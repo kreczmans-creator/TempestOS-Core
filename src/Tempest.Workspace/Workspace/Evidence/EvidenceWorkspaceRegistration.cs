@@ -7,6 +7,20 @@ using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Workspace.Evidence;
 
+/// <summary>The command ids <see cref="EvidenceWorkspaceRegistration"/> registers.</summary>
+public static class EvidenceCommandIds
+{
+    public const string Create = "evidence.create";
+    public const string Cite = "evidence.cite";
+    public const string DeclareFigure = "evidence.declare-figure";
+    public const string Check = "evidence.check";
+    public const string Issue = "evidence.issue";
+    public const string Revise = "evidence.revise";
+    public const string SetSubject = "evidence.set-subject";
+    public const string Rename = "evidence.rename";
+    public const string Delete = "evidence.delete";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the Evidence discipline
 /// into a running Workspace — mirrors
@@ -104,7 +118,7 @@ public static class EvidenceWorkspaceRegistration
         commandDispatcher.RegisterHandler<SetEvidenceSubjectCommand>(new SetEvidenceSubjectCommandHandler(evidenceService));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.create", displayName: "Create Evidence", category: "Evidence",
+            id: EvidenceCommandIds.Create, displayName: "Create Evidence", category: "Evidence",
             description: "Creates a new piece of evidence — a record of engineering work done elsewhere.")
         {
             // Parent is where the user is standing (`WP 17.9.3`): the
@@ -124,7 +138,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.cite", displayName: "Cite Reference", category: "Evidence",
+            id: EvidenceCommandIds.Cite, displayName: "Cite Reference", category: "Evidence",
             description: "Cites a released reference record from one of the five governed libraries, pinned to the revision held. An unreleased record is refused, with the record named.")
         {
             Binding = new CommandBinding(
@@ -140,7 +154,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.declare-figure", displayName: "Declare Figure", category: "Evidence",
+            id: EvidenceCommandIds.DeclareFigure, displayName: "Declare Figure", category: "Evidence",
             description: "Declares a named, typed figure — an input or a result — against the selected evidence.")
         {
             Binding = new CommandBinding(
@@ -157,7 +171,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.check", displayName: "Record Check", category: "Evidence",
+            id: EvidenceCommandIds.Check, displayName: "Record Check", category: "Evidence",
             description: "Records a check against the selected evidence — the client's own review, entered by hand, unless the independent-check rule is on.")
         {
             Binding = new CommandBinding(
@@ -176,7 +190,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.issue", displayName: "Issue", category: "Evidence",
+            id: EvidenceCommandIds.Issue, displayName: "Issue", category: "Evidence",
             description: "Issues the selected, checked evidence to the client.")
         {
             Binding = new CommandBinding(
@@ -193,7 +207,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.revise", displayName: "Revise", category: "Evidence",
+            id: EvidenceCommandIds.Revise, displayName: "Revise", category: "Evidence",
             description: "Reopens the selected, issued evidence as a new Draft revision; the issued revision stays readable.")
         {
             // Confirmed, not unattended: this is a genuine status move
@@ -210,7 +224,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.set-subject", displayName: "Change Subject", category: "Evidence",
+            id: EvidenceCommandIds.SetSubject, displayName: "Change Subject", category: "Evidence",
             description: "Tags the selected evidence to a Part, Assembly, Requirement or Deliverable, or clears the tag. Refused once the evidence is Issued.")
         {
             // No `Binding.Fields` — the Subject picker collects a `Guid?`
@@ -238,7 +252,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.rename", displayName: "Rename Evidence", category: "Evidence",
+            id: EvidenceCommandIds.Rename, displayName: "Rename Evidence", category: "Evidence",
             description: "Renames the selected evidence.")
         {
             Binding = new CommandBinding(
@@ -250,7 +264,7 @@ public static class EvidenceWorkspaceRegistration
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "evidence.delete", displayName: "Delete Evidence", category: "Evidence",
+            id: EvidenceCommandIds.Delete, displayName: "Delete Evidence", category: "Evidence",
             description: "Soft-deletes the selected evidence (rejected if it still has live children).")
         {
             Binding = new CommandBinding(

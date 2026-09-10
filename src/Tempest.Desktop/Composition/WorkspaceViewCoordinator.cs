@@ -19,6 +19,35 @@ using Tempest.Desktop.Views;
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
+/// The document-opening capability <see cref="WorkspaceViewCoordinator"/>
+/// needs from <see cref="DocumentAreaView"/> — <see cref="ShowTab"/>,
+/// <see cref="MarkDirty"/>, <see cref="RemoveTab"/> and
+/// <see cref="IsMarkedDirty"/>, nothing else. A seam, not merely a narrower
+/// type: it is what lets the coordinator declare this dependency as a
+/// plain, non-nullable constructor parameter, present from its own
+/// construction onward — never a nullable field read behind a
+/// null-forgiving <c>!</c> — because <see cref="DocumentAreaView"/> is now
+/// built <em>before</em> this coordinator exists (`WP 19.2A`;
+/// <see cref="DocumentAreaView.ContentBuilder"/> is what makes that
+/// ordering possible, resolving the other direction of the one genuine
+/// construction-order cycle between the two types).
+/// </summary>
+internal interface IDocumentOpener
+{
+    /// <summary>Adds (or focuses, if already present) a tab for <paramref name="view"/>.</summary>
+    void ShowTab(IWorkspaceView view);
+
+    /// <summary>Marks <paramref name="viewId"/>'s own tab dirty or clean.</summary>
+    void MarkDirty(Guid viewId, bool isDirty);
+
+    /// <summary>Removes <paramref name="viewId"/>'s own tab, if present.</summary>
+    void RemoveTab(Guid viewId);
+
+    /// <summary>Gets whether <paramref name="viewId"/>'s own tab is currently showing a dirty indicator.</summary>
+    bool IsMarkedDirty(Guid viewId);
+}
+
+/// <summary>
 /// Wires every Explorer/Inspector/Document-Area cross-view interaction —
 /// select-to-inspect, open-to-edit, the Object Editor Framework's own
 /// injectable content builder, drag-and-drop reparenting, Favourite
@@ -33,38 +62,28 @@ namespace Tempest.Desktop.Composition;
 /// sibling collaborator back.
 /// </summary>
 /// <remarks>
-/// <see cref="Attach"/> exists because <see cref="DocumentAreaView"/> must
-/// itself be constructed with <see cref="BuildDocumentContent"/> as its
-/// own injectable content builder — a genuine construction-order cycle,
-/// this collaborator needs to exist before <see cref="DocumentAreaView"/>
-/// can, and <see cref="DocumentAreaView"/> must exist before its own
-/// <c>TabCloseRequested</c> event can be subscribed. The pre-decomposition
-/// source resolved the identical cycle with a "field assigned after
-/// construction, read lazily by a deferred delegate" two-phase sequencing
-/// (its own constructor remarks: "a local function's own captured-field
-/// flow state is evaluated at its own declaration point, not its own
-/// later invocation point"); <see cref="Attach"/> is that same, unchanged
-/// resolution, one collaborator boundary away rather than one field
-/// assignment away. Undo/Redo button refresh needs no explicit call here
-/// — <c>Stack</c> is the plain <see cref="IUndoRedoStack"/>
-/// <c>UndoRedoCoordinator</c> already owns and reactively refreshes from
-/// (<see cref="IUndoRedoStack.Changed"/>), passed once as a value, never
-/// a reference to that collaborator itself.
-/// </remarks>
-/// <remarks>
-/// **`WP 12.4B` (`ADR-0104`).** Previously also carried
-/// <see cref="CockpitView"/> through this same two-phase-construction
-/// cycle purely to call its own <c>Refresh()</c> — WP12.0B's own
-/// architecture review, Finding 5, flagged this as heavier than the
-/// actual need warranted, since <see cref="CockpitView"/>'s only other
-/// use anywhere in this class was as <see cref="Attach"/>'s own second
-/// parameter. Replaced with a plain <c>Action refreshCockpit</c>
-/// constructor parameter — `ADR-0104`'s own "direct delegate over object
-/// reference" default — supplied by <see cref="MainWindow"/> (the
-/// composition root) via the same field-closure lazy-capture pattern
-/// already used here for <see cref="DocumentAreaView"/> itself. Only one
-/// genuine construction-order cycle (<see cref="DocumentAreaView"/>)
-/// remains after this change.
+/// **`WP 19.2A`.** <see cref="IDocumentOpener"/> is a plain constructor
+/// parameter now — <see cref="DocumentAreaView"/> is built first (see that
+/// interface's own remarks), closing the construction-order cycle this
+/// type's own <c>Attach</c> method used to exist for. One genuine cycle
+/// remains: <see cref="CockpitView"/> itself needs
+/// <see cref="NavigateToObject"/> to be constructed, so this coordinator
+/// must exist first, and <see cref="Attach"/> is what <see cref="CockpitView"/>
+/// is handed to once it, in turn, exists — the identical "receive it when
+/// it exists" resolution, one collaborator narrower than before.
+/// <c>refreshStatusBar</c>/<c>recordHistory</c>/<c>refreshCockpit</c> — the
+/// three <see cref="Action"/> delegates <see cref="MainWindow"/> used to
+/// thread through purely to call back into state it alone owned — are
+/// gone in turn: recording history is now the already-owned
+/// <see cref="ActionOutcomeReporter"/>'s own job (see
+/// <see cref="ToggleFavouriteAsync"/>), refreshing the Cockpit is the
+/// now-attached <see cref="CockpitView"/> reference's own
+/// <see cref="CockpitView.SafeRefreshAsync"/>, and the Selected Object
+/// status segment is set directly from the already-owned
+/// <see cref="StatusBarView"/>/<see cref="WorkspaceManager"/> — the fuller
+/// <c>RefreshStatusBar(manager)</c> a selection alone never needed
+/// (diagnostics/Output-panel/Background-Tasks are untouched by which
+/// object is selected, and already refresh from their own real triggers).
 /// </remarks>
 internal sealed class WorkspaceViewCoordinator
 {
@@ -84,10 +103,8 @@ internal sealed class WorkspaceViewCoordinator
     private readonly RecentObjectsState _recentObjects;
     private readonly FavouriteObjectsState _favouriteObjects;
     private readonly Dictionary<Guid, IWorkspaceView> _openGraphViewsByRootId;
-    private readonly Action _refreshStatusBar;
-    private readonly Action<string> _recordHistory;
     private readonly ActionOutcomeReporter _reporter;
-    private readonly Action _refreshCockpit;
+    private readonly IDocumentOpener _documentOpener;
     private readonly IWorkspaceChanges? _workspaceChanges;
 
     // `WP 18.2A`: the declaration-per-Kind Object Editor's own optional
@@ -99,9 +116,9 @@ internal sealed class WorkspaceViewCoordinator
     private readonly EvidenceEditorSupport? _evidenceSupport;
     private readonly IAuditQuery? _auditQuery;
 
-    private DocumentAreaView? _documentArea;
+    private CockpitView? _cockpitView;
 
-    /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector cross-view interaction that does not need <see cref="DocumentAreaView"/> to already exist (see <see cref="Attach"/>).</summary>
+    /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector/Document-Area cross-view interaction.</summary>
     /// <summary>
     /// Opens one of an object's attachments in the document viewer
     /// (`TD-80`), set by the shell that owns the workspace.
@@ -120,7 +137,7 @@ internal sealed class WorkspaceViewCoordinator
         ProjectExplorerView explorerView, PropertyInspectorView inspectorView, RibbonView ribbon,
         StatusBarView statusBar, ToastHost toastHost, ConfirmationDialog confirmationDialog, IUndoRedoStack undoRedoStack,
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
-        Action refreshStatusBar, Action<string> recordHistory, Action refreshCockpit, ActionOutcomeReporter reporter,
+        IDocumentOpener documentOpener, ActionOutcomeReporter reporter,
         IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
         EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null)
     {
@@ -139,9 +156,7 @@ internal sealed class WorkspaceViewCoordinator
         ArgumentNullException.ThrowIfNull(recentObjects);
         ArgumentNullException.ThrowIfNull(favouriteObjects);
         ArgumentNullException.ThrowIfNull(openGraphViewsByRootId);
-        ArgumentNullException.ThrowIfNull(refreshStatusBar);
-        ArgumentNullException.ThrowIfNull(recordHistory);
-        ArgumentNullException.ThrowIfNull(refreshCockpit);
+        ArgumentNullException.ThrowIfNull(documentOpener);
         ArgumentNullException.ThrowIfNull(reporter);
 
         _workspace = workspace;
@@ -160,9 +175,7 @@ internal sealed class WorkspaceViewCoordinator
         _recentObjects = recentObjects;
         _favouriteObjects = favouriteObjects;
         _openGraphViewsByRootId = openGraphViewsByRootId;
-        _refreshStatusBar = refreshStatusBar;
-        _recordHistory = recordHistory;
-        _refreshCockpit = refreshCockpit;
+        _documentOpener = documentOpener;
         _workspaceChanges = workspaceChanges;
         _reporter = reporter;
         _declarations = declarations;
@@ -175,14 +188,19 @@ internal sealed class WorkspaceViewCoordinator
             await _workspace.Selection.SelectAsync(id, kind).ConfigureAwait(true);
             _inspectorView.SetCurrentSelection(id, kind);
             await _inspectorView.RefreshAsync().ConfigureAwait(true);
-            _refreshStatusBar();
+
+            // The Selected Object segment alone — a selection changes no
+            // diagnostics/Output-panel/Background-Tasks state, so this no
+            // longer runs the shell's own fuller status-bar refresh on
+            // every selection (`WP 19.2A`; see this type's own remarks).
+            _statusBar.SetText(_manager.StatusBar.StatusText);
             _ribbon.RefreshEnablement();
         };
         _explorerView.ObjectOpened += async (id, kind) =>
         {
             var view = await _workspace.Navigation.OpenAsync(id, kind).ConfigureAwait(true);
-            _documentArea!.ShowTab(view);
-            _refreshCockpit();
+            _documentOpener.ShowTab(view);
+            RefreshCockpit();
 
             // "Recent objects" (`WP 10.6A`) — recorded here, the one
             // place every Open path already converges (tree double-click/
@@ -248,19 +266,33 @@ internal sealed class WorkspaceViewCoordinator
     }
 
     /// <summary>
-    /// Attaches the now-constructed <see cref="DocumentAreaView"/> — must
-    /// be called exactly once, immediately after it is constructed (see
-    /// this type's own remarks for why it needs this collaborator to
-    /// exist first), wiring the one piece of Document Area interaction
-    /// (Tab Close) that could not be wired inside this collaborator's own
-    /// constructor.
+    /// Attaches the now-constructed <see cref="CockpitView"/> — must be
+    /// called exactly once, immediately after it is constructed. The one
+    /// remaining genuine construction-order cycle (see this type's own
+    /// remarks): <see cref="CockpitView"/> itself needs
+    /// <see cref="NavigateToObject"/>, so this coordinator must exist
+    /// first, and <see cref="CockpitView"/> can only be handed back once
+    /// it, in turn, exists.
     /// </summary>
-    public void Attach(DocumentAreaView documentArea)
+    public void Attach(CockpitView cockpitView)
     {
-        ArgumentNullException.ThrowIfNull(documentArea);
+        ArgumentNullException.ThrowIfNull(cockpitView);
 
-        _documentArea = documentArea;
-        _documentArea.TabCloseRequested += viewId => _ = CloseDocumentAsync(viewId);
+        _cockpitView = cockpitView;
+    }
+
+    /// <summary>
+    /// Refreshes the now-<see cref="Attach"/>ed <see cref="CockpitView"/> —
+    /// every non-Cockpit action that still wants it re-rendered (opening or
+    /// closing a document tab changes <c>EngineeringCockpit.OpenDocumentCount</c>
+    /// and Recent Objects, neither of which raises <c>WorkspaceChanged</c>).
+    /// </summary>
+    private void RefreshCockpit()
+    {
+        if (_cockpitView is null)
+            throw new InvalidOperationException("WorkspaceViewCoordinator.Attach(CockpitView) must be called before the Cockpit can be refreshed.");
+
+        _cockpitView.SafeRefreshAsync();
     }
 
     /// <summary>
@@ -273,15 +305,6 @@ internal sealed class WorkspaceViewCoordinator
     /// Sample Explorer's own fixed content) — <see cref="DocumentAreaView"/>
     /// itself stays completely agnostic to which.
     /// </summary>
-    /// <remarks>
-    /// Only ever invoked as a deferred delegate, after
-    /// <see cref="Attach"/> has already run — the
-    /// null-forgiving operator on <see cref="_documentArea"/> here
-    /// suppresses a known, harmless nullable-flow-analysis limitation (a
-    /// method's own captured-field flow state is evaluated at its own
-    /// declaration point, not its own later invocation point), not a
-    /// genuine possible-null risk.
-    /// </remarks>
     public Control BuildDocumentContent(IWorkspaceView view)
     {
         // The Digital Thread graph (`WP 10.4A`) is itself both the
@@ -299,7 +322,7 @@ internal sealed class WorkspaceViewCoordinator
         if (editor is null)
             return DocumentAreaView.BuildDefaultBody(view);
 
-        editor.DirtyChanged += dirty => _documentArea!.MarkDirty(view.Id, dirty);
+        editor.DirtyChanged += dirty => _documentOpener.MarkDirty(view.Id, dirty);
 
         // `TD-80`: the editor asks; the shell decides where a document
         // opens. Fire-and-forget because opening is the user's gesture and
@@ -327,8 +350,8 @@ internal sealed class WorkspaceViewCoordinator
     public async Task NavigateToObjectAsync(Guid id, string kind)
     {
         var relatedView = await _workspace.Navigation.OpenAsync(id, kind).ConfigureAwait(true);
-        _documentArea!.ShowTab(relatedView);
-        _refreshCockpit();
+        _documentOpener.ShowTab(relatedView);
+        RefreshCockpit();
     }
 
     /// <summary>Fire-and-forget wrapper over <see cref="NavigateToObjectAsync"/> — the delegate shape every synchronous callback site (Object Editor "Open →" links, the Cockpit's own Favourite Projects card, the Digital Thread graph) needs.</summary>
@@ -371,9 +394,12 @@ internal sealed class WorkspaceViewCoordinator
         await _favouriteObjects.SaveAsync().ConfigureAwait(true);
 
         var message = wasFavourite ? $"Removed '{displayName}' from Favourites." : $"Added '{displayName}' to Favourites.";
-        _statusBar.SetText(message);
-        _toastHost.Show(message, FeedbackSeverity.Success);
-        _recordHistory(message);
+
+        // Status bar, toast, history — the already-owned ActionOutcomeReporter's
+        // own tail (`WP-D1`), rather than a separate `recordHistory` delegate
+        // repeating what it already does (`WP 19.2A`). No dependent surface
+        // to refresh: favouriting changes no workspace data.
+        await _reporter.ReportAsync(message, ActionOutcome.Changed).ConfigureAwait(true);
 
         var favourites = _favouriteObjects;
 
@@ -396,13 +422,13 @@ internal sealed class WorkspaceViewCoordinator
     /// <see cref="ConfirmationDialog"/> first. Cancelling leaves the tab
     /// open, with its edits intact, exactly as if Close had never been
     /// requested. Public — both <see cref="DocumentAreaView.TabCloseRequested"/>
-    /// (wired inside <see cref="Attach"/>) and <see cref="MainWindow"/>'s
-    /// own <c>Ctrl+W</c> keyboard shortcut call through this identical
-    /// path.
+    /// (wired by the composer once this coordinator exists — see
+    /// <see cref="IDocumentOpener"/>) and <see cref="MainWindow"/>'s own
+    /// <c>Ctrl+W</c> keyboard shortcut call through this identical path.
     /// </summary>
     public async Task CloseDocumentAsync(Guid viewId)
     {
-        if (_documentArea!.IsMarkedDirty(viewId))
+        if (_documentOpener.IsMarkedDirty(viewId))
         {
             var discard = await _confirmationDialog.ConfirmAsync(
                 "Discard unsaved changes?",
@@ -415,7 +441,7 @@ internal sealed class WorkspaceViewCoordinator
         await _workspace.Navigation.CloseAsync(viewId).ConfigureAwait(true);
         foreach (var rootId in _openGraphViewsByRootId.Where(kv => kv.Value.Id == viewId).Select(kv => kv.Key).ToList())
             _openGraphViewsByRootId.Remove(rootId);
-        _documentArea.RemoveTab(viewId);
-        _refreshCockpit();
+        _documentOpener.RemoveTab(viewId);
+        RefreshCockpit();
     }
 }

@@ -4,6 +4,25 @@ using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Workspace.Calculations;
 
+/// <summary>The command ids <see cref="CalculationsWorkspaceRegistration"/> registers.</summary>
+public static class CalculationsCommandIds
+{
+    public const string Create = "calculations.create";
+    public const string Rename = "calculations.rename";
+    public const string Edit = "calculations.edit";
+    public const string Delete = "calculations.delete";
+    public const string Move = "calculations.move";
+    public const string Copy = "calculations.copy";
+    public const string Duplicate = "calculations.duplicate";
+    public const string Execute = "calculations.execute";
+    public const string Recalculate = "calculations.recalculate";
+    public const string Lock = "calculations.lock";
+    public const string Unlock = "calculations.unlock";
+    public const string RequestReview = "calculations.request-review";
+    public const string Approve = "calculations.approve";
+    public const string Archive = "calculations.archive";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Engineering
 /// Calculations discipline into a running Workspace — everything
@@ -104,7 +123,7 @@ public static class CalculationsWorkspaceRegistration
         var boundKinds = CalculationObjectFactoryRegistry.SupportedKinds;
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.create", displayName: "Create Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Create, displayName: "Create Calculation", category: "Calculations",
             description: "Creates a new Calculation or Calculation Set.")
         {
             // `WP 17.9.3` (`TD-172`): the new calculation goes under the selected
@@ -120,7 +139,7 @@ public static class CalculationsWorkspaceRegistration
                 ]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.rename", displayName: "Rename Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Rename, displayName: "Rename Calculation", category: "Calculations",
             description: "Renames the selected Calculation Domain object.")
         {
             // Bound for the Palette and every other future Id-based
@@ -137,7 +156,7 @@ public static class CalculationsWorkspaceRegistration
                 boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.edit", displayName: "Edit Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Edit, displayName: "Edit Calculation", category: "Calculations",
             description: "Records a new content revision of the selected Calculation's own method statement.")
         {
             // ChangeSummary is left at ReviseCalculationCommand's own
@@ -154,7 +173,7 @@ public static class CalculationsWorkspaceRegistration
                 boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.delete", displayName: "Delete Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Delete, displayName: "Delete Calculation", category: "Calculations",
             description: "Soft-deletes the selected Calculation Domain object.")
         {
             // The confirmation is what keeps a soft-delete out of an
@@ -170,21 +189,21 @@ public static class CalculationsWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Calculation")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.move", displayName: "Move Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Move, displayName: "Move Calculation", category: "Calculations",
             description: "Reparents the selected Calculation Domain object.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Moving a Calculation needs a destination parent chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.copy", displayName: "Copy Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Copy, displayName: "Copy Calculation", category: "Calculations",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Copying a Calculation needs a destination parent chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.duplicate", displayName: "Duplicate Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Duplicate, displayName: "Duplicate Calculation", category: "Calculations",
             description: "Creates a copy of the selected object under its own current parent.")
         {
             // NewIdentifier is left at the command's own optional default,
@@ -198,7 +217,7 @@ public static class CalculationsWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Calculation")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.execute", displayName: "Execute Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Execute, displayName: "Execute Calculation", category: "Calculations",
             description: "Executes a registered Calculation Template against the selected object, recording a new CalculationRecord.")
         {
             Binding = CommandBinding.Unavailable(
@@ -206,7 +225,7 @@ public static class CalculationsWorkspaceRegistration
                     "Executing a Calculation needs the chosen Template's own structured input document — a different set of typed fields per Template, supplied as JSON")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.recalculate", displayName: "Recalculate", category: "Calculations",
+            id: CalculationsCommandIds.Recalculate, displayName: "Recalculate", category: "Calculations",
             description: "Re-executes a Calculation Template already executed against the selected object, with fresh input.")
         {
             Binding = CommandBinding.Unavailable(
@@ -218,31 +237,31 @@ public static class CalculationsWorkspaceRegistration
         // each is the one shape that can run unattended in a macro
         // (ADR-0098): no parameters to collect, and nothing to confirm.
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.lock", displayName: "Lock Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Lock, displayName: "Lock Calculation", category: "Calculations",
             description: "Locks the selected Calculation against further edits by transitioning its own status to Approved (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Approved, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.unlock", displayName: "Unlock Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Unlock, displayName: "Unlock Calculation", category: "Calculations",
             description: "Unlocks the selected Calculation for further edits by transitioning its own status back to Draft (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Draft, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.request-review", displayName: "Request Review", category: "Calculations",
+            id: CalculationsCommandIds.RequestReview, displayName: "Request Review", category: "Calculations",
             description: "Transitions the selected Calculation's own status to InReview (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.InReview, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.approve", displayName: "Approve Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Approve, displayName: "Approve Calculation", category: "Calculations",
             description: "Transitions the selected Calculation's own status to Approved (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Approved, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "calculations.archive", displayName: "Archive Calculation", category: "Calculations",
+            id: CalculationsCommandIds.Archive, displayName: "Archive Calculation", category: "Calculations",
             description: "Transitions the selected Calculation's own status to Archived, a terminal state (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Archived, boundKinds),

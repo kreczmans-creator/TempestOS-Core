@@ -3,6 +3,7 @@ using Tempest.Workspace.Composition;
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -323,7 +324,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         {
             foreach (var registration in DescriptorRegistrations(source))
             {
-                var id = Regex.Match(registration, @"id: ""(?<id>[^""]+)""").Groups["id"].Value;
+                var id = ExtractDescriptorId(registration);
                 declaredIds.Add(id);
 
                 if (!registration.Contains("Binding =", StringComparison.Ordinal))
@@ -408,6 +409,49 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
             yield return string.Join("\n", statement);
         }
+    }
+
+    /// <summary>
+    /// `WP 19.2A`: each discipline registration's own <c>CommandIds</c>
+    /// class, keyed by its own name — how <see cref="ExtractDescriptorId"/>
+    /// resolves a <c>&lt;Discipline&gt;CommandIds.&lt;Name&gt;</c> constant
+    /// reference back to its literal value by reflection, without this
+    /// scan taking a build-time dependency on the constant it reads.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, Type> CommandIdsTypes = new Dictionary<string, Type>(StringComparer.Ordinal)
+    {
+        [nameof(CalculationsCommandIds)] = typeof(CalculationsCommandIds),
+        [nameof(DocumentsCommandIds)] = typeof(DocumentsCommandIds),
+        [nameof(EvidenceCommandIds)] = typeof(EvidenceCommandIds),
+        [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
+        [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
+        [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
+        [nameof(VerificationCommandIds)] = typeof(VerificationCommandIds),
+    };
+
+    /// <summary>
+    /// The command id a <c>RegisterDescriptor</c> statement declares — a
+    /// quoted literal, or (`WP 19.2A`, `TD-105`–`TD-107`/`TD-112`/`TD-113`)
+    /// a <c>&lt;Discipline&gt;CommandIds.&lt;Name&gt;</c> constant
+    /// reference, resolved back to its own literal value here so this
+    /// remains a source-text check on what each registration declares,
+    /// not a build-time assertion of a constant against itself.
+    /// </summary>
+    private static string ExtractDescriptorId(string registration)
+    {
+        var literal = Regex.Match(registration, @"id: ""(?<id>[^""]+)""");
+        if (literal.Success)
+            return literal.Groups["id"].Value;
+
+        var constant = Regex.Match(registration, @"id: (?<type>\w+CommandIds)\.(?<field>\w+)");
+        if (constant.Success
+            && CommandIdsTypes.TryGetValue(constant.Groups["type"].Value, out var type)
+            && type.GetField(constant.Groups["field"].Value)?.GetRawConstantValue() is string value)
+        {
+            return value;
+        }
+
+        return string.Empty;
     }
 
     // ==================================================================

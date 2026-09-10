@@ -1,6 +1,7 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -56,24 +57,24 @@ public sealed class KindEligibilityInvariantTests
     private static readonly IReadOnlyDictionary<string, Verb> EditorRouted =
         new Dictionary<string, Verb>(StringComparer.Ordinal)
         {
-            ["calculations.rename"] = Verb.Rename,
-            ["documents.rename"] = Verb.Rename,
-            ["manufacturing.rename"] = Verb.Rename,
-            ["mechanical.rename"] = Verb.Rename,
-            ["verification.rename"] = Verb.Rename,
-            ["calculations.edit"] = Verb.Revise,
-            ["documents.edit"] = Verb.Revise,
-            ["manufacturing.edit"] = Verb.Revise,
-            ["mechanical.edit"] = Verb.Revise,
-            ["verification.edit"] = Verb.Revise,
-            ["requirements.revise"] = Verb.Revise,
+            [CalculationsCommandIds.Rename] = Verb.Rename,
+            [DocumentsCommandIds.Rename] = Verb.Rename,
+            [ManufacturingCommandIds.Rename] = Verb.Rename,
+            [MechanicalCommandIds.Rename] = Verb.Rename,
+            [VerificationCommandIds.Rename] = Verb.Rename,
+            [CalculationsCommandIds.Edit] = Verb.Revise,
+            [DocumentsCommandIds.Edit] = Verb.Revise,
+            [ManufacturingCommandIds.Edit] = Verb.Revise,
+            [MechanicalCommandIds.Edit] = Verb.Revise,
+            [VerificationCommandIds.Edit] = Verb.Revise,
+            [RequirementsCommandIds.Revise] = Verb.Revise,
         };
 
     private static readonly IReadOnlyList<string> DeleteRouted =
     [
-        "calculations.delete", "documents.delete", "evidence.delete", "manufacturing.delete", "mechanical.delete",
-        "verification.delete", "requirements.delete", "requirements.delete-group",
-        "requirements.delete-collection",
+        CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
+        VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
+        RequirementsCommandIds.DeleteCollection,
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>

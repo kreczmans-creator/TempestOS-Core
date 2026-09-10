@@ -3,6 +3,29 @@ using Tempest.Core.Requirements;
 
 namespace Tempest.Workspace.Requirements;
 
+/// <summary>The command ids <see cref="RequirementsWorkspaceRegistration"/> registers.</summary>
+public static class RequirementsCommandIds
+{
+    public const string Create = "requirements.create";
+    public const string Revise = "requirements.revise";
+    public const string SetStatus = "requirements.set-status";
+    public const string SetOwner = "requirements.set-owner";
+    public const string SetPriority = "requirements.set-priority";
+    public const string Delete = "requirements.delete";
+    public const string Move = "requirements.move";
+    public const string Duplicate = "requirements.duplicate";
+    public const string Link = "requirements.link";
+    public const string CreateGroup = "requirements.create-group";
+    public const string MoveGroup = "requirements.move-group";
+    public const string DeleteGroup = "requirements.delete-group";
+    public const string CreateCollection = "requirements.create-collection";
+    public const string DeleteCollection = "requirements.delete-collection";
+    public const string AddToCollection = "requirements.add-to-collection";
+    public const string BulkSetStatus = "requirements.bulk-set-status";
+    public const string BulkSetOwner = "requirements.bulk-set-owner";
+    public const string BulkSetPriority = "requirements.bulk-set-priority";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Requirements
 /// Management discipline into a running Workspace — everything
@@ -98,7 +121,7 @@ public static class RequirementsWorkspaceRegistration
         // — never this class's own three-entry SupportedKinds.
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create", displayName: "Create Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Create, displayName: "Create Requirement", category: "Requirements",
             description: "Creates a new Requirement with a business identifier and statement.")
         {
             // Both prompts the Ribbon's own Create flow already collects, with the
@@ -116,7 +139,7 @@ public static class RequirementsWorkspaceRegistration
                 ]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.revise", displayName: "Revise Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Revise, displayName: "Revise Requirement", category: "Requirements",
             description: "Records a new revision of the selected Requirement's own statement.")
         {
             // A Requirement's own mutable field is its Statement — this discipline
@@ -132,7 +155,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-status", displayName: "Set Requirement Status", category: "Requirements",
+            id: RequirementsCommandIds.SetStatus, displayName: "Set Requirement Status", category: "Requirements",
             description: "Sets the selected Requirement's own current lifecycle status.")
         {
             Binding = new CommandBinding(
@@ -144,7 +167,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-owner", displayName: "Set Requirement Owner", category: "Requirements",
+            id: RequirementsCommandIds.SetOwner, displayName: "Set Requirement Owner", category: "Requirements",
             description: "Sets the selected Requirement's own current owner.")
         {
             // Owner is nullable on the command and unvalidated in the Ribbon's own
@@ -158,7 +181,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-priority", displayName: "Set Requirement Priority", category: "Requirements",
+            id: RequirementsCommandIds.SetPriority, displayName: "Set Requirement Priority", category: "Requirements",
             description: "Sets the selected Requirement's own current priority.")
         {
             Binding = new CommandBinding(
@@ -170,7 +193,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete", displayName: "Delete Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Delete, displayName: "Delete Requirement", category: "Requirements",
             description: "Soft-deletes the selected Requirement.")
         {
             // The confirmation is what keeps a delete out of an unattended macro.
@@ -184,14 +207,14 @@ public static class RequirementsWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.move", displayName: "Move Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Move, displayName: "Move Requirement", category: "Requirements",
             description: "Moves the selected Requirement into a different group, or ungroups it.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement needs a destination Requirement Group chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.duplicate", displayName: "Duplicate Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Duplicate, displayName: "Duplicate Requirement", category: "Requirements",
             description: "Creates a copy of the selected Requirement's own Statement/Category/Priority/Group under a new identifier.")
         {
             // Alone among the six disciplines' Duplicate commands, this one takes a
@@ -206,14 +229,14 @@ public static class RequirementsWorkspaceRegistration
                 WorkspaceCommandBindings.DuplicateConfirmation("Requirement")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.link", displayName: "Link Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Link, displayName: "Link Requirement", category: "Requirements",
             description: "Records a typed relationship from the selected Requirement to another document — allocation, dependency, derivation, reference, or satisfaction.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Linking a Requirement needs a target object chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create-group", displayName: "Create Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.CreateGroup, displayName: "Create Requirement Group", category: "Requirements",
             description: "Creates a new Requirement Group, optionally nested under an existing parent group.")
         {
             // ParentGroupId stays at the command's own optional default: nesting a
@@ -226,14 +249,14 @@ public static class RequirementsWorkspaceRegistration
                 [WorkspaceCommandBindings.Required("name", "Name for the new group")]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.move-group", displayName: "Move Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.MoveGroup, displayName: "Move Requirement Group", category: "Requirements",
             description: "Reparents the selected Requirement Group, or makes it a root group.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement Group needs a destination parent Group chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete-group", displayName: "Delete Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.DeleteGroup, displayName: "Delete Requirement Group", category: "Requirements",
             description: "Soft-deletes the selected Requirement Group (rejected if it still has live grouped requirements or sub-groups).")
         {
             Binding = new CommandBinding(
@@ -243,7 +266,7 @@ public static class RequirementsWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Group")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create-collection", displayName: "Create Requirement Collection", category: "Requirements",
+            id: RequirementsCommandIds.CreateCollection, displayName: "Create Requirement Collection", category: "Requirements",
             description: "Creates a new, empty Requirement Collection (a Requirement Set).")
         {
             Binding = new CommandBinding(
@@ -252,7 +275,7 @@ public static class RequirementsWorkspaceRegistration
                 [WorkspaceCommandBindings.Required("name", "Name for the new collection")]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete-collection", displayName: "Delete Requirement Collection", category: "Requirements",
+            id: RequirementsCommandIds.DeleteCollection, displayName: "Delete Requirement Collection", category: "Requirements",
             description: "Soft-deletes the selected Requirement Collection — never affects any member requirement.")
         {
             Binding = new CommandBinding(
@@ -262,14 +285,14 @@ public static class RequirementsWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Collection")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.add-to-collection", displayName: "Add Requirement to Collection", category: "Requirements",
+            id: RequirementsCommandIds.AddToCollection, displayName: "Add Requirement to Collection", category: "Requirements",
             description: "Adds the selected Requirement to an existing Requirement Collection.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Adding a Requirement to a Collection needs the target Collection chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-status", displayName: "Bulk Set Requirement Status", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetStatus, displayName: "Bulk Set Requirement Status", category: "Requirements",
             description: "Sets the same status on every requirement in a set.")
         {
             // The whole ordered selection, not just the primary — which is exactly
@@ -284,7 +307,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-owner", displayName: "Bulk Set Requirement Owner", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetOwner, displayName: "Bulk Set Requirement Owner", category: "Requirements",
             description: "Sets the same owner on every requirement in a set.")
         {
             Binding = new CommandBinding(
@@ -295,7 +318,7 @@ public static class RequirementsWorkspaceRegistration
                 RequirementKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-priority", displayName: "Bulk Set Requirement Priority", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetPriority, displayName: "Bulk Set Requirement Priority", category: "Requirements",
             description: "Sets the same priority on every requirement in a set.")
         {
             Binding = new CommandBinding(

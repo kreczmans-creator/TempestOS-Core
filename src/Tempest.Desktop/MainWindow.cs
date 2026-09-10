@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Platform;
 using Tempest.Workspace.Editors;
 using Tempest.Workspace.Files;
@@ -10,12 +9,8 @@ using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
-using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
-using Tempest.Desktop.Editors;
-using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
-using Tempest.Desktop.Input;
 using Tempest.Desktop.Tasks;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -23,124 +18,96 @@ using Tempest.Desktop.Views;
 namespace Tempest.Desktop;
 
 /// <summary>
-/// The Main Window (`WP 10.0B`; modernised `WP 10.2A` — Workspace
-/// Modernisation; extended `WP 10.2B` — Docking &amp; Workspace Layouts;
-/// given real Object Editors `WP 10.3A`; given the Engineering Ribbon
-/// &amp; Command Experience `WP 10.3B`) — assembles every named
-/// implementation item across all five Work Packages (Docking framework
-/// incl. Bottom dock and the Output panel, Collapse, Auto-Hide,
-/// predefined/saved/reset layouts, Panel host, Document host wired to the
-/// real Object Editor Framework, a real, tabbed Engineering Ribbon
-/// consolidating the old Navigation Framework button row, a Quick Access
-/// Toolbar, Menu system, Command Palette host, Keyboard shortcut
-/// framework; real object Rename/Delete/Revise dispatch, `ADR-0096`/
-/// `ADR-0097`, a seven-segment Status Bar including a live command hint,
-/// and document switching shortcuts) into one running window over the
-/// real, unchanged Engineering Workspace six real disciplines already
-/// populate.
+/// The rendered content and per-area entry action one <see cref="ShellArea"/>
+/// registers into <see cref="MainWindow"/>'s own area registry (`WP 19.2A`,
+/// `TD-109`) — the table <see cref="MainWindow.RenderCurrentModuleAsync"/>
+/// reads instead of a switch, so a later Work Package adds an area with one
+/// entry, never a new case. <paramref name="OnEnter"/> is
+/// <see langword="null"/> for an area with nothing to load on entry; one
+/// absent from the table renders <see cref="DeclaredCapabilityView"/>.
+/// </summary>
+internal sealed record ShellAreaRender(Func<Control> Content, Func<Task>? OnEnter);
+
+/// <summary>
+/// The Main Window (`WP 10.0B`, modernised through `WP 10.3B`) —
+/// assembles every named implementation item across five Work Packages
+/// into one running window over the real, unchanged Engineering Workspace
+/// six real disciplines already populate.
 /// </summary>
 /// <remarks>
-/// **Composition root, `WP 12.0B` (`ADR-0103`).** Previously a
-/// ~1,550-line, ~1,000-line-constructor "God Object" (Finding A-1,
-/// `WP11.0A Platform Architecture Review.md`). Every object-graph
-/// responsibility this class does not need to keep for itself now lives
-/// in its own <c>Tempest.Desktop.Composition</c> collaborator — see each
-/// one's own XML docs for its own single reason to change. This class
-/// itself, per `ADR-0103`, retains only what is irreducibly a composition
-/// root's own job: root visual-tree assembly (it *is* the
-/// <see cref="Window"/>), constructing every collaborator with
-/// <c>new</c>, and wiring the genuinely cross-collaborator bridges no
-/// single collaborator can own. See `docs/architecture/Desktop
-/// Composition Architecture.md` and `ADR-0103` for the full pattern this
-/// class is the motivating realisation of.
+/// **Composition root, `WP 12.0B` (`ADR-0103`); recomposed `WP 19.2A`
+/// (`TD-109`).** <see cref="MainWindowComposer"/> now owns the whole of
+/// what used to be this constructor's own ~830-line body, in four explicit
+/// phases — <c>BuildViews</c>, <c>BuildCoordinators</c>, <c>Wire</c>,
+/// <c>Layout</c> — each returning a record the next consumes; this
+/// constructor is the short call sequence over those four, the window's
+/// own self-properties, field assignment from what it still needs, and its
+/// own <c>Opened</c>/<c>Closing</c> handlers. This class retains only what
+/// is irreducibly a composition root's own job: root visual-tree assembly
+/// (it *is* the <see cref="Window"/>), delegating construction to the
+/// composer, and the cross-collaborator bridges
+/// (<see cref="MainWindowCallbacks"/>) no single collaborator can own. See
+/// `docs/architecture/Desktop Composition Architecture.md` and `ADR-0103`.
 /// </remarks>
 public sealed class MainWindow : Window
 {
-    private readonly ThemeService _theme;
     private readonly ProjectExplorerView _explorerView;
     private readonly PropertyInspectorView _inspectorView;
-    private readonly DocumentAreaView _documentArea;
     private readonly StatusBarView _statusBar;
-    private readonly CommandPaletteOverlay _commandPalette;
     private readonly WorkspaceDockingComposer _dockingComposer;
     private readonly Viewing.AttachmentViewerLauncher _attachmentViewers;
-    private readonly CockpitView _cockpitView;
     private readonly IDiagnosticsProvider _diagnostics;
     private readonly RibbonView _ribbon;
-    private readonly Dictionary<Guid, IWorkspaceView> _openGraphViewsByRootId = new();
-    private readonly ToastHost _toastHost = new();
-    private readonly BusyOverlay _busyOverlay = new();
-    private readonly ConfirmationDialog _confirmationDialog = new();
-    private readonly InputDialog _inputDialog = new();
-    private readonly MessageDialog _messageDialog = new();
-    private readonly DesktopSessionState _session;
+    private readonly ToastHost _toastHost;
+    private readonly ConfirmationDialog _confirmationDialog;
+    private readonly InputDialog _inputDialog;
+    private readonly MessageDialog _messageDialog;
     private readonly SettingsDialog _settingsDialog;
+    private readonly DesktopSessionState _session;
     private readonly WorkspaceViewCoordinator _viewCoordinator;
-    private readonly IWorkspaceManager _workspaceManager;
     private readonly UndoRedoCoordinator _undoRedo;
-    private readonly WorkspaceLayoutPresetCoordinator _layoutPresets;
+    private readonly IWorkspaceManager _workspaceManager;
+    private readonly DocumentAreaView _documentArea;
+    private readonly CommandPaletteOverlay _commandPalette;
+    private readonly MacroManagerDialog _macroManagerDialog;
+    private readonly ActionOutcomeReporter _actionReporter;
+    private readonly DockPanel _dock;
+
+    // The Evidence workspace's own picker/entry dialogs (`WP 18.2A`).
+    private readonly CitationPicker _citationPicker;
+    private readonly SubjectPicker _subjectPicker;
+    private readonly DeclaredFigureEntry _declaredFigureEntry;
+    private readonly CheckEntry _checkEntry;
+    private readonly IssueEntry _issueEntry;
+    private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
 
     // The Product Spine (`TD-84`) — Module -> Project -> Workspace.
     private readonly IShellNavigator _navigator;
     private readonly IProjectContext _projectContext;
     private readonly GlobalNavigationRail _navigationRail;
-    private readonly ShellHeaderView _header = new();
+    private readonly ShellHeaderView _header;
     private readonly ProjectBrowserView _projectBrowser;
     private readonly ProjectWorkspaceView _projectWorkspace;
-    private readonly ContentControl _moduleHost = new();
+    private readonly ContentControl _moduleHost;
     private readonly Control _engineeringSurface;
     private readonly IProjectDirectory _projectDirectory;
 
-    // The open project's own tasks/milestones/deliverables and its
-    // risks/issues/decisions (`ADR-0103` collaborators, `WP-G`) — the CRUD
-    // interaction logic `TD-109` named, moved out of this class verbatim.
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
     private bool _engineeringCalculationLoaded;
 
-    // The Evidence workspace (`WP 18.2A`, `ADR-0148`) — an Evidence tab and
-    // a Libraries tab, plus the three picker dialogs its own Create flow
-    // and the Object Editor's own declared Evidence sections share.
+    // The Evidence workspace (`WP 18.2A`, `ADR-0148`).
     private readonly EvidenceWorkspaceView _evidenceWorkspace;
-    private readonly CitationPicker _citationPicker;
-    private readonly SubjectPicker _subjectPicker;
-    private readonly DeclaredFigureEntry _declaredFigureEntry;
-
-    // `WP 18.2B`, §1/§2: the Check and Issue entry dialogs the Object
-    // Editor's own Lifecycle actions share, alongside the three above.
-    private readonly CheckEntry _checkEntry;
-    private readonly IssueEntry _issueEntry;
-
-    // `WP 18.2B`: the Libraries tab's own Revise entry dialog, closing a
-    // gap `WP 18.2A` disclosed.
-    private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
-    private readonly IFilePicker _evidenceFilePicker;
-    private readonly ProjectDeliveryCoordinator _projectDelivery;
-    private readonly ProjectGovernanceCoordinator _projectGovernanceCoordinator;
 
     // WP 10.6A — Command Execution & Productivity Experience.
-    private readonly CommandHistoryLog _commandHistory = new();
-    private readonly IBackgroundTaskRunner _backgroundTaskRunner = new BackgroundTaskRunner();
-    private readonly ActionOutcomeReporter _actionReporter;
-    private readonly KeyboardCommandBindingProvider _keyboardBindingProvider = new();
-    private readonly MacroManagerDialog _macroManagerDialog;
+    private readonly CommandHistoryLog _commandHistory;
+    private readonly IBackgroundTaskRunner _backgroundTaskRunner;
 
     private readonly IEngineeringScope _engineeringScope;
     private readonly EngineeringDomainContext _domainContext;
 
-    private string? _currentAreaTitle;
-    private bool _closeConfirmed;
-
-    // `WP 16.5A` — `TD-65`/`TD-83`: real dialog modality. `_dock` is the
-    // shell's own content behind every overlay (header, status bar, rail,
-    // module host) — Tab must never reach it while a dialog/palette is
-    // open. `_modalCount` counts overlapping opens (in principle more
-    // than one of the six could be visible at once) so the dock's own
-    // prior tab-navigation mode is restored only once every one of them
-    // has closed, never prematurely on the first of several to close.
-    private readonly DockPanel _dock = new();
-    private int _modalCount;
-    private KeyboardNavigationMode _dockTabNavigationBeforeModal;
+    /// <summary>The area registry (`WP 19.2A`, `TD-109`) — see <see cref="ShellAreaRender"/>.</summary>
+    private readonly Dictionary<ShellArea, ShellAreaRender> _areaRegistry;
 
     /// <summary>Initialises a new instance of the <see cref="MainWindow"/> class over an already-started <see cref="WorkspaceHost"/>.</summary>
     /// <param name="host">The already-started Workspace Host this window presents.</param>
@@ -150,823 +117,151 @@ public sealed class MainWindow : Window
     /// real <see cref="AvaloniaFilePicker"/> over this window's own
     /// <see cref="TopLevel"/>. Injectable so a headless journey test can
     /// supply a stub that returns bytes from a temp file with no OS dialog
-    /// ever on screen (`WP 18.2A`, Execution Plan §3 decision 6) — the
-    /// identical seam <see cref="WorkspaceHost"/>'s own
-    /// <c>sessionPrincipals</c> parameter already establishes for the
-    /// session principal.
+    /// ever on screen (`WP 18.2A`, Execution Plan §3 decision 6).
     /// </param>
     public MainWindow(WorkspaceHost host, IFilePicker? evidenceFilePickerOverride = null)
     {
         ArgumentNullException.ThrowIfNull(host);
 
-        var workspace = host.Workspace ?? throw new InvalidOperationException("WorkspaceHost must be started before constructing MainWindow.");
-        var manager = host.Manager!;
-        _workspaceManager = manager;
-        var services = host.Services!;
-
-        // Platform Service resolution (`ADR-0103` collaborator #1) —
-        // mirrors EngineeringWorkspaceComposer's own "Desktop-specific
-        // composition step" shape.
-        var composition = new DesktopCompositionRoot(services);
-        _diagnostics = composition.Diagnostics;
-
-        // The build is in the title bar (`WP 17.9.4`): version and short
-        // commit. The second Windows smoke test was run against a stale
-        // clone's executable, and nothing on screen said so.
-        Title = $"TempestOS {DescribeBuild(services)}";
+        // The brand's own shell chrome — the window's own job, never the
+        // composer's (`WP 19.2A`). The build is in the title bar (`WP
+        // 17.9.4`): version and short commit.
+        Title = $"TempestOS {DescribeBuild(host.Services!)}";
         MinWidth = 960;
         MinHeight = 600;
-
-        // The brand's own shell chrome: the prose face for every control,
-        // the page ground behind every module, the three button
-        // treatments (`ChromeStyles`) every surface beneath classes
-        // against, and the mark as the window's own icon.
         FontFamily = DesignTokens.BodyFont;
         FontSize = 12.5;
         ThemeReactiveBrush.Bind(this, BackgroundProperty, BrandPalette.PageBackgroundBrushKey);
         ChromeStyles.Install(this);
         ApplyBrandIcon();
 
-        // Desktop-local session state (`ADR-0103` collaborator #2) —
-        // every independent, synchronously-loaded, per-session persisted
-        // state. Window geometry restoration applies immediately, the
-        // identical established discipline this codebase already uses,
-        // so the very first frame already reflects last session's own
-        // geometry, never a default-then-jump.
-        _session = new DesktopSessionState(composition.SettingsProvider, composition.Logger);
-        _session.WindowUiState.ApplyTo(this);
-        _toastHost.DefaultDuration = TimeSpan.FromSeconds(_session.UserSettings.ToastDurationSeconds);
+        // `MainWindowComposer`'s own four explicit phases (`WP 19.2A`,
+        // `TD-109`) — see that type's own remarks. `callbacks` is this
+        // window's own back half of the one genuine two-way bridge: the
+        // few methods below that must stay on this class (several fields
+        // at once, or reached directly by an acceptance test), threaded
+        // into the composer as plain delegates rather than a reference to
+        // this window itself (`ADR-0103`).
+        var composer = new MainWindowComposer();
+        var callbacks = new MainWindowCallbacks(
+            RecordHistory, RefreshOutputPanelExtras, RefreshStatusBar, SetCurrentArea,
+            OpenObjectAsync, OpenProjectAttachmentAsync, OpenEvidenceRecordAsync, PromptForNewProjectAsync, RenderCurrentModuleAsync);
 
-        // Keyboard is just another IInputBindingProvider (`WP 10.6A`,
-        // `ADR-0100`) — registered against the shared IInputBindingRegistry
-        // Platform Service, the identical mechanism a future real Stream
-        // Deck/MIDI/game controller provider would register against.
-        composition.InputBindingRegistry.Register(_keyboardBindingProvider);
+        var views = composer.BuildViews(host, this, evidenceFilePickerOverride, callbacks);
+        var coordinators = composer.BuildCoordinators(host, this, views, callbacks);
+        composer.Wire(host, this, views, coordinators, callbacks);
+        var layout = composer.Layout(host, this, views, coordinators);
+        Content = layout.Content;
 
-        _macroManagerDialog = new MacroManagerDialog(
-            composition.MacroManager,
-            composition.CommandRegistry,
-            runMacro: async macroId =>
-            {
-                var descriptor = composition.CommandRegistry.Items.FirstOrDefault(d => d.Id == IMacroManager.CommandIdPrefix + macroId);
-                var title = descriptor?.DisplayName ?? "Macro";
-
-                // The one real Background Task Runner consumer this
-                // Work Package wires (`WP 10.6A` §4) — a macro's own
-                // multi-step invocation is the one genuinely "could take
-                // a moment" case in this platform today.
-                //
-                // The context is captured here, at macro start, and every
-                // step replays it (`ADR-0098`) — the identical shape the
-                // palette's own macro path uses (`WP-A1`); before that this
-                // ran through the obsolete Id-only overload with no context
-                // at all, so every object-scoped step reported "needs a
-                // selected object" however the workspace was selected. No
-                // prompt is passed, so a parameterised step fails honestly
-                // rather than interrupting an unattended run.
-                var context = WorkspaceCommandContext.From(workspace.Selection);
-                var result = await _backgroundTaskRunner.RunAsync(
-                    $"Running macro '{title}'…",
-                    async ct =>
-                    {
-                        var invocation = await composition.CommandRegistry
-                            .InvokeAsync(IMacroManager.CommandIdPrefix + macroId, context, prompt: null, ct)
-                            .ConfigureAwait(false);
-
-                        return invocation.Result
-                            ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
-                    }).ConfigureAwait(true);
-
-                _commandHistory.Record($"Macro '{title}'", result.Succeeded);
-                RefreshOutputPanelExtras();
-
-                // `WP 18.1A`: no explicit Explorer/Cockpit refresh here any
-                // more — a macro is an arbitrary multi-command mutation,
-                // and every one of its commands commits through the same
-                // mutators as any other write, each raising its own
-                // WorkspaceChanged. Explorer and Cockpit are both
-                // subscribed and reload from that.
-                return result;
-            });
-
-        // The Notification Framework's own first real Desktop consumer
-        // (`WP 10.5B`) — every `IPlatformNotification` this platform
-        // already publishes (background tasks, sample modules, any
-        // future long-running operation) now reaches a real Toast.
-        var toastBridge = new PlatformNotificationToastBridge(_toastHost);
-        composition.EventBus.Subscribe(toastBridge);
-
-        // Every real producer publishes through INotificationDispatcher,
-        // not the event bus — without this second subscription no
-        // platform notification ever reached a toast (`TD-58` stale-UI
-        // closure; confirmed dead wiring by whole-repository search).
-        composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
-
-        _theme = new ThemeService(composition.SettingsProvider);
-        _settingsDialog = new SettingsDialog(_theme, _session.UserSettings, composition.SettingsProvider);
-
-        // The Delete Confirmation gate (`WP 10.5B`, Dialog Framework) —
-        // one real implementation, wired identically into every Delete
-        // path (Ribbon button, Project Explorer context menu, Delete key).
-        // Honours `UserSettings.ConfirmBeforeDelete` — a user who
-        // deliberately opts out via Preferences gets the pre-`WP 10.5B`
-        // immediate-delete behaviour back, never forced through a prompt
-        // they turned off.
-        Task<bool> ConfirmDeleteAsync(string prompt) =>
-            _session.UserSettings.ConfirmBeforeDelete
-                ? _confirmationDialog.ConfirmAsync("Delete?", prompt, "Delete")
-                : Task.FromResult(true);
-
-        // `WP 18.1A`: every view that renders workspace data subscribes to
-        // the one change feed here, at construction, rather than being
-        // reloaded through an explicit call site at every mutation below.
-        _explorerView = new ProjectExplorerView(workspace.ProjectExplorer, manager) { ConfirmDeleteAsync = ConfirmDeleteAsync, RecentSearchCapacity = _session.UserSettings.RecentSearchCapacity, WorkspaceChanges = composition.WorkspaceChanges };
-        var principals = (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory));
-        _inspectorView = new PropertyInspectorView(workspace.PropertyInspector, manager, composition.DomainContext, principals) { WorkspaceChanges = composition.WorkspaceChanges };
-        _statusBar = new StatusBarView();
-        _commandPalette = new CommandPaletteOverlay(composition.CommandRegistry);
-
-        // The Engineering Ribbon (`WP 10.3B`) — a real, tabbed command
-        // surface over the existing ICommandRegistry, replacing the old
-        // Navigation Framework's own standalone area-switch button row
-        // (`WP 10.0B`) — a Ribbon tab click both switches the Navigation
-        // area (via CategorySelected, below) and shows that discipline's
-        // own real commands, so the two concerns need only one control,
-        // not two. Never a second registration mechanism (`ADR-0070`) —
-        // every button dispatches a real, already-registered command.
-        // `openDocument` reads `_documentArea` lazily (assigned below) —
-        // never invoked before this constructor fully returns.
-        _ribbon = new RibbonView(
-            composition.CommandRegistry,
-            manager,
-            workspace,
-            setHint: hint => _statusBar.SetHint(hint),
-            openDocument: view => _documentArea!.ShowTab(view))
-        {
-            ConfirmDeleteAsync = ConfirmDeleteAsync,
-        };
-
-        // Undo/Redo (`ADR-0103` collaborator #3, `WP 10.6A`/`ADR-0099`) —
-        // constructed before WorkspaceViewCoordinator, which needs its
-        // own Stack. `WP 12.4B` (`ADR-0104`): its own CockpitView-refresh
-        // need is a plain `Action` delegate, not an object reference —
-        // The one report-then-refresh tail (`WP-D1`, `TD-111`) — built here,
-        // in the composition root, and handed to every collaborator that
-        // reports an action. It owns the presentation consequences only;
-        // each caller still supplies its own refresh set.
-        _actionReporter = new ActionOutcomeReporter(_statusBar, _toastHost, RecordHistory);
-
-        // `WP 18.1A`: no `explorerView`/`refreshCockpit` arguments any
-        // more — Undo/Redo reverses a change through the same mutators as
-        // any other write, so it raises its own WorkspaceChanged and the
-        // subscriptions wired above (and below, on CockpitView) reload
-        // Explorer and Cockpit from that.
-        _undoRedo = new UndoRedoCoordinator(_actionReporter);
-
-        // Explorer/Inspector/Document-Area cross-view coordination
-        // (`ADR-0103` collaborator #4) — DocumentAreaView is attached
-        // once it exists, below (see WorkspaceViewCoordinator's own
-        // remarks for why that one cycle needs two phases). Its own
-        // CockpitView-refresh need (view-state, not data — an opened or
-        // closed document tab) is still the identical `Action` delegate,
-        // `WP 12.4B` (`ADR-0104`).
-        // The declaration-per-Kind Object Editor's own collaborators
-        // (`WP 18.2A`) — built here, ahead of `WorkspaceViewCoordinator`,
-        // which threads them into every `ObjectEditorView` it opens.
-        // `_citationPicker`/`_subjectPicker`/`_declaredFigureEntry` are
-        // added to this window's own overlay root and tracked as modal
-        // dialogs below, alongside every other Dialog Framework overlay.
-        var kindEditorDeclarations = new KindEditorDeclarationRegistry();
-        KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
-
-        _evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(this);
-        _citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
-            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
-        _subjectPicker = new SubjectPicker(composition.DomainContext);
-        _declaredFigureEntry = new DeclaredFigureEntry();
-        _checkEntry = new CheckEntry();
-        _issueEntry = new IssueEntry();
-        _reviseReferenceRecordEntry = new ReviseReferenceRecordEntry();
-
-        var evidenceSupport = new EvidenceEditorSupport(
-            _evidenceFilePicker,
-            ct => _citationPicker.PickAsync(ct),
-            ct => _declaredFigureEntry.PromptAsync(ct),
-            ct => _subjectPicker.PickAsync(ct),
-            ct => _checkEntry.PromptAsync(ct),
-            ct => _issueEntry.PromptAsync(ct));
-
-        _viewCoordinator = new WorkspaceViewCoordinator(
-            workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
-            _explorerView, _inspectorView, _ribbon, _statusBar, _toastHost, _confirmationDialog, _undoRedo.Stack,
-            _session.RecentObjects, _session.FavouriteObjects, _openGraphViewsByRootId,
-            refreshStatusBar: () => RefreshStatusBar(manager), recordHistory: RecordHistory, refreshCockpit: () => _cockpitView!.SafeRefreshAsync(), _actionReporter,
-            workspaceChanges: composition.WorkspaceChanges, declarations: kindEditorDeclarations, evidenceSupport: evidenceSupport, auditQuery: host.AuditQuery);
-
-        _documentArea = new DocumentAreaView(_viewCoordinator.BuildDocumentContent);
-
-        // The Engineering Cockpit (WP 10.1A, ADR-0069) — the Workspace's
-        // own default landing screen, realised here as the Document Area's
-        // own permanent Home tab. Reached through IWorkspace.Cockpit
-        // directly (`WP 17.2B`) — no cast to the concrete internal
-        // Workspace class and no InternalsVisibleTo grant needed; Desktop
-        // and Tempest.Harness are now two separate assemblies with no
-        // reference to one another, each reaching the Workspace only
-        // through its public contracts.
-        var cockpit = workspace.Cockpit;
-        _cockpitView = new CockpitView(
-            cockpit,
-            workspace.Navigation.Areas,
-            onContinue: () => cockpit.ContinueAsync(),
-            onOpenRecent: async index =>
-            {
-                var view = await cockpit.OpenRecentAsync(index).ConfigureAwait(true);
-                _documentArea.ShowTab(view);
-            },
-            onOpenCommandPalette: () => _commandPalette.Open(),
-            onSwitchArea: async areaId =>
-            {
-                // Navigation, not a data mutation: switching the Explorer's
-                // own area scope needs its own reload regardless of
-                // WorkspaceChanged, which this does not raise.
-                await workspace.Navigation.SwitchAreaAsync(areaId).ConfigureAwait(true);
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-                SetCurrentArea(workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId)?.Title);
-            },
-            // WP 10.7A — Feature Completion: the "Favourite Projects"
-            // card's own real source and open-callback, reusing the
-            // identical NavigateToObject every other Cockpit/Object
-            // Editor navigation action already calls.
-            favourites: _session.FavouriteObjects,
-            onOpenFavourite: _viewCoordinator.NavigateToObject,
-            // `WP 18.1B` §4/§5: "Recently changed" opens right up through
-            // the same OpenObjectAsync every other found-or-created object
-            // does — reveal in the Explorer, select, editor tab — not
-            // merely a document tab.
-            onOpenRecentlyChanged: async index =>
-            {
-                var items = cockpit.RecentlyChanged;
-                if (index < 1 || index > items.Count)
-                    return;
-
-                var item = items[index - 1];
-                await OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
-            }) { WorkspaceChanges = composition.WorkspaceChanges };
-        _documentArea.SetHomeTab(_cockpitView);
-
-        _viewCoordinator.Attach(_documentArea);
-
-        // Panel construction/resize/hide/collapse/pin/flyout wiring
-        // (`ADR-0103` collaborator #5, `WP 10.2B`).
-        _dockingComposer = new WorkspaceDockingComposer(workspace, _explorerView, _inspectorView, _documentArea, _session.PanelUiState, _session.LayoutStore);
-
-        // `TD-80`: the document and drawing viewer. Constructed over the
-        // docking composer's own registry and layout controller, so a
-        // viewer is an ordinary `TD-72` panel — it tabs with the document
-        // area, splits, floats onto a second monitor and persists with no
-        // code here for any of it, and opening a second document is the
-        // same call again rather than a second reserved slot.
-        _attachmentViewers = new Viewing.AttachmentViewerLauncher(
-            _dockingComposer.Registry, _dockingComposer.Layout, _dockingComposer.DocumentPanelId);
-
-        // Opening a document never navigates: the shell stays where it is,
-        // so the project, the open object and the Explorer selection are
-        // all still there when the viewer tab is closed.
-        _viewCoordinator.OpenAttachmentAsync = (owner, attachment) =>
-            _attachmentViewers.OpenAsync(owner, attachment, Bounds.Width, Bounds.Height);
-
-        // Click-away: a pointer press landing directly on the Document
-        // Area (never intercepted by the flyout itself, which sits above
-        // it in Z-order while open) closes any open Auto-Hide flyout —
-        // the deliberate "click to peek, click away to dismiss"
-        // interaction model (`WP10.2B UX Review.md` §3), chosen over
-        // hover-to-peek/dwell-timer for determinism, keyboard parity
-        // (`Escape`, below), and headless testability.
-        _documentArea.PointerPressed += (_, _) =>
-        {
-            if (_dockingComposer.IsFlyoutOpen)
-                _dockingComposer.CloseFlyout();
-        };
-        KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Escape && _dockingComposer.IsFlyoutOpen)
-                _dockingComposer.CloseFlyout();
-        };
-
-        // TD-77 Stage 5. The ~390-line RibbonObjectActionHandlers is gone:
-        // every one of its per-discipline Create/Duplicate/status-transition
-        // closures re-derived, by hand, what a command needed and how to
-        // build it - which is exactly what a CommandBinding now declares
-        // once, beside the handler it was registered with. The Ribbon and
-        // the Palette both invoke through the registry instead, and this is
-        // the one prompt implementation they share.
-        //
-        // Confirmation policy stays here, where the settings live: a delete
-        // honours UserSettings.ConfirmBeforeDelete exactly as before, while
-        // every other declared confirmation (the six Duplicates) is
-        // unconditional, which is what their bindings mean.
-        var commandPrompt = new DesktopCommandPrompt(
-            _inputDialog,
-            confirm: (descriptor, message) => SurfaceCommandPolicy.DeleteCommandIds.Contains(descriptor.Id)
-                ? ConfirmDeleteAsync(message)
-                : _confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
-
-        _ribbon.ParameterPrompt = commandPrompt.Prompt;
-
-        // Reported through the one shared tail (`WP-D1`). No `refresh`
-        // delegate (`WP 18.1A`): a successful ribbon action commits
-        // through the same mutators as any other write, raising its own
-        // WorkspaceChanged — Explorer and Cockpit are both subscribed and
-        // reload from that; a refused/failed action changed nothing and
-        // raises no event, so neither reloads for one, exactly as before.
-        _ribbon.ActionCompleted += (message, outcome) =>
-            _ = _actionReporter.ReportAsync(message, outcome);
-
-        // `WP 17.9.4`: what you make opens right up. Nothing a user creates
-        // may drop out of sight; the shell takes them to it.
-        _ribbon.ObjectCreated += (id, kind) => _ = OpenObjectAsync(id, kind);
-
-        // Background-task state changes drive the Output panel's own
-        // Background Tasks list directly (`TD-58` stale-UI closure) —
-        // previously `Changed` had no subscriber at all, so a running
-        // macro never showed "Running" and completion appeared only
-        // after the next unrelated action happened to refresh the panel.
-        _backgroundTaskRunner.Changed += RefreshOutputPanelExtras;
-
-        // Ribbon minimise (`TD-70`) — restore the persisted state, and
-        // record every later change so it survives the next restart.
-        _ribbon.SetCollapsed(_session.PanelUiState.RibbonCollapsed);
-        _ribbon.CollapsedChanged += collapsed => _session.PanelUiState.RibbonCollapsed = collapsed;
-
-        _ribbon.CategorySelected += async category =>
-        {
-            var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
-            if (area is null)
-                return;
-
-            // A real Busy Overlay usage site (`WP 10.5A`) — switching
-            // Navigation area re-populates the entire Project Explorer
-            // tree; genuinely worth a real loading indicator, unlike the
-            // many single-object `LoadAsync` refreshes elsewhere in this
-            // class, which stay fast enough that a busy overlay would only
-            // flicker.
-            await _busyOverlay.RunAsync($"Switching to {area.Title}…", async () =>
-            {
-                await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
-                await _explorerView.LoadAsync().ConfigureAwait(true);
-            }).ConfigureAwait(true);
-            SetCurrentArea(area.Title);
-        };
-
-        // Named layout presets (`ADR-0103` collaborator #7, `WP 10.2B`).
-        _layoutPresets = new WorkspaceLayoutPresetCoordinator(
-            _dockingComposer.ApplyPreset, _dockingComposer.ResetLayout, _statusBar);
-
-        // Menu System / Quick Access Toolbar (`ADR-0103` collaborators #8
-        // — stateless build functions, `WP 10.0B`/`WP 10.3B`).
-        var menu = MainMenuFactory.Build(
-            workspace, _dockingComposer.Layout,
-            _dockingComposer.ExplorerPanelId, _dockingComposer.InspectorPanelId, _dockingComposer.OutputPanelId,
-            _session.PanelUiState, _dockingComposer.OutputPanel, _dockingComposer.OutputView, _diagnostics,
-            _theme, _settingsDialog, _messageDialog, _commandPalette, _documentArea, _ribbon, _layoutPresets.Apply, _layoutPresets.Reset);
-        var quickAccessToolbar = QuickAccessToolbarFactory.Build(
-            workspace, composition.DomainContext, _viewCoordinator.NavigateToObject, _statusBar, _documentArea,
-            _layoutPresets.Reset, _macroManagerDialog, _undoRedo.UndoButton, _undoRedo.RedoButton, _openGraphViewsByRootId);
-
-        // One command row, not two: the menu on the left and the Quick
-        // Access Toolbar on the right share a single strip above the
-        // Ribbon, so the Engineering surface spends one row less on chrome
-        // before the user reaches their work.
-        var commandRow = new DockPanel { LastChildFill = true };
-        DockPanel.SetDock(quickAccessToolbar, Dock.Right);
-        menu.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
-        commandRow.Children.Add(quickAccessToolbar);
-        commandRow.Children.Add(menu);
-        var commandRowFrame = new Border { Child = commandRow, BorderThickness = new Thickness(0, 0, 0, 1) };
-        ThemeReactiveBrush.Bind(commandRowFrame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
-        ThemeReactiveBrush.Bind(commandRowFrame, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
-
-        var topStack = new StackPanel();
-        topStack.Children.Add(commandRowFrame);
-        topStack.Children.Add(_ribbon);
-
-        // ---- The Product Spine's own shell composition (`TD-84`) ----
-        // The Engineering surface (ribbon + docking grid) is no longer the
-        // whole application: it is one module inside a global shell whose
-        // first level is the navigation rail and whose second is a project.
+        // This window's own retained fields — every collaborator a method
+        // below still needs directly (see each field's own declaration).
+        _explorerView = views.ExplorerView;
+        _inspectorView = views.InspectorView;
+        _statusBar = views.StatusBar;
+        _dockingComposer = coordinators.DockingComposer;
+        _attachmentViewers = coordinators.AttachmentViewers;
+        _diagnostics = views.Diagnostics;
+        _ribbon = views.Ribbon;
+        _toastHost = views.ToastHost;
+        _confirmationDialog = views.ConfirmationDialog;
+        _inputDialog = views.InputDialog;
+        _messageDialog = views.MessageDialog;
+        _settingsDialog = views.SettingsDialog;
+        _session = views.Session;
+        _viewCoordinator = coordinators.ViewCoordinator;
+        _undoRedo = coordinators.UndoRedo;
+        _workspaceManager = views.Manager;
+        _documentArea = views.DocumentArea;
+        _commandPalette = views.CommandPalette;
+        _macroManagerDialog = views.MacroManagerDialog;
+        _actionReporter = views.ActionReporter;
+        _dock = layout.Dock;
+        _citationPicker = views.CitationPicker;
+        _subjectPicker = views.SubjectPicker;
+        _declaredFigureEntry = views.DeclaredFigureEntry;
+        _checkEntry = views.CheckEntry;
+        _issueEntry = views.IssueEntry;
+        _reviseReferenceRecordEntry = views.ReviseReferenceRecordEntry;
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
+        _navigationRail = views.NavigationRail;
+        _header = views.Header;
+        _projectBrowser = views.ProjectBrowser;
+        _projectWorkspace = views.ProjectWorkspace;
+        _moduleHost = views.ModuleHost;
+        _engineeringSurface = layout.EngineeringSurface;
+        _projectDirectory = views.ProjectDirectory;
+        _engineeringCalculation = views.EngineeringCalculation;
+        _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
+        _evidenceWorkspace = coordinators.EvidenceWorkspace;
+        _commandHistory = views.CommandHistory;
+        _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
-        _domainContext = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
+        _domainContext = views.Composition.DomainContext;
 
-        var engineeringStack = new DockPanel();
-        DockPanel.SetDock(topStack, Dock.Top);
-        engineeringStack.Children.Add(topStack);
-        engineeringStack.Children.Add(_dockingComposer.View);
-        _engineeringSurface = engineeringStack;
-
-        _projectDirectory = host.ProjectDirectory!;
-        _projectBrowser = new ProjectBrowserView(_projectDirectory, _navigator, PromptForNewProjectAsync);
-        _projectWorkspace = new ProjectWorkspaceView(
-            _projectContext, host.ProjectDirectory!, _navigator, host.ProjectDocuments!, host.ProjectRequirements!,
-            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!);
-
-        // The two project-CRUD collaborators (`WP-G`, `ADR-0103`). They own
-        // the interaction logic this class used to hold inline; the wiring
-        // below still says which surface event runs which operation, which
-        // is the composition root's own job and stays here.
-        _projectDelivery = new ProjectDeliveryCoordinator(
-            _projectContext, host.ProjectTaskWorkflow!, host.ProjectTasks!,
-            host.ProjectMilestoneWorkflow!, host.ProjectMilestones!,
-            _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
-
-        _projectGovernanceCoordinator = new ProjectGovernanceCoordinator(
-            _projectContext, host.ProjectGovernanceWorkflow!, host.ProjectGovernance!,
-            _projectWorkspace, _inputDialog, _toastHost, RecordHistory);
-
-        // The Engineering Calculation surface and its own collaborator
-        // (`ADR-0103`, the same shape as the two above). The view raises
-        // intent; the coordinator performs it through the App-layer
-        // workbench and renders the answer. No engineering rule, no
-        // lifecycle rule and no formula lives on this side of the seam.
-        _engineeringCalculation = new EngineeringCalculationView(principals.Describe);
-        _engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(
-            host.BracketCalculations!, _engineeringCalculation);
-
-        _engineeringCalculation.PopulateRequested += () => _ = _engineeringCalculationCoordinator.PopulateAsync();
-        _engineeringCalculation.AddMaterialRequested += () => _ = _engineeringCalculationCoordinator.AddMaterialAsync();
-        _engineeringCalculation.ReleaseRequested += () => _ = _engineeringCalculationCoordinator.VerifyAndReleaseAsync();
-        _engineeringCalculation.CalculateRequested += () => _ = _engineeringCalculationCoordinator.CalculateAsync();
-        _engineeringCalculation.NewCalculationRequested += () => _engineeringCalculationCoordinator.BeginNewCalculation();
-        _engineeringCalculation.OpenCalculationRequested += recordId => _ = _engineeringCalculationCoordinator.OpenAsync(recordId);
-        _engineeringCalculation.RenameRequested += (objectId, name) => _ = _engineeringCalculationCoordinator.RenameAsync(objectId, name);
-        _engineeringCalculation.RetireRequested += objectId => _ = _engineeringCalculationCoordinator.RetireAsync(objectId);
-        _engineeringCalculation.ShowRetiredChanged += include => _ = _engineeringCalculationCoordinator.SetShowRetiredAsync(include);
-        _engineeringCalculation.SelectionMoved += () => _engineeringCalculationCoordinator.ForgetPendingRetirement();
-
-        // The Evidence workspace's own Create flow and the Object Editor's
-        // own declared Evidence sections both need a real prompt now that
-        // it exists (`WP 18.2A`).
-        var librariesView = new LibrariesView(
-            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
-            host.ReferenceReview!, host.BracketCalculations!)
+        // The area registry (`WP 19.2A`, `TD-109`) — see
+        // `RenderCurrentModuleAsync`/`ShellAreaRender`.
+        _areaRegistry = new Dictionary<ShellArea, ShellAreaRender>
         {
-            ReviseRecordPrompt = (label, definitionJson, source, ct) => _reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
-        };
-        librariesView.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
-
-        _evidenceWorkspace = new EvidenceWorkspaceView(
-            composition.DomainContext, composition.CommandDispatcher, _evidenceFilePicker,
-            () => _projectContext.Current?.Id, (id, kind) => _ = OpenEvidenceRecordAsync(id, kind), librariesView)
-        {
-            ParameterPrompt = commandPrompt.Prompt,
-            SubjectPrompt = ct => _subjectPicker.PickAsync(ct),
-            WorkspaceChanges = composition.WorkspaceChanges,
-        };
-        _evidenceWorkspace.ActionCompleted += (message, outcome) => _ = _actionReporter.ReportAsync(message, outcome);
-
-        _navigationRail = new GlobalNavigationRail(_navigator);
-
-        _navigationRail.NavigationRequested += () => _ = RenderCurrentModuleAsync();
-        _projectBrowser.ProjectOpened += () => _ = RenderCurrentModuleAsync();
-        _projectWorkspace.EngineeringRequested += () => _ = RenderCurrentModuleAsync();
-        _projectWorkspace.ProjectClosed += () => _ = RenderCurrentModuleAsync();
-
-        // The Documents area opens a file through the same `TD-80`
-        // launcher the object editor uses. It goes through the shell
-        // rather than straight to the launcher for the same reason the
-        // editor does: the shell owns where a document opens, and the
-        // project area that asked keeps no knowledge of the workspace
-        // layout at all.
-        _projectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
-            _ = OpenProjectAttachmentAsync(ownerId, attachmentId);
-
-        // The Tasks area raises intent; the shell performs it through
-        // IProjectTaskService and re-renders. Same shape as the Documents
-        // area's own Open button, and for the same reason: the surface
-        // that asked stays free of both the domain and the layout.
-        _projectWorkspace.CreateTaskRequested += () => _ = _projectDelivery.CreateProjectTaskAsync();
-        _projectWorkspace.AssignTaskToMeRequested += taskId => _ = _projectDelivery.AssignProjectTaskToMeAsync(taskId);
-        _projectWorkspace.TaskWorkStateChangeRequested += (taskId, target) => _ = _projectDelivery.ChangeProjectTaskWorkStateAsync(taskId, target);
-        _projectWorkspace.CreateRiskRequested += () => _ = _projectGovernanceCoordinator.CreateProjectRiskAsync();
-        _projectWorkspace.CreateIssueRequested += () => _ = _projectGovernanceCoordinator.CreateProjectIssueAsync();
-        _projectWorkspace.CreateDecisionRequested += () => _ = _projectGovernanceCoordinator.CreateProjectDecisionAsync();
-        _projectWorkspace.RiskStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.ChangeProjectRiskStatusAsync(id, target);
-        _projectWorkspace.IssueStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.ChangeProjectIssueStatusAsync(id, target);
-        _projectWorkspace.DecisionStatusChangeRequested += (id, target) => _ = _projectGovernanceCoordinator.DecideProjectDecisionAsync(id, target);
-        _projectWorkspace.OwnRiskRequested += id => _ = _projectGovernanceCoordinator.OwnProjectRiskAsync(id);
-        _projectWorkspace.AssignIssueToMeRequested += id => _ = _projectGovernanceCoordinator.AssignProjectIssueToMeAsync(id);
-        _projectWorkspace.ScoreRiskRequested += id => _ = _projectGovernanceCoordinator.ScoreProjectRiskAsync(id);
-        _projectWorkspace.EditRiskRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Risk);
-        _projectWorkspace.EditIssueRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Issue);
-        _projectWorkspace.EditDecisionRequested += id => _ = _projectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Decision);
-        _projectWorkspace.CreateMilestoneRequested += () => _ = _projectDelivery.CreateProjectMilestoneAsync();
-        _projectWorkspace.AddDeliverableRequested += id => _ = _projectDelivery.AddProjectDeliverableAsync(id);
-        _projectWorkspace.EditMilestoneRequested += id => _ = _projectDelivery.EditProjectMilestoneAsync(id);
-        _projectWorkspace.EditTaskRequested += taskId => _ = _projectDelivery.EditProjectTaskAsync(taskId);
-        _projectWorkspace.TaskDueDateChangeRequested += taskId => _ = _projectDelivery.ChangeProjectTaskDueDateAsync(taskId);
-
-        // `TD-104`: rehydration that could not recover everything is a
-        // fact about the user's own engineering work, so it is said out
-        // loud here rather than left in a log file. Recovery still
-        // recovers everything it can — refusing to start would lose the
-        // rest — but an unknown Kind means durable work is missing from
-        // this session, and a user who is never told will assume it was
-        // never saved.
-        ReportIncompleteRehydration(host.RehydrationResult);
-
-        // The shell carries its module surface from construction, not from
-        // a later window event: a window that exists but hosts nothing is a
-        // window whose menus and commands are unreachable.
-        _moduleHost.Content = _navigator.Current.Area switch
-        {
-            ShellArea.Projects => _projectBrowser,
-            ShellArea.ProjectWorkspace => _projectWorkspace,
-            ShellArea.EngineeringCalculation => _engineeringCalculation,
-            ShellArea.Evidence => _evidenceWorkspace,
-            _ => _engineeringSurface,
+            [ShellArea.Projects] = new(() => _projectBrowser, () => _projectBrowser.RefreshAsync()),
+            [ShellArea.ProjectWorkspace] = new(() => _projectWorkspace, () => _projectWorkspace.RefreshAsync()),
+            // Both render the engineering surface: the Cockpit is a panel
+            // within it. `WP 17.9.1`: Engineering alone is not usable
+            // without the Project Explorer and Properties panels, so
+            // entering it (never Home) guarantees they are present
+            // whatever a saved layout says.
+            [ShellArea.Home] = new(() => _engineeringSurface, null),
+            [ShellArea.Engineering] = new(() => _engineeringSurface, EnterEngineeringAsync),
+            // `WP 18.2A`: re-read on every entry, the same "load when you
+            // land here" discipline every other area follows.
+            [ShellArea.Evidence] = new(() => _evidenceWorkspace, () => _evidenceWorkspace.RefreshAsync()),
+            [ShellArea.EngineeringCalculation] = new(() => _engineeringCalculation, EnterEngineeringCalculationAsync),
         };
 
-        // The brand header — where am I, what project am I in, what can I
-        // do here — is the one strip every module shares; its search field
-        // and theme switch reach the same palette and ThemeService the
-        // menu and keyboard already do, never a second path.
-        _header.SearchRequested += () => _commandPalette.Open();
-        _header.ThemeToggleRequested += async () => await _theme.ToggleAsync().ConfigureAwait(true);
-
-        // `WP-Z4` Productisation Phase 1 (P0) — the project chip is the
-        // one existing way back into the open project from anywhere else
-        // in the shell, most notably Engineering, which previously had no
-        // path back at all (`ReturnToProjectAsync` existed with zero
-        // Desktop call sites). The chip itself only raises this while a
-        // project is open (`ShellHeaderView.SetContext` disables it
-        // otherwise), so no guard is needed here.
-        _header.ReturnToProjectRequested += async () =>
-        {
-            await _navigator.ReturnToProjectAsync().ConfigureAwait(true);
-            await RenderCurrentModuleAsync().ConfigureAwait(true);
-        };
-
-        _header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName);
-
-        var shell = new DockPanel();
-        DockPanel.SetDock(_navigationRail, Dock.Left);
-        shell.Children.Add(_navigationRail);
-        shell.Children.Add(_moduleHost);
-
-        DockPanel.SetDock(_header, Dock.Top);
-        DockPanel.SetDock(_statusBar, Dock.Bottom);
-        _dock.Children.Add(_header);
-        _dock.Children.Add(_statusBar);
-        _dock.Children.Add(shell);
-
-        // Responsive shell chrome: below the compact threshold the rail
-        // folds to its icons and the header's search field to its glyph,
-        // so a narrow window or a split screen gives the room back to the
-        // module the user is working in rather than to navigation.
-        SizeChanged += (_, e) =>
-        {
-            var compact = e.NewSize.Width < DesignTokens.CompactShellWidth;
-            _navigationRail.SetCompact(compact);
-            _header.SetCompact(compact);
-        };
-
-        // `WP 10.5A`'s own three new overlay surfaces — added last, so
-        // each renders above every other root child (Grid Z-order follows
-        // Children order for overlapping siblings), exactly like
-        // `_commandPalette` already does.
-        var root = new Grid();
-        root.Children.Add(_dock);
-        root.Children.Add(_busyOverlay);
-        root.Children.Add(_commandPalette);
-        root.Children.Add(_confirmationDialog);
-        root.Children.Add(_inputDialog);
-        root.Children.Add(_messageDialog);
-        root.Children.Add(_settingsDialog);
-        root.Children.Add(_macroManagerDialog);
-        root.Children.Add(_citationPicker);
-        root.Children.Add(_subjectPicker);
-        root.Children.Add(_declaredFigureEntry);
-        root.Children.Add(_checkEntry);
-        root.Children.Add(_issueEntry);
-        root.Children.Add(_reviseReferenceRecordEntry);
-        root.Children.Add(_toastHost);
-        Content = root;
-
-        // `WP 16.5A` — `TD-83`: while any dialog/the palette is open, Tab
-        // must never reach the shell content behind it. Each of the six
-        // overlays already flips its own `IsVisible` as its open/close
-        // signal (`DialogModality`'s own identical premise); tracking that
-        // here, once, covers every dialog's own many call sites (spread
-        // across this class and `DesktopCommandPrompt`) without needing to
-        // wrap each one individually.
-        foreach (var modal in new Border[]
-                 {
-                     _confirmationDialog, _inputDialog, _messageDialog, _settingsDialog, _macroManagerDialog, _commandPalette,
-                     _citationPicker, _subjectPicker, _declaredFigureEntry, _checkEntry, _issueEntry, _reviseReferenceRecordEntry,
-                 })
-            TrackModal(modal);
-
-        var shortcutActions = new KeyboardShortcutActions(
-            openCommandPalette: () => _commandPalette.Open(),
-            selectNextDocument: () => _documentArea.SelectNextTab(),
-            selectPreviousDocument: () => _documentArea.SelectPreviousTab(),
-            closeActiveDocument: () =>
-            {
-                if (_documentArea.ActiveClosableViewId is { } viewId)
-                    _ = _viewCoordinator.CloseDocumentAsync(viewId);
-            },
-            focusExplorerFilter: () => _explorerView.FocusFilter(),
-            undo: () => _ = _undoRedo.UndoAsync(),
-            redo: () => _ = _undoRedo.RedoAsync(),
-            toggleFavourite: async () =>
-            {
-                if (workspace.Selection.Current is { } selection)
-                {
-                    var target = await composition.DomainContext.Repository.FindAsync(selection.ObjectId).ConfigureAwait(true);
-                    var title = (target as IHasBusinessIdentifier)?.DisplayName ?? selection.Kind;
-                    _viewCoordinator.ToggleFavourite(selection.ObjectId, selection.Kind, title);
-                }
-                else
-                {
-                    _statusBar.SetText("Select an object first to favourite it.");
-                }
-            });
-        KeyboardShortcuts.Register(this, shortcutActions);
-
-        // Keyboard as an IInputBindingProvider (`WP 10.6A`) — handled
-        // after the fixed KeyboardShortcuts above, so a fixed binding
-        // always takes priority over a user-configured one for the same
-        // gesture (KeyboardCommandBindingProvider.HandleKeyDown's own
-        // "already Handled" guard).
-        KeyDown += (_, e) => _keyboardBindingProvider.HandleKeyDown(e);
-
-        // TD-77 Stage 5: the palette evaluates and invokes against the real
-        // selection, through the same adapter the Ribbon uses, and collects
-        // declared values through the same one prompt.
-        // `WP 17.9.2`: the context carries the open project, so a command
-        // that creates something knows where the user is standing.
-        _commandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
-        _commandPalette.ParameterPrompt = commandPrompt.Prompt;
-        _ribbon.ProjectIdSource = () => _projectContext.Current?.Id;
-
-        // `WP-A2`: a bound gesture now asks the same question the Ribbon and
-        // the Palette ask, and gets the same answers — the same selection
-        // adapter and the same one prompt. Until then the router used the
-        // obsolete Id-only overload, which throws for every production
-        // command, so a bound key would have looked like a dead key. Nothing
-        // is bound today (`AT-23`, a product choice, not a defect shield);
-        // this is what makes the first binding anyone adds actually work.
-        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, _projectContext.Current?.Id);
-        composition.InputBindingRegistry.ParameterPrompt = commandPrompt.Prompt;
-
-        _commandPalette.InvokeOverride = async (descriptor, context) =>
-        {
-            if (!descriptor.Id.StartsWith(IMacroManager.CommandIdPrefix, StringComparison.Ordinal))
-            {
-                return await composition.CommandRegistry
-                    .InvokeAsync(descriptor.Id, context, commandPrompt.Prompt)
-                    .ConfigureAwait(true);
-            }
-
-            // Macro invocation (`WP 10.6A`) routes through the
-            // Background Task Runner — the one real "could take a
-            // moment" case in this platform. The context is captured here,
-            // at macro start, and every step replays it (`ADR-0098`); no
-            // prompt is passed, so a parameterised step fails honestly
-            // rather than interrupting an unattended run.
-            // IBackgroundTaskRunner reports a CommandResult, unchanged by
-            // TD-77. A macro that could not be run at all is reported as
-            // the failure it is, rather than widening that contract.
-            var macroResult = await _backgroundTaskRunner.RunAsync(
-                $"Running macro '{descriptor.DisplayName}'…",
-                async ct =>
-                {
-                    var invocation = await composition.CommandRegistry
-                        .InvokeAsync(descriptor.Id, context, prompt: null, ct)
-                        .ConfigureAwait(false);
-
-                    return invocation.Result
-                        ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
-                }).ConfigureAwait(true);
-
-            return CommandInvocation.Executed(macroResult);
-        };
-        _commandPalette.CommandInvoked += async (descriptor, result) =>
-        {
-            RecordHistory(result.Succeeded
-                ? $"Invoked '{descriptor.DisplayName}' via Command Palette."
-                : $"'{descriptor.DisplayName}' failed via Command Palette: {result.Message ?? "Command failed."}");
-            RefreshStatusBar(manager);
-
-            // `WP 18.1A`: no explicit Explorer/Cockpit refresh here — a
-            // successful command commits through the same mutators as any
-            // other write, raising its own WorkspaceChanged; a failed one
-            // changed nothing and raises no event. Both views are
-            // subscribed and reload only when one actually lands.
-            if (result.Succeeded)
-            {
-                // `WP 17.9.4`: a created object opens right up, from the
-                // palette exactly as from the ribbon.
-                if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
-                    await OpenObjectAsync(createdId, createdKind).ConfigureAwait(true);
-            }
-        };
-        _commandPalette.CommandUnavailable += (descriptor, reason) =>
-        {
-            // The command's own declared reason (TD-77 Stage 5) — what is
-            // actually missing, not a guess at where else to try.
-            _statusBar.SetText(reason);
-            _toastHost.Show(reason, FeedbackSeverity.Warning);
-        };
-
-        // `WP 18.1B` §2: the palette's own Objects section — a background
-        // full-text search (`ObjectSearchSource` is awaited, never blocked
-        // on) over the platform's one search index, each hit resolved to
-        // its own live title and its project's own live name so the row
-        // never renders a stale snapshot of either.
-        var searchStore = (Tempest.Core.Persistence.IQueryablePersistenceStore)services.GetService(typeof(Tempest.Core.Persistence.IQueryablePersistenceStore));
-        _commandPalette.ObjectSearchSource = async (query, cancellationToken) =>
-        {
-            var hits = await searchStore.SearchAsync(query, 10, cancellationToken).ConfigureAwait(true);
-            var results = new List<PaletteObjectHit>(hits.Count);
-
-            foreach (var hit in hits)
-            {
-                var found = await composition.DomainContext.Repository.FindAsync(hit.ObjectId, cancellationToken).ConfigureAwait(true);
-                var title = (found as IHasBusinessIdentifier)?.DisplayName ?? hit.ObjectId.ToString();
-
-                string? projectName = null;
-                if (hit.ProjectId is { } projectId)
-                {
-                    var project = await composition.DomainContext.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(true);
-                    projectName = (project as IHasBusinessIdentifier)?.DisplayName;
-                }
-
-                results.Add(new PaletteObjectHit(hit.ObjectId, hit.Kind, title, projectName));
-            }
-
-            return results;
-        };
-        _commandPalette.ObjectSelected += async hit =>
-        {
-            RecordHistory($"Opened '{hit.Title}' from Command Palette search.");
-            await OpenObjectAsync(hit.ObjectId, hit.Kind).ConfigureAwait(true);
-        };
-
+        // `TD-84`: no Explorer area is selected by default — the
+        // Engineering Cockpit, not an Explorer area, is the Workspace's
+        // own default landing screen (`ADR-0069`). Selecting the first
+        // available area here gives the Project Explorer real content
+        // immediately, a presentation-layer default, not a change to that
+        // existing "no default area" behaviour itself.
         Opened += async (_, _) =>
         {
-            await _theme.LoadAsync().ConfigureAwait(true);
+            await views.Theme.LoadAsync().ConfigureAwait(true);
 
-            // The workspace arrangement the user left (`TD-72`) — restored
-            // before anything renders, so the shell never flashes a default
-            // layout and then rearranges itself underneath them.
+            // The workspace arrangement the user left (`TD-72`) —
+            // restored before anything renders.
             await _dockingComposer.RestoreLayoutAsync().ConfigureAwait(true);
 
-            // No Explorer area is selected by default — the Engineering
-            // Cockpit, not an Explorer area, is the Workspace's own default
-            // landing screen (ADR-0069). Selecting the first available area
-            // here gives the Project Explorer real content to show
-            // immediately, mirroring what clicking the first Navigation
-            // Framework button would do — a presentation-layer default,
-            // not a change to that existing "no default area" behaviour
-            // itself.
-            var firstArea = workspace.Navigation.Areas.FirstOrDefault();
+            var firstArea = views.Workspace.Navigation.Areas.FirstOrDefault();
             if (firstArea is not null)
-                await workspace.Navigation.SwitchAreaAsync(firstArea.Id).ConfigureAwait(true);
+                await views.Workspace.Navigation.SwitchAreaAsync(firstArea.Id).ConfigureAwait(true);
 
             await _explorerView.LoadAsync().ConfigureAwait(true);
             SetCurrentArea(firstArea?.Title);
-            RefreshStatusBar(manager);
-            await _cockpitView.RefreshAsync().ConfigureAwait(true);
+            RefreshStatusBar(views.Manager);
+            await coordinators.CockpitView.RefreshAsync().ConfigureAwait(true);
 
             // Render whichever module the recovered location names
-            // (`TD-84`) — the shell opens where the user left it, with the
-            // project they left it in, not always at Engineering.
+            // (`TD-84`) — the shell opens where the user left it.
             await RenderCurrentModuleAsync().ConfigureAwait(true);
         };
 
-        // Graceful shutdown (`WP 10.5B` scope: "unsaved work handling,
-        // clean application exit") — one real, consolidated Closing gate,
-        // replacing the old two-separate-places arrangement
-        // (`App.cs`'s own `ShutdownRequested` previously called
-        // `SaveDesktopUiStateAsync` directly, with no unsaved-work check
-        // at all). `Closing`'s own event handler is not awaited by
+        // Graceful shutdown (`WP 10.5B` scope) — one real, consolidated
+        // Closing gate. `Closing`'s own event handler is not awaited by
         // Avalonia itself, so every path synchronously sets `e.Cancel =
         // true` first, then re-closes programmatically once the real,
-        // awaited work (the confirmation prompt, if needed; both state
-        // saves) has actually completed — the standard async-Closing
-        // pattern, never a fire-and-forget save racing the real close.
+        // awaited work has actually completed.
+        var closeConfirmed = false;
         Closing += async (_, e) =>
         {
-            if (_closeConfirmed)
+            if (closeConfirmed)
                 return;
 
             e.Cancel = true;
 
-            if (_documentArea.HasAnyDirtyTab)
+            if (views.DocumentArea.HasAnyDirtyTab)
             {
-                var discard = await _confirmationDialog.ConfirmAsync(
+                var discard = await views.ConfirmationDialog.ConfirmAsync(
                     "Unsaved changes",
                     "One or more open tabs have unsaved edits. Exiting now will discard them permanently.",
                     "Exit").ConfigureAwait(true);
@@ -986,7 +281,7 @@ public sealed class MainWindow : Window
             await _session.RecentObjects.SaveAsync().ConfigureAwait(true);
             await _session.FavouriteObjects.SaveAsync().ConfigureAwait(true);
 
-            _closeConfirmed = true;
+            closeConfirmed = true;
             Close();
         };
     }
@@ -996,8 +291,7 @@ public sealed class MainWindow : Window
     /// (Collapse/Auto-Hide/Output — <see cref="DesktopPanelUiState"/>) —
     /// called from <c>App.cs</c>'s own <c>ShutdownRequested</c> handler,
     /// alongside (never inside) <see cref="WorkspaceHost.ShutdownAsync"/>'s
-    /// own, separate save of <see cref="IWorkspaceState"/> — two
-    /// independent writes to two independent Settings keys.
+    /// own, separate save of <see cref="IWorkspaceState"/>.
     /// </summary>
     public Task SaveDesktopUiStateAsync() => _session.PanelUiState.SaveAsync();
 
@@ -1010,32 +304,16 @@ public sealed class MainWindow : Window
     /// <summary>The workspace layout controller — the one owner of the arrangement (`TD-72`).</summary>
     public Docking.WorkspaceLayoutController WorkspaceLayout => _dockingComposer.Layout;
 
-    /// <summary>The document and drawing viewer's opener (`TD-80`).</summary>
-    /// <remarks>
-    /// Exposed so an acceptance test can open a document exactly as the
-    /// editor's Open button does, rather than reaching past the shell to
-    /// construct a viewer of its own.
-    /// </remarks>
+    /// <summary>The document and drawing viewer's opener (`TD-80`) — exposed so a test can open a document exactly as the editor's Open button does.</summary>
     public Viewing.AttachmentViewerLauncher AttachmentViewers => _attachmentViewers;
 
     /// <summary>
     /// Opens one of the open project's own files in the `TD-80` viewer,
-    /// resolving the object and attachment the Documents area named.
+    /// resolving the object and attachment the Documents area named — the
+    /// same launcher the object editor's Open button uses. Opening never
+    /// navigates: the module, the open project and the project area the
+    /// user was on are all untouched.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Goes through the same <see cref="AttachmentViewers"/> launcher the
-    /// object editor's Open button uses — one entry point to the viewer,
-    /// so a document opened from the project register behaves identically
-    /// to one opened from an editor: an ordinary `TD-72` tab that splits,
-    /// floats and persists, and a second document is the same call again.
-    /// </para>
-    /// <para>
-    /// Opening never navigates. The module, the open project and the
-    /// project area the user was on are all untouched, so looking at a
-    /// drawing never costs the user their place.
-    /// </para>
-    /// </remarks>
     public async Task OpenProjectAttachmentAsync(Guid ownerId, Guid attachmentId, CancellationToken cancellationToken = default)
     {
         if (await _domainContext.Repository.FindAsync(ownerId, cancellationToken).ConfigureAwait(true) is not IHasAttachments owner)
@@ -1049,67 +327,10 @@ public sealed class MainWindow : Window
         _projectWorkspace.MarkDocumentOpened(attachmentId);
     }
 
-    /// <summary>
-    /// Tells the user when startup rehydration could not bring everything
-    /// back, and exactly what was missed.
-    /// </summary>
-    /// <remarks>
-    /// Silence here would be the worst outcome available: the workspace
-    /// would simply look emptier than the user left it, which is
-    /// indistinguishable from having lost the work. The message names the
-    /// unrecoverable Kinds, because "some objects" is not something anyone
-    /// can act on.
-    /// </remarks>
-    private void ReportIncompleteRehydration(EngineeringRehydrationResult? result)
-    {
-        if (result is null || result.IsComplete)
-            return;
-
-        var parts = new List<string>();
-
-        if (result.UnknownKinds.Count > 0)
-            parts.Add($"{result.UnknownKinds.Count} unrecognised kind(s): {string.Join(", ", result.UnknownKinds.Distinct().Order(StringComparer.Ordinal))}");
-
-        if (result.OrphanedStateIds.Count > 0)
-            parts.Add($"{result.OrphanedStateIds.Count} object(s) with no backing document");
-
-        if (result.FailedObjectIds.Count > 0)
-            parts.Add($"{result.FailedObjectIds.Count} object(s) that could not be reconstructed");
-
-        var message = $"Some saved engineering work could not be reopened — {string.Join("; ", parts)}. It is still on disk; see the Output panel.";
-
-        // The rehydration service has already logged each unrecoverable
-        // object at Error level with the Kind and the fix; this is the
-        // half a user actually sees.
-        _toastHost.Show(message, FeedbackSeverity.Error, TimeSpan.FromSeconds(20));
-    }
-
-    /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does.</summary>
-    /// <remarks>
-    /// Exposed for the same reason as <see cref="AttachmentViewers"/>: so
-    /// an acceptance test can reach an object's real editor and press its
-    /// own Open button, proving the wiring from that button through to the
-    /// viewer — rather than calling the launcher directly and leaving the
-    /// button itself untested.
-    /// </remarks>
+    /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does — exposed so a test can reach an object's real editor and press its own Open button.</summary>
     public Task NavigateToObjectAsync(Guid id, string kind) => _viewCoordinator.NavigateToObjectAsync(id, kind);
 
-    /// <summary>
-    /// Professional Error Handling (`WP 10.5B` scope: "unexpected
-    /// exceptions") — shows a real <see cref="MessageDialog"/> for a
-    /// genuinely unexpected exception (never a foreseen
-    /// <see cref="Tempest.Core.Commands.CommandResult.Failure"/>, which
-    /// already surfaces via the Status Bar/Toast, unchanged), with the
-    /// exception's own message and type name as the collapsible
-    /// "Details" section — real diagnostics, not a bare crash dialog.
-    /// Called from <c>App.cs</c>'s own <see cref="TaskScheduler.UnobservedTaskException"/>
-    /// handler — the one unhandled-exception surface that reaches this
-    /// point without the process already unwinding/terminating, so a
-    /// dialog genuinely has time to render (disclosed scope: this is not
-    /// a global crash handler — an `AppDomain.UnhandledException` is, by
-    /// definition, already fatal by the time it fires, too late for an
-    /// interactive dialog to help; `WP10.5B UX Review.md` §3).
-    /// </summary>
+    /// <summary>Professional Error Handling (`WP 10.5B` scope) — a real <see cref="MessageDialog"/> for a genuinely unexpected exception, called from <c>App.cs</c>'s own <see cref="TaskScheduler.UnobservedTaskException"/> handler.</summary>
     public Task ShowUnexpectedErrorAsync(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
@@ -1120,7 +341,7 @@ public sealed class MainWindow : Window
             $"{exception.GetType().FullName}: {exception.Message}");
     }
 
-    /// <summary>Refreshes every Status Bar segment from real, current sources — the Selected Object segment from <c>WorkspaceManager.StatusBar</c> (unchanged since `WP 10.0B`), Host State/Diagnostics from a fresh <see cref="IDiagnosticsProvider"/> read (`WP 10.2A`), the Output panel from the identical read (`WP 10.2B`).</summary>
+    /// <summary>Refreshes every Status Bar segment from real, current sources.</summary>
     private void RefreshStatusBar(WorkspaceManager manager)
     {
         _statusBar.SetText(manager.StatusBar.StatusText);
@@ -1129,77 +350,29 @@ public sealed class MainWindow : Window
         RefreshOutputPanelExtras();
     }
 
-    /// <summary>Refreshes the Output panel's own Background Tasks/Command History sections (`WP 10.6A`) from their own real, current state.</summary>
     /// <summary>
-    /// Renders whichever module the navigator currently reports (`TD-84`).
+    /// Renders whichever module the navigator currently reports (`TD-84`),
+    /// from the area registry (`WP 19.2A`, `TD-109`) built in the
+    /// constructor — the shell's one place that decides what is on screen,
+    /// derived from <see cref="IShellNavigator.Current"/> so it can never
+    /// disagree with the navigation state. An area absent from the
+    /// registry renders <see cref="DeclaredCapabilityView"/>, honestly
+    /// naming what is missing rather than a dead button or a fake screen.
     /// </summary>
-    /// <remarks>
-    /// The shell has exactly one place that decides what is on screen, and
-    /// it derives that from <see cref="IShellNavigator.Current"/> — so the
-    /// rendered surface can never disagree with the navigation state, and a
-    /// test can assert the surface by setting the location.
-    /// </remarks>
     public async Task RenderCurrentModuleAsync()
     {
         var location = _navigator.Current;
 
-        switch (location.Area)
+        if (_areaRegistry.TryGetValue(location.Area, out var entry))
         {
-            case ShellArea.Projects:
-                await _projectBrowser.RefreshAsync().ConfigureAwait(true);
-                _moduleHost.Content = _projectBrowser;
-                break;
+            if (entry.OnEnter is not null)
+                await entry.OnEnter().ConfigureAwait(true);
 
-            case ShellArea.ProjectWorkspace:
-                await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
-                _moduleHost.Content = _projectWorkspace;
-                break;
-
-            case ShellArea.Home:
-            case ShellArea.Engineering:
-                // Both render the engineering surface today: the Cockpit is
-                // a panel within it. Engineering carries its own scope —
-                // the open project, or standalone (`TD-89`) — which the
-                // surface reads from the navigator rather than from here.
-                // `WP 17.9.1`: Engineering is not usable without the Project
-                // Explorer and Properties panels, so entering it guarantees
-                // they are present whatever a saved layout says.
-                if (location.Area == ShellArea.Engineering)
-                    _dockingComposer.EnsureCorePanelsPresent();
-                _moduleHost.Content = _engineeringSurface;
-                break;
-
-            case ShellArea.Evidence:
-                // `WP 18.2A`: the open project's own evidence and the
-                // Libraries tab. Re-read on every entry (`RefreshAsync`),
-                // the same "load when you land here" discipline every
-                // other area already follows — never a manual refresh
-                // call site scattered elsewhere (`WP 18.1A`'s own guard).
-                await _evidenceWorkspace.RefreshAsync().ConfigureAwait(true);
-                _moduleHost.Content = _evidenceWorkspace;
-                break;
-
-            case ShellArea.EngineeringCalculation:
-                // The governed calculation surface. The library is re-read
-                // on every entry, because a material released elsewhere in
-                // the session must not still read as Draft here; the stored
-                // calculation is recovered once, on the first entry of the
-                // session, which is what makes a relaunch show the result
-                // the engineer left behind.
-                await _engineeringCalculationCoordinator
-                    .RefreshAsync(restoreInputs: !_engineeringCalculationLoaded)
-                    .ConfigureAwait(true);
-                _engineeringCalculationLoaded = true;
-                _moduleHost.Content = _engineeringCalculation;
-                break;
-
-            default:
-                // A module the product declares but has not built. It gets a
-                // real, honest surface naming what is missing and what
-                // tracks it — never a dead button, and never a fake screen.
-                _moduleHost.Content = new DeclaredCapabilityView(
-                    ShellAreas.For(location.Area), _projectContext.Current?.Label);
-                break;
+            _moduleHost.Content = entry.Content();
+        }
+        else
+        {
+            _moduleHost.Content = new DeclaredCapabilityView(ShellAreas.For(location.Area), _projectContext.Current?.Label);
         }
 
         _navigationRail.RefreshSelection();
@@ -1209,12 +382,33 @@ public sealed class MainWindow : Window
             await RefreshEngineeringScopeAsync().ConfigureAwait(true);
     }
 
+    /// <summary>The Engineering area's own entry action — see <see cref="_areaRegistry"/>.</summary>
+    private Task EnterEngineeringAsync()
+    {
+        _dockingComposer.EnsureCorePanelsPresent();
+        return Task.CompletedTask;
+    }
+
     /// <summary>
-    /// Shows the current project in the Status Bar (`TD-84`) — the
-    /// "see the current project everywhere appropriate" requirement, met
-    /// from the one real context rather than a caption a view sets on
-    /// itself. Before the spine this segment read "No project" permanently,
-    /// because nothing could ever set it.
+    /// The Engineering Calculation area's own entry action — see
+    /// <see cref="_areaRegistry"/>. The library is re-read on every entry,
+    /// because a material released elsewhere in the session must not
+    /// still read as Draft here; the stored calculation is recovered once,
+    /// on the first entry of the session, which is what makes a relaunch
+    /// show the result the engineer left behind.
+    /// </summary>
+    private async Task EnterEngineeringCalculationAsync()
+    {
+        await _engineeringCalculationCoordinator
+            .RefreshAsync(restoreInputs: !_engineeringCalculationLoaded)
+            .ConfigureAwait(true);
+        _engineeringCalculationLoaded = true;
+    }
+
+    /// <summary>
+    /// Shows the current project in the Status Bar (`TD-84`) — the "see
+    /// the current project everywhere appropriate" requirement, met from
+    /// the one real context rather than a caption a view sets on itself.
     /// </summary>
     private void RefreshProjectStatus()
     {
@@ -1259,46 +453,9 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// Wires <paramref name="modal"/>'s own <c>IsVisible</c> into this
-    /// window's modal count (`WP 16.5A`, `TD-83`) — Tab is trapped inside
-    /// <see cref="_dock"/> the moment the first of the six overlays opens,
-    /// and released the moment the last one closes.
-    /// </summary>
-    private void TrackModal(Border modal)
-    {
-        modal.PropertyChanged += (_, e) =>
-        {
-            if (e.Property != Visual.IsVisibleProperty)
-                return;
-
-            if (modal.IsVisible)
-            {
-                if (_modalCount == 0)
-                {
-                    _dockTabNavigationBeforeModal = KeyboardNavigation.GetTabNavigation(_dock);
-                    KeyboardNavigation.SetTabNavigation(_dock, KeyboardNavigationMode.None);
-                }
-                _modalCount++;
-            }
-            else if (_modalCount > 0)
-            {
-                _modalCount--;
-                if (_modalCount == 0)
-                    KeyboardNavigation.SetTabNavigation(_dock, _dockTabNavigationBeforeModal);
-            }
-        };
-    }
-
-    /// <summary>
     /// Reports the Engineering Workspace's own current scope and how many
     /// engineering objects are actually in it (`TD-89`).
     /// </summary>
-    /// <remarks>
-    /// A real read of the real object graph through
-    /// <see cref="IEngineeringScope"/>, not a caption: it is what makes
-    /// "this Engineering session is scoped to Apollo, and Apollo contains
-    /// eleven objects" a checkable statement rather than a claim.
-    /// </remarks>
     public async Task RefreshEngineeringScopeAsync()
     {
         if (_navigator.Current.Area != ShellArea.Engineering)
@@ -1315,14 +472,6 @@ public sealed class MainWindow : Window
     /// A one-line answer to "where am I", derived from the navigation
     /// state (`TD-89`).
     /// </summary>
-    /// <remarks>
-    /// The product rule is that a user must always be able to tell where
-    /// they are, which project they are in, and which workspace — so the
-    /// Status Bar states the module, the project area when inside one, and
-    /// crucially <b>which engineering scope is active</b>, because
-    /// "Engineering" alone no longer says whether the work belongs to a
-    /// project or is standalone.
-    /// </remarks>
     internal static string DescribeLocation(ShellLocation location)
     {
         ArgumentNullException.ThrowIfNull(location);
@@ -1370,14 +519,10 @@ public sealed class MainWindow : Window
 
     /// <summary>
     /// Records <paramref name="message"/> into the Command History
-    /// (`WP 10.6A`). <c>succeeded</c> is a disclosed heuristic — every
-    /// existing <c>ActionCompleted</c> surface carries only a
-    /// human-readable string, not a <see cref="Tempest.Core.Commands.CommandResult"/>
-    /// (changing every one of those event signatures was judged too large
-    /// a change for this Work Package) — inferred here from whether the
-    /// message contains "fail", mirroring <c>EngineeringCockpit</c>'s own
-    /// established "disclosed heuristic" precedent
-    /// (<c>IsOutOfDate</c>/<c>HasMissingEvidence</c>).
+    /// (`WP 10.6A`). <c>succeeded</c> is a disclosed heuristic — inferred
+    /// here from whether the message contains "fail", mirroring
+    /// <c>EngineeringCockpit</c>'s own established "disclosed heuristic"
+    /// precedent (<c>IsOutOfDate</c>/<c>HasMissingEvidence</c>).
     /// </summary>
     private void RecordHistory(string message)
     {
@@ -1385,15 +530,6 @@ public sealed class MainWindow : Window
         RefreshOutputPanelExtras();
     }
 
-    /// <summary>
-    /// Sets the Status Bar's own "Active Workspace" segment (`WP 10.2A`)
-    /// and the Ribbon's own current tab (`WP 10.3B`) — called from every
-    /// place this window switches the current Navigation area, the one
-    /// consolidation point "Context-sensitive ribbon tabs" needs, so every
-    /// area-switch path (Ribbon tab click, Engineering Cockpit's own area
-    /// cards, the default first-area selection on startup) keeps both in
-    /// sync without each needing its own separate call.
-    /// </summary>
     /// <summary>"0.17.0 (9e52a53)": the platform's semantic version with the build metadata shortened to a commit prefix, or just the version when there is none.</summary>
     internal static string DescribeBuild(Tempest.Core.DependencyInjection.ITempestServiceProvider services)
     {
@@ -1409,17 +545,7 @@ public sealed class MainWindow : Window
         return $"{version[..plus]} ({(metadata.Length > 7 ? metadata[..7] : metadata)})";
     }
 
-    /// <summary>
-    /// Takes the user to an object — one they just made (`WP 17.9.4`), or
-    /// one they just found (`WP 18.1B`, the Command Palette's own Objects
-    /// section, the Home cockpit's own Recently changed card): the
-    /// Explorer switches to the area that lists its Kind, reloads, expands
-    /// the path to it and selects it; then the object opens in the editor
-    /// tab with every field in front of them. Placement and open-right-up
-    /// are rules of the store and the declaration (`WP 18.1B` §5), not of
-    /// each screen — this is the one method every screen that opens an
-    /// object by id and Kind now calls.
-    /// </summary>
+    /// <summary>Takes the user to an object — one they just made (`WP 17.9.4`) or found (`WP 18.1B`): the Explorer switches to the area that lists its Kind, reloads, expands the path to it and selects it; then the object opens in the editor tab.</summary>
     internal async Task OpenObjectAsync(Guid id, string kind)
     {
         var workspace = _workspaceManager.Current;
@@ -1449,14 +575,10 @@ public sealed class MainWindow : Window
     /// Opens an Evidence record's own editor from the Evidence rail area
     /// (`WP 18.2A`) — Create and opening a row both call this. The Object
     /// Editor's own document tabs live in the Engineering module's own
-    /// docking layout (<see cref="_engineeringSurface"/>), which
-    /// <see cref="_moduleHost"/> does not show while the Evidence area
-    /// itself is on screen; without switching first, "opens right up"
-    /// (Product Owner guard, `WP 17.9.4`) would open the tab behind a
-    /// module the user is not looking at. Mirrors
-    /// <c>OpenCreatedObjectAsync</c>'s own "switch, then navigate" shape
-    /// for the one respect Evidence genuinely needs it: which module is on
-    /// screen, not which Explorer area or Ribbon tab.
+    /// docking layout, which <see cref="_moduleHost"/> does not show while
+    /// Evidence itself is on screen; without switching first, "opens right
+    /// up" (`WP 17.9.4`) would open the tab behind a module the user is
+    /// not looking at.
     /// </summary>
     private async Task OpenEvidenceRecordAsync(Guid id, string kind)
     {
@@ -1467,9 +589,7 @@ public sealed class MainWindow : Window
 
     private void SetCurrentArea(string? title)
     {
-        _currentAreaTitle = title;
-        _statusBar.SetArea(_currentAreaTitle);
+        _statusBar.SetArea(title);
         _ribbon.SelectTabForArea(title);
     }
-
 }
