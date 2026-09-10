@@ -54,6 +54,7 @@ public sealed class EvidenceWorkspaceView : UserControl
     private readonly Button _createButton = new() { Content = "Create", MinHeight = DesignTokens.MinControlSize };
 
     private IWorkspaceChanges? _workspaceChanges;
+    private readonly Control _libraries;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -112,6 +113,7 @@ public sealed class EvidenceWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(currentProjectId);
         ArgumentNullException.ThrowIfNull(openObject);
         ArgumentNullException.ThrowIfNull(libraries);
+        _libraries = libraries;
 
         _domainContext = domainContext;
         _commandDispatcher = commandDispatcher;
@@ -168,6 +170,13 @@ public sealed class EvidenceWorkspaceView : UserControl
     /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     public async Task RefreshAsync()
     {
+        // The Libraries tab loads with the area, not on its own: nothing
+        // else ever asks it to, and the first Windows run of v0.18.0 found
+        // it empty for exactly that reason (the tests had refreshed it by
+        // hand). Libraries do not depend on a project being open.
+        if (_libraries is LibrariesView libraries)
+            await libraries.RefreshAsync().ConfigureAwait(true);
+
         var projectId = _currentProjectId();
 
         if (projectId is not { } id)

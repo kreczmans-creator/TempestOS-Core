@@ -380,6 +380,12 @@ public sealed class LibrariesView : UserControl
 
     private async Task OnAddMaterialAsync()
     {
+        if (string.IsNullOrWhiteSpace(_newMaterialName.Text) || string.IsNullOrWhiteSpace(_newMaterialDesignation.Text))
+        {
+            Report("Enter a name and a designation before adding a material.", succeeded: false);
+            return;
+        }
+
         try
         {
             var material = new NewMaterialRecord(

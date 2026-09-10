@@ -331,7 +331,6 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             var tabs = (TabControl)evidenceWorkspace.Content!;
             tabs.SelectedIndex = 1;
             var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
-            await librariesView.RefreshAsync();
             LayOut(window);
 
             var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
