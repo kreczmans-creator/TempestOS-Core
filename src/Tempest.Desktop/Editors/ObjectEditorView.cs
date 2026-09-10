@@ -291,6 +291,10 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBlock _commercialProjectManagerStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
     private Expander _commercialSection = null!;
+    private readonly StackPanel _invoiceLinesPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _invoiceLinesSection = null!;
+    private readonly StackPanel _invoiceExternalPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _invoiceExternalSection = null!;
 
     private string _originalName = string.Empty;
     private string _originalContent = string.Empty;
@@ -788,6 +792,14 @@ public sealed class ObjectEditorView : UserControl
         _commercialSection = BuildSection("Commercial", commercialBody);
         _commercialSection.IsVisible = false;
 
+        // `WP 19.1A`: an invoice request's lines and its connector fields are
+        // read-only projections of the record; the actions live on the
+        // Invoicing area, not here.
+        _invoiceLinesSection = BuildSection("Lines", _invoiceLinesPanel);
+        _invoiceLinesSection.IsVisible = false;
+        _invoiceExternalSection = BuildSection("Connector", _invoiceExternalPanel);
+        _invoiceExternalSection.IsVisible = false;
+
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(header);
         body.Children.Add(_statusMessage);
@@ -795,6 +807,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(identitySection);
         body.Children.Add(_descriptionSection);
         body.Children.Add(_commercialSection);
+        body.Children.Add(_invoiceLinesSection);
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
         body.Children.Add(_bomSection);
@@ -807,6 +820,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_attachmentsSection);
         body.Children.Add(_whereUsedSection);
         body.Children.Add(_lifecycleSection);
+        body.Children.Add(_invoiceExternalSection);
         body.Children.Add(_evidenceLifecycleSection);
         body.Children.Add(relationshipsSection);
         body.Children.Add(validationSection);
@@ -865,6 +879,7 @@ public sealed class ObjectEditorView : UserControl
         PopulateDescription(target);
         await PopulateWhereUsedAsync(target).ConfigureAwait(true);
         PopulateCommercial(target);
+        PopulateInvoiceRequest(target);
 
         PopulateLifecycle(target);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
@@ -1222,6 +1237,65 @@ public sealed class ObjectEditorView : UserControl
     /// each editable and dispatching its own already-registered
     /// <c>project.*</c> command directly.
     /// </summary>
+    private void PopulateInvoiceRequest(IEngineeringObject target)
+    {
+        var declaration = _declarations?.For(_objectKind);
+
+        if (declaration is null || target is not Core.Invoicing.InvoiceRequest request)
+        {
+            _invoiceLinesSection.IsVisible = false;
+            _invoiceExternalSection.IsVisible = false;
+            return;
+        }
+
+        _invoiceLinesSection.IsVisible = declaration.HasSection(Tempest.Workspace.Editors.EditorSectionKeys.InvoiceLines);
+        _invoiceLinesPanel.Children.Clear();
+        if (request.Lines.Count == 0)
+        {
+            _invoiceLinesPanel.Children.Add(new TextBlock { Text = "(no lines)", Opacity = 0.5, FontSize = DesignTokens.FontSizeBody });
+        }
+
+        foreach (var line in request.Lines)
+        {
+            _invoiceLinesPanel.Children.Add(new TextBlock
+            {
+                Text = $"{line.Description}  •  {line.Quantity:0.##} × {line.UnitRate}  =  {line.Amount}",
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = DesignTokens.FontSizeBody,
+            });
+        }
+
+        _invoiceLinesPanel.Children.Add(new TextBlock
+        {
+            Text = $"Total {request.Total}",
+            FontWeight = DesignTokens.WeightHeading,
+            FontSize = DesignTokens.FontSizeBody,
+            Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0),
+        });
+
+        _invoiceExternalSection.IsVisible = declaration.HasSection(Tempest.Workspace.Editors.EditorSectionKeys.InvoicingExternal);
+        _invoiceExternalPanel.Children.Clear();
+        foreach (var (label, value) in new[]
+        {
+            ("Connector", request.Connector),
+            ("External Id", request.ExternalId),
+            ("External Invoice Number", request.ExternalInvoiceNumber),
+            ("External Status", request.ExternalStatus),
+            ("Issued Date", request.IssuedDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
+            ("Paid Date", request.PaidDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
+            ("Last Error", request.LastError),
+        })
+        {
+            _invoiceExternalPanel.Children.Add(new TextBlock
+            {
+                Text = $"{label}: {value ?? "—"}",
+                Opacity = value is null ? 0.6 : 1.0,
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = DesignTokens.FontSizeBody,
+            });
+        }
+    }
+
     private void PopulateCommercial(IEngineeringObject target)
     {
         var declaration = _declarations?.For(_objectKind);
