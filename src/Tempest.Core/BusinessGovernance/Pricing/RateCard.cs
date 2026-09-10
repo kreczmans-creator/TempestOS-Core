@@ -85,6 +85,7 @@ public enum RateKind
 /// <param name="ServiceName">What the service is called. Required.</param>
 /// <param name="Basis">What the rate is charged against.</param>
 /// <param name="Rate">The rate itself. Required.</param>
+/// <param name="CostRate">The loaded cost of an hour (or other billed unit) of this grade, set by the operator (`WP 19.0A`, `ADR-0150`) — what the work actually costs the organisation, kept beside <paramref name="Rate"/> so one pinned card answers both what an hour bills at and what it costs. <see langword="null"/> where the cost base is not held (every card written before `WP 19.0A` reads back this way — the JSON round trip keeps them readable).</param>
 /// <param name="MinimumCharge">The least that will be charged however small the job. <see langword="null"/> where there is no minimum.</param>
 /// <param name="Grade">The grade or seniority the rate applies to. <see langword="null"/> where the service is not graded.</param>
 /// <param name="Description">What is included, and what is not. <see langword="null"/> if the name says it.</param>
@@ -94,6 +95,7 @@ public sealed record RateCardEntry(
     string ServiceName,
     PricingBasis Basis,
     Money Rate,
+    Money? CostRate = null,
     Money? MinimumCharge = null,
     string? Grade = null,
     string? Description = null,
@@ -114,6 +116,12 @@ public sealed record RateCardEntry(
     public Money Rate { get; } = Rate.IsNegative
         ? throw new ArgumentOutOfRangeException(nameof(Rate), Rate, "A published rate cannot be negative. A credit is not a rate.")
         : Rate;
+
+    /// <summary>The loaded cost of an hour (or other billed unit) of this grade, set by the operator. <see langword="null"/> where the cost base is not held.</summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="CostRate"/> is negative.</exception>
+    public Money? CostRate { get; } = CostRate is { IsNegative: true }
+        ? throw new ArgumentOutOfRangeException(nameof(CostRate), CostRate, "A cost rate cannot be negative. A credit is not a cost.")
+        : CostRate;
 
     /// <summary>Anything the rate depends on.</summary>
     public IReadOnlyList<string> Conditions { get; init; } = Conditions ?? [];
@@ -229,6 +237,29 @@ public sealed record RateCard
     public RateCardEntry? FindEntry(string serviceCode) =>
         Entries.FirstOrDefault(e => string.Equals(e.ServiceCode, serviceCode, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Returns the entry priced for <paramref name="grade"/>, or <see langword="null"/> if no entry on this card carries that grade.</summary>
+    public RateCardEntry? FindEntryForGrade(string grade) =>
+        Entries.FirstOrDefault(e => string.Equals(e.Grade, grade, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Resolves what an hour (or other billed unit) of <paramref name="grade"/>
+    /// bills at and costs, on this card — the one lookup `WP 19.0A`'s own
+    /// timesheet entry freezes at record time (`ADR-0150`). Refused, as a
+    /// result rather than an exception, when the grade is not on this
+    /// card — an engineering-governance finding a caller shows, exactly as
+    /// <c>IEvidenceService.CiteAsync</c> refuses an unreleased citation.
+    /// </summary>
+    public RateResolution ResolveRates(string grade)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(grade);
+
+        var entry = FindEntryForGrade(grade);
+
+        return entry is null
+            ? RateResolution.Refused($"Grade '{grade}' is not priced on rate card '{Code}'.")
+            : RateResolution.Resolved(entry.Rate, entry.CostRate);
+    }
+
     /// <summary>Whether every rate on the card is stated in the card's own currency.</summary>
     /// <remarks>
     /// Always true for a card built through the constructor's own
@@ -309,5 +340,44 @@ public sealed record QuotedRate(
             return null;
 
         return (listRate.Amount - Rate.Amount) / listRate.Amount;
+    }
+}
+
+/// <summary>
+/// The outcome of <see cref="RateCard.ResolveRates"/>: either the billing
+/// and cost rate a grade resolves to, or a refusal that says why it did
+/// not (`WP 19.0A`, `ADR-0150`).
+/// </summary>
+public sealed record RateResolution
+{
+    private RateResolution(bool succeeded, Money? billing, Money? cost, string? reason)
+    {
+        Succeeded = succeeded;
+        Billing = billing;
+        Cost = cost;
+        Reason = reason;
+    }
+
+    /// <summary>Whether the grade resolved to a rate.</summary>
+    public bool Succeeded { get; }
+
+    /// <summary>The billing rate, when resolved. <see langword="null"/> when refused.</summary>
+    public Money? Billing { get; }
+
+    /// <summary>The cost rate, when resolved and the card holds one. <see langword="null"/> when refused, or when the card holds no cost rate for this grade.</summary>
+    public Money? Cost { get; }
+
+    /// <summary>Why the grade did not resolve, in a sentence an engineer can read. <see langword="null"/> when it resolved.</summary>
+    public string? Reason { get; }
+
+    /// <summary>A resolved billing rate, and cost rate where the card holds one.</summary>
+    public static RateResolution Resolved(Money billing, Money? cost) => new(true, billing, cost, null);
+
+    /// <summary>A refusal — the grade is not priced on the card.</summary>
+    public static RateResolution Refused(string reason)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        return new(false, null, null, reason);
     }
 }
