@@ -155,6 +155,58 @@ jobs:
             exit $LASTEXITCODE
           }
 
+      # `WP 19.3A` — the layout verification walk (`TD-83`, the `WP 17.0A`
+      # overlap class): launches the real, built Desktop in-process
+      # (Avalonia.Headless with real Skia rendering — this repository has
+      # no OS-level automation dependency, so the walk cannot run as a
+      # separate, already-built-exe step) and walks every rail entry and
+      # every project tab at two window sizes, screenshotting each and
+      # failing on any intersecting sibling `Bounds` or any control outside
+      # its parent. It already ran once, as part of the whole-suite Test
+      # step above, in both configurations — this dedicated, Release-only
+      # rerun exists only so `TEMPEST_LAYOUT_OUTPUT` can pin the screenshot
+      # output to a repository-root-relative path the upload step below can
+      # find, and so its own `--results-directory` is separate from the
+      # whole-suite .trx above. Release-only to keep the Debug leg's own
+      # time: the walk needs only one real run to matter to the physical
+      # review, and Release is the configuration that review actually uses.
+      # No `continue-on-error` — the walk is part of the gate, exactly like
+      # Build and Test above: a failure here fails this leg.
+      - name: Layout verification walk screenshots (Release)
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        env:
+          TEMPEST_LAYOUT_OUTPUT: TestResults/layout
+        run: |
+          dotnet test tests/Tempest.Desktop.Tests `
+            --configuration Release `
+            --no-build `
+            --filter "Category=LayoutWalk" `
+            --logger trx `
+            --logger "console;verbosity=normal" `
+            --results-directory "TestResults/Release/layout"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "The layout verification walk failed (exit code $LASTEXITCODE) - see TestResults/Release/layout and the layout-screenshots artefact."
+            exit $LASTEXITCODE
+          }
+
+      # Diagnostic-shaped like every other artefact upload in this
+      # workflow (`if: always()`, `continue-on-error: true`,
+      # `if-no-files-found: warn`) — publishing the screenshots is never
+      # itself the gate; the Test step above already is. Release-only,
+      # matching the step that produces them: the Debug leg never writes
+      # to `TestResults/layout`, so uploading there on that leg would only
+      # ever warn on an empty path.
+      - name: Upload layout verification screenshots (Release)
+        if: always() && matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: layout-screenshots
+          path: TestResults/layout/**
+          if-no-files-found: warn
+          retention-days: 14
+
       # Runs even if Build or Test failed above (if: always()), so a
       # failing run still publishes exactly what it got through — the
       # same "disclose what actually happened" instinct this project

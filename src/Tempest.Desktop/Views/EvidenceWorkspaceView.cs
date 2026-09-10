@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -159,6 +160,12 @@ public sealed class EvidenceWorkspaceView : UserControl
 
         var evidenceTab = new TabItem { Header = "Evidence", Content = new ScrollViewer { Content = evidenceBody } };
         var librariesTab = new TabItem { Header = "Libraries", Content = libraries };
+
+        // `WP 19.3A`: named for the same reason as the project tabs
+        // (`ProjectWorkspaceView`) — a layout-walk failure inside either
+        // tab names it, rather than a bare "TabItem".
+        AutomationProperties.SetName(evidenceTab, "Evidence");
+        AutomationProperties.SetName(librariesTab, "Libraries");
 
         var tabs = new TabControl();
         tabs.Items.Add(evidenceTab);
