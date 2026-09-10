@@ -28,16 +28,27 @@ internal sealed partial class MainWindowComposer
     /// and installs the one real Tab-trap covering all of them (`WP
     /// 16.5A`, `TD-83`).
     /// </summary>
-    public ComposedLayout Layout(WorkspaceHost host, Window window, ComposedViews views, ComposedCoordinators coordinators)
+    public ComposedLayout Layout(WorkspaceHost host, Window window, ComposedViews views, ComposedCoordinators coordinators, MainWindowCallbacks callbacks)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(views);
         ArgumentNullException.ThrowIfNull(coordinators);
+        ArgumentNullException.ThrowIfNull(callbacks);
 
         var workspace = views.Workspace;
         var composition = views.Composition;
         var navigator = host.ShellNavigator!;
+
+        // `WP 19.2B`: the menu's own "Preferences..." item now navigates
+        // to the Settings rail area instead of opening the retired
+        // Preferences dialog — a real move through the same navigator
+        // every rail button uses, not a second, dialog-shaped mechanism.
+        async Task NavigateToSettingsAsync()
+        {
+            await navigator.GoToModuleAsync(ShellArea.Settings).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
 
         // Menu System / Quick Access Toolbar (`ADR-0103` collaborators #8
         // — stateless build functions, `WP 10.0B`/`WP 10.3B`).
@@ -45,7 +56,7 @@ internal sealed partial class MainWindowComposer
             workspace, coordinators.DockingComposer.Layout,
             coordinators.DockingComposer.ExplorerPanelId, coordinators.DockingComposer.InspectorPanelId, coordinators.DockingComposer.OutputPanelId,
             views.Session.PanelUiState, coordinators.DockingComposer.OutputPanel, coordinators.DockingComposer.OutputView, views.Diagnostics,
-            views.Theme, views.SettingsDialog, views.MessageDialog, views.CommandPalette, views.DocumentArea, views.Ribbon,
+            views.Theme, () => _ = NavigateToSettingsAsync(), views.MessageDialog, views.CommandPalette, views.DocumentArea, views.Ribbon,
             coordinators.LayoutPresets.Apply, coordinators.LayoutPresets.Reset);
         var quickAccessToolbar = QuickAccessToolbarFactory.Build(
             workspace, composition.DomainContext, coordinators.ViewCoordinator.NavigateToObject, views.StatusBar, views.DocumentArea,
@@ -75,8 +86,24 @@ internal sealed partial class MainWindowComposer
         engineeringStack.Children.Add(coordinators.DockingComposer.View);
         Control engineeringSurface = engineeringStack;
 
+        // `WP 19.2B`: the Structure tab's own placeholder
+        // (`views.ProjectWorkspace`'s own `_structureHost`) is deliberately
+        // left empty here — `engineeringSurface` is a single control that
+        // can only ever be parented in one place, and the switch just
+        // below may still hand it directly to `views.ModuleHost` for this
+        // very first render (Home, or a persisted standalone-Engineering
+        // location). `MainWindow.RenderCurrentModuleAsync`'s own
+        // `ResolveEngineeringSurfaceHost`, which the `Opened` handler runs
+        // immediately after this constructor returns, is the one place
+        // that moves it into the Structure tab — never here, where doing
+        // so could hand it to both places at once and throw.
+
         // The shell carries its module surface from construction, not from
-        // a later window event.
+        // a later window event. `RenderCurrentModuleAsync` (`Opened`)
+        // supersedes this immediately, including for Home and Engineering
+        // — see that method's own remarks; this switch only has to be a
+        // reasonable placeholder for the instant between construction and
+        // that first render.
         views.ModuleHost.Content = navigator.Current.Area switch
         {
             ShellArea.Projects => views.ProjectBrowser,
@@ -85,6 +112,8 @@ internal sealed partial class MainWindowComposer
             ShellArea.Evidence => coordinators.EvidenceWorkspace,
             ShellArea.Timesheets => views.TimesheetWeekView,
             ShellArea.Invoicing => views.InvoicingView,
+            ShellArea.Reports => views.ReportsView,
+            ShellArea.Settings => views.SettingsView,
             _ => engineeringSurface,
         };
 
@@ -110,7 +139,6 @@ internal sealed partial class MainWindowComposer
         root.Children.Add(views.ConfirmationDialog);
         root.Children.Add(views.InputDialog);
         root.Children.Add(views.MessageDialog);
-        root.Children.Add(views.SettingsDialog);
         root.Children.Add(views.MacroManagerDialog);
         root.Children.Add(views.CitationPicker);
         root.Children.Add(views.SubjectPicker);
@@ -158,7 +186,7 @@ internal sealed partial class MainWindowComposer
 
         foreach (var modal in new Border[]
                  {
-                     views.ConfirmationDialog, views.InputDialog, views.MessageDialog, views.SettingsDialog, views.MacroManagerDialog, views.CommandPalette,
+                     views.ConfirmationDialog, views.InputDialog, views.MessageDialog, views.MacroManagerDialog, views.CommandPalette,
                      views.CitationPicker, views.SubjectPicker, views.DeclaredFigureEntry, views.CheckEntry, views.IssueEntry, views.ReviseReferenceRecordEntry,
                      views.OrganisationPicker, views.RateCardPicker, views.TimesheetEntryPrompt, views.DeliverableCompletionPrompt,
                  })

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
@@ -143,60 +144,49 @@ public sealed class WorkflowInteractionTests
     }
 
     // ------------------------------------------------------------
-    // SettingsDialog
+    // SettingsView (`WP 19.2B`: a rail area, replacing the retired
+    // SettingsDialog — no pending Save/Cancel two-step, so there is no
+    // "Cancel leaves settings unchanged" gesture left to test: not
+    // pressing Save already leaves the stored values exactly as they
+    // were, which is not a behaviour this dialog-shaped test format has
+    // anything left to prove).
     // ------------------------------------------------------------
 
     [AvaloniaFact]
-    public async Task SettingsDialog_Save_PersistsToUserSettings()
+    public async Task SettingsView_Save_PersistsToUserSettings()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            var configuration = (Tempest.Core.Configuration.IConfigurationProvider)host.Services!.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
             var theme = new ThemeService(settingsProvider);
             var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings, settingsProvider);
+            var view = new SettingsView(theme, settings, settingsProvider, configuration, "(test)");
+            await view.RefreshAsync();
 
-            var showTask = dialog.ShowAsync();
-            var checkbox = GetLogicalDescendants(dialog).OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
+            var checkbox = GetLogicalDescendants(view).OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
             checkbox.IsChecked = false;
 
-            var saveButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Save"));
+            var saveButton = GetLogicalDescendants(view).OfType<Button>().Single(b => Equals(b.Content, "Save"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-            Assert.True(await showTask);
+            // The field itself is set synchronously, before `SaveAsync`'s
+            // own first `await` — the durable write is not.
             Assert.False(settings.ConfirmBeforeDelete);
 
             var reloaded = new UserSettings(settingsProvider);
-            await reloaded.LoadAsync();
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            do
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+                await reloaded.LoadAsync();
+            }
+            while (reloaded.ConfirmBeforeDelete && DateTime.UtcNow < deadline);
+
             Assert.False(reloaded.ConfirmBeforeDelete);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Cancel_LeavesSettingsUnchanged()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var theme = new ThemeService(settingsProvider);
-            var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings, settingsProvider);
-
-            var showTask = dialog.ShowAsync();
-            var cancelButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            cancelButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            Assert.False(await showTask);
-            Assert.True(settings.ConfirmBeforeDelete); // unchanged, still the default
         }
         finally
         {

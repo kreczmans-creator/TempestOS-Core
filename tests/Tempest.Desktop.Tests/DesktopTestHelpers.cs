@@ -182,7 +182,6 @@ internal static class DesktopTestHelpers
         typeof(ConfirmationDialog),
         typeof(InputDialog),
         typeof(MessageDialog),
-        typeof(SettingsDialog),
         typeof(MacroManagerDialog),
         typeof(CitationPicker),
         typeof(SubjectPicker),

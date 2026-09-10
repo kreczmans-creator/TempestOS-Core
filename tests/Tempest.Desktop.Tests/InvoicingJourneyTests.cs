@@ -313,28 +313,35 @@ public sealed class InvoicingJourneyTests
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
 
-            var settingsDialog = GetPrivateField<SettingsDialog>(window, "_settingsDialog");
-            var showTask = settingsDialog.ShowAsync();
-            await RenderUntilAsync(window, () => settingsDialog.IsVisible);
+            // `WP 19.2B`: Settings is a rail area now (`SettingsView`),
+            // reached through the real navigator exactly as a user
+            // reaches it — never a view's own `RefreshAsync` called by
+            // hand.
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Settings);
+            await window.RenderCurrentModuleAsync();
 
-            var connectorCombo = settingsDialog.GetLogicalDescendants().OfType<ComboBox>()
+            var settingsView = GetPrivateField<SettingsView>(window, "_settingsView");
+            await RenderUntilAsync(window, () => settingsView.GetLogicalDescendants().OfType<ComboBox>().Any());
+
+            var connectorCombo = settingsView.GetLogicalDescendants().OfType<ComboBox>()
                 .Single(c => c.Items.OfType<ComboBoxItem>().Any(i => Equals(i.Content, "Fake")));
             connectorCombo.SelectedItem = connectorCombo.Items.OfType<ComboBoxItem>().Single(i => Equals(i.Content, "Fake"));
 
-            var authoriseButton = settingsDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Authorise"));
+            var authoriseButton = settingsView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Authorise"));
             authoriseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () =>
-                settingsDialog.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == "Authorised."));
-            Assert.Contains(settingsDialog.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Authorised.");
+                settingsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text == "Authorised."));
+            Assert.Contains(settingsView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Authorised.");
 
-            var pollMinutes = settingsDialog.GetLogicalDescendants().OfType<NumericUpDown>().Last();
+            var pollMinutes = settingsView.GetLogicalDescendants().OfType<NumericUpDown>().Last();
             pollMinutes.Value = 30m;
 
-            var saveButton = settingsDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save"));
+            var saveButton = settingsView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save"));
             saveButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-            Assert.True(await showTask);
+            await RenderUntilAsync(window, () =>
+                settingsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.StartsWith("Saved at", StringComparison.Ordinal)));
 
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
             Assert.Equal("Fake", await settingsProvider.GetValueAsync(InvoicingService.ConnectorConfigurationKey).ConfigureAwait(true));

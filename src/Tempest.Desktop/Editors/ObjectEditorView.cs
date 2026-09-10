@@ -985,7 +985,20 @@ public sealed class ObjectEditorView : UserControl
             openContent.Children.Add(IconGeometry.Build(IconGeometry.ChevronRight, 11));
             var openButton = new Button { Content = openContent, Padding = new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
             openButton.Classes.Add(ChromeStyles.Flat);
-            Avalonia.Automation.AutomationProperties.SetName(openButton, "Open");
+
+            // `WP 19.2B` (`TD-132`). Every relationship row's Open button
+            // carried the identical literal name "Open" — a screen-reader
+            // user sweeping the Relationships panel of an object with
+            // several relationships heard "Open, button" once per row with
+            // nothing to tell them apart, the same defect the sibling
+            // `BuildObjectReferenceRowAsync`'s own Open button (below) and
+            // the attachments row's own Open button (`WP 16.5A-R2`) were
+            // already fixed against. Direction and relationship kind are
+            // included, not just the related object's name, because one
+            // object can legitimately appear in more than one relationship
+            // to the same object (e.g. both an incoming and an outgoing
+            // edge to it).
+            Avalonia.Automation.AutomationProperties.SetName(openButton, $"Open {direction} {relationshipKind} — {displayName}");
             openButton.Click += (_, _) => _navigateToObject(otherId, otherKind);
             Grid.SetColumn(openButton, 2);
             row.Children.Add(openButton);

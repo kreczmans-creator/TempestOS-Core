@@ -311,9 +311,10 @@ public sealed class ProjectTaskAcceptanceTests
 
             // The area no longer claims a capability it does not have —
             // and it no longer draws the card that says so either.
+            // (`WP 19.2B`: that card, `DeclaredCapabilityView`, is deleted
+            // — every project area is now genuinely implemented.)
             Assert.True(ProjectAreas.IsImplemented(ProjectArea.Tasks));
             Assert.Null(ProjectAreas.For(ProjectArea.Tasks).TrackedBy);
-            Assert.Empty(tasks.GetLogicalDescendants().OfType<DeclaredCapabilityView>());
 
             // It is a plain surface inside the project workspace's own tab
             // host — no reserved slot, no window of its own (`TD-72`).

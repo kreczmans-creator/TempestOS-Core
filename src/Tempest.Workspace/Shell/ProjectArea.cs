@@ -34,10 +34,10 @@ public enum ProjectArea
     /// <summary>The project's own schedule, milestones and deliverables (`TD-81`).</summary>
     Timeline,
 
-    /// <summary>Reports generated from this project's own engineering evidence (`TD-81`).</summary>
+    /// <summary>Removed from the tab strip (`WP 19.2B`, `TD-81`) — was "Reports generated from this project's own engineering evidence"; delivered instead by the rail's own Reports area, filtered by project.</summary>
     Reports,
 
-    /// <summary>This project's own settings — identity, lifecycle and configuration (`TD-76`).</summary>
+    /// <summary>Removed from the tab strip (`WP 19.2B`, `TD-81`) — was "This project's own settings — identity, lifecycle and configuration".</summary>
     Settings,
 
     /// <summary>

@@ -23,14 +23,13 @@ namespace Tempest.Desktop.Views;
 /// rest of the shell about where the user is.
 /// </para>
 /// <para>
-/// <b>Every module the product designs is shown, and every one of them
-/// goes somewhere real.</b> The rail is built from
-/// <see cref="ShellAreas.RailModules"/>, so which modules exist and which
-/// are backed by a capability is declared once, in application state, not
-/// decided here. A module whose capability is not built yet is marked in
-/// the rail and lands on a surface that says exactly what is missing and
-/// what tracks it — never a dead button, and never a screen pretending to
-/// work.
+/// <b>Every module the rail shows is real.</b> `WP 19.2B` (`TD-81`): an
+/// undelivered module is removed from <see cref="ShellAreas.RailModules"/>
+/// rather than shown dimmed — there is no "planned, not yet built" marker
+/// left to draw, because nothing in <see cref="ShellAreas"/> claims a
+/// capability that does not exist. The rail is still built from
+/// <see cref="ShellAreas.RailModules"/>, so which modules exist is
+/// declared once, in application state, not decided here.
 /// </para>
 /// <para>
 /// <b>Visual language.</b> The design system's rail: a sunken instrument
@@ -48,7 +47,6 @@ public sealed class GlobalNavigationRail : UserControl
     private readonly StackPanel _buttons = new() { Spacing = DesignTokens.SpaceXs };
     private readonly List<ModuleItem> _modules = [];
     private readonly TextBlock _sectionLabel;
-    private readonly TextBlock _plannedLegend;
     private bool _compact;
 
     /// <summary>Raised after the user picks a module, so the shell can render it.</summary>
@@ -83,24 +81,9 @@ public sealed class GlobalNavigationRail : UserControl
             AddModule(module, navigate);
         }
 
-        // The legend for the planned-module marker, so the meaning of the
-        // violet dot is stated on the surface rather than left to be
-        // guessed.
-        _plannedLegend = new TextBlock
-        {
-            Text = "●  planned, not yet built",
-            FontSize = DesignTokens.FontSizeLabel,
-            Margin = new Thickness(DesignTokens.SpaceLg + DesignTokens.SpaceSm, DesignTokens.SpaceLg, DesignTokens.SpaceLg, DesignTokens.SpaceLg),
-            TextWrapping = TextWrapping.Wrap,
-            IsVisible = ShellAreas.RailModules.Any(m => m.Availability == NavigationAvailability.Declared),
-        };
-        ThemeReactiveBrush.Bind(_plannedLegend, TextBlock.ForegroundProperty, BrandPalette.FaintTextBrushKey);
-
         var body = new DockPanel();
         DockPanel.SetDock(_sectionLabel, Dock.Top);
-        DockPanel.SetDock(_plannedLegend, Dock.Bottom);
         body.Children.Add(_sectionLabel);
-        body.Children.Add(_plannedLegend);
         body.Children.Add(new ScrollViewer { Content = _buttons, Padding = new Thickness(DesignTokens.SpaceMd, 0), HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
 
         var frame = new Border { Child = body, BorderThickness = new Thickness(0, 0, 1, 0) };
@@ -123,12 +106,10 @@ public sealed class GlobalNavigationRail : UserControl
         _compact = compact;
         Width = compact ? DesignTokens.RailCompactWidth : DesignTokens.RailWidth;
         _sectionLabel.IsVisible = !compact;
-        _plannedLegend.IsVisible = !compact && ShellAreas.RailModules.Any(m => m.Availability == NavigationAvailability.Declared);
 
         foreach (var item in _modules)
         {
             item.Title.IsVisible = !compact;
-            item.Marker.IsVisible = !compact && item.IsDeclaredOnly;
             item.Button.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Left;
             item.Button.Padding = compact ? new Thickness(0, DesignTokens.SpaceMd) : new Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceMd);
         }
@@ -154,8 +135,6 @@ public sealed class GlobalNavigationRail : UserControl
 
     private void AddModule(ShellAreaDescriptor module, Func<Task> navigate)
     {
-        var isDeclaredOnly = module.Availability == NavigationAvailability.Declared;
-
         // The icon inherits its Foreground from this host, which the
         // selection state paints — so one binding tints the vector.
         var iconHost = new ContentControl
@@ -173,41 +152,21 @@ public sealed class GlobalNavigationRail : UserControl
             FontSize = DesignTokens.FontSizeBody + 1,
             VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Opacity = isDeclaredOnly ? 0.7 : 1.0,
         };
 
-        // A module with no capability behind it is visibly distinguished in
-        // the rail (the brand's violet, strictly secondary, as a small
-        // dot), and says so again on the surface it opens — the user
-        // learns what TempestOS is without being misled about what it can
-        // do today.
-        var marker = new Border
-        {
-            Width = 6,
-            Height = 6,
-            CornerRadius = new CornerRadius(3),
-            VerticalAlignment = VerticalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            IsVisible = isDeclaredOnly,
-            Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0),
-        };
-        ThemeReactiveBrush.Bind(marker, Border.BackgroundProperty, BrandPalette.SecondaryAccentBrushKey);
-
-        var content = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var content = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
         title.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
         // The title may never ask for more than the rail has left beside the
-        // icon and the marker: rail width, less the scroll padding, the
-        // button padding, the icon, the title margin and the marker. Without
-        // this ceiling the measure reaches the text at infinite width and
-        // "Engineering Calculations" pushed its button 14 px past the rail
-        // (found by the layout walk, WP 19.3A). The tooltip has the full name.
-        title.MaxWidth = DesignTokens.RailWidth - 2 * DesignTokens.SpaceMd - 2 * DesignTokens.SpaceLg - 20 - DesignTokens.SpaceLg - (6 + DesignTokens.SpaceSm);
+        // icon: rail width, less the scroll padding, the button padding, the
+        // icon and the title margin. Without this ceiling the measure
+        // reaches the text at infinite width and "Engineering Calculations"
+        // pushed its button 14 px past the rail (found by the layout walk,
+        // WP 19.3A). The tooltip has the full name.
+        title.MaxWidth = DesignTokens.RailWidth - 2 * DesignTokens.SpaceMd - 2 * DesignTokens.SpaceLg - 20 - DesignTokens.SpaceLg;
         Grid.SetColumn(iconHost, 0);
         Grid.SetColumn(title, 1);
-        Grid.SetColumn(marker, 2);
         content.Children.Add(iconHost);
         content.Children.Add(title);
-        content.Children.Add(marker);
 
         var button = new Button
         {
@@ -225,8 +184,8 @@ public sealed class GlobalNavigationRail : UserControl
         button.Classes.Add(ChromeStyles.Flat);
 
         AutomationProperties.SetName(button, module.Title);
-        AutomationProperties.SetHelpText(button, isDeclaredOnly ? $"{module.Title} — {DeclaredCapabilityView.NotImplementedBadge}. {module.Note}" : module.Note);
-        ToolTip.SetTip(button, isDeclaredOnly ? $"{module.Title} — {DeclaredCapabilityView.NotImplementedBadge}\n{module.Note}" : $"{module.Title}\n{module.Note}");
+        AutomationProperties.SetHelpText(button, module.Note);
+        ToolTip.SetTip(button, $"{module.Title}\n{module.Note}");
         button.Click += async (_, _) =>
         {
             await navigate().ConfigureAwait(true);
@@ -252,7 +211,7 @@ public sealed class GlobalNavigationRail : UserControl
         };
 
         _buttons.Children.Add(frame);
-        _modules.Add(new ModuleItem(module.Area, button, frame, rule, title, iconHost, marker, isDeclaredOnly));
+        _modules.Add(new ModuleItem(module.Area, button, frame, rule, title, iconHost));
     }
 
     /// <summary>The vector icon for <paramref name="area"/> — one per designed module, falling back to the module's own declared text glyph for a module this set does not yet know.</summary>
@@ -262,15 +221,12 @@ public sealed class GlobalNavigationRail : UserControl
         ShellArea.Projects => IconGeometry.Folder,
         ShellArea.ProjectWorkspace => IconGeometry.Folder,
         ShellArea.Engineering => IconGeometry.Gear,
-        ShellArea.Tasks => IconGeometry.CheckSquare,
-        ShellArea.Commercial => IconGeometry.Currency,
-        ShellArea.Resources => IconGeometry.People,
-        ShellArea.Knowledge => IconGeometry.Book,
         ShellArea.EngineeringCalculation => IconGeometry.Scales,
         ShellArea.Evidence => IconGeometry.Paperclip,
         ShellArea.Timesheets => IconGeometry.Clock,
         ShellArea.Invoicing => IconGeometry.Document,
-        ShellArea.Administration => IconGeometry.Shield,
+        ShellArea.Reports => IconGeometry.Chart,
+        ShellArea.Settings => IconGeometry.Sliders,
         _ => IconGeometry.Dot,
     };
 
@@ -288,5 +244,5 @@ public sealed class GlobalNavigationRail : UserControl
         return label;
     }
 
-    private sealed record ModuleItem(ShellArea Area, Button Button, Border Frame, Border Rule, TextBlock Title, ContentControl Icon, Border Marker, bool IsDeclaredOnly);
+    private sealed record ModuleItem(ShellArea Area, Button Button, Border Frame, Border Rule, TextBlock Title, ContentControl Icon);
 }

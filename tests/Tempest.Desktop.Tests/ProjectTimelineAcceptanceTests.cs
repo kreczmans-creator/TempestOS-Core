@@ -181,19 +181,15 @@ public sealed class ProjectTimelineAcceptanceTests
             var project = await host.ProjectDirectory!.CreateAsync("P-0081", "Apollo");
             await GoToTimelineAsync(host, window, project.Id);
 
-            // Asserted against the tab's own content, not the window: the
-            // project workspace builds every area's content up front, so
-            // cards for the areas that genuinely are Declared legitimately
-            // exist in the logical tree.
+            // Asserted against the tab's own content, not the window.
+            // (`WP 19.2B`: every project area is now Implemented — the
+            // two that were Declared, Reports and Settings, are removed
+            // from the tab strip entirely rather than shipped dimmed.)
             var timelineTab = window.GetLogicalDescendants().OfType<TabItem>()
                 .Distinct()
                 .Single(tab => tab.Tag is ProjectArea.Timeline);
 
             Assert.IsType<ProjectTimelineView>(timelineTab.Content);
-
-            Assert.DoesNotContain(
-                ((Control)timelineTab.Content!).GetLogicalDescendants().OfType<Control>(),
-                child => child is DeclaredCapabilityView);
         }
         finally
         {

@@ -96,9 +96,14 @@ public sealed class ShellDockingSeamTests
             Assert.NotNull(window.GetLogicalDescendants().OfType<ProjectWorkspaceView>().SingleOrDefault());
             Assert.Null(window.GetLogicalDescendants().OfType<ProjectBrowserView>().SingleOrDefault());
 
-            await navigator.GoToModuleAsync(ShellArea.Commercial);
+            // `WP 19.2B`: `ShellArea.Commercial` (and every other one of
+            // the five "declared, not dimmed" modules) is removed from
+            // the rail entirely — there is no descriptor for it any more,
+            // so `Evidence`, a real, Implemented module, stands in for
+            // "some other module" here instead.
+            await navigator.GoToModuleAsync(ShellArea.Evidence);
             await window.RenderCurrentModuleAsync();
-            Assert.NotNull(window.GetLogicalDescendants().OfType<DeclaredCapabilityView>().SingleOrDefault());
+            Assert.NotNull(window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().SingleOrDefault());
             Assert.Null(window.GetLogicalDescendants().OfType<ProjectWorkspaceView>().SingleOrDefault());
         }
         finally

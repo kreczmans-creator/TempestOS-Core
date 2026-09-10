@@ -143,6 +143,12 @@ public sealed class WorkspaceLayoutHost : UserControl
         view.FlyoutRequested += ShowFlyout;
         view.TabDragStarted += (panelId, e) => PanelDragStarted?.Invoke(panelId, e);
 
+        // `WP 19.2B` (`TD-133`): keyboard docking moves, from a focused
+        // panel header — the same "raise intent, `Apply` a pure operation"
+        // shape every mouse gesture above already uses.
+        view.MoveRequested += (panelId, edge) => Apply(t => t.DockToEdge(panelId, edge));
+        view.ResizeRequested += (panelId, delta) => Apply(t => t.ResizeSplit(panelId, delta));
+
         return view;
     }
 
