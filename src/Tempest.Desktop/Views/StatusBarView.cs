@@ -208,6 +208,9 @@ public sealed class StatusBarView : UserControl
             separator.IsVisible = true;
         }
 
+        LastMeasuredWidth = availableSize.Width;
+        MeasurePasses++;
+
         if (!double.IsInfinity(availableSize.Width))
         {
             var budget = availableSize.Width - DesignTokens.SpaceLg * 2 - NaturalWidth(_selectedSegment);
@@ -229,8 +232,37 @@ public sealed class StatusBarView : UserControl
         return base.MeasureOverride(availableSize);
     }
 
+    /// <summary>
+    /// Every text setter ends here. A longer text re-measures its own
+    /// segment and the bar's <see cref="DockPanel"/>, but the panel's
+    /// desired size is clamped to what it was given, so the change never
+    /// reaches this control's own <see cref="MeasureOverride"/> — the
+    /// budget stayed as it was when the text was shorter, and the message
+    /// area was squeezed 11 px short at 1180×760 once the first Explorer
+    /// area's long title landed in AREA (the layout walk, `WP 19.9.0`).
+    /// Invalidating this control's own measure makes every text change
+    /// re-run the budget.
+    /// </summary>
+    private void TextChanged() => InvalidateMeasure();
+
+    /// <summary>The width the last <see cref="MeasureOverride"/> was given — read by the layout tests when the collapse did not do what the bar's own contents required.</summary>
+    internal double LastMeasuredWidth { get; private set; } = double.NaN;
+
+    /// <summary>How many times <see cref="MeasureOverride"/> has run — the same diagnostic.</summary>
+    internal int MeasurePasses { get; private set; }
+
     private static double NaturalWidth(Control control)
     {
+        // A segment whose text grew since it was last measured against
+        // infinity still reports the old width: Avalonia re-measures the
+        // grown TextBlock on its own, its StackPanel and the DockPanel
+        // follow, but the DockPanel's desired size is clamped to what it
+        // was given, so the change stops there and never reaches this
+        // bar's own measure — and a valid measure against the same
+        // infinity is not repeated. The layout walk at 1180×760 found the
+        // message area budgeted at 81 px when its text needed 92 (`WP
+        // 19.9.0`). Invalidating first makes the answer current.
+        control.InvalidateMeasure();
         control.Measure(Size.Infinity);
         return control.DesiredSize.Width;
     }
@@ -243,20 +275,36 @@ public sealed class StatusBarView : UserControl
     /// <see langword="null"/>/empty renders an honest "Ready." rather
     /// than a blank segment.
     /// </summary>
-    public void SetHint(string? text) => _hint.Text = string.IsNullOrWhiteSpace(text) ? "Ready." : text;
+    public void SetHint(string? text)
+    {
+        _hint.Text = string.IsNullOrWhiteSpace(text) ? "Ready." : text;
+        TextChanged();
+    }
 
     /// <summary>Sets the "Selected Object" segment's own text — retained, unchanged signature (`WP 10.0B`), every existing caller unaffected.</summary>
-    public void SetText(string text) => _selection.Text = text;
+    public void SetText(string text)
+    {
+        _selection.Text = text;
+        TextChanged();
+    }
 
     /// <summary>
     /// Sets the "Current Project" segment from the one real
     /// <c>IProjectContext</c> (`TD-84`) — <see langword="null"/> renders an
     /// honest "No project" rather than guessing.
     /// </summary>
-    public void SetProject(string? projectName) => _project.Text = projectName ?? "No project";
+    public void SetProject(string? projectName)
+    {
+        _project.Text = projectName ?? "No project";
+        TextChanged();
+    }
 
     /// <summary>Sets the "Active Workspace" segment to the current Navigation area's own title.</summary>
-    public void SetArea(string? areaTitle) => _area.Text = areaTitle ?? "No area";
+    public void SetArea(string? areaTitle)
+    {
+        _area.Text = areaTitle ?? "No area";
+        TextChanged();
+    }
 
     /// <summary>
     /// Sets the shell-location segment (`TD-89`) — which global module the
@@ -272,7 +320,11 @@ public sealed class StatusBarView : UserControl
     /// at once — and the product rule is that they must always be able to
     /// tell where they are <em>and</em> what they are working in.
     /// </remarks>
-    public void SetLocation(string? location) => _location.Text = location ?? "—";
+    public void SetLocation(string? location)
+    {
+        _location.Text = location ?? "—";
+        TextChanged();
+    }
 
     /// <summary>Sets the "Host State"/"Diagnostics" segments from a real <see cref="IDiagnosticsProvider"/> read — never a cached or assumed value.</summary>
     public void SetDiagnostics(IDiagnosticsProvider diagnostics)
@@ -289,6 +341,7 @@ public sealed class StatusBarView : UserControl
             : $"{failed} module(s) failed";
         ThemeReactiveBrush.Bind(_diagnosticsDot, Border.BackgroundProperty,
             failed == 0 ? BrandPalette.SuccessBrushKey : BrandPalette.DangerBrushKey);
+        TextChanged();
     }
 
     /// <summary>
@@ -298,7 +351,11 @@ public sealed class StatusBarView : UserControl
     /// per-session notification count yet — this always reads 0 today,
     /// disclosed rather than fabricating activity.
     /// </summary>
-    public void SetNotifications(int count) => _notifications.Text = count == 0 ? "No notifications" : $"{count}";
+    public void SetNotifications(int count)
+    {
+        _notifications.Text = count == 0 ? "No notifications" : $"{count}";
+        TextChanged();
+    }
 
     // ----------------------------------------------------------------
 
