@@ -25,9 +25,11 @@ namespace Tempest.Core.Tests.Commands;
 /// <c>CommandDescriptorBindingTests</c> proves what the production
 /// descriptors <i>declare</i>. Neither answers the question this file
 /// exists for: does <see cref="ICommandRegistry"/> actually carry all
-/// eighty-two real bindings (`WP 18.0A` added the Evidence discipline's
-/// own eight) from an Id and a context through to a registered handler —
-/// every one of them, not the handful a hand-picked example covers.
+/// ninety-three real bindings (`WP 18.0A` added the Evidence discipline's
+/// own eight; `WP 19.0A` added the project commercial core, Timesheets and
+/// Deliverables' own ten) from an Id and a context through to a registered
+/// handler — every one of them, not the handful a hand-picked example
+/// covers.
 /// </para>
 /// <para>
 /// So nothing here is hand-picked. Every assertion below enumerates the
@@ -39,7 +41,10 @@ namespace Tempest.Core.Tests.Commands;
 public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
-        ["Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification"];
+        [
+            "Calculations", "Deliverables", "Documents", "Evidence", "Manufacturing", "Mechanical", "Projects",
+            "Requirements", "Timesheets", "Verification",
+        ];
 
     private TempDirectory _temp = null!;
     private ITempestHost _host = null!;
@@ -185,7 +190,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(failures);
         // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
-        Assert.Equal(65, built);
+        // `WP 19.0A` adds ten invocable descriptors (six `project.set-*`/
+        // `pin-rate-card`, three `timesheet.*`, one `deliverable.complete`),
+        // none of them unavailable, so 65 becomes 75.
+        Assert.Equal(75, built);
     }
 
     [Fact]
@@ -242,7 +250,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(failures);
         // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
-        Assert.Equal(65, executed);
+        // `WP 19.0A` adds ten invocable descriptors, none unavailable, so 65 becomes 75.
+        Assert.Equal(75, executed);
     }
 
     [Fact]
@@ -370,7 +379,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(disagreements);
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
-        Assert.Equal(83 * 4, compared);
+        // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
+        Assert.Equal(93 * 4, compared);
     }
 
     // ==================================================================
@@ -426,7 +436,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // eleven are genuinely free text - the five content fields, two
         // owner fields, and set-bom-line's four optional strings - and
         // have nothing to refuse.
-        Assert.Equal(46, refused);
+        // `WP 19.0A` adds thirteen more rule-having parameters: two
+        // `project.set-dates` fields, `project.set-budget.budget` and
+        // `project.pin-rate-card.rateCardId` (four), every one of
+        // `timesheet.record`'s five and `timesheet.amend`'s three (eight),
+        // and `deliverable.complete.completedOn` (one) - so 46 becomes 59.
+        Assert.Equal(59, refused);
     }
 
     [Fact]
@@ -450,6 +465,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "mechanical.set-bom-line.itemNumber",
                 "mechanical.set-bom-line.referenceDesignator",
                 "mechanical.set-bom-line.unitOfMeasure",
+                "project.set-client.organisationId",
+                "project.set-project-manager.identityId",
+                "project.set-purchase-order.reference",
                 "requirements.bulk-set-owner.owner",
                 "requirements.set-owner.owner",
                 "verification.edit.newContent",
@@ -463,7 +481,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 18.2B` adds "evidence.set-subject" (one free-text parameter,
         // "subjectId" — a blank clears the tag, so no non-blank rule
         // applies), so 57 becomes 58.
-        Assert.Equal(58, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // `WP 19.0A` adds sixteen declared parameters across ten
+        // descriptors: three of "project.set-client"/"set-purchase-order"/
+        // "set-project-manager" are free text (blank clears the field, the
+        // same "evidence.set-subject" reasoning), the other thirteen carry
+        // a rule (see `EveryValidatedParameter_RefusesABadValue...`'s own
+        // comment) — so 58 becomes 74.
+        Assert.Equal(74, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -511,7 +535,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // no parameter but each carries a confirmation — so 42 becomes 50.
         // `WP 18.2B` adds a ninth, "evidence.set-subject" (one field), so
         // 50 becomes 51.
-        Assert.Equal(51, refused);
+        // `WP 19.0A` adds ten prompt-requiring descriptors — every one of
+        // them declares a parameter or (`timesheet.delete`) a confirmation
+        // — so 51 becomes 61.
+        Assert.Equal(61, refused);
     }
 
     [Fact]
@@ -544,6 +571,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         // `WP 18.0A` added no member here: every one of Evidence's own
         // eight descriptors needs at least a parameter or a confirmation.
+        // `WP 19.0A` adds no member either, for the identical reason: every
+        // one of its ten descriptors needs at least a parameter or a
+        // confirmation.
         Assert.Equal(14, ran);
     }
 
@@ -572,7 +602,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // Nine deletes and six duplicates (`WP 18.0A` added "evidence.delete"
         // to the deletes), plus "evidence.revise" — the one non-delete,
         // non-duplicate confirmation in the production set.
-        Assert.Equal(16, confirmed);
+        // `WP 19.0A` adds "timesheet.delete" to the deletes, so 16 becomes 17.
+        Assert.Equal(17, confirmed);
     }
 
     [Fact]
@@ -623,7 +654,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     {
         Assert.All(Production, d => Assert.Null(d.CreateDefault));
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
-        Assert.Equal(83, Production.Count);
+        // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
+        Assert.Equal(93, Production.Count);
     }
 
     [Fact]
@@ -636,9 +668,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // 56 becomes 64 and 74 becomes 82; 18 is unchanged.
         // `WP 18.2B` adds a ninth, invocable Evidence descriptor
         // ("evidence.set-subject"), so 64 becomes 65 and 82 becomes 83.
-        Assert.Equal(65, Invocable.Count());
+        // `WP 19.0A` adds ten production descriptors, all invocable (none
+        // needs an object picker or structured input), so 65 becomes 75 and
+        // 83 becomes 93; 18 is unchanged.
+        Assert.Equal(75, Invocable.Count());
         Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(83, Production.Count);
+        Assert.Equal(93, Production.Count);
     }
 
     [Fact]
@@ -736,10 +771,14 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToList();
 
+        // `WP 19.0A` adds a tenth: "timesheet.record" also declares
+        // CommandContextRequirement.None (its own project comes from
+        // CreationPlacement, never a selection), so the comment above is
+        // finally accurate at nine plus this one, ten.
         Assert.Equal(
             [
                 "calculations.create", "documents.create", "evidence.create", "manufacturing.create", "mechanical.create",
-                "requirements.create", "requirements.create-collection", "requirements.create-group",
+                "requirements.create", "requirements.create-collection", "requirements.create-group", "timesheet.record",
             ],
             affected);
 

@@ -22,6 +22,7 @@ public static class KindEditorDeclarations
         registry.Register(Part());
         registry.Register(Assembly());
         registry.Register(Component());
+        registry.Register(Project());
     }
 
     /// <summary>
@@ -99,6 +100,32 @@ public static class KindEditorDeclarations
             DescriptionSection(),
             WhereUsedSection(),
             AttachmentsSection(),
+            LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// The project's own declaration (`WP 19.0A`, `ADR-0150`): Identity;
+    /// Commercial (client and rate card and project manager read-only —
+    /// each needs a picker, Desktop work of part 2 of this Work Package;
+    /// purchase order reference, dates and budget editable now, as plain
+    /// text); Lifecycle. No Description, Where-used or Bill-of-Materials
+    /// section — those facets are Mechanical's own structural product,
+    /// which a Project does not carry.
+    /// </summary>
+    public static KindEditorDeclaration Project() => new(
+        MechanicalObjectFactoryRegistry.Project,
+        [
+            IdentitySection(),
+
+            new(EditorSectionKeys.Commercial, "Commercial",
+                new EditorFieldDeclaration("Client", EditorControlKind.ObjectReference, Editable: false),
+                new EditorFieldDeclaration("Purchase Order Reference", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-purchase-order"),
+                new EditorFieldDeclaration("Budget", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-budget"),
+                new EditorFieldDeclaration("Rate Card", EditorControlKind.ObjectReference, Editable: false),
+                new EditorFieldDeclaration("Start Date", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-dates"),
+                new EditorFieldDeclaration("Target Date", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-dates"),
+                new EditorFieldDeclaration("Project Manager", EditorControlKind.ObjectReference, Editable: false)),
+
             LifecycleSection(),
         ]);
 

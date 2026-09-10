@@ -150,4 +150,65 @@ public class PricingTests
 
         Assert.Empty(await cards.FindApplicableAsync(Today));
     }
+
+    // ==================================================================
+    // ResolveRates (`WP 19.0A`, `ADR-0150`) — one lookup a timesheet entry
+    // freezes at record time: what a grade bills at, and what it costs.
+    // ==================================================================
+
+    private static RateCard CardWithGrades() => BusinessGovernanceFixtures.Card() with
+    {
+        Entries =
+        [
+            new RateCardEntry("ENG-SEN", "Senior engineer", PricingBasis.Day, Gbp(750m), Gbp(450m), Grade: "Senior"),
+            new RateCardEntry("ENG-PRI", "Principal engineer", PricingBasis.Day, Gbp(950m), Grade: "Principal"),
+        ],
+    };
+
+    [Fact]
+    public void ResolveRates_ForAGradeOnTheCard_ReturnsBillingAndCostRate()
+    {
+        var resolution = CardWithGrades().ResolveRates("Senior");
+
+        Assert.True(resolution.Succeeded);
+        Assert.Equal(Gbp(750m), resolution.Billing);
+        Assert.Equal(Gbp(450m), resolution.Cost);
+    }
+
+    [Fact]
+    public void ResolveRates_ForAGradeWithNoCostRateSet_ReturnsANullCost()
+    {
+        var resolution = CardWithGrades().ResolveRates("Principal");
+
+        Assert.True(resolution.Succeeded);
+        Assert.Equal(Gbp(950m), resolution.Billing);
+        Assert.Null(resolution.Cost);
+    }
+
+    [Fact]
+    public void ResolveRates_ForAGradeNotOnTheCard_IsRefused_NamingTheCard()
+    {
+        var resolution = CardWithGrades().ResolveRates("Apprentice");
+
+        Assert.False(resolution.Succeeded);
+        Assert.Null(resolution.Billing);
+        Assert.Null(resolution.Cost);
+        Assert.Contains("Apprentice", resolution.Reason);
+        Assert.Contains(CardWithGrades().Code, resolution.Reason);
+    }
+
+    [Fact]
+    public void ResolveRates_MatchesGradeCaseInsensitively()
+    {
+        var resolution = CardWithGrades().ResolveRates("senior");
+
+        Assert.True(resolution.Succeeded);
+        Assert.Equal(Gbp(750m), resolution.Billing);
+    }
+
+    [Fact]
+    public void FindEntryForGrade_ReturnsNull_WhenNoEntryCarriesTheGrade()
+    {
+        Assert.Null(CardWithGrades().FindEntryForGrade("Nonexistent"));
+    }
 }

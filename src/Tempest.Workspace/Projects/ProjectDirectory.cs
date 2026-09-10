@@ -131,5 +131,8 @@ public sealed class ProjectDirectory : IProjectDirectory
     }
 
     private static ProjectSummary ToSummary(IProject project) =>
-        new(project.Id, project.Identifier, project.DisplayName, project.Status, project.ProgrammeId);
+        new(
+            project.Id, project.Identifier, project.DisplayName, project.Status, project.ProgrammeId,
+            project.ClientOrganisationId, project.PurchaseOrderReference, project.Budget, project.RateCardPin,
+            project.StartDate, project.TargetDate, project.ProjectManagerIdentityId);
 }
