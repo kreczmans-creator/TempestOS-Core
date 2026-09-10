@@ -105,6 +105,9 @@ public static class EditorSectionKeys
     /// <summary>The object's own lifecycle position and history.</summary>
     public const string Lifecycle = "lifecycle";
 
+    /// <summary>A project's own commercial core: client, purchase order, budget, pinned rate card, dates and project manager (`WP 19.0A`, `ADR-0150`).</summary>
+    public const string Commercial = "commercial";
+
     /// <summary>Evidence's own check and issue records, read-only (the Check and Issue actions themselves are `WP 18.2B`).</summary>
     public const string CheckAndIssue = "check-and-issue";
 
