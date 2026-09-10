@@ -1,17 +1,21 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
+using Tempest.Core.Deliverables;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
@@ -19,12 +23,14 @@ using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Macros;
 using Tempest.Core.Materials;
+using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Standards;
+using Tempest.Core.Timesheets;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
@@ -175,6 +181,9 @@ public static class EngineeringWorkspaceComposer
         var evidenceService = (IEvidenceService)services.GetService(typeof(IEvidenceService));
         var principalDirectory = (IPrincipalDirectory)services.GetService(typeof(IPrincipalDirectory));
         var platformVersionProvider = (IPlatformVersionProvider)services.GetService(typeof(IPlatformVersionProvider));
+        var projectCommercialService = (IProjectCommercialService)services.GetService(typeof(IProjectCommercialService));
+        var timesheetService = (ITimesheetService)services.GetService(typeof(ITimesheetService));
+        var deliverableService = (IDeliverableService)services.GetService(typeof(IDeliverableService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -188,6 +197,17 @@ public static class EngineeringWorkspaceComposer
         EvidenceWorkspaceRegistration.Register(
             manager, domainContext, evidenceService, commandDispatcher, commandRegistry,
             issueSheetRenderer, principalDirectory, platformVersionProvider);
+
+        // `ADR-0150` (`WP 19.0A`). The project commercial core's own six
+        // commands, over the Project Kind Mechanical already owns and
+        // registers a node/facet provider for.
+        ProjectCommercialWorkspaceRegistration.Register(projectCommercialService, commandDispatcher, commandRegistry);
+
+        // `ADR-0150` (`WP 19.0A`). Time and deliverable completion — each a
+        // new canonical Kind with its own discipline registration,
+        // mirroring Evidence's own shape.
+        TimesheetsWorkspaceRegistration.Register(manager, domainContext, timesheetService, principalDirectory, commandDispatcher, commandRegistry);
+        DeliverableCompletionWorkspaceRegistration.Register(manager, domainContext, deliverableService, principalDirectory, commandDispatcher, commandRegistry);
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
@@ -214,6 +234,13 @@ public static class EngineeringWorkspaceComposer
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         rehydrators.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, domainContext);
+
+        // `ADR-0150` (`WP 19.0A`) — the fortieth and forty-first Kinds with
+        // a production rehydrator from the day they shipped, the Evidence
+        // path repeated for each of the two new disciplines registered
+        // above.
+        rehydrators.Register<Tempest.Core.Timesheets.TimesheetEntry>(Tempest.Core.Timesheets.TimesheetEntry.CanonicalKind, domainContext);
+        rehydrators.Register<Tempest.Core.Deliverables.DeliverableCompletion>(Tempest.Core.Deliverables.DeliverableCompletion.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by

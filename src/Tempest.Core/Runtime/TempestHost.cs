@@ -7,10 +7,13 @@ using Tempest.Core.Components;
 using Tempest.Core.Constants;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
+using Tempest.Core.Deliverables;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Projects;
+using Tempest.Core.Timesheets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
@@ -761,6 +764,16 @@ public sealed class TempestHost : ITempestHost
         // libraries above and Identity/Configuration/Settings already
         // provide, registered here because it depends on all of them.
         services.Singleton<IEvidenceService, EvidenceService>();
+
+        // `ADR-0150` (`v0.19.0` "Consultancy Seam and Desktop", `WP 19.0A`).
+        // The project commercial core, time and deliverable completion —
+        // registered here because each depends on the reference catalogues
+        // and Settings above (the rate-card catalogue, the working-pattern
+        // setting).
+        services.Singleton<IProjectCommercialService, ProjectCommercialService>();
+        services.Singleton<IWorkingPatternProvider, WorkingPatternProvider>();
+        services.Singleton<ITimesheetService, TimesheetService>();
+        services.Singleton<IDeliverableService, DeliverableService>();
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references

@@ -200,16 +200,16 @@ public sealed class Project : EngineeringObjectBase, IProject, IRehydratable<Pro
     {
         _clientOrganisationId = state.Type(nameof(ClientOrganisationId));
         _purchaseOrderReference = state.Type(nameof(PurchaseOrderReference));
-        _budget = state.TypeJson<Money>(nameof(Budget));
+        _budget = state.TypeJson<Money?>(nameof(Budget));
         _rateCardPin = state.TypeJson<ReferencePin>(nameof(RateCardPin));
-        _startDate = state.TypeJson<DateOnly>(nameof(StartDate));
-        _targetDate = state.TypeJson<DateOnly>(nameof(TargetDate));
+        _startDate = state.TypeJson<DateOnly?>(nameof(StartDate));
+        _targetDate = state.TypeJson<DateOnly?>(nameof(TargetDate));
         _projectManagerIdentityId = state.Type(nameof(ProjectManagerIdentityId));
     }
 
     static Project IRehydratable<Project>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
         new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata, state.TypeGuid(nameof(ProgrammeId)),
-            state.Type(nameof(ClientOrganisationId)), state.Type(nameof(PurchaseOrderReference)), state.TypeJson<Money>(nameof(Budget)),
-            state.TypeJson<ReferencePin>(nameof(RateCardPin)), state.TypeJson<DateOnly>(nameof(StartDate)), state.TypeJson<DateOnly>(nameof(TargetDate)),
+            state.Type(nameof(ClientOrganisationId)), state.Type(nameof(PurchaseOrderReference)), state.TypeJson<Money?>(nameof(Budget)),
+            state.TypeJson<ReferencePin>(nameof(RateCardPin)), state.TypeJson<DateOnly?>(nameof(StartDate)), state.TypeJson<DateOnly?>(nameof(TargetDate)),
             state.Type(nameof(ProjectManagerIdentityId)));
 }
