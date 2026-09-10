@@ -13,9 +13,11 @@ using Tempest.Workspace.Editors;
 using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Files;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Audit;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
@@ -49,6 +51,27 @@ public sealed record EvidenceEditorSupport(
     Func<CancellationToken, Task<Guid?>> PickSubjectAsync,
     Func<CancellationToken, Task<CheckEntryInput?>> PickCheckAsync,
     Func<CancellationToken, Task<IssueEntryInput?>> PickIssueAsync);
+
+/// <summary>
+/// The project Commercial section's own pickers (`WP 19.0A`, `ADR-0150`):
+/// <see cref="PickClientOrganisationIdAsync"/> returns the chosen
+/// organisation's own record id, an empty string for "Clear", or
+/// <see langword="null"/> for cancelled — <see cref="OrganisationPicker.PickAsync"/>'s
+/// own exact three-way shape; <see cref="PickRateCardIdAsync"/> returns the
+/// chosen Released card's own record id, or <see langword="null"/> for
+/// cancelled — <see cref="RateCardPicker.PickAsync"/>'s own shape.
+/// <see cref="CurrentPrincipalIdentityId"/> is the identity id the Project
+/// Manager field's own "Use Me" affordance offers by default, since there
+/// is no principal enumeration (`WP 19.0A` brief §3). <see langword="null"/>
+/// (any test that constructs this editor directly without it) leaves the
+/// Commercial section's own Change/Pin/Use Me affordances honestly
+/// unavailable rather than run without asking — the identical discipline
+/// <see cref="ObjectEditorView.WorkspaceChanges"/> already established.
+/// </summary>
+public sealed record ProjectCommercialEditorSupport(
+    Func<CancellationToken, Task<string?>> PickClientOrganisationIdAsync,
+    Func<CancellationToken, Task<string?>> PickRateCardIdAsync,
+    Func<string?> CurrentPrincipalIdentityId);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -126,6 +149,7 @@ public sealed class ObjectEditorView : UserControl
     private readonly IKindEditorDeclarationRegistry? _declarations;
     private readonly EvidenceEditorSupport? _evidenceSupport;
     private readonly IAuditQuery? _auditQuery;
+    private readonly ProjectCommercialEditorSupport? _commercialSupport;
 
     private readonly TextBlock _identityReadout = new() { Opacity = 0.7, FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBox _nameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
@@ -233,6 +257,40 @@ public sealed class ObjectEditorView : UserControl
 
     private readonly StackPanel _evidenceAuditPanel = new() { Spacing = DesignTokens.SpaceXs };
     private Expander _evidenceAuditSection = null!;
+
+    // `WP 19.0A` (`ADR-0150`) — the project Commercial section: client and
+    // rate card each with a picker and a Change/Pin action (mirrors
+    // Evidence's own Subject "Change" affordance), purchase order
+    // reference/budget/dates/project manager each a plain field with its
+    // own Save action, dispatching the six already-registered
+    // `project.*` commands directly.
+    private readonly StackPanel _commercialClientPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _changeClientButton = new() { Content = "Change Client", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _commercialClientStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private readonly TextBox _commercialPurchaseOrderBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _commercialPurchaseOrderSaveButton = new() { Content = "Save Purchase Order", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _commercialPurchaseOrderStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private readonly TextBox _commercialBudgetBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize, Watermark = "amount currency" };
+    private readonly Button _commercialBudgetSaveButton = new() { Content = "Save Budget", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _commercialBudgetStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private readonly StackPanel _commercialRateCardPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly Button _changeRateCardButton = new() { Content = "Pin Rate Card", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _commercialRateCardStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private readonly DatePicker _commercialStartDate = new() { MinHeight = DesignTokens.MinControlSize };
+    private readonly DatePicker _commercialTargetDate = new() { MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _commercialDatesSaveButton = new() { Content = "Save Dates", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _commercialDatesStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private readonly TextBox _commercialProjectManagerBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _commercialUseMeButton = new() { Content = "Use Me", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _commercialProjectManagerSaveButton = new() { Content = "Save Project Manager", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _commercialProjectManagerStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private Expander _commercialSection = null!;
 
     private string _originalName = string.Empty;
     private string _originalContent = string.Empty;
@@ -363,7 +421,8 @@ public sealed class ObjectEditorView : UserControl
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates,
-        IKindEditorDeclarationRegistry? declarations, EvidenceEditorSupport? evidenceSupport, IAuditQuery? auditQuery)
+        IKindEditorDeclarationRegistry? declarations, EvidenceEditorSupport? evidenceSupport, IAuditQuery? auditQuery,
+        ProjectCommercialEditorSupport? commercialSupport)
     {
         _objectId = objectId;
         _objectKind = objectKind;
@@ -376,6 +435,7 @@ public sealed class ObjectEditorView : UserControl
         _declarations = declarations;
         _evidenceSupport = evidenceSupport;
         _auditQuery = auditQuery;
+        _commercialSupport = commercialSupport;
 
         // `WP 18.1A`: once this tab closes and the control leaves the
         // visual tree, drop the change-feed subscription — see
@@ -437,6 +497,15 @@ public sealed class ObjectEditorView : UserControl
         _checkButton.Click += async (_, _) => await OnCheckAsync().ConfigureAwait(true);
         _issueButton.Click += async (_, _) => await OnIssueAsync().ConfigureAwait(true);
         _reviseButton.Click += async (_, _) => await OnReviseAsync().ConfigureAwait(true);
+
+        // `WP 19.0A` (`ADR-0150`) — the project Commercial section.
+        _changeClientButton.Click += async (_, _) => await OnChangeClientAsync().ConfigureAwait(true);
+        _changeRateCardButton.Click += async (_, _) => await OnChangeRateCardAsync().ConfigureAwait(true);
+        _commercialPurchaseOrderSaveButton.Click += async (_, _) => await OnSaveCommercialPurchaseOrderAsync().ConfigureAwait(true);
+        _commercialBudgetSaveButton.Click += async (_, _) => await OnSaveCommercialBudgetAsync().ConfigureAwait(true);
+        _commercialDatesSaveButton.Click += async (_, _) => await OnSaveCommercialDatesAsync().ConfigureAwait(true);
+        _commercialUseMeButton.Click += (_, _) => _commercialProjectManagerBox.Text = _commercialSupport?.CurrentPrincipalIdentityId() ?? _commercialProjectManagerBox.Text;
+        _commercialProjectManagerSaveButton.Click += async (_, _) => await OnSaveCommercialProjectManagerAsync().ConfigureAwait(true);
     }
 
     /// <summary>Gets whether this editor holds local, buffered edits (Name and/or Content) not yet committed via Save — this Work Package's own genuine, buffered dirty-state (distinct from and unrelated to <see cref="IWorkspaceView.IsDirty"/>, which remains permanently <see langword="false"/>, by design, unchanged — see class remarks).</summary>
@@ -478,7 +547,7 @@ public sealed class ObjectEditorView : UserControl
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService = null, CalculationTemplateRegistry? calculationTemplates = null,
         IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
-        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null)
+        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null, ProjectCommercialEditorSupport? commercialSupport = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(manager);
@@ -492,7 +561,7 @@ public sealed class ObjectEditorView : UserControl
 
         var editor = new ObjectEditorView(
             objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
-            declarations, evidenceSupport, auditQuery)
+            declarations, evidenceSupport, auditQuery, commercialSupport)
         {
             WorkspaceChanges = workspaceChanges,
         };
@@ -669,12 +738,63 @@ public sealed class ObjectEditorView : UserControl
         _evidenceAuditSection = BuildSection("Audit", _evidenceAuditPanel);
         _evidenceAuditSection.IsVisible = false;
 
+        // `WP 19.0A` (`ADR-0150`) — the project Commercial section: client
+        // and rate card each read-only with a Change/Pin action; purchase
+        // order reference, budget, dates and project manager each a plain
+        // field with its own Save action.
+        var commercialBody = new StackPanel { Spacing = DesignTokens.SpaceMd };
+        var clientGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        clientGroup.Children.Add(new TextBlock { Text = "Client", Opacity = 0.8, FontSize = DesignTokens.FontSizeBody });
+        clientGroup.Children.Add(_commercialClientPanel);
+        clientGroup.Children.Add(_changeClientButton);
+        clientGroup.Children.Add(_commercialClientStatus);
+        commercialBody.Children.Add(clientGroup);
+
+        var poGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        poGroup.Children.Add(LabeledRow("Purchase Order Reference", _commercialPurchaseOrderBox));
+        poGroup.Children.Add(_commercialPurchaseOrderSaveButton);
+        poGroup.Children.Add(_commercialPurchaseOrderStatus);
+        commercialBody.Children.Add(poGroup);
+
+        var budgetGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        budgetGroup.Children.Add(LabeledRow("Budget", _commercialBudgetBox));
+        budgetGroup.Children.Add(_commercialBudgetSaveButton);
+        budgetGroup.Children.Add(_commercialBudgetStatus);
+        commercialBody.Children.Add(budgetGroup);
+
+        var rateCardGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        rateCardGroup.Children.Add(new TextBlock { Text = "Rate Card", Opacity = 0.8, FontSize = DesignTokens.FontSizeBody });
+        rateCardGroup.Children.Add(_commercialRateCardPanel);
+        rateCardGroup.Children.Add(_changeRateCardButton);
+        rateCardGroup.Children.Add(_commercialRateCardStatus);
+        commercialBody.Children.Add(rateCardGroup);
+
+        var datesGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        datesGroup.Children.Add(LabeledRow("Start Date", _commercialStartDate));
+        datesGroup.Children.Add(LabeledRow("Target Date", _commercialTargetDate));
+        datesGroup.Children.Add(_commercialDatesSaveButton);
+        datesGroup.Children.Add(_commercialDatesStatus);
+        commercialBody.Children.Add(datesGroup);
+
+        var pmGroup = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        pmGroup.Children.Add(LabeledRow("Project Manager", _commercialProjectManagerBox));
+        var pmButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
+        pmButtons.Children.Add(_commercialUseMeButton);
+        pmButtons.Children.Add(_commercialProjectManagerSaveButton);
+        pmGroup.Children.Add(pmButtons);
+        pmGroup.Children.Add(_commercialProjectManagerStatus);
+        commercialBody.Children.Add(pmGroup);
+
+        _commercialSection = BuildSection("Commercial", commercialBody);
+        _commercialSection.IsVisible = false;
+
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(header);
         body.Children.Add(_statusMessage);
         body.Children.Add(new Separator());
         body.Children.Add(identitySection);
         body.Children.Add(_descriptionSection);
+        body.Children.Add(_commercialSection);
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
         body.Children.Add(_bomSection);
@@ -744,6 +864,7 @@ public sealed class ObjectEditorView : UserControl
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
         PopulateDescription(target);
         await PopulateWhereUsedAsync(target).ConfigureAwait(true);
+        PopulateCommercial(target);
 
         PopulateLifecycle(target);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
@@ -1092,6 +1213,185 @@ public sealed class ObjectEditorView : UserControl
         }
 
         return row;
+    }
+
+    /// <summary>
+    /// The project Commercial section (`WP 19.0A`, `ADR-0150`): client and
+    /// rate card, each read-only with a Change/Pin action opening a real
+    /// picker; purchase order reference, budget, dates and project manager,
+    /// each editable and dispatching its own already-registered
+    /// <c>project.*</c> command directly.
+    /// </summary>
+    private void PopulateCommercial(IEngineeringObject target)
+    {
+        var declaration = _declarations?.For(_objectKind);
+
+        if (declaration is null || !declaration.HasSection(EditorSectionKeys.Commercial) || target is not IProject project)
+        {
+            _commercialSection.IsVisible = false;
+            return;
+        }
+
+        _commercialSection.IsVisible = true;
+
+        _commercialClientPanel.Children.Clear();
+        _commercialClientPanel.Children.Add(new TextBlock
+        {
+            Text = project.ClientOrganisationId ?? "(no client set)",
+            Opacity = project.ClientOrganisationId is null ? 0.5 : 1.0,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = DesignTokens.FontSizeBody,
+        });
+        _changeClientButton.IsVisible = _commercialSupport is not null;
+        _commercialClientStatus.Text = string.Empty;
+
+        _commercialPurchaseOrderBox.Text = project.PurchaseOrderReference ?? string.Empty;
+        _commercialPurchaseOrderStatus.Text = string.Empty;
+
+        _commercialBudgetBox.Text = project.Budget?.ToString() ?? string.Empty;
+        _commercialBudgetStatus.Text = string.Empty;
+
+        _commercialRateCardPanel.Children.Clear();
+        _commercialRateCardPanel.Children.Add(new TextBlock
+        {
+            Text = project.RateCardPin is { } pin ? pin.ToString() : "(no rate card pinned)",
+            Opacity = project.RateCardPin is null ? 0.5 : 1.0,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = DesignTokens.FontSizeBody,
+        });
+        _changeRateCardButton.IsVisible = _commercialSupport is not null;
+        _commercialRateCardStatus.Text = string.Empty;
+
+        _commercialStartDate.SelectedDate = project.StartDate is { } start ? new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue)) : null;
+        _commercialTargetDate.SelectedDate = project.TargetDate is { } targetDate ? new DateTimeOffset(targetDate.ToDateTime(TimeOnly.MinValue)) : null;
+        _commercialDatesStatus.Text = string.Empty;
+
+        _commercialProjectManagerBox.Text = project.ProjectManagerIdentityId ?? string.Empty;
+        _commercialUseMeButton.IsVisible = _commercialSupport is not null;
+        _commercialProjectManagerStatus.Text = string.Empty;
+    }
+
+    private async Task OnChangeClientAsync()
+    {
+        if (_commercialSupport is null)
+            return;
+
+        var picked = await _commercialSupport.PickClientOrganisationIdAsync(CancellationToken.None).ConfigureAwait(true);
+        if (picked is null)
+        {
+            _commercialClientStatus.Text = "Change client was cancelled.";
+            return;
+        }
+
+        var organisationId = picked.Length == 0 ? null : picked;
+        var result = await _commandDispatcher
+            .DispatchAsync(new SetProjectClientCommand(_objectId, _objectKind, organisationId), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialClientStatus, result).ConfigureAwait(true);
+    }
+
+    private async Task OnChangeRateCardAsync()
+    {
+        if (_commercialSupport is null)
+            return;
+
+        var picked = await _commercialSupport.PickRateCardIdAsync(CancellationToken.None).ConfigureAwait(true);
+        if (picked is null)
+        {
+            _commercialRateCardStatus.Text = "Pin rate card was cancelled.";
+            return;
+        }
+
+        var result = await _commandDispatcher
+            .DispatchAsync(new PinProjectRateCardCommand(_objectId, _objectKind, picked), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialRateCardStatus, result).ConfigureAwait(true);
+    }
+
+    private async Task OnSaveCommercialPurchaseOrderAsync()
+    {
+        var result = await _commandDispatcher
+            .DispatchAsync(new SetProjectPurchaseOrderCommand(_objectId, _objectKind, NullIfEmpty(_commercialPurchaseOrderBox.Text)), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialPurchaseOrderStatus, result).ConfigureAwait(true);
+    }
+
+    private async Task OnSaveCommercialBudgetAsync()
+    {
+        var text = _commercialBudgetBox.Text?.Trim();
+        Money? budget = null;
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            if (!TryParseMoney(text, out var parsed))
+            {
+                _commercialBudgetStatus.Text = "Budget must be \"<amount> <currency>\" (e.g. \"50000 GBP\"), or blank to clear.";
+                return;
+            }
+
+            budget = parsed;
+        }
+
+        var result = await _commandDispatcher
+            .DispatchAsync(new SetProjectBudgetCommand(_objectId, _objectKind, budget), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialBudgetStatus, result).ConfigureAwait(true);
+    }
+
+    private async Task OnSaveCommercialDatesAsync()
+    {
+        var startDate = _commercialStartDate.SelectedDate is { } start ? DateOnly.FromDateTime(start.Date) : (DateOnly?)null;
+        var targetDate = _commercialTargetDate.SelectedDate is { } target ? DateOnly.FromDateTime(target.Date) : (DateOnly?)null;
+
+        var result = await _commandDispatcher
+            .DispatchAsync(new SetProjectDatesCommand(_objectId, _objectKind, startDate, targetDate), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialDatesStatus, result).ConfigureAwait(true);
+    }
+
+    private async Task OnSaveCommercialProjectManagerAsync()
+    {
+        var result = await _commandDispatcher
+            .DispatchAsync(new SetProjectManagerCommand(_objectId, _objectKind, NullIfEmpty(_commercialProjectManagerBox.Text)), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        await ReportCommercialAsync(_commercialProjectManagerStatus, result).ConfigureAwait(true);
+    }
+
+    /// <summary>Reports a Commercial field's own write outcome — mirrors <see cref="OnSaveBomAsync"/>'s own "refresh before the message survives" discipline.</summary>
+    private async Task ReportCommercialAsync(TextBlock statusMessage, CommandResult result)
+    {
+        var message = result.Succeeded ? "Saved." : result.Message ?? "Save failed.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        statusMessage.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    private static bool TryParseMoney(string value, out Money money)
+    {
+        var parts = value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 2 && decimal.TryParse(parts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out var amount))
+        {
+            try
+            {
+                money = new Money(amount, new Tempest.Core.BusinessGovernance.CurrencyCode(parts[1]));
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                // Falls through to the failure return below.
+            }
+        }
+
+        money = default;
+        return false;
     }
 
     /// <summary>

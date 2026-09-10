@@ -99,6 +99,9 @@ public sealed class MainWindow : Window
     // The Evidence workspace (`WP 18.2A`, `ADR-0148`).
     private readonly EvidenceWorkspaceView _evidenceWorkspace;
 
+    // The Timesheets area (`WP 19.0A`, `ADR-0150`).
+    private readonly TimesheetWeekView _timesheetWeekView;
+
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
     private readonly IBackgroundTaskRunner _backgroundTaskRunner;
@@ -194,6 +197,7 @@ public sealed class MainWindow : Window
         _engineeringCalculation = views.EngineeringCalculation;
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
         _evidenceWorkspace = coordinators.EvidenceWorkspace;
+        _timesheetWeekView = views.TimesheetWeekView;
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -216,6 +220,10 @@ public sealed class MainWindow : Window
             // land here" discipline every other area follows.
             [ShellArea.Evidence] = new(() => _evidenceWorkspace, () => _evidenceWorkspace.RefreshAsync()),
             [ShellArea.EngineeringCalculation] = new(() => _engineeringCalculation, EnterEngineeringCalculationAsync),
+            // `WP 19.0A` (`ADR-0150`): re-read on every entry, the same
+            // "load when you land here" discipline every other area
+            // follows.
+            [ShellArea.Timesheets] = new(() => _timesheetWeekView, () => _timesheetWeekView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the

@@ -51,6 +51,12 @@ public static class ProjectAreas
         new(ProjectArea.Timeline, "Timeline", "▦", NavigationAvailability.Implemented,
             "This project's own milestones in date order, the deliverables due against each, and the tasks and actions contributing to them. A dated register, not a Gantt chart: there is no scheduling engine, no dependency graph and no critical path."),
 
+        // `WP 19.0A` (`ADR-0150`): every milestone Deliverable of the
+        // project with its own completion state — placed right after
+        // Timeline, where the deliverables it completes are due.
+        new(ProjectArea.Deliverables, "Deliverables", "◈", NavigationAvailability.Implemented,
+            "This project's own deliverables, each against the milestone it is due on, with its completion — when, by whom, on what evidence and documents, and a fixed-price value where it is billed that way rather than by time."),
+
         new(ProjectArea.Reports, "Reports", "▤", NavigationAvailability.Declared,
             "Reports over this project's own engineering evidence. Evidence composition and traceability are real and queryable; report definition, generation and export are not built.",
             "TD-81"),

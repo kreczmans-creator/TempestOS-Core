@@ -57,12 +57,24 @@ internal sealed partial class MainWindowComposer
         // Stack.
         var undoRedo = new UndoRedoCoordinator(views.ActionReporter);
 
+        // `WP 19.0A` (`ADR-0150`): the project Commercial section's own
+        // pickers — the real `OrganisationPicker`/`RateCardPicker`
+        // overlays `BuildViews` already built, threaded into the Object
+        // Editor's own declaration-driven Commercial section exactly as
+        // `evidenceSupport` threads Evidence's own pickers into its
+        // declared sections.
+        var commercialSupport = new ProjectCommercialEditorSupport(
+            ct => views.OrganisationPicker.PickAsync(ct),
+            ct => views.RateCardPicker.PickAsync(ct),
+            () => host.SessionPrincipal?.IdentityId);
+
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             views.ExplorerView, views.InspectorView, views.Ribbon, views.StatusBar, views.ToastHost, views.ConfirmationDialog, undoRedo.Stack,
             views.Session.RecentObjects, views.Session.FavouriteObjects, views.OpenGraphViewsByRootId,
             views.DocumentArea, views.ActionReporter,
-            workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport, auditQuery: host.AuditQuery);
+            workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
+            auditQuery: host.AuditQuery, commercialSupport: commercialSupport);
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which
