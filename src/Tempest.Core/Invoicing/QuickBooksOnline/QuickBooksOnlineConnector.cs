@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Tempest.Core.Configuration;
 using Tempest.Core.Invoicing.OAuth;
 
@@ -58,7 +59,7 @@ namespace Tempest.Core.Invoicing.QuickBooksOnline;
 /// </remarks>
 public sealed class QuickBooksOnlineConnector : IInvoicingConnector
 {
-    private static readonly JsonSerializerOptions JsonOptions = new();
+    private static readonly JsonSerializerOptions JsonOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
     private readonly HttpClient _httpClient;
     private readonly OAuthAuthoriser _authoriser;
