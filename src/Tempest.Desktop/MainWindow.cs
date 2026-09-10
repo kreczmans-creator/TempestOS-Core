@@ -81,6 +81,13 @@ public sealed class MainWindow : Window
     private readonly IssueEntry _issueEntry;
     private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
 
+    // The project Commercial section's own pickers, and the Timesheets/
+    // Deliverables prompts (`WP 19.0A`, `ADR-0150`).
+    private readonly OrganisationPicker _organisationPicker;
+    private readonly RateCardPicker _rateCardPicker;
+    private readonly TimesheetEntryPrompt _timesheetEntryPrompt;
+    private readonly DeliverableCompletionPrompt _deliverableCompletionPrompt;
+
     // The Product Spine (`TD-84`) — Module -> Project -> Workspace.
     private readonly IShellNavigator _navigator;
     private readonly IProjectContext _projectContext;
@@ -185,6 +192,10 @@ public sealed class MainWindow : Window
         _checkEntry = views.CheckEntry;
         _issueEntry = views.IssueEntry;
         _reviseReferenceRecordEntry = views.ReviseReferenceRecordEntry;
+        _organisationPicker = views.OrganisationPicker;
+        _rateCardPicker = views.RateCardPicker;
+        _timesheetEntryPrompt = views.TimesheetEntryPrompt;
+        _deliverableCompletionPrompt = views.DeliverableCompletionPrompt;
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
         _navigationRail = views.NavigationRail;
