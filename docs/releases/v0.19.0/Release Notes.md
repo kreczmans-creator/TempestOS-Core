@@ -64,6 +64,20 @@ screenshots every screen in CI.
 - The layout walk is a normal Desktop test (`Category=LayoutWalk`) that CI
   reruns on the Release leg to publish screenshots.
 
+## Fixed during the release gate (`WP 19.9.0`)
+
+- **One live invoice request per source** (333fad6): completing a
+  deliverable raises the request through the completion hook; Raise
+  invoice on the same completion raised a second Draft with the same
+  lines. Refused now, naming the first (`ADR-0151`, last addendum).
+- **The status bar re-budgets its collapse when a segment's text grows**
+  (9e11551): the layout walk at 1180×760 found the message area 11 px
+  short once a long Explorer area title landed in AREA; the bar's own
+  measure had never re-run. Found by the walk, fixed with a unit test.
+- **Two opens told apart** (333fad6): `MainWindow` records every
+  open-right-up phase with the object's id, and a failed open is reported
+  in the status bar rather than swallowed.
+
 ## Warnings
 
 - **Sending an invoice is sequential, not one transaction**: status,
