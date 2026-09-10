@@ -6,6 +6,7 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Workspace.Timesheets;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
 
@@ -74,7 +75,7 @@ public sealed class KindEligibilityInvariantTests
     [
         CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
         VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
-        RequirementsCommandIds.DeleteCollection,
+        RequirementsCommandIds.DeleteCollection, TimesheetCommandIds.Delete,
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>

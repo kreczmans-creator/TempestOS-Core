@@ -52,6 +52,12 @@ public static class TimesheetsWorkspaceRegistration
 
         manager.RegisterExplorerArea(ExplorerAreaId, new TimesheetEntryNodeProvider(ExplorerAreaId, domainContext));
         manager.RegisterFacetProvider(TimesheetEntry.CanonicalKind, new TimesheetEntryPropertyFacetProvider(TimesheetEntry.CanonicalKind, domainContext, principalDirectory));
+
+        // The shell routes every delete through its selection-clearing path
+        // (SurfaceCommandPolicy), which asks the manager for the Kind's own
+        // delete factory. A time entry's delete is its own command, not the
+        // generic one, because an invoiced entry refuses deletion.
+        manager.RegisterDeleteFactory(TimesheetEntry.CanonicalKind, static (id, targetKind) => new DeleteTimesheetCommand(id, targetKind));
         manager.RegisterView(TimesheetEntry.CanonicalKind, new TimesheetEntryObjectViewFactory(domainContext));
 
         commandDispatcher.RegisterHandler<RecordTimesheetCommand>(new RecordTimesheetCommandHandler(timesheetService));
