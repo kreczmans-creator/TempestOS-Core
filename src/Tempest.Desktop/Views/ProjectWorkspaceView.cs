@@ -229,7 +229,16 @@ public sealed class ProjectWorkspaceView : UserControl
         // present and still navigable — it opens a real, project-aware
         // surface that says what is missing (`DeclaredCapabilityView`).
         foreach (var descriptor in ProjectAreas.All)
-            _areas.Items.Add(new TabItem { Header = descriptor.Title, Tag = descriptor.Area, Content = BuildAreaContent(descriptor) });
+        {
+            var tabItem = new TabItem { Header = descriptor.Title, Tag = descriptor.Area, Content = BuildAreaContent(descriptor) };
+
+            // `WP 19.3A`: named so the layout walk's own bounds/overlap
+            // failures can name the actual tab rather than a bare
+            // "TabItem" — the same convention the rail buttons already
+            // follow (`GlobalNavigationRail.AddModule`).
+            AutomationProperties.SetName(tabItem, descriptor.Title);
+            _areas.Items.Add(tabItem);
+        }
 
         AutomationProperties.SetName(_areas, "Project areas");
         _areas.SelectionChanged += async (_, _) =>

@@ -1,7 +1,9 @@
 using System.Reflection;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Views;
@@ -75,7 +77,17 @@ internal static class DesktopTestHelpers
     /// deliberately stacked in a Grid cell is not a sibling of the content
     /// it covers in any layout this product uses.
     /// </summary>
-    public static void AssertNoSiblingOverlap(Control control, string what)
+    /// <param name="control">The control to check against its own siblings.</param>
+    /// <param name="what">Describes <paramref name="control"/> in a failure message.</param>
+    /// <param name="isExemptOverlay">
+    /// `WP 19.3A`: when supplied, a sibling this predicate accepts is never
+    /// checked against <paramref name="control"/> — the layout walk's own
+    /// explicit allow-list of intentional overlays (dialogs, the command
+    /// palette, the toast host) stacked in <c>MainWindow</c>'s root
+    /// <c>Grid</c>. <see langword="null"/> (every other call site) keeps
+    /// this method's original behaviour exactly.
+    /// </param>
+    public static void AssertNoSiblingOverlap(Control control, string what, Func<Control, bool>? isExemptOverlay = null)
     {
         if (control.Parent is not Panel parent)
             return;
@@ -83,7 +95,7 @@ internal static class DesktopTestHelpers
         var mine = control.Bounds;
         foreach (var sibling in parent.Children)
         {
-            if (ReferenceEquals(sibling, control) || !sibling.IsVisible || IsDecorationOnly(sibling))
+            if (ReferenceEquals(sibling, control) || !sibling.IsVisible || IsDecorationOnly(sibling) || (isExemptOverlay?.Invoke(sibling) ?? false))
                 continue;
 
             var theirs = sibling.Bounds;
@@ -94,6 +106,163 @@ internal static class DesktopTestHelpers
             Assert.False(
                 overlap.Width > 0.5 && overlap.Height > 0.5,
                 $"{what} at {mine} is drawn over its sibling {Describe(sibling)} at {theirs} (overlap {overlap}).");
+        }
+    }
+
+    /// <summary>
+    /// The layout walk's own explicit allow-list of intentional overlays
+    /// (`WP 19.3A`) — every overlay <c>MainWindow</c> stacks directly in its
+    /// root <c>Grid</c> over the shell's real content (`WP 10.5A`'s dialog
+    /// framework, the Evidence dialogs it grew, the command palette and the
+    /// toast host). These are checked as neither "mine" nor "theirs" by
+    /// <see cref="AssertLayoutIsSound"/>: a modal dialog covering the whole
+    /// window while open is the product working as designed, not a defect,
+    /// and while closed each already reports zero bounds — this list is the
+    /// explicit, structural version of that fact rather than a reliance on
+    /// every dialog happening to be closed whenever the walk runs.
+    /// <see cref="BusyOverlay"/> is included for the same reason even though
+    /// nothing in the walk opens it.
+    /// </summary>
+    private static readonly HashSet<Type> IntentionalOverlayTypes =
+    [
+        typeof(ToastHost),
+        typeof(CommandPaletteOverlay),
+        typeof(BusyOverlay),
+        typeof(ConfirmationDialog),
+        typeof(InputDialog),
+        typeof(MessageDialog),
+        typeof(SettingsDialog),
+        typeof(MacroManagerDialog),
+        typeof(CitationPicker),
+        typeof(SubjectPicker),
+        typeof(DeclaredFigureEntry),
+        typeof(CheckEntry),
+        typeof(IssueEntry),
+        typeof(ReviseReferenceRecordEntry),
+    ];
+
+    private static bool IsIntentionalOverlay(Control control) => IntentionalOverlayTypes.Contains(control.GetType());
+
+    /// <summary>
+    /// The layout walk's own whole-tree check (`WP 19.3A`, `TD-83`, the
+    /// `WP 17.0A` overlap class): walks every <b>logical</b> descendant of
+    /// <paramref name="root"/> and asserts, everywhere in the tree rather
+    /// than at one caller's own control, the same two properties a person
+    /// needs a screen to actually be usable — <see cref="AssertPlaced"/>'s
+    /// premise extended from a single control to a whole rendered area.
+    /// </summary>
+    /// <param name="root">The rendered area to walk — a rail module's content, a project tab, or a whole window.</param>
+    /// <param name="area">Names <paramref name="root"/> in every failure message (the area and the window size, so a failure is diagnosable from the message alone).</param>
+    /// <remarks>
+    /// <para>
+    /// <b>The logical tree, deliberately, not the visual one.</b> A first
+    /// version walked <see cref="Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(Avalonia.Visual)"/>
+    /// and failed on its very first control: every
+    /// <see cref="Window"/>'s own default template stacks a background
+    /// <see cref="Border"/> and a <c>VisualLayerManager</c> as siblings in
+    /// the same template <see cref="Panel"/>, coextensive with the whole
+    /// window, by design — template plumbing every Avalonia control has,
+    /// not a product layout defect. The logical tree
+    /// (<see cref="LogicalExtensions.GetLogicalDescendants"/>) skips
+    /// exactly this: a <see cref="ContentPresenter"/> re-parents its own
+    /// content to be a logical child of the templated control itself, which
+    /// is why <c>window.GetLogicalDescendants().OfType‹T›()</c> is already
+    /// this suite's own convention for finding real application content
+    /// (<see cref="EvidenceWorkspaceJourneyTests"/> and every journey test
+    /// beside it) — this walk follows the identical convention, for the
+    /// identical reason.
+    /// </para>
+    /// <para>
+    /// <b>(a) No two visible, hit-testable siblings in the same Panel
+    /// intersect.</b> Reuses <see cref="AssertNoSiblingOverlap"/> itself,
+    /// called once per non-decoration, non-allow-listed child of every
+    /// <see cref="Panel"/> found anywhere in the logical tree — the
+    /// identical decoration-only exclusion, extended from one caller's own
+    /// control to every panel, plus <see cref="IsIntentionalOverlay"/> so a
+    /// dialog, the palette or the toast host is never checked against
+    /// whatever they legitimately sit over.
+    /// </para>
+    /// <para>
+    /// <b>(b) Every visible control's bounds lie within its parent's
+    /// bounds</b>, a 1px tolerance for sub-pixel arrangement. A
+    /// <see cref="ScrollViewer"/>'s own content is exempt by design — it may
+    /// genuinely be taller or wider than the viewport that shows it (its
+    /// content is a direct logical child of the <see cref="ScrollViewer"/>
+    /// itself, exactly like any other <c>ContentControl</c>, so this is a
+    /// simple type check); the <see cref="ScrollViewer"/>'s own bounds (the
+    /// viewport) are what get checked against <em>its</em> parent instead,
+    /// when the walk visits the <see cref="ScrollViewer"/> itself. A
+    /// <see cref="Viewbox"/>'s content is exempt for the same shape of
+    /// reason — fitted by a render <c>Scale</c> transform rather than by
+    /// arrangement, so its un-scaled <c>Bounds</c> legitimately disagrees
+    /// with the smaller size it actually renders at (every rail and Ribbon
+    /// icon, <see cref="Icons.IconGeometry"/>).
+    /// </para>
+    /// </remarks>
+    public static void AssertLayoutIsSound(Control root, string area)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        foreach (var logical in new ILogical[] { root }.Concat(root.GetLogicalDescendants()))
+        {
+            if (logical is not Control control || !control.IsVisible)
+                continue;
+
+            if (control is Panel panel)
+            {
+                foreach (var child in panel.Children)
+                {
+                    if (!child.IsVisible || IsDecorationOnly(child) || IsIntentionalOverlay(child))
+                        continue;
+
+                    AssertNoSiblingOverlap(child, $"[{area}] {Describe(child)}", IsIntentionalOverlay);
+                }
+            }
+
+            // The *visual* parent, deliberately, not the logical one used
+            // above to decide what to visit: `Bounds` is a visual-tree
+            // coordinate, relative to whatever control actually hosts this
+            // one on screen. For an ordinary product-authored container
+            // (a `Panel` a view added a child to directly) the two parents
+            // are the same control. They diverge for anything a
+            // `ContentPresenter` places — a `TabItem`'s own `Content`
+            // renders inside the `TabControl`'s selected-content host, not
+            // inside the `TabItem`'s own small header-button bounds, and a
+            // `ListBoxItem` renders inside the list's internal items panel,
+            // not directly inside the `ListBox`'s own outer bounds. Using
+            // the logical parent there compared real content against the
+            // wrong rectangle and failed on every `TabControl` in the
+            // shell; the visual parent is the rectangle the control is
+            // actually drawn into, whatever template stands between them.
+            if (control.GetVisualParent() is not Control parent || !parent.IsVisible)
+                continue;
+
+            // `ScrollViewer` content is exempt by design (stated above),
+            // checked against its own presenter's coextensive bounds; a
+            // `Viewbox`'s own content is the same shape of exemption for a
+            // different reason — it fits its child by a render `Scale`
+            // transform, not by arranging it inside the `Viewbox`'s own
+            // bounds, so the child's un-scaled `Bounds` legitimately
+            // disagrees with the smaller size it actually renders at (an
+            // icon's own 24x24 `StreamGeometry`, for instance, scaled down
+            // to the 16x16 a rail button actually shows).
+            if (parent is ScrollViewer or ScrollContentPresenter or Viewbox)
+                continue;
+
+            if (control.Bounds.Width <= 0 || control.Bounds.Height <= 0)
+                continue;
+
+            const double tolerance = 1.0;
+            var bounds = control.Bounds;
+            var withinParent =
+                bounds.X >= -tolerance
+                && bounds.Y >= -tolerance
+                && bounds.Right <= parent.Bounds.Width + tolerance
+                && bounds.Bottom <= parent.Bounds.Height + tolerance;
+
+            Assert.True(
+                withinParent,
+                $"[{area}] {Describe(control)} at {bounds} lies outside its parent {Describe(parent)} ({parent.Bounds.Width:0.#}x{parent.Bounds.Height:0.#}).");
         }
     }
 
