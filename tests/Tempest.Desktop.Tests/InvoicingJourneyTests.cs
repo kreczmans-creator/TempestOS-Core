@@ -134,11 +134,20 @@ public sealed class InvoicingJourneyTests
             ObjectEditorView? editor = null;
             await RenderUntilAsync(window, () =>
             {
-                editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault();
+                // The completion's own editor opened right up a moment ago too:
+                // pick the request's editor by its object id, not the first one.
+                editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault(e => GetPrivateField<Guid>(e, "_objectId") == request!.Id);
                 return editor is not null;
             });
             Assert.NotNull(editor);
             AssertSectionPresent(editor!, "Identity");
+            // Closed by the lead the same day: the editor now renders the
+            // declaration's own Lines and Connector sections.
+            // The declared sections fill in when the editor's own populate
+            // finishes (it awaits attachments and relationships first).
+            await RenderUntilAsync(window, () => editor!.GetLogicalDescendants().OfType<Expander>().Any(e => Equals(e.Header, "Lines") && e.IsVisible));
+            AssertSectionPresent(editor!, "Lines");
+            AssertSectionPresent(editor!, "Connector");
 
             // ---- rail → Invoicing → Send ----
             await navigator.GoToModuleAsync(ShellArea.Invoicing);
