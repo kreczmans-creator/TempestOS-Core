@@ -4,6 +4,7 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -48,8 +49,8 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     private static readonly IReadOnlyList<string> Disciplines =
         [
-            "Calculations", "Deliverables", "Documents", "Evidence", "Manufacturing", "Mechanical", "Projects",
-            "Requirements", "Timesheets", "Verification",
+            "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
+            "Projects", "Requirements", "Timesheets", "Verification",
         ];
 
     /// <summary>U1 — an object picker this platform does not have (FCR-0073).</summary>
@@ -206,9 +207,12 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // discipline categories (Projects, Timesheets, Deliverables), none
         // of them unavailable, so 83 becomes 93 and 65 becomes 75; 18 is
         // unchanged.
-        Assert.Equal(93, ProductionDescriptors.Count);
+        // `WP 19.1A` adds four production descriptors in a fourth new
+        // discipline category (Invoicing), none of them unavailable, so 93
+        // becomes 97 and 75 becomes 79; 18 is unchanged.
+        Assert.Equal(97, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(75, bindable.Count);
+        Assert.Equal(79, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -310,9 +314,9 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The structural guard: a future production descriptor cannot be added
-    /// to one of the ten discipline registrations without either a binding
-    /// or a stated reason, because this reads the registration sources
-    /// themselves and counts what they declare.
+    /// to one of the eleven discipline registrations without either a
+    /// binding or a stated reason, because this reads the registration
+    /// sources themselves and counts what they declare.
     /// </summary>
     [Fact]
     public void EveryDescriptorRegistrationInSource_DeclaresABinding()
@@ -345,7 +349,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
         Assert.True(
             declaredOnly.Count == 0 && registeredOnly.Count == 0,
-            $"The ten registration sources and the live registry disagree.\n"
+            $"The eleven registration sources and the live registry disagree.\n"
             + $"  Declared in source but not registered: {string.Join(", ", declaredOnly)}\n"
             + $"  Registered but not declared in source: {string.Join(", ", registeredOnly)}");
 
@@ -361,6 +365,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                      ("Deliverables", "DeliverableCompletionWorkspaceRegistration.cs"),
                      ("Documents", "DocumentsWorkspaceRegistration.cs"),
                      ("Evidence", "EvidenceWorkspaceRegistration.cs"),
+                     ("Invoicing", "InvoicingWorkspaceRegistration.cs"),
                      ("Manufacturing", "ManufacturingWorkspaceRegistration.cs"),
                      ("Mechanical", "MechanicalWorkspaceRegistration.cs"),
                      ("Projects", "ProjectCommercialWorkspaceRegistration.cs"),
@@ -423,6 +428,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         [nameof(CalculationsCommandIds)] = typeof(CalculationsCommandIds),
         [nameof(DocumentsCommandIds)] = typeof(DocumentsCommandIds),
         [nameof(EvidenceCommandIds)] = typeof(EvidenceCommandIds),
+        [nameof(InvoicingCommandIds)] = typeof(InvoicingCommandIds),
         [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
         [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
         [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),

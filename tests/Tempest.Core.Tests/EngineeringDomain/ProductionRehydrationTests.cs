@@ -7,6 +7,7 @@ using Tempest.Workspace.Verification;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Timesheets;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
@@ -77,6 +78,12 @@ public sealed class ProductionRehydrationTests
         // have one).
         data.Add(TimesheetEntry.CanonicalKind, typeof(TimesheetEntry));
         data.Add(DeliverableCompletion.CanonicalKind, typeof(DeliverableCompletion));
+
+        // `WP 19.1A` (`ADR-0151`) — the twenty-first Kind with a production
+        // rehydrator from the day it shipped, the identical Evidence shape
+        // once more: its own discipline registration rather than
+        // `CanonicalObjectKinds`.
+        data.Add(InvoiceRequest.CanonicalKind, typeof(InvoiceRequest));
 
         // The twelve that were registered only by Tempest.Samples.
         data.Add(CanonicalObjectKinds.Portfolio, typeof(Portfolio));
@@ -241,6 +248,7 @@ public sealed class ProductionRehydrationTests
         registry.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, context);
         registry.Register<TimesheetEntry>(TimesheetEntry.CanonicalKind, context);
         registry.Register<DeliverableCompletion>(DeliverableCompletion.CanonicalKind, context);
+        registry.Register<InvoiceRequest>(InvoiceRequest.CanonicalKind, context);
         CanonicalObjectKinds.RegisterRehydrators(registry, context);
     }
 

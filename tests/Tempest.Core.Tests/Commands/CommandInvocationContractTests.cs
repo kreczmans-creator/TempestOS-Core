@@ -42,8 +42,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
         [
-            "Calculations", "Deliverables", "Documents", "Evidence", "Manufacturing", "Mechanical", "Projects",
-            "Requirements", "Timesheets", "Verification",
+            "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
+            "Projects", "Requirements", "Timesheets", "Verification",
         ];
 
     private TempDirectory _temp = null!;
@@ -193,7 +193,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.0A` adds ten invocable descriptors (six `project.set-*`/
         // `pin-rate-card`, three `timesheet.*`, one `deliverable.complete`),
         // none of them unavailable, so 65 becomes 75.
-        Assert.Equal(75, built);
+        // `WP 19.1A` adds four invocable descriptors (`invoicing.raise`/
+        // `send`/`reconcile`/`void`), none of them unavailable, so 75
+        // becomes 79.
+        Assert.Equal(79, built);
     }
 
     [Fact]
@@ -251,7 +254,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         Assert.Empty(failures);
         // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
         // `WP 19.0A` adds ten invocable descriptors, none unavailable, so 65 becomes 75.
-        Assert.Equal(75, executed);
+        // `WP 19.1A` adds four invocable descriptors, none unavailable, so 75 becomes 79.
+        Assert.Equal(79, executed);
     }
 
     [Fact]
@@ -380,7 +384,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         Assert.Empty(disagreements);
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
         // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
-        Assert.Equal(93 * 4, compared);
+        // `WP 19.1A` adds four production descriptors, so 93 becomes 97.
+        Assert.Equal(97 * 4, compared);
     }
 
     // ==================================================================
@@ -441,6 +446,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `project.pin-rate-card.rateCardId` (four), every one of
         // `timesheet.record`'s five and `timesheet.amend`'s three (eight),
         // and `deliverable.complete.completedOn` (one) - so 46 becomes 59.
+        // `WP 19.1A` adds four descriptors (`invoicing.raise`/`send`/
+        // `reconcile`/`void`), every one SelectedObject-bound with a
+        // confirmation and no declared parameter at all - so 59 is
+        // unchanged.
         Assert.Equal(59, refused);
     }
 
@@ -487,6 +496,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // same "evidence.set-subject" reasoning), the other thirteen carry
         // a rule (see `EveryValidatedParameter_RefusesABadValue...`'s own
         // comment) — so 58 becomes 74.
+        // `WP 19.1A` adds four descriptors, none of them declaring a
+        // parameter at all — every one is SelectedObject-bound with a
+        // confirmation only — so 74 is unchanged.
         Assert.Equal(74, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
@@ -538,7 +550,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.0A` adds ten prompt-requiring descriptors — every one of
         // them declares a parameter or (`timesheet.delete`) a confirmation
         // — so 51 becomes 61.
-        Assert.Equal(61, refused);
+        // `WP 19.1A` adds four prompt-requiring descriptors — no parameter,
+        // but every one carries a confirmation — so 61 becomes 65.
+        Assert.Equal(65, refused);
     }
 
     [Fact]
@@ -574,6 +588,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.0A` adds no member either, for the identical reason: every
         // one of its ten descriptors needs at least a parameter or a
         // confirmation.
+        // `WP 19.1A` adds no member either: all four of its own descriptors
+        // carry a confirmation.
         Assert.Equal(14, ran);
     }
 
@@ -603,7 +619,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // to the deletes), plus "evidence.revise" — the one non-delete,
         // non-duplicate confirmation in the production set.
         // `WP 19.0A` adds "timesheet.delete" to the deletes, so 16 becomes 17.
-        Assert.Equal(17, confirmed);
+        // `WP 19.1A` adds four more non-delete, non-duplicate confirmations
+        // ("invoicing.raise"/"send"/"reconcile"/"void" — none of them has a
+        // parameter to collect, so a confirmation is the only way each
+        // needs a person), so 17 becomes 21.
+        Assert.Equal(21, confirmed);
     }
 
     [Fact]
@@ -655,7 +675,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         Assert.All(Production, d => Assert.Null(d.CreateDefault));
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
         // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
-        Assert.Equal(93, Production.Count);
+        // `WP 19.1A` adds four production descriptors, so 93 becomes 97.
+        Assert.Equal(97, Production.Count);
     }
 
     [Fact]
@@ -671,9 +692,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.0A` adds ten production descriptors, all invocable (none
         // needs an object picker or structured input), so 65 becomes 75 and
         // 83 becomes 93; 18 is unchanged.
-        Assert.Equal(75, Invocable.Count());
+        // `WP 19.1A` adds four production descriptors, all invocable (each
+        // SelectedObject-bound with a confirmation, none needing an object
+        // picker or structured input), so 75 becomes 79 and 93 becomes 97;
+        // 18 is unchanged.
+        Assert.Equal(79, Invocable.Count());
         Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(93, Production.Count);
+        Assert.Equal(97, Production.Count);
     }
 
     [Fact]
