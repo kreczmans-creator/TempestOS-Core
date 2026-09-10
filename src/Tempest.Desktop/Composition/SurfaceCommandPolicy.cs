@@ -1,4 +1,11 @@
 using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Verification;
 
 namespace Tempest.Desktop.Composition;
 
@@ -41,12 +48,12 @@ internal static class SurfaceCommandPolicy
     /// </remarks>
     internal static readonly IReadOnlySet<string> ObjectEditorCommandIds = new HashSet<string>(StringComparer.Ordinal)
     {
-        "calculations.rename", "calculations.edit",
-        "documents.rename", "documents.edit",
-        "manufacturing.rename", "manufacturing.edit",
-        "mechanical.rename", "mechanical.edit",
-        "verification.rename", "verification.edit",
-        "requirements.revise",
+        CalculationsCommandIds.Rename, CalculationsCommandIds.Edit,
+        DocumentsCommandIds.Rename, DocumentsCommandIds.Edit,
+        ManufacturingCommandIds.Rename, ManufacturingCommandIds.Edit,
+        MechanicalCommandIds.Rename, MechanicalCommandIds.Edit,
+        VerificationCommandIds.Rename, VerificationCommandIds.Edit,
+        RequirementsCommandIds.Revise,
     };
 
     /// <summary>
@@ -67,14 +74,14 @@ internal static class SurfaceCommandPolicy
     /// </remarks>
     internal static readonly IReadOnlySet<string> DeleteCommandIds = new HashSet<string>(StringComparer.Ordinal)
     {
-        "calculations.delete",
-        "documents.delete",
-        "evidence.delete",
-        "manufacturing.delete",
-        "mechanical.delete",
-        "verification.delete",
-        "requirements.delete",
-        "requirements.delete-group",
-        "requirements.delete-collection",
+        CalculationsCommandIds.Delete,
+        DocumentsCommandIds.Delete,
+        EvidenceCommandIds.Delete,
+        ManufacturingCommandIds.Delete,
+        MechanicalCommandIds.Delete,
+        VerificationCommandIds.Delete,
+        RequirementsCommandIds.Delete,
+        RequirementsCommandIds.DeleteGroup,
+        RequirementsCommandIds.DeleteCollection,
     };
 }

@@ -4,6 +4,22 @@ using Tempest.Core.Verification;
 
 namespace Tempest.Workspace.Verification;
 
+/// <summary>The command ids <see cref="VerificationWorkspaceRegistration"/> registers.</summary>
+public static class VerificationCommandIds
+{
+    public const string Create = "verification.create";
+    public const string Rename = "verification.rename";
+    public const string Edit = "verification.edit";
+    public const string Delete = "verification.delete";
+    public const string Move = "verification.move";
+    public const string Copy = "verification.copy";
+    public const string Duplicate = "verification.duplicate";
+    public const string RecordResult = "verification.record-result";
+    public const string RequestReview = "verification.request-review";
+    public const string Approve = "verification.approve";
+    public const string Archive = "verification.archive";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Verification
 /// Management discipline into a running Workspace — everything
@@ -79,7 +95,7 @@ public static class VerificationWorkspaceRegistration
         var boundKinds = SupportedKinds;
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.create", displayName: "Create Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Create, displayName: "Create Verification Activity", category: "Verification",
             description: "Creates a new Verification Activity — a Verification Plan until a result is recorded.")
         {
             // Creating a Verification Activity genuinely means "verify the object I
@@ -105,7 +121,7 @@ public static class VerificationWorkspaceRegistration
                 ]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.rename", displayName: "Rename Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Rename, displayName: "Rename Verification Activity", category: "Verification",
             description: "Renames the selected Verification Activity.")
         {
             // Bound for the Palette and every other future Id-based consumer.
@@ -119,7 +135,7 @@ public static class VerificationWorkspaceRegistration
                 boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.edit", displayName: "Edit Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Edit, displayName: "Edit Verification Activity", category: "Verification",
             description: "Records a new content revision of the selected Verification Activity.")
         {
             // ChangeSummary stays at the command's own optional default.
@@ -131,7 +147,7 @@ public static class VerificationWorkspaceRegistration
                 boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.delete", displayName: "Delete Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Delete, displayName: "Delete Verification Activity", category: "Verification",
             description: "Soft-deletes the selected Verification Activity.")
         {
             // The confirmation is what keeps a soft-delete out of an unattended
@@ -146,21 +162,21 @@ public static class VerificationWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Verification Activity")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.move", displayName: "Move Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Move, displayName: "Move Verification Activity", category: "Verification",
             description: "Reparents the selected Verification Activity.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Moving a Verification Activity needs a destination parent chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.copy", displayName: "Copy Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Copy, displayName: "Copy Verification Activity", category: "Verification",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.ObjectPickerRequired("Copying a Verification Activity needs a destination parent chosen from the object tree")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.duplicate", displayName: "Duplicate Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Duplicate, displayName: "Duplicate Verification Activity", category: "Verification",
             description: "Creates a copy of the selected object under its own current parent.")
         {
             Binding = new CommandBinding(
@@ -171,7 +187,7 @@ public static class VerificationWorkspaceRegistration
                 confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Verification Activity")),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.record-result", displayName: "Record Verification Result", category: "Verification",
+            id: VerificationCommandIds.RecordResult, displayName: "Record Verification Result", category: "Verification",
             description: "Records a real IVerificationRecord (Pass/Fail/Conditional, criteria, evidence) against the selected Verification Activity — this Work Package's own realisation of Execute/Record Result/Attach Evidence together (ADR-0089).")
         {
             // This discipline's own binding for RecordVerificationResultCommand,
@@ -197,19 +213,19 @@ public static class VerificationWorkspaceRegistration
                 boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.request-review", displayName: "Request Review", category: "Verification",
+            id: VerificationCommandIds.RequestReview, displayName: "Request Review", category: "Verification",
             description: "Transitions the selected Verification Activity's own status to InReview (SetVerificationActivityStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.InReview, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.approve", displayName: "Approve Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Approve, displayName: "Approve Verification Activity", category: "Verification",
             description: "Transitions the selected Verification Activity's own status to Approved (SetVerificationActivityStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Approved, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "verification.archive", displayName: "Archive Verification Activity", category: "Verification",
+            id: VerificationCommandIds.Archive, displayName: "Archive Verification Activity", category: "Verification",
             description: "Transitions the selected Verification Activity's own status to Archived, a terminal state (SetVerificationActivityStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Archived, boundKinds),

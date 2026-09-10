@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Workspace;
+using Tempest.Desktop.Composition;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 
@@ -28,7 +29,7 @@ namespace Tempest.Desktop.Views;
 /// disclosed "empty workspace"/"loading placeholder" scope decisions —
 /// see their own remarks below.
 /// </summary>
-public sealed class DocumentAreaView : UserControl
+public sealed class DocumentAreaView : UserControl, IDocumentOpener
 {
     private readonly TabControl _tabs = new();
     private readonly Dictionary<Guid, TabItem> _tabsByViewId = [];
@@ -36,7 +37,7 @@ public sealed class DocumentAreaView : UserControl
     private readonly Dictionary<Guid, TextBlock> _headerTextBlocks = [];
     private readonly Dictionary<Guid, string> _headerBaseText = [];
     private readonly HashSet<Guid> _extraDirtyFlags = [];
-    private readonly Func<IWorkspaceView, Control> _contentBuilder;
+    private Func<IWorkspaceView, Control> _contentBuilder;
     private TabItem? _homeTab;
 
     /// <summary>Raised when the user requests a tab close (its own close glyph clicked).</summary>
@@ -66,6 +67,23 @@ public sealed class DocumentAreaView : UserControl
         ThemeReactiveBrush.Bind(_tabs, BackgroundProperty, BrandPalette.PageBackgroundBrushKey);
         Content = _tabs;
         _tabs.SelectionChanged += (_, _) => UpdateActiveHighlighting();
+    }
+
+    /// <summary>
+    /// The Object Editor Framework's own injectable content builder —
+    /// settable after construction, not only via the constructor, so
+    /// <see cref="DocumentAreaView"/> can be built before
+    /// <see cref="Composition.WorkspaceViewCoordinator"/> exists to supply
+    /// its own <see cref="Composition.WorkspaceViewCoordinator.BuildDocumentContent"/>
+    /// (`WP 19.2A`, resolving the one genuine construction-order cycle
+    /// between the two — see <see cref="IDocumentOpener"/> for the other
+    /// direction of that same cycle). <see langword="null"/> resets it to
+    /// <see cref="BuildDefaultBody"/>, the original generic fallback.
+    /// </summary>
+    public Func<IWorkspaceView, Control> ContentBuilder
+    {
+        get => _contentBuilder;
+        set => _contentBuilder = value ?? BuildDefaultBody;
     }
 
     /// <summary>
