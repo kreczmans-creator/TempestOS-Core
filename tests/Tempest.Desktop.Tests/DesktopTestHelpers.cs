@@ -1,4 +1,5 @@
 using System.Reflection;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
@@ -89,8 +90,26 @@ internal static class DesktopTestHelpers
     /// </param>
     public static void AssertNoSiblingOverlap(Control control, string what, Func<Control, bool>? isExemptOverlay = null)
     {
+        if (FindSiblingOverlap(control, what, isExemptOverlay) is { } finding)
+            Assert.Fail(finding);
+    }
+
+    /// <summary>
+    /// The non-throwing core of <see cref="AssertNoSiblingOverlap"/>
+    /// (`WP 19.3A-R1`) — the identical walk and the identical first-violation
+    /// semantics (it stops at the first offending sibling of
+    /// <paramref name="control"/>, in child order, exactly as the throwing
+    /// version always has), just returning the message instead of asserting
+    /// it. <see cref="AssertNoSiblingOverlap"/> itself keeps throwing
+    /// immediately, so every existing call site (<see cref="AssertPlaced"/>
+    /// and its own callers) is unaffected; <see cref="CollectLayoutFindings"/>
+    /// calls this directly so the layout walk can gather every finding
+    /// across a whole run instead of stopping at the first.
+    /// </summary>
+    private static string? FindSiblingOverlap(Control control, string what, Func<Control, bool>? isExemptOverlay)
+    {
         if (control.Parent is not Panel parent)
-            return;
+            return null;
 
         var mine = control.Bounds;
         foreach (var sibling in parent.Children)
@@ -103,10 +122,42 @@ internal static class DesktopTestHelpers
                 continue;
 
             var overlap = mine.Intersect(theirs);
-            Assert.False(
-                overlap.Width > 0.5 && overlap.Height > 0.5,
-                $"{what} at {mine} is drawn over its sibling {Describe(sibling)} at {theirs} (overlap {overlap}).");
+            if (overlap.Width <= 0.5 || overlap.Height <= 0.5)
+                continue;
+
+            if (IsGridSplitterGrabHandleOverlap(control, sibling, overlap))
+                continue;
+
+            return $"{what} at {mine} is drawn over its sibling {Describe(sibling)} at {theirs} (overlap {overlap}).";
         }
+
+        return null;
+    }
+
+    /// <summary>
+    /// `WP 19.3A-R1` — a docking pane and its own <see cref="GridSplitter"/>
+    /// (<c>WorkspaceLayoutHost.BuildSplitter</c>) are deliberately given a
+    /// slightly larger grab handle than the hairline the splitter paints, so
+    /// it stays comfortably draggable; that handle legitimately extends a
+    /// little way onto the pane beside it. That is not the `TD-83`/`WP 17.0A`
+    /// overlap defect this check exists to catch — two independent pieces of
+    /// content drawn on top of each other — so it is exempted, but narrowly:
+    /// only an overlap no larger than the splitter's own arranged thickness
+    /// in its thin axis (<see cref="GridSplitter.Width"/> for a
+    /// vertical/column splitter, <see cref="GridSplitter.Height"/> for a
+    /// horizontal/row one), never a blanket widening of the tolerance this
+    /// method applies to every other sibling pair.
+    /// </summary>
+    private static bool IsGridSplitterGrabHandleOverlap(Control control, Control sibling, Rect overlap)
+    {
+        var splitter = control as GridSplitter ?? sibling as GridSplitter;
+        if (splitter is null)
+            return false;
+
+        var thinAxisIsWidth = splitter.Bounds.Width <= splitter.Bounds.Height;
+        var thickness = thinAxisIsWidth ? splitter.Bounds.Width : splitter.Bounds.Height;
+        var overlapExtent = thinAxisIsWidth ? overlap.Width : overlap.Height;
+        return overlapExtent <= thickness + 0.5;
     }
 
     /// <summary>
@@ -196,12 +247,47 @@ internal static class DesktopTestHelpers
     /// reason — fitted by a render <c>Scale</c> transform rather than by
     /// arrangement, so its un-scaled <c>Bounds</c> legitimately disagrees
     /// with the smaller size it actually renders at (every rail and Ribbon
-    /// icon, <see cref="Icons.IconGeometry"/>).
+    /// icon, <see cref="Icons.IconGeometry"/>). A control's own
+    /// <em>negative</em> <see cref="Layoutable.Margin"/> component
+    /// (`WP 19.3A-R1`) earns the identical exemption, bounded to that exact
+    /// magnitude on that one edge — the codebase's own established
+    /// "negative margin cancels a margin" technique
+    /// (<see cref="Views.CockpitCardControl.AddAction"/>, the card grid in
+    /// <see cref="Views.CockpitView"/>), not an accidental overflow.
+    /// </para>
+    /// <para>
+    /// <b>Fail-on-first, deliberately.</b> This throws at the first finding,
+    /// exactly as it always has — the deliberate-overlap self-test
+    /// (<c>AssertLayoutIsSound_CatchesADeliberateOverlap_NamingBothControls</c>)
+    /// depends on that. The layout walk's own main test
+    /// (`WP 19.3A-R1`, so one run tells the whole story instead of one
+    /// screen at a time) calls <see cref="CollectLayoutFindings"/> — the
+    /// same walk, never throwing — directly instead, and aggregates across
+    /// every rail entry, project tab and window size itself.
     /// </para>
     /// </remarks>
     public static void AssertLayoutIsSound(Control root, string area)
     {
+        var findings = CollectLayoutFindings(root, area);
+        if (findings.Count > 0)
+            Assert.Fail(findings[0]);
+    }
+
+    /// <summary>
+    /// The non-throwing core of <see cref="AssertLayoutIsSound"/>
+    /// (`WP 19.3A-R1`) — the identical walk, returning every finding instead
+    /// of throwing at the first. Used directly by the layout walk's own main
+    /// test so a single run collects every finding across both window sizes,
+    /// every rail entry and every project tab before reporting; every other
+    /// call site keeps using <see cref="AssertLayoutIsSound"/>, which is
+    /// unchanged.
+    /// </summary>
+    /// <param name="root">The rendered area to walk — a rail module's content, a project tab, or a whole window.</param>
+    /// <param name="area">Names <paramref name="root"/> in every failure message (the area and the window size, so a failure is diagnosable from the message alone).</param>
+    public static List<string> CollectLayoutFindings(Control root, string area)
+    {
         ArgumentNullException.ThrowIfNull(root);
+        var findings = new List<string>();
 
         foreach (var logical in new ILogical[] { root }.Concat(root.GetLogicalDescendants()))
         {
@@ -215,7 +301,8 @@ internal static class DesktopTestHelpers
                     if (!child.IsVisible || IsDecorationOnly(child) || IsIntentionalOverlay(child))
                         continue;
 
-                    AssertNoSiblingOverlap(child, $"[{area}] {Describe(child)}", IsIntentionalOverlay);
+                    if (FindSiblingOverlap(child, $"[{area}] {Describe(child)}", IsIntentionalOverlay) is { } overlapFinding)
+                        findings.Add(overlapFinding);
                 }
             }
 
@@ -254,16 +341,40 @@ internal static class DesktopTestHelpers
 
             const double tolerance = 1.0;
             var bounds = control.Bounds;
-            var withinParent =
-                bounds.X >= -tolerance
-                && bounds.Y >= -tolerance
-                && bounds.Right <= parent.Bounds.Width + tolerance
-                && bounds.Bottom <= parent.Bounds.Height + tolerance;
 
-            Assert.True(
-                withinParent,
-                $"[{area}] {Describe(control)} at {bounds} lies outside its parent {Describe(parent)} ({parent.Bounds.Width:0.#}x{parent.Bounds.Height:0.#}).");
+            // `WP 19.3A-R1`: a *negative* `Margin` component is this
+            // codebase's own established way to deliberately bleed a
+            // control past the edge of whatever reports its layout bounds —
+            // `CockpitCardControl.AddAction`'s left-aligned action button
+            // pulls its own left edge out by `-SpaceMd` so its hit/hover
+            // area reaches the card's edge while its text still lines up
+            // with the card's other content; `CockpitView`'s card-grid
+            // `WrapPanel` is given `-SpaceMd` on every side to cancel each
+            // card's own `SpaceMd` margin, so the grid's outer cards sit
+            // flush with the page rather than leaving a doubled gutter. Both
+            // are the standard "negative margin cancels a margin" technique,
+            // not an accidental overflow — nothing is clipped or overlaps an
+            // unrelated sibling (the sibling-overlap check above still runs,
+            // unaffected). Exempt only up to the exact magnitude of the
+            // control's own negative margin on that specific edge — never
+            // more, and a positive or zero margin adds no tolerance at all.
+            var margin = control.Margin;
+            var leftTolerance = tolerance + Math.Max(0, -margin.Left);
+            var topTolerance = tolerance + Math.Max(0, -margin.Top);
+            var rightTolerance = tolerance + Math.Max(0, -margin.Right);
+            var bottomTolerance = tolerance + Math.Max(0, -margin.Bottom);
+
+            var withinParent =
+                bounds.X >= -leftTolerance
+                && bounds.Y >= -topTolerance
+                && bounds.Right <= parent.Bounds.Width + rightTolerance
+                && bounds.Bottom <= parent.Bounds.Height + bottomTolerance;
+
+            if (!withinParent)
+                findings.Add($"[{area}] {Describe(control)} at {bounds} lies outside its parent {Describe(parent)} ({parent.Bounds.Width:0.#}x{parent.Bounds.Height:0.#}).");
         }
+
+        return findings;
     }
 
     /// <summary>
