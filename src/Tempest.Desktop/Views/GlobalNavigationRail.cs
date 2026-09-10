@@ -101,7 +101,7 @@ public sealed class GlobalNavigationRail : UserControl
         DockPanel.SetDock(_plannedLegend, Dock.Bottom);
         body.Children.Add(_sectionLabel);
         body.Children.Add(_plannedLegend);
-        body.Children.Add(new ScrollViewer { Content = _buttons, Padding = new Thickness(DesignTokens.SpaceMd, 0) });
+        body.Children.Add(new ScrollViewer { Content = _buttons, Padding = new Thickness(DesignTokens.SpaceMd, 0), HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
 
         var frame = new Border { Child = body, BorderThickness = new Thickness(0, 0, 1, 0) };
         ThemeReactiveBrush.Bind(frame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
@@ -195,6 +195,13 @@ public sealed class GlobalNavigationRail : UserControl
 
         var content = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
         title.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        // The title may never ask for more than the rail has left beside the
+        // icon and the marker: rail width, less the scroll padding, the
+        // button padding, the icon, the title margin and the marker. Without
+        // this ceiling the measure reaches the text at infinite width and
+        // "Engineering Calculations" pushed its button 14 px past the rail
+        // (found by the layout walk, WP 19.3A). The tooltip has the full name.
+        title.MaxWidth = DesignTokens.RailWidth - 2 * DesignTokens.SpaceMd - 2 * DesignTokens.SpaceLg - 20 - DesignTokens.SpaceLg - (6 + DesignTokens.SpaceSm);
         Grid.SetColumn(iconHost, 0);
         Grid.SetColumn(title, 1);
         Grid.SetColumn(marker, 2);
@@ -206,7 +213,11 @@ public sealed class GlobalNavigationRail : UserControl
         {
             Content = content,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            HorizontalContentAlignment = HorizontalAlignment.Left,
+            // Stretch, not Left: a left-aligned content presenter measures its
+            // content at infinite width, so a long title (Engineering
+            // Calculations) never trimmed and pushed the button 14 px past the
+            // rail. The content grid keeps the title left through its columns.
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
             MinHeight = DesignTokens.ControlSizeMedium + 2,
             Padding = new Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceMd),
             Tag = module.Area,
