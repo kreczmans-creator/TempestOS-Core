@@ -97,18 +97,11 @@ public class EngineeringCockpitTests
         await manager.ShutdownAsync();
     }
 
-    [Fact]
-    public async Task KpiCards_AreAllMarkedPlaceholder()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        Assert.NotEmpty(cockpit.KpiCards);
-        Assert.All(cockpit.KpiCards, kpi => Assert.True(kpi.IsPlaceholder));
-
-        await manager.ShutdownAsync();
-    }
+    // `WP 19.1B`: `KpiCards_AreAllMarkedPlaceholder` used to stand here,
+    // proving `EngineeringCockpit.KpiCards` — the cross-discipline
+    // "Engineering Overview" aggregate — which this Work Package's own
+    // row removes outright, superseded by the Home cockpit's five KPI
+    // cards (see `tests/Tempest.Core.Tests/Workspace/EngineeringCockpitKpiTests.cs`).
 
     // ----------------------------------------------------------------
     // Real Workspace service consumption (no placeholder)
@@ -592,34 +585,13 @@ public class EngineeringCockpitTests
     // placeholder cards.
     // ----------------------------------------------------------------
 
-    [Fact]
-    public async Task KpiCards_NoLiveRequirement_RequirementsEntryIsStillPlaceholder()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
-        Assert.True(requirementsCard.IsPlaceholder);
-
-        await manager.ShutdownAsync();
-    }
-
-    [Fact]
-    public async Task KpiCards_WithALiveRequirement_RequirementsEntryIsReal()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
-        await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
-        Assert.False(requirementsCard.IsPlaceholder);
-        Assert.Equal("1 total", requirementsCard.Value);
-
-        await manager.ShutdownAsync();
-    }
+    // `WP 19.1B`: `KpiCards_NoLiveRequirement_RequirementsEntryIsStillPlaceholder`
+    // and `KpiCards_WithALiveRequirement_RequirementsEntryIsReal` used to
+    // stand here, both proving the removed `EngineeringCockpit.KpiCards`
+    // aggregate's own "Requirements" entry — see this file's own remarks
+    // above `KpiCards_AreAllMarkedPlaceholder`'s old position.
+    // `RequirementsKpiCards` (the per-discipline set, below) is unaffected
+    // and still real.
 
     [Fact]
     public async Task RequirementsKpiCards_NoLiveRequirement_ReportsZeroesHonestly()

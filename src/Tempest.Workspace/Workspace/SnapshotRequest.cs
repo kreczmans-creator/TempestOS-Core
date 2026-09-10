@@ -1,3 +1,5 @@
+using Tempest.Workspace.Kpi;
+
 namespace Tempest.Workspace;
 
 /// <summary>
@@ -17,6 +19,9 @@ public enum WorkspaceSnapshotKind
 
     /// <summary>One object's raw type-specific facet values.</summary>
     FacetSet,
+
+    /// <summary>The Home cockpit's own five-equation KPI read (`WP 19.1B`) — every financial ingredient except utilisation's own working-pattern denominator, computed in one coherent scan.</summary>
+    Kpi,
 }
 
 /// <summary>
@@ -27,11 +32,13 @@ public enum WorkspaceSnapshotKind
 /// </summary>
 public sealed class WorkspaceSnapshotRequest
 {
-    private WorkspaceSnapshotRequest(WorkspaceSnapshotKind kind, Guid? objectId, string? objectKind)
+    private WorkspaceSnapshotRequest(WorkspaceSnapshotKind kind, Guid? objectId, string? objectKind, KpiPeriod? kpiPeriod = null, DateOnly? kpiAsOf = null)
     {
         Kind = kind;
         ObjectId = objectId;
         ObjectKind = objectKind;
+        KpiPeriod = kpiPeriod;
+        KpiAsOf = kpiAsOf;
     }
 
     /// <summary>What shape of snapshot this request asks for.</summary>
@@ -42,6 +49,12 @@ public sealed class WorkspaceSnapshotRequest
 
     /// <summary>The subject object's Kind, as a diagnostic name only — the read itself is Kind-agnostic. Populated alongside <see cref="ObjectId"/>.</summary>
     public string? ObjectKind { get; }
+
+    /// <summary>The reporting window. Populated for <see cref="WorkspaceSnapshotKind.Kpi"/>.</summary>
+    public KpiPeriod? KpiPeriod { get; }
+
+    /// <summary>"Today", for the two `WP 19.1B` equations that are not scoped to <see cref="KpiPeriod"/> (work in progress ageing, days sales outstanding). Populated for <see cref="WorkspaceSnapshotKind.Kpi"/>.</summary>
+    public DateOnly? KpiAsOf { get; }
 
     /// <summary>A request for the whole explorer tree — every live object's identity and structural parent.</summary>
     public static WorkspaceSnapshotRequest ExplorerTree() => new(WorkspaceSnapshotKind.ExplorerTree, null, null);
@@ -61,5 +74,12 @@ public sealed class WorkspaceSnapshotRequest
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         return new WorkspaceSnapshotRequest(WorkspaceSnapshotKind.FacetSet, objectId, kind);
+    }
+
+    /// <summary>A request for the Home cockpit's own KPI read (`WP 19.1B`): every equation for <paramref name="period"/>, work in progress and days sales outstanding as of <paramref name="asOf"/>.</summary>
+    public static WorkspaceSnapshotRequest Kpi(KpiPeriod period, DateOnly asOf)
+    {
+        ArgumentNullException.ThrowIfNull(period);
+        return new WorkspaceSnapshotRequest(WorkspaceSnapshotKind.Kpi, null, null, period, asOf);
     }
 }

@@ -2,11 +2,17 @@ namespace Tempest.Workspace;
 
 /// <summary>
 /// One KPI card on the Engineering Cockpit (`WP8.0C Engineering Cockpit
-/// Specification.md` §2, Engineering Health Summary). <see cref="IsPlaceholder"/>
-/// is always <see langword="true"/> today — no Requirements, Verification,
-/// or Calculation service is wired to the Workspace yet (`WP 8.1C`'s own
-/// explicit scope boundary) — carried on the type itself so a future,
-/// real KPI can be told apart from today's fixed sample value without
+/// Specification.md` §2, Engineering Health Summary) or the Home cockpit's
+/// own five `WP 19.1B` cards (`ADR-0150`). <see cref="IsPlaceholder"/> is
+/// <see langword="false"/> for every KPI shipped today — Requirements,
+/// Verification, Calculations, Documentation and Manufacturing each
+/// carry a real per-discipline read model (`WP 12.0B` onward), and
+/// utilisation/margin/work-in-progress/days-sales-outstanding/calc
+/// throughput are each a real read over `ADR-0150`'s own equations, an
+/// honestly-empty state ("no time recorded", "unavailable") rendered as
+/// a real, non-placeholder value rather than as this flag — carried on
+/// the type itself so a genuine future placeholder (a KPI with no read
+/// model behind it yet) can still be told apart from a live one without
 /// inspecting the value's own text.
 /// </summary>
 /// <param name="Label">The KPI's own short name — for example "Requirements".</param>

@@ -74,73 +74,12 @@ public sealed class CockpitViewHonestyTests
         }
     }
 
-    /// <summary>
-    /// `WP 10.7A` (Feature Completion) — the Engineering Health Summary's
-    /// own "Risks" card, previously hardcoded <c>IsPlaceholder: true</c>
-    /// regardless of any real data, now reads the identical real
-    /// <see cref="EngineeringCockpit"/>-internal risk read
-    /// <see cref="RealData_RiskSummary_ReportsAnHonestRealCountNeverTheOldFixedPlaceholder"/>
-    /// already proves ("1 open — 1 Medium.") — the same one real, live
-    /// Risk, now surfaced as a genuine KPI count too.
-    /// </summary>
-    [AvaloniaFact]
-    public async Task RealData_KpiCards_RisksCard_ReportsARealCountNeverTheOldFixedPlaceholder()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var cockpit = host.Workspace!.Cockpit;
-            await cockpit.PrimeAsync();
-            var risksCard = cockpit.KpiCards.Single(c => c.Label == "Risks");
-            Assert.False(risksCard.IsPlaceholder);
-            Assert.Equal("1 total", risksCard.Value);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    /// <summary>
-    /// `WP 10.7A` (Feature Completion) — the Engineering Health Summary's
-    /// own "Review" card, previously hardcoded <c>IsPlaceholder: true</c>
-    /// regardless of any real data, now sums each discipline's own
-    /// already-computed in-review count. Self-consistency, not a
-    /// hardcoded expected number — the same live sample data.
-    /// </summary>
-    [AvaloniaFact]
-    public async Task RealData_KpiCards_ReviewCard_SumsEachDisciplinesOwnRealInReviewCount()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var cockpit = host.Workspace!.Cockpit;
-            await cockpit.PrimeAsync();
-            var requirementsReview = int.Parse(cockpit.RequirementsKpiCards.Single(c => c.Label == "Review").Value);
-            var calculationsReview = int.Parse(cockpit.CalculationsKpiCards.Single(c => c.Label == "Review").Value);
-            var documentsReview = cockpit.OutstandingDocumentReviews;
-            var expectedTotal = requirementsReview + calculationsReview + documentsReview;
-
-            var reviewCard = cockpit.KpiCards.Single(c => c.Label == "Review");
-            if (expectedTotal > 0)
-            {
-                Assert.False(reviewCard.IsPlaceholder);
-                Assert.Equal($"{expectedTotal} total", reviewCard.Value);
-            }
-            else
-            {
-                Assert.True(reviewCard.IsPlaceholder);
-            }
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
+    // `WP 19.1B`: the two tests that used to stand here proved
+    // `EngineeringCockpit.KpiCards` — the cross-discipline "Engineering
+    // Overview" aggregate (Requirements/Verification/Calculations/
+    // Documentation/Review/Risks totals) — which this Work Package's own
+    // row removes outright, superseded by the Home cockpit's five KPI
+    // cards. See CockpitKpiJourneyTests.cs for their replacement coverage.
 
     [AvaloniaFact]
     public async Task RealData_UpcomingMilestones_ReflectsTheLiveSeededMilestone()
