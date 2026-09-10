@@ -135,8 +135,17 @@ public sealed class OAuthAuthoriser
     public async Task<AccessTokenResult> EnsureAccessTokenAsync(CancellationToken cancellationToken = default)
     {
         var refreshToken = await _secretStore.GetAsync(Key("RefreshToken"), cancellationToken).ConfigureAwait(false);
+
         if (string.IsNullOrEmpty(refreshToken))
-            return AccessTokenResult.NotAuthorised();
+        {
+            // Never authorised. A missing client id is reported as
+            // NotConfigured rather than a bare NotAuthorised — the brief's
+            // own "Selection" acceptance (§4): an operator who has never
+            // even registered a sandbox app gets a diagnosis naming that,
+            // not a generic "sign in" prompt with nothing to act on.
+            var neverAuthorisedCredentials = await ResolveClientCredentialsAsync(cancellationToken).ConfigureAwait(false);
+            return neverAuthorisedCredentials is null ? AccessTokenResult.NotConfigured() : AccessTokenResult.NotAuthorised();
+        }
 
         var accessToken = await _secretStore.GetAsync(Key("AccessToken"), cancellationToken).ConfigureAwait(false);
         var tenantId = await _secretStore.GetAsync(Key("TenantId"), cancellationToken).ConfigureAwait(false);
