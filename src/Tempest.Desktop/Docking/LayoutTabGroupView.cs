@@ -232,10 +232,29 @@ public sealed class LayoutTabGroupView : UserControl
 
         actions.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
 
+        // `WP 19.3A-R1`: `tabs` is a horizontal StackPanel, measured (like
+        // every StackPanel) at its own natural sum-of-children width
+        // regardless of what the strip actually has — a narrow docking
+        // column, or several tabs in one group, can ask for more than the
+        // strip has and, with only `tabs.ClipToBounds` catching it, a tab
+        // near the end was silently, invisibly cut off rather than reachable
+        // (the layout walk's own "lies outside its parent" finding). A
+        // horizontally scrolling strip is the same fix shape the tab strips
+        // in every comparable shell use: nothing is ever cropped away
+        // un-reachably, and the content genuinely may be wider than its
+        // viewport, so this is the walk's own already-recognised ScrollViewer
+        // exemption, not a new one.
+        var tabsScroll = new ScrollViewer
+        {
+            Content = tabs,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+        };
+
         var strip = new DockPanel { Height = DesignTokens.ControlSizeSmall + DesignTokens.SpaceSm };
         DockPanel.SetDock(actions, Dock.Right);
         strip.Children.Add(actions);
-        strip.Children.Add(tabs);
+        strip.Children.Add(tabsScroll);
 
         // The strip is a sunken instrument surface with a hairline beneath
         // it, so a panel's own title row reads as chrome and its content

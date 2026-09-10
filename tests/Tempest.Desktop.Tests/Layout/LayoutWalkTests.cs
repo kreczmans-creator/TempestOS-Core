@@ -81,6 +81,10 @@ public sealed class LayoutWalkTests
         var outputRoot = ResolveOutputRoot();
         var pngCount = 0;
         string? captureMethod = null;
+        // `WP 19.3A-R1`: every finding across both sizes, every rail entry
+        // and every project tab, gathered rather than thrown on the first —
+        // one run tells the whole story instead of one screen at a time.
+        var findings = new List<string>();
 
         try
         {
@@ -137,9 +141,16 @@ public sealed class LayoutWalkTests
                     LayOut(window, size.Width, size.Height);
 
                     var area = $"{size.Name} · rail · {module.Title}";
-                    captureMethod ??= SaveFrame(window, Path.Combine(sizeDir, $"rail-{module.Title}.png"));
+                    // `WP 19.3A-R1`: `captureMethod ??= SaveFrame(...)` short-circuits
+                    // once `captureMethod` is non-null — `SaveFrame` (and so the actual
+                    // PNG write) never ran again after the very first module, though
+                    // `pngCount` kept incrementing as if it had. Calling `SaveFrame`
+                    // unconditionally, every time, is what "write every PNG" needs;
+                    // `captureMethod` still only records the method name once.
+                    var method = SaveFrame(window, Path.Combine(sizeDir, $"rail-{module.Title}.png"));
+                    captureMethod ??= method;
                     pngCount++;
-                    AssertLayoutIsSound(window, area);
+                    findings.AddRange(CollectLayoutFindings(window, area));
                 }
 
                 foreach (var descriptor in ProjectAreas.All)
@@ -149,14 +160,23 @@ public sealed class LayoutWalkTests
                     LayOut(window, size.Width, size.Height);
 
                     var area = $"{size.Name} · tab · {descriptor.Title}";
-                    captureMethod ??= SaveFrame(window, Path.Combine(sizeDir, $"tab-{descriptor.Title}.png"));
+                    var tabMethod = SaveFrame(window, Path.Combine(sizeDir, $"tab-{descriptor.Title}.png"));
+                    captureMethod ??= tabMethod;
                     pngCount++;
-                    AssertLayoutIsSound(window, area);
+                    findings.AddRange(CollectLayoutFindings(window, area));
                 }
             }
 
             _output.WriteLine($"Captured {pngCount} PNGs under '{outputRoot}' via {captureMethod}.");
             Assert.Equal((ShellAreas.RailModules.Count + ProjectAreas.All.Count) * Sizes.Length, pngCount);
+
+            // Every PNG is already written above, whether or not the walk
+            // found anything — only now, with the complete picture, does it
+            // fail (one line per finding, so a single run tells the whole
+            // story rather than one screen at a time).
+            Assert.True(
+                findings.Count == 0,
+                $"Layout walk found {findings.Count} finding(s):{Environment.NewLine}{string.Join(Environment.NewLine, findings)}");
         }
         finally
         {
