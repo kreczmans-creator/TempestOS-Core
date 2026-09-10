@@ -111,6 +111,12 @@ public static class EditorSectionKeys
     /// <summary>Evidence's own check and issue records, read-only (the Check and Issue actions themselves are `WP 18.2B`).</summary>
     public const string CheckAndIssue = "check-and-issue";
 
+    /// <summary>An invoice request's own lines and total, read-only — built by <c>InvoicingService.RaiseFromCompletionAsync</c>, never edited here (`WP 19.1A`, `ADR-0151`).</summary>
+    public const string InvoiceLines = "invoice-lines";
+
+    /// <summary>An invoice request's own connector and every external field it has reported — external id, invoice number, status, issued and paid dates, and the last error (`WP 19.1A`, `ADR-0151`).</summary>
+    public const string InvoicingExternal = "invoicing-external";
+
     /// <summary>The object's own audit trail.</summary>
     public const string Audit = "audit";
 }

@@ -23,6 +23,7 @@ public static class KindEditorDeclarations
         registry.Register(Assembly());
         registry.Register(Component());
         registry.Register(Project());
+        registry.Register(InvoiceRequest());
     }
 
     /// <summary>
@@ -127,6 +128,38 @@ public static class KindEditorDeclarations
                 new EditorFieldDeclaration("Project Manager", EditorControlKind.ObjectReference, Editable: false)),
 
             LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// The invoice request's own declaration (`WP 19.1A`, `ADR-0151`):
+    /// Identity (name, read-only — derived, never renamed); Lines
+    /// (read-only, built by <c>InvoicingService.RaiseFromCompletionAsync</c>)
+    /// and the total; Lifecycle (status); Connector (every external field
+    /// the connector has reported, and the last error). No Description,
+    /// Where-used or Bill-of-Materials section — those facets are
+    /// Mechanical's own structural product, which a request does not
+    /// carry.
+    /// </summary>
+    public static KindEditorDeclaration InvoiceRequest() => new(
+        Core.Invoicing.InvoiceRequest.CanonicalKind,
+        [
+            new(EditorSectionKeys.Identity, "Identity",
+                new EditorFieldDeclaration("Name", EditorControlKind.Text, Editable: false)),
+
+            new(EditorSectionKeys.InvoiceLines, "Lines",
+                new EditorFieldDeclaration("Lines", EditorControlKind.ReadOnlyList, Editable: false),
+                new EditorFieldDeclaration("Total", EditorControlKind.Text, Editable: false)),
+
+            LifecycleSection(),
+
+            new(EditorSectionKeys.InvoicingExternal, "Connector",
+                new EditorFieldDeclaration("Connector", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Id", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Invoice Number", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Status", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Issued Date", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Paid Date", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Last Error", EditorControlKind.Text, Editable: false)),
         ]);
 
     private static EditorSectionDeclaration IdentitySection() => new(

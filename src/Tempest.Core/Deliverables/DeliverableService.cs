@@ -7,6 +7,7 @@ namespace Tempest.Core.Deliverables;
 public sealed class DeliverableService : IDeliverableService
 {
     private readonly EngineeringDomainContext _context;
+    private Func<Guid, CancellationToken, Task>? _completionHook;
 
     /// <summary>Initialises a new instance of the <see cref="DeliverableService"/> class.</summary>
     public DeliverableService(EngineeringDomainContext context)
@@ -15,6 +16,31 @@ public sealed class DeliverableService : IDeliverableService
 
         _context = context;
     }
+
+    /// <summary>
+    /// Registers a hook run, best-effort, after a deliverable is
+    /// completed — this is how completing a deliverable raises an invoice
+    /// request (`WP 19.1A`, `Tempest.Core.Invoicing.InvoicingService.RaiseFromCompletionAsync`),
+    /// through this service rather than by the UI, with no compile-time
+    /// dependency from <c>Tempest.Core.Deliverables</c> onto
+    /// <c>Tempest.Core.Invoicing</c> (which itself depends on
+    /// <see cref="IDeliverableService"/>, so a direct reference the other
+    /// way would be circular). The composition root
+    /// (<c>Tempest.Workspace.Composition.EngineeringWorkspaceComposer.RegisterEngineeringDisciplines</c>)
+    /// wires this once, after both services exist. <see langword="null"/>
+    /// (the default, and every composition root this Work Package does not
+    /// touch) means completing a deliverable raises nothing.
+    /// </summary>
+    /// <remarks>
+    /// Any exception the hook itself throws, or any refusal
+    /// <see cref="Tempest.Core.Invoicing.InvoicingService.RaiseFromCompletionAsync"/>
+    /// reports (no client recorded, nothing to bill, and so on), is
+    /// swallowed here rather than failing the completion that triggered
+    /// it: a deliverable is completed the moment
+    /// <see cref="CompleteAsync"/>'s own write commits, regardless of
+    /// whether raising an invoice for it succeeds.
+    /// </remarks>
+    public void SetCompletionHook(Func<Guid, CancellationToken, Task>? hook) => _completionHook = hook;
 
     /// <inheritdoc />
     public async Task<DeliverableCompletionResult> CompleteAsync(
@@ -64,6 +90,21 @@ public sealed class DeliverableService : IDeliverableService
 
         if (created is IHasParent hasParent)
             await hasParent.MoveAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+        if (_completionHook is { } hook)
+        {
+            try
+            {
+                await hook(created.Id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Best-effort (this method's own remarks): completing a
+                // deliverable succeeded the moment the write above
+                // committed, and stays succeeded regardless of whether
+                // raising an invoice for it did.
+            }
+        }
 
         return new DeliverableCompletionResult(DeliverableCompletionRefusal.None, null, (DeliverableCompletion)created);
     }

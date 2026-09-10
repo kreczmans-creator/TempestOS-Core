@@ -2,6 +2,7 @@ using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -58,6 +59,9 @@ public static class DisciplineAreas
         // `ADR-0150` (`WP 19.0A`).
         map[Tempest.Core.Timesheets.TimesheetEntry.CanonicalKind] = TimesheetsWorkspaceRegistration.ExplorerAreaId;
         map[Tempest.Core.Deliverables.DeliverableCompletion.CanonicalKind] = DeliverableCompletionWorkspaceRegistration.ExplorerAreaId;
+
+        // `ADR-0151` (`WP 19.1A`).
+        map[Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind] = InvoicingWorkspaceRegistration.ExplorerAreaId;
 
         return map;
     }
