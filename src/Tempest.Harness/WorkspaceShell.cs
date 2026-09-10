@@ -543,7 +543,7 @@ public sealed class WorkspaceShell : IAsyncDisposable
         _output.WriteLine($"Review:        {FormatStatus(cockpit.ReviewStatus)}");
 
         _output.WriteLine();
-        _output.WriteLine("Home Cockpit KPIs (`WP 19.1B`)");
+        _output.WriteLine("Home Cockpit KPIs");
         _output.WriteLine("--------------------------------");
         foreach (var (title, kpis) in new (string, IReadOnlyList<CockpitKpiCard>)[]
         {

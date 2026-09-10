@@ -578,7 +578,7 @@ public class WorkspaceShellTests
         Assert.Contains("Blocked Items", output);
         Assert.Contains("Overdue Actions", output);
         Assert.Contains("Project Health Dashboard", output);
-        Assert.Contains("Engineering Health Summary (KPI Cards)", output);
+        Assert.Contains("Home Cockpit KPIs", output);
         Assert.Contains("Risk Summary", output);
         Assert.Contains("Digital Thread Summary", output);
         Assert.Contains("Upcoming Milestones", output);
@@ -610,8 +610,15 @@ public class WorkspaceShellTests
         await wshell.StopAsync();
     }
 
+    // `WP 19.1B`: this used to prove the old cross-discipline
+    // `EngineeringCockpit.KpiCards` aggregate's own "Requirements: —
+    // (placeholder)" rendering — that aggregate ("Engineering Overview")
+    // is removed outright, superseded by the Home cockpit's five KPI
+    // cards. `StartAsync_Cockpit_RendersHonestEmptyKpiCards` (below)
+    // proves their own honest-empty rendering with no commercial data.
+
     [Fact]
-    public async Task StartAsync_Cockpit_RendersPlaceholderKpiCards()
+    public async Task StartAsync_Cockpit_RendersHonestEmptyKpiCards()
     {
         using var temp = new TempDirectory();
         var writer = new StringWriter();
@@ -620,9 +627,10 @@ public class WorkspaceShellTests
         await wshell.StartAsync();
 
         var output = writer.ToString();
-        Assert.Contains("Requirements: — (placeholder)", output);
-        Assert.Contains("Verification: — (placeholder)", output);
-        Assert.Contains("Calculations: — (placeholder)", output);
+        Assert.Contains("No time recorded for this period.", output);
+        Assert.Contains("No time or deliverables recorded for this period.", output);
+        Assert.Contains("No unbilled work outstanding.", output);
+        Assert.Contains("Unavailable", output);
 
         await wshell.StopAsync();
     }
