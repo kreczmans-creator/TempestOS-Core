@@ -189,23 +189,22 @@ public sealed class ProjectDeliverablesView : UserControl
             open.Click += (_, _) => _openObject(completion.Id, DeliverableCompletion.CanonicalKind);
             actions.Children.Add(open);
 
-            // `WP 19.1A` part 3 (`ADR-0151`): a completed deliverable with
-            // unbilled value — `InvoicedBy` set once and never cleared
-            // (`DeliverableCompletion`'s own remarks) — gets a Raise
-            // invoice action. Dispatched directly, mirroring this file's
-            // own `OnCompleteAsync` convention, rather than through
-            // `ICommandRegistry`'s own confirmation flow: the same command
-            // (`invoicing.raise`) remains reachable with its own
-            // confirmation from the Ribbon or the Command Palette for a
-            // selected, completed deliverable.
-            if (completion.InvoicedBy is null)
-            {
-                var raiseInvoice = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
-                raiseInvoice.Classes.Add(ChromeStyles.Flat);
-                AutomationProperties.SetName(raiseInvoice, $"Raise invoice for {deliverable.DisplayName}");
-                raiseInvoice.Click += async (_, _) => await OnRaiseInvoiceAsync(completion.Id).ConfigureAwait(true);
-                actions.Children.Add(raiseInvoice);
-            }
+            // `WP 19.1A` part 3 (`ADR-0151`): a completed deliverable gets
+            // a Raise invoice action, mirroring `Complete`'s own convention
+            // in this exact file exactly — always present, dispatched
+            // directly (never through `ICommandRegistry`'s own
+            // confirmation flow; the same `invoicing.raise` command remains
+            // reachable with its own confirmation from the Ribbon or the
+            // Command Palette), and a second click on an already-invoiced
+            // completion shows the refusal naming the first request rather
+            // than hiding the button once it can only fail — exactly how a
+            // second `Complete` on an already-completed deliverable already
+            // behaves here.
+            var raiseInvoice = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
+            raiseInvoice.Classes.Add(ChromeStyles.Flat);
+            AutomationProperties.SetName(raiseInvoice, $"Raise invoice for {deliverable.DisplayName}");
+            raiseInvoice.Click += async (_, _) => await OnRaiseInvoiceAsync(completion.Id).ConfigureAwait(true);
+            actions.Children.Add(raiseInvoice);
         }
 
         rows.Children.Add(actions);
