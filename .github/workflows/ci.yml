@@ -176,7 +176,10 @@ jobs:
         if: matrix.configuration == 'Release'
         shell: pwsh
         env:
-          TEMPEST_LAYOUT_OUTPUT: TestResults/layout
+          # Absolute: the test host's working directory is the test project's
+          # own output folder, so a relative path landed the PNGs under bin/
+          # and the first run's upload found nothing (a warning, not a failure).
+          TEMPEST_LAYOUT_OUTPUT: ${{ github.workspace }}/TestResults/layout
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
             --configuration Release `
@@ -200,11 +203,11 @@ jobs:
       - name: Upload layout verification screenshots (Release)
         if: always() && matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
-        continue-on-error: true
+        # Not advisory: a walk that wrote no screenshots is a broken walk.
         with:
           name: layout-screenshots
           path: TestResults/layout/**
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       # Runs even if Build or Test failed above (if: always()), so a
