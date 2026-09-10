@@ -284,8 +284,27 @@ public sealed class ProjectWorkspaceView : UserControl
         }
 
         AutomationProperties.SetName(_areas, "Project areas");
-        _areas.SelectionChanged += async (_, _) =>
+        _areas.SelectionChanged += async (_, e) =>
         {
+            // `WP 19.2B`: `SelectionChanged` is a bubbling routed event
+            // shared by every `SelectingItemsControl` — and the Structure
+            // tab now embeds the whole engineering surface (the Project
+            // Explorer tree, the Ribbon's own tab strip, the calculation
+            // pickers), each a `SelectingItemsControl` of its own. Their
+            // selection changes bubble through `_structureHost` and reach
+            // this handler exactly as a real tab-strip click would,
+            // unless it is the tab strip itself that raised the event —
+            // checked here the same way `DigitalThreadGraphView`'s own
+            // hit-test guard already does for its own bubbled events.
+            // Without this, an unrelated reload deep inside the embedded
+            // surface (the Explorer's own change-feed refresh, say) reads
+            // as the user picking the Structure tab, silently steering the
+            // navigator back to project-scoped Engineering and tearing the
+            // shell's own module host away from whatever area was actually
+            // on screen.
+            if (!ReferenceEquals(e.Source, _areas))
+                return;
+
             if (_suppressAreaSelection || _areas.SelectedItem is not TabItem { Tag: ProjectArea area })
                 return;
 
