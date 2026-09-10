@@ -1,8 +1,9 @@
 # TempestOS v0.19.0 — Release Notes
 
-**Status: release candidate in preparation on `release/v0.19.0`, built on
-the `v0.18.0` candidate; figures below are re-derived at `WP 19.9.0`
-before the tag.** Nothing in this document is certification.
+**Status: release candidate on `release/v0.19.0` (2026-09-10), built on
+the `v0.18.0` candidate; the figures below were re-derived at `WP 19.9.0`
+on the merged head `86ea1c2`. The tag follows the Product Owner's manual
+test.** Nothing in this document is certification.
 
 ## Summary
 
@@ -48,7 +49,7 @@ screenshots every screen in CI.
 | `WP 19.2A` Desktop composition | `MainWindowComposer` (BuildViews → BuildCoordinators → Wire → Layout); `MainWindow.cs` 1,475 → 595 lines; no null-forgiving field capture; area registry; `CommandIds` constants | 2026-09-10 |
 | `WP 19.2B` The honest rail | The rail reads Home, Projects, Evidence, Timesheets, Invoicing, Reports, Engineering Calculations, Settings — nothing declared-but-empty; Engineering is the project's Structure tab; Reports (issued sheets, project documents) and Settings (the dialog's sections as an area) are real areas; the ribbon compacts to icons below 1,200 px; 122 controls gained automation names with a structural test; `RailSurfaceContractTests` runs six behavioural checks per rail entry; two defects found at merge and fixed: the Structure tab's embedded surface steered the project tab strip through bubbled selection events, and the Commercial section now shows the client's name and the card's code through the release branch's resolvers | 2026-09-10 (6d0ceaa) |
 | `WP 19.3A` Layout verification in CI | In-process walk under headless Skia of every rail entry and project tab at two sizes; bounds and overlap checks; `layout-screenshots` artifact; it found and fixed a rail title overflow, a status-bar squeeze and a clipped tab strip on its first runs | 2026-09-10 |
-| `WP 19.9.0` Release | *(this document, the physical review, the tag)* | |
+| `WP 19.9.0` Release | Three defects found by the gate and fixed with tests (the section below); VERSION 0.19.0; this document's figures and warnings; `PHYSICAL_REVIEW.md` §7b, fourteen steps; the backlog reconciled against the code (TD-76 and TD-109 closed with evidence, six 19.2B closures verified, TD-133 partly, TD-33 and TD-115 kept open with notes); the release-candidate report | 2026-09-10 |
 
 ## Figures
 
@@ -109,7 +110,15 @@ screenshots every screen in CI.
   refuses, naming that request. Before this guard it raised a second Draft
   with the same lines — found by the Desktop journey one run in two, fixed
   at `WP 19.9.0`, `ADR-0151`'s own last addendum.
-- *(further warnings filled at `WP 19.9.0`)*
+- **Two `BACKLOG.md` rows named a `v0.19.0` Work Package as their closer
+  and are not actually closed** (`WP 19.9.0` backlog reconciliation):
+  `TD-33` (`EngineeringCockpit.FormatCoverage`'s wrong-discipline
+  zero-state string — `WP 19.1B` never touches
+  `CockpitFormatting.cs`) and `TD-115` (the three commands with no
+  production construction path, pending `FCR-0073` — `WP 19.2A`'s own
+  touch to `RequirementsWorkspaceRegistration.cs` is a `CommandIds`
+  constants rename, not an object picker). Both rows stay open in
+  `BACKLOG.md` with a note.
 
 ## Related
 

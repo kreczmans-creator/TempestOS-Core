@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (25 of 30 cap)
+## Live Backlog (24 of 30 cap)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -46,12 +46,11 @@ and nothing on disk.
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
-| `TD-33` | `EngineeringCockpit.FormatCoverage` returns a hardcoded, wrong-discipline empty-state string | `WP 19.1B` |
+| `TD-33` | `EngineeringCockpit.FormatCoverage` returns a hardcoded, wrong-discipline empty-state string | `WP 19.1B` (claimed, not closed — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-63` | `TD-40`'s dirty-tab-close fix is not pinned on its production path | unowned |
-| `TD-76` | No project context anywhere in the running application | `WP 19.0A` |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
@@ -73,7 +72,7 @@ mechanism `WP 17.1A`/`WP 17.1B` replace, but neither row is literally
 listed; `TD-28` sits in the refresh/notification mechanism `WP 18.1A`
 replaces, same caveat. Owners other than "unowned" that are not one of
 the programme Work Packages (`WP 18.0B`, `18.2B`,
-`19.0A`, `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
+`19.1B`, `17.0C`) are real, named in that WP's own "Closes"
 column in `WorkPackages.md`, but fall outside the specific
 "substrate"/"surface" set that rule defines — they are kept here,
 with their real owner shown, rather than mislabelled "unowned."
@@ -129,6 +128,21 @@ composition-root assertion is updated to the new real counts a launch now
 reaches. `TD-157` (the pin-supersession resolver) and the deferred
 interpolation/value-band half of `ADR-0149` are unaffected and remain as
 this section already describes them.
+
+**Closed by `WP 19.0A` (2026-09-10), with evidence — moved out of the
+Live Backlog:** `TD-76`. The row's own residual — real project context
+already existed (`IProjectContext`/`ProjectContext`,
+`src/Tempest.Workspace/Projects/`, predating this Work Package), but
+`Project` carried none of the fields the archived register's own note
+named as remaining: "customer, manager, dates, budget." `Project`
+(`src/Tempest.Core/EngineeringDomain/Implementation/ProgrammeHierarchy.cs:62-111`)
+now carries `ClientOrganisationId`, `PurchaseOrderReference`, `Budget`,
+`RateCardPin`, `StartDate`, `TargetDate` and `ProjectManagerIdentityId`,
+each mutated through its own `ProjectCommercialService.Set*Async` method
+under one transaction with an audit row. Proven end-to-end, over a real
+SQLite root, through a restart, by
+`tests/Tempest.Core.Tests/Projects/ProjectCommercialJourneyTests.cs:32`
+(`CommercialCore_TimeAndDeliverableCompletion_SurviveARestart_WithAuditRows`).
 
 ## Owned by Programme
 
@@ -197,8 +211,7 @@ touched).
 | `TD-77` | Command Palette is not contextual; most real commands are unavailable there | `WP 19.2B` (residual — see note below the `WP 19.2B` closures; no Command Palette contextuality change landed in this Work Package's own worktree) |
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |
 | `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
-| `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` |
-| `TD-115` | Three registered commands have no production construction path | `WP 19.2A` |
+| `TD-115` | Three registered commands have no production construction path | `WP 19.2A` (claimed, not closed — see note) |
 | `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` (partial — see note) |
 | `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` (claimed, not closed — see note) |
 
@@ -225,6 +238,7 @@ this table can now point at, rather than merely name.
 | `TD-128` | Digital Thread graph edges are keyboard-unreachable | `WP 19.2B` — `DigitalThreadGraphView`'s own edge hit-test `Line` is now `Focusable`, in a deterministic Tab order following each node's own outgoing edges, named `"<from> → <to>"`, and `Enter`/`Space` selects the edge and moves keyboard focus to its target node; proven end-to-end, no simulated pointer event, by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_SelectsADigitalThreadEdge`. |
 | `TD-132` | Every relationship row's "Open" button shares one accessible name | `WP 19.2B` — `ObjectEditorView.BuildRelationshipRowAsync`'s own Open button is now named `"Open {direction} {relationshipKind} — {displayName}"` per row, mirroring the sibling `BuildObjectReferenceRowAsync`/attachment-row buttons that were already fixed this same way. |
 | `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` — repositioning: with a panel header focused, `Ctrl+Shift+Arrow` moves it to the workspace edge in that direction (`LayoutTabGroupView`'s own `MoveRequested` event, `WorkspaceLayoutHost`'s `DockToEdge`), and `Ctrl+Shift+[`/`Ctrl+Shift+]` resizes its own split share (`WorkspaceLayoutTree.ResizeSplit`), both documented in the panel header's own `AutomationProperties.HelpText`; proven end-to-end by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_MovesADockedPanelToTheOppositeEdge`. Tab *reordering* (dragging one tab before another within a group) is unchanged and stays mouse-only — out of this Work Package's own brief, which named panel repositioning and resizing only. |
+| `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` — `MainWindowComposer`'s four phases (`BuildViews` → `BuildCoordinators` → `Wire` → `Layout`, `src/Tempest.Desktop/Composition/MainWindowComposer*.cs`) replace the constructor; `MainWindow.cs` is now 782 lines, and `tests/Tempest.Desktop.Tests/MainWindowCompositionTests.cs:394` (`MainWindowComposer_FourPhases_ExistAndAreCalledInOrder`) pins that all four phases exist and are invoked, in that order, from `MainWindow`'s own constructor. |
 
 **Claimed by `v0.18.0` Work Packages and verified NOT closed, `WP 18.9.0`
 (2026-09-09):** `TD-90` — no focus-capture/restore mechanism exists
@@ -242,6 +256,48 @@ reference libraries, closing one of the row's three named gaps, but
 and `BracketEngineeringRecordService` is still reachable from no screen
 (`TD-165`). `TD-165` — unchanged: `BracketEngineeringRecordService` has
 no consumer anywhere under `src/Tempest.Desktop`.
+
+**Re-verified on `release/v0.19.0`, `WP 19.9.0` (2026-09-10) — all five
+`WP 18.9.0` findings above still hold, unchanged by this release's own
+Work Packages:** `TD-90` — still no `Focus` reference in
+`WorkspaceLayoutController`, `WorkspaceLayoutHost` or
+`WorkspaceDockingComposer` (`WP 19.2B`'s own keyboard work for `TD-133`
+added `Ctrl+Shift+Arrow`/`Ctrl+Shift+[`/`]` to `LayoutTabGroupView.cs`,
+not a focus-restore path). `TD-108`/`TD-118` stay closed (`WP 18.1A-R1`
+predates this branch's own point of divergence, `8df3466`, and nothing
+in `v0.19.0` touches `EngineeringCockpit.PrimeAsync`). `TD-160` —
+still partial: `CalculationTrace` still has no consumer under
+`src/Tempest.Desktop`. `TD-165` — still unchanged:
+`src/Tempest.Desktop/WorkspaceHost.cs` was not touched by any `v0.19.0`
+Work Package; `BracketEngineeringRecordService` is constructed there
+(line 266) and exposed as a property (line 401), but nothing under
+`src/Tempest.Desktop` reads `WorkspaceHost.BracketEngineeringRecords`.
+
+**Claimed by `v0.19.0` Work Packages and verified NOT closed, `WP 19.9.0`
+(2026-09-10):** `TD-33` — `EngineeringCockpit.FormatCoverage` is now
+`CockpitFormatting.FormatCoverage`
+(`src/Tempest.Workspace/Workspace/CockpitFormatting.cs:29-30`, moved out
+of `EngineeringCockpit` by `WP 12.0B`, long before this release) and
+still returns the fixed string `"— (no requirements yet)"` for a zero
+denominator regardless of which discipline calls it — its own remarks
+disclose this explicitly as unfixed. `WP 19.1B`'s merge (`f4db8ac`) adds
+the KPI read models and the Home cockpit's five cards; it never touches
+`CockpitFormatting.cs`, and `EngineeringCockpit.cs` itself no longer
+calls `FormatCoverage` at all (its placeholder KPI cards were removed),
+so the row's real subject — the shared, wrong-discipline string still
+used by `CalculationsCockpitReadModel`/`VerificationCockpitReadModel` —
+is untouched. `TD-115` — the three commands
+(`AddRequirementToCollectionCommand`, `CompareBaselinesCommand`,
+`LinkRequirementCommand`) still have no production construction path;
+`tests/Tempest.Core.Tests/Workspace/FutureCapabilityCommandTests.cs` (an
+unchanged file on this branch, still asserting the absence as a `WP-H`
+pinned decision pending `FCR-0073`, the object-picker) still passes.
+`WP 19.2A`'s merge (`42319a2`) touches
+`RequirementsWorkspaceRegistration.cs` only to replace string-literal
+command ids with `RequirementsCommandIds` constants (its own actual
+scope: `MainWindowComposer`, `WorkspaceViewCoordinator`,
+`SurfaceCommandPolicy`) — no object picker, and no construction path for
+any of the three commands, was added.
 
 **`TD-02`, `WP 17.0C`, before this table existed:** "single-sink
 limitation" — closed by `CompositeLogSink` (see that class's own
