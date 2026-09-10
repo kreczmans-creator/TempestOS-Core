@@ -161,7 +161,13 @@ public sealed class ProjectDeliverablesView : UserControl
                 ? "Not yet completed."
                 : $"Completed {completion.CompletedOn:yyyy-MM-dd} by {completion.PrincipalIdentityId}"
                   + (completion.FixedPriceValue is { } price ? $" — fixed price {price}" : " — time-billed")
-                  + $" — {completion.IssuedEvidenceIds.Count} evidence record(s), {completion.DocumentIds.Count} document(s).",
+                  + $" — {completion.IssuedEvidenceIds.Count} evidence record(s), {completion.DocumentIds.Count} document(s)."
+                  // `WP 19.1A` part 3 (`ADR-0151`): once invoiced, this
+                  // completion's own `InvoicedBy` link is set once and
+                  // never cleared — shown here so its Raise button's own
+                  // absence (below) is not the only sign it has already
+                  // been billed.
+                  + (completion.InvoicedBy is { } requestId ? $" — invoiced (request '{requestId:N}')." : string.Empty),
             FontSize = DesignTokens.FontSizeCaption,
             Opacity = 0.85,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -182,6 +188,23 @@ public sealed class ProjectDeliverablesView : UserControl
             AutomationProperties.SetName(open, $"Open the completion of {deliverable.DisplayName}");
             open.Click += (_, _) => _openObject(completion.Id, DeliverableCompletion.CanonicalKind);
             actions.Children.Add(open);
+
+            // `WP 19.1A` part 3 (`ADR-0151`): a completed deliverable gets
+            // a Raise invoice action, mirroring `Complete`'s own convention
+            // in this exact file exactly — always present, dispatched
+            // directly (never through `ICommandRegistry`'s own
+            // confirmation flow; the same `invoicing.raise` command remains
+            // reachable with its own confirmation from the Ribbon or the
+            // Command Palette), and a second click on an already-invoiced
+            // completion shows the refusal naming the first request rather
+            // than hiding the button once it can only fail — exactly how a
+            // second `Complete` on an already-completed deliverable already
+            // behaves here.
+            var raiseInvoice = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
+            raiseInvoice.Classes.Add(ChromeStyles.Flat);
+            AutomationProperties.SetName(raiseInvoice, $"Raise invoice for {deliverable.DisplayName}");
+            raiseInvoice.Click += async (_, _) => await OnRaiseInvoiceAsync(completion.Id).ConfigureAwait(true);
+            actions.Children.Add(raiseInvoice);
         }
 
         rows.Children.Add(actions);
@@ -224,6 +247,32 @@ public sealed class ProjectDeliverablesView : UserControl
         // `WP 17.9.4`: what you make opens right up.
         if (result.SubjectId is { } createdId)
             _openObject(createdId, DeliverableCompletion.CanonicalKind);
+    }
+
+    /// <summary>
+    /// Raises a new <see cref="Tempest.Core.Invoicing.InvoiceRequest"/> from
+    /// <paramref name="completionId"/> (<c>invoicing.raise</c>,
+    /// <see cref="Tempest.Core.Invoicing.IInvoicingService.RaiseFromCompletionAsync"/>) —
+    /// every refusal (no client, no rate-card pin, already invoiced,
+    /// nothing to bill) is shown, never swallowed.
+    /// </summary>
+    private async Task OnRaiseInvoiceAsync(Guid completionId)
+    {
+        var command = new Tempest.Workspace.Invoicing.RaiseInvoiceCommand(completionId, DeliverableCompletion.CanonicalKind);
+        var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
+
+        if (!result.Succeeded)
+        {
+            Report(result.Message ?? "Raise invoice failed.", succeeded: false);
+            return;
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        Report(result.Message ?? "Invoice request raised.", succeeded: true);
+
+        // `WP 17.9.4`: what you make opens right up.
+        if (result.SubjectId is { } createdId)
+            _openObject(createdId, Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind);
     }
 
     private void OnWorkspaceChanged(WorkspaceChange change)

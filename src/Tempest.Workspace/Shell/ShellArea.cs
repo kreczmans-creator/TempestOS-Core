@@ -80,4 +80,16 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     Timesheets,
+
+    /// <summary>
+    /// The Invoicing area (`WP 19.1A` part 3, `ADR-0151`): every
+    /// <c>InvoiceRequest</c> across open projects (or the open project when
+    /// one is open), grouped by status — raised from a project's own
+    /// completed deliverables, sent to a connector, reconciled, and voided.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Invoicing,
 }

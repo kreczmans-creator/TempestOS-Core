@@ -109,6 +109,9 @@ public sealed class MainWindow : Window
     // The Timesheets area (`WP 19.0A`, `ADR-0150`).
     private readonly TimesheetWeekView _timesheetWeekView;
 
+    // The Invoicing area (`WP 19.1A` part 3, `ADR-0151`).
+    private readonly InvoicingView _invoicingView;
+
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
     private readonly IBackgroundTaskRunner _backgroundTaskRunner;
@@ -209,6 +212,7 @@ public sealed class MainWindow : Window
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
         _evidenceWorkspace = coordinators.EvidenceWorkspace;
         _timesheetWeekView = views.TimesheetWeekView;
+        _invoicingView = views.InvoicingView;
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -235,6 +239,10 @@ public sealed class MainWindow : Window
             // "load when you land here" discipline every other area
             // follows.
             [ShellArea.Timesheets] = new(() => _timesheetWeekView, () => _timesheetWeekView.RefreshAsync()),
+            // `WP 19.1A` part 3 (`ADR-0151`): re-read on every entry, the
+            // same "load when you land here" discipline every other area
+            // follows.
+            [ShellArea.Invoicing] = new(() => _invoicingView, () => _invoicingView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the

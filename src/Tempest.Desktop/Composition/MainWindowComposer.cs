@@ -64,6 +64,7 @@ internal sealed record ComposedViews(
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
+    InvoicingView InvoicingView,
     Dictionary<Guid, IWorkspaceView> OpenGraphViewsByRootId,
     CommandHistoryLog CommandHistory,
     IBackgroundTaskRunner BackgroundTaskRunner,
@@ -198,7 +199,18 @@ internal sealed partial class MainWindowComposer
         // them yet.
         var workingPatterns = (Tempest.Core.Timesheets.IWorkingPatternProvider)services.GetService(typeof(Tempest.Core.Timesheets.IWorkingPatternProvider));
         var currentPrincipalAccessor = (Tempest.Core.Identity.ICurrentPrincipalAccessor)services.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
-        var settingsDialog = new SettingsDialog(theme, session.UserSettings, composition.SettingsProvider, workingPatterns, currentPrincipalAccessor);
+
+        // `WP 19.1A` part 3 (`ADR-0151`): the Invoicing area's own connector
+        // and secret store, resolved here exactly as `workingPatterns`/
+        // `currentPrincipalAccessor` are above — `SettingsDialog`'s own
+        // Invoicing section (Authorise button, client id/secret) and
+        // `InvoicingView` (`invoicingConnector` is not itself threaded into
+        // the view; only `SettingsDialog` reads it) need them.
+        var invoicingConnector = (Tempest.Core.Invoicing.IInvoicingConnector)services.GetService(typeof(Tempest.Core.Invoicing.IInvoicingConnector));
+        var secretStore = (Tempest.Core.Secrets.ISecretStore)services.GetService(typeof(Tempest.Core.Secrets.ISecretStore));
+
+        var settingsDialog = new SettingsDialog(
+            theme, session.UserSettings, composition.SettingsProvider, workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -303,6 +315,21 @@ internal sealed partial class MainWindowComposer
         };
         deliverablesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // `WP 19.1A` part 3 (`ADR-0151`): the Invoicing area — every
+        // InvoiceRequest across open projects (or the open project when one
+        // is open), grouped by status. Dispatches Send/Reconcile/Void
+        // through the command dispatcher's own registry, mirroring
+        // `TimesheetWeekView`'s own Amend/Delete shape, and opens what it
+        // reviews right up through the same callback `EvidenceWorkspaceView`
+        // uses (`WP 17.9.4`).
+        var invoicingView = new InvoicingView(
+            composition.DomainContext, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id, openObjectRightUp)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        invoicingView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var projectDirectory = host.ProjectDirectory!;
         var projectBrowser = new ProjectBrowserView(projectDirectory, host.ShellNavigator!, callbacks.PromptForNewProjectAsync);
         var projectWorkspace = new ProjectWorkspaceView(
@@ -325,6 +352,6 @@ internal sealed partial class MainWindowComposer
             citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
             engineeringCalculation, librariesView, organisationPicker, rateCardPicker, timesheetEntryPrompt, deliverableCompletionPrompt,
-            timesheetWeekView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider, workspace, manager, principals);
+            timesheetWeekView, invoicingView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider, workspace, manager, principals);
     }
 }
