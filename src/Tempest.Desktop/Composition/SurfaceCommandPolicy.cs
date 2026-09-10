@@ -5,6 +5,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 
 namespace Tempest.Desktop.Composition;
@@ -83,5 +84,10 @@ internal static class SurfaceCommandPolicy
         RequirementsCommandIds.Delete,
         RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection,
+
+        // `WP 19.0A` (`ADR-0150`): `timesheet.delete` carries a delete
+        // confirmation (`TimesheetsWorkspaceRegistration`) — found missing
+        // from this policy by part 2's own gate run and disclosed here.
+        TimesheetCommandIds.Delete,
     };
 }

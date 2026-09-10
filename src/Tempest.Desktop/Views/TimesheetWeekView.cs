@@ -311,7 +311,7 @@ public sealed class TimesheetWeekView : UserControl
         }
 
         var context = new CommandContext([new CommandContextObject(entryId, TimesheetEntry.CanonicalKind)]);
-        var invocation = await _commandRegistry.InvokeAsync("timesheet.amend", context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
+        var invocation = await _commandRegistry.InvokeAsync(Tempest.Workspace.Timesheets.TimesheetCommandIds.Amend, context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
 
         if (invocation.Outcome == CommandOutcome.Cancelled)
             return;
@@ -336,7 +336,7 @@ public sealed class TimesheetWeekView : UserControl
         }
 
         var context = new CommandContext([new CommandContextObject(entryId, TimesheetEntry.CanonicalKind)]);
-        var invocation = await _commandRegistry.InvokeAsync("timesheet.delete", context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
+        var invocation = await _commandRegistry.InvokeAsync(Tempest.Workspace.Timesheets.TimesheetCommandIds.Delete, context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
 
         if (invocation.Outcome == CommandOutcome.Cancelled)
             return;

@@ -5,6 +5,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
@@ -75,6 +76,10 @@ public sealed class KindEligibilityInvariantTests
         CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
         VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection,
+        // `WP 19.0A` (`ADR-0150`): timesheet.delete carries a delete
+        // confirmation and is now routed through `SurfaceCommandPolicy` —
+        // found missing from this map by part 2's own gate run.
+        TimesheetCommandIds.Delete,
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>
