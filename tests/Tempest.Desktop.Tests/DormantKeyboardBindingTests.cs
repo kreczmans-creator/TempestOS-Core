@@ -107,12 +107,15 @@ public sealed class DormantKeyboardBindingTests
     {
         Assert.Empty(new KeyboardCommandBindingProvider().Bindings);
 
-        // MainWindow constructs and registers the provider (so the extension
-        // point is genuinely wired, not merely declared) and binds nothing to
-        // it. Both halves matter: a provider nobody registers would make this
-        // dormancy meaningless rather than deliberate.
-        var mainWindow = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "MainWindow.cs"));
+        // MainWindowComposer's own BuildViews phase constructs and registers
+        // the provider (so the extension point is genuinely wired, not
+        // merely declared) and binds nothing to it (`WP 19.2A`: this call
+        // moved out of MainWindow's own constructor along with everything
+        // else BuildViews now owns). Both halves matter: a provider nobody
+        // registers would make this dormancy meaningless rather than
+        // deliberate.
+        var composer = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "Composition", "MainWindowComposer.cs"));
 
-        Assert.Contains("InputBindingRegistry.Register(_keyboardBindingProvider)", mainWindow, StringComparison.Ordinal);
+        Assert.Contains("InputBindingRegistry.Register(keyboardBindingProvider)", composer, StringComparison.Ordinal);
     }
 }

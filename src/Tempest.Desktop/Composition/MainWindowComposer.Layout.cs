@@ -15,7 +15,7 @@ namespace Tempest.Desktop.Composition;
 /// only exists once this phase has built it, and that
 /// <c>RenderCurrentModuleAsync</c> needs as a field.
 /// </summary>
-internal sealed record ComposedLayout(Control Content, Control EngineeringSurface);
+internal sealed record ComposedLayout(Control Content, Control EngineeringSurface, DockPanel Dock);
 
 internal sealed partial class MainWindowComposer
 {
@@ -157,6 +157,6 @@ internal sealed partial class MainWindowComposer
                  })
             TrackModal(modal);
 
-        return new ComposedLayout(root, engineeringSurface);
+        return new ComposedLayout(root, engineeringSurface, dock);
     }
 }

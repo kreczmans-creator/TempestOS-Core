@@ -21,11 +21,10 @@ namespace Tempest.Desktop;
 /// The rendered content and per-area entry action one <see cref="ShellArea"/>
 /// registers into <see cref="MainWindow"/>'s own area registry (`WP 19.2A`,
 /// `TD-109`) — the table <see cref="MainWindow.RenderCurrentModuleAsync"/>
-/// reads instead of a switch, so a Work Package that adds an area (`WP
-/// 19.0A` part 2, `WP 19.1A` part 3, `WP 19.2B`) adds one entry, never a
-/// new case. <paramref name="OnEnter"/> is <see langword="null"/> for an
-/// area with nothing to load on entry; one absent from the table entirely
-/// renders <see cref="DeclaredCapabilityView"/>.
+/// reads instead of a switch, so a later Work Package adds an area with one
+/// entry, never a new case. <paramref name="OnEnter"/> is
+/// <see langword="null"/> for an area with nothing to load on entry; one
+/// absent from the table renders <see cref="DeclaredCapabilityView"/>.
 /// </summary>
 internal sealed record ShellAreaRender(Func<Control> Content, Func<Task>? OnEnter);
 
@@ -60,11 +59,27 @@ public sealed class MainWindow : Window
     private readonly IDiagnosticsProvider _diagnostics;
     private readonly RibbonView _ribbon;
     private readonly ToastHost _toastHost;
+    private readonly ConfirmationDialog _confirmationDialog;
     private readonly InputDialog _inputDialog;
     private readonly MessageDialog _messageDialog;
+    private readonly SettingsDialog _settingsDialog;
     private readonly DesktopSessionState _session;
     private readonly WorkspaceViewCoordinator _viewCoordinator;
+    private readonly UndoRedoCoordinator _undoRedo;
     private readonly IWorkspaceManager _workspaceManager;
+    private readonly DocumentAreaView _documentArea;
+    private readonly CommandPaletteOverlay _commandPalette;
+    private readonly MacroManagerDialog _macroManagerDialog;
+    private readonly ActionOutcomeReporter _actionReporter;
+    private readonly DockPanel _dock;
+
+    // The Evidence workspace's own picker/entry dialogs (`WP 18.2A`).
+    private readonly CitationPicker _citationPicker;
+    private readonly SubjectPicker _subjectPicker;
+    private readonly DeclaredFigureEntry _declaredFigureEntry;
+    private readonly CheckEntry _checkEntry;
+    private readonly IssueEntry _issueEntry;
+    private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
 
     // The Product Spine (`TD-84`) — Module -> Project -> Workspace.
     private readonly IShellNavigator _navigator;
@@ -148,11 +163,25 @@ public sealed class MainWindow : Window
         _diagnostics = views.Diagnostics;
         _ribbon = views.Ribbon;
         _toastHost = views.ToastHost;
+        _confirmationDialog = views.ConfirmationDialog;
         _inputDialog = views.InputDialog;
         _messageDialog = views.MessageDialog;
+        _settingsDialog = views.SettingsDialog;
         _session = views.Session;
         _viewCoordinator = coordinators.ViewCoordinator;
+        _undoRedo = coordinators.UndoRedo;
         _workspaceManager = views.Manager;
+        _documentArea = views.DocumentArea;
+        _commandPalette = views.CommandPalette;
+        _macroManagerDialog = views.MacroManagerDialog;
+        _actionReporter = views.ActionReporter;
+        _dock = layout.Dock;
+        _citationPicker = views.CitationPicker;
+        _subjectPicker = views.SubjectPicker;
+        _declaredFigureEntry = views.DeclaredFigureEntry;
+        _checkEntry = views.CheckEntry;
+        _issueEntry = views.IssueEntry;
+        _reviseReferenceRecordEntry = views.ReviseReferenceRecordEntry;
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
         _navigationRail = views.NavigationRail;
@@ -301,11 +330,7 @@ public sealed class MainWindow : Window
     /// <summary>Opens an engineering object in the document area, as the Explorer's own activation does — exposed so a test can reach an object's real editor and press its own Open button.</summary>
     public Task NavigateToObjectAsync(Guid id, string kind) => _viewCoordinator.NavigateToObjectAsync(id, kind);
 
-    /// <summary>
-    /// Professional Error Handling (`WP 10.5B` scope) — shows a real
-    /// <see cref="MessageDialog"/> for a genuinely unexpected exception.
-    /// Called from <c>App.cs</c>'s own <see cref="TaskScheduler.UnobservedTaskException"/> handler.
-    /// </summary>
+    /// <summary>Professional Error Handling (`WP 10.5B` scope) — a real <see cref="MessageDialog"/> for a genuinely unexpected exception, called from <c>App.cs</c>'s own <see cref="TaskScheduler.UnobservedTaskException"/> handler.</summary>
     public Task ShowUnexpectedErrorAsync(Exception exception)
     {
         ArgumentNullException.ThrowIfNull(exception);
@@ -520,13 +545,7 @@ public sealed class MainWindow : Window
         return $"{version[..plus]} ({(metadata.Length > 7 ? metadata[..7] : metadata)})";
     }
 
-    /// <summary>
-    /// Takes the user to an object — one they just made (`WP 17.9.4`), or
-    /// one they just found (`WP 18.1B`): the Explorer switches to the area
-    /// that lists its Kind, reloads, expands the path to it and selects
-    /// it; then the object opens in the editor tab with every field in
-    /// front of them.
-    /// </summary>
+    /// <summary>Takes the user to an object — one they just made (`WP 17.9.4`) or found (`WP 18.1B`): the Explorer switches to the area that lists its Kind, reloads, expands the path to it and selects it; then the object opens in the editor tab.</summary>
     internal async Task OpenObjectAsync(Guid id, string kind)
     {
         var workspace = _workspaceManager.Current;
@@ -554,16 +573,13 @@ public sealed class MainWindow : Window
 
     /// <summary>
     /// Opens an Evidence record's own editor from the Evidence rail area
-    /// (`WP 18.2A`) — Create and opening a row both call this.
+    /// (`WP 18.2A`) — Create and opening a row both call this. The Object
+    /// Editor's own document tabs live in the Engineering module's own
+    /// docking layout, which <see cref="_moduleHost"/> does not show while
+    /// Evidence itself is on screen; without switching first, "opens right
+    /// up" (`WP 17.9.4`) would open the tab behind a module the user is
+    /// not looking at.
     /// </summary>
-    /// <remarks>
-    /// The Object Editor's own document tabs live in the Engineering
-    /// module's own docking layout (<see cref="_engineeringSurface"/>),
-    /// which <see cref="_moduleHost"/> does not show while the Evidence
-    /// area itself is on screen; without switching first, "opens right up"
-    /// (Product Owner guard, `WP 17.9.4`) would open the tab behind a
-    /// module the user is not looking at.
-    /// </remarks>
     private async Task OpenEvidenceRecordAsync(Guid id, string kind)
     {
         await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
