@@ -46,13 +46,21 @@ screenshots every screen in CI.
 | `WP 19.1A` Outbound invoicing (ADR-0151) | `IInvoicingConnector`; `InvoiceRequest` with the request id as idempotency key and a nine-state lifecycle; `InvoicingService`; `FakeInvoicingConnector`; DPAPI secret store; reconciliation poller; OAuth 2.0 with PKCE over a loopback listener; `XeroConnector` and `QuickBooksOnlineConnector` with contract tests against recorded responses; the Invoicing area; connector authorisation in Settings | 2026-09-10 |
 | `WP 19.1B` KPI read models and Home cockpit | One `KpiSnapshot` per period; the five equations from `ADR-0150` with hand-computed fixture tests; period presets persisted; the engineering placeholder cards removed | 2026-09-10 |
 | `WP 19.2A` Desktop composition | `MainWindowComposer` (BuildViews → BuildCoordinators → Wire → Layout); `MainWindow.cs` 1,475 → 595 lines; no null-forgiving field capture; area registry; `CommandIds` constants | 2026-09-10 |
-| `WP 19.2B` The honest rail | *(filled at merge)* | |
+| `WP 19.2B` The honest rail | The rail reads Home, Projects, Evidence, Timesheets, Invoicing, Reports, Engineering Calculations, Settings — nothing declared-but-empty; Engineering is the project's Structure tab; Reports (issued sheets, project documents) and Settings (the dialog's sections as an area) are real areas; the ribbon compacts to icons below 1,200 px; 122 controls gained automation names with a structural test; `RailSurfaceContractTests` runs six behavioural checks per rail entry; two defects found at merge and fixed: the Structure tab's embedded surface steered the project tab strip through bubbled selection events, and the Commercial section now shows the client's name and the card's code through the release branch's resolvers | 2026-09-10 (6d0ceaa) |
 | `WP 19.3A` Layout verification in CI | In-process walk under headless Skia of every rail entry and project tab at two sizes; bounds and overlap checks; `layout-screenshots` artifact; it found and fixed a rail title overflow, a status-bar squeeze and a clipped tab strip on its first runs | 2026-09-10 |
 | `WP 19.9.0` Release | *(this document, the physical review, the tag)* | |
 
 ## Figures
 
-*(re-derived at `WP 19.9.0`)*
+| Measure | `v0.18.0` | `v0.19.0` |
+|---|---|---|
+| Live source lines (`src/`, excluding `Frozen/`) | 113,343 | 126,156 |
+| Live test lines (`tests/`, excluding `Frozen/`) | 99,709 | 107,824 |
+| `Tempest.Core` source lines | 54,366 | 59,472 (timesheets, deliverables, invoicing, connectors, reconciliation, KPI read models) |
+| Core tests | 3,991 | 4,255 |
+| Desktop tests | 532 | 550 (commercial section, timesheets, invoicing and rail-contract journeys; automation-name coverage; the layout walk; the status-bar collapse) |
+| ADRs | 149 | 151 (0150, 0151 new) |
+| Commits on the release branch | 68 | 70 since `release/v0.18.0`'s candidate head `8df3466` |
 
 ## What changed for a developer
 
