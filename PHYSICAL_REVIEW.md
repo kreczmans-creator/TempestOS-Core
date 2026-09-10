@@ -333,6 +333,29 @@ the Engineering workspace still has its **Calculations** tab.
 | E11 | Libraries → a Draft material → **Verify**, **Release** | Its state advances; it now appears in the citation picker without restart. | Requires a restart; a permission refusal is shown as a crash. |
 | E12 | Home cockpit | **Recently changed** lists the evidence at the top; clicking it opens the record. | Stale after a change; a manual refresh is needed anywhere. |
 
+### 7b. Consultancy journey (`v0.19.0`, about 15 minutes)
+
+Launch per §3. The title bar reads `TempestOS 0.19.0 (<commit>)`. The rail
+reads Home, Projects, Evidence, Timesheets, Invoicing, Reports,
+Engineering Calculations, Settings, and nothing else; no entry is dimmed.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| C1 | Rail → **Settings** | The Settings area (not a dialog): persistence root shown with *Open folder*; principal display name and role as configured; **Invoicing** with connector *Fake*, an **Authorise** button and the poll interval; **Working pattern** hours per week (37.5); the independent-check toggle; theme. Set the working pattern to 40. | A dialog instead of an area; a setting that does not persist. |
+| C2 | Projects → open or create a project → its editor's **Commercial** section | Change client → **Add organisation** *Client Ltd* → chosen and shown by name; **Rate card** → pick a Released card (release one from Evidence → Libraries if none; a Draft card is refused with the reason); PO reference `PO-1001`; budget `25000 GBP`; dates; project manager defaults to you. | An id where a name belongs; a Draft card accepted. |
+| C3 | Rail → **Timesheets** | This week, empty, with available hours 40 and utilisation 0 %. **Record** → project, today, 3 h, billable, grade from the card, task *Bracket calc* → the entry opens right up; the week shows the day and week totals and the utilisation. Record 2 h non-billable tomorrow. **Amend** the first to 3.5 h; **Delete** the second. | Totals wrong; an entry that opens nowhere; a rate that changes after a card revision. |
+| C4 | Evidence → Libraries → **Revise** the pinned rate card (raise the billing rate) → Release; back to Timesheets | The existing entry still shows the rate it was recorded at. | The entry's rate moved. |
+| C5 | Project → **Deliverables** tab → **Complete** a deliverable (create a milestone deliverable in Timeline first if none) with one Issued evidence record and fixed price `500 GBP` | The completion opens right up, and completing has raised an invoice request (Draft) by itself; **Complete** again → refused naming the first completion. | A second completion accepted; no request raised. |
+| C6 | Deliverables tab → **Raise invoice** on the same completion; then rail → **Invoicing** → **Review** the request | Raise invoice is refused, naming the request completing already raised (it is the retry for a completion whose raise was refused, not a second bill). Review opens the request right up: two lines (3.5 h × the frozen rate, the 500 fixed price), the total in GBP, status Draft, the Connector section. | A second request raised; lines missing; a total in the wrong currency. |
+| C7 | Rail → **Invoicing** → the request → **Send** (connector Fake) | Sent, with the fake's invoice number; Timesheets shows the entry as *invoiced*; Amend and Delete on it are refused. | Sent without linking the entry; a refusal missing. |
+| C8 | Invoicing → **Reconcile now** | External status and dates read from the fake (paid date shown when the fake reports paid); nothing in Tempest can set *Paid*. | A Paid control anywhere. |
+| C9 | Home | Five cards with *This week*: utilisation (3.5 ÷ 40), margin for the project (billing minus cost), WIP (nothing unbilled after C7), DSO (from the sent request's dates, or *unavailable*), calc throughput (issued evidence this period). Switch to *Last month* → cards change; relaunch → the period is remembered. | A zero where *unavailable* belongs; a card that ignores the period. |
+| C10 | Rail → **Reports** | Issued evidence sheets (Open, Export) and project documents, filtered by project. | Empty with an issued record present. |
+| C11 | Project → **Structure** tab | The engineering surface (ribbon and docking) inside the tab; Create a Part from it; it opens right up; the rail has no Engineering entry. | The tab swaps the whole module away. |
+| C12 | Narrow the window below 1,200 px | The rail folds to icons; the ribbon compacts to icons with tooltips; nothing overlaps or is clipped; the status bar collapses lower-priority segments. Widen: everything returns. | A horizontal scroll bar in the ribbon; clipped controls. |
+| C13 | Keyboard only: Tab to a Digital Thread edge and press Enter; with a panel header focused press Ctrl+Shift+Right | The edge's target is selected; the panel moves to the next slot. | No keyboard reach. |
+| C14 | Close, relaunch from the same folder | Project, entries, completion, request, KPI period and settings all present; the last area is remembered. | Anything missing. |
+
 ---
 
 ## 8. Known limitations that affect a physical review

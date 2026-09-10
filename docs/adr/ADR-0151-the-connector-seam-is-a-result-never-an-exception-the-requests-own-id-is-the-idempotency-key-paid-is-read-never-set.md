@@ -281,3 +281,22 @@ organisation — `CreateDraftInvoiceAsync` returns
 `ConnectorResult.Rejected("client organisation '<id>' is not in the
 catalogue")` outright, never querying or creating a contact named after a
 raw, meaningless id.
+
+## Addendum (`WP 19.9.0`) — a source is billed on at most one live request
+
+§5 writes `InvoicedBy` only once a request reaches `Sent`; §7 raises a
+request the moment a deliverable is completed. Together they left a gap
+the v0.19.0 Desktop journey found one run in two: the completion hook
+raised a Draft, and Raise invoice on the same completion from the
+Deliverables tab raised a second Draft carrying the same lines, because
+nothing was yet marked invoiced. `RaiseFromCompletionAsync` now reads
+every live request first (anything not `Rejected` or `Voided`, which free
+their lines): a completion a live request already carries is refused
+`AlreadyInvoiced`, naming that request and its status; a timesheet entry a
+live request already carries is left off the new one; and when nothing is
+left, the `NothingToBill` refusal names the request that already holds it.
+The Deliverables tab's Raise invoice therefore stays what §7 implied it
+was — the retry for a completion whose hook refused (no client yet, no
+rate-card pin) — and never a way to bill the same work twice. The
+`InvoiceRequestResult` a refusal carries is the existing request, so a
+caller can open it.

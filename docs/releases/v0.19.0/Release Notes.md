@@ -80,6 +80,13 @@ screenshots every screen in CI.
   the configured port is already in use, connecting reports the exact
   port and configuration key rather than failing silently. See `ADR-0151`'s
   own addendum.
+- **Completing a deliverable raises the invoice request itself** (the
+  completion hook, `ADR-0151` §7). Raise invoice on the Deliverables tab
+  is the retry for a completion whose hook refused (no client, no
+  rate-card pin); on a completion a live request already carries it now
+  refuses, naming that request. Before this guard it raised a second Draft
+  with the same lines — found by the Desktop journey one run in two, fixed
+  at `WP 19.9.0`, `ADR-0151`'s own last addendum.
 - *(further warnings filled at `WP 19.9.0`)*
 
 ## Related
