@@ -1,5 +1,6 @@
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Kpi;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -9,6 +10,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
+using Tempest.Core.Settings;
 
 namespace Tempest.Workspace;
 
@@ -114,6 +116,22 @@ public sealed class EngineeringCockpit
     private string _digitalThreadSummary = "0 links tracked (no live Engineering objects exist yet).";
     private IReadOnlyList<CockpitRecentChange> _recentlyChanged = [];
 
+    // `WP 19.1B` — the Home cockpit's own five KPI cards (ADR-0150).
+    // `_kpiSnapshots`/`_settings`/`_principals` are optional, additive
+    // dependencies (every existing caller/test that never threads them
+    // through still compiles, and still renders every other region
+    // exactly as before): `null` leaves every KPI card at its own honest
+    // "no time recorded"/"unavailable" text, never a crash. `_kpiPeriod`
+    // is loaded from `_settings` (or defaulted to `KpiPeriod.ThisWeek`)
+    // the first time `PrimeAsync` runs, then held here across calls so a
+    // caller can change it once, through `SetKpiPeriodAsync`, without a
+    // second settings read on every subsequent refresh.
+    private readonly IKpiSnapshotService? _kpiSnapshots;
+    private readonly ISettingsProvider? _settings;
+    private readonly IPrincipalDirectory? _principals;
+    private KpiPeriod? _kpiPeriod;
+    private KpiSnapshot? _kpi;
+
     /// <summary>
     /// Initialises a new instance of the <see cref="EngineeringCockpit"/>
     /// class — internal: only <see cref="WorkspaceManager.StartAsync"/>
@@ -129,10 +147,19 @@ public sealed class EngineeringCockpit
     /// and test compiles unchanged) leaves that card honestly empty rather
     /// than failing.
     /// </param>
+    /// <param name="kpiSnapshots">
+    /// Reads the Home cockpit's own five-equation KPI snapshot (`WP 19.1B`,
+    /// `ADR-0150`) — <see langword="null"/> (the default) leaves every KPI
+    /// card at its own honest "no time recorded"/"unavailable" text rather
+    /// than failing.
+    /// </param>
+    /// <param name="settings">Persists the selected <see cref="KpiPeriod"/> (`Cockpit.KpiPeriod`) — <see langword="null"/> leaves the period unpersisted (always <see cref="Kpi.KpiPeriod.ThisWeek"/> on construction) rather than failing.</param>
+    /// <param name="principalDirectory">Names each utilisation row's own principal (<see cref="UtilisationKpiCards"/>) — <see langword="null"/> falls back to the raw identity id.</param>
     internal EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
         IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
-        Func<DateTimeOffset>? now = null, IAuditQuery? auditQuery = null)
+        Func<DateTimeOffset>? now = null, IAuditQuery? auditQuery = null,
+        IKpiSnapshotService? kpiSnapshots = null, ISettingsProvider? settings = null, IPrincipalDirectory? principalDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -145,6 +172,12 @@ public sealed class EngineeringCockpit
         _domainContext = domainContext;
         _requirementValidationService = requirementValidationService;
         _auditQuery = auditQuery;
+        _kpiSnapshots = kpiSnapshots;
+        _settings = settings;
+        _principals = principalDirectory;
+
+        if (_settings is not null)
+            KpiPeriodSetting.EnsureRegistered(_settings);
 
         // The clock "overdue" is measured against. Optional, so every
         // existing caller is unchanged; injectable so a test can state the
@@ -246,7 +279,39 @@ public sealed class EngineeringCockpit
         }
 
         _recentlyChanged = await LoadRecentlyChangedAsync(cancellationToken).ConfigureAwait(false);
+
+        await LoadKpiAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Loads <see cref="_kpi"/> for the Home cockpit's own five KPI card
+    /// sets (`WP 19.1B`) — honestly empty (every card's own "no time
+    /// recorded"/"unavailable" text) if no <see cref="IKpiSnapshotService"/>
+    /// was supplied at construction. <see cref="_kpiPeriod"/> is read from
+    /// <see cref="_settings"/> (or defaulted to <see cref="Kpi.KpiPeriod.ThisWeek"/>)
+    /// only the first time this runs; a later call — the very next
+    /// <see cref="PrimeAsync"/> pass after <see cref="SetKpiPeriodAsync"/>
+    /// changed it — re-reads against whatever <see cref="_kpiPeriod"/>
+    /// already holds, never overwriting a caller's own choice with the
+    /// persisted value again.
+    /// </summary>
+    private async Task LoadKpiAsync(CancellationToken cancellationToken)
+    {
+        if (_kpiSnapshots is null)
+            return;
+
+        if (_kpiPeriod is null)
+        {
+            _kpiPeriod = _settings is not null
+                ? await KpiPeriodSetting.LoadAsync(_settings, Today, cancellationToken).ConfigureAwait(false)
+                : KpiPeriod.ThisWeek(Today);
+        }
+
+        _kpi = await _kpiSnapshots.GetSnapshotAsync(_kpiPeriod, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>"Today", by this Cockpit's own injectable clock (<see cref="_now"/>) — the same clock <see cref="OverdueActions"/> already measures against.</summary>
+    private DateOnly Today => DateOnly.FromDateTime(_now().UtcDateTime);
 
     // ------------------------------------------------------------
     // Where am I?
@@ -523,40 +588,131 @@ public sealed class EngineeringCockpit
     /// <summary>Gets the Requirements discipline's own dedicated KPI card set — see <see cref="RequirementsCockpitReadModel.KpiCards"/>.</summary>
     public IReadOnlyList<CockpitKpiCard> RequirementsKpiCards => _requirements.KpiCards;
 
+    /// <summary>Gets the Manufacturing discipline's own dedicated seven-card KPI set — see <see cref="ManufacturingCockpitReadModel.KpiCards"/>.</summary>
+    public IReadOnlyList<CockpitKpiCard> ManufacturingKpiCards => _manufacturing.KpiCards;
+
+    // ------------------------------------------------------------
+    // The Home cockpit's own five KPI cards (`WP 19.1B`, `ADR-0150`).
+    // The old cross-discipline "Engineering Overview" aggregate
+    // (`WP-Z4`'s own KpiCards property, rendered as the Cockpit's
+    // "Engineering Overview" card) is removed here, per this Work
+    // Package's own row: the Engineering Cockpit's placeholder KPI cards
+    // make way for these — the same "What Needs Attention"/discipline-chip
+    // regions above still cover that ground for the Engineering
+    // disciplines; nothing here replaces them.
+    // ------------------------------------------------------------
+
+    /// <summary>Gets the selected KPI reporting period — <see cref="Kpi.KpiPeriod.ThisWeek"/> until <see cref="PrimeAsync"/> has run at least once with a period to load.</summary>
+    public KpiPeriod SelectedKpiPeriod => _kpiPeriod ?? KpiPeriod.ThisWeek(Today);
+
     /// <summary>
-    /// Gets the Engineering Health Summary's own per-discipline KPI cards
-    /// — a real, cross-discipline aggregation (`ADR-0103`): the live
-    /// object count each contributing collaborator already computes, or
-    /// a disclosed placeholder if none exist yet. "Review" sums each
-    /// discipline's own already-computed in-review count; "Risks" is
-    /// <see cref="LiveRisks"/>'s own real count, the identical read
-    /// <see cref="RiskSummary"/> already uses.
+    /// Selects <paramref name="period"/> as the Home cockpit's own KPI
+    /// reporting window, and persists it (`Cockpit.KpiPeriod`) when a
+    /// <see cref="ISettingsProvider"/> was supplied at construction. Takes
+    /// effect on the next <see cref="PrimeAsync"/> call — this method
+    /// itself performs no read of its own, so a caller (<c>CockpitView</c>'s
+    /// own period selector) follows it with <c>RefreshAsync</c>.
     /// </summary>
-    public IReadOnlyList<CockpitKpiCard> KpiCards
+    public async Task SetKpiPeriodAsync(KpiPeriod period, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(period);
+
+        _kpiPeriod = period;
+
+        if (_settings is not null)
+            await KpiPeriodSetting.SaveAsync(_settings, period, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The text an honestly-empty KPI card shows before any of the five below has anything real to report.</summary>
+    private static IReadOnlyList<CockpitKpiCard> EmptyKpi(string label, string message) => [new(label, message, IsPlaceholder: false)];
+
+    /// <summary>Gets utilisation per principal for <see cref="SelectedKpiPeriod"/> — billable hours over available hours from the working pattern, never calendar days (`ADR-0150`). One row per principal with at least one live entry in the period, named via <see cref="IPrincipalDirectory.Describe"/> when available.</summary>
+    public IReadOnlyList<CockpitKpiCard> UtilisationKpiCards
     {
         get
         {
-            var totalRequirements = _requirements.Count;
-            var totalCalculations = _calculations.Count;
-            var totalDocuments = _documents.Count;
-            var totalVerificationActivities = _verification.Count;
-            var totalInReview = _requirements.InReviewCount + _calculations.InReviewCount + _documents.OutstandingReviews;
-            var totalRisks = LiveRisks.Count;
+            var rows = _kpi?.Utilisation;
+            if (rows is not { Count: > 0 })
+                return EmptyKpi("Utilisation", "No time recorded for this period.");
 
             return
             [
-                totalRequirements > 0 ? new("Requirements", $"{totalRequirements} total", IsPlaceholder: false) : new("Requirements", "—", IsPlaceholder: true),
-                totalVerificationActivities > 0 ? new("Verification", $"{totalVerificationActivities} total", IsPlaceholder: false) : new("Verification", "—", IsPlaceholder: true),
-                totalCalculations > 0 ? new("Calculations", $"{totalCalculations} total", IsPlaceholder: false) : new("Calculations", "—", IsPlaceholder: true),
-                totalDocuments > 0 ? new("Documentation", $"{totalDocuments} total", IsPlaceholder: false) : new("Documentation", "—", IsPlaceholder: true),
-                totalInReview > 0 ? new("Review", $"{totalInReview} total", IsPlaceholder: false) : new("Review", "—", IsPlaceholder: true),
-                totalRisks > 0 ? new("Risks", $"{totalRisks} total", IsPlaceholder: false) : new("Risks", "—", IsPlaceholder: true),
+                .. rows.Select(row => new CockpitKpiCard(
+                    _principals?.Describe(row.PrincipalIdentityId) ?? row.PrincipalIdentityId,
+                    $"{row.BillableHours:0.##}h billable / {row.AvailableHours:0.##}h available",
+                    IsPlaceholder: false,
+                    row.Percent)),
             ];
         }
     }
 
-    /// <summary>Gets the Manufacturing discipline's own dedicated seven-card KPI set — see <see cref="ManufacturingCockpitReadModel.KpiCards"/>.</summary>
-    public IReadOnlyList<CockpitKpiCard> ManufacturingKpiCards => _manufacturing.KpiCards;
+    /// <summary>Gets margin per project for <see cref="SelectedKpiPeriod"/> — billable value less cost, as an amount and a percentage of billable value (`ADR-0150`). Discloses when a contributing entry carried no frozen cost rate, rather than silently understating cost.</summary>
+    public IReadOnlyList<CockpitKpiCard> MarginKpiCards
+    {
+        get
+        {
+            var rows = _kpi?.MarginByProject;
+            if (rows is not { Count: > 0 })
+                return EmptyKpi("Margin per project", "No time or deliverables recorded for this period.");
+
+            return
+            [
+                .. rows.Select(row => new CockpitKpiCard(
+                    row.ProjectName,
+                    row.AnyMissingCostRate
+                        ? $"{row.Margin} ({FormatPercent(row.MarginPercentOfRevenue)} of billable value — cost rate missing for some entries, counted as zero)"
+                        : $"{row.Margin} ({FormatPercent(row.MarginPercentOfRevenue)} of billable value)",
+                    IsPlaceholder: false,
+                    row.MarginPercentOfRevenue)),
+            ];
+        }
+    }
+
+    /// <summary>Gets work in progress by project — billable value not yet linked to an invoice request, with the age of the oldest such entry (`ADR-0150`). A live backlog snapshot: never scoped to <see cref="SelectedKpiPeriod"/>, since unbilled work from any date is still owed.</summary>
+    public IReadOnlyList<CockpitKpiCard> WorkInProgressKpiCards
+    {
+        get
+        {
+            var rows = _kpi?.WorkInProgress;
+            if (rows is not { Count: > 0 })
+                return EmptyKpi("Work in progress", "No unbilled work outstanding.");
+
+            return
+            [
+                .. rows.Select(row => new CockpitKpiCard(
+                    row.ProjectName,
+                    $"{row.Value} — oldest entry {row.OldestEntryAgeDays} day(s) old",
+                    IsPlaceholder: false)),
+            ];
+        }
+    }
+
+    /// <summary>Gets days sales outstanding across every invoice request in Sent or later (`ADR-0150`) — a live aggregate, never scoped to <see cref="SelectedKpiPeriod"/>. Reads "unavailable", never zero, when no connector has ever been authorised or nothing has been sent yet.</summary>
+    public IReadOnlyList<CockpitKpiCard> DaysSalesOutstandingKpiCards
+    {
+        get
+        {
+            var dso = _kpi?.DaysSalesOutstanding;
+            var value = dso is { IsAvailable: true } available
+                ? $"{available.AverageDays:0.#} day(s) average, across {available.InvoiceCount} invoice(s)"
+                : "Unavailable — no invoice has reached Sent with a known issued date yet.";
+
+            return [new("Days sales outstanding", value, IsPlaceholder: false)];
+        }
+    }
+
+    /// <summary>Gets calc throughput — Evidence records reaching Issued in <see cref="SelectedKpiPeriod"/>, by their own issue date (`ADR-0150`). Zero is an honest count here, never a placeholder.</summary>
+    public IReadOnlyList<CockpitKpiCard> CalcThroughputKpiCards
+    {
+        get
+        {
+            var count = _kpi?.CalcThroughput ?? 0;
+            return [new("Calc throughput", $"{count} sheet(s) issued this period", IsPlaceholder: false)];
+        }
+    }
+
+    /// <summary>Renders a KPI row's own coverage-style percentage — <see langword="null"/> (a zero denominator) as <c>"n/a"</c>, never a fabricated figure.</summary>
+    private static string FormatPercent(int? percent) => percent is { } value ? $"{value}%" : "n/a";
 
     /// <summary>Gets the Verification discipline's own dedicated KPI card set — see <see cref="VerificationCockpitReadModel.KpiCards"/>.</summary>
     public IReadOnlyList<CockpitKpiCard> VerificationKpiCards => _verification.KpiCards;

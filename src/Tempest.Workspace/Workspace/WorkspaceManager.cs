@@ -1,12 +1,16 @@
+using Tempest.Workspace.Kpi;
 using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Identity;
 using Tempest.Core.Navigation;
+using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Settings;
+using Tempest.Core.Timesheets;
 
 namespace Tempest.Workspace;
 
@@ -110,13 +114,24 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         // card — the same audit trail every mutator already writes
         // (`ADR-0145`), so the card survives a restart.
         var auditQuery = (IAuditQuery)services.GetService(typeof(IAuditQuery));
+        // `WP 19.1B` (`ADR-0150`): the Home cockpit's own five KPI cards.
+        // `IQueryablePersistenceStore`/`IWorkingPatternProvider`/
+        // `IPrincipalDirectory` are registered for every `ITempestHost`
+        // (`TempestHost`'s own core registration, unconditional), so this
+        // never fails a caller that already resolves the services above.
+        var queryableStore = (IQueryablePersistenceStore)services.GetService(typeof(IQueryablePersistenceStore));
+        var workingPatterns = (IWorkingPatternProvider)services.GetService(typeof(IWorkingPatternProvider));
+        var principalDirectory = (IPrincipalDirectory)services.GetService(typeof(IPrincipalDirectory));
+        var kpiSnapshots = new KpiSnapshotService(new WorkspaceSnapshotReader(queryableStore), workingPatterns);
         _eventBus = eventBus;
 
         var navigationService = new NavigationService(navigationProvider, _viewFactories, _context);
         var projectExplorer = new ProjectExplorer(navigationService, _explorerProviders);
         var propertyInspector = new PropertyInspector(_facetProviders);
         _propertyInspector = propertyInspector;
-        var cockpit = new EngineeringCockpit(navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService, auditQuery: auditQuery);
+        var cockpit = new EngineeringCockpit(
+            navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService,
+            auditQuery: auditQuery, kpiSnapshots: kpiSnapshots, settings: settingsProvider, principalDirectory: principalDirectory);
 
         var defaultPlacements = new List<WorkspacePanelPlacement>
         {

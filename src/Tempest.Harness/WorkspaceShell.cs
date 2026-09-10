@@ -543,10 +543,20 @@ public sealed class WorkspaceShell : IAsyncDisposable
         _output.WriteLine($"Review:        {FormatStatus(cockpit.ReviewStatus)}");
 
         _output.WriteLine();
-        _output.WriteLine("Engineering Health Summary (KPI Cards)");
-        _output.WriteLine("----------------------------------------");
-        foreach (var kpi in cockpit.KpiCards)
-            _output.WriteLine($"{kpi.Label}: {kpi.Value}{(kpi.IsPlaceholder ? " (placeholder)" : string.Empty)}");
+        _output.WriteLine("Home Cockpit KPIs");
+        _output.WriteLine("--------------------------------");
+        foreach (var (title, kpis) in new (string, IReadOnlyList<CockpitKpiCard>)[]
+        {
+            ("Utilisation", cockpit.UtilisationKpiCards),
+            ("Margin per project", cockpit.MarginKpiCards),
+            ("Work in progress", cockpit.WorkInProgressKpiCards),
+            ("Days sales outstanding", cockpit.DaysSalesOutstandingKpiCards),
+            ("Calc throughput", cockpit.CalcThroughputKpiCards),
+        })
+        {
+            foreach (var kpi in kpis)
+                _output.WriteLine($"{title} — {kpi.Label}: {kpi.Value}");
+        }
 
         _output.WriteLine();
         _output.WriteLine("Risk Summary");
