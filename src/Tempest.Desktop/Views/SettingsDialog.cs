@@ -5,7 +5,9 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Tempest.Core.Evidence;
+using Tempest.Core.Identity;
 using Tempest.Core.Settings;
+using Tempest.Core.Timesheets;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -28,18 +30,33 @@ public sealed class SettingsDialog : Border
     private readonly ThemeService _theme;
     private readonly UserSettings _settings;
     private readonly ISettingsProvider _settingsProvider;
+    private readonly IWorkingPatternProvider? _workingPatterns;
+    private readonly ICurrentPrincipalAccessor? _principals;
 
     private readonly ComboBox _themeSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140 };
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly CheckBox _confirmBeforeDelete = new() { Content = "Confirm before deleting an object" };
     private readonly CheckBox _independentCheckRequired = new() { Content = "Independent check required (checker must differ from the evidence's own author)" };
+    private readonly NumericUpDown _workingPatternHours = new() { Minimum = 0, Maximum = 168, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
     private TaskCompletionSource<bool>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="SettingsDialog"/> class, initially hidden.</summary>
-    public SettingsDialog(ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider)
+    /// <param name="theme">The theme service Appearance controls.</param>
+    /// <param name="settings">The user settings Notifications and Workflow control.</param>
+    /// <param name="settingsProvider">Every runtime-mutable setting's own read/write surface.</param>
+    /// <param name="workingPatterns">
+    /// Reads and lazily registers the current principal's own working
+    /// pattern (`WP 19.0A`, `ADR-0150`). <see langword="null"/> omits the
+    /// Timesheets section entirely — a composition root with no principal
+    /// context to show it against.
+    /// </param>
+    /// <param name="principals">The current principal, whose own working pattern the Timesheets section edits. <see langword="null"/> omits the section, as above.</param>
+    public SettingsDialog(
+        ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider,
+        IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -47,6 +64,8 @@ public sealed class SettingsDialog : Border
         _theme = theme;
         _settings = settings;
         _settingsProvider = settingsProvider;
+        _workingPatterns = workingPatterns;
+        _principals = principals;
 
         IsVisible = false;
         IsHitTestVisible = true;
@@ -76,6 +95,11 @@ public sealed class SettingsDialog : Border
         // the evidence's own author.
         var evidence = BuildSection("Evidence", _independentCheckRequired);
 
+        // `WP 19.0A` (`ADR-0150`): the current principal's own working
+        // pattern — hours per week, the denominator utilisation (`WP 19.1B`)
+        // reads. Shown only where a principal context exists to edit it.
+        var timesheets = BuildSection("Timesheets", LabeledRow("Working pattern (hours/week)", _workingPatternHours));
+
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, DesignTokens.SpaceLg, 0, 0) };
         buttons.Children.Add(_cancelButton);
         buttons.Children.Add(_saveButton);
@@ -86,6 +110,10 @@ public sealed class SettingsDialog : Border
         body.Children.Add(notifications);
         body.Children.Add(workflow);
         body.Children.Add(evidence);
+
+        if (_workingPatterns is not null && _principals is not null)
+            body.Children.Add(timesheets);
+
         body.Children.Add(buttons);
         Child = body;
 
@@ -150,6 +178,9 @@ public sealed class SettingsDialog : Border
         _independentCheckRequired.IsChecked = false;
         _ = LoadIndependentCheckRequiredAsync();
 
+        _workingPatternHours.Value = WorkingPatternProvider.DefaultHoursPerWeek;
+        _ = LoadWorkingPatternAsync();
+
         IsVisible = true;
         // The safe action gets initial focus (mirroring
         // `ConfirmationDialog`'s own identical convention) — Enter before
@@ -166,6 +197,23 @@ public sealed class SettingsDialog : Border
         _independentCheckRequired.IsChecked = bool.TryParse(value, out var required) && required;
     }
 
+    /// <summary>
+    /// Loads the current principal's own working pattern — registering its
+    /// own setting definition lazily, at the default, if nothing has yet
+    /// (`WP 19.0A`; mirrors <see cref="LoadIndependentCheckRequiredAsync"/>'s
+    /// own background-read shape, starting from the safe default this
+    /// dialog already shows the instant it opens).
+    /// </summary>
+    private async Task LoadWorkingPatternAsync()
+    {
+        if (_workingPatterns is null || _principals?.Current?.Identity.Id is not { } identityId)
+            return;
+
+        _workingPatternHours.Value = await _workingPatterns
+            .AvailableHoursAsync(identityId, DateOnly.FromDateTime(DateTime.UtcNow))
+            .ConfigureAwait(true);
+    }
+
     private async Task SaveAsync()
     {
         if (_themeSelector.SelectedItem is ComboBoxItem { Tag: ThemeVariant selectedTheme } && selectedTheme != _theme.Current)
@@ -178,6 +226,16 @@ public sealed class SettingsDialog : Border
         await _settingsProvider.SetValueAsync(
             EvidenceService.IndependentCheckSettingKey,
             (_independentCheckRequired.IsChecked ?? false) ? bool.TrueString : bool.FalseString).ConfigureAwait(true);
+
+        if (_workingPatterns is not null && _principals?.Current?.Identity.Id is { } identityId)
+        {
+            await _workingPatterns.EnsureRegisteredAsync(identityId).ConfigureAwait(true);
+
+            var hours = _workingPatternHours.Value ?? WorkingPatternProvider.DefaultHoursPerWeek;
+            await _settingsProvider
+                .SetValueAsync(WorkingPatternProvider.SettingKeyFor(identityId), hours.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                .ConfigureAwait(true);
+        }
 
         Complete(true);
     }
