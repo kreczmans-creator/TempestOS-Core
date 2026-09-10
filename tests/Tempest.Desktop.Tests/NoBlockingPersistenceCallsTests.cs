@@ -167,7 +167,15 @@ public sealed class NoBlockingPersistenceCallsTests
     /// Twenty-five sites across seven files closed this Work Package
     /// (<c>EngineeringCockpit.cs</c> and all six <c>*CockpitReadModel.cs</c>
     /// collaborators) — see the class remarks. These eleven, across nine
-    /// files, remain:
+    /// files, remained as of `WP 18.1A-R1`.
+    /// <c>WP 19.0A</c>/<c>WP 19.1A</c> (`ADR-0150`/`ADR-0151`) each add one
+    /// more Kind following the identical <c>Evidence</c> shape, each with
+    /// its own plain-data view bridging the same frozen
+    /// <c>IWorkspaceViewFactory.Create</c> contract the six above already
+    /// disclose — <c>TimesheetEntryObjectView.cs</c>,
+    /// <c>DeliverableCompletionObjectView.cs</c> and
+    /// <c>InvoiceRequestObjectView.cs</c>, taking the total to fourteen
+    /// sites across twelve files.
     /// </remarks>
     private static readonly Dictionary<string, (int Count, string Reason)> AllowedWorkspaceBlockingCallSites = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -204,6 +212,17 @@ public sealed class NoBlockingPersistenceCallsTests
             (1, "Runs once during Workspace startup composition, before any UI-thread caller exists to contend with — the same startup shape App.cs/DesktopSessionState.cs are excepted for above."),
         [Path.Combine("Workspace", "WorkspaceManager.cs")] =
             (1, "ThrowIfHostRunFaulted's own disclosed non-blocking rethrow: only called once _hostRunTask.IsCompleted is already true, so GetResult() returns immediately rather than blocking."),
+
+        // `WP 19.0A`/`WP 19.1A` (`ADR-0150`/`ADR-0151`): the same
+        // IWorkspaceViewFactory.Create sync/async boundary as
+        // RequirementsWorkspaceViewFactory.cs, for each new Kind's own
+        // plain-data view.
+        [Path.Combine("Workspace", "Timesheets", "TimesheetEntryObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
+        [Path.Combine("Workspace", "Deliverables", "DeliverableCompletionObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
+        [Path.Combine("Workspace", "Invoicing", "InvoiceRequestObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
     };
 
     private static IEnumerable<string> WorkspaceSourceFiles() =>
@@ -281,20 +300,23 @@ public sealed class NoBlockingPersistenceCallsTests
     }
 
     /// <summary>
-    /// Pins the Workspace allow-list itself: exactly eleven disclosed
-    /// sites across exactly nine files — down from the thirty-six this
-    /// Work Package found across the whole of <c>src/Tempest.Workspace</c>
-    /// once the twenty-five sites across the seven Cockpit-owned files
-    /// (<c>EngineeringCockpit.cs</c> and all six <c>*CockpitReadModel.cs</c>
-    /// collaborators) were fixed. A future fix that closes one of these
-    /// eleven must shrink this test deliberately; nothing here can
-    /// silently widen.
+    /// Pins the Workspace allow-list itself: fourteen disclosed sites
+    /// across twelve files — eleven across nine as of `WP 18.1A-R1`, down
+    /// from the thirty-six this Work Package found across the whole of
+    /// <c>src/Tempest.Workspace</c> once the twenty-five sites across the
+    /// seven Cockpit-owned files (<c>EngineeringCockpit.cs</c> and all six
+    /// <c>*CockpitReadModel.cs</c> collaborators) were fixed;
+    /// <c>WP 19.0A</c>/<c>WP 19.1A</c> each add one more disclosed site for
+    /// their own Kind's plain-data view, the identical
+    /// <c>IWorkspaceViewFactory.Create</c> bridge six other files already
+    /// disclose. A future fix that closes one of these fourteen must
+    /// shrink this test deliberately; nothing here can silently widen.
     /// </summary>
     [Fact]
-    public void TheWorkspaceAllowList_PinsExactlyElevenSites_AcrossNineFiles()
+    public void TheWorkspaceAllowList_PinsExactlyFourteenSites_AcrossTwelveFiles()
     {
-        Assert.Equal(9, AllowedWorkspaceBlockingCallSites.Count);
-        Assert.Equal(11, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
+        Assert.Equal(12, AllowedWorkspaceBlockingCallSites.Count);
+        Assert.Equal(14, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
 
         foreach (var (relative, allowed) in AllowedWorkspaceBlockingCallSites)
         {
