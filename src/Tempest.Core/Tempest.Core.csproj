@@ -42,4 +42,17 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
   </ItemGroup>
 
+  <!-- WP 19.1A / ADR-0151: WindowsDpapiSecretStore's own DPAPI
+       (Data Protection API) encryption for a connector's stored token.
+       ProtectedData is the official, Microsoft-published OOB shim for
+       DPAPI on modern .NET (the type is Windows-only at runtime;
+       WindowsDpapiSecretStore itself is `[SupportedOSPlatform("windows")]`
+       and Tempest.Core.Runtime.TempestHost selects it only inside an
+       `OperatingSystem.IsWindows()` guard). Confined to
+       Tempest.Core.Secrets.WindowsDpapiSecretStore; no other type in this
+       assembly references it. -->
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.11" />
+  </ItemGroup>
+
 </Project>
