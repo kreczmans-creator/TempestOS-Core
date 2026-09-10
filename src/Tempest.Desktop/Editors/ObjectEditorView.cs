@@ -67,11 +67,21 @@ public sealed record EvidenceEditorSupport(
 /// Commercial section's own Change/Pin/Use Me affordances honestly
 /// unavailable rather than run without asking — the identical discipline
 /// <see cref="ObjectEditorView.WorkspaceChanges"/> already established.
+/// <see cref="ResolveClientNameAsync"/>/<see cref="ResolveRateCardAsync"/>
+/// (`WP 19.2B`) turn the record ids <see cref="IProject.ClientOrganisationId"/>/
+/// <see cref="IProject.RateCardPin"/> actually store into the
+/// organisation's own name and the card's own code for display — the
+/// Commercial section shows a raw record id nowhere; each resolver answers
+/// <see langword="null"/> for a record no longer in its catalogue (never an
+/// exception), which <see cref="ObjectEditorView.PopulateCommercialAsync"/>
+/// discloses rather than papering over.
 /// </summary>
 public sealed record ProjectCommercialEditorSupport(
     Func<CancellationToken, Task<string?>> PickClientOrganisationIdAsync,
     Func<CancellationToken, Task<string?>> PickRateCardIdAsync,
-    Func<string?> CurrentPrincipalIdentityId);
+    Func<string?> CurrentPrincipalIdentityId,
+    Func<string, CancellationToken, Task<string?>> ResolveClientNameAsync,
+    Func<string, CancellationToken, Task<string?>> ResolveRateCardAsync);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -864,7 +874,7 @@ public sealed class ObjectEditorView : UserControl
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
         PopulateDescription(target);
         await PopulateWhereUsedAsync(target).ConfigureAwait(true);
-        PopulateCommercial(target);
+        await PopulateCommercialAsync(target).ConfigureAwait(true);
 
         PopulateLifecycle(target);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
@@ -1235,7 +1245,19 @@ public sealed class ObjectEditorView : UserControl
     /// each editable and dispatching its own already-registered
     /// <c>project.*</c> command directly.
     /// </summary>
-    private void PopulateCommercial(IEngineeringObject target)
+    /// <remarks>
+    /// `WP 19.2B`: <see cref="IProject.ClientOrganisationId"/>/
+    /// <see cref="IProject.RateCardPin"/> are record ids, not display text —
+    /// resolved through <see cref="ProjectCommercialEditorSupport.ResolveClientNameAsync"/>/
+    /// <see cref="ProjectCommercialEditorSupport.ResolveRateCardAsync"/> into
+    /// the organisation's own name and the card's own code. No
+    /// <see cref="ProjectCommercialEditorSupport"/> (a test that constructs
+    /// this editor directly without one) or a resolver answering
+    /// <see langword="null"/> (the record no longer in its catalogue) each
+    /// fall back to showing the id itself, clearly marked as such, rather
+    /// than inventing a name or silently going blank.
+    /// </remarks>
+    private async Task PopulateCommercialAsync(IEngineeringObject target)
     {
         var declaration = _declarations?.For(_objectKind);
 
@@ -1247,11 +1269,25 @@ public sealed class ObjectEditorView : UserControl
 
         _commercialSection.IsVisible = true;
 
+        string clientText;
+        double clientOpacity;
+        if (project.ClientOrganisationId is not { } clientId)
+        {
+            clientText = "(no client set)";
+            clientOpacity = 0.5;
+        }
+        else
+        {
+            var clientName = _commercialSupport is null ? null : await _commercialSupport.ResolveClientNameAsync(clientId, CancellationToken.None).ConfigureAwait(true);
+            clientText = clientName ?? $"{clientId} (organisation no longer on file)";
+            clientOpacity = 1.0;
+        }
+
         _commercialClientPanel.Children.Clear();
         _commercialClientPanel.Children.Add(new TextBlock
         {
-            Text = project.ClientOrganisationId ?? "(no client set)",
-            Opacity = project.ClientOrganisationId is null ? 0.5 : 1.0,
+            Text = clientText,
+            Opacity = clientOpacity,
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
         });
@@ -1264,11 +1300,25 @@ public sealed class ObjectEditorView : UserControl
         _commercialBudgetBox.Text = project.Budget?.ToString() ?? string.Empty;
         _commercialBudgetStatus.Text = string.Empty;
 
+        string rateCardText;
+        double rateCardOpacity;
+        if (project.RateCardPin is not { } pin)
+        {
+            rateCardText = "(no rate card pinned)";
+            rateCardOpacity = 0.5;
+        }
+        else
+        {
+            var rateCardCode = _commercialSupport is null ? null : await _commercialSupport.ResolveRateCardAsync(pin.RecordId, CancellationToken.None).ConfigureAwait(true);
+            rateCardText = rateCardCode ?? $"{pin.RecordId} (rate card no longer on file)";
+            rateCardOpacity = 1.0;
+        }
+
         _commercialRateCardPanel.Children.Clear();
         _commercialRateCardPanel.Children.Add(new TextBlock
         {
-            Text = project.RateCardPin is { } pin ? pin.ToString() : "(no rate card pinned)",
-            Opacity = project.RateCardPin is null ? 0.5 : 1.0,
+            Text = rateCardText,
+            Opacity = rateCardOpacity,
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
         });

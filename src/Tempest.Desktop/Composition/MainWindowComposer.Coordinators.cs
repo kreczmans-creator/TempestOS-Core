@@ -62,11 +62,18 @@ internal sealed partial class MainWindowComposer
         // overlays `BuildViews` already built, threaded into the Object
         // Editor's own declaration-driven Commercial section exactly as
         // `evidenceSupport` threads Evidence's own pickers into its
-        // declared sections.
+        // declared sections. `WP 19.2B`: the same section's own name
+        // resolvers, over the identical real `IOrganisationCatalog`/
+        // `IRateCardCatalog` the pickers themselves already read from —
+        // the Commercial section shows the client's organisation name and
+        // the rate card's own code, never the bare record id either
+        // stores.
         var commercialSupport = new ProjectCommercialEditorSupport(
             ct => views.OrganisationPicker.PickAsync(ct),
             ct => views.RateCardPicker.PickAsync(ct),
-            () => host.SessionPrincipal?.IdentityId);
+            () => host.SessionPrincipal?.IdentityId,
+            async (organisationId, ct) => (await views.OrganisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
+            async (rateCardId, ct) => (await views.RateCardCatalog.FindAsync(rateCardId, ct).ConfigureAwait(false))?.Definition.Code);
 
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,

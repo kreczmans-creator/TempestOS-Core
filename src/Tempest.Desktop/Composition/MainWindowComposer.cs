@@ -60,6 +60,8 @@ internal sealed record ComposedViews(
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
+    Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog OrganisationCatalog,
+    Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog RateCardCatalog,
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
@@ -380,7 +382,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals);
     }
