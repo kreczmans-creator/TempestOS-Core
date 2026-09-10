@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
@@ -343,5 +344,92 @@ public sealed class MainWindowCompositionTests
         }
 
         return null;
+    }
+
+    // ======================================================================
+    // WP 19.2A (TD-105–TD-107, TD-109, TD-112, TD-113, TD-115) — structural
+    // pins on the composition itself, grep-style over the real source text
+    // like NoBlockingPersistenceCallsTests, rather than over a running
+    // window: what these three assert is about the shape of the code, not
+    // its runtime behaviour, which the rest of this file and every journey
+    // test already cover.
+    // ======================================================================
+
+    /// <summary>
+    /// Neither <c>MainWindow.cs</c> nor <c>WorkspaceViewCoordinator.cs</c>
+    /// reads a field behind a null-forgiving <c>!</c> any more — the two
+    /// two-phase-construction cycles (<c>_documentArea!</c>,
+    /// <c>_cockpitView!</c>) `WP 19.2A` closed, one by building the
+    /// Document Area before the coordinator that needs it
+    /// (<c>DocumentAreaView.ContentBuilder</c>, <c>IDocumentOpener</c>),
+    /// the other by a real <c>WorkspaceViewCoordinator.Attach(CockpitView)</c>
+    /// call once it exists. A non-field null-forgiving use (<c>host.X!</c>,
+    /// asserting the already-started <c>WorkspaceHost</c>'s own optional
+    /// properties) is untouched — only an underscore-prefixed field name
+    /// matches.
+    /// </summary>
+    [Theory]
+    [InlineData("MainWindow.cs")]
+    [InlineData("Composition/WorkspaceViewCoordinator.cs")]
+    public void NoNullForgivingFieldCapture_InMainWindowOrWorkspaceViewCoordinator(string relativePath)
+    {
+        var source = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", relativePath));
+
+        var offenders = Regex.Matches(source, @"\b_[A-Za-z][A-Za-z0-9]*!(?!=)")
+            .Select(m => m.Value)
+            .ToList();
+
+        Assert.True(offenders.Count == 0, $"{relativePath} still null-forgives a field read: {string.Join(", ", offenders)}");
+    }
+
+    /// <summary>
+    /// <see cref="MainWindowComposer"/>'s own four phases —
+    /// <c>BuildViews</c>, <c>BuildCoordinators</c>, <c>Wire</c>,
+    /// <c>Layout</c> — exist, and <see cref="MainWindow"/>'s own
+    /// constructor calls all four, in that order. `TD-109`: the god
+    /// object's own ~830-line constructor is this composer's job now; a
+    /// future edit that reorders or drops a phase call is what this catches.
+    /// </summary>
+    [Fact]
+    public void MainWindowComposer_FourPhases_ExistAndAreCalledInOrder()
+    {
+        string SourceOf(string fileName) =>
+            File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "Composition", fileName));
+
+        Assert.Contains("public ComposedViews BuildViews(", SourceOf("MainWindowComposer.cs"), StringComparison.Ordinal);
+        Assert.Contains("public ComposedCoordinators BuildCoordinators(", SourceOf("MainWindowComposer.Coordinators.cs"), StringComparison.Ordinal);
+        Assert.Contains("public void Wire(", SourceOf("MainWindowComposer.Wire.cs"), StringComparison.Ordinal);
+        Assert.Contains("public ComposedLayout Layout(", SourceOf("MainWindowComposer.Layout.cs"), StringComparison.Ordinal);
+
+        var mainWindowSource = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "MainWindow.cs"));
+        var buildViewsCall = mainWindowSource.IndexOf("composer.BuildViews(", StringComparison.Ordinal);
+        var buildCoordinatorsCall = mainWindowSource.IndexOf("composer.BuildCoordinators(", StringComparison.Ordinal);
+        var wireCall = mainWindowSource.IndexOf("composer.Wire(", StringComparison.Ordinal);
+        var layoutCall = mainWindowSource.IndexOf("composer.Layout(", StringComparison.Ordinal);
+
+        Assert.True(
+            buildViewsCall >= 0 && buildCoordinatorsCall >= 0 && wireCall >= 0 && layoutCall >= 0,
+            "MainWindow's own constructor must call all four MainWindowComposer phases.");
+        Assert.True(
+            buildViewsCall < buildCoordinatorsCall && buildCoordinatorsCall < wireCall && wireCall < layoutCall,
+            "MainWindowComposer's four phases must run in order: BuildViews, BuildCoordinators, Wire, Layout.");
+    }
+
+    /// <summary>
+    /// <c>SurfaceCommandPolicy</c>'s own two sets name every command by its
+    /// discipline's own <c>CommandIds</c> constant (`WP 19.2A`) — never a
+    /// string literal ending <c>.rename</c>, <c>.edit</c> or <c>.delete</c>,
+    /// the three suffixes both sets are built from.
+    /// </summary>
+    [Fact]
+    public void SurfaceCommandPolicy_NamesNoCommandId_AsAStringLiteral()
+    {
+        var source = File.ReadAllText(Path.Combine(RepositoryRoot, "src", "Tempest.Desktop", "Composition", "SurfaceCommandPolicy.cs"));
+
+        var offenders = Regex.Matches(source, @"""[a-z][a-z.-]*\.(rename|edit|delete)""")
+            .Select(m => m.Value)
+            .ToList();
+
+        Assert.True(offenders.Count == 0, $"SurfaceCommandPolicy.cs still names a command id as a string literal: {string.Join(", ", offenders)}");
     }
 }
