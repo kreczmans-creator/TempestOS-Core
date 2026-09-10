@@ -88,7 +88,8 @@ public sealed class InvoiceReconciliationServiceTests
         // Timesheets/Deliverables but a connector that always throws —
         // proves the poller isolates a defect in a connector
         // implementation exactly as any other outcome.
-        var throwingInvoicing = new InvoicingService(domain, rateCards, timesheets, deliverables, new ThrowingConnector());
+        var organisations = InvoicingTestHost.Organisations(host);
+        var throwingInvoicing = new InvoicingService(domain, rateCards, timesheets, deliverables, new ThrowingConnector(), organisations);
         var recordingLogger = new RecordingLogger();
         var poller = new InvoiceReconciliationService(throwingInvoicing, domain, configuration, recordingLogger);
 

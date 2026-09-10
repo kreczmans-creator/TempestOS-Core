@@ -28,11 +28,18 @@ namespace Tempest.Core.Invoicing.QuickBooksOnline;
 /// <c>CustomerRef.value</c> before an invoice can be created at all — a
 /// bare name in the invoice body is not enough. This connector therefore
 /// queries <c>Customer</c> by <c>DisplayName</c> (matching
-/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientOrganisationId"/>, the
-/// one textual identifier the snapshot carries) and creates one when
-/// absent — the brief's own "contacts matched by name, created when
-/// absent" (§2), genuinely implemented here rather than deferred, because
-/// QuickBooks Online's own API leaves no other way to create the invoice.
+/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientName"/> — the client
+/// organisation's own name, resolved from the Organisation catalogue by
+/// <c>InvoicingService</c> and filled onto the snapshot before this
+/// connector ever sees it, never <see cref="Invoicing.InvoiceRequestSnapshot.ClientOrganisationId"/>
+/// itself, `WP 19.1A-R1` disclosure #3) and creates one when absent — the
+/// brief's own "contacts matched by name, created when absent" (§2),
+/// genuinely implemented here rather than deferred, because QuickBooks
+/// Online's own API leaves no other way to create the invoice. A
+/// <see langword="null"/> or blank <c>ClientName</c> means the id did not
+/// resolve in the catalogue at all; <see cref="CreateDraftInvoiceAsync"/>
+/// rejects outright rather than querying/creating a customer named after
+/// a raw, meaningless id.
 /// </para>
 /// <para>
 /// <b>Disclosed gap: no item catalogue.</b> QuickBooks Online's real API
@@ -94,7 +101,10 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector
         if (string.IsNullOrEmpty(access.TenantId))
             return ConnectorResult<CreatedInvoice>.Reauthorise("No QuickBooks Online company is connected; re-authorise to select one.");
 
-        var (customerId, failure) = await ResolveOrCreateCustomerIdAsync<CreatedInvoice>(request.ClientOrganisationId, access, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(request.ClientName))
+            return ConnectorResult<CreatedInvoice>.Rejected($"client organisation '{request.ClientOrganisationId}' is not in the catalogue");
+
+        var (customerId, failure) = await ResolveOrCreateCustomerIdAsync<CreatedInvoice>(request.ClientName, access, cancellationToken).ConfigureAwait(false);
         if (failure is not null)
             return failure;
 
@@ -104,7 +114,7 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector
 
         var body = new
         {
-            DocNumber = idempotencyKey,
+            DocNumber = DeriveDocNumber(idempotencyKey),
             PrivateNote = $"TempestOS request {idempotencyKey}",
             CustomerRef = new { value = customerId },
             CurrencyRef = new { value = request.Currency.ToString() },
@@ -211,7 +221,12 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector
         if (string.IsNullOrEmpty(access.TenantId))
             return ConnectorResult<CreatedInvoice?>.Reauthorise("No QuickBooks Online company is connected; re-authorise to select one.");
 
-        var query = Uri.EscapeDataString($"select * from Invoice where DocNumber = '{EscapeForQuery(reference)}'");
+        // `reference` is our own request id (`IInvoicingConnector.FindByReferenceAsync`'s
+        // own remarks), the same 36-character value `CreateDraftInvoiceAsync`
+        // itself derived `DocNumber` from — never the derived value directly,
+        // so it is derived again here rather than assumed already-shortened
+        // (`WP 19.1A-R1` disclosure #2).
+        var query = Uri.EscapeDataString($"select * from Invoice where DocNumber = '{EscapeForQuery(DeriveDocNumber(reference))}'");
         using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"v3/company/{access.TenantId}/query?query={query}");
         ApplyAuthHeaders(httpRequest, access);
 
@@ -417,6 +432,50 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector
     }
 
     private static string EscapeForQuery(string value) => value.Replace("'", "''", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Derives a stable, exactly-21-character QuickBooks Online <c>DocNumber</c>
+    /// from <paramref name="idempotencyKey"/> — <c>InvoiceRequest.Id</c>'s own
+    /// 36-character <c>"D"</c>-format string, which exceeds the field's own
+    /// 21-character limit (`WP 19.1A-R1` disclosure #2): <c>"TOS-"</c> (4
+    /// characters) plus the first 17 hex digits found in
+    /// <paramref name="idempotencyKey"/> (its own dashes skipped),
+    /// upper-cased, right-padded with <c>'0'</c> if fewer than 17 hex
+    /// digits are present at all.
+    /// </summary>
+    /// <remarks>
+    /// <b>Stable, not claimed unique.</b> The same id always derives the
+    /// same <c>DocNumber</c> — what <see cref="FindByReferenceAsync"/>
+    /// depends on to look a request back up by reference — but 17 of a
+    /// GUID's own 32 hex digits is 68 bits of the original 128, so two
+    /// different request ids sharing a derived number is merely
+    /// astronomically unlikely, never impossible. Nothing here claims
+    /// otherwise, and nothing is lost either way: <see cref="CreateDraftInvoiceAsync"/>
+    /// writes <paramref name="idempotencyKey"/> in full into <c>PrivateNote</c>
+    /// alongside this derived number.
+    /// </remarks>
+    internal static string DeriveDocNumber(string idempotencyKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
+
+        const int HexDigitsWanted = 17;
+        Span<char> hex = stackalloc char[HexDigitsWanted];
+        var count = 0;
+
+        foreach (var c in idempotencyKey)
+        {
+            if (count == HexDigitsWanted)
+                break;
+
+            if (Uri.IsHexDigit(c))
+                hex[count++] = char.ToUpperInvariant(c);
+        }
+
+        for (var i = count; i < HexDigitsWanted; i++)
+            hex[i] = '0';
+
+        return $"TOS-{new string(hex)}";
+    }
 
     /// <summary>
     /// Derives the status word <c>InvoicingService.InterpretStatus</c>

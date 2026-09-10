@@ -71,6 +71,15 @@ screenshots every screen in CI.
   why; a crash between steps is reconciled by reference on the next poll.
 - **QuickBooks Online needs an item reference** the product has no
   catalogue for; `Invoicing:QuickBooksOnline:DefaultItemId` is the opt-in.
+- **Sandbox registration**: the OAuth loopback redirect URI is now fixed
+  rather than a fresh ephemeral port every run — register
+  `http://127.0.0.1:49301/callback/` exactly in the Xero or QuickBooks
+  Online sandbox app console. Configure `Invoicing:OAuth:LoopbackPort` to
+  use a different port; `0` keeps the old ephemeral behaviour (tests only
+  — a real sandbox app needs one fixed URI registered ahead of time). If
+  the configured port is already in use, connecting reports the exact
+  port and configuration key rather than failing silently. See `ADR-0151`'s
+  own addendum.
 - *(further warnings filled at `WP 19.9.0`)*
 
 ## Related

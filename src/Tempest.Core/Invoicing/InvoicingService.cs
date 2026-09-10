@@ -1,5 +1,6 @@
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Timesheets;
@@ -50,24 +51,27 @@ public sealed class InvoicingService : IInvoicingService
     private readonly ITimesheetService _timesheets;
     private readonly IDeliverableService _deliverables;
     private readonly IInvoicingConnector _connector;
+    private readonly IOrganisationCatalog _organisations;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="InvoicingService"/> class.</summary>
     public InvoicingService(
         EngineeringDomainContext context, IRateCardCatalog rateCards, ITimesheetService timesheets, IDeliverableService deliverables,
-        IInvoicingConnector connector, TimeProvider? timeProvider = null)
+        IInvoicingConnector connector, IOrganisationCatalog organisations, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
         ArgumentNullException.ThrowIfNull(timesheets);
         ArgumentNullException.ThrowIfNull(deliverables);
         ArgumentNullException.ThrowIfNull(connector);
+        ArgumentNullException.ThrowIfNull(organisations);
 
         _context = context;
         _rateCards = rateCards;
         _timesheets = timesheets;
         _deliverables = deliverables;
         _connector = connector;
+        _organisations = organisations;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -172,8 +176,10 @@ public sealed class InvoicingService : IInvoicingService
 
         await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
 
+        var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
+
         var result = await _connector
-            .CreateDraftInvoiceAsync(ToSnapshot(request), requestId.ToString(), cancellationToken)
+            .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
             .ConfigureAwait(false);
 
         switch (result.Outcome)
@@ -326,8 +332,24 @@ public sealed class InvoicingService : IInvoicingService
     private static InvoiceRequestResult NotFound(Guid requestId) =>
         new(InvoiceRequestRefusal.RequestNotFound, $"No invoice request '{requestId}' is registered.", null);
 
-    private static InvoiceRequestSnapshot ToSnapshot(InvoiceRequest request) =>
-        new(request.Id, request.ClientOrganisationId, request.PurchaseOrderReference, request.Currency, request.Lines, request.Total);
+    /// <summary>
+    /// Builds the plain-data projection a connector is actually handed —
+    /// resolving <see cref="InvoiceRequestSnapshot.ClientName"/> from the
+    /// Organisation catalogue by <see cref="InvoiceRequest.ClientOrganisationId"/>
+    /// here, the one place in this seam that reads the catalogue at all
+    /// (`WP 19.1A-R1` disclosure #3). <see langword="null"/> when the id
+    /// does not resolve to any registered organisation — every connector
+    /// implementation rejects outright rather than matching or creating a
+    /// contact named after a raw, meaningless id.
+    /// </summary>
+    private async Task<InvoiceRequestSnapshot> ToSnapshotAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        var organisation = await _organisations.FindAsync(request.ClientOrganisationId, cancellationToken).ConfigureAwait(false);
+
+        return new InvoiceRequestSnapshot(
+            request.Id, request.ClientOrganisationId, organisation?.Definition.Name, request.PurchaseOrderReference,
+            request.Currency, request.Lines, request.Total);
+    }
 
     /// <summary>
     /// Maps a connector's own free-form status word to what it means for

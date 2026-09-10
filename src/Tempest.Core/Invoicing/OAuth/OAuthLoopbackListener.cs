@@ -17,9 +17,18 @@ internal sealed record OAuthCallback(string? Code, string? State, string? Error,
 
 /// <summary>
 /// The loopback half of the authorisation-code flow: an
-/// <see cref="HttpListener"/> on a free, ephemeral <c>127.0.0.1</c> port,
-/// under the fixed <c>/callback/</c> path every provider's own redirect URI
-/// is registered against (`WP 19.1A` part 2, brief §1(a)/(d)).
+/// <see cref="HttpListener"/> on <c>127.0.0.1</c>, under the fixed
+/// <c>/callback/</c> path every provider's own redirect URI is registered
+/// against (`WP 19.1A` part 2, brief §1(a)/(d)). The port itself is fixed
+/// too, as of `WP 19.1A-R1` disclosure #1: Xero's and Intuit's own app
+/// consoles require an exact redirect URI to be registered ahead of time,
+/// which an ephemeral port — a fresh one every run — can never satisfy.
+/// <see cref="OAuthAuthoriser"/> resolves the configured port
+/// (<c>Invoicing:OAuth:LoopbackPort</c>, default <c>49301</c>) and passes
+/// it to <paramref name="port"/> here; <c>0</c> (only ever a test's own
+/// choice) keeps the original ephemeral behaviour, so a suite running many
+/// authorisation round trips in parallel never fights itself over one
+/// fixed port.
 /// </summary>
 /// <remarks>
 /// <see cref="HttpListener"/> binds a specific loopback address/port
@@ -32,10 +41,16 @@ internal sealed class OAuthLoopbackListener : IDisposable
 {
     private readonly HttpListener _listener;
 
-    /// <summary>Starts listening immediately, on a freshly chosen free port.</summary>
-    public OAuthLoopbackListener()
+    /// <summary>
+    /// Starts listening immediately, on <paramref name="port"/> — or a
+    /// freshly chosen free port when <paramref name="port"/> is <c>0</c>.
+    /// </summary>
+    /// <param name="port">The exact loopback port to bind, or <c>0</c> to pick a free one.</param>
+    /// <exception cref="HttpListenerException"><paramref name="port"/> is already in use.</exception>
+    public OAuthLoopbackListener(int port = 0)
     {
-        RedirectUri = new Uri($"http://127.0.0.1:{FindFreePort()}/callback/");
+        var resolvedPort = port > 0 ? port : FindFreePort();
+        RedirectUri = new Uri($"http://127.0.0.1:{resolvedPort}/callback/");
 
         _listener = new HttpListener();
         _listener.Prefixes.Add(RedirectUri.ToString());

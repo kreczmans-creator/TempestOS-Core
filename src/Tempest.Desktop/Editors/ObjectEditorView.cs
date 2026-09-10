@@ -67,11 +67,23 @@ public sealed record EvidenceEditorSupport(
 /// Commercial section's own Change/Pin/Use Me affordances honestly
 /// unavailable rather than run without asking — the identical discipline
 /// <see cref="ObjectEditorView.WorkspaceChanges"/> already established.
+/// <see cref="ResolveClientNameAsync"/>/<see cref="ResolveRateCardAsync"/>
+/// (`WP 19.1A-R1` disclosure #4) resolve, asynchronously and never
+/// blocking, what the Commercial section actually shows for the client and
+/// the rate card — the organisation's own name and the card's own code,
+/// name and pinned revision, rather than the bare id/<see cref="Tempest.Core.ReferenceData.ReferencePin"/>
+/// a reader cannot otherwise place. Both are optional trailing parameters,
+/// not required alongside the three above: <see langword="null"/> (any
+/// test, or a composition that has not yet wired a resolver) leaves the
+/// section showing the id/pin exactly as before, honestly unresolved,
+/// never blocking or throwing over it.
 /// </summary>
 public sealed record ProjectCommercialEditorSupport(
     Func<CancellationToken, Task<string?>> PickClientOrganisationIdAsync,
     Func<CancellationToken, Task<string?>> PickRateCardIdAsync,
-    Func<string?> CurrentPrincipalIdentityId);
+    Func<string?> CurrentPrincipalIdentityId,
+    Func<string, CancellationToken, Task<string?>>? ResolveClientNameAsync = null,
+    Func<ReferencePin, CancellationToken, Task<(string Code, string Name)?>>? ResolveRateCardAsync = null);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -878,7 +890,7 @@ public sealed class ObjectEditorView : UserControl
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
         PopulateDescription(target);
         await PopulateWhereUsedAsync(target).ConfigureAwait(true);
-        PopulateCommercial(target);
+        await PopulateCommercialAsync(target).ConfigureAwait(true);
         PopulateInvoiceRequest(target);
 
         PopulateLifecycle(target);
@@ -1296,7 +1308,7 @@ public sealed class ObjectEditorView : UserControl
         }
     }
 
-    private void PopulateCommercial(IEngineeringObject target)
+    private async Task PopulateCommercialAsync(IEngineeringObject target)
     {
         var declaration = _declarations?.For(_objectKind);
 
@@ -1308,10 +1320,20 @@ public sealed class ObjectEditorView : UserControl
 
         _commercialSection.IsVisible = true;
 
+        // `WP 19.1A-R1` disclosure #4: the client shows the organisation's
+        // own name (falling back to the bare id when unresolved — no
+        // resolver wired, or the id no longer matches any registered
+        // organisation) and the rate card shows the card's own code and
+        // name alongside the pinned revision, rather than the bare id or
+        // `ReferencePin.ToString()` a reader has no way to place. Resolved
+        // asynchronously, never blocking: this whole method is already
+        // awaited end-to-end from `PopulateFromAsync`, exactly like every
+        // other section's own async population.
         _commercialClientPanel.Children.Clear();
+        var clientName = project.ClientOrganisationId is { } clientId ? await ResolveClientNameAsync(clientId).ConfigureAwait(true) : null;
         _commercialClientPanel.Children.Add(new TextBlock
         {
-            Text = project.ClientOrganisationId ?? "(no client set)",
+            Text = clientName ?? project.ClientOrganisationId ?? "(no client set)",
             Opacity = project.ClientOrganisationId is null ? 0.5 : 1.0,
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
@@ -1326,9 +1348,10 @@ public sealed class ObjectEditorView : UserControl
         _commercialBudgetStatus.Text = string.Empty;
 
         _commercialRateCardPanel.Children.Clear();
+        var rateCardDisplay = project.RateCardPin is { } pin ? await ResolveRateCardDisplayAsync(pin).ConfigureAwait(true) : null;
         _commercialRateCardPanel.Children.Add(new TextBlock
         {
-            Text = project.RateCardPin is { } pin ? pin.ToString() : "(no rate card pinned)",
+            Text = rateCardDisplay ?? (project.RateCardPin is { } unresolvedPin ? unresolvedPin.ToString() : "(no rate card pinned)"),
             Opacity = project.RateCardPin is null ? 0.5 : 1.0,
             TextWrapping = TextWrapping.Wrap,
             FontSize = DesignTokens.FontSizeBody,
@@ -1343,6 +1366,26 @@ public sealed class ObjectEditorView : UserControl
         _commercialProjectManagerBox.Text = project.ProjectManagerIdentityId ?? string.Empty;
         _commercialUseMeButton.IsVisible = _commercialSupport is not null;
         _commercialProjectManagerStatus.Text = string.Empty;
+    }
+
+    /// <summary>The client organisation's own name for <paramref name="clientOrganisationId"/>, or <see langword="null"/> when no resolver is wired or the id does not resolve — <see cref="PopulateCommercialAsync"/>'s own caller then falls back to the bare id.</summary>
+    private async Task<string?> ResolveClientNameAsync(string clientOrganisationId)
+    {
+        if (_commercialSupport?.ResolveClientNameAsync is not { } resolve)
+            return null;
+
+        var name = await resolve(clientOrganisationId, CancellationToken.None).ConfigureAwait(true);
+        return string.IsNullOrWhiteSpace(name) ? null : name;
+    }
+
+    /// <summary>The rate card's own code, name and pinned revision for <paramref name="pin"/>, formatted for display — or <see langword="null"/> when no resolver is wired or the pin does not resolve, so <see cref="PopulateCommercialAsync"/>'s own caller falls back to <see cref="ReferencePin.ToString"/>.</summary>
+    private async Task<string?> ResolveRateCardDisplayAsync(ReferencePin pin)
+    {
+        if (_commercialSupport?.ResolveRateCardAsync is not { } resolve)
+            return null;
+
+        var resolved = await resolve(pin, CancellationToken.None).ConfigureAwait(true);
+        return resolved is { } card ? $"{card.Code} — {card.Name} (rev {pin.RevisionNumber})" : null;
     }
 
     private async Task OnChangeClientAsync()

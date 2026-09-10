@@ -16,18 +16,23 @@ namespace Tempest.Core.Invoicing.Xero;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Contacts.</b> An invoice's own <c>Contact</c> carries only
-/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientOrganisationId"/> as
-/// its <c>Name</c> — the one textual identifier this connector's own input
-/// shape carries (<see cref="Invoicing.InvoiceRequestSnapshot"/>'s own
-/// remarks: plain data, no dependency on the organisation catalogue).
-/// Xero itself matches an existing contact by that name, or creates one
-/// when absent — documented Xero behaviour for an invoice's inline
-/// <c>Contact</c> object, so this connector defers contact search/creation
-/// to Xero rather than adding its own <c>/Contacts</c> round trip before
-/// every send. A future part that threads the organisation's own display
-/// name onto the snapshot would improve what name is actually matched
-/// against; disclosed here rather than assumed away.
+/// <b>Contacts.</b> An invoice's own <c>Contact</c> carries
+/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientName"/> as its
+/// <c>Name</c> — the client organisation's own name, resolved from the
+/// Organisation catalogue by <c>InvoicingService</c> and filled onto the
+/// snapshot before this connector ever sees it (<c>WP 19.1A-R1</c>
+/// disclosure #3; previously this connector matched by
+/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientOrganisationId"/>
+/// itself, a bare catalogue id no accounting system's own contact list
+/// was ever going to already hold). Xero itself matches an existing
+/// contact by that name, or creates one when absent — documented Xero
+/// behaviour for an invoice's inline <c>Contact</c> object, so this
+/// connector defers contact search/creation to Xero rather than adding
+/// its own <c>/Contacts</c> round trip before every send. A
+/// <see langword="null"/> or blank <c>ClientName</c> means the id did not
+/// resolve in the catalogue at all; <see cref="CreateDraftInvoiceAsync"/>
+/// rejects outright rather than handing Xero a contact named after a raw,
+/// meaningless id.
 /// </para>
 /// </remarks>
 public sealed class XeroConnector : IInvoicingConnector
@@ -64,11 +69,14 @@ public sealed class XeroConnector : IInvoicingConnector
         if (string.IsNullOrEmpty(access.TenantId))
             return ConnectorResult<CreatedInvoice>.Reauthorise("No Xero organisation is connected; re-authorise to select one.");
 
+        if (string.IsNullOrWhiteSpace(request.ClientName))
+            return ConnectorResult<CreatedInvoice>.Rejected($"client organisation '{request.ClientOrganisationId}' is not in the catalogue");
+
         var payload = new XeroInvoicesEnvelope(
         [
             new XeroInvoice(
                 Type: "ACCREC",
-                Contact: new XeroContact(Name: request.ClientOrganisationId),
+                Contact: new XeroContact(Name: request.ClientName),
                 LineItems: [.. request.Lines.Select(l => new XeroLineItem(l.Description, l.Quantity, l.UnitRate.Amount, l.Amount.Amount))],
                 Reference: idempotencyKey,
                 CurrencyCode: request.Currency.ToString()),
