@@ -136,7 +136,7 @@ public sealed class FindabilityAcceptanceTests
                 Assert.Equal(partId, selectedHit!.ObjectId);
                 LayOut(window);
 
-                var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+                var explorer = window.FindUnique<ProjectExplorerView>();
                 await RenderUntilAsync(window, () => explorer.IsRevealed(partId));
                 Assert.True(explorer.IsRevealed(partId), "Selecting the Part from the palette did not reveal it in the Explorer.");
 

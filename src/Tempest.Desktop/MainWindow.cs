@@ -449,7 +449,23 @@ public sealed class MainWindow : Window
     /// </summary>
     private async Task EnterProjectWorkspaceAsync()
     {
-        ResolveEngineeringSurfaceHost(projectScoped: true);
+        // `WP 19.2B`: the engineering surface is attached to the
+        // Structure tab only while that tab is genuinely the one this
+        // location names, and detached the moment it is not — leaving it
+        // attached while some other project tab (Overview, Documents, …)
+        // is current would make it a *logical* descendant of the hidden
+        // Structure `TabItem` while never being laid out inside it
+        // (Avalonia does not zero a hidden `TabItem`'s own `Content`
+        // control's `IsVisible`), which is exactly what the layout walk's
+        // "lies outside its parent" finding caught: `engineeringSurface`
+        // retaining bounds from whichever tab or module last actually
+        // rendered it, checked against a `WrapPanel` it was never really
+        // arranged inside.
+        if (_navigator.Current.ProjectArea == ProjectArea.Engineering)
+            ResolveEngineeringSurfaceHost(projectScoped: true);
+        else
+            _projectWorkspace.ClearEngineeringSurface();
+
         await _projectWorkspace.RefreshAsync().ConfigureAwait(true);
     }
 

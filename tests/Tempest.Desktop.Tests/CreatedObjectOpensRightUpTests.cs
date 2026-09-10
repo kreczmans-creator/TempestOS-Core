@@ -48,7 +48,7 @@ public sealed class CreatedObjectOpensRightUpTests
             // The situation the smoke test was in: the Explorer is showing a
             // different discipline, so the mechanical tree is not on screen.
             await workspace.Navigation.SwitchAreaAsync(DocumentsWorkspaceExplorerModule.NavigationItemId);
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
             await explorer.LoadAsync();
             await workspace.Selection.ClearAsync();
 
@@ -114,7 +114,7 @@ public sealed class CreatedObjectOpensRightUpTests
             LayOut(window);
 
             await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
             await explorer.LoadAsync();
 
             var palette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");

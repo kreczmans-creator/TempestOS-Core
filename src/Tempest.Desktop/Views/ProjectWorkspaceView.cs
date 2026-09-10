@@ -66,7 +66,28 @@ public sealed class ProjectWorkspaceView : UserControl
     // frees it again when the shell needs the same, single control
     // instance for standalone engineering instead (see both methods' own
     // remarks).
-    private readonly ContentControl _structureHost = new();
+    //
+    // Its `Margin` cancels `root`'s own `DesignTokens.PagePadding` exactly
+    // (the same "negative margin cancels a margin" technique
+    // `CockpitCardControl`/`CockpitView` already use) — the ribbon and
+    // docking surface is not page-shaped content and is meant to fill the
+    // tab edge-to-edge, exactly as it does standalone at Home. This is
+    // more than cosmetic: `root`'s padding otherwise narrows this one
+    // shared surface by 48px relative to Home, which is just enough, with
+    // this project's real engineering-object and evidence content on the
+    // Home cockpit, to push one of its card rows past the two-cards-per-row
+    // wrap threshold the wider Home width clears — one extra wrapped row
+    // and every row beneath it shifts down, and the last row's own bottom
+    // edge then lands past the card grid's own arranged height (a genuine
+    // `WrapPanel` measure/arrange sizing difference at the narrower width,
+    // not a bug this Work Package introduced in `CockpitView` itself, which
+    // WP 19.2B does not own or touch — matching Home's width removes the
+    // narrower trigger rather than papering over that surface's own
+    // layout).
+    private readonly ContentControl _structureHost = new()
+    {
+        Margin = new Thickness(-DesignTokens.PagePadding.Left, -DesignTokens.PagePadding.Top, -DesignTokens.PagePadding.Right, -DesignTokens.PagePadding.Bottom),
+    };
 
     private bool _suppressAreaSelection;
 

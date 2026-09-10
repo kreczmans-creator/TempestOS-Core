@@ -45,7 +45,7 @@ public sealed class MechanicalCreateFromTheShellTests
 
             // The Explorer shows the Mechanical area before the user presses
             // Create, exactly as the Ribbon tab switch loads it in the shell.
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
             await explorer.LoadAsync();
 
             // The context the Palette (and, through ProjectIdSource, the
