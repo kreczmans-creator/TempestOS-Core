@@ -93,6 +93,25 @@ public sealed class InvoicingService : IInvoicingService
                 await FindRequestAsync(existingRequestId, cancellationToken).ConfigureAwait(false));
         }
 
+        // A source is billed on at most one live request. `InvoicedBy` is
+        // written only once a request reaches Sent (`ADR-0151` §5), so
+        // before that the completion hook's own request (§7) and a Raise
+        // invoice on the same completion from the Deliverables tab used to
+        // raise two Drafts carrying the same lines — the v0.19.0 Desktop
+        // journey found the second one, one run in two. A completion a
+        // live request already carries is refused naming that request, as
+        // an already-sent one is above; a timesheet entry a live request
+        // already carries is left off, and a Rejected or Voided request
+        // frees its lines.
+        var carriedBy = await ListCarriedSourcesAsync(cancellationToken).ConfigureAwait(false);
+        if (carriedBy.TryGetValue(completion.Id, out var carrier))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Deliverable completion '{deliverableCompletionId}' is already invoiced by request '{carrier.Id:N}' ({carrier.Status}); send or void that request rather than raising a second.",
+                carrier);
+        }
+
         if (completion.ParentId is not { } projectId
             || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
         {
@@ -121,8 +140,15 @@ public sealed class InvoicingService : IInvoicingService
 
         var lines = new List<InvoiceRequestLine>(unbilled.Count + 1);
 
+        InvoiceRequest? carrierOfTime = null;
         foreach (var entry in unbilled)
         {
+            if (carriedBy.TryGetValue(entry.Id, out var carrierOfEntry))
+            {
+                carrierOfTime ??= carrierOfEntry;
+                continue;
+            }
+
             var amount = entry.BillingRate * entry.Hours;
             lines.Add(new InvoiceRequestLine(TimesheetEntry.CanonicalKind, entry.Id, entry.TaskDescription, entry.Hours, entry.BillingRate, amount));
         }
@@ -136,6 +162,14 @@ public sealed class InvoicingService : IInvoicingService
 
         if (lines.Count == 0)
         {
+            if (carrierOfTime is not null)
+            {
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.NothingToBill,
+                    $"Everything billable for completion '{deliverableCompletionId}' is already on request '{carrierOfTime.Id:N}' ({carrierOfTime.Status}); send or void that request rather than raising a second.",
+                    carrierOfTime);
+            }
+
             return new InvoiceRequestResult(
                 InvoiceRequestRefusal.NothingToBill,
                 $"Project '{projectId}' has no unbilled time and completion '{deliverableCompletionId}' carries no fixed price; there is nothing to bill.",
@@ -327,6 +361,24 @@ public sealed class InvoicingService : IInvoicingService
     {
         var candidate = await _context.Repository.FindAsync(requestId, cancellationToken).ConfigureAwait(false);
         return candidate is InvoiceRequest { } request && IsLive(request) ? request : null;
+    }
+
+    /// <summary>Every source (a timesheet entry or a deliverable completion) a live request carries, keyed by source id — a Rejected or Voided request frees its lines.</summary>
+    private async Task<Dictionary<Guid, InvoiceRequest>> ListCarriedSourcesAsync(CancellationToken cancellationToken)
+    {
+        var carried = new Dictionary<Guid, InvoiceRequest>();
+        var requests = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+
+        foreach (var request in requests.OfType<InvoiceRequest>())
+        {
+            if (!IsLive(request) || request.Status is InvoiceRequestStatus.Rejected or InvoiceRequestStatus.Voided)
+                continue;
+
+            foreach (var line in request.Lines)
+                carried.TryAdd(line.SourceId, request);
+        }
+
+        return carried;
     }
 
     private static InvoiceRequestResult NotFound(Guid requestId) =>

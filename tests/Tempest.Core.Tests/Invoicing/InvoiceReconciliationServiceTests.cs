@@ -146,7 +146,6 @@ public sealed class InvoiceReconciliationServiceTests
         ITempestHost host, Guid projectId, EngineeringDomainContext domain, string suffix)
     {
         var deliverables = InvoicingTestHost.Deliverables(host);
-        var invoicing = InvoicingTestHost.Invoicing(host);
 
         var milestoneService = new ProjectMilestoneService(domain);
         var milestone = await milestoneService.CreateMilestoneAsync(projectId, $"MS-{suffix}", $"Milestone {suffix}", DateTimeOffset.UtcNow.AddDays(30));
@@ -155,10 +154,8 @@ public sealed class InvoiceReconciliationServiceTests
         var completion = await deliverables.CompleteAsync(deliverable.Id, projectId, Week, fixedPriceValue: new Money(250m, CurrencyCode.Gbp));
         Assert.True(completion.Succeeded);
 
-        var raised = await invoicing.RaiseFromCompletionAsync(completion.Completion!.Id);
-        Assert.True(raised.Succeeded, raised.Reason);
-
-        return raised.Request!;
+        // Completing raised it through the completion hook (`ADR-0151` §7).
+        return await InvoicingTestHost.RequestRaisedByCompletionAsync(host, completion.Completion!.Id);
     }
 
     /// <summary>A connector that always throws — proves the poller isolates a defect in an implementation, not just an ordinary <see cref="ConnectorOutcome"/>.</summary>

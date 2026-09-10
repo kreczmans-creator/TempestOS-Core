@@ -159,8 +159,16 @@ public sealed class RibbonView : UserControl
 
         _tabs.SelectionChanged += (_, _) =>
         {
-            if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category })
+            // Only a change of category is a request to switch area: a
+            // re-attach or a rebuild that re-selects the tab already shown
+            // must not bounce the explorer back to that tab's area (the
+            // v0.19.0 Invoicing journey saw a raised request's area reset
+            // to Calculations, one run in three).
+            if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category } && !string.Equals(category, _lastRaisedCategory, StringComparison.Ordinal))
+            {
+                _lastRaisedCategory = category;
                 CategorySelected?.Invoke(category);
+            }
         };
 
         Rebuild();
@@ -242,7 +250,11 @@ public sealed class RibbonView : UserControl
         _suppressTabSelection = true;
         _tabs.SelectedItem = tab;
         _suppressTabSelection = false;
+        _lastRaisedCategory = category;
     }
+
+    /// <summary>The category the last raised <see cref="CategorySelected"/> named, or the one selected programmatically; a re-selection of the same tab is not a switch.</summary>
+    private string? _lastRaisedCategory;
 
     /// <summary>
     /// Recomputes every selection-aware button's own enabled state —

@@ -49,9 +49,17 @@ public sealed class InvoicingServiceJourneyTests
         var completion = await deliverables.CompleteAsync(deliverableId, projectId, Week, fixedPriceValue: new Money(500m, CurrencyCode.Gbp));
         Assert.True(completion.Succeeded);
 
-        var raised = await invoicing.RaiseFromCompletionAsync(completion.Completion!.Id);
-        Assert.True(raised.Succeeded, raised.Reason);
-        var request = raised.Request!;
+        // Completing raised the request through the completion hook
+        // (`ADR-0151` §7). Raising again by hand while it is still Draft
+        // refuses, naming it, rather than raising a second Draft carrying
+        // the same four lines (the v0.19.0 Desktop journey found that
+        // second one, one run in two, before this guard).
+        var request = await InvoicingTestHost.RequestRaisedByCompletionAsync(host, completion.Completion!.Id);
+        var raisedAgain = await invoicing.RaiseFromCompletionAsync(completion.Completion.Id);
+        Assert.False(raisedAgain.Succeeded);
+        Assert.Equal(InvoiceRequestRefusal.AlreadyInvoiced, raisedAgain.Refusal);
+        Assert.Equal(request.Id, raisedAgain.Request!.Id);
+        Assert.Single((await domain.Repository.ListChildrenAsync(projectId)).OfType<InvoiceRequest>());
 
         Assert.Equal(4, request.Lines.Count);
         Assert.Equal(new Money(150m * 4 + 150m * 3 + 150m * 2 + 500m, CurrencyCode.Gbp), request.Total);
@@ -315,11 +323,16 @@ public sealed class InvoicingServiceJourneyTests
         var completion = await deliverables.CompleteAsync(deliverableId, projectId, Week);
         Assert.True(completion.Succeeded);
 
-        var firstRaise = await invoicing.RaiseFromCompletionAsync(completion.Completion!.Id);
-        Assert.True(firstRaise.Succeeded);
-        Assert.Single(firstRaise.Request!.Lines);
+        // Completing raised the request through the completion hook; with
+        // no fixed price it carries the entry alone, so a second raise by
+        // hand finds that entry already on it and nothing left to bill.
+        var firstRequest = await InvoicingTestHost.SingleRequestUnderProjectAsync(host, projectId);
+        Assert.Single(firstRequest.Lines);
+        var raisedAgain = await invoicing.RaiseFromCompletionAsync(completion.Completion!.Id);
+        Assert.Equal(InvoiceRequestRefusal.NothingToBill, raisedAgain.Refusal);
+        Assert.Equal(firstRequest.Id, raisedAgain.Request!.Id);
 
-        var sent = await invoicing.SendAsync(firstRaise.Request.Id);
+        var sent = await invoicing.SendAsync(firstRequest.Id);
         Assert.Equal(InvoiceRequestStatus.Sent, sent.Request!.Status);
 
         // The entry now carries InvoicedBy; a second deliverable completed
@@ -431,16 +444,13 @@ public sealed class InvoicingServiceJourneyTests
         ITempestHost host, Guid projectId, EngineeringDomainContext domain, string suffix)
     {
         var deliverables = InvoicingTestHost.Deliverables(host);
-        var invoicing = InvoicingTestHost.Invoicing(host);
 
         var deliverableId = await CreateDeliverableAsync(domain, projectId, suffix);
         var completion = await deliverables.CompleteAsync(deliverableId, projectId, Week, fixedPriceValue: new Money(250m, CurrencyCode.Gbp));
         Assert.True(completion.Succeeded);
 
-        var raised = await invoicing.RaiseFromCompletionAsync(completion.Completion!.Id);
-        Assert.True(raised.Succeeded, raised.Reason);
-
-        return raised.Request!;
+        // Completing raised it through the completion hook (`ADR-0151` §7).
+        return await InvoicingTestHost.RequestRaisedByCompletionAsync(host, completion.Completion!.Id);
     }
 
     private static async Task<Guid> CreateDeliverableAsync(EngineeringDomainContext domain, Guid projectId, string suffix)

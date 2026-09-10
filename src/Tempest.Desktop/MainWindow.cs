@@ -259,8 +259,15 @@ public sealed class MainWindow : Window
             // restored before anything renders.
             await _dockingComposer.RestoreLayoutAsync().ConfigureAwait(true);
 
-            var firstArea = views.Workspace.Navigation.Areas.FirstOrDefault();
-            if (firstArea is not null)
+            // A default area only where nothing has chosen one yet: this
+            // handler runs asynchronously after Show, and an open-right-up
+            // that already switched the area (a request raised from the
+            // Deliverables tab before this settled) must not be reset to
+            // the first tab (the v0.19.0 Invoicing journey, one run in three).
+            var firstArea = views.Workspace.Navigation.CurrentAreaId is null
+                ? views.Workspace.Navigation.Areas.FirstOrDefault()
+                : views.Workspace.Navigation.Areas.FirstOrDefault(a => a.Id == views.Workspace.Navigation.CurrentAreaId);
+            if (firstArea is not null && views.Workspace.Navigation.CurrentAreaId is null)
                 await views.Workspace.Navigation.SwitchAreaAsync(firstArea.Id).ConfigureAwait(true);
 
             await _explorerView.LoadAsync().ConfigureAwait(true);
@@ -271,6 +278,7 @@ public sealed class MainWindow : Window
             // Render whichever module the recovered location names
             // (`TD-84`) — the shell opens where the user left it.
             await RenderCurrentModuleAsync().ConfigureAwait(true);
+            _ready.TrySetResult();
         };
 
         // Graceful shutdown (`WP 10.5B` scope) — one real, consolidated
@@ -575,9 +583,24 @@ public sealed class MainWindow : Window
     /// <summary>Takes the user to an object — one they just made (`WP 17.9.4`) or found (`WP 18.1B`): the Explorer switches to the area that lists its Kind, reloads, expands the path to it and selects it; then the object opens in the editor tab.</summary>
     internal async Task OpenObjectAsync(Guid id, string kind)
     {
+        // Entering a module can re-scope the workspace on the dispatcher;
+        // for a moment there is no current workspace and an open issued in
+        // that moment used to return silently, so a raised invoice request
+        // sometimes never showed (the v0.19.0 Invoicing journey, one run in
+        // three). Wait briefly for the scope; if there is still none, say so.
         var workspace = _workspaceManager.Current;
+        var waited = 0;
+        while (workspace is null && waited < 3000)
+        {
+            await Task.Delay(25).ConfigureAwait(true);
+            waited += 25;
+            workspace = _workspaceManager.Current;
+        }
+
         if (workspace is null)
-            return;
+            throw new InvalidOperationException($"No workspace is open, so {kind} {id:N} cannot be shown.");
+
+        LastOpenPhase = $"switching area ({kind} {id:N})";
 
         var areaId = DisciplineAreas.AreaFor(kind);
         if (areaId is not null && workspace.Navigation.Areas.FirstOrDefault(a => a.Id == areaId) is { } area)
@@ -591,6 +614,7 @@ public sealed class MainWindow : Window
         _explorerView.Reveal(id);
         await workspace.Selection.SelectAsync(id, kind).ConfigureAwait(true);
         await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
+        LastOpenPhase = $"tab shown ({kind} {id:N}, {_documentArea.TabCount} tabs)";
         _inspectorView.SetCurrentSelection(id, kind);
         await _inspectorView.RefreshFromSourceAsync().ConfigureAwait(true);
     }
@@ -609,10 +633,39 @@ public sealed class MainWindow : Window
     /// </summary>
     private async Task OpenEvidenceRecordAsync(Guid id, string kind)
     {
+        var tag = $"{kind} {id:N}";
+        LastOpenPhase = $"navigating to Engineering ({tag})";
         await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
+        LastOpenPhase = $"rendering the module ({tag})";
         await RenderCurrentModuleAsync().ConfigureAwait(true);
-        await _viewCoordinator.NavigateToObjectAsync(id, kind).ConfigureAwait(true);
+
+        // Then open the object the way Create does: area, reveal, selection,
+        // editor, inspector (`WP 17.9.4`).
+        LastOpenPhase = $"opening ({tag})";
+        await OpenObjectAsync(id, kind).ConfigureAwait(true);
+        LastOpenPhase = $"opened ({tag}, {_documentArea.TabCount} tabs)";
     }
+
+    /// <summary>
+    /// The last step an open-from-another-module reached — read by the
+    /// journey tests when an object did not open, so a stall names its
+    /// phase instead of leaving "nothing happened".
+    /// </summary>
+    internal string LastOpenPhase
+    {
+        get => _openPhases.Count == 0 ? "idle" : _openPhases[^1];
+        private set => _openPhases.Add($"{DateTime.UtcNow:HH:mm:ss.fff} {value}");
+    }
+
+    private readonly List<string> _openPhases = [];
+
+    /// <summary>Every open phase recorded this session, oldest first — printed by the journey tests when an open stalls, so two interleaved opens can be told apart.</summary>
+    internal IReadOnlyList<string> OpenPhases => _openPhases;
+
+    private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Completes once the <c>Opened</c> handler has restored the layout, chosen the explorer area and rendered the module; journey tests wait on it before acting.</summary>
+    internal Task Ready => _ready.Task;
 
     private void SetCurrentArea(string? title)
     {

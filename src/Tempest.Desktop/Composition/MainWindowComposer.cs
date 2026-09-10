@@ -297,7 +297,22 @@ internal sealed partial class MainWindowComposer
         var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog);
         var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
 
-        Action<Guid, string> openObjectRightUp = (id, kind) => _ = callbacks.OpenEvidenceRecordAsync(id, kind);
+        // Fire-and-forget at the view boundary, but never silently: an open
+        // that throws is reported like any other failed action, so "it
+        // created but nothing opened" has a reason on screen.
+        Action<Guid, string> openObjectRightUp = (id, kind) => _ = OpenReportingAsync(id, kind);
+
+        async Task OpenReportingAsync(Guid id, string kind)
+        {
+            try
+            {
+                await callbacks.OpenEvidenceRecordAsync(id, kind).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                await actionReporter.ReportAsync($"Created, but opening it failed: {ex.GetBaseException().Message}", ActionOutcome.Failed).ConfigureAwait(true);
+            }
+        }
 
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,

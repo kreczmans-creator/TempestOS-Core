@@ -54,6 +54,7 @@ public sealed class InvoicingJourneyTests
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
+            await RenderUntilAsync(window, () => window.Ready.IsCompleted);
             var navigator = host.ShellNavigator!;
 
             await navigator.GoToProjectsAsync();
@@ -105,41 +106,67 @@ public sealed class InvoicingJourneyTests
             });
             Assert.NotNull(completion);
 
-            // ---- Deliverables tab → Raise invoice ----
-            await ClickButtonWithContentAsync(window, deliverablesView, "Raise invoice");
-
+            // ---- completing raised the request (the completion hook, `ADR-0151` §7) ----
             InvoiceRequest? request = null;
             await RenderUntilAsync(window, () =>
             {
-                request = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<InvoiceRequest>().FirstOrDefault();
+                request = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<InvoiceRequest>().SingleOrDefault();
                 return request is not null;
             });
             Assert.NotNull(request);
             Assert.Equal(4, request!.Lines.Count);
             Assert.Equal(new Money(2m * 150m + 3m * 150m + 1m * 150m + 500m, CurrencyCode.Gbp), request.Total);
 
-            // The request opens right up, in the Object Editor (Product
-            // Owner guard, `WP 17.9.4`). Its own four lines and total are
-            // asserted on the domain object directly, just above — not
-            // through the editor's own "Lines"/"Connector" sections
-            // (`KindEditorDeclarations.InvoiceRequest`'s own
-            // `EditorSectionKeys.InvoiceLines`/`InvoicingExternal`): this
-            // Work Package found no rendering wired for either key in
-            // `ObjectEditorView.cs` (only Identity/Description/WhereUsed/
-            // Commercial/BillOfMaterials/Lifecycle are ever checked there) —
-            // a gap in a file outside this Work Package's own "files you
-            // own" list, disclosed in this Work Package's report rather
-            // than worked around here (`brief-common.md`'s own Kill
-            // switch).
+            // ---- Deliverables tab → Raise invoice on the same completion → refused, naming it ----
+            // Before this guard the button raised a second Draft carrying
+            // the same four lines (InvoicedBy is written only at Sent), and
+            // this journey found whichever of the two the store listed
+            // first — one run in two.
+            var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
+            await ClickButtonWithContentAsync(window, deliverablesView, "Raise invoice");
+            await RenderUntilAsync(window, () =>
+                statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase) && t.Text.Contains(request.Id.ToString("N"), StringComparison.OrdinalIgnoreCase)));
+            Assert.Single((await domain.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true)).OfType<InvoiceRequest>());
+
+            // ---- rail → Invoicing → Review opens the request right up ----
+            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var invoicingView = GetPrivateField<InvoicingView>(window, "_invoicingView");
+            invoicingView.ParameterPrompt = AutoConfirmPrompt();
+            await ClickRequestActionAsync(window, invoicingView, request.Id, "Review");
+
+            // The request opens in the Object Editor (Product Owner guard,
+            // `WP 17.9.4`), with the declaration's own Lines and Connector
+            // sections rendered.
             ObjectEditorView? editor = null;
             await RenderUntilAsync(window, () =>
             {
                 // The completion's own editor opened right up a moment ago too:
                 // pick the request's editor by its object id, not the first one.
-                editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault(e => GetPrivateField<Guid>(e, "_objectId") == request!.Id);
+                // Read the document area's own tabs rather than the window's
+                // logical tree: the editor lives in the Engineering surface,
+                // which is not in the tree while another module is on screen
+                // (suite order decides which), and a tab is real either way.
+                var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
+                var tabs = GetPrivateField<TabControl>(documentArea, "_tabs");
+                editor = tabs.Items.OfType<TabItem>().Select(tab => tab.Content).OfType<ObjectEditorView>()
+                    .FirstOrDefault(e => GetPrivateField<Guid>(e, "_objectId") == request!.Id);
                 return editor is not null;
             });
-            Assert.NotNull(editor);
+            if (editor is null)
+            {
+                var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
+                var tabs = GetPrivateField<TabControl>(documentArea, "_tabs");
+                var open = string.Join(" | ", tabs.Items.OfType<TabItem>().Select(tab => $"{tab.Header}:{(tab.Content is ObjectEditorView e ? GetPrivateField<Guid>(e, "_objectId").ToString("N")[..8] : tab.Content?.GetType().Name)}"));
+                var status = window.GetLogicalDescendants().OfType<StatusBarView>().FirstOrDefault()?.GetLogicalDescendants().OfType<TextBlock>().Select(b => b.Text).Where(s => !string.IsNullOrWhiteSpace(s)).Aggregate(string.Empty, (a, b) => a + " / " + b);
+                var manager = GetPrivateField<Tempest.Workspace.IWorkspaceManager>(window, "_workspaceManager");
+                var openViews = string.Join(" | ", ((manager.Current?.Navigation as Tempest.Workspace.NavigationService)?.OpenViews ?? []).Select(v => $"{v.ObjectKind}:{v.ObjectId.ToString("N")[..8]}"));
+                var requests = string.Join(", ", domain.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind).GetAwaiter().GetResult().Select(r => r.Id.ToString("N")[..8]));
+                var phases = string.Join(" -> ", window.OpenPhases);
+                Assert.Fail($"The raised request {request!.Id:N} did not open right up. Open tabs: [{open}]. Open views: [{openViews}]. Requests in store: [{requests}]. Completion: {completion!.Id:N}. Status bar: {status}. Area: {host.ShellNavigator!.Current.Area}. Phases: {phases}.");
+            }
             AssertSectionPresent(editor!, "Identity");
             // Closed by the lead the same day: the editor now renders the
             // declaration's own Lines and Connector sections.
@@ -154,9 +181,6 @@ public sealed class InvoicingJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var invoicingView = GetPrivateField<InvoicingView>(window, "_invoicingView");
-            invoicingView.ParameterPrompt = AutoConfirmPrompt();
-
             await ClickRequestActionAsync(window, invoicingView, request.Id, "Send");
 
             await RenderUntilAsync(window, () =>
@@ -166,7 +190,6 @@ public sealed class InvoicingJourneyTests
             Assert.NotNull(sent.ExternalInvoiceNumber);
             Assert.NotNull(sent.ExternalId);
 
-            var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains(sent.ExternalInvoiceNumber!, StringComparison.Ordinal)));
             Assert.Contains(
@@ -217,6 +240,7 @@ public sealed class InvoicingJourneyTests
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
+            await RenderUntilAsync(window, () => window.Ready.IsCompleted);
             var navigator = host.ShellNavigator!;
 
             await navigator.GoToProjectsAsync();
@@ -243,9 +267,11 @@ public sealed class InvoicingJourneyTests
                     deliverable.Id, project.Id, DateOnly.FromDateTime(DateTime.Now), fixedPriceValue: new Money(price, CurrencyCode.Gbp));
                 Assert.True(completed.Succeeded, completed.Reason);
 
-                var raised = await invoicingService.RaiseFromCompletionAsync(completed.Completion!.Id);
-                Assert.True(raised.Succeeded, raised.Reason);
-                return raised.Request!;
+                // Completing raised it through the completion hook (`ADR-0151`
+                // §7); raising again by hand refuses, naming that request.
+                var raisedAgain = await invoicingService.RaiseFromCompletionAsync(completed.Completion!.Id);
+                Assert.Equal(InvoiceRequestRefusal.AlreadyInvoiced, raisedAgain.Refusal);
+                return raisedAgain.Request!;
             }
 
             await navigator.GoToModuleAsync(ShellArea.Invoicing);
