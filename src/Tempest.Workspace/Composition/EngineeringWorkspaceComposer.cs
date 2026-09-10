@@ -3,6 +3,7 @@ using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
@@ -21,6 +22,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Macros;
 using Tempest.Core.Materials;
 using Tempest.Core.Projects;
@@ -184,6 +186,7 @@ public static class EngineeringWorkspaceComposer
         var projectCommercialService = (IProjectCommercialService)services.GetService(typeof(IProjectCommercialService));
         var timesheetService = (ITimesheetService)services.GetService(typeof(ITimesheetService));
         var deliverableService = (IDeliverableService)services.GetService(typeof(IDeliverableService));
+        var invoicingService = (IInvoicingService)services.GetService(typeof(IInvoicingService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -208,6 +211,29 @@ public static class EngineeringWorkspaceComposer
         // mirroring Evidence's own shape.
         TimesheetsWorkspaceRegistration.Register(manager, domainContext, timesheetService, principalDirectory, commandDispatcher, commandRegistry);
         DeliverableCompletionWorkspaceRegistration.Register(manager, domainContext, deliverableService, principalDirectory, commandDispatcher, commandRegistry);
+
+        // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the connector seam,
+        // the request Kind and its own discipline registration, mirroring
+        // Evidence's own shape — no view, no rail entry (this Work
+        // Package's own scope is the model and the substrate; parts 2/3
+        // build the real connectors and the Invoicing area). Wired here,
+        // after DeliverableCompletionWorkspaceRegistration, so completing a
+        // deliverable can raise a request the moment this registration's
+        // own hook is set, below.
+        InvoicingWorkspaceRegistration.Register(manager, domainContext, invoicingService, commandDispatcher, commandRegistry);
+
+        // The optional completion hook (`DeliverableService`'s own
+        // remarks): completing a deliverable raises an invoice request
+        // through the service, never the UI. Set here, once both services
+        // exist, rather than as a constructor dependency either way round
+        // — `InvoicingService` already depends on `IDeliverableService`
+        // (`MarkInvoicedAsync`), so the reverse dependency at construction
+        // time would be circular.
+        if (deliverableService is Tempest.Core.Deliverables.DeliverableService concreteDeliverableService)
+        {
+            concreteDeliverableService.SetCompletionHook(
+                (completionId, token) => invoicingService.RaiseFromCompletionAsync(completionId, token));
+        }
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
@@ -241,6 +267,10 @@ public static class EngineeringWorkspaceComposer
         // above.
         rehydrators.Register<Tempest.Core.Timesheets.TimesheetEntry>(Tempest.Core.Timesheets.TimesheetEntry.CanonicalKind, domainContext);
         rehydrators.Register<Tempest.Core.Deliverables.DeliverableCompletion>(Tempest.Core.Deliverables.DeliverableCompletion.CanonicalKind, domainContext);
+
+        // `ADR-0151` (`WP 19.1A`) — the same shape once more, for the
+        // request Kind this Work Package adds.
+        rehydrators.Register<Tempest.Core.Invoicing.InvoiceRequest>(Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by

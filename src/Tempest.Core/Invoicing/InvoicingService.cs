@@ -42,6 +42,9 @@ namespace Tempest.Core.Invoicing;
 /// </remarks>
 public sealed class InvoicingService : IInvoicingService
 {
+    /// <summary>The <see cref="Tempest.Core.Configuration.IConfigurationProvider"/> key naming which connector binds to <see cref="IInvoicingConnector"/> — <c>"Fake"</c> (default), <c>"Xero"</c>, <c>"QuickBooksOnline"</c>. Read by <see cref="Tempest.Core.Runtime.TempestHost"/>'s own composition, not by this class: parts 2 and 3 of this Work Package replace the binding the key selects, never this seam.</summary>
+    public const string ConnectorConfigurationKey = "Invoicing:Connector";
+
     private readonly EngineeringDomainContext _context;
     private readonly IRateCardCatalog _rateCards;
     private readonly ITimesheetService _timesheets;

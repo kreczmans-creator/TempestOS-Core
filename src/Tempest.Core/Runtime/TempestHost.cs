@@ -25,6 +25,7 @@ using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
 using Tempest.Core.Manufacturing;
@@ -38,6 +39,7 @@ using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Reporting;
 using Tempest.Core.Requirements;
+using Tempest.Core.Secrets;
 using Tempest.Core.Settings;
 using Tempest.Core.Standards;
 using Tempest.Core.Verification;
@@ -774,6 +776,60 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IWorkingPatternProvider, WorkingPatternProvider>();
         services.Singleton<ITimesheetService, TimesheetService>();
         services.Singleton<IDeliverableService, DeliverableService>();
+
+        // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the token store,
+        // then the connector, then the service over both plus Timesheets/
+        // Deliverables just above (`MarkInvoicedAsync`) and the rate-card
+        // catalogue above that (currency resolution). Neither the store nor
+        // the connector has a compile-time-fixed implementation to bind
+        // with `Singleton<TService, TImplementation>()`: which concrete
+        // type answers depends on `OperatingSystem.IsWindows()` for the
+        // store and on `Invoicing:Connector` for the connector, so each is
+        // constructed directly, once, and registered as an instance —
+        // ADR-0044's own dual-registration precedent for
+        // `CurrentPrincipalAccessor`, applied here to pick a runtime branch
+        // rather than to share one instance under two keys.
+        //
+        // Never the persistence database (`ISecretStore`'s own remarks):
+        // `WindowsDpapiSecretStore` encrypts each token with DPAPI, scoped
+        // to the signed-in Windows user; `FileSecretStore` is the
+        // documented, disclosed non-Windows fallback until a platform
+        // keychain binding exists.
+        ISecretStore secretStore = OperatingSystem.IsWindows()
+            ? new WindowsDpapiSecretStore(configuration)
+            : new FileSecretStore(configuration, logger);
+        services.AddInstance(secretStore);
+
+        // `Invoicing:Connector` (`InvoicingService.ConnectorConfigurationKey`):
+        // `"Fake"` (default), `"Xero"`, `"QuickBooksOnline"`. Only `Fake`
+        // is implemented by this Work Package; `WP 19.1A` parts 2 and 3
+        // add the real bindings here, replacing this seam's own selection
+        // logic, never `IInvoicingConnector` itself. A value this build
+        // does not recognise still resolves to the Fake connector, loudly
+        // — never a silent fallback.
+        var configuredConnectorName = configuration.TryGetValue(InvoicingService.ConnectorConfigurationKey, out var connectorNameValue)
+            ? connectorNameValue?.Trim()
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(configuredConnectorName) && !string.Equals(configuredConnectorName, "Fake", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.Warning(
+                $"'{InvoicingService.ConnectorConfigurationKey}' is configured as '{configuredConnectorName}', which this build does not implement yet; "
+                + "using the Fake connector instead.");
+        }
+
+        IInvoicingConnector invoicingConnector = new FakeInvoicingConnector();
+        services.AddInstance(invoicingConnector);
+
+        services.Singleton<IInvoicingService, InvoicingService>();
+
+        // `InvoiceReconciliationService` (`IHostedService`) needs no
+        // registration line here: the platform's own reflection-based
+        // hosted-service discovery (this method's own "Hosted Service
+        // Discovery" phase, above) finds it like every other hosted
+        // service, and constructs it from the container once its own
+        // dependencies — `IInvoicingService`, `EngineeringDomainContext`,
+        // `IConfigurationProvider` — are resolvable, which they now are.
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
