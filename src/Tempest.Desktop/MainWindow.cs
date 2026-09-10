@@ -81,6 +81,13 @@ public sealed class MainWindow : Window
     private readonly IssueEntry _issueEntry;
     private readonly ReviseReferenceRecordEntry _reviseReferenceRecordEntry;
 
+    // The project Commercial section's own pickers, and the Timesheets/
+    // Deliverables prompts (`WP 19.0A`, `ADR-0150`).
+    private readonly OrganisationPicker _organisationPicker;
+    private readonly RateCardPicker _rateCardPicker;
+    private readonly TimesheetEntryPrompt _timesheetEntryPrompt;
+    private readonly DeliverableCompletionPrompt _deliverableCompletionPrompt;
+
     // The Product Spine (`TD-84`) — Module -> Project -> Workspace.
     private readonly IShellNavigator _navigator;
     private readonly IProjectContext _projectContext;
@@ -98,6 +105,9 @@ public sealed class MainWindow : Window
 
     // The Evidence workspace (`WP 18.2A`, `ADR-0148`).
     private readonly EvidenceWorkspaceView _evidenceWorkspace;
+
+    // The Timesheets area (`WP 19.0A`, `ADR-0150`).
+    private readonly TimesheetWeekView _timesheetWeekView;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
@@ -182,6 +192,10 @@ public sealed class MainWindow : Window
         _checkEntry = views.CheckEntry;
         _issueEntry = views.IssueEntry;
         _reviseReferenceRecordEntry = views.ReviseReferenceRecordEntry;
+        _organisationPicker = views.OrganisationPicker;
+        _rateCardPicker = views.RateCardPicker;
+        _timesheetEntryPrompt = views.TimesheetEntryPrompt;
+        _deliverableCompletionPrompt = views.DeliverableCompletionPrompt;
         _navigator = host.ShellNavigator!;
         _projectContext = host.ProjectContext!;
         _navigationRail = views.NavigationRail;
@@ -194,6 +208,7 @@ public sealed class MainWindow : Window
         _engineeringCalculation = views.EngineeringCalculation;
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
         _evidenceWorkspace = coordinators.EvidenceWorkspace;
+        _timesheetWeekView = views.TimesheetWeekView;
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -216,6 +231,10 @@ public sealed class MainWindow : Window
             // land here" discipline every other area follows.
             [ShellArea.Evidence] = new(() => _evidenceWorkspace, () => _evidenceWorkspace.RefreshAsync()),
             [ShellArea.EngineeringCalculation] = new(() => _engineeringCalculation, EnterEngineeringCalculationAsync),
+            // `WP 19.0A` (`ADR-0150`): re-read on every entry, the same
+            // "load when you land here" discipline every other area
+            // follows.
+            [ShellArea.Timesheets] = new(() => _timesheetWeekView, () => _timesheetWeekView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the

@@ -268,6 +268,7 @@ public sealed class GlobalNavigationRail : UserControl
         ShellArea.Knowledge => IconGeometry.Book,
         ShellArea.EngineeringCalculation => IconGeometry.Scales,
         ShellArea.Evidence => IconGeometry.Paperclip,
+        ShellArea.Timesheets => IconGeometry.Clock,
         ShellArea.Administration => IconGeometry.Shield,
         _ => IconGeometry.Dot,
     };

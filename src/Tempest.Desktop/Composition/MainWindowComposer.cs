@@ -59,6 +59,11 @@ internal sealed record ComposedViews(
     ProjectWorkspaceView ProjectWorkspace,
     EngineeringCalculationView EngineeringCalculation,
     LibrariesView LibrariesView,
+    OrganisationPicker OrganisationPicker,
+    RateCardPicker RateCardPicker,
+    TimesheetEntryPrompt TimesheetEntryPrompt,
+    DeliverableCompletionPrompt DeliverableCompletionPrompt,
+    TimesheetWeekView TimesheetWeekView,
     Dictionary<Guid, IWorkspaceView> OpenGraphViewsByRootId,
     CommandHistoryLog CommandHistory,
     IBackgroundTaskRunner BackgroundTaskRunner,
@@ -185,7 +190,15 @@ internal sealed partial class MainWindowComposer
         composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
 
         var theme = new ThemeService(composition.SettingsProvider);
-        var settingsDialog = new SettingsDialog(theme, session.UserSettings, composition.SettingsProvider);
+
+        // `WP 19.0A` (`ADR-0150`): the Timesheets section — hours per week
+        // for the current principal — needs both resolved before the
+        // dialog is built; `SettingsDialog` itself already knows what to
+        // do with them (part 1), this composer simply had not supplied
+        // them yet.
+        var workingPatterns = (Tempest.Core.Timesheets.IWorkingPatternProvider)services.GetService(typeof(Tempest.Core.Timesheets.IWorkingPatternProvider));
+        var currentPrincipalAccessor = (Tempest.Core.Identity.ICurrentPrincipalAccessor)services.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var settingsDialog = new SettingsDialog(theme, session.UserSettings, composition.SettingsProvider, workingPatterns, currentPrincipalAccessor);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -258,11 +271,43 @@ internal sealed partial class MainWindowComposer
 
         var moduleHost = new ContentControl();
 
+        // `WP 19.0A` (`ADR-0150`): the Timesheets area and the project
+        // Deliverables tab — each dispatches directly through the command
+        // dispatcher, mirroring `EvidenceWorkspaceView`'s own identical
+        // shape, and each opens what it makes right up through the same
+        // callback `EvidenceWorkspaceView` uses (`WP 17.9.4`).
+        var organisationCatalog = (Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog));
+        var rateCardCatalog = (Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog)services.GetService(typeof(Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog));
+        var timesheetService = (Tempest.Core.Timesheets.ITimesheetService)services.GetService(typeof(Tempest.Core.Timesheets.ITimesheetService));
+
+        var organisationPicker = new OrganisationPicker(organisationCatalog);
+        var rateCardPicker = new RateCardPicker(rateCardCatalog);
+        var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog);
+        var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
+
+        Action<Guid, string> openObjectRightUp = (id, kind) => _ = callbacks.OpenEvidenceRecordAsync(id, kind);
+
+        var timesheetWeekView = new TimesheetWeekView(
+            composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
+            () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        timesheetWeekView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        var deliverablesView = new ProjectDeliverablesView(
+            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, deliverableCompletionPrompt, openObjectRightUp)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        deliverablesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var projectDirectory = host.ProjectDirectory!;
         var projectBrowser = new ProjectBrowserView(projectDirectory, host.ShellNavigator!, callbacks.PromptForNewProjectAsync);
         var projectWorkspace = new ProjectWorkspaceView(
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
-            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!);
+            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView);
 
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
@@ -279,6 +324,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider, workspace, manager, principals);
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, timesheetEntryPrompt, deliverableCompletionPrompt,
+            timesheetWeekView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider, workspace, manager, principals);
     }
 }

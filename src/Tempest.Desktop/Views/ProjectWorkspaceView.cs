@@ -59,6 +59,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectTasksView _tasksView = new();
     private readonly ProjectRisksView _risksView = new();
     private readonly ProjectTimelineView _timelineView = new();
+    private readonly ProjectDeliverablesView _deliverablesView;
 
     private bool _suppressAreaSelection;
 
@@ -148,7 +149,18 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>The Timeline surface, so the shell can drive and inspect it.</summary>
     public ProjectTimelineView TimelineView => _timelineView;
 
+    /// <summary>The Deliverables surface, so the shell can drive and inspect it (`WP 19.0A`, `ADR-0150`).</summary>
+    public ProjectDeliverablesView DeliverablesView => _deliverablesView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
+    /// <param name="deliverablesView">
+    /// This project's own Deliverables tab (`WP 19.0A`, `ADR-0150`) — built
+    /// externally (it needs the Engineering Domain and the command
+    /// dispatcher directly, neither of which this view otherwise depends
+    /// on), so it is handed in already constructed, exactly as
+    /// <see cref="EvidenceWorkspaceView"/> is handed to <c>MainWindow</c>'s
+    /// own area registry.
+    /// </param>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
         IProjectDirectory directory,
@@ -157,7 +169,8 @@ public sealed class ProjectWorkspaceView : UserControl
         IProjectRequirementRegister requirements,
         IProjectTaskRegister tasks,
         IProjectGovernanceRegister governance,
-        IProjectMilestoneRegister milestones)
+        IProjectMilestoneRegister milestones,
+        ProjectDeliverablesView deliverablesView)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -167,6 +180,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(tasks);
         ArgumentNullException.ThrowIfNull(governance);
         ArgumentNullException.ThrowIfNull(milestones);
+        ArgumentNullException.ThrowIfNull(deliverablesView);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -176,6 +190,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _tasks = tasks;
         _governance = governance;
         _milestones = milestones;
+        _deliverablesView = deliverablesView;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -305,6 +320,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _tasksView.Show([], [], null);
             _risksView.Show([], [], [], null);
             _timelineView.Show([], null);
+            await _deliverablesView.RefreshAsync().ConfigureAwait(true);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -328,6 +344,7 @@ public sealed class ProjectWorkspaceView : UserControl
             await _governance.ListDecisionsAsync(project.Id).ConfigureAwait(true),
             project.Label);
         _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
+        await _deliverablesView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();
         _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
         var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
@@ -376,6 +393,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
         if (descriptor.Area == ProjectArea.Timeline)
             return _timelineView;
+
+        if (descriptor.Area == ProjectArea.Deliverables)
+            return _deliverablesView;
 
         var host = new ContentControl { Tag = descriptor.Area };
         _areaHosts.Add(host);

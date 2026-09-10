@@ -39,4 +39,11 @@ public enum ProjectArea
 
     /// <summary>This project's own settings — identity, lifecycle and configuration (`TD-76`).</summary>
     Settings,
+
+    /// <summary>
+    /// This project's own deliverables — every milestone <c>Deliverable</c>
+    /// with its completion state (`WP 19.0A`, `ADR-0150`).
+    /// </summary>
+    /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
+    Deliverables,
 }

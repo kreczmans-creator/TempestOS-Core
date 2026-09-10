@@ -79,6 +79,13 @@ public static class ShellAreas
         new(ShellArea.Evidence, "Evidence", "▧", NavigationAvailability.Implemented,
             "A project's own evidence — files, citations, declared figures, check and issue — plus the Libraries tab over the five governed reference libraries evidence cites."),
 
+        // `WP 19.0A` (`ADR-0150`): the current principal's own weekly
+        // timesheet, placed right after Evidence for the same reason
+        // Evidence sits right after Projects — real, governed, day-to-day
+        // work, not one of the five modules that are only Declared.
+        new(ShellArea.Timesheets, "Timesheets", "◷", NavigationAvailability.Implemented,
+            "The current principal's own weekly timesheet — record, amend and delete time against a project's own Released rate-card pin, priced and frozen at record time."),
+
         new(ShellArea.ProjectWorkspace, "Project", "◧", NavigationAvailability.Implemented,
             "One project's own workspace. Reached by opening a project, not from the rail."),
 

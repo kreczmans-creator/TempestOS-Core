@@ -115,6 +115,7 @@ internal sealed class WorkspaceViewCoordinator
     private readonly IKindEditorDeclarationRegistry? _declarations;
     private readonly EvidenceEditorSupport? _evidenceSupport;
     private readonly IAuditQuery? _auditQuery;
+    private readonly ProjectCommercialEditorSupport? _commercialSupport;
 
     private CockpitView? _cockpitView;
 
@@ -139,7 +140,7 @@ internal sealed class WorkspaceViewCoordinator
         RecentObjectsState recentObjects, FavouriteObjectsState favouriteObjects, Dictionary<Guid, IWorkspaceView> openGraphViewsByRootId,
         IDocumentOpener documentOpener, ActionOutcomeReporter reporter,
         IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
-        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null)
+        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null, ProjectCommercialEditorSupport? commercialSupport = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -181,6 +182,7 @@ internal sealed class WorkspaceViewCoordinator
         _declarations = declarations;
         _evidenceSupport = evidenceSupport;
         _auditQuery = auditQuery;
+        _commercialSupport = commercialSupport;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -318,7 +320,7 @@ internal sealed class WorkspaceViewCoordinator
 
         var editor = ObjectEditorView.TryCreate(
             view.ObjectId, view.ObjectKind, _domainContext, _manager, NavigateToObject, _commandDispatcher, _requirementsService, _calculationTemplates,
-            _workspaceChanges, _declarations, _evidenceSupport, _auditQuery);
+            _workspaceChanges, _declarations, _evidenceSupport, _auditQuery, _commercialSupport);
         if (editor is null)
             return DocumentAreaView.BuildDefaultBody(view);
 

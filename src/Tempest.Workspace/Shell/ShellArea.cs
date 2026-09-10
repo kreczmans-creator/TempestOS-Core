@@ -69,4 +69,15 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     Evidence,
+
+    /// <summary>
+    /// The Timesheets area (`WP 19.0A`, `ADR-0150`): the current
+    /// principal's own weekly timesheet — record, amend and delete time
+    /// against a project's own Released rate-card pin.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Timesheets,
 }

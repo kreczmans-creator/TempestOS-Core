@@ -8,8 +8,8 @@ using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
-using Tempest.Workspace.Verification;
 using Tempest.Workspace.Timesheets;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -433,6 +433,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
         [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
         [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
+        [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
         [nameof(VerificationCommandIds)] = typeof(VerificationCommandIds),
         [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
     };
