@@ -84,6 +84,7 @@ internal sealed partial class MainWindowComposer
             ShellArea.EngineeringCalculation => views.EngineeringCalculation,
             ShellArea.Evidence => coordinators.EvidenceWorkspace,
             ShellArea.Timesheets => views.TimesheetWeekView,
+            ShellArea.Invoicing => views.InvoicingView,
             _ => engineeringSurface,
         };
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -6,6 +7,8 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Tempest.Core.Evidence;
 using Tempest.Core.Identity;
+using Tempest.Core.Invoicing;
+using Tempest.Core.Secrets;
 using Tempest.Core.Settings;
 using Tempest.Core.Timesheets;
 using Tempest.Desktop.Theming;
@@ -27,20 +30,35 @@ namespace Tempest.Desktop.Views;
 /// </summary>
 public sealed class SettingsDialog : Border
 {
+    /// <summary>Where a connector's own client id is stored, through <see cref="ISecretStore"/> — never the persistence database (`WP 19.1A` part 3, `ADR-0151`).</summary>
+    public const string InvoicingClientIdSecretKey = "Invoicing:ClientId";
+
+    /// <summary>Where a connector's own client secret is stored, through <see cref="ISecretStore"/> — never the persistence database.</summary>
+    public const string InvoicingClientSecretSecretKey = "Invoicing:ClientSecret";
+
     private readonly ThemeService _theme;
     private readonly UserSettings _settings;
     private readonly ISettingsProvider _settingsProvider;
     private readonly IWorkingPatternProvider? _workingPatterns;
     private readonly ICurrentPrincipalAccessor? _principals;
+    private readonly IInvoicingConnector? _invoicingConnector;
+    private readonly ISecretStore? _secretStore;
 
     private readonly ComboBox _themeSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140 };
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly CheckBox _confirmBeforeDelete = new() { Content = "Confirm before deleting an object" };
     private readonly CheckBox _independentCheckRequired = new() { Content = "Independent check required (checker must differ from the evidence's own author)" };
     private readonly NumericUpDown _workingPatternHours = new() { Minimum = 0, Maximum = 168, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
+    private readonly ComboBox _invoicingConnectorSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
+    private readonly TextBox _invoicingClientId = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
+    private readonly TextBox _invoicingClientSecret = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160, PasswordChar = '•' };
+    private readonly TextBlock _invoicingAuthorisationStatus = new() { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
+    private readonly Button _invoicingAuthoriseButton = new() { Content = "Authorise", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly NumericUpDown _invoicingPollMinutes = new() { Minimum = 1, Maximum = 1440, Increment = 1, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
+    private bool _invoicingSettingsRegistered;
     private TaskCompletionSource<bool>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="SettingsDialog"/> class, initially hidden.</summary>
@@ -54,9 +72,16 @@ public sealed class SettingsDialog : Border
     /// context to show it against.
     /// </param>
     /// <param name="principals">The current principal, whose own working pattern the Timesheets section edits. <see langword="null"/> omits the section, as above.</param>
+    /// <param name="invoicingConnector">
+    /// The connector <see cref="ConnectorAuthorisationState"/> is read from
+    /// for the Invoicing section's own Authorise button (`WP 19.1A` part 3,
+    /// `ADR-0151`). <see langword="null"/> omits the section entirely.
+    /// </param>
+    /// <param name="secretStore">Where the Invoicing section's own client id and secret are stored — never <paramref name="settingsProvider"/>'s own runtime-mutable settings, and never the persistence database. <see langword="null"/> omits the section, as above.</param>
     public SettingsDialog(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider,
-        IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null)
+        IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
+        IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -66,6 +91,8 @@ public sealed class SettingsDialog : Border
         _settingsProvider = settingsProvider;
         _workingPatterns = workingPatterns;
         _principals = principals;
+        _invoicingConnector = invoicingConnector;
+        _secretStore = secretStore;
 
         IsVisible = false;
         IsHitTestVisible = true;
@@ -100,6 +127,31 @@ public sealed class SettingsDialog : Border
         // reads. Shown only where a principal context exists to edit it.
         var timesheets = BuildSection("Timesheets", LabeledRow("Working pattern (hours/week)", _workingPatternHours));
 
+        // `WP 19.1A` part 3 (`ADR-0151`): connector authorisation — the
+        // choice of connector (bound to `InvoicingService.ConnectorConfigurationKey`,
+        // "Invoicing:Connector"), its own client id and secret (through
+        // `ISecretStore`, never this dialog's own `ISettingsProvider` and
+        // never the persistence database), an Authorise button behind the
+        // `IInvoicingConnector.AuthorisationStateAsync` seam, and the poll
+        // interval (`InvoiceReconciliationService.PollMinutesConfigurationKey`,
+        // "Invoicing:PollMinutes"). Shown only where a connector and a
+        // secret store exist to edit against.
+        _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "Fake", Tag = "Fake" });
+        _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "Xero", Tag = "Xero" });
+        _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "QuickBooks Online", Tag = "QuickBooksOnline" });
+
+        var invoicingAuthoriseRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        invoicingAuthoriseRow.Children.Add(_invoicingAuthoriseButton);
+        invoicingAuthoriseRow.Children.Add(_invoicingAuthorisationStatus);
+
+        var invoicingStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        invoicingStack.Children.Add(LabeledRow("Connector", _invoicingConnectorSelector));
+        invoicingStack.Children.Add(LabeledRow("Client Id", _invoicingClientId));
+        invoicingStack.Children.Add(LabeledRow("Client Secret", _invoicingClientSecret));
+        invoicingStack.Children.Add(invoicingAuthoriseRow);
+        invoicingStack.Children.Add(LabeledRow("Poll every (minutes)", _invoicingPollMinutes));
+        var invoicing = BuildSection("Invoicing", invoicingStack);
+
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, DesignTokens.SpaceLg, 0, 0) };
         buttons.Children.Add(_cancelButton);
         buttons.Children.Add(_saveButton);
@@ -114,6 +166,9 @@ public sealed class SettingsDialog : Border
         if (_workingPatterns is not null && _principals is not null)
             body.Children.Add(timesheets);
 
+        if (_invoicingConnector is not null && _secretStore is not null)
+            body.Children.Add(invoicing);
+
         body.Children.Add(buttons);
         Child = body;
 
@@ -122,6 +177,7 @@ public sealed class SettingsDialog : Border
         title.FontFamily = DesignTokens.TitleFont;
         _cancelButton.Click += (_, _) => Complete(false);
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
+        _invoicingAuthoriseButton.Click += async (_, _) => await OnAuthoriseInvoicingAsync().ConfigureAwait(true);
         KeyDown += OnKeyDown;
 
         // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
@@ -181,6 +237,14 @@ public sealed class SettingsDialog : Border
         _workingPatternHours.Value = WorkingPatternProvider.DefaultHoursPerWeek;
         _ = LoadWorkingPatternAsync();
 
+        _invoicingConnectorSelector.SelectedIndex = 0;
+        _invoicingClientId.Text = string.Empty;
+        _invoicingClientSecret.Text = string.Empty;
+        _invoicingClientSecret.Watermark = string.Empty;
+        _invoicingAuthorisationStatus.Text = string.Empty;
+        _invoicingPollMinutes.Value = InvoiceReconciliationService.DefaultPollMinutes;
+        _ = LoadInvoicingSectionAsync();
+
         IsVisible = true;
         // The safe action gets initial focus (mirroring
         // `ConfirmationDialog`'s own identical convention) — Enter before
@@ -237,7 +301,171 @@ public sealed class SettingsDialog : Border
                 .ConfigureAwait(true);
         }
 
+        if (_invoicingConnector is not null && _secretStore is not null)
+            await SaveInvoicingSectionAsync().ConfigureAwait(true);
+
         Complete(true);
+    }
+
+    /// <summary>
+    /// Loads the Invoicing section's own current values (`WP 19.1A` part 3):
+    /// the connector choice and poll interval from <see cref="ISettingsProvider"/>
+    /// (registering both definitions lazily, at their defaults, the same
+    /// "register on first read" shape <see cref="LoadWorkingPatternAsync"/>
+    /// already uses), whether a client id/secret is stored (never the
+    /// secret's own value — a secret field never re-displays what it
+    /// already holds), and the connector's own current authorisation state.
+    /// </summary>
+    private async Task LoadInvoicingSectionAsync()
+    {
+        if (_invoicingConnector is null || _secretStore is null)
+            return;
+
+        EnsureInvoicingSettingsRegistered();
+
+        var connectorValue = await _settingsProvider.GetValueAsync(InvoicingService.ConnectorConfigurationKey).ConfigureAwait(true);
+        SelectInvoicingConnector(connectorValue);
+
+        var storedClientId = await _secretStore.GetAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
+        _invoicingClientId.Text = storedClientId ?? string.Empty;
+
+        var hasStoredSecret = await _secretStore.GetAsync(InvoicingClientSecretSecretKey).ConfigureAwait(true) is not null;
+        _invoicingClientSecret.Text = string.Empty;
+        _invoicingClientSecret.Watermark = hasStoredSecret ? "(unchanged)" : string.Empty;
+
+        var pollValue = await _settingsProvider.GetValueAsync(InvoiceReconciliationService.PollMinutesConfigurationKey).ConfigureAwait(true);
+        _invoicingPollMinutes.Value = int.TryParse(pollValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes) && minutes > 0
+            ? minutes
+            : InvoiceReconciliationService.DefaultPollMinutes;
+
+        await RefreshInvoicingAuthorisationStatusAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Registers the Invoicing section's own two <see cref="ISettingsProvider"/>
+    /// definitions, once — <see cref="InvoicingService.ConnectorConfigurationKey"/>
+    /// and <see cref="InvoiceReconciliationService.PollMinutesConfigurationKey"/>.
+    /// </summary>
+    /// <remarks>
+    /// Those two constants are <c>Tempest.Core.Configuration.IConfigurationProvider</c>
+    /// keys in <c>Tempest.Core.Invoicing</c> today — read once at startup,
+    /// immutable thereafter (<c>IConfigurationProvider</c>'s own remarks) —
+    /// registered here, under the identical key strings, as this dialog's
+    /// own runtime-mutable <see cref="ISettingsProvider"/> values instead,
+    /// exactly as <see cref="WorkingPatternProvider"/> registers its own
+    /// setting lazily. This Work Package's own files stop at persisting the
+    /// operator's choice durably and correctly; wiring
+    /// <see cref="Tempest.Core.Runtime.TempestHost"/>'s own connector
+    /// selection and <see cref="InvoiceReconciliationService"/>'s own poll
+    /// timer to consult this setting at startup is outside this Work
+    /// Package's own "Do not touch <c>Core/Invoicing</c>" boundary — see
+    /// this Work Package's own report.
+    /// </remarks>
+    private void EnsureInvoicingSettingsRegistered()
+    {
+        if (_invoicingSettingsRegistered)
+            return;
+
+        _invoicingSettingsRegistered = true;
+
+        try
+        {
+            _settingsProvider.RegisterDefinition(new SettingDefinition(
+                InvoicingService.ConnectorConfigurationKey, "Invoicing — connector", "Fake"));
+        }
+        catch (DuplicateSettingDefinitionException)
+        {
+            // Registered already — by an earlier `ShowAsync` this process
+            // made. The definition existing is what matters.
+        }
+
+        try
+        {
+            _settingsProvider.RegisterDefinition(new SettingDefinition(
+                InvoiceReconciliationService.PollMinutesConfigurationKey, "Invoicing — poll interval (minutes)",
+                InvoiceReconciliationService.DefaultPollMinutes.ToString(CultureInfo.InvariantCulture)));
+        }
+        catch (DuplicateSettingDefinitionException)
+        {
+            // As above.
+        }
+    }
+
+    private void SelectInvoicingConnector(string value)
+    {
+        foreach (var candidate in _invoicingConnectorSelector.Items.OfType<ComboBoxItem>())
+        {
+            if (Equals(candidate.Tag, value))
+            {
+                _invoicingConnectorSelector.SelectedItem = candidate;
+                return;
+            }
+        }
+
+        _invoicingConnectorSelector.SelectedIndex = 0;
+    }
+
+    /// <summary>
+    /// Re-reads <see cref="IInvoicingConnector.AuthorisationStateAsync"/> and
+    /// shows what it reports — the Authorise button's own action
+    /// (`WP 19.1A` part 3's own brief §3): "runs the OAuth authoriser from
+    /// part 2 when present". No such authoriser exists in this worktree —
+    /// part 2 runs in parallel and lands its own real connectors separately
+    /// — so, today, every connector's own "Authorise" reduces to this seam
+    /// alone; <see cref="FakeInvoicingConnector"/>'s own default state is
+    /// already <see cref="ConnectorAuthorisation.Authorised"/>, so pressing
+    /// Authorise with it selected succeeds immediately, exactly as the
+    /// brief describes.
+    /// </summary>
+    private async Task RefreshInvoicingAuthorisationStatusAsync()
+    {
+        if (_invoicingConnector is null)
+            return;
+
+        var state = await _invoicingConnector.AuthorisationStateAsync().ConfigureAwait(true);
+        _invoicingAuthorisationStatus.Text = DescribeAuthorisationState(state);
+    }
+
+    private async Task OnAuthoriseInvoicingAsync() => await RefreshInvoicingAuthorisationStatusAsync().ConfigureAwait(true);
+
+    private static string DescribeAuthorisationState(ConnectorAuthorisationState state)
+    {
+        var headline = state.Status switch
+        {
+            ConnectorAuthorisation.Authorised => "Authorised.",
+            ConnectorAuthorisation.NotAuthorised => "Not authorised.",
+            ConnectorAuthorisation.Expired => "Re-authorise needed.",
+            _ => "Unknown.",
+        };
+
+        return state.Detail is { } detail ? $"{headline} {detail}" : headline;
+    }
+
+    private async Task SaveInvoicingSectionAsync()
+    {
+        if (_invoicingConnector is null || _secretStore is null)
+            return;
+
+        var connectorValue = (_invoicingConnectorSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "Fake";
+        await _settingsProvider.SetValueAsync(InvoicingService.ConnectorConfigurationKey, connectorValue).ConfigureAwait(true);
+
+        var clientId = _invoicingClientId.Text ?? string.Empty;
+        if (string.IsNullOrEmpty(clientId))
+            await _secretStore.RemoveAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
+        else
+            await _secretStore.SetAsync(InvoicingClientIdSecretKey, clientId).ConfigureAwait(true);
+
+        // A blank secret field means "leave the stored secret unchanged" —
+        // this dialog never re-displays a stored secret (`LoadInvoicingSectionAsync`'s
+        // own remarks), so a blank field is never distinguishable from "the
+        // operator did not mean to change it" and must not clear it.
+        if (!string.IsNullOrEmpty(_invoicingClientSecret.Text))
+            await _secretStore.SetAsync(InvoicingClientSecretSecretKey, _invoicingClientSecret.Text).ConfigureAwait(true);
+
+        var pollMinutes = (int)(_invoicingPollMinutes.Value ?? InvoiceReconciliationService.DefaultPollMinutes);
+        await _settingsProvider
+            .SetValueAsync(InvoiceReconciliationService.PollMinutesConfigurationKey, pollMinutes.ToString(CultureInfo.InvariantCulture))
+            .ConfigureAwait(true);
     }
 
     private static Control BuildSection(string title, Control content)

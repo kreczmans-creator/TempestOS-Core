@@ -86,6 +86,14 @@ public static class ShellAreas
         new(ShellArea.Timesheets, "Timesheets", "◷", NavigationAvailability.Implemented,
             "The current principal's own weekly timesheet — record, amend and delete time against a project's own Released rate-card pin, priced and frozen at record time."),
 
+        // `WP 19.1A` part 3 (`ADR-0151`): invoice requests raised from a
+        // project's own completed deliverables and unbilled time, placed
+        // right after Timesheets for the same reason Timesheets sits right
+        // after Evidence — real, governed, day-to-day work, not one of the
+        // five modules that are only Declared.
+        new(ShellArea.Invoicing, "Invoicing", "▥", NavigationAvailability.Implemented,
+            "Every invoice request across open projects (or the open project when one is open), grouped by status — raised from a completed deliverable, sent to a connector, reconciled, and voided, with every outcome shown."),
+
         new(ShellArea.ProjectWorkspace, "Project", "◧", NavigationAvailability.Implemented,
             "One project's own workspace. Reached by opening a project, not from the rail."),
 
