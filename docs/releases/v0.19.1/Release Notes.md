@@ -42,6 +42,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.10Q` New Project from Projects → Open opens the project right up | `ProjectBrowserView.CreateAsync` finds the project it just created through the directory itself, not its own filtered `_current` list — a snapshot `ProjectsAreaView` takes at group-selection time, before the new project exists, which left `CreateAsync` unable to find its own work and returning without ever opening it; a `ProjectCreated` event lets `ProjectsAreaView` extend the Open group's own visible set synchronously as part of the same create path, so the list and the filter agree the moment the project opens; the explicit re-open `QuotationJourneyTests` carried for this is gone; `ProjectBrowserViewTests` proves the journey through `ProjectsAreaView` end to end — a `PHYSICAL_REVIEW.md` §7c D2 gap found by `WP 19.10B`'s file-based tracing | (d46e910) |
 | `WP 19.10O` The rail and tree-column collapse on demand, and stay collapsed | A chevron at the navigation rail's own foot folds it to icon width at any window size (Ctrl+B, and "Collapse navigation" on the Command Palette), independent of the existing responsive fold, which still wins below `CompactShellWidth`; a new shared `CollapsibleColumn` control gives the Projects, Engineering and Business tree columns the identical chevron, collapsing each to a 28px strip carrying the expand chevron and a vertical caption naming the area, with the right pane filling the freed width; both states persist through the existing Desktop panel UI state document and are restored before first render; the layout walk gains a sibling covering both collapsed states at both existing sizes | 2026-09-14 (b7ba555) |
 | `WP 19.10P` The rehearsal's own findings: Open deliverable opens, money shows its symbol, empty libraries show a heading | Open deliverable (the D6 blocker) now opens right up — no `IWorkspaceViewFactory` was ever registered for the Deliverable Kind, only for its own `DeliverableCompletion`; `MoneyDisplay.Format` renders a currency symbol (£/€/$, the ISO code otherwise) wherever an amount is shown to a person, across the Home/Business/Projects dashboards, the Quote tab, Quotes and Invoicing; the Home dashboard's Invoices line renders `AccountsSnapshot.UnavailableReason` once, verbatim, dropping a doubled period and dead fallback text; `LibrariesView` gives every one of the eight governed libraries its own heading, an empty one reading "No records yet"; the eighth library's own screen name is "Rate cards", its routing key unchanged | 2026-09-14 (ca181b23) |
+| `WP 19.10R` The Structure tab's ribbon and the Command Palette refuse a write on an archived project (`TD-179` residual) | `CommandBinding.Mutates` (defaults `false`, so every untouched binding is unaffected); `ArchivedProjectCommandGuard` resolves the project a command would mutate (the selected object's own ancestry via `IHasParent`, else the shell's open project scope) and refuses "Project '{code}' is archived — read only." when it is Archive; `CommandRegistry.Evaluate` consults the guard for any binding whose `Mutates` is set, so the Ribbon, the Palette and a macro replaying either all see the identical refusal from the one place availability is already decided; `mutates: true` set on every genuine write across the five discipline registrations (Mechanical, Manufacturing, Documents, Verification, Requirements) plus Quotations, Deliverables, Tasks and Evidence — sixty binding sites, seventy-seven commands — with `mechanical.validate-configuration` the one deliberate exception (a read-only consistency check); registered in `TempestHost`'s own container so the shipped `CommandRegistry` singleton carries a real guard; `ArchivedProjectCommandGuardTests` (Core) and an extension to `ArchivedProjectReadOnlyTests` (Desktop, the Structure tab) | 2026-09-14 (pending merge) |
 
 ## Figures
 
@@ -84,18 +85,27 @@ counts from the gate).
   core panel comes back on re-entering Engineering or through Reset Layout
   on the Command Palette; the presets had no user beyond the menu. Say if
   any of the three should return.
-- **Archived-project write guards stop at `IRequirementsService` and the
-  Structure tab's ribbon** (`WP 19.5C`, narrowed `WP 19.10H`): the
+- **Archived-project write guards stop at `IRequirementsService`**
+  (`WP 19.5C`, narrowed `WP 19.10H`, narrowed again `WP 19.10R`): the
   commercial, quotation, deliverable, timesheet, invoicing, milestone,
   engineering-task, evidence and manual-task services all refuse writes on
-  an archived project now, and the project workspace disables every write
-  control it can reach on Evidence, Tasks, Timeline and the Quote tab, with
-  an "Archived project — read only" tooltip. `IRequirementsService.CreateAsync`
-  takes no project id, so guarding it needs a design step rather than a
-  copy of the pattern; the Structure tab's ribbon acts through the
-  engineering command registry, which carries no archived-project check at
-  all, so an engineering object can still be created under an archived
-  project from there. Both disclosed as `TD-179`.
+  an archived project now, the project workspace disables every write
+  control it can reach on Evidence, Tasks, Timeline and the Quote tab with
+  an "Archived project — read only" tooltip, and the Structure tab's Ribbon
+  and the Command Palette (and a macro replaying either) now refuse too:
+  `Tempest.Core.Commands.CommandRegistry.Evaluate` consults one
+  `ArchivedProjectCommandGuard`, resolving the project a command would
+  mutate (the selected object's own ancestry, else the shell's open
+  project) for every binding across the five discipline registrations
+  (Mechanical, Manufacturing, Documents, Verification, Requirements) plus
+  Quotations, Deliverables, Tasks and Evidence whose own
+  `CommandBinding.Mutates` marker is set, refusing "Project '{code}' is
+  archived — read only." — the disabled Ribbon button carries this as its
+  own tooltip, and the Palette lists the command with the same reason.
+  `IRequirementsService.CreateAsync` still takes no project id, so guarding
+  it needs a design step rather than a copy of the pattern every other
+  guarded write now follows — the one remaining residual, disclosed as
+  `TD-179`.
 - **"Finance" tasks use a thirty-day heuristic** (`WP 19.5C`): no payment
   terms field exists on an invoice request, so a Sent request unpaid for
   thirty days, and a Sent quotation older than seven days, are what the

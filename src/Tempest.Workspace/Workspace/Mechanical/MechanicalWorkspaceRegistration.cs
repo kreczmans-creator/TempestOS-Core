@@ -128,7 +128,8 @@ public static class MechanicalWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, MechanicalObjectFactoryRegistry.Part),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Rename, displayName: "Rename Mechanical Object", category: "Mechanical",
@@ -142,7 +143,8 @@ public static class MechanicalWorkspaceRegistration
                 (context, values) => new RenameMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Edit, displayName: "Edit Mechanical Object", category: "Mechanical",
@@ -154,7 +156,8 @@ public static class MechanicalWorkspaceRegistration
                 (context, values) => new ReviseMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Delete, displayName: "Delete Mechanical Object", category: "Mechanical",
@@ -169,7 +172,8 @@ public static class MechanicalWorkspaceRegistration
                 (context, _) => new DeleteMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Mechanical object")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Mechanical object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Move, displayName: "Move Mechanical Object", category: "Mechanical",
@@ -194,7 +198,8 @@ public static class MechanicalWorkspaceRegistration
                 (context, _) => new DuplicateMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Mechanical object")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Mechanical object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.SetBomLine, displayName: "Set BOM Line", category: "Mechanical",
@@ -228,7 +233,8 @@ public static class MechanicalWorkspaceRegistration
                     WorkspaceCommandBindings.Text("itemNumber", "Item number"),
                     WorkspaceCommandBindings.Text("referenceDesignator", "Reference designator"),
                 ],
-                BomLineKinds),
+                BomLineKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.CompareBaselines, displayName: "Compare Baselines", category: "Mechanical",

@@ -118,7 +118,8 @@ public static class VerificationWorkspaceRegistration
                     // Object Editor's own record-result path already spell
                     // this default the same, literal way, for the same reason.
                     WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Rename, displayName: "Rename Verification Activity", category: "Verification",
@@ -132,7 +133,8 @@ public static class VerificationWorkspaceRegistration
                 (context, values) => new RenameVerificationActivityCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Edit, displayName: "Edit Verification Activity", category: "Verification",
@@ -144,7 +146,8 @@ public static class VerificationWorkspaceRegistration
                 (context, values) => new ReviseVerificationActivityCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Delete, displayName: "Delete Verification Activity", category: "Verification",
@@ -159,7 +162,8 @@ public static class VerificationWorkspaceRegistration
                 (context, _) => new DeleteVerificationActivityCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Verification Activity")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Verification Activity"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Move, displayName: "Move Verification Activity", category: "Verification",
@@ -184,7 +188,8 @@ public static class VerificationWorkspaceRegistration
                 (context, _) => new DuplicateVerificationActivityCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Verification Activity")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Verification Activity"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.RecordResult, displayName: "Record Verification Result", category: "Verification",
@@ -210,7 +215,8 @@ public static class VerificationWorkspaceRegistration
                     WorkspaceCommandBindings.EnumChoice<VerificationOutcome>("outcome", "Outcome"),
                     WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
                 ],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.RequestReview, displayName: "Request Review", category: "Verification",
@@ -245,6 +251,7 @@ public static class VerificationWorkspaceRegistration
                 WorkspaceCommandBindings.Target(context).ObjectId,
                 WorkspaceCommandBindings.Target(context).Kind,
                 status),
-            appliesToKinds: appliesToKinds);
+            appliesToKinds: appliesToKinds,
+            mutates: true);
 
 }

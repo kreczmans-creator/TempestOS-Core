@@ -64,8 +64,10 @@ status to the Product Owner.
 | 5 | `WP 19.10O` The rail and tree-column collapse on demand, and stay collapsed | — | 1 | Sonnet | `GlobalNavigationRail`, `CollapsibleColumn`, `ProjectsAreaView`/`EngineeringAreaView`/`BusinessAreaView` tree wrappers, `DesktopPanelUiState`, `MainWindowComposer.Wire.cs`/`Layout.cs` |
 | 5 | `WP 19.10P` The rehearsal's own findings: Open deliverable opens, money shows its symbol, empty libraries show a heading | 19.10A | 0.5 | Sonnet | `DeliverableCompletionWorkspaceRegistration.cs`, `ProjectQuoteView.cs`, `MoneyDisplay.cs` and every surface using it, `HomeDashboardView.cs`, `LibrariesView.cs`, `ReferenceRecordView.cs`, `QuotationJourneyTests.cs`, `MoneyDisplayTests.cs`, `DashboardsTests.cs`, `LibrariesTabLoadsOnEntryTests.cs` — `docs/releases/v0.19.1/Rehearsal.md`'s D6 blocker and four D1/D15 differences, closed here |
 
-Effort: 29 days. Status is reported per Work Package as a percentage of
-its own scope and as its effort-weighted share of the 29.
+| 5 | `WP 19.10R` TD-179 residual: no engineering command mutates an archived project, from the Ribbon, the Palette or a macro | 19.10H | 1 | Sonnet | `CommandBinding.cs` (`Mutates` marker), `ArchivedProjectCommandGuard.cs`, `CommandRegistry.cs` (`Evaluate` consults it), `TempestHost.cs` (DI registration); `mutates: true` set across the five discipline registrations plus Quotations, Deliverables, Tasks and Evidence; `ArchivedProjectCommandGuardTests` (Core), `ArchivedProjectReadOnlyTests` extended for the Structure tab (Desktop) |
+
+Effort: 30 days. Status is reported per Work Package as a percentage of
+its own scope and as its effort-weighted share of the 30.
 
 ## 3. Engineering decisions taken while planning
 

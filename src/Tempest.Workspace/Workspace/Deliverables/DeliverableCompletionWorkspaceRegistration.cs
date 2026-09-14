@@ -68,7 +68,8 @@ public static class DeliverableCompletionWorkspaceRegistration
                     "completedOn", "Completed on (yyyy-MM-dd)",
                     DefaultValue: DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     Validate: ValidateRequiredDate)],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         // `WP 19.5B` (`ADR-0152` §7, Product Owner comment item 4's second
@@ -89,7 +90,8 @@ public static class DeliverableCompletionWorkspaceRegistration
                 [
                     new CommandParameter("title", "Title", Validate: ValidateRequiredTitle),
                     new CommandParameter("targetDate", "Target date (yyyy-MM-dd, blank for 90 days out)", DefaultValue: string.Empty, Validate: ValidateOptionalDate),
-                ]),
+                ],
+                mutates: true),
         });
     }
 

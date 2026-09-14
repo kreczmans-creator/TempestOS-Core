@@ -1,14 +1,17 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Projects;
 using Tempest.Core.Quotations;
 using Tempest.Desktop.Views;
+using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Shell;
 
 namespace Tempest.Desktop.Tests;
@@ -24,6 +27,18 @@ namespace Tempest.Desktop.Tests;
 /// <see cref="QuotationService"/>, already refuses it) stays clickable.
 /// Reopen is checked separately, below.
 /// </summary>
+/// <remarks>
+/// <b>`WP 19.10R` extension (`TD-179`'s residual).</b> The two routes
+/// `WP 19.10H` could not close because neither has its own notion of
+/// "archived" — the Structure tab's Ribbon and the Command Palette, both
+/// of which act only through <see cref="ICommandRegistry"/> — are added to
+/// the same journey below: a Part created while the project is still
+/// open, then, once the project is Archive, every mutating Mechanical
+/// Ribbon button reachable with that Part selected is disabled with the
+/// registry's own "Project '{code}' is archived — read only." reason, and
+/// the Palette lists <c>mechanical.create</c> with the identical reason
+/// and refuses it on <c>Enter</c>.
+/// </remarks>
 /// <remarks>
 /// <b>Reopen, on a project genuinely 91 days closed, cannot both stay
 /// live and succeed.</b> <see cref="IProjectLifecycleService.ReopenAsync"/>
@@ -85,6 +100,13 @@ public sealed class ArchivedProjectReadOnlyTests
             await quotationService.AddLineAsync(sentQuoteId, "Detailed pack", null, null, new Money(2500m, toBeSent.Quotation.Currency));
             var sendResult = await quotationService.SendAsync(sentQuoteId);
             Assert.True(sendResult.Succeeded, sendResult.Reason);
+
+            // `WP 19.10R`: a Part for the Structure tab's own Ribbon/Palette
+            // checks below — created directly against the domain, exactly
+            // as the task/milestone/quotations above are, while the
+            // project is still open.
+            var part = await new MechanicalObjectFactoryRegistry(domain).CreateAsync(
+                MechanicalObjectFactoryRegistry.Part, "PT-ARCH", "Archived Bracket", "Initial content.", parentId: project.Id);
 
             // ================================================================
             // Close the project 91 days ago — Archive, not merely Closed.
@@ -176,6 +198,88 @@ public sealed class ArchivedProjectReadOnlyTests
             AssertDisabledWithTooltip(tasksView, "New Task");
             AssertDisabledWithTooltip(timelineView, "Set Milestone");
             AssertDisabledWithTooltip(evidenceView, "Create");
+
+            // ================================================================
+            // `WP 19.10R` (`TD-179`'s residual): the Structure tab's own
+            // Ribbon, and the Command Palette — the two routes that acted
+            // only through `ICommandRegistry`, which carried no
+            // archived-project check before this Work Package.
+            // ================================================================
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            await navigator.OpenProjectAsync(project.Id, ProjectArea.Engineering).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            // Selected exactly as `SurfaceCommandIntegrationTests.Ribbon_Enablement_ComesFromEvaluate_NotFromTheIdsTrailingWord`
+            // already establishes: `workspace.Selection.SelectAsync` is the
+            // real selection service every ribbon button's own enablement
+            // reads from; `RefreshEnablement` is the ribbon's own public
+            // "the selection changed, recompute" entry point, called from
+            // more than one production site already (`Rebuild`, a Ribbon
+            // delete), never a view's own content-loading `RefreshAsync`.
+            await host.Workspace!.Selection.SelectAsync(part.Id, "Part").ConfigureAwait(true);
+            var ribbon = GetPrivateField<RibbonView>(window, "_ribbon");
+            ribbon.RefreshEnablement();
+
+            const string ArchivedCommandReason = "Project 'P-ARCH-1' is archived — read only.";
+
+            // Every mutating Mechanical Ribbon button reachable with the
+            // Part selected — Rename/Edit route to the Object Editor before
+            // ever reading Evaluate, so they are not ribbon-disabled by
+            // this guard and are covered by the Palette's own identical
+            // Evaluate call below instead; Duplicate/Set BOM Line/Create
+            // dispatch straight through the registry and are.
+            AssertRibbonButtonDisabledWithReason(ribbon, registry, "mechanical.duplicate", ArchivedCommandReason);
+            AssertRibbonButtonDisabledWithReason(ribbon, registry, "mechanical.set-bom-line", ArchivedCommandReason);
+            AssertRibbonButtonDisabledWithReason(ribbon, registry, "mechanical.create", ArchivedCommandReason);
+
+            // Rename/Edit still refuse through the identical Evaluate path
+            // the Palette (and a macro) would use — proven directly against
+            // the registry, since the Ribbon routes them to the Object
+            // Editor before ever asking (`SurfaceCommandPolicy`).
+            var renameContext = CommandContext.For(part.Id, "Part");
+            var renameAvailability = registry.Evaluate("mechanical.rename", renameContext);
+            Assert.False(renameAvailability.IsAvailable);
+            Assert.Equal(ArchivedCommandReason, renameAvailability.Reason);
+
+            // The Palette lists the same Create command with the same
+            // reason, and refuses it on Enter — a macro replaying either
+            // route stops with this identical reason.
+            var palette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");
+            palette.Open("Create Mechanical Object");
+
+            var panel = (StackPanel)palette.Child!;
+            var queryBox = (TextBox)panel.Children[0];
+            var results = (ListBox)panel.Children[1];
+            var items = (IReadOnlyList<ListBoxItem>)results.ItemsSource!;
+            var createRowIndex = items.ToList().FindIndex(
+                i => i.Content is string s && s.Contains("Create Mechanical Object", StringComparison.Ordinal));
+
+            Assert.True(createRowIndex >= 0, "Expected the Palette to list 'Create Mechanical Object'.");
+            var createRow = items[createRowIndex];
+            Assert.False(createRow.IsEnabled);
+            Assert.Contains(ArchivedCommandReason, (string)createRow.Content!, StringComparison.Ordinal);
+
+            CommandDescriptor? unavailableDescriptor = null;
+            string? unavailableReason = null;
+            palette.CommandUnavailable += (descriptor, reason) => { unavailableDescriptor = descriptor; unavailableReason = reason; };
+
+            results.SelectedIndex = createRowIndex;
+            queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            Assert.NotNull(unavailableDescriptor);
+            Assert.Equal("mechanical.create", unavailableDescriptor!.Id);
+            Assert.Equal(ArchivedCommandReason, unavailableReason);
+            Assert.False(palette.IsOpen); // closes exactly as a real invocation would
+
+            // Nothing was created under the archived project: the refused
+            // Enter never even reached a prompt (the Palette's own stored,
+            // render-time `Availability` short-circuits `InvokeSelectedAsync`
+            // before any value is collected), so the Part above is still
+            // the project's only direct child.
+            var contentsAfterRefusedCreate = await domain.Repository.ListChildrenAsync(project.Id);
+            Assert.Single(contentsAfterRefusedCreate, o => o.Id == part.Id);
         }
         finally
         {
@@ -189,6 +293,21 @@ public sealed class ArchivedProjectReadOnlyTests
         var button = root.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, buttonContent));
         Assert.False(button.IsEnabled, $"'{buttonContent}' should be disabled on an archived project.");
         Assert.Equal("Archived project — read only", ToolTip.GetTip(button));
+    }
+
+    /// <summary>
+    /// `WP 19.10R`: a Ribbon command button's own <c>Content</c> is an
+    /// icon+label <c>StackPanel</c>, never a plain string
+    /// (<see cref="AssertDisabledWithTooltip"/>'s own match-by-Content
+    /// would never find one) — found the same way every other Ribbon test
+    /// does, by its command Id, scoped to that command's own discipline
+    /// tab (<c>DesktopTestHelpers.FindButton</c>).
+    /// </summary>
+    private static void AssertRibbonButtonDisabledWithReason(RibbonView ribbon, ICommandRegistry registry, string commandId, string reason)
+    {
+        var button = DesktopTestHelpers.FindButton(ribbon, registry, commandId);
+        Assert.False(button.IsEnabled, $"'{commandId}' should be disabled on an archived project.");
+        Assert.Equal(reason, ToolTip.GetTip(button));
     }
 
     private static T GetPrivateField<T>(object instance, string fieldName)

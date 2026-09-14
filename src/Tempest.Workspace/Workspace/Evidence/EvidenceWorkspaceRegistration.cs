@@ -134,7 +134,8 @@ public static class EvidenceWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.ObjectName("title", "Title"),
                     WorkspaceCommandBindings.EnumChoice<EvidenceClassification>("classification", "Classification", nameof(EvidenceClassification.Calculation)),
-                ]),
+                ],
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -150,7 +151,8 @@ public static class EvidenceWorkspaceRegistration
                     WorkspaceCommandBindings.Required("library", "Library"),
                     WorkspaceCommandBindings.Required("recordId", "Record"),
                 ],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -167,7 +169,8 @@ public static class EvidenceWorkspaceRegistration
                     WorkspaceCommandBindings.EnumChoice<DeclaredFigureRole>("role", "Role", nameof(DeclaredFigureRole.Result)),
                     WorkspaceCommandBindings.Required("quantity", "Quantity (e.g. \"142 MPa\")"),
                 ],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -186,7 +189,8 @@ public static class EvidenceWorkspaceRegistration
                     WorkspaceCommandBindings.Required("statement", "Statement"),
                     WorkspaceCommandBindings.EnumChoice<CheckOutcome>("outcome", "Outcome", nameof(CheckOutcome.Accepted)),
                 ],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -203,7 +207,8 @@ public static class EvidenceWorkspaceRegistration
                     WorkspaceCommandBindings.Required("revision", "Revision"),
                     WorkspaceCommandBindings.Required("client", "Client"),
                 ],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -220,7 +225,8 @@ public static class EvidenceWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new ReviseEvidenceCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: BoundKinds,
-                confirmationMessage: "Revise the selected, issued evidence? A new Draft revision begins; the issued revision stays readable."),
+                confirmationMessage: "Revise the selected, issued evidence? A new Draft revision begins; the issued revision stays readable.",
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -248,7 +254,8 @@ public static class EvidenceWorkspaceRegistration
                 // sensible default: it clears the subject, never a
                 // fabricated placeholder id.
                 [WorkspaceCommandBindings.Text("subjectId", "Subject id (blank clears it)", defaultValue: string.Empty)],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -260,7 +267,8 @@ public static class EvidenceWorkspaceRegistration
                 (context, values) => new RenameMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                BoundKinds),
+                BoundKinds,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -272,7 +280,8 @@ public static class EvidenceWorkspaceRegistration
                 (context, _) => new DeleteMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: BoundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Evidence")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Evidence"),
+                mutates: true),
         });
     }
 }
