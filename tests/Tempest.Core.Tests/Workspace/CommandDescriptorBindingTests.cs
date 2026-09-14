@@ -72,8 +72,10 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>
-    /// — every command that can run unattended in a macro, and no other
-    /// (ADR-0098).
+    /// and <c>task.complete</c> (`WP 19.5C` — no parameters, no
+    /// confirmation, a low-stakes status move exactly like the others
+    /// here) — every command that can run unattended in a macro, and no
+    /// other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
@@ -83,6 +85,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
         "mechanical.validate-configuration",
+        "task.complete",
     ];
 
     private static readonly IReadOnlyList<string> CalculationKinds = ["Calculation", "CalculationSet"];
