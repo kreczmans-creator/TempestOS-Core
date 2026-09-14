@@ -187,6 +187,95 @@ public sealed class RailSurfaceContractTests
         }
     }
 
+    /// <summary>
+    /// The case <see cref="Home_MeetsAllSixChecks"/>'s own check 4 proves
+    /// only for a first attach: live change-feed reactivity must survive the
+    /// shell's own module-host swap. Until `WP 19.7C` every rail-area view
+    /// nulled its <c>WorkspaceChanges</c> on <c>DetachedFromVisualTree</c>
+    /// (`WP 18.1A`'s per-tab editor discipline, copied to the singleton area
+    /// views) and nothing restored it when the same instance came back —
+    /// disclosed by `WP 19.7B` (4/n); <see cref="WorkspaceChangesSubscription"/>
+    /// now follows the owner's own attach/detach lifecycle. This is the
+    /// end-to-end reproduction through the real window, complementing
+    /// <c>WorkspaceChangesReattachTests</c>'s own fake-feed isolation: it
+    /// fails on the pre-`WP 19.7C` Desktop sources at its last assertion and
+    /// passes with the helper. Home → Projects → Home reattaches the
+    /// identical <c>HomeDashboardView</c>; a manual task completed through
+    /// <c>CompleteTaskCommand</c> while Home is on screen the second time
+    /// must leave Home's own task list with no explicit re-render, exactly
+    /// as a create does on the first attach.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Home_StaysLiveAfterNavigatingAwayAndBack()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+            var dispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // First attach: a task created while Home is on screen appears
+            // live — the already-proven case, repeated here only so the
+            // reattach below is a change of state on the same instance.
+            await navigator.GoHomeAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var home = window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single();
+
+            var created = await dispatcher.DispatchAsync(new Tempest.Workspace.Tasks.CreateTaskCommand("Reattach Contract Task", null, today), CancellationToken.None);
+            Assert.True(created.Succeeded, created.Message);
+            await RenderUntilAsync(window, () => ListsTask(home, "Reattach Contract Task"));
+            Assert.True(ListsTask(home, "Reattach Contract Task"), "Home never listed the new task on its first attach.");
+
+            // Away and back: the module host detaches Home for Projects, then
+            // reattaches the very same instance.
+            await navigator.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            Assert.Empty(window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>());
+
+            await navigator.GoHomeAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            Assert.Same(home, window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single());
+            Assert.True(ListsTask(home, "Reattach Contract Task"), "Home's own on-entry refresh lost the task.");
+
+            // The edit while Home is on screen the second time — and no
+            // RenderCurrentModuleAsync/RefreshAsync call after it: only
+            // Home's own change-feed subscription can make the row go.
+            var completed = await dispatcher.DispatchAsync(
+                new Tempest.Workspace.Tasks.CompleteTaskCommand(created.SubjectId!.Value, Tempest.Core.Tasks.ManualTask.CanonicalKind), CancellationToken.None);
+            Assert.True(completed.Succeeded, completed.Message);
+
+            await RenderUntilAsync(window, () => !ListsTask(home, "Reattach Contract Task"));
+            Assert.False(
+                ListsTask(home, "Reattach Contract Task"),
+                "Home still lists the completed task: its change-feed subscription did not survive being detached and reattached by the module host.");
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Whether Home's own task list carries a row for <paramref name="title"/>
+    /// — located by the row's own Open button, never by any text block:
+    /// after a completion the right rail's "Recently changed" list also
+    /// names the task ("… — StatusChanged"), so a text search would still
+    /// find the title after the task-list row has correctly gone.
+    /// </summary>
+    private static bool ListsTask(Tempest.Desktop.Views.Dashboards.HomeDashboardView home, string title) =>
+        home.GetLogicalDescendants().OfType<Button>().Any(b =>
+            (AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Open ", StringComparison.Ordinal)
+            && (AutomationProperties.GetName(b) ?? string.Empty).Contains(title, StringComparison.Ordinal));
+
     // ================================================================
     // Tasks
     // ================================================================
