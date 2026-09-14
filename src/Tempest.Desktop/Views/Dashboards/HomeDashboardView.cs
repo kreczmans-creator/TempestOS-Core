@@ -9,6 +9,7 @@ using Tempest.Workspace.Projects;
 using Tempest.Workspace.Tasks;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Quotations;
 using Tempest.Desktop;
@@ -68,6 +69,27 @@ public sealed class HomeDashboardView : UserControl
     private readonly StackPanel _favouriteList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _recentlyChangedList = new() { Spacing = DesignTokens.SpaceXs };
 
+    private IWorkspaceChanges? _workspaceChanges;
+
+    /// <summary>The change feed this view re-reads every source from while shown — settable by the composition root exactly as every sibling rail view's identical property already is.</summary>
+    public IWorkspaceChanges? WorkspaceChanges
+    {
+        get => _workspaceChanges;
+        set
+        {
+            if (ReferenceEquals(_workspaceChanges, value))
+                return;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed -= OnWorkspaceChanged;
+
+            _workspaceChanges = value;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed += OnWorkspaceChanged;
+        }
+    }
+
     /// <summary>Initialises a new instance of the <see cref="HomeDashboardView"/> class.</summary>
     public HomeDashboardView(
         ITasksReadModel tasksReadModel, IProjectStatusReadModel projectStatusReadModel, IAccountsReadModel accountsReadModel,
@@ -95,6 +117,8 @@ public sealed class HomeDashboardView : UserControl
         _onOpenRecent = onOpenRecent;
         _onOpenFavourite = onOpenFavourite;
         _onOpenRecentlyChanged = onOpenRecentlyChanged;
+
+        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
 
         ThemeReactiveBrush.Bind(_commercialText, TextBlock.ForegroundProperty, BrandPalette.BodyTextBrushKey);
 
@@ -358,4 +382,19 @@ public sealed class HomeDashboardView : UserControl
         var list = amounts.ToList();
         return list.Count == 0 ? Money.Zero(CurrencyCode.Gbp) : Money.Sum(list, list[0].Currency);
     }
+
+    private void OnWorkspaceChanged(WorkspaceChange change) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // Best-effort background refresh — mirrors every sibling
+                // rail view's own identical "the next real entry is the
+                // backstop" shape (`ProjectsAreaView.OnWorkspaceChanged`).
+            }
+        });
 }

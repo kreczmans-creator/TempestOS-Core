@@ -177,7 +177,8 @@ internal sealed partial class MainWindowComposer
 
                 var item = items[index - 1];
                 await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
-            });
+            })
+        { WorkspaceChanges = composition.WorkspaceChanges };
 
         async Task OpenTasksAsync()
         {

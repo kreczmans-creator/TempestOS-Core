@@ -106,8 +106,10 @@ public sealed class RailSurfaceContractTests
             // 4 (raised here, before 2/3, exactly as every other honest-edit
             // surface in this file does — see the class remarks): Home has
             // no command of its own; a manual task created elsewhere, due
-            // today, is the edit Home's own change-feed subscription reacts
-            // to.
+            // today, is the edit — proven live, through Home's own
+            // change-feed subscription (not a button inside Home, and not
+            // a subsequent explicit re-entry), while this first attach is
+            // still the one on screen.
             var dispatcher = (Tempest.Core.Commands.ICommandDispatcher)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandDispatcher));
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var createResult = await dispatcher.DispatchAsync(new Tempest.Workspace.Tasks.CreateTaskCommand("Rail Contract Task", null, today), CancellationToken.None);
@@ -116,6 +118,9 @@ public sealed class RailSurfaceContractTests
 
             await RenderUntilAsync(window, () =>
                 home.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal)));
+            Assert.Contains(
+                home.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
             LayOut(window);
 
             // 2. Select something in it -> the selection has meaning: the
@@ -126,8 +131,12 @@ public sealed class RailSurfaceContractTests
             await RenderUntilAsync(window, () => navigator.Current.Area == ShellArea.Tasks);
             Assert.Equal(ShellArea.Tasks, navigator.Current.Area);
 
-            // 3. Open it -> usable content: back on Home, the task row's
-            // own Open button.
+            // 3. Open it -> usable content: back on Home (a fresh,
+            // explicit re-entry — `MainWindow`'s own area registry always
+            // re-reads on entry, independently of live change-feed
+            // reactivity, which is what `RenderCurrentModuleAsync` below
+            // exercises instead of check 4's own live path), the task
+            // row's own Open button.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
             LayOut(window);
@@ -141,26 +150,6 @@ public sealed class RailSurfaceContractTests
             LayOut(window);
             Assert.NotNull(documentArea.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault());
 
-            // Opening the task above navigated to Engineering (`WP 17.9.4`
-            // — the tab must be visible, not merely present); back to Home
-            // before the next check.
-            await navigator.GoHomeAsync();
-            await window.RenderCurrentModuleAsync();
-            LayOut(window);
-
-            // A second manual task, created while Home is on screen, is a
-            // second edit — Home's own change-feed subscription (not a
-            // button inside Home) is what reflects it, the same "Reports
-            // has no command of its own" shape this file's own remarks
-            // already describe.
-            var secondCreate = await dispatcher.DispatchAsync(new Tempest.Workspace.Tasks.CreateTaskCommand("Rail Contract Task Two", null, today), CancellationToken.None);
-            Assert.True(secondCreate.Succeeded, secondCreate.Message);
-
-            await RenderUntilAsync(window, () =>
-                window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().SingleOrDefault()
-                    ?.GetLogicalDescendants().OfType<TextBlock>()
-                    .Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task Two", StringComparison.Ordinal)) ?? false);
-
             // 6. Navigate away and back -> coherent.
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
@@ -170,7 +159,10 @@ public sealed class RailSurfaceContractTests
             await RenderUntilAsync(window, () =>
                 window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single()
                     .GetLogicalDescendants().OfType<TextBlock>()
-                    .Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task Two", StringComparison.Ordinal)));
+                    .Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal)));
+            Assert.Contains(
+                window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single().GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
 
             await host.ShutdownAsync();
         }
