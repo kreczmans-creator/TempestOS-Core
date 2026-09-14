@@ -58,6 +58,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectRisksView _risksView = new();
     private readonly ProjectTimelineView _timelineView = new();
     private readonly ProjectDeliverablesView _deliverablesView;
+    private readonly ProjectQuoteView _quoteView;
 
     // `WP 19.2B`: the Structure tab's own content host — a stable
     // placeholder built at construction time, before the engineering
@@ -180,6 +181,9 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>The Deliverables surface, so the shell can drive and inspect it (`WP 19.0A`, `ADR-0150`).</summary>
     public ProjectDeliverablesView DeliverablesView => _deliverablesView;
 
+    /// <summary>The Quote surface, so the shell can drive and inspect it (`WP 19.5B`, `ADR-0152`).</summary>
+    public ProjectQuoteView QuoteView => _quoteView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     /// <param name="deliverablesView">
     /// This project's own Deliverables tab (`WP 19.0A`, `ADR-0150`) — built
@@ -189,6 +193,7 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <see cref="EvidenceWorkspaceView"/> is handed to <c>MainWindow</c>'s
     /// own area registry.
     /// </param>
+    /// <param name="quoteView">This project's own Quote tab (`WP 19.5B`, `ADR-0152`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
         IProjectDirectory directory,
@@ -198,7 +203,8 @@ public sealed class ProjectWorkspaceView : UserControl
         IProjectTaskRegister tasks,
         IProjectGovernanceRegister governance,
         IProjectMilestoneRegister milestones,
-        ProjectDeliverablesView deliverablesView)
+        ProjectDeliverablesView deliverablesView,
+        ProjectQuoteView quoteView)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -209,6 +215,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(governance);
         ArgumentNullException.ThrowIfNull(milestones);
         ArgumentNullException.ThrowIfNull(deliverablesView);
+        ArgumentNullException.ThrowIfNull(quoteView);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -219,6 +226,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _governance = governance;
         _milestones = milestones;
         _deliverablesView = deliverablesView;
+        _quoteView = quoteView;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -404,6 +412,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _risksView.Show([], [], [], null);
             _timelineView.Show([], null);
             await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+            await _quoteView.RefreshAsync().ConfigureAwait(true);
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -428,6 +437,7 @@ public sealed class ProjectWorkspaceView : UserControl
             project.Label);
         _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+        await _quoteView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();
         _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
         var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
@@ -463,6 +473,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private Control BuildAreaContent(ProjectAreaDescriptor descriptor) => descriptor.Area switch
     {
         ProjectArea.Overview => _overview,
+        ProjectArea.Quote => _quoteView,
         // `WP 19.2B`: the Structure tab embeds the engineering surface
         // (ribbon + docking) through `_structureHost`, filled once
         // `MainWindow`/`MainWindowComposer` has built that surface (see

@@ -114,6 +114,7 @@ internal sealed partial class MainWindowComposer
             ShellArea.Invoicing => views.InvoicingView,
             ShellArea.Reports => views.ReportsView,
             ShellArea.Settings => views.SettingsView,
+            ShellArea.Quotes => views.QuotesView,
             _ => engineeringSurface,
         };
 
@@ -150,6 +151,8 @@ internal sealed partial class MainWindowComposer
         root.Children.Add(views.RateCardPicker);
         root.Children.Add(views.TimesheetEntryPrompt);
         root.Children.Add(views.DeliverableCompletionPrompt);
+        root.Children.Add(views.NewProjectPrompt);
+        root.Children.Add(views.ProjectPicker);
         root.Children.Add(views.ToastHost);
 
         // `WP 16.5A` — `TD-83`: while any dialog/the palette is open, Tab
@@ -189,6 +192,7 @@ internal sealed partial class MainWindowComposer
                      views.ConfirmationDialog, views.InputDialog, views.MessageDialog, views.MacroManagerDialog, views.CommandPalette,
                      views.CitationPicker, views.SubjectPicker, views.DeclaredFigureEntry, views.CheckEntry, views.IssueEntry, views.ReviseReferenceRecordEntry,
                      views.OrganisationPicker, views.RateCardPicker, views.TimesheetEntryPrompt, views.DeliverableCompletionPrompt,
+                     views.NewProjectPrompt, views.ProjectPicker,
                  })
             TrackModal(modal);
 

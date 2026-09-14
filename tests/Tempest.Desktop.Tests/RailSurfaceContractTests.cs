@@ -222,13 +222,20 @@ public sealed class RailSurfaceContractTests
                 .GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Project…"));
             newProjectButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
-            await RenderUntilAsync(window, () => inputDialog.IsVisible);
-            var nameBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
+            // `WP 19.5B`: the New Project prompt is now `NewProjectPrompt`
+            // (name + "open a quotation" option), not the shared
+            // `InputDialog` — unchecking the option here keeps this test's
+            // own scope exactly what it always was (project creation),
+            // never a quotation's own journey (`QuotationJourneyTests`'s).
+            var newProjectPrompt = GetPrivateField<NewProjectPrompt>(window, "_newProjectPrompt");
+            await RenderUntilAsync(window, () => newProjectPrompt.IsVisible);
+            var nameBox = newProjectPrompt.GetLogicalDescendants().OfType<TextBox>().First();
             nameBox.Text = "Rail Contract Created Project";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+            var openQuotationBox = newProjectPrompt.GetLogicalDescendants().OfType<CheckBox>().Single();
+            openQuotationBox.IsChecked = false;
+            var okButton = newProjectPrompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
             okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => !inputDialog.IsVisible);
+            await RenderUntilAsync(window, () => !newProjectPrompt.IsVisible);
 
             IReadOnlyList<Tempest.Workspace.Projects.ProjectSummary> all = [];
             await RenderUntilAsync(window, () =>

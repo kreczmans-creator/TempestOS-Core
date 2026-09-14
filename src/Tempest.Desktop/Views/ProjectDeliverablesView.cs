@@ -39,17 +39,29 @@ public sealed class ProjectDeliverablesView : UserControl
 {
     private readonly EngineeringDomainContext _domainContext;
     private readonly ICommandDispatcher _commandDispatcher;
+    private readonly ICommandRegistry _commandRegistry;
     private readonly Func<Guid?> _currentProjectId;
     private readonly DeliverableCompletionPrompt _completionPrompt;
     private readonly Action<Guid, string> _openObject;
 
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly StackPanel _list = new() { Spacing = DesignTokens.SpaceSm };
+    private readonly Button _addButton = new() { Content = "Add Deliverable", MinHeight = DesignTokens.ControlSizeMedium };
 
     private IWorkspaceChanges? _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
+
+    /// <summary>
+    /// Collects Add Deliverable's own title/target date (`WP 19.5B`,
+    /// `ADR-0152` §7) — reuses <c>deliverable.add</c>'s own registered
+    /// <see cref="CommandBinding"/>, exactly as <see cref="InvoicingView.ParameterPrompt"/>
+    /// does for Send/Reconcile/Void. <see langword="null"/> (any test that
+    /// constructs this view directly) leaves Add honestly unavailable
+    /// rather than run without asking.
+    /// </summary>
+    public CommandParameterPrompt? ParameterPrompt { get; set; }
 
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -72,17 +84,19 @@ public sealed class ProjectDeliverablesView : UserControl
 
     /// <summary>Initialises a new instance of the <see cref="ProjectDeliverablesView"/> class.</summary>
     public ProjectDeliverablesView(
-        EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher, Func<Guid?> currentProjectId,
+        EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Func<Guid?> currentProjectId,
         DeliverableCompletionPrompt completionPrompt, Action<Guid, string> openObject)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
+        ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(currentProjectId);
         ArgumentNullException.ThrowIfNull(completionPrompt);
         ArgumentNullException.ThrowIfNull(openObject);
 
         _domainContext = domainContext;
         _commandDispatcher = commandDispatcher;
+        _commandRegistry = commandRegistry;
         _currentProjectId = currentProjectId;
         _completionPrompt = completionPrompt;
         _openObject = openObject;
@@ -97,8 +111,19 @@ public sealed class ProjectDeliverablesView : UserControl
             FontWeight = DesignTokens.WeightHeading,
         };
 
+        // `WP 19.5B` (`ADR-0152` §7, Product Owner comment item 4's second
+        // half): a deliverable can now be added directly, with no
+        // quotation and no milestone timeline detour.
+        AutomationProperties.SetName(_addButton, "Add Deliverable");
+        _addButton.Classes.Add(ChromeStyles.Primary);
+        _addButton.Click += async (_, _) => await OnAddAsync().ConfigureAwait(true);
+
+        var headerRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd };
+        headerRow.Children.Add(heading);
+        headerRow.Children.Add(_addButton);
+
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
-        body.Children.Add(heading);
+        body.Children.Add(headerRow);
         body.Children.Add(_status);
         body.Children.Add(_list);
 
@@ -220,6 +245,49 @@ public sealed class ProjectDeliverablesView : UserControl
         ThemeReactiveBrush.Bind(border, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
         ThemeReactiveBrush.Bind(border, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
         return border;
+    }
+
+    /// <summary>
+    /// Adds a deliverable directly to the open project, with no quotation
+    /// (<c>deliverable.add</c>, `WP 19.5B`, `ADR-0152` §7) — dispatched
+    /// through <see cref="ICommandRegistry.InvokeAsync(string,CommandContext,CommandParameterPrompt?,CancellationToken)"/>
+    /// so the same registered title/target-date parameters this view's own
+    /// header button collects here are exactly what the ribbon's
+    /// Deliverables category collects for the identical command.
+    /// </summary>
+    private async Task OnAddAsync()
+    {
+        if (ParameterPrompt is null)
+        {
+            Report("Nothing can confirm this here — Add Deliverable is unavailable.", succeeded: false);
+            return;
+        }
+
+        var projectId = _currentProjectId();
+        var context = new CommandContext([], projectId);
+        var invocation = await _commandRegistry.InvokeAsync("deliverable.add", context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
+
+        if (invocation.Outcome == CommandOutcome.Cancelled)
+            return;
+
+        if (invocation.Outcome == CommandOutcome.Unavailable || invocation.Result is not { } result)
+        {
+            Report(invocation.Reason ?? "Add Deliverable is unavailable.", succeeded: false);
+            return;
+        }
+
+        if (!result.Succeeded)
+        {
+            Report(result.Message ?? "Add Deliverable failed.", succeeded: false);
+            return;
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        Report(result.Message ?? "Deliverable added.", succeeded: true);
+
+        // `WP 17.9.4`: what you make opens right up.
+        if (result.SubjectId is { } createdId)
+            _openObject(createdId, CanonicalObjectKinds.Deliverable);
     }
 
     private async Task OnCompleteAsync(Guid projectId, Guid deliverableId)

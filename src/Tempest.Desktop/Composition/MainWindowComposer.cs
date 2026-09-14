@@ -13,6 +13,7 @@ using Tempest.Desktop.Editors;
 using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Input;
+using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Tasks;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -69,6 +70,10 @@ internal sealed record ComposedViews(
     InvoicingView InvoicingView,
     ReportsView ReportsView,
     SettingsView SettingsView,
+    NewProjectPrompt NewProjectPrompt,
+    ProjectPicker ProjectPicker,
+    ProjectQuoteView ProjectQuoteView,
+    QuotesView QuotesView,
     Dictionary<Guid, IWorkspaceView> OpenGraphViewsByRootId,
     CommandHistoryLog CommandHistory,
     IBackgroundTaskRunner BackgroundTaskRunner,
@@ -366,8 +371,10 @@ internal sealed partial class MainWindowComposer
         timesheetWeekView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var deliverablesView = new ProjectDeliverablesView(
-            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, deliverableCompletionPrompt, openObjectRightUp)
+            composition.DomainContext, composition.CommandDispatcher, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id,
+            deliverableCompletionPrompt, openObjectRightUp)
         {
+            ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         deliverablesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
@@ -389,9 +396,52 @@ internal sealed partial class MainWindowComposer
 
         var projectDirectory = host.ProjectDirectory!;
         var projectBrowser = new ProjectBrowserView(projectDirectory, host.ShellNavigator!, callbacks.PromptForNewProjectAsync);
+
+        // `WP 19.5B` (`ADR-0152`, Product Owner comment item 4): the Quote
+        // tab and the Quotes area — a quote is opened with the project,
+        // defines its initial deliverables and requirements once accepted,
+        // and exports as a PDF through the same SkiaSharp path the issue
+        // sheet already established (comment item 9).
+        var newProjectPrompt = new NewProjectPrompt();
+        var projectPicker = new ProjectPicker(projectDirectory);
+        var quotationSheetRenderer = new QuotationSheetRenderer();
+        string IssuerName() => host.SessionPrincipal?.Identity.DisplayName ?? "TempestOS";
+        string ApplicationVersionText() => MainWindow.DescribeBuild(services);
+
+        var projectQuoteView = new ProjectQuoteView(
+            composition.DomainContext, composition.CommandDispatcher, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id,
+            organisationCatalog, openObjectRightUp, evidenceFilePicker, quotationSheetRenderer, IssuerName, ApplicationVersionText)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        projectQuoteView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // Opens a specific quotation's own project, right up in its Quote
+        // tab (`WP 17.9.4`) — specialised from the generic `openObjectRightUp`
+        // above because a Quotation's own "opens right up" destination is
+        // the project's Quote tab, not the generic Object Editor (this Work
+        // Package's own brief, scope item 5: "Open (opens the project's
+        // Quote tab right up)").
+        async Task OpenQuoteAsync(Guid projectId, Guid quotationId)
+        {
+            await host.ShellNavigator!.OpenProjectAsync(projectId, Tempest.Workspace.Shell.ProjectArea.Quote).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+            await projectQuoteView.SelectQuoteAsync(quotationId).ConfigureAwait(true);
+        }
+        Action<Guid, Guid> openQuote = (projectId, quotationId) => _ = OpenQuoteAsync(projectId, quotationId);
+
+        var quotesView = new QuotesView(
+            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, organisationCatalog,
+            projectDirectory, projectPicker, evidenceFilePicker, quotationSheetRenderer, IssuerName, ApplicationVersionText, openQuote)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var projectWorkspace = new ProjectWorkspaceView(
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
-            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView);
+            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView);
 
         // `WP 19.2B`: the Reports area — issued evidence sheets and
         // project documents, across every live project, filterable to one.
@@ -424,7 +474,8 @@ internal sealed partial class MainWindowComposer
             citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
             engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
-            timesheetWeekView, invoicingView, reportsView, settingsView, [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
+            timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
+            [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals);
     }
 }
