@@ -66,19 +66,17 @@ public sealed class GlobalNavigationRail : UserControl
         _sectionLabel = Label("MODULES");
         _sectionLabel.Margin = new Thickness(DesignTokens.SpaceLg + DesignTokens.SpaceSm, DesignTokens.SpaceXl, DesignTokens.SpaceLg, DesignTokens.SpaceMd);
 
+        // `WP 19.7A`: every rail button is a plain global module now —
+        // `ShellArea.Engineering`'s own scope-aware verbs
+        // (`GoToEngineeringAsync`) are reached from
+        // `EngineeringDepartment`'s own Modules → Mechanical node instead
+        // of from this rail directly (see `ShellArea.EngineeringDepartment`'s
+        // own remarks), so every button here goes through the one plain
+        // `GoToModuleAsync`.
         foreach (var module in ShellAreas.RailModules)
         {
             var area = module.Area;
-
-            // Engineering is the one module with a scope of its own: it
-            // enters the open project when there is one, and the
-            // standalone workflow when there is not. Both are real
-            // destinations (`TD-89`).
-            Func<Task> navigate = area == ShellArea.Engineering
-                ? () => _navigator.GoToEngineeringAsync()
-                : () => _navigator.GoToModuleAsync(area);
-
-            AddModule(module, navigate);
+            AddModule(module, () => _navigator.GoToModuleAsync(area));
         }
 
         var body = new DockPanel();
@@ -220,12 +218,10 @@ public sealed class GlobalNavigationRail : UserControl
         ShellArea.Home => IconGeometry.Home,
         ShellArea.Projects => IconGeometry.Folder,
         ShellArea.ProjectWorkspace => IconGeometry.Folder,
+        ShellArea.Tasks => IconGeometry.CheckSquare,
         ShellArea.Engineering => IconGeometry.Gear,
-        ShellArea.EngineeringCalculation => IconGeometry.Scales,
-        ShellArea.Evidence => IconGeometry.Paperclip,
-        ShellArea.Timesheets => IconGeometry.Clock,
-        ShellArea.Invoicing => IconGeometry.Document,
-        ShellArea.Reports => IconGeometry.Chart,
+        ShellArea.EngineeringDepartment => IconGeometry.Gear,
+        ShellArea.Business => IconGeometry.Currency,
         ShellArea.Settings => IconGeometry.Sliders,
         _ => IconGeometry.Dot,
     };
