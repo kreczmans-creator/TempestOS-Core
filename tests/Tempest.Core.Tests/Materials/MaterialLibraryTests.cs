@@ -2,6 +2,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.Tests.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Materials;
@@ -612,5 +613,58 @@ public class MaterialLibraryTests
         // still this library's own.
         Assert.Equal("MaterialSpecification", document!.Kind);
         Assert.Equal(MaterialCatalog.MaterialSpecificationDocumentKind, document.Kind);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158`/`TD-156` through the shared ReferenceDataTransactionalFacts
+    // helper (`WP 19.10K`) — proving MaterialCatalog runs the same
+    // transactional path the shared layer's own tests already cover, not
+    // a library left behind on the old one.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = MaterialFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("mat-1", MaterialFixtures.Steel("FX-1"), MaterialFixtures.Sourced()),
+            async () => await catalog.FindAsync("mat-1") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+        Assert.Null(await catalog.FindByDesignationAsync("FX-1"));
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = MaterialFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("mat-1", MaterialFixtures.Steel("FX-1"), MaterialFixtures.Verified());
+        await catalog.RegisterAsync("mat-2", MaterialFixtures.Steel("FX-2"), MaterialFixtures.Verified());
+        await MaterialFixtures.ReleaseAsync(catalog, "mat-1");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<MaterialDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("mat-1", "mat-2", "Replaced."),
+            () => catalog.FindAsync("mat-1"),
+            ReferenceValidationState.Released);
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_ThenTheReplacementClaimsTheFreedDesignation_FindByDesignationReturnsTheReplacement()
+    {
+        var catalog = MaterialFixtures.BuildCatalog();
+        await catalog.RegisterAsync("mat-1", MaterialFixtures.Steel("FX-SHARED"), MaterialFixtures.Verified());
+        await catalog.RegisterAsync("mat-2", MaterialFixtures.Steel("FX-2"), MaterialFixtures.Verified());
+        await MaterialFixtures.ReleaseAsync(catalog, "mat-1");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync<MaterialDefinition>(
+            () => catalog.SupersedeAsync("mat-1", "mat-2", "Replaced."),
+            () => catalog.ReviseAsync(
+                "mat-2", MaterialFixtures.Steel("FX-SHARED"), MaterialFixtures.Verified(), "Adopts the designation it replaces."),
+            () => catalog.FindByDesignationAsync("FX-SHARED"),
+            "mat-1",
+            "mat-2");
     }
 }

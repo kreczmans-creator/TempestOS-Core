@@ -6,6 +6,7 @@ using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Tests.Materials;
 using Tempest.Core.UnitsAndQuantities;
+using ReferenceDataTransactionalFacts = Tempest.Core.Tests.ReferenceData.ReferenceDataTransactionalFacts;
 
 namespace Tempest.Core.Tests.Components;
 
@@ -769,5 +770,38 @@ public class ComponentLibraryTests
         Assert.Equal(ReferenceValidationState.Superseded, superseded!.ValidationState);
         Assert.Equal("cmp-0002", superseded.SupersededByRecordId);
         Assert.Equal(40, (await catalog.GetRevisionAsync("cmp-0001", 1)).Definition.Gear!.NumberOfTeeth);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158` through the shared ReferenceDataTransactionalFacts helper
+    // (`WP 19.10K`) — ComponentCatalog runs the same transactional path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = ComponentFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("cmp-fault", ComponentFixtures.CompressionSpring("FX-FAULT"), ComponentFixtures.SourcedProvenance()),
+            async () => await catalog.FindAsync("cmp-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = ComponentFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("cmp-a", ComponentFixtures.CompressionSpring("FX-A"), ComponentFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("cmp-b", ComponentFixtures.CompressionSpring("FX-B"), ComponentFixtures.VerifiedProvenance());
+        await ComponentFixtures.ReleaseAsync(catalog, "cmp-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<ComponentDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("cmp-a", "cmp-b", "Replaced."),
+            () => catalog.FindAsync("cmp-a"),
+            ReferenceValidationState.Released);
     }
 }

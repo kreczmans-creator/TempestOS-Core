@@ -306,6 +306,19 @@ one); and `TD-86`, `TD-95`, `TD-96` (batching, content-addressed
 deduplication and streaming payloads, none of which this Work Package
 touched).
 
+### Closed by `WP 19.10K`
+
+`TD-158` is exactly the row `WP 17.1B`'s own note above named as not
+closed by it: a composition of several already-transactional calls in
+`ReferenceDataCatalog<TDefinition>` that needed its own transaction
+boundary. `TD-156` is the secondary-index half of the same class's own
+lifecycle handling, audited alongside it by `WP 19.10G`.
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-156` | A superseded reference record keeps its secondary index entry | `RequireSecondaryKeyFreeAsync` (`src/Tempest.Core/ReferenceData/ReferenceDataCatalog.cs`) no longer treats a secondary key as permanently held once its own holder is superseded, so a replacement record may legitimately claim the designation its predecessor carried; `SupersedeAsync` itself deliberately leaves the secondary index untouched — a superseded record keeps resolving by its own former key, retained rather than deleted, until another record legitimately claims it (`SupersedeAsync_LeavesTheSupersededValuesReadable`, `ASupersededConstantStopsBeingHandedToCalculations`, both unchanged and still passing). Proven by `SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync` run against the shared Widget layer and `MaterialCatalog`/`StandardCatalog`/`ConstantCatalog`'s own fixtures, and by `RegisterAsync_ReusingASupersededRecordsSecondaryKey_Succeeds`. |
+| `TD-158` | `ReferenceDataCatalog` composes durable writes with no all-or-nothing semantics | `RegisterAsync`, `ReviseAsync` (`ReviseCoreAsync`) and `SupersedeAsync` now run every durable write they compose — the document/revision, the primary index entry, the secondary index entry, the `Supersedes` link — inside one `IQueryablePersistenceStore.ExecuteInTransactionAsync` transaction, through the same internal `ITransactionalDocumentWriter` seam `EngineeringObjectBase` already uses (`ADR-0145`); the constructor now refuses (`ArgumentException`) a persistence or document store that cannot support this, rather than falling back to the old sequential writes silently. Proven by the shared `ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync`/`SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync` facts, run against the shared Widget layer and against `MaterialCatalog`, `FastenerCatalog`, `BearingCatalog`, `StandardCatalog`, `ComponentCatalog`, `ConstantCatalog` and `ProcessCatalog`'s own fixtures — `CommitFailingPersistenceStore` (`WP 17.1B`'s own fault-injection double) fails each transaction's commit after its body has staged every write, and every test then finds nothing durable, or the original record exactly as it was. |
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
@@ -320,7 +333,7 @@ touched).
 | `TD-30` | `ICalculationResult`/`IVerificationResult`/`IApprovalGate` have zero implementations | `WP 18.0A` |
 | `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 17.1B` |
 | `TD-36` | `PersistenceStore.DefaultRootPath` resolves relative to the process CWD | `WP 17.1A` |
-| `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` |
+| `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (reference data half closed by `WP 19.10K`; requirements and verification halves `WP 19.10L`) |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
 | `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` |
 | `TD-95` | Attachment bytes are stored per attachment, never deduplicated by content | `WP 17.1B` |
@@ -329,8 +342,6 @@ touched).
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 17.1B` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |
-| `TD-156` | A superseded reference record keeps its secondary index entry | `WP 17.1A` |
-| `TD-158` | `ReferenceDataCatalog` composes durable writes with no all-or-nothing semantics | `WP 17.1B` |
 | `TD-169` | The canonical lifecycle permits no `Draft` → `Archived` transition | `WP 18.0A` |
 | `TD-170` | Naming an executed calculation is create-then-link with no compensation | `WP 17.1B` |
 | `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |

@@ -53,6 +53,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 {
     private readonly IEngineeringDocumentStore _documentStore;
     private readonly IPersistenceStore _persistenceStore;
+    private readonly IQueryablePersistenceStore _transactionalStore;
+    private readonly ITransactionalDocumentWriter _documentWriter;
     private readonly ILogger? _logger;
     private readonly AsyncKeyedLock _recordLock = new();
     private readonly AsyncKeyedLock _secondaryKeyLock = new();
@@ -64,6 +66,15 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
     /// <param name="persistenceStore">The store this catalogue's own indexes are held in.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     /// <exception cref="ArgumentNullException"><paramref name="documentStore"/> or <paramref name="persistenceStore"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="persistenceStore"/> does not also implement
+    /// <see cref="IQueryablePersistenceStore"/>, or <paramref name="documentStore"/>
+    /// does not also implement <see cref="ITransactionalDocumentWriter"/> —
+    /// either way, this catalogue's composed writes (`TD-158`) could only be
+    /// made transactional by silently falling back to the old, unsafe
+    /// sequential path, which this constructor refuses to do. Every store
+    /// this platform ships (production and test alike) implements both.
+    /// </exception>
     protected ReferenceDataCatalog(IEngineeringDocumentStore documentStore, IPersistenceStore persistenceStore, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
@@ -72,6 +83,37 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
         _documentStore = documentStore;
         _persistenceStore = persistenceStore;
         _logger = logger;
+
+        // `TD-158`: RegisterAsync, ReviseAsync and SupersedeAsync each
+        // compose more than one durable write (the document/revision, the
+        // primary index entry, and — on revise or supersede — the
+        // secondary index entry) and must land as one transaction or not
+        // at all. `IPersistenceStore` alone cannot express that, so the
+        // narrowest widening is a runtime type check against the same
+        // store instance for the transactional query surface
+        // (`IQueryablePersistenceStore`, `ADR-0144`) and, for the document
+        // half of the write, the internal transactional writer contract
+        // `EngineeringDocumentStore` already implements for
+        // `EngineeringObjectBase` (`ADR-0145`). Both shipped stores —
+        // production's `SqlitePersistenceStore` and every in-memory test
+        // double this suite uses — implement both, so this is never
+        // reached outside a deliberately narrow test double; where it is
+        // reached, refusing loudly is the only acceptable outcome (never a
+        // silent, non-transactional fallback that would reintroduce the
+        // defect this constructor exists to close).
+        _transactionalStore = persistenceStore as IQueryablePersistenceStore
+            ?? throw new ArgumentException(
+                $"'{persistenceStore.GetType().Name}' does not implement '{nameof(IQueryablePersistenceStore)}', so " +
+                $"{GetType().Name} cannot compose its durable writes into one transaction (`TD-158`). Use the store " +
+                "this platform ships, or widen the store passed here to also implement the transactional query surface.",
+                nameof(persistenceStore));
+
+        _documentWriter = documentStore as ITransactionalDocumentWriter
+            ?? throw new ArgumentException(
+                $"'{documentStore.GetType().Name}' does not implement '{nameof(ITransactionalDocumentWriter)}', so " +
+                $"{GetType().Name} cannot compose its durable writes into one transaction (`TD-158`). Use the " +
+                "document store this platform ships.",
+                nameof(documentStore));
     }
 
     /// <inheritdoc />
@@ -140,18 +182,27 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             await RequireSecondaryKeyFreeAsync(definition, recordId, cancellationToken).ConfigureAwait(false);
 
             var dto = new ReferenceDocumentDto<TDefinition>(recordId, definition, provenance, ReferenceValidationState.Draft, null, source);
-            var document = await _documentStore
-                .CreateAsync(DocumentKind, Serialise(dto), cancellationToken)
-                .ConfigureAwait(false);
+            var content = Serialise(dto);
+            var documentId = Guid.NewGuid();
+            IDocumentRevision? revision = null;
 
-            await _persistenceStore.WriteAsync(IndexCollectionName, recordId, document.Id.ToString("N"), cancellationToken).ConfigureAwait(false);
-            if (secondaryKey is not null)
-                await _persistenceStore.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, cancellationToken).ConfigureAwait(false);
+            // `TD-158`: the document, its revision 1, the primary index
+            // entry and the secondary index entry (if any) are one
+            // transaction — a fault after any of them leaves none durable.
+            await _transactionalStore.ExecuteInTransactionAsync(async (transaction, ct) =>
+            {
+                var creation = await _documentWriter.CreateAsync(transaction, documentId, DocumentKind, content, ct).ConfigureAwait(false);
+                revision = creation.Revision;
 
-            _logger?.Information($"{LibraryName} record registered: '{recordId}' (document '{document.Id}').");
+                await transaction.WriteAsync(IndexCollectionName, recordId, documentId.ToString("N"), ct).ConfigureAwait(false);
+                if (secondaryKey is not null)
+                    await transaction.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, ct).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
+
+            _logger?.Information($"{LibraryName} record registered: '{recordId}' (document '{documentId}').");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, definition, provenance, ReferenceValidationState.Draft, null, document.Id, document.CurrentRevisionNumber, source);
+                recordId, definition, provenance, ReferenceValidationState.Draft, null, documentId, revision!.RevisionNumber, source);
         }
     }
 
@@ -283,28 +334,31 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             var previousKey = GetSecondaryKey(current.Definition);
             var effectiveSource = sourceSpecified ? source : current.Source;
             var revised = current with { Definition = definition, Provenance = provenance, Source = effectiveSource };
-            var revision = await _documentStore
-                .ReviseAsync(documentId, Serialise(revised), changeSummary, cancellationToken)
-                .ConfigureAwait(false);
+            var content = Serialise(revised);
+            IDocumentRevision? revision = null;
 
-            if (!string.Equals(previousKey, secondaryKey, StringComparison.Ordinal))
+            // `TD-158`: the revision and the secondary-index move (if the
+            // key changed) are one transaction — a fault between the two
+            // used to be able to leave a stale index entry pointing at a
+            // key no record carries; now either both land or neither does.
+            await _transactionalStore.ExecuteInTransactionAsync(async (transaction, ct) =>
             {
-                // The secondary index is rewritten only after the record
-                // itself is durably revised: a crash between the two leaves
-                // a stale index entry pointing at a real record (which
-                // resolves, and which the guards in ListAsync/FindAsync
-                // already tolerate), never an index entry pointing at a key
-                // no record carries.
-                if (previousKey is not null)
-                    await _persistenceStore.DeleteAsync(SecondaryIndexCollectionName, previousKey, cancellationToken).ConfigureAwait(false);
-                if (secondaryKey is not null)
-                    await _persistenceStore.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, cancellationToken).ConfigureAwait(false);
-            }
+                revision = await _documentWriter.ReviseAsync(transaction, documentId, content, changeSummary, ct).ConfigureAwait(false);
 
-            _logger?.Information($"{LibraryName} record revised: '{recordId}' (revision {revision.RevisionNumber}).");
+                if (!string.Equals(previousKey, secondaryKey, StringComparison.Ordinal))
+                {
+                    if (previousKey is not null)
+                        await transaction.DeleteAsync(SecondaryIndexCollectionName, previousKey, ct).ConfigureAwait(false);
+                    if (secondaryKey is not null)
+                        await transaction.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, ct).ConfigureAwait(false);
+                }
+            }, cancellationToken).ConfigureAwait(false);
+
+            var revisionNumber = revision!.RevisionNumber;
+            _logger?.Information($"{LibraryName} record revised: '{recordId}' (revision {revisionNumber}).");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, definition, provenance, current.ValidationState, current.SupersededByRecordId, documentId, revision.RevisionNumber,
+                recordId, definition, provenance, current.ValidationState, current.SupersededByRecordId, documentId, revisionNumber,
                 effectiveSource);
         }
     }
@@ -374,21 +428,39 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 ValidationState = ReferenceValidationState.Superseded,
                 SupersededByRecordId = replacementRecordId,
             };
+            var content = Serialise(updated);
+            IDocumentRevision? revision = null;
 
-            var revision = await _documentStore
-                .ReviseAsync(documentId, Serialise(updated), changeSummary, cancellationToken)
-                .ConfigureAwait(false);
+            // `TD-158`: the revision and the Supersedes link are one
+            // transaction — a fault between the two used to be able to
+            // leave a durably superseded record with no recorded
+            // replacement, or a link naming a document that was never
+            // actually revised.
+            //
+            // The secondary index is deliberately left untouched here — a
+            // superseded record keeps resolving by its own former key,
+            // exactly as it keeps resolving by its own Id: retained, not
+            // deleted, because its history is itself engineering data
+            // (`SupersedeAsync_LeavesTheSupersededValuesReadable`,
+            // `ASupersededConstantStopsBeingHandedToCalculations`). What
+            // `TD-156` actually closes is `RequireSecondaryKeyFreeAsync`
+            // below, which used to treat that key as permanently held even
+            // once its holder was superseded, so no later record could
+            // ever legitimately claim it — see the remarks there.
+            await _transactionalStore.ExecuteInTransactionAsync(async (transaction, ct) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, documentId, content, changeSummary, ct).ConfigureAwait(false);
 
-            // The replacement links to the record it supersedes, not the
-            // other way round: that is the direction, and the kind, this
-            // platform already uses (`Decision.SupersedesAsync`). The
-            // superseded record still names its own replacement directly,
-            // so nothing is lost by following the established direction,
-            // and no library invents a second value for one concept
-            // (`ADR-0073`).
-            await _documentStore
-                .LinkAsync(replacementDocumentId, documentId, GovernanceRelationshipKinds.Supersedes, cancellationToken)
-                .ConfigureAwait(false);
+                // The replacement links to the record it supersedes, not the
+                // other way round: that is the direction, and the kind, this
+                // platform already uses (`Decision.SupersedesAsync`). The
+                // superseded record still names its own replacement directly,
+                // so nothing is lost by following the established direction,
+                // and no library invents a second value for one concept
+                // (`ADR-0073`).
+                await _documentWriter.LinkAsync(
+                    transaction, replacementDocumentId, documentId, GovernanceRelationshipKinds.Supersedes, ct).ConfigureAwait(false);
+            }, cancellationToken).ConfigureAwait(false);
 
             _logger?.Information($"{LibraryName} record '{recordId}' superseded by '{replacementRecordId}'.");
 
@@ -399,7 +471,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 ReferenceValidationState.Superseded,
                 replacementRecordId,
                 documentId,
-                revision.RevisionNumber,
+                revision!.RevisionNumber,
                 current.Source);
         }
     }
@@ -439,6 +511,19 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
     private async Task<IDisposable> AcquireSecondaryLockAsync(string? secondaryKey, CancellationToken cancellationToken) =>
         await _secondaryKeyLock.AcquireAsync(secondaryKey ?? string.Empty, cancellationToken).ConfigureAwait(false);
 
+    /// <remarks>
+    /// <b>`TD-156`.</b> A key nominally still indexed to a now-superseded
+    /// record is not actually held by anything current, so it must not go
+    /// on blocking every later record from claiming it — which is exactly
+    /// what happened before this fix: <c>SupersedeAsync</c> never touches
+    /// the secondary index (deliberately — see its own remarks), so
+    /// without this check a designation's replacement record could never
+    /// legitimately be revised onto the very designation it replaces, and
+    /// nothing "newer" could ever be found by that key again. The
+    /// superseded holder itself is unaffected — it keeps its own Id, its
+    /// own revision history, and keeps resolving by this same key for as
+    /// long as nothing else claims it (retained, never deleted).
+    /// </remarks>
     private async Task RequireSecondaryKeyFreeAsync(TDefinition definition, string recordId, CancellationToken cancellationToken)
     {
         var key = GetSecondaryKey(definition);
@@ -447,8 +532,14 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
         var holder = await _persistenceStore.ReadAsync(SecondaryIndexCollectionName, key, cancellationToken).ConfigureAwait(false);
 
-        if (holder is not null && !string.Equals(holder, recordId, StringComparison.Ordinal))
-            throw new DuplicateReferenceKeyException(LibraryName, DescribeSecondaryKey(definition), holder);
+        if (holder is null || string.Equals(holder, recordId, StringComparison.Ordinal))
+            return;
+
+        var holderRecord = await FindAsync(holder, cancellationToken).ConfigureAwait(false);
+        if (holderRecord is { ValidationState: ReferenceValidationState.Superseded })
+            return;
+
+        throw new DuplicateReferenceKeyException(LibraryName, DescribeSecondaryKey(definition), holder);
     }
 
     private async Task<(Guid DocumentId, ReferenceDocumentDto<TDefinition> Current)> RequireAsync(string recordId, CancellationToken cancellationToken)
