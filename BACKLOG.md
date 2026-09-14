@@ -80,7 +80,7 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
-| `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
+| `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
