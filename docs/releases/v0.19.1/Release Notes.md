@@ -96,10 +96,6 @@ counts from the gate).
   the font subset is embedded, as the issue sheet's is. The renderer
   paginates (the table header and the footer repeat on every page;
   `QuotationSheetRendererTests` proves it with forty lines).
-- **The header search opens the Command Palette without the typed text**
-  (`WP 19.7A`): the palette has no public way to seed its query yet, so
-  the search box opens the Objects search and the text is typed again
-  there. Ctrl+K is unchanged.
 - **Engineering → Tasks lists Reviews and Approvals only** (`WP 19.7A`):
   the tasks read model has no Calculations bucket (a calculation is not a
   task until someone asks for one), so the sketched Calculations node is

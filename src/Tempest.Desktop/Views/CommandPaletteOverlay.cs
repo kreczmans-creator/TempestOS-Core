@@ -171,10 +171,27 @@ public sealed class CommandPaletteOverlay : Border
         DialogModality.Install(this);
     }
 
-    /// <summary>Opens the palette: clears the query, re-reads every registered command, and gives the query box focus.</summary>
-    public void Open()
+    /// <summary>
+    /// Opens the palette with its query text set to <paramref name="query"/>
+    /// (caret at the end, matching an actual typed keystroke), re-filters
+    /// exactly as <see cref="ApplyFilter"/> would for that same text typed
+    /// by hand — the Objects section included, once its own background
+    /// search returns — and gives the query box focus. <see langword="null"/>
+    /// or empty behaves exactly as the historical parameterless open:
+    /// every registered command, no Objects section, an empty box.
+    /// </summary>
+    /// <remarks>
+    /// `TD-177`: the one public seed-query entry point — the header's own
+    /// search box calls this with whatever it holds on Enter or its own
+    /// search button, so what was typed there is exactly what this
+    /// palette's Objects search runs against; nobody retypes it here.
+    /// Every existing open path (`Ctrl+K`, the palette command) still
+    /// calls this with no argument and is unaffected.
+    /// </remarks>
+    public void Open(string? query = null)
     {
-        _query.Text = string.Empty;
+        _query.Text = query ?? string.Empty;
+        _query.CaretIndex = _query.Text.Length;
         ApplyFilter();
         IsVisible = true;
         _query.Focus();

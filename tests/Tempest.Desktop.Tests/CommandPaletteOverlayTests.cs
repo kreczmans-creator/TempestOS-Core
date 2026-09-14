@@ -137,6 +137,61 @@ public sealed class CommandPaletteOverlayTests
         }
     }
 
+    /// <summary>
+    /// `TD-177`: <see cref="CommandPaletteOverlay.Open(string?)"/> seeds the
+    /// query box with the text passed in, caret at the end, and filters
+    /// exactly as if that text had been typed by hand — the Objects
+    /// section included, once the (stubbed) background search returns —
+    /// so the header's own search box never makes anyone retype what they
+    /// already typed once.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Open_WithAQuery_SeedsTheQueryTextWithCaretAtEnd_AndFiltersExactlyAsIfTyped()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            var palette = new CommandPaletteOverlay(registry);
+            var hitId = Guid.NewGuid();
+            var hit = new PaletteObjectHit(hitId, "Part", "Bracket Mounting Plate", "Demo Project");
+            palette.ObjectSearchSource = (q, _) =>
+                Task.FromResult<IReadOnlyList<PaletteObjectHit>>(q == "bra" ? [hit] : []);
+
+            palette.Open("bra");
+
+            Assert.True(palette.IsOpen);
+            var queryBox = (TextBox)((StackPanel)palette.Child!).Children[0];
+            var results = (ListBox)((StackPanel)palette.Child!).Children[1];
+            Assert.Equal("bra", queryBox.Text);
+            Assert.Equal("bra".Length, queryBox.CaretIndex);
+
+            var deadline = DesktopTestHelpers.Deadline(5);
+            while (!HasObjectRow(results) && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            Assert.True(HasObjectRow(results), "Expected the seeded query to drive the same Objects search a typed query would.");
+
+            // `Open(null)` behaves exactly like the historical parameterless
+            // open: every existing call site (Ctrl+K, the palette command)
+            // is unaffected by this overload.
+            palette.Close();
+            palette.Open(null);
+            Assert.True(palette.IsOpen);
+            Assert.Equal(string.Empty, queryBox.Text);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     private static bool HasObjectRow(ListBox results) =>
         results.ItemsSource is IReadOnlyList<ListBoxItem> items
             && items.Any(i => i.Content is string s && s.Contains("Bracket Mounting Plate", StringComparison.Ordinal));

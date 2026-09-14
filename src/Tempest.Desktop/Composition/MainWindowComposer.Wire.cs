@@ -138,8 +138,9 @@ internal sealed partial class MainWindowComposer
         // about the user's own engineering work, said out loud here.
         ReportIncompleteRehydration(views.ToastHost, host.RehydrationResult);
 
-        // The brand header.
-        views.Header.SearchRequested += () => views.CommandPalette.Open();
+        // The brand header. `TD-177`: the header's own search box now
+        // carries its typed text straight into the palette's own query.
+        views.Header.SearchRequested += query => views.CommandPalette.Open(query);
         views.Header.ThemeToggleRequested += async () => await views.Theme.ToggleAsync().ConfigureAwait(true);
         views.Header.ReturnToProjectRequested += async () =>
         {

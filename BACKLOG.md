@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (28 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (27 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -64,14 +64,15 @@ and nothing on disk.
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-176` | `ProjectContext.RefreshAsync` closes the context when an overlapping render does not yet find a just-created project; the New Project with quotation journey exposed it and is fixed at the test, not the source | unowned (raised by v0.19.1 — `WP 19.7A`) |
-| `TD-177` | `CommandPaletteOverlay` has no public seed-query API, so the header's global search cannot pre-fill the typed text into the Objects search it opens | unowned (raised by v0.19.1 — `WP 19.7A`) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) cover only five Core services (commercial, quotation, deliverable, timesheet, invoicing); the Workspace-layer milestone and engineering-task services, evidence, requirements and the new manual-task service are unguarded | unowned (raised by v0.19.1 — `WP 19.5C`) |
 | `TD-180` | The "Finance" task bucket uses a thirty-day-since-Sent heuristic (and a seven-day-since-Sent one for quotations) because no payment-terms field exists on an invoice request | unowned (raised by v0.19.1 — `WP 19.5C`) |
 | `TD-181` | `ITasksReadModel` has no Calculations bucket, so Engineering → Tasks and the Engineering dashboard's Open tasks panel both disclose and omit the sketched Calculations sub-heading rather than showing it empty | unowned (raised by v0.19.1 — `WP 19.7A`/`WP 19.7B`) |
 | `TD-182` | `QuotationSheetRenderer` duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | unowned (raised by v0.19.1 — `WP 19.5B`) |
 
-**Six rows added by `WP 19.9.1` (2026-09-14):** `TD-176`, `TD-177`,
-`TD-179`–`TD-182`, one per limit a v0.19.1 Work Package disclosed in its
+**Six rows added by `WP 19.9.1` (2026-09-14):** `TD-176`, `TD-177`
+(closed by `WP 19.10C` — the header search now seeds the palette's own
+query; no longer a row above), `TD-179`–`TD-182`, one per limit a
+v0.19.1 Work Package disclosed in its
 own report that no row already in this table covered — confirmed by
 keyword search across this file before each was added (`TD-178`, the
 cockpit's unnamed card buttons, was raised and then closed in the same
