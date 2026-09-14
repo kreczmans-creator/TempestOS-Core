@@ -1,14 +1,17 @@
 # TempestOS v0.19.1 — Release Notes
 
-**Status: in preparation on `release/v0.19.1`, cut from the `v0.19.0`
+**Status: release candidate on `release/v0.19.1`, cut from the `v0.19.0`
 candidate `947c50d` on 2026-09-14 after the Product Owner's first pass
-over it.** Nothing in this document is certification.
+over it; the last code change is `df2ebe8` and every commit after it is
+documentation; under the Product Owner's manual test.** Nothing in this
+document is certification.
 
 ## Summary
 
 **v0.19.1 is the Product Owner's first-pass corrections to the
-Consultancy Seam** — eight items raised on 2026-09-14 while testing the
-`v0.19.0` candidate, led by the Quotation: a quote opened with the
+Consultancy Seam** — nine items raised on 2026-09-14 while testing the
+`v0.19.0` candidate (eight comments and the answers that a quote export
+ships now and that Xero is the accounting package), led by the Quotation: a quote opened with the
 project defines its requirements and deliverables, and everything
 downstream (completion, invoice request) hangs from it. Alongside it: the
 shell laid out the way the Product Owner sketched it (Home, Projects,
@@ -30,11 +33,35 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.5D` A blank optional parameter reaches the binding; the invocation contract covers Quotations and Tasks | `InputDialog.PromptAsync` gains `allowBlank` and the command prompt passes it, so a Ribbon or Palette parameter the binding accepts blank (`quotation.create`'s reference, generated as `Q-yyyy-nnn`; `deliverable.add`'s target date) completes without typing one, while the other twenty-eight prompts keep refusing blanks; `CommandInvocationContractTests` now covers the Quotations and Tasks categories, which exposed `quotation.update-line` / `remove-line`'s line-id parameter as unsatisfiable from the Palette — given a default the validator accepts and the service refuses cleanly; a journey creating a quotation from the Palette with a blank reference | 2026-09-14 (c83f99c) |
 | `WP 19.7A` The shell as sketched | The rail reads Home, Projects, Tasks, Engineering, Business and nothing else; a header with the mark, a global search that opens the Command Palette, a notifications bell with its flyout and the signed-in principal (Settings behind it); Projects → Dashboard + Reports, Open, Closed (under 90 days), Archive, each project opening its workspace with Overview, Quote, Structure, Deliverables, Requirements, Evidence, Sign off, Documents, Tasks, Risks and Timeline tabs; Engineering → Dashboard + Reports, Tasks (Reviews, Approvals), Modules (Mechanical, Engineering Calculations), Reference data (the eight libraries); Business → Dashboard & Reports, Quotes, Invoices, Timesheets, Subscriptions (repeating bills by Hardware / Software / Premises and bills due, read-only from the accounts reading); Tasks lists every bucket with open-right-up and New task; Sign off through the lifecycle service; five real defects fixed on the way (a double-parenting crash, a sticky selection loop, stale group content, a closed popup's false bounds, disposed-host handlers); nineteen suites re-navigated | 2026-09-14 (2c3ce7e) |
 | `WP 19.7B` The four dashboards | Home: Overdue, Due today, Due this week, Approvals and Finance tiles (each opening the Tasks area on that bucket), the commercial snapshot (open quotes, invoices sent, outstanding, overdue), the project status chart, the next milestones, the task list, and Continue / Recent / Favourite; Projects: Active, At risk, On hold and Ready to invoice tiles, the Blocked, At risk and Ready to invoice lists with reasons, a Gantt of open projects with quoted and recorded hours; Engineering: open tasks and engineering reviews; Business: Invoiced, Overdue, Due 30 and Due 90 tiles, receivable and payable lists, quotes open with the over-seven-day chase list, a twelve-week cash-flow line; one `DashboardChart` helper drawing bars, lines and Gantt rows with Avalonia shapes in theme colours, every figure also as text; every empty panel says why; `DashboardsTests` over a six-project fixture with hand-computed values | 2026-09-14 (8216db9) |
+| `WP 19.7C` A view keeps reacting after it has been shown, hidden and shown again | Since `WP 18.2A` every area view and tab that reads the change feed dropped its subscription the first time it left the visual tree and never took it back, so on any second visit it re-read on entry but no longer reacted to a change made while it was showing; `WorkspaceChangesSubscription` now subscribes on attach and unsubscribes on detach for all thirteen views (Home, Projects, Engineering, Business, Tasks, Evidence, Invoicing, Quotes, Reports, Timesheets, the Deliverables and Quote tabs, the object editor); `WorkspaceChangesReattachTests` proves each one reacts, stops while hidden, and reacts again; a Tasks journey leaves and returns before creating a task | 2026-09-14 (df2ebe8) |
 | `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
+
+| `WP 19.9.1` Release | Two idle-machine races in `QuotationJourneyTests` fixed by waiting for the last side effect (the attached sheet after Send; the export file closed, not merely created); every cockpit card action names itself, so the automation-name walk has no exemption left; `PHYSICAL_REVIEW.md` §7c (D1–D19) written from the code, which also corrected this document's own wrong "one page" claim about the quote PDF; the backlog reconciled (nine open rows re-verified unchanged, six raised from the packages' own disclosures, one raised and closed in the same pass, the live list at exactly 30); the nine Product Owner comments checked against the code (five answered, four answered with a disclosed limit, none unanswered); figures, warnings, `PROJECT_STATUS.md`; three green CI Gate runs on the candidate head | 2026-09-14 (df2ebe8) |
 
 ## Figures
 
-*(re-derived at `WP 19.9.1`)*
+Re-derived at `WP 19.9.1` on the candidate head `df2ebe8`
+(`git grep -c '' HEAD -- 'src/*.cs'` excluding `Frozen/`; the test
+counts from the gate).
+
+| Figure | v0.19.0 (`947c50d`) | v0.19.1 (`df2ebe8`) |
+|---|---|---|
+| Live source lines (`src/`, excluding `Frozen/`) | 126,156 | 138,616 |
+| Live test lines (`tests/`) | 107,824 | 137,303 |
+| `Tempest.Core` source lines | 59,472 | 62,720 (quotations, lifecycle, tasks, accounts reads) |
+| Core tests | 4,255 | 4,370 |
+| Desktop tests | 550 | 594 |
+| ADRs | 151 | 152 (ADR-0152) |
+| Commits on the branch | — | 81 since `947c50d`, fourteen of them merges |
+| Effort | — | 28 days across twelve Work Packages, all on 2026-09-14 |
+
+## Gate on the candidate head
+
+- Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`
+- Core tests: 4,370 passed, 0 failed, Debug and Release
+- Desktop tests: 594 passed, 0 failed, Debug (9 m 57 s) and Release (9 m 18 s)
+- Governance health check: 5 of 5
+- CI: the CI Gate job green on every pushed head of the branch on 2026-09-14 (runs 34842170404 on `289b11c`, 34849599412 on `6c37f34`, 34866145341 on `fc67feb`, 34877649676 on `dfbd637`); the three runs on the candidate head itself are recorded on the candidate page
 
 ## Warnings
 
@@ -81,7 +108,15 @@ attachments, and three defects in the `v0.19.0` Structure tab.
   overlapping render does not yet find a just-created project; the New
   Project with quotation journey exposed it and the test now waits. The
   real fix belongs in `ProjectContext`; carried to the backlog.
-- *(further warnings filled at each merge)*
+- **Business → Invoices groups by request status, not by the sketch**
+  (`WP 19.7A`, found by the `PHYSICAL_REVIEW.md` §7c walk): the area is
+  the existing Invoicing view grouped Draft, Sending, Sent, Accepted,
+  Rejected, Unknown, Reauthorise, Voided. The sketched New / Available to
+  invoice / Sent / Outstanding-Overdue grouping is not what it shows; an
+  "available to invoice" completion is on its project's Deliverables tab
+  and on the Projects dashboard's Ready to invoice list, and an overdue
+  request on the Business dashboard's receivable list. Say if the
+  Invoices area itself should regroup.
 
 ## Related
 
