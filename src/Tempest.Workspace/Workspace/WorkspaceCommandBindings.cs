@@ -41,25 +41,15 @@ internal static class WorkspaceCommandBindings
     /// </summary>
     internal const int MaxNameLength = 200;
 
-    // The two capabilities this platform genuinely does not have yet.
-    // Named specifically, and per command, because ADR-0070 requires an
-    // unavailable command to state its own reason rather than fall through
-    // to a generic one.
-    private const string NoObjectPicker =
-        "this platform has no object picker to choose one with yet (FCR-0073, Copy/Move Destination-Picker Dialog & Wired Dispatch).";
-
+    // The one capability this platform genuinely does not have yet. Named
+    // specifically because ADR-0070 requires an unavailable command to
+    // state its own reason rather than fall through to a generic one. The
+    // object-picker half of this pair (U1) is gone: WP 20.2A built the
+    // picker FCR-0073 named, so the fifteen commands that used to declare
+    // ObjectPickerRequired now declare real bindings instead (Destination/
+    // RequiredObjectReference below).
     private const string NoStructuredInput =
         "this platform's command input surface collects single-line text only, and cannot collect that.";
-
-    /// <summary>
-    /// The reason a command needing a destination/target object declares —
-    /// <c>U1</c>, object-picker unavailable.
-    /// </summary>
-    /// <param name="whatIsMissing">
-    /// What must be chosen, phrased as the sentence's own subject — for
-    /// example, <c>"Moving a Calculation needs a destination parent"</c>.
-    /// </param>
-    internal static string ObjectPickerRequired(string whatIsMissing) => $"{whatIsMissing}, and {NoObjectPicker}";
 
     /// <summary>
     /// The reason a command needing structured or binary input declares —
@@ -155,6 +145,46 @@ internal static class WorkspaceCommandBindings
     /// the command's own <see langword="null"/> already means.
     /// </summary>
     internal static string? OrNull(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    /// <summary>
+    /// An existing object's own Id, chosen through the platform's
+    /// object-reference picker (`FCR-0073`, `WP 20.2A`) rather than typed —
+    /// optional: blank means "none" (a top-level Move/Copy destination, an
+    /// ungrouped Requirement, a root Requirement Group). <paramref name="allowedKinds"/>
+    /// only narrows what the picker itself offers; it is never re-checked
+    /// here, because the domain's own <c>IHasParent.MoveAsync</c> is the one
+    /// place a wrong choice is actually judged (a circular assignment), not
+    /// this parameter's own <see cref="CommandParameter.Check"/>.
+    /// </summary>
+    internal static CommandParameter Destination(string name, string label, IReadOnlyList<string>? allowedKinds = null) =>
+        new(name, label, DefaultValue: string.Empty, ObjectPickerKinds: allowedKinds ?? [],
+            Validate: value => string.IsNullOrEmpty(value) || Guid.TryParse(value, out _)
+                ? null
+                : $"'{label}' must be an object chosen from the picker.");
+
+    /// <summary>
+    /// An existing object's own Id, chosen through the platform's
+    /// object-reference picker (`FCR-0073`, `WP 20.2A`) — required, unlike
+    /// <see cref="Destination"/>: there is no "none" this command can act on
+    /// (a Link's own target, an Add-to-Collection's own Collection, a
+    /// Compare-Baselines' own second Baseline/Release).
+    /// </summary>
+    internal static CommandParameter RequiredObjectReference(string name, string label, IReadOnlyList<string>? allowedKinds = null) =>
+        new(name, label, DefaultValue: Guid.Empty.ToString(), ObjectPickerKinds: allowedKinds ?? [],
+            Validate: value => Guid.TryParse(value, out _)
+                ? null
+                : $"'{label}' is required — an object chosen from the picker.");
+
+    /// <summary>
+    /// Parses a <see cref="Destination"/>/<see cref="RequiredObjectReference"/>
+    /// parameter's own collected value — blank means "none", exactly as
+    /// <see cref="OrNull"/> means "unset" for free text. Never called on a
+    /// value that has not already passed <see cref="CommandParameter.Check"/>:
+    /// a malformed Guid reaching here is a defect in the binding, the same
+    /// invariant <see cref="ParseDecimal"/>'s own callers already rely on.
+    /// </summary>
+    internal static Guid? ParseDestination(string value) =>
+        string.IsNullOrEmpty(value) ? null : Guid.Parse(value);
 
     /// <summary>The selected object a single-target binding acts on. Never <see langword="null"/>: the binding declared <see cref="CommandContextRequirement.SelectedObject"/>.</summary>
     internal static CommandContextObject Target(CommandContext context) => context.Primary!;

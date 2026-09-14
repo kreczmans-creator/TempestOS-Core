@@ -179,15 +179,34 @@ public static class MechanicalWorkspaceRegistration
             id: MechanicalCommandIds.Move, displayName: "Move Mechanical Object", category: "Mechanical",
             description: "Reparents the selected Mechanical Product Structure object.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Mechanical object needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveMechanicalObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Copy, displayName: "Copy Mechanical Object", category: "Mechanical",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Mechanical object needs a destination parent chosen from the object tree")),
+            // NewIdentifier/NewDisplayName stay at the command's own
+            // optional defaults, exactly as Duplicate's own binding already
+            // leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyMechanicalObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.Duplicate, displayName: "Duplicate Mechanical Object", category: "Mechanical",
@@ -240,10 +259,18 @@ public static class MechanicalWorkspaceRegistration
             id: MechanicalCommandIds.CompareBaselines, displayName: "Compare Baselines", category: "Mechanical",
             description: "Compares two Configuration/Baseline/Release objects' own member revisions — added, removed, revision-changed.")
         {
-            // Two objects, and a context carries one selection whose first entry is
-            // the primary — the second Baseline/Release has nowhere to come from.
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Comparing baselines needs a second Baseline or Release chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the second Baseline/Release —
+            // which a context carrying one selection has nowhere else to
+            // come from — is now chosen from the object picker, scoped to
+            // the same two Kinds this command itself applies to. Required,
+            // not a Destination: there is no "compare against nothing".
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CompareBaselinesCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["secondId"])!.Value),
+                [WorkspaceCommandBindings.RequiredObjectReference("secondId", "Second Baseline or Release", BaselineKinds)],
+                BaselineKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: MechanicalCommandIds.ValidateConfiguration, displayName: "Validate Configuration", category: "Mechanical",
@@ -258,9 +285,19 @@ public static class MechanicalWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new ValidateConfigurationCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
-                appliesToKinds: [MechanicalObjectFactoryRegistry.Baseline, MechanicalObjectFactoryRegistry.Release]),
+                appliesToKinds: BaselineKinds),
         });
     }
+
+    /// <summary>
+    /// The two Kinds that satisfy <c>IBaseline</c> — held here (`WP 20.2A`)
+    /// so <c>mechanical.compare-baselines</c>'s own second-object picker and
+    /// <c>mechanical.validate-configuration</c>'s own Kind restriction state
+    /// the identical set once, rather than each spelling it out inline.
+    /// </summary>
+    internal static readonly IReadOnlyList<string> BaselineKinds =
+        [MechanicalObjectFactoryRegistry.Baseline, MechanicalObjectFactoryRegistry.Release];
+
     /// <summary>
     /// The Mechanical Kinds that carry a Bill of Materials line — the four
     /// whose own contracts declare <c>IHasBomLine</c>

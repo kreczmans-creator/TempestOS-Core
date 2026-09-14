@@ -18,10 +18,13 @@ namespace Tempest.Core.Commands;
 /// <b>Values are strings because the collection primitive is.</b> The only
 /// input surface this platform has returns <c>string?</c>, so a parameter
 /// is a string and the binding's own lambda does the typed parse. Where a
-/// value cannot be safely expressed as text — a file's bytes, a
-/// per-template JSON payload, a destination object — the correct answer is
-/// an explicitly unavailable binding
-/// (<see cref="CommandBinding.Unavailable"/>), never a weaker parameter.
+/// value cannot be safely expressed as text — a file's bytes, or a
+/// per-template JSON payload — the correct answer is an explicitly
+/// unavailable binding (<see cref="CommandBinding.Unavailable"/>), never a
+/// weaker parameter. A destination object is the one exception this
+/// platform now has a real answer for (`WP 20.2A`, FCR-0073): it is still
+/// collected as a string — the chosen object's own <see cref="Guid"/>, or
+/// blank for "none" — see <see cref="ObjectPickerKinds"/>.
 /// </para>
 /// </remarks>
 /// <param name="Name">The key this value is collected and read under.</param>
@@ -39,12 +42,26 @@ namespace Tempest.Core.Commands;
 /// already takes, so an existing length limit or non-blank rule moves here
 /// unchanged rather than being lost.
 /// </param>
+/// <param name="ObjectPickerKinds">
+/// <see langword="null"/> (the default) for an ordinary typed value. A
+/// non-null list — empty for "any Kind", or one or more canonical Kind
+/// names to narrow it — marks this parameter as an existing object's own
+/// Id, chosen from the platform's object-reference picker (FCR-0073)
+/// rather than typed. The collected value is still a plain string (the
+/// chosen <see cref="Guid"/>'s own text, or blank for "none"/"top level"):
+/// <see cref="Validate"/> decides whether blank is acceptable for this
+/// particular parameter, exactly as it already does for free text. A
+/// surface with no object picker (a macro replay, a hand-written test
+/// prompt) can still supply this value directly — it is collected, never
+/// constructed, by whatever implements <see cref="CommandParameterPrompt"/>.
+/// </param>
 public sealed record CommandParameter(
     string Name,
     string Label,
     string? DefaultValue = null,
     IReadOnlyList<string>? AllowedValues = null,
-    Func<string, string?>? Validate = null)
+    Func<string, string?>? Validate = null,
+    IReadOnlyList<string>? ObjectPickerKinds = null)
 {
     /// <summary>
     /// Checks <paramref name="value"/> against this parameter's own
