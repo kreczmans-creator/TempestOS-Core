@@ -94,10 +94,24 @@ internal sealed class DesktopPanelUiState
     /// <summary>Gets or sets whether the Engineering Ribbon is minimised to its own tab strip (`TD-70`) — persisted so a user working on a laptop keeps the vertical space they reclaimed across restarts.</summary>
     public bool RibbonCollapsed { get; set; }
 
+    /// <summary>Gets or sets whether <see cref="Tempest.Desktop.Views.GlobalNavigationRail"/> is manually collapsed to its icon width (`WP 19.10O`) — persisted so a user reclaiming rail real estate keeps that choice across restarts, independent of the responsive fold below <see cref="Tempest.Desktop.Theming.DesignTokens.CompactShellWidth"/>.</summary>
+    public bool RailCollapsed { get; set; }
+
+    /// <summary>Gets or sets whether the Projects area's own tree column (`WP 19.7A`) is manually collapsed to its strip (`WP 19.10O`) — persisted per area, independent of the responsive fold.</summary>
+    public bool ProjectsTreeCollapsed { get; set; }
+
+    /// <summary>Gets or sets whether the Engineering area's own tree column (`WP 19.7A`) is manually collapsed to its strip (`WP 19.10O`) — persisted per area, independent of the responsive fold.</summary>
+    public bool EngineeringTreeCollapsed { get; set; }
+
+    /// <summary>Gets or sets whether the Business area's own tree column (`WP 19.7A`) is manually collapsed to its strip (`WP 19.10O`) — persisted per area, independent of the responsive fold.</summary>
+    public bool BusinessTreeCollapsed { get; set; }
+
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new DesktopPanelUiStateDto(ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned, LastAppliedPreset, RibbonCollapsed, LayoutIsUserArranged);
+        var dto = new DesktopPanelUiStateDto(
+            ExplorerCollapsed, ExplorerPinned, InspectorCollapsed, InspectorPinned, OutputVisible, OutputHeight, OutputCollapsed, OutputPinned,
+            LastAppliedPreset, RibbonCollapsed, LayoutIsUserArranged, RailCollapsed, ProjectsTreeCollapsed, EngineeringTreeCollapsed, BusinessTreeCollapsed);
         await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
@@ -120,6 +134,10 @@ internal sealed class DesktopPanelUiState
         LastAppliedPreset = dto.LastAppliedPreset;
         RibbonCollapsed = dto.RibbonCollapsed;
         LayoutIsUserArranged = dto.LayoutIsUserArranged;
+        RailCollapsed = dto.RailCollapsed;
+        ProjectsTreeCollapsed = dto.ProjectsTreeCollapsed;
+        EngineeringTreeCollapsed = dto.EngineeringTreeCollapsed;
+        BusinessTreeCollapsed = dto.BusinessTreeCollapsed;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
@@ -134,5 +152,9 @@ internal sealed class DesktopPanelUiState
         bool OutputPinned,
         string? LastAppliedPreset,
         bool RibbonCollapsed = false,
-        bool LayoutIsUserArranged = false);
+        bool LayoutIsUserArranged = false,
+        bool RailCollapsed = false,
+        bool ProjectsTreeCollapsed = false,
+        bool EngineeringTreeCollapsed = false,
+        bool BusinessTreeCollapsed = false);
 }
