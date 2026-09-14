@@ -2,6 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
@@ -63,6 +64,7 @@ public class VerificationSampleModuleIntegrationTests
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
         services.Singleton<IVerificationService, VerificationService>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
