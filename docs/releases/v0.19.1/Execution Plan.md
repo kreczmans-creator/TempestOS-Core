@@ -54,10 +54,11 @@ status to the Product Owner.
 | 2 | `WP 19.5C` Tasks, project status, Sign off, Open/Closed/Archive read models | 19.5A | 3 | Sonnet | `Workspace/Tasks/*`, project lifecycle (Sign off, Closed, Archive), status read model |
 | 3 | `WP 19.7A` The shell: rail, header, the three trees, Timesheets under Business | 19.4A, 19.5B, 19.5C | 4 | Sonnet | `ShellArea*`, `GlobalNavigationRail`, `ShellHeaderView`, area views, `TimesheetWeekView` prompt |
 | 3 | `WP 19.7B` The four dashboards | 19.5C, 19.8B, 19.7A | 4 | Sonnet | Home, Project, Engineering and Business dashboard views and their read models |
+| 3 | `WP 19.5D` Optional command parameters reach the binding; the invocation contract covers Quotations and Tasks | 19.5B, 19.5C | 0.5 | Sonnet | `InputDialog` allow-blank, `DesktopCommandPrompt`, `CommandInvocationContractTests` — two defects found by 19.5B and 19.5C, added 2026-09-14 |
 | 4 | `WP 19.9.1` Release | all | 1.5 | lead | notes, `PHYSICAL_REVIEW.md` §7c, backlog audit, VERSION, CI, the candidate page |
 
-Effort: 27 days. Status is reported per Work Package as a percentage of its
-own scope and as its effort-weighted share of the 27.
+Effort: 27.5 days. Status is reported per Work Package as a percentage of its
+own scope and as its effort-weighted share of the 27.5.
 
 ## 3. Engineering decisions taken while planning
 

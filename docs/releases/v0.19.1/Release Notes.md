@@ -26,6 +26,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.6A` A real editor for library records | `ReferenceRecordView`: identity, the definition's fields rendered generically with units (every library's definition types, nested groups and tables), revision history with the current marked, source citation, cited by (one Evidence scan through `ReferenceCitationIndex`), Verify, Release and Revise on the record; Libraries becomes master and detail with Open and double-tap, folding to a Back control when compact; all eight libraries listed (Manufacturing, Components and rate cards newly wired); Add and Revise open the record right up | 2026-09-14 (e9aeabc) |
 | `WP 19.5A` Quotation core (ADR-0152) | The `Quotation` Kind under a project: reference (`Q-yyyy-nnn` or given), date, client, currency, validity, terms, lines with hours × rate or a fixed price, totals; Draft → Sent → Accepted / Declined with refusals as results; Accept creates one Deliverable per line under a milestone named after the reference and one Requirement per line allocated to the quotation and so to the project; `AddDeliverableAsync` for deliverables added directly; five `quotation.*` commands under the Quotations category; explorer area, editor declaration, registration guards | 2026-09-14 (564a074) |
 | `WP 19.5C` Project lifecycle, status and tasks read models, the ManualTask Kind | `ProjectLifecycleService`: Hold, Resume, Sign off (statement and record) and Reopen, one transaction and audit row each; a project's listing group (Open, Closed under 90 days, Archive over 90 days) derived from its closed date; writes on an archived project refused in the commercial, quotation, deliverable, timesheet and invoicing services; `ProjectStatusReadModel`: one scan giving each project one of On hold, Blocked, Overdue, At risk, Ready to invoice or On track with the reason, counts and the Gantt schedule fields; `ManualTask` Kind with its own service, commands (`task.create`, `task.complete`) and registration; `ITasksReadModel`: Overdue, Due today, Due this week, Later, Reviews, Approvals and Finance buckets over deliverables, milestones, manual tasks, evidence, invoice requests and quotations | 2026-09-14 (ab505b3) |
+| `WP 19.5B` The Quote tab, the Quotes area, the quote export | `ProjectQuoteView` as the project's Quote tab: identity, lines editable while Draft (add, edit, remove through `quotation.update-line` / `quotation.remove-line`), totals, terms, Send / Accept / Decline with confirmation, Export, and after Accept the deliverables and requirements it created with open-right-up; `QuotesView` under Business (New, Sent, Outstanding, with Open, Export and New Quote through a project picker); `QuotationSheetRenderer`: a one-page A4 quote PDF (SkiaSharp, the issue sheet's own two-phase layout) saved through the save picker as `<reference>-quote.pdf`; New Project prompts to open a quotation with the project (on by default, ADR-0152); Add Deliverable on the Deliverables tab through `deliverable.add`; the editor's Quotation lines section; `QuotationJourneyTests`, renderer tests over extracted PDF text, a rail contract for Quotes | 2026-09-14 (1f81c27) |
 | `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
 
 ## Figures
@@ -60,6 +61,17 @@ attachments, and three defects in the `v0.19.0` Structure tab.
   thirty days, and a Sent quotation older than seven days, are what the
   Finance bucket lists. When terms are recorded the bucket should read
   them.
+- **The input dialog refuses a blank optional parameter** (found by
+  `WP 19.5B`, not fixed there): `InputDialog` rejects empty input before
+  consulting the parameter's own validation rule, so a Ribbon or Palette
+  command with a genuinely optional parameter (`quotation.create`'s
+  reference, which is generated when blank; `deliverable.add`'s target
+  date) cannot be completed without typing one. The Quote tab and the
+  Quotes area's New Quote do not pass through the dialog.
+- **The quote PDF is one page** (`WP 19.5B`): the renderer lays out one
+  A4 sheet; a quotation whose lines overrun it is clipped rather than
+  paginated. The file is about 600 KB because the font subset is embedded,
+  as the issue sheet's is.
 - *(further warnings filled at each merge)*
 
 ## Related
