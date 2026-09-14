@@ -447,6 +447,21 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>The post-commit window (`TD-150`).</b> Once <c>COMMIT;</c> below
+    /// has returned, the write is durable — <c>synchronous=FULL</c> means
+    /// it is already fsynced (see the class remarks, "Durability"). From
+    /// that instant on, closing the connection is cleanup, not part of the
+    /// unit of work: an exception from it is caught, logged through this
+    /// store's own logger naming this transaction's committed sequence,
+    /// and does not propagate — this method returns normally. Before
+    /// <c>COMMIT;</c> returns, the boundary is exactly what it always was:
+    /// a throw rolls the transaction back and propagates. <c>committed</c>,
+    /// below, marks that boundary explicitly, so a caller — in particular
+    /// <see cref="EngineeringDomainContext.ExecuteWriteAsync"/> — can keep
+    /// relying on "this method threw" meaning "nothing committed" (see that
+    /// method's own remarks).
+    /// </remarks>
     public async Task ExecuteInTransactionAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work,
         CancellationToken cancellationToken = default)
@@ -465,7 +480,17 @@ public sealed class SqlitePersistenceStore
                 $"Failed to open '{_databasePath}' to begin a transaction.", ex);
         }
 
-        await using (connection.ConfigureAwait(false))
+        // `committed` becomes true only once `COMMIT;` has returned
+        // (`TD-150`). Everything after that point — the `finally` below —
+        // treats a connection-close failure as this call's own problem to
+        // absorb, never the caller's: the caller already has a durable
+        // write. `committedSequence` is captured at the same instant,
+        // rather than re-read from `_currentSequence` inside the `finally`,
+        // so the log line below cannot race a second transaction's own
+        // commit landing in between.
+        var committed = false;
+        var committedSequence = 0L;
+        try
         {
             // BEGIN IMMEDIATE, not the default deferred BEGIN: the write
             // lock is taken up front, so a transaction that is going to
@@ -487,6 +512,8 @@ public sealed class SqlitePersistenceStore
                 // observe ahead of the data that earned it.
                 var sequence = await IncrementSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
                 await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+                committed = true;
+                committedSequence = sequence;
 
                 // SQLite's own write lock (taken by BEGIN IMMEDIATE, above)
                 // serialises every transaction on this store end to end, so
@@ -505,6 +532,32 @@ public sealed class SqlitePersistenceStore
             finally
             {
                 transaction.Invalidate();
+            }
+        }
+        finally
+        {
+            try
+            {
+                await CloseConnectionAsync(connection).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (committed)
+            {
+                // The write already landed (`committed`, above); only
+                // closing the connection afterwards failed, with nothing
+                // left for this call to do about it. Swallowing this
+                // (rather than letting it propagate) is `TD-150`'s fix:
+                // unswallowed, it would reach
+                // `EngineeringDomainContext.ExecuteWriteAsync` as an
+                // ordinary exception, which runs `afterCommit` only when
+                // nothing threw — so an object durably on disk would never
+                // be registered in memory, and the caller would be told a
+                // write failed that in fact succeeded. `when (committed)`
+                // is deliberately the whole story: a close failure before
+                // `COMMIT;` ever ran still propagates, exactly as before.
+                _logger?.Warning(
+                    $"Persistence committed a transaction (sequence {committedSequence}) on '{_databasePath}' " +
+                    "but could not close its connection afterwards. The write is durable; only the close failed.",
+                    ex);
             }
         }
     }
@@ -848,6 +901,33 @@ public sealed class SqlitePersistenceStore
             throw;
         }
     }
+
+    /// <summary>
+    /// Closes <paramref name="connection"/> at the end of
+    /// <see cref="ExecuteInTransactionAsync"/>: <see cref="TestOnlyConnectionCloser"/>
+    /// when a test has set one (`TD-150`), otherwise the connection's own
+    /// <see cref="SqliteConnection.DisposeAsync"/>.
+    /// </summary>
+    private ValueTask CloseConnectionAsync(SqliteConnection connection) =>
+        TestOnlyConnectionCloser is { } closer ? closer(connection) : connection.DisposeAsync();
+
+    /// <summary>
+    /// Test-only seam behind <see cref="CloseConnectionAsync"/> (`TD-150`).
+    /// When set, replaces the normal <see cref="SqliteConnection.DisposeAsync"/>
+    /// call at the end of <see cref="ExecuteInTransactionAsync"/>, letting a
+    /// test make that step itself throw — after performing real cleanup, if
+    /// the delegate chooses to — so the post-commit boundary this Work
+    /// Package adds can be proven against the real store rather than only a
+    /// double. <c>internal</c>, reachable only from <c>Tempest.Core.Tests</c>
+    /// (<c>InternalsVisibleTo</c>, <c>AssemblyInfo.cs</c>); never set outside
+    /// a test. Nothing else reaches this point to seam: a decorator over
+    /// <see cref="IQueryablePersistenceStore"/> — <c>CommitFailingPersistenceStore</c>
+    /// included — only ever sees this method's already-awaited result, since
+    /// the connection this closes is opened and disposed entirely inside
+    /// this sealed class's own method, beneath every interface such a
+    /// decorator implements.
+    /// </summary>
+    internal Func<SqliteConnection, ValueTask>? TestOnlyConnectionCloser { get; set; }
 
     /// <summary>
     /// Applies this store's four pragmas to <paramref name="connection"/>.

@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (25 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (24 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -49,6 +49,16 @@ record and the creation audit row are one transaction, and
 commits, so a creation whose write fails leaves nothing in the repository
 and nothing on disk.
 
+`TD-150` — `PersistenceStore`'s post-commit failure window: `WP 17.1B`'s
+own `ADR-0145` claimed this row closed alongside `TD-140`–`TD-149`, but
+`SqlitePersistenceStore.ExecuteInTransactionAsync` disposed its
+connection outside the `try`/`catch` that rolled back and rethrew, so a
+close failure landing after a real `COMMIT;` still reported a committed
+write as failed (`WP 19.10F` audit, rated P1). **Closed by `WP 19.10J`**:
+the close step now runs after `COMMIT;` under a `committed` flag, and an
+exception there is logged and swallowed only once the transaction has
+actually landed — see `ADR-0145`'s own addendum.
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
@@ -69,7 +79,6 @@ and nothing on disk.
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-131` | Focus-ring contrast test can't see any `Flat`-treatment state | unowned |
 | `TD-134` | `SettingsDocument<TDocument>` has no per-consumer notion of "current version" | unowned |
-| `TD-150` | `PersistenceStore`'s post-commit failure window: 0 of 3,330 tests would notice a revert | `WP 17.0C` |
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) cover only five Core services (commercial, quotation, deliverable, timesheet, invoicing); the Workspace-layer milestone and engineering-task services, evidence, requirements and the new manual-task service are unguarded | unowned (raised by v0.19.1 — `WP 19.5C`) |
@@ -101,10 +110,11 @@ answered. Housekeeping ("`D:/tempest-wt/19.2B` directory still locked by
 a stray testhost") is an environment cleanup, not product debt.
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
-`TD-27` and `TD-150` sit squarely in the persistence/object-store
-mechanism `WP 17.1A`/`WP 17.1B` replace, but neither row is literally
-listed; `TD-28` sits in the refresh/notification mechanism `WP 18.1A`
-replaces, same caveat. Owners other than "unowned" that are not one of
+`TD-27` sits squarely in the persistence/object-store mechanism
+`WP 17.1A`/`WP 17.1B` replace, but the row is not literally listed;
+`TD-28` sits in the refresh/notification mechanism `WP 18.1A` replaces,
+same caveat. (`TD-150` was once a third example here; `WP 19.10J` closes
+it by name, above, rather than by judgement.) Owners other than "unowned" that are not one of
 the programme Work Packages (`WP 18.0B`, `18.2B`,
 `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
 column in `WorkPackages.md`, but fall outside the specific
