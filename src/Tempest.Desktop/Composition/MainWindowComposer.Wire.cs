@@ -136,16 +136,19 @@ internal sealed partial class MainWindowComposer
         };
 
         // Responsive shell chrome: below the compact threshold the rail
-        // folds to its icons, the header's search field to its glyph, and
-        // the ribbon's own command buttons to icons alone (`WP 19.2B`,
-        // `TD-73`) — the same one threshold drives all three, so they
-        // never disagree about what counts as "narrow".
+        // folds to its icons, the header's search field to its glyph, the
+        // ribbon's own command buttons to icons alone (`WP 19.2B`,
+        // `TD-73`), and the Libraries tab's own open record replaces the
+        // list (with Back) rather than sitting beside it (`WP 19.6A`) —
+        // the same one threshold drives all four, so they never disagree
+        // about what counts as "narrow".
         window.SizeChanged += (_, e) =>
         {
             var compact = e.NewSize.Width < DesignTokens.CompactShellWidth;
             views.NavigationRail.SetCompact(compact);
             views.Header.SetCompact(compact);
             views.Ribbon.SetCompact(compact);
+            views.LibrariesView.SetCompact(compact);
         };
 
         var shortcutActions = new KeyboardShortcutActions(

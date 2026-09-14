@@ -5,6 +5,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Tempest.Core.Evidence;
 using Tempest.Desktop.Editors;
+using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 using Tempest.Workspace.Shell;
 using static Tempest.Desktop.Tests.DesktopTestHelpers;
@@ -117,6 +118,77 @@ public sealed class ReferenceRecordViewTests
                 return evidenceEditor is not null;
             });
             Assert.NotNull(evidenceEditor);
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Scope §2: an open record sits beside the list at a typical width,
+    /// and in place of it, with a Back control, below
+    /// <see cref="DesignTokens.CompactShellWidth"/> — the same threshold
+    /// the rail, header and ribbon already fold at
+    /// (`MainWindowComposer.Wire.cs`'s own single `window.SizeChanged`
+    /// handler).
+    /// </summary>
+    [AvaloniaFact]
+    public async Task OpeningARecord_SitsBesideTheListWhenWide_AndReplacesItWithBackWhenNarrow()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var tabs = (TabControl)evidenceWorkspace.Content!;
+            tabs.SelectedIndex = 1;
+            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            LayOut(window);
+
+            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
+                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
+            var openButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open"));
+            openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } d
+                && d.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("fst-m10-coarse", StringComparison.Ordinal)));
+
+            // Wide (the window's own default in this suite, 1900px):
+            // beside the list — both a row and the record are on screen,
+            // no Back control.
+            var listRows = librariesView.GetLogicalDescendants().OfType<Grid>()
+                .Where(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)))
+                .ToList();
+            Assert.NotEmpty(listRows);
+            Assert.DoesNotContain(
+                librariesView.GetLogicalDescendants().OfType<Button>(),
+                b => Equals(b.Content, "← Back to Libraries") && b.IsEffectivelyVisible);
+
+            // Narrow: in place of the list, with Back.
+            librariesView.SetCompact(true);
+            LayOut(window);
+
+            Assert.DoesNotContain(
+                librariesView.GetLogicalDescendants().OfType<Grid>(),
+                g => g.IsEffectivelyVisible && g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
+            var backButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "← Back to Libraries"));
+            Assert.True(backButton.IsEffectivelyVisible);
+
+            // Back returns to the list.
+            backButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            LayOut(window);
+            Assert.Contains(
+                librariesView.GetLogicalDescendants().OfType<Grid>(),
+                g => g.IsEffectivelyVisible && g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("fst-m10-coarse", StringComparison.Ordinal)));
         }
         finally
         {
