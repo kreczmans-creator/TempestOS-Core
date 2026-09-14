@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
@@ -21,11 +22,12 @@ public class RequirementsReconciliationServiceTests
 {
     private static (RequirementsService Requirements, EngineeringDocumentStore Documents, IPersistenceStore Persistence, RequirementsReconciliationService Reconciliation) Build()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
         var reconciliation = new RequirementsReconciliationService(documentStore, store);
 
@@ -213,11 +215,12 @@ public class RequirementsReconciliationServiceTests
     [Fact]
     public async Task SweepAsync_InterleavedWithAnInFlightCreate_NeverMakesTheRequirementUnfindable()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         var gated = new OrderAgnosticGatedListKeysPersistenceStore(
@@ -251,11 +254,12 @@ public class RequirementsReconciliationServiceTests
     [Fact]
     public async Task SweepAsync_InterleavedWithAnInFlightCollectionCreate_NeverMakesTheCollectionUnlisted()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         var gated = new OrderAgnosticGatedListKeysPersistenceStore(

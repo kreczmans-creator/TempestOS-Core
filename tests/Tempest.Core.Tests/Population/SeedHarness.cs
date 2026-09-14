@@ -4,6 +4,7 @@ using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Manufacturing;
@@ -15,7 +16,7 @@ using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Standards;
-using Tempest.Core.Tests.Materials;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.Population;
 
@@ -39,7 +40,7 @@ internal class SeedHarness
 {
     public SeedHarness()
     {
-        SqlitePersistenceStore = new InMemoryPersistenceStore();
+        SqlitePersistenceStore = new InMemoryQueryablePersistenceStore();
         DocumentStore = new EngineeringDocumentStore(SqlitePersistenceStore, new CurrentPrincipalAccessor());
 
         Materials = new MaterialCatalog(DocumentStore, SqlitePersistenceStore);
@@ -57,7 +58,9 @@ internal class SeedHarness
             (EngineeringDocumentStore)DocumentStore,
             SqlitePersistenceStore,
             principals,
-            new VerificationService((EngineeringDocumentStore)DocumentStore, principals, new PermissionEvaluator()));
+            new VerificationService(
+                (EngineeringDocumentStore)DocumentStore, principals, new PermissionEvaluator(),
+                SqlitePersistenceStore, new InMemoryEngineeringRelationshipRepository()));
 
         Seeder = new ReferenceSeedService();
     }
@@ -65,7 +68,7 @@ internal class SeedHarness
     /// <summary>The identifier of the requirement the seeded assets hang from.</summary>
     public const string BracketRequirementIdentifier = "REQ-BRACKET-001";
 
-    public InMemoryPersistenceStore SqlitePersistenceStore { get; }
+    public InMemoryQueryablePersistenceStore SqlitePersistenceStore { get; }
 
     public IEngineeringDocumentStore DocumentStore { get; }
 

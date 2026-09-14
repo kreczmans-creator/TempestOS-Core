@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Requirements;
@@ -10,13 +12,14 @@ namespace Tempest.Core.Tests.Requirements;
 public class RequirementsServiceTests
 {
     private static (RequirementsService Requirements, EngineeringDocumentStore Documents, IVerificationService Verification) BuildServices(
-        IPersistenceStore? persistenceStore = null)
+        InMemoryQueryablePersistenceStore? persistenceStore = null)
     {
-        var store = persistenceStore ?? new InMemoryPersistenceStore();
+        var store = persistenceStore ?? new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         // GetEvidenceAsync transitively requires VerificationService.ReadPermission
@@ -38,9 +41,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullDocumentStore_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
-        var verification = new VerificationService(new EngineeringDocumentStore(store, principalAccessor), principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            new EngineeringDocumentStore(store, principalAccessor), principalAccessor, new PermissionEvaluator(),
+            store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(null!, store, principalAccessor, verification));
     }
@@ -48,10 +53,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullPersistenceStore_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, null!, principalAccessor, verification));
     }
@@ -59,10 +65,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullCurrentPrincipalAccessor_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, store, null!, verification));
     }
@@ -70,11 +77,25 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullVerificationService_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, store, principalAccessor, null!));
+    }
+
+    [Fact]
+    public void Constructor_PersistenceStoreNotQueryable_ThrowsArgumentException()
+    {
+        var store = new InMemoryPersistenceStore();
+        var principalAccessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(store, principalAccessor);
+        var queryableStore = new InMemoryQueryablePersistenceStore();
+        var verification = new VerificationService(
+            new EngineeringDocumentStore(queryableStore, principalAccessor), principalAccessor, new PermissionEvaluator(),
+            queryableStore, new InMemoryEngineeringRelationshipRepository());
+
+        Assert.Throws<ArgumentException>(() => new RequirementsService(documentStore, store, principalAccessor, verification));
     }
 
     // ------------------------------------------------------------
@@ -726,11 +747,12 @@ public class RequirementsServiceTests
     [Fact]
     public async Task GetEvidenceAsync_InheritsVerificationReadPermissionGate()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         var requirement = await requirementsService.CreateAsync("REQ-001", "Statement.");
@@ -883,10 +905,115 @@ public class RequirementsServiceTests
         var store = new FailingPersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var workingStore = new InMemoryQueryablePersistenceStore();
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), workingStore, new InMemoryEngineeringRelationshipRepository());
         var requirements = new RequirementsService(documentStore, store, principalAccessor, verification);
 
         await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(() => requirements.CreateAsync("REQ-001", "Statement."));
+    }
+
+    // ------------------------------------------------------------
+    // Atomicity (`TD-67`) — the document and its identifier-index entry
+    // are one transaction, the same shape and the same primitive
+    // VerificationService.RecordAsync's own TD-23 closure uses.
+    // ------------------------------------------------------------
+
+    /// <summary>
+    /// A fault injected after the transaction body has fully run — the
+    /// document and its identifier-index entry both staged — but before
+    /// the commit lands, leaves nothing durable: no document, and no
+    /// identifier-index entry either. Before `TD-67`'s closure the two
+    /// writes were independent, so a crash in this exact window left a
+    /// document that existed but could never be found by its own
+    /// identifier — precisely the "invisible orphan" the row named, and
+    /// exactly the scenario `RequirementsReconciliationServiceTests`'s own
+    /// suite exists to detect and repair after the fact rather than
+    /// prevent.
+    /// </summary>
+    [Fact]
+    public async Task CreateAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument()
+    {
+        var backing = new InMemoryQueryablePersistenceStore();
+        var principalAccessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(backing, principalAccessor);
+        var failable = new FailableTransactionStore(backing) { FailNextCommit = true };
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), backing, new InMemoryEngineeringRelationshipRepository());
+        var requirements = new RequirementsService(documentStore, failable, principalAccessor, verification);
+
+        await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(
+            () => requirements.CreateAsync("REQ-RACE-1", "The system shall survive a failed commit."));
+
+        Assert.Equal(1, failable.BodiesCompleted);
+        Assert.Null(await requirements.FindByIdentifierAsync("REQ-RACE-1"));
+        Assert.Empty(await backing.ReadAllAsync(RequirementsService.IdentifierIndexCollectionName));
+    }
+
+    /// <summary>
+    /// Wraps a <see cref="InMemoryQueryablePersistenceStore"/> so a test can
+    /// inject a commit failure (via <see cref="CommitFailingPersistenceStore"/>)
+    /// while still satisfying <see cref="RequirementsService"/>'s single
+    /// <see cref="IPersistenceStore"/> constructor parameter, which it also
+    /// casts to <see cref="IQueryablePersistenceStore"/> internally
+    /// (`TD-67`) — every plain <see cref="IPersistenceStore"/> read goes
+    /// straight to the backing store, so a caller can read what really
+    /// committed exactly as <c>TestEngineeringDomain.NewContextOver</c>'s
+    /// own <c>transactional</c>/<c>backing</c> split does.
+    /// </summary>
+    private sealed class FailableTransactionStore : IPersistenceStore, IQueryablePersistenceStore
+    {
+        private readonly InMemoryQueryablePersistenceStore _backing;
+        private readonly CommitFailingPersistenceStore _failing;
+
+        public FailableTransactionStore(InMemoryQueryablePersistenceStore backing)
+        {
+            _backing = backing;
+            _failing = new CommitFailingPersistenceStore(backing);
+        }
+
+        public bool FailNextCommit
+        {
+            get => _failing.FailNextCommit;
+            set => _failing.FailNextCommit = value;
+        }
+
+        public int BodiesCompleted => _failing.BodiesCompleted;
+
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _backing.ReadAsync(collection, key, cancellationToken);
+
+        public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
+            _backing.WriteAsync(collection, key, value, cancellationToken);
+
+        public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+            _backing.DeleteAsync(collection, key, cancellationToken);
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default) =>
+            _backing.ListKeysAsync(collection, cancellationToken);
+
+        public long CurrentSequence => _backing.CurrentSequence;
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
+            _backing.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default) =>
+            _backing.ReadAllAsync(collection, cancellationToken);
+
+        public Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(string collection, IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default) =>
+            _backing.ReadManyAsync(collection, keys, cancellationToken);
+
+        public Task ExecuteInTransactionAsync(Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
+            _failing.ExecuteInTransactionAsync(work, cancellationToken);
+
+        public Task<T> ExecuteInReadTransactionAsync<T>(Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+            _backing.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+        public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+            _backing.SearchAsync(query, limit, cancellationToken);
+
+        public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+            _backing.IsSearchIndexEmptyAsync(cancellationToken);
     }
 
     // ------------------------------------------------------------

@@ -491,12 +491,12 @@ the table below, with the reason: `TD-141` (the second relationship-write
 path, `EngineeringRelationshipFactory.CreateAsync`, is transactional but
 still carries no supersession guard, because it takes ids rather than an
 instance and there is no public way to ask whether a source object has
-been retired); `TD-158` and `TD-170` (both are compositions of several
-already-transactional calls in `ReferenceDataCatalog` and the calculation
-naming path, which need their own transaction boundary rather than this
-one); and `TD-86`, `TD-95`, `TD-96` (batching, content-addressed
-deduplication and streaming payloads, none of which this Work Package
-touched).
+been retired — closed since by `WP 19.10L`, below); `TD-158` and `TD-170`
+(both are compositions of several already-transactional calls in
+`ReferenceDataCatalog` and the calculation naming path, which need their
+own transaction boundary rather than this one); and `TD-86`, `TD-95`,
+`TD-96` (batching, content-addressed deduplication and streaming
+payloads, none of which this Work Package touched).
 
 ### Closed by `WP 19.10K`
 
@@ -520,19 +520,16 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 | `TD-20` | `MaterialCatalog` reads a full revision history for a latest-only lookup | `WP 17.1A` |
 | `TD-21` | `ICalculationDefinition.Calculate` carries no `CancellationToken` | `WP 18.0A` |
 | `TD-22` | `CalculationContext` has no result bound; intermediate values aren't type-safe on read-back | `WP 18.0A` |
-| `TD-23` | `VerificationService.RecordAsync`'s multi-step link sequence is not transactional | `WP 17.1B` |
 | `TD-29` | `CalculationRecord` never retains its input, blocking a parameterless re-run | `WP 17.3A` / `WP 18.0A` |
 | `TD-30` | `ICalculationResult`/`IVerificationResult`/`IApprovalGate` have zero implementations | `WP 18.0A` |
-| `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 17.1B` |
 | `TD-36` | `PersistenceStore.DefaultRootPath` resolves relative to the process CWD | `WP 17.1A` |
-| `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (reference data half closed by `WP 19.10K`; requirements and verification halves `WP 19.10L`) |
+| `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (requirements half and verification half closed by `WP 19.10L` — `RequirementsService.CreateAsync`'s document-then-identifier-index write and `VerificationService.RecordAsync`'s document-then-link writes are each now the one-transaction primitive this row's own `TD-23` entry (see "Closed" below) closes with; the requirements half is proven the same way, by `tests/Tempest.Core.Tests/Requirements/RequirementsServiceTests.cs`'s `CreateAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument`; reference-data half `WP 19.10K`) |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
 | `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` |
 | `TD-95` | Attachment bytes are stored per attachment, never deduplicated by content | `WP 17.1B` |
 | `TD-96` | `IBinaryPersistenceStore` materialises whole file content in memory | `WP 17.1B` |
 | `TD-130` | Reconciliation services (one of which deletes data) have no authorization seam | `WP 17.2A` |
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
-| `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 17.1B` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |
 | `TD-169` | The canonical lifecycle permits no `Draft` → `Archived` transition | `WP 18.0A` |
 | `TD-170` | Naming an executed calculation is create-then-link with no compensation | `WP 17.1B` |
@@ -568,6 +565,9 @@ this table can now point at, rather than merely name.
 | `TD-132` | Every relationship row's "Open" button shares one accessible name | `WP 19.2B` — `ObjectEditorView.BuildRelationshipRowAsync`'s own Open button is now named `"Open {direction} {relationshipKind} — {displayName}"` per row, mirroring the sibling `BuildObjectReferenceRowAsync`/attachment-row buttons that were already fixed this same way. |
 | `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` — repositioning: with a panel header focused, `Ctrl+Shift+Arrow` moves it to the workspace edge in that direction (`LayoutTabGroupView`'s own `MoveRequested` event, `WorkspaceLayoutHost`'s `DockToEdge`), and `Ctrl+Shift+[`/`Ctrl+Shift+]` resizes its own split share (`WorkspaceLayoutTree.ResizeSplit`), both documented in the panel header's own `AutomationProperties.HelpText`; proven end-to-end by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_MovesADockedPanelToTheOppositeEdge`. Tab *reordering* (dragging one tab before another within a group) is unchanged and stays mouse-only — out of this Work Package's own brief, which named panel repositioning and resizing only. |
 | `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` — `MainWindowComposer`'s four phases (`BuildViews` → `BuildCoordinators` → `Wire` → `Layout`, `src/Tempest.Desktop/Composition/MainWindowComposer*.cs`) replace the constructor; `MainWindow.cs` is now 782 lines, and `tests/Tempest.Desktop.Tests/MainWindowCompositionTests.cs:394` (`MainWindowComposer_FourPhases_ExistAndAreCalledInOrder`) pins that all four phases exist and are invoked, in that order, from `MainWindow`'s own constructor. |
+| `TD-23` | `VerificationService.RecordAsync`'s multi-step link sequence is not transactional | `WP 19.10L` (audited not closed by `WP 19.10G`, 2026-09-14) — the record's own document, its "verifiedBy" link and every additional "references"/"basedOnCalculation" link are now written inside one `IQueryablePersistenceStore.ExecuteInTransactionAsync` call through `ITransactionalDocumentWriter` (`ADR-0145`), the same primitive `EngineeringDomainContext.ExecuteWriteAsync` uses; a fault after the whole body runs but before the commit lands leaves nothing durable, proven by `tests/Tempest.Core.Tests/Verification/VerificationServiceTests.cs`'s `RecordAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument` (fault injection, mirroring `R7RegressionProofTests`'s own convention) and `RecordAsync_NonExistentLinkedDocument_LeavesNoVerifiedByReference_NotEvenTheRecord` (a missing linked document no longer leaves a durably-orphaned record). |
+| `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 19.10L` (audited not closed by `WP 19.10G`, 2026-09-14) — `VerificationService.RecordAsync` now records the "verifiedBy" edge with `IEngineeringRelationshipRepository` immediately after its transaction commits, exactly as every other relationship-creating mutator in this codebase does; `RecordVerificationResultCommand`'s own identical edge from the Activity's subject (`TD-173`'s fix) gets the same fix. Proven by `tests/Tempest.Core.Tests/Verification/VerificationServiceTests.cs`'s `RecordAsync_RegistersVerifiedByLink_DiscoverableFromBothEnds_InThisSameSession`, which reads the edge back through `RelationshipDiscoveryService` from both ends in the same session, with no restart or rehydration. |
+| `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 19.10L` (audited partly closed by `WP 19.10G`, 2026-09-14 — `EngineeringObjectBase.LinkAsync`'s own instance-handle guard already existed; `EngineeringRelationshipFactory.CreateAsync` still had none) — the factory now resolves both ends inside its transaction and refuses with `SupersededEngineeringObjectException` when either is already `LifecycleState.Superseded`, before writing anything: a raw id carries no instance handle to go stale, so the durable signal it checks instead is the resolved object's own `IHasLifecycle.Status`, the public surface `WP 19.10G`'s own audit found missing. Proven by `tests/Tempest.Core.Tests/EngineeringDomain/RelationshipFactorySupersessionTests.cs`'s `CreateAsync_SourceAlreadySuperseded_ThrowsSupersededEngineeringObjectException_AndWritesNothing` and `CreateAsync_TargetAlreadySuperseded_ThrowsSupersededEngineeringObjectException_AndWritesNothing` (one per end, per the audit's own "a test per end" instruction), plus a third fact that the identical call still succeeds, and is discoverable, once neither end is superseded. |
 
 **Claimed by `v0.18.0` Work Packages and verified NOT closed, `WP 18.9.0`
 (2026-09-09):** `TD-90` — no focus-capture/restore mechanism exists

@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
@@ -38,7 +39,8 @@ public class RequirementsServiceHostileDataTests
         var store = new SqlitePersistenceStore(BuildConfiguration(rootPath));
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verificationService = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
         return (new RequirementsService(documentStore, store, principalAccessor, verificationService), store);
     }
 

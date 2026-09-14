@@ -2,6 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
@@ -63,6 +64,7 @@ public class VerificationSampleModuleIntegrationTests
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
         services.Singleton<IVerificationService, VerificationService>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
@@ -184,7 +186,9 @@ public class VerificationSampleModuleIntegrationTests
         ])).Build());
         var accessorTwo = new CurrentPrincipalAccessor();
         var documentStoreTwo = new EngineeringDocumentStore(persistenceStoreTwo, accessorTwo);
-        var serviceTwo = new VerificationService(documentStoreTwo, accessorTwo, new PermissionEvaluator());
+        var serviceTwo = new VerificationService(
+            documentStoreTwo, accessorTwo, new PermissionEvaluator(),
+            persistenceStoreTwo, new Tempest.Core.EngineeringDomain.InMemoryEngineeringRelationshipRepository());
         accessorTwo.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var history = await serviceTwo.GetVerificationHistoryAsync(moduleOne.SampleSubjectDocumentId!.Value);

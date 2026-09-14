@@ -112,10 +112,27 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
 
     /// <inheritdoc />
     /// <remarks>
+    /// <para>
     /// The reference record and its audit row are one transaction; the
     /// in-memory relationship cache learns of the link only after it
     /// commits, so a failed write leaves the cache and the store agreeing
     /// that nothing happened (`TD-140`).
+    /// </para>
+    /// <para>
+    /// <b>Refuses either end that is already superseded (`TD-141`).</b>
+    /// <see cref="EngineeringObjectBase.LinkAsync"/> guards a durable write
+    /// through a specific, retired instance <em>handle</em> with its own
+    /// private <c>ThrowIfSuperseded</c> check; this factory takes raw ids
+    /// instead, which carry no handle to go stale, so it checks the
+    /// durable signal a raw id <em>can</em> carry — the resolved object's
+    /// own <see cref="IHasLifecycle.Status"/>. An id that currently
+    /// resolves to an object whose lifecycle has already moved to
+    /// <see cref="LifecycleState.Superseded"/> is refused with the same
+    /// <see cref="SupersededEngineeringObjectException"/>
+    /// <c>ThrowIfSuperseded</c> throws, before either end is resolved for
+    /// the write below - so a refusal, like every other guard on this
+    /// write path, leaves nothing durable.
+    /// </para>
     /// </remarks>
     public async Task<IEngineeringRelationship> CreateAsync(Guid sourceId, Guid targetId, CancellationToken cancellationToken = default)
     {
@@ -130,9 +147,14 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
         await _context.ExecuteWriteAsync(
             async (transaction, token) =>
             {
+                var source = await _context.Repository.FindAsync(sourceId, token).ConfigureAwait(false);
+                ThrowIfSuperseded(source, sourceId);
+
+                var target = await _context.Repository.FindAsync(targetId, token).ConfigureAwait(false);
+                ThrowIfSuperseded(target, targetId);
+
                 await _context.DocumentWriter.LinkAsync(transaction, sourceId, targetId, RelationshipKind, token).ConfigureAwait(false);
 
-                var source = await _context.Repository.FindAsync(sourceId, token).ConfigureAwait(false);
                 sourceKind = source?.Kind ?? "Unknown";
 
                 await AuditTransactionWriter.WriteAsync(
@@ -150,5 +172,12 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
             touched: () => [new WorkspaceChangeEntry(sourceId, sourceKind!, WorkspaceChangeType.Updated)]).ConfigureAwait(false);
 
         return relationship;
+    }
+
+    /// <summary>Refuses (`TD-141`) when <paramref name="candidate"/> was resolved and its own lifecycle is already <see cref="LifecycleState.Superseded"/>. A <see langword="null"/> candidate (not yet resolvable) is not this guard's concern - the write below leaves that refusal to the document store's own existence check.</summary>
+    private static void ThrowIfSuperseded(IEngineeringObject? candidate, Guid id)
+    {
+        if (candidate is IHasLifecycle { Status: LifecycleState.Superseded })
+            throw new SupersededEngineeringObjectException(id, candidate.CurrentRevisionNumber);
     }
 }
