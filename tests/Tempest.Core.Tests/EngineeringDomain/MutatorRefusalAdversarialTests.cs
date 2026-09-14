@@ -338,6 +338,75 @@ public sealed class MutatorRefusalAdversarialTests
         }
     }
 
+    /// <summary>
+    /// `TD-18`: many different sources linking to one shared object at
+    /// once, with that object linking back to every one of them at the
+    /// same time — every link lands, none are lost, none are duplicated,
+    /// and a reciprocal pair racing each other (the two-object shape a
+    /// cycle takes) is never mistaken for one edge.
+    /// </summary>
+    /// <remarks>
+    /// <b>Guard-rail.</b> <c>LinkAsync</c> commits its reference record and
+    /// records the in-memory relationship inside <c>ExecuteWriteAsync</c>'s
+    /// own domain write lock hold (`ADR-0145`) — the same lock every other
+    /// mutator in this file is proven against. This fact exercises that
+    /// claim under real concurrency for the one path (`LinkAsync`) no
+    /// earlier round of this file's own adversarial testing had run this
+    /// way; it does not demonstrate a defect, because the architecture it
+    /// pins already forecloses one, but it stands so a future change to
+    /// that lock discipline is caught here rather than in the field.
+    /// </remarks>
+    [Fact]
+    public async Task LinkAsync_ManySimultaneousLinksToOneObject_NoneLostNoneDuplicatedNoCycle()
+    {
+        var rig = new Rig();
+        var hub = await rig.CreatePartAsync("PRT-HUB", "Hub");
+
+        const int sourceCount = 20;
+        var sources = new List<Part>();
+        for (var i = 0; i < sourceCount; i++)
+            sources.Add(await rig.CreatePartAsync($"PRT-{i}", $"Source {i}"));
+
+        // Every source links to the hub, and the hub links back to every
+        // source, all in flight together.
+        var work = new List<Task<Exception?>>();
+        foreach (var source in sources)
+        {
+            work.Add(RecordAsync(() => source.LinkAsync(hub.Id, "relatedTo")));
+            work.Add(RecordAsync(() => hub.LinkAsync(source.Id, "relatedTo")));
+        }
+
+        var outcomes = await Task.WhenAll(work).WaitAsync(Timeout);
+
+        Assert.All(outcomes, Assert.Null);
+
+        var hubIncoming = await rig.Context.RelationshipRepository.GetIncomingAsync(hub.Id);
+        var hubOutgoing = await hub.GetRelationshipsAsync();
+
+        // No lost link, no duplicate: exactly one incoming edge per source
+        // (its own link to the hub) and exactly one outgoing edge per
+        // source (the hub's own link back to it).
+        Assert.Equal(sourceCount, hubIncoming.Count);
+        Assert.Equal(sourceCount, hubIncoming.Select(r => r.SourceId).Distinct().Count());
+        Assert.Equal(sourceCount, hubOutgoing.Count);
+        Assert.Equal(sourceCount, hubOutgoing.Select(r => r.TargetId).Distinct().Count());
+        Assert.Equal(sources.Select(s => s.Id).OrderBy(id => id), hubIncoming.Select(r => r.SourceId).OrderBy(id => id));
+        Assert.Equal(sources.Select(s => s.Id).OrderBy(id => id), hubOutgoing.Select(r => r.TargetId).OrderBy(id => id));
+
+        // No cycle confusion: each source's own outgoing edge to the hub and
+        // the hub's own outgoing edge to that source are two distinct,
+        // correctly-directed relationships, never one edge two racing
+        // writers collapsed into the other's direction.
+        foreach (var source in sources)
+        {
+            var sourceOutgoing = await source.GetRelationshipsAsync();
+            var sourceIncoming = await rig.Context.RelationshipRepository.GetIncomingAsync(source.Id);
+
+            Assert.Single(sourceOutgoing, r => r.TargetId == hub.Id);
+            Assert.Single(sourceIncoming, r => r.SourceId == hub.Id);
+        }
+    }
+
     // ================================================================
     // §2 The refusal invariant, from an angle the author's own suite
     //     does not use

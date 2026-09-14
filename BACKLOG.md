@@ -516,13 +516,13 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 | ID | Title | Closed by |
 |---|---|---|
 | `TD-20` | `ReferenceDataCatalog` reads a full revision history for a latest-only lookup | `IEngineeringDocumentStore.GetLatestRevisionAsync` (new) reads the document record once for its own `CurrentRevisionNumber` and then exactly the one revision it names, never the whole history `GetRevisionHistoryAsync` builds; `ReferenceDataCatalog<TDefinition>.ReadDtoAsync` and `ReadRecordAsync` (`src/Tempest.Core/ReferenceData/ReferenceDataCatalog.cs`) now share one `ReadDtoWithRevisionAsync` call onto it, so a `FindAsync`/`ListAsync` lookup calls `GetLatestRevisionAsync` exactly once and `GetRevisionHistoryAsync` not at all — `ReadRecordAsync` previously read the whole history twice per lookup (once directly, once inside its own call to `ReadDtoAsync`). Proven by `tests/Tempest.Core.Tests/ReferenceData/ReferenceDataCatalogTests.cs`'s `FindAsync_ReadsTheLatestRevisionOnly_NeverTheWholeHistory`, which counts store calls through a counting `IEngineeringDocumentStore` decorator (`CountingDocumentStore`) against a record carrying several prior revisions. |
+| `TD-18` | `LinkAsync` concurrency under many simultaneous calls is untested | `tests/Tempest.Core.Tests/EngineeringDomain/MutatorRefusalAdversarialTests.cs`'s `LinkAsync_ManySimultaneousLinksToOneObject_NoneLostNoneDuplicatedNoCycle` runs twenty sources linking to one shared hub and the hub linking back to every one of them, all at once: every edge lands (no lost link), exactly once each direction (no duplicate), and each reciprocal pair stays two distinct, correctly-directed relationships rather than one edge two racing writers collapsed together (no cycle confusion). No defect: `EngineeringObjectBase.LinkAsync` already commits its reference record and records the in-memory relationship inside `EngineeringDomainContext.ExecuteWriteAsync`'s own domain write lock hold (`ADR-0145`), the same lock this file's own adversarial suite already proves every other mutator against — this fact is the first to exercise that claim for `LinkAsync` itself under real concurrency, and stands as a guard-rail against a future change to that lock discipline. |
 
 | ID | Title | Owner |
 |---|---|---|
 | `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
 | `TD-04` | `IHostedService` name clashes with `Microsoft.Extensions.Hosting.IHostedService` | `WP 17.2A` |
 | `TD-12` | `IPersistenceStore` has no native query or filter capability | `WP 17.1A` |
-| `TD-18` | `LinkAsync` concurrency under many simultaneous calls is untested | `WP 17.1A` |
 | `TD-21` | `ICalculationDefinition.Calculate` carries no `CancellationToken` | `WP 18.0A` |
 | `TD-22` | `CalculationContext` has no result bound; intermediate values aren't type-safe on read-back | `WP 18.0A` |
 | `TD-29` | `CalculationRecord` never retains its input, blocking a parameterless re-run | `WP 17.3A` / `WP 18.0A` |
