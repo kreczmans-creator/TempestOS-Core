@@ -54,4 +54,20 @@ public enum ProjectArea
     /// </summary>
     /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
     Quote,
+
+    /// <summary>
+    /// This project's own evidence — records, citations, declared figures,
+    /// check and issue — the existing Evidence surface scoped to this
+    /// project (`WP 19.7A`, `po-comments.md` item 6 delta (e)).
+    /// </summary>
+    /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
+    Evidence,
+
+    /// <summary>
+    /// This project's own sign off — the statement box and the Sign off
+    /// action (`WP 19.5C`'s lifecycle service), showing the record
+    /// afterwards (`WP 19.7A`, `po-comments.md` item 6 delta (c)).
+    /// </summary>
+    /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
+    SignOff,
 }

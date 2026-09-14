@@ -132,4 +132,37 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     Quotes,
+
+    /// <summary>
+    /// The Business module (`WP 19.7A`, Product Owner IA sketches items 6
+    /// and 7): Dashboard &amp; Reports, Quotes, Invoices, Timesheets and
+    /// Subscriptions, as one tree with a right pane over the selected
+    /// node.
+    /// </summary>
+    /// <remarks>
+    /// A brand-new member, never <see cref="Commercial"/>'s own ordinal —
+    /// <see cref="Commercial"/>'s doc comment records that ordinals are
+    /// never renumbered or reused for a different meaning once shipped.
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Business,
+
+    /// <summary>
+    /// The Engineering module's own rail destination (`WP 19.7A`): a tree
+    /// (Dashboard + Reports, Tasks, Modules, Reference data) with a right
+    /// pane over the selected node — distinct from <see cref="Engineering"/>
+    /// itself, which stays the ribbon-and-docking engineering surface's own
+    /// scope-aware location (a project's Structure tab, or standalone).
+    /// Selecting Modules → Mechanical from this tree's own content
+    /// navigates on to <see cref="Engineering"/> exactly as it always has;
+    /// this member exists only so the rail can offer a real landing page
+    /// first, per the Product Owner's IA sketches, without touching
+    /// <see cref="Engineering"/>'s own long-established behaviour.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    EngineeringDepartment,
 }

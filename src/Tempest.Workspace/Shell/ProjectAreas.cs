@@ -52,11 +52,38 @@ public static class ProjectAreas
         new(ProjectArea.Engineering, "Structure", "⚙", NavigationAvailability.Implemented,
             "The project's own engineering objects — the ribbon and docking surface of the Engineering Workspace, embedded here with this project as its scope."),
 
-        new(ProjectArea.Documents, "Documents", "📄", NavigationAvailability.Implemented,
-            "This project's own documents and drawings, resolved transitively through project membership, with every file held against them openable in the document viewer."),
+        // `WP 19.7A` (`po-comments.md` item 6, sheets 6–7): the sketch's
+        // own tab order for an open project — Deliverables and
+        // Requirements sit right after Structure, ahead of the tabs this
+        // Work Package's own audit kept unmoved below.
+        new(ProjectArea.Deliverables, "Deliverables", "◈", NavigationAvailability.Implemented,
+            "This project's own deliverables, each against the milestone it is due on, with its completion — when, by whom, on what evidence and documents, and a fixed-price value where it is billed that way rather than by time."),
 
         new(ProjectArea.Requirements, "Requirements", "◎", NavigationAvailability.Implemented,
             "The requirements allocated to this project's engineering objects, each showing its declared status alongside what its verification history actually records."),
+
+        // `WP 19.7A` (`po-comments.md` item 6 delta (e)): Evidence leaves
+        // the rail and becomes this project's own tab — the same Evidence
+        // surface (`WP 18.2A`), already scoped to whichever project is
+        // open (`IProjectContext.Current`), embedded here rather than
+        // reached from a cross-project rail button.
+        new(ProjectArea.Evidence, "Evidence", "▧", NavigationAvailability.Implemented,
+            "This project's own evidence — files, citations, declared figures, check and issue — scoped to this project."),
+
+        // `WP 19.7A` (`po-comments.md` item 6 delta (c)): the statement
+        // box and the Sign off action (`WP 19.5C`'s lifecycle service),
+        // showing the record afterwards.
+        new(ProjectArea.SignOff, "Sign off", "✓", NavigationAvailability.Implemented,
+            "This project's own sign off — a statement, who signed and when, and the Hold/Resume/Sign off/Reopen actions the project's lifecycle allows from its current state."),
+
+        // The tabs below survive this Work Package's own audit of
+        // Documents/Tasks/Risks/Timeline/Reports/Settings for real
+        // behaviour behind them (`WP 19.7A`'s own brief, scope item 3):
+        // each still renders a real, working surface over the project's
+        // own domain data, so each stays exactly as it was, only moved
+        // after the sketch's own newly placed tabs above.
+        new(ProjectArea.Documents, "Documents", "📄", NavigationAvailability.Implemented,
+            "This project's own documents and drawings, resolved transitively through project membership, with every file held against them openable in the document viewer."),
 
         new(ProjectArea.Tasks, "Tasks", "☑", NavigationAvailability.Implemented,
             "This project's own tasks and actions, created, assigned, prioritised, dated and moved through their own work states, as a list or a status board."),
@@ -66,12 +93,6 @@ public static class ProjectAreas
 
         new(ProjectArea.Timeline, "Timeline", "▦", NavigationAvailability.Implemented,
             "This project's own milestones in date order, the deliverables due against each, and the tasks and actions contributing to them. A dated register, not a Gantt chart: there is no scheduling engine, no dependency graph and no critical path."),
-
-        // `WP 19.0A` (`ADR-0150`): every milestone Deliverable of the
-        // project with its own completion state — placed right after
-        // Timeline, where the deliverables it completes are due.
-        new(ProjectArea.Deliverables, "Deliverables", "◈", NavigationAvailability.Implemented,
-            "This project's own deliverables, each against the milestone it is due on, with its completion — when, by whom, on what evidence and documents, and a fixed-price value where it is billed that way rather than by time."),
 
         // `WP 19.2B` (`TD-81`): the Reports and Settings tabs are removed
         // from this tab strip, not dimmed — `DeclaredCapabilityView`,
