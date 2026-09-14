@@ -38,6 +38,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
 
 | `WP 19.9.1` Release | Two idle-machine races in `QuotationJourneyTests` fixed by waiting for the last side effect (the attached sheet after Send; the export file closed, not merely created); every cockpit card action names itself, so the automation-name walk has no exemption left; `PHYSICAL_REVIEW.md` §7c (D1–D19) written from the code, which also corrected this document's own wrong "one page" claim about the quote PDF; the backlog reconciled (nine open rows re-verified unchanged, six raised from the packages' own disclosures, one raised and closed in the same pass, the live list at exactly 30); the nine Product Owner comments checked against the code (five answered, four answered with a disclosed limit, none unanswered); figures, warnings, `PROJECT_STATUS.md`; three green CI Gate runs on the candidate head; the CI Build & Test ceiling raised from 45 to 90 minutes after the Desktop leg reached 43 | 2026-09-14 (df2ebe8) |
+| `WP 19.10D` Business → Invoices grouped as the Product Owner sketched | `InvoicingView` regroups New (Draft — Review, Send, Void) / Available to invoice (a live `DeliverableCompletion` not yet invoiced and not carried by any live request's own lines — Open completion, Raise invoice) / Sent (Sending, Sent, Accepted not yet Outstanding — Review, Reconcile now) / Outstanding-Overdue (Sent/Accepted unpaid more than thirty days after being sent — the identical heuristic the Finance task bucket uses — plus Reauthorise and Unknown, which always need attention) / Closed (Rejected, Voided — Review only, collapsed by default); Raise invoice dispatches the identical `invoicing.raise` command the Deliverables tab already uses; every `InvoiceRequestStatus` this platform ever persists lands in exactly one group; `InvoicesGroupingTests` proves the placement, the group captions and each group's own empty text | 2026-09-14 (pending merge) |
 
 ## Figures
 
@@ -112,15 +113,6 @@ counts from the gate).
   five-minute backstop never fired). The ceiling is raised, not the
   cause: the suite's CI time roughly doubles with coverage collection,
   which is diagnostic only. Worth deciding whether Debug needs it.
-- **Business → Invoices groups by request status, not by the sketch**
-  (`WP 19.7A`, found by the `PHYSICAL_REVIEW.md` §7c walk): the area is
-  the existing Invoicing view grouped Draft, Sending, Sent, Accepted,
-  Rejected, Unknown, Reauthorise, Voided. The sketched New / Available to
-  invoice / Sent / Outstanding-Overdue grouping is not what it shows; an
-  "available to invoice" completion is on its project's Deliverables tab
-  and on the Projects dashboard's Ready to invoice list, and an overdue
-  request on the Business dashboard's receivable list. Say if the
-  Invoices area itself should regroup.
 
 - **An editor on a background Document Area tab misses a change made
   while it is hidden** (`WP 19.7C`): a tab control detaches the content
