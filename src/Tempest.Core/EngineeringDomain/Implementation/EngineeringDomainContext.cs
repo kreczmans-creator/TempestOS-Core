@@ -235,6 +235,22 @@ public sealed class EngineeringDomainContext
     /// may apply its own change outside this call.
     /// </para>
     /// <para>
+    /// <b>The <see langword="await"/> above only ever throws for a
+    /// transaction that did not commit (`TD-150`).</b>
+    /// <see cref="PersistenceStore"/>'s own <c>ExecuteInTransactionAsync</c>
+    /// guarantees this: once its own <c>COMMIT;</c> has returned, nothing
+    /// afterwards — including a failure while closing the connection — can
+    /// surface as an exception here. Without that guarantee, a close
+    /// failure landing between "durably committed" and "back from
+    /// <see langword="await"/>" would skip <paramref name="afterCommit"/>
+    /// exactly as a real commit failure does, and this method could not
+    /// tell the two apart: a write that is in fact on disk would be
+    /// reported to the caller as failed, and never registered in memory
+    /// either. See `SqlitePersistenceStore.ExecuteInTransactionAsync`'s own
+    /// remarks for the boundary, and its test double
+    /// <c>PostCommitFailingPersistenceStore</c> for the proof.
+    /// </para>
+    /// <para>
     /// <paramref name="afterCommit"/> is synchronous and must not block,
     /// await, or call back into a mutator: it runs under a non-reentrant
     /// lock, so re-entry would deadlock rather than misbehave visibly.

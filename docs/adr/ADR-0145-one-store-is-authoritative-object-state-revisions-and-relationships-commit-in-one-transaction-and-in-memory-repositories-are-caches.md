@@ -315,3 +315,61 @@ removing.
 - `ADR-0075` — the facet interfaces, unchanged.
 - `docs/architecture/Engineering Object Rehydration Architecture.md`.
 - `docs/releases/v1.0.0/WorkPackages.md`, `WP 17.1B`.
+
+## Addendum, 2026-09-14, `WP 19.10J`: the post-commit window
+
+This ADR's own "Closed" section above already named `TD-150` among the
+range `TD-140`–`TD-150` — true of the failure this ADR set out to close
+(a transaction that never commits still leaving state behind) but not of
+one it did not: `SqlitePersistenceStore.ExecuteInTransactionAsync` issued
+`COMMIT;` inside a `try`/`catch` that rolled back and rethrew, then
+disposed its connection through the method's own outer `await using` —
+*outside* that `try`/`catch`. A connection-close failure landing in that
+window, after `COMMIT;` had already returned, propagated as an ordinary
+exception to `EngineeringDomainContext.ExecuteWriteAsync`, which runs
+`afterCommit` (§"Commit and apply are one critical section", above) only
+when nothing threw. The object was durably on disk; the running
+application never registered it; the caller was told the write failed.
+`WP 19.10F`'s audit found the gap (rated P1) and `BACKLOG.md` had in fact
+kept `TD-150`'s own row open the whole time, against this ADR's premature
+"Closed" claim — the register discrepancy this addendum also closes.
+
+**The fix.** `ExecuteInTransactionAsync` now tracks a `committed` flag,
+set only once `COMMIT;` has returned. The method's connection-close step
+moved into its own `finally`, gated by that flag: an exception closing a
+connection whose transaction committed is caught, logged (naming the
+transaction's own committed sequence), and does not propagate — the
+method returns success, exactly as `EngineeringDomainContext
+.ExecuteWriteAsync` already assumed it would. An exception closing a
+connection whose transaction did **not** commit is unaffected and still
+propagates — the boundary this fix adds is exactly, and only, the
+post-commit window; a contrast fact
+(`SqlitePersistenceStorePostCommitDisposalTests
+.ExecuteInTransactionAsync_CloseFailsBeforeCommit_StillPropagates`)
+pins that the pre-commit path is unchanged.
+
+**The guarantee, restated.** `SqlitePersistenceStore.ExecuteInTransactionAsync`
+throwing now means, without exception, that nothing committed. A caller —
+`EngineeringDomainContext.ExecuteWriteAsync` foremost — may keep treating
+"this call returned" and "this call threw" as the whole story about
+whether a write landed; nothing after `COMMIT;` returns can any longer
+turn the first into the second.
+
+**The test.** No existing double could exercise this: `CommitFailingPersistenceStore`
+fails a transaction by making its own `work` delegate throw, which runs
+*before* `COMMIT;` — the opposite window. `PostCommitFailingPersistenceStore`
+(`tests/Tempest.Core.Tests/Persistence/`) instead wraps a real
+`SqlitePersistenceStore` directly and drives its internal
+`TestOnlyConnectionCloser` seam — reachable only from `Tempest.Core.Tests`
+(`InternalsVisibleTo`) — to make every transaction's close step throw
+*after* a real `COMMIT;` has returned; no interface a decorator could
+implement reaches that point, since the connection is opened and disposed
+entirely inside the store's own sealed method. Through it,
+`PostCommitDisposalFaultInjectionTests` proves `EngineeringObjectFactory<T>
+.CreateAsync` still registers the created object and
+`EngineeringObjectBase.RenameAsync` (through `MutateAndPersistAsync`)
+still applies its change in memory and on disk;
+`SqlitePersistenceStorePostCommitDisposalTests` proves the store itself
+directly — a transaction whose close is made to throw after its own
+`COMMIT;` reports success, and the write survives a second store instance
+reopening the same root.
