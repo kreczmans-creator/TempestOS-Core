@@ -6,6 +6,7 @@ using Tempest.Workspace.Shell;
 using Tempest.Workspace.Tasks;
 using Tempest.Core.Events;
 using Tempest.Desktop.Theming;
+using Tempest.Desktop.Views.Dashboards;
 
 namespace Tempest.Desktop.Views;
 
@@ -19,9 +20,10 @@ namespace Tempest.Desktop.Views;
 /// <remarks>
 /// <para>
 /// Every node embeds an already-built, already-tested view rather than
-/// rendering anything new: Dashboard + Reports carries the one disclosed
-/// placeholder this release allows plus the existing <see cref="ReportsView"/>;
-/// Tasks filters the existing <see cref="ITasksReadModel"/> to Reviews and
+/// rendering anything new: Dashboard + Reports carries
+/// <see cref="EngineeringDashboardView"/> (`WP 19.7B`) plus the existing
+/// <see cref="ReportsView"/>; Tasks filters the existing
+/// <see cref="ITasksReadModel"/> to Reviews and
 /// Approvals (the read model has no "Calculations" bucket of its own to
 /// filter by, so that sketched sub-heading is not shown — the kill
 /// switch's own "leave it out and say so" rather than inventing a second
@@ -46,10 +48,11 @@ public sealed class EngineeringAreaView : UserControl
     private readonly LibrariesView _referenceData;
     private readonly Func<Task> _onEngineeringCalculationSelected;
 
+    private readonly EngineeringDashboardView _dashboard;
+
     private readonly TreeView _tree = new() { MinWidth = 260, MaxWidth = 260 };
     private readonly ContentControl _detail = new();
     private Border? _treeHost;
-    private readonly Control _dashboardPlaceholder;
     private readonly StackPanel _dashboardStack = new() { Spacing = DesignTokens.SpaceLg };
     private readonly ScrollViewer _dashboardScroll;
     private readonly StackPanel _tasksPanel = new() { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding };
@@ -91,13 +94,14 @@ public sealed class EngineeringAreaView : UserControl
     public EngineeringAreaView(
         IShellNavigator navigator, ITasksReadModel tasksReadModel, ReportsView reportsView,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
-        Func<Task> onEngineeringCalculationSelected)
+        EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
         ArgumentNullException.ThrowIfNull(reportsView);
         ArgumentNullException.ThrowIfNull(engineeringCalculation);
         ArgumentNullException.ThrowIfNull(referenceData);
+        ArgumentNullException.ThrowIfNull(dashboard);
         ArgumentNullException.ThrowIfNull(onEngineeringCalculationSelected);
 
         _navigator = navigator;
@@ -105,16 +109,12 @@ public sealed class EngineeringAreaView : UserControl
         _reportsView = reportsView;
         _engineeringCalculation = engineeringCalculation;
         _referenceData = referenceData;
+        _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
 
         this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
 
-        _dashboardPlaceholder = new EmptyStateView(
-            "▤",
-            "Engineering dashboard — not built yet",
-            "WP 19.7B fills this in: Open tasks and Engineering reviews tiles. The Reports panel below is real today.");
-
-        _dashboardStack.Children.Add(_dashboardPlaceholder);
+        _dashboardStack.Children.Add(_dashboard);
         _dashboardStack.Children.Add(_reportsView);
         _dashboardScroll = new ScrollViewer { Content = _dashboardStack };
         _tasksScroll = new ScrollViewer { Content = _tasksPanel };
@@ -197,7 +197,7 @@ public sealed class EngineeringAreaView : UserControl
             // method must see real content the instant it returns, not
             // only once that later task happens to complete.
             _dashboardNode.IsSelected = true;
-            await _reportsView.RefreshAsync().ConfigureAwait(true);
+            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
             _detail.Content = _dashboardScroll;
             return;
         }
@@ -215,7 +215,7 @@ public sealed class EngineeringAreaView : UserControl
 
         if (ReferenceEquals(selected, _dashboardNode))
         {
-            await _reportsView.RefreshAsync().ConfigureAwait(true);
+            await Task.WhenAll(_dashboard.RefreshAsync(), _reportsView.RefreshAsync()).ConfigureAwait(true);
             _detail.Content = _dashboardScroll;
             return;
         }

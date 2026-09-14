@@ -9,6 +9,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Projects;
 using Tempest.Desktop.Theming;
+using Tempest.Desktop.Views.Dashboards;
 
 namespace Tempest.Desktop.Views;
 
@@ -36,12 +37,12 @@ public sealed class ProjectsAreaView : UserControl
 {
     private readonly EngineeringDomainContext _domainContext;
     private readonly ProjectBrowserView _projectBrowser;
+    private readonly ProjectsDashboardView _dashboard;
     private readonly TimeProvider _time;
 
     private readonly TreeView _tree = new() { MinWidth = 260, MaxWidth = 260 };
     private readonly ContentControl _detail = new();
     private Border? _treeHost;
-    private readonly Control _dashboardPlaceholder;
 
     private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
     private readonly TreeViewItem _openNode = new() { Header = "Open", IsExpanded = true };
@@ -73,22 +74,21 @@ public sealed class ProjectsAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="ProjectsAreaView"/> class.</summary>
     /// <param name="domainContext">Reads every project's real <c>ClosedOn</c>/<c>Held</c> facts for grouping.</param>
     /// <param name="projectBrowser">The single, already-composed project catalogue — reused, filtered, for each group.</param>
+    /// <param name="dashboard">The "Dashboard + Reports" node's own real content (`WP 19.7B`).</param>
     /// <param name="timeProvider">The clock the 90-day Archive rule reads "as of". <see langword="null"/> is <see cref="TimeProvider.System"/>.</param>
-    public ProjectsAreaView(EngineeringDomainContext domainContext, ProjectBrowserView projectBrowser, TimeProvider? timeProvider = null)
+    public ProjectsAreaView(EngineeringDomainContext domainContext, ProjectBrowserView projectBrowser, ProjectsDashboardView dashboard, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(projectBrowser);
+        ArgumentNullException.ThrowIfNull(dashboard);
 
         _domainContext = domainContext;
         _projectBrowser = projectBrowser;
+        _dashboard = dashboard;
+        _dashboard.OpenProjectRequestedAsync += id => OpenProjectRequestedAsync?.Invoke(id) ?? Task.CompletedTask;
         _time = timeProvider ?? TimeProvider.System;
 
         this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
-
-        _dashboardPlaceholder = new EmptyStateView(
-            "▤",
-            "Projects dashboard — not built yet",
-            "WP 19.7B fills this in: status tiles (Active, At risk, On hold, Ready to invoice), Blocked/At risk/Ready-to-invoice panels, and a top-level project schedule. Use the tree on the left to open a project today.");
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_openNode);
@@ -188,7 +188,8 @@ public sealed class ProjectsAreaView : UserControl
             _suppressSelection = true;
             _dashboardNode.IsSelected = true;
             _suppressSelection = false;
-            _detail.Content = _dashboardPlaceholder;
+            await _dashboard.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _dashboard;
             return;
         }
 
@@ -222,7 +223,8 @@ public sealed class ProjectsAreaView : UserControl
 
         if (ReferenceEquals(selected, _dashboardNode))
         {
-            _detail.Content = _dashboardPlaceholder;
+            await _dashboard.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _dashboard;
             return;
         }
 
