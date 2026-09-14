@@ -149,6 +149,14 @@ public sealed class EngineeringObjectRehydrationService
 
         var relationshipCount = await RebuildRelationshipsAsync(rehydrated, cancellationToken).ConfigureAwait(false);
 
+        // `TD-38`: the business-identifier index is a pure projection of
+        // the live object set, exactly like `Repository`/`RelationshipRepository`
+        // above — never persisted, so it is rebuilt wholesale from every
+        // object now registered (not only `rehydrated`, so an already-live
+        // object contributes its own claim too) rather than incrementally
+        // maintained across a restart.
+        await RebuildBusinessIdentifierIndexAsync(cancellationToken).ConfigureAwait(false);
+
         var result = new EngineeringRehydrationResult(
             rehydrated.Count, relationshipCount, [.. unknownKinds], orphanedStateIds, failedObjectIds, alreadyLiveCount);
 
@@ -156,6 +164,36 @@ public sealed class EngineeringObjectRehydrationService
             $"Engineering rehydration complete: {result.ObjectCount} object(s), {result.RelationshipCount} relationship(s) restored.");
 
         return result;
+    }
+
+    /// <summary>
+    /// Rebuilds `TD-38`'s business-identifier index from every live
+    /// object <see cref="EngineeringDomainContext.Repository"/> now holds.
+    /// A soft-deleted object claims nothing, matching the rule's own
+    /// "live objects only" scope; a Kind
+    /// <see cref="BusinessIdentifierScope.EnforcedKinds"/> does not name
+    /// is skipped, exactly as <see cref="EngineeringObjectFactory{T}.CreateAsync(string, Guid?, CancellationToken)"/>
+    /// and <see cref="EngineeringObjectBase.RenameAsync"/> skip it.
+    /// </summary>
+    private async Task RebuildBusinessIdentifierIndexAsync(CancellationToken cancellationToken)
+    {
+        _context.BusinessIdentifierIndex.Clear();
+
+        var everyLiveObject = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var candidate in everyLiveObject)
+        {
+            if (!BusinessIdentifierScope.EnforcedKinds.Contains(candidate.Kind))
+                continue;
+
+            if (candidate is IDeletable { IsDeleted: true })
+                continue;
+
+            var parentId = (candidate as IHasParent)?.ParentId;
+            var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
+            _context.BusinessIdentifierIndex.Claim(candidate.Kind, projectScopeId, candidate.BusinessIdentifier, candidate.Id);
+        }
     }
 
     /// <summary>

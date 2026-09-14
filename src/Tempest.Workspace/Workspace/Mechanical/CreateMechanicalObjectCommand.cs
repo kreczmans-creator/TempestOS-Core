@@ -79,6 +79,10 @@ public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<Creat
         {
             return CommandResult.Failure(ex.Message);
         }
+        catch (DuplicateBusinessIdentifierException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
 
         // Said in the user's terms (`WP 17.9.2`): the name they typed and
         // where it now sits, not a Guid. An object that hangs from nothing

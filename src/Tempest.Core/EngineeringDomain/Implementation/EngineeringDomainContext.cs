@@ -114,7 +114,8 @@ public sealed class EngineeringDomainContext
         IEngineeringObjectStateStore? objectStateStore = null,
         IAttachmentContentStore? attachmentContentStore = null,
         ILogger? logger = null,
-        IWorkspaceChangePublisher? workspaceChanges = null)
+        IWorkspaceChangePublisher? workspaceChanges = null,
+        IBusinessIdentifierIndex? businessIdentifierIndex = null)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
         ArgumentNullException.ThrowIfNull(store);
@@ -146,6 +147,7 @@ public sealed class EngineeringDomainContext
         AttachmentWriter = Require<ITransactionalAttachmentWriter>(AttachmentContentStore, nameof(attachmentContentStore));
         StateWriter = Require<ITransactionalStateWriter>(ObjectStateStore, nameof(objectStateStore));
         WorkspaceChanges = workspaceChanges;
+        BusinessIdentifierIndex = businessIdentifierIndex ?? new BusinessIdentifierIndex();
     }
 
     /// <summary>The single durable store every engineering write commits through (`ADR-0145`).</summary>
@@ -177,6 +179,9 @@ public sealed class EngineeringDomainContext
 
     /// <summary>The durable attachment-content store (`TD-31`) — the read surface for attachment bytes.</summary>
     public IAttachmentContentStore AttachmentContentStore { get; }
+
+    /// <summary>The in-memory `TD-38` business-identifier claim table. Populated from committed state only; never a co-equal writer, exactly like <see cref="Repository"/>.</summary>
+    public IBusinessIdentifierIndex BusinessIdentifierIndex { get; }
 
     internal ITransactionalDocumentWriter DocumentWriter { get; }
 

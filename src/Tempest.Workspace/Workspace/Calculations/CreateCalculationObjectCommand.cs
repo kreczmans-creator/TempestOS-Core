@@ -73,6 +73,10 @@ public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<Crea
         {
             return CommandResult.Failure(ex.Message);
         }
+        catch (DuplicateBusinessIdentifierException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
 
         return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);
     }

@@ -49,9 +49,30 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
     /// has already written and read back nothing.
     /// </para>
     /// </remarks>
-    public async Task<IEngineeringObject> CreateAsync(string initialContent, CancellationToken cancellationToken = default)
+    public Task<IEngineeringObject> CreateAsync(string initialContent, CancellationToken cancellationToken = default) =>
+        CreateAsync(initialContent, projectScopeId: null, cancellationToken);
+
+    /// <summary>
+    /// As <see cref="CreateAsync(string, CancellationToken)"/>, and additionally enforces `TD-38`'s
+    /// uniqueness rule — a business identifier unique among live objects of this <see cref="Kind"/>
+    /// within one project — for the Kinds <see cref="BusinessIdentifierScope.EnforcedKinds"/> names.
+    /// </summary>
+    /// <param name="initialContent">The new object's own revision-1 content.</param>
+    /// <param name="projectScopeId">
+    /// The project this object is about to be placed under — resolved by the caller from its own
+    /// intended parent, via <see cref="BusinessIdentifierScope.ResolveProjectId"/>, before this object
+    /// exists to resolve its own ancestry from. <see langword="null"/> for "outside any project".
+    /// Ignored for a Kind <see cref="BusinessIdentifierScope.EnforcedKinds"/> does not name.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the wait for the write lock, and the transaction.</param>
+    /// <exception cref="DuplicateBusinessIdentifierException">
+    /// A different, still-live object of this <see cref="Kind"/> already holds the new object's own
+    /// <see cref="IEngineeringObject.BusinessIdentifier"/> within <paramref name="projectScopeId"/>.
+    /// </exception>
+    public async Task<IEngineeringObject> CreateAsync(string initialContent, Guid? projectScopeId, CancellationToken cancellationToken = default)
     {
         var documentId = Guid.NewGuid();
+        var enforced = BusinessIdentifierScope.EnforcedKinds.Contains(Kind);
         T? instance = null;
 
         await _context.ExecuteWriteAsync(
@@ -71,6 +92,17 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
                 // every type-specific field a caller had changed since.
                 candidate.AttachSelfFactory((doc, rev, state) => T.Rehydrate(doc, rev, _context, state));
 
+                // `TD-38`. Checked here, inside the transaction and before
+                // anything durable is written for this object, so a refusal
+                // leaves nothing behind — the identical "project" step
+                // `ADR-0145` uses throughout; the claim itself is not made
+                // until `afterCommit`, below.
+                if (enforced)
+                {
+                    BusinessIdentifierScope.EnsureAvailable(
+                        _context.BusinessIdentifierIndex, _context.Repository, Kind, projectScopeId, candidate.BusinessIdentifier, documentId);
+                }
+
                 await candidate.WriteCreationAsync(transaction, token).ConfigureAwait(false);
 
                 instance = candidate;
@@ -79,7 +111,13 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
             // this point put the instance anywhere a second caller could
             // find it, and nothing after the lock is released can find it
             // missing.
-            afterCommit: () => _context.Repository.Register(instance!),
+            afterCommit: () =>
+            {
+                _context.Repository.Register(instance!);
+
+                if (enforced)
+                    _context.BusinessIdentifierIndex.Claim(Kind, projectScopeId, instance!.BusinessIdentifier, documentId);
+            },
             cancellationToken,
             touched: () => [new WorkspaceChangeEntry(documentId, Kind, WorkspaceChangeType.Created)]).ConfigureAwait(false);
 
