@@ -188,6 +188,82 @@ public sealed class RailSurfaceContractTests
     }
 
     // ================================================================
+    // Tasks
+    // ================================================================
+
+    /// <summary>
+    /// `WP 19.7C`'s own journey assertion (the brief's Tests section):
+    /// enter Tasks, leave to Home, return — the reattach
+    /// <see cref="WorkspaceChangesSubscription"/> fixes — create a task
+    /// through New task, and the row appears without re-entering the area
+    /// a second time. Driven through the real "New task" button and the
+    /// real <see cref="InputDialog"/>, unlike
+    /// <c>WorkspaceChangesReattachTests</c>'s own direct
+    /// <c>FakeWorkspaceChanges.Raise()</c> — this is the end-to-end shape
+    /// the defect report itself described.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Tasks_RowAppearsAfterLeavingAndReturning_WithoutReenteringAgain()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+
+            // Enter Tasks.
+            await navigator.GoToModuleAsync(ShellArea.Tasks);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var tasksAreaView = GetPrivateField<TasksAreaView>(window, "_tasksAreaView");
+            Assert.Same(tasksAreaView, window.GetLogicalDescendants().OfType<TasksAreaView>().Single());
+
+            // Leave to Home.
+            await navigator.GoHomeAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            // Return to Tasks — the same TasksAreaView instance reattaches;
+            // this is the exact reattach WP 19.7C fixes.
+            await navigator.GoToModuleAsync(ShellArea.Tasks);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            // Create a task through New task.
+            var newTaskButton = tasksAreaView.GetLogicalDescendants().OfType<Button>()
+                .Single(b => (AutomationProperties.GetName(b) ?? string.Empty) == "New task…");
+            newTaskButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
+            await RenderUntilAsync(window, () => inputDialog.IsVisible);
+            var titleBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
+            titleBox.Text = "Reattach Journey Task";
+            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !inputDialog.IsVisible);
+
+            // The row appears in the same TasksAreaView instance — without
+            // this test re-entering the area a second time: no further
+            // GoToModuleAsync/RenderCurrentModuleAsync call follows, only
+            // pumping the already-attached view's own state.
+            await RenderUntilAsync(window, () =>
+                tasksAreaView.GetLogicalDescendants().OfType<TextBlock>()
+                    .Any(t => (t.Text ?? string.Empty).Contains("Reattach Journey Task", StringComparison.Ordinal)));
+            Assert.Contains(
+                tasksAreaView.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Reattach Journey Task", StringComparison.Ordinal));
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    // ================================================================
     // Projects
     // ================================================================
 
