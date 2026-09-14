@@ -8,10 +8,12 @@ using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Files;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Viewing;
 using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Desktop.Editors;
+using Tempest.Desktop.Viewing;
 using Tempest.Desktop.Views;
 
 namespace Tempest.Desktop.Tests;
@@ -201,6 +203,62 @@ public sealed class AttachmentsSectionTests
             var reread = await domainContext.Repository.FindAsync(target.Id);
             var attachments = await ((IHasAttachments)reread!).GetAttachmentsAsync();
             Assert.Single(attachments, a => a.FileName == Path.GetFileName(file));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Scope §4 / Kill switch: "confirm a Calculation's attachment opens" —
+    /// the exact real-UI path
+    /// `TheOpenButtonOnAnAttachmentRow_ExistsInARealEditor_AndOpensTheViewer`
+    /// (`DocumentViewerAcceptanceTests`) already proves for a Document,
+    /// driven here against a Calculation instead: attach through the real
+    /// command (bytes included, no picker needed for this one), open the
+    /// real editor, click the row's own Open button, and confirm the same
+    /// <see cref="Tempest.Desktop.Viewing.AttachmentViewerLauncher"/> a
+    /// Calculation attachment opens through — unchanged by this Work
+    /// Package, exactly as the seam map predicted.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CalculationAttachment_OpensThroughTheRealViewer_JustLikeADocumentsDoes()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var domainContext = DomainOf(host);
+            var commandDispatcher = DispatcherOf(host);
+
+            var calculation = await CreateObjectAsync(commandDispatcher, domainContext, CalculationObjectFactoryRegistry.CalculationKind, "WP 19.4B viewer calculation");
+            var content = DocumentPageSourceTests.MultiPagePdf();
+            var attached = await commandDispatcher.DispatchAsync(
+                new AttachDocumentCommand(calculation.Id, CalculationObjectFactoryRegistry.CalculationKind, "calc-attachment.pdf", "application/pdf", content),
+                CancellationToken.None);
+            Assert.True(attached.Succeeded, attached.Message);
+            var attachmentId = (await ((IHasAttachments)calculation).GetAttachmentsAsync()).Single(a => a.FileName == "calc-attachment.pdf").Id;
+
+            var window = new MainWindow(host);
+            await window.NavigateToObjectAsync(calculation.Id, CalculationObjectFactoryRegistry.CalculationKind);
+
+            var editor = window.GetLogicalDescendants().OfType<ObjectEditorView>()
+                .Single(e => e.GetLogicalDescendants().OfType<TextBlock>()
+                    .Any(t => t.Text?.Contains("calc-attachment.pdf", StringComparison.Ordinal) == true));
+
+            var open = editor.GetLogicalDescendants().OfType<Button>().Single(b => b.Content as string == "Open");
+            open.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+            for (var attempt = 0; attempt < 200 && window.AttachmentViewers.OpenAttachmentIds.Count == 0; attempt++)
+                await Task.Delay(10);
+
+            Assert.Equal([attachmentId], window.AttachmentViewers.OpenAttachmentIds);
+
+            var viewer = window.GetLogicalDescendants().OfType<DocumentViewerView>().Single();
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Equal("calc-attachment.pdf", viewer.Session!.FileName);
         }
         finally
         {
