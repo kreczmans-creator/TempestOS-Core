@@ -178,7 +178,7 @@ internal sealed class CalculationsCockpitReadModel
                 new("Approved", CountStatus(LifecycleState.Approved).ToString(), IsPlaceholder: false),
                 new("Failed", FailedCalculationsCount.ToString(), IsPlaceholder: false),
                 new("Out-of-date", outOfDate.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", CockpitFormatting.FormatCoverage(executed, total), IsPlaceholder: false, CockpitFormatting.PercentOf(executed, total)),
+                new("Verification Coverage", CockpitFormatting.FormatCoverage(executed, total, "calculations"), IsPlaceholder: false, CockpitFormatting.PercentOf(executed, total)),
                 new("Calculation Health", Status.ToString(), IsPlaceholder: false),
             ];
         }

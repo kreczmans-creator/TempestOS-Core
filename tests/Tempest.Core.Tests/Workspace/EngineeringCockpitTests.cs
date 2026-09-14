@@ -611,6 +611,66 @@ public class EngineeringCockpitTests
         await manager.ShutdownAsync();
     }
 
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — <c>CockpitFormatting.FormatCoverage</c>'s
+    /// zero-denominator text names the noun each caller actually owns.
+    /// Requirements is the discipline the pre-fix fixed string already
+    /// matched; this pins it explicitly rather than only by omission.
+    /// </summary>
+    [Fact]
+    public async Task RequirementsKpiCards_NoLiveRequirement_CoverageCardsNameRequirementsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no requirements yet)", cards["Verification Coverage"]);
+        Assert.Equal("— (no requirements yet)", cards["Allocation Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — before the fix, <c>CockpitFormatting.FormatCoverage</c>
+    /// took no noun and this card showed the fixed string <c>"— (no
+    /// requirements yet)"</c>, even though this is the Calculations
+    /// discipline's own card.
+    /// </summary>
+    [Fact]
+    public async Task CalculationsKpiCards_NoLiveCalculation_VerificationCoverageNamesCalculationsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.CalculationsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no calculations yet)", cards["Verification Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — same wrong-discipline defect as
+    /// <see cref="CalculationsKpiCards_NoLiveCalculation_VerificationCoverageNamesCalculationsInTheEmptyState"/>,
+    /// for the Verification discipline's own card.
+    /// </summary>
+    [Fact]
+    public async Task VerificationKpiCards_NoLiveVerification_VerificationCoverageNamesVerificationResultsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.VerificationKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no verification results yet)", cards["Verification Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
     [Fact]
     public async Task RequirementsKpiCards_CountsByStatus()
     {

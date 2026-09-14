@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (30 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (29 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -46,7 +46,6 @@ and nothing on disk.
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
-| `TD-33` | `EngineeringCockpit.FormatCoverage` returns a hardcoded, wrong-discipline empty-state string | `WP 19.1B` (claimed, not closed — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
@@ -169,6 +168,24 @@ under one transaction with an audit row. Proven end-to-end, over a real
 SQLite root, through a restart, by
 `tests/Tempest.Core.Tests/Projects/ProjectCommercialJourneyTests.cs:32`
 (`CommercialCore_TimeAndDeliverableCompletion_SurviveARestart_WithAuditRows`).
+
+**Closed by `WP 19.10E` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-33`. `CockpitFormatting.FormatCoverage`
+(`src/Tempest.Workspace/Workspace/CockpitFormatting.cs`) now takes an
+`emptyStateNoun` parameter that each of its three callers supplies —
+`CalculationsCockpitReadModel` passes `"calculations"`,
+`RequirementsCockpitReadModel` passes `"requirements"` (unchanged
+text, since Requirements is the discipline the old fixed string
+already matched), `VerificationCockpitReadModel` passes `"verification
+results"` — so a zero-denominator "Verification Coverage" card now
+reads `"— (no calculations yet)"`, `"— (no requirements yet)"` or
+`"— (no verification results yet)"` for its own discipline, never
+another's noun. Proven by
+`tests/Tempest.Core.Tests/Workspace/EngineeringCockpitTests.cs`, one
+fact per call site
+(`RequirementsKpiCards_NoLiveRequirement_CoverageCardsNameRequirementsInTheEmptyState`,
+`CalculationsKpiCards_NoLiveCalculation_VerificationCoverageNamesCalculationsInTheEmptyState`,
+`VerificationKpiCards_NoLiveVerification_VerificationCoverageNamesVerificationResultsInTheEmptyState`).
 
 ## Owned by Programme
 
