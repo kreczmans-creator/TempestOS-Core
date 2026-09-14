@@ -2,6 +2,7 @@ using Tempest.Workspace;
 using Tempest.Workspace.Requirements;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
+using Tempest.Core.Events;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
@@ -383,12 +384,33 @@ public class RequirementsWorkspaceIntegrationTests
         var first = await requirementsService.CreateAsync("REQ-BULK-001", "Bulk one.");
         var second = await requirementsService.CreateAsync("REQ-BULK-002", "Bulk two.");
 
+        // `TD-28`: BulkSetRequirementStatusCommandHandler dispatches through
+        // the ordinary single-item SetStatusAsync per item, and that alone
+        // now reaches the change bus — a docked-style subscriber resolved
+        // here the same way any docked view would sees one StatusChanged
+        // WorkspaceChange per item, with no bulk-specific publish code
+        // anywhere.
+        var workspaceChanges = (IWorkspaceChanges)host.Services!.GetService(typeof(IWorkspaceChanges));
+        var received = new List<WorkspaceChange>();
+        workspaceChanges.Changed += received.Add;
+
         var result = await commandDispatcher.DispatchAsync(
             new BulkSetRequirementStatusCommand([first.Id, second.Id], RequirementStatus.Reviewed), default);
 
         Assert.True(result.Succeeded);
         Assert.Equal(RequirementStatus.Reviewed, (await requirementsService.FindAsync(first.Id))!.Status);
         Assert.Equal(RequirementStatus.Reviewed, (await requirementsService.FindAsync(second.Id))!.Status);
+
+        Assert.Equal(2, received.Count);
+        var touchedIds = received.SelectMany(c => c.Entries).Select(e => e.ObjectId).ToList();
+        Assert.Contains(first.Id, touchedIds);
+        Assert.Contains(second.Id, touchedIds);
+        Assert.All(received, change =>
+        {
+            var entry = Assert.Single(change.Entries);
+            Assert.Equal(RequirementsService.RequirementDocumentKind, entry.Kind);
+            Assert.Equal(WorkspaceChangeType.StatusChanged, entry.ChangeType);
+        });
 
         await manager.ShutdownAsync();
     }
