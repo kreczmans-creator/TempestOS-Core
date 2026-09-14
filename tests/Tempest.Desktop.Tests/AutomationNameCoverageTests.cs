@@ -3,7 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Tempest.Core.Evidence;
+using Tempest.Desktop.Views;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Shell;
 
@@ -102,6 +104,33 @@ public sealed class AutomationNameCoverageTests
                 await navigator.GoToModuleAsync(module.Area);
                 await window.RenderCurrentModuleAsync();
                 Scan($"rail · {module.Title}");
+
+                // `WP 19.7A`: Projects, Engineering and Business are each a
+                // tree now — every real node (never the pure group header
+                // "Modules", which carries no content of its own) gets
+                // scanned too, the same coverage the rail entry itself
+                // already gets.
+                foreach (var node in TreeNodesFor(module.Area))
+                {
+                    if (node == "Mechanical")
+                    {
+                        window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode(node);
+                        await window.RenderCurrentModuleAsync();
+                        await navigator.GoToModuleAsync(module.Area);
+                        await window.RenderCurrentModuleAsync();
+                        continue;
+                    }
+
+                    SelectAreaNode(window, module.Area, node);
+                    var deadline = DateTime.UtcNow.AddSeconds(5);
+                    while (DateTime.UtcNow < deadline)
+                    {
+                        await Task.Delay(10);
+                        Dispatcher.UIThread.RunJobs();
+                    }
+
+                    Scan($"rail · {module.Title} · {node}");
+                }
             }
 
             await navigator.OpenProjectAsync(project.Id);
@@ -122,6 +151,38 @@ public sealed class AutomationNameCoverageTests
         {
             await host.ShutdownAsync();
             await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// The real, non-placeholder nodes <see cref="ShellArea"/>'s own tree
+    /// area (Projects, Engineering, Business — `WP 19.7A`) offers. The pure
+    /// group header "Modules" carries no content of its own and is not
+    /// walked; "Mechanical" is walked (it navigates on) but not scanned
+    /// here — the surface it lands on is the identical shared one
+    /// <see cref="ShellArea.Home"/>'s own scan already covers.
+    /// </summary>
+    private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
+    {
+        ShellArea.Projects => ["Dashboard + Reports", "Open", "Closed", "Archive"],
+        ShellArea.EngineeringDepartment => ["Dashboard + Reports", "Tasks", "Mechanical", "Engineering Calculations", "Reference data"],
+        ShellArea.Business => ["Dashboard & Reports", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
+        _ => [],
+    };
+
+    private static void SelectAreaNode(MainWindow window, ShellArea area, string node)
+    {
+        switch (area)
+        {
+            case ShellArea.Projects:
+                window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode(node);
+                break;
+            case ShellArea.EngineeringDepartment:
+                window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode(node);
+                break;
+            case ShellArea.Business:
+                window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode(node);
+                break;
         }
     }
 
