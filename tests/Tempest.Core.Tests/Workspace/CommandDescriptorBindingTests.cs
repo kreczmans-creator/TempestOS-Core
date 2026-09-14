@@ -71,16 +71,16 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         ["calculations.execute", "calculations.recalculate", "documents.attach"];
 
     /// <summary>
-    /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>
-    /// and <c>task.complete</c> (`WP 19.5C` — no parameters, no
-    /// confirmation, a low-stakes status move exactly like the others
-    /// here) — every command that can run unattended in a macro, and no
-    /// other (ADR-0098).
+    /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>,
+    /// <c>task.complete</c> (`WP 19.5C`) and <c>calculations.complete</c>
+    /// (`WP 20.1B`, `TD-181` — no parameters, no confirmation, a low-stakes
+    /// status move exactly like the others here) — every command that can
+    /// run unattended in a macro, and no other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
         "calculations.lock", "calculations.unlock", "calculations.request-review",
-        "calculations.approve", "calculations.archive",
+        "calculations.approve", "calculations.archive", "calculations.complete",
         "documents.request-review", "documents.approve", "documents.release",
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
@@ -233,9 +233,13 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // command (add — a deliverable added directly, with no quotation,
         // `ADR-0152` §7). So 104 becomes 107 and 86 becomes 89; 18 is
         // unchanged.
-        Assert.Equal(107, ProductionDescriptors.Count);
+        //
+        // `WP 20.1B` (`TD-181`) adds one more, not unavailable
+        // (calculations.complete). So 107 becomes 108 and 89 becomes 90;
+        // 18 is unchanged.
+        Assert.Equal(108, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(89, bindable.Count);
+        Assert.Equal(90, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -703,6 +707,15 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // IHasBomLine, and member consistency to the two that are Baselines.
         Assert.Equal(BomLineKinds, Binding("mechanical.set-bom-line").AppliesToKinds);
         Assert.Equal(BaselineKinds, Binding("mechanical.validate-configuration").AppliesToKinds);
+    }
+
+    [Fact]
+    public void CalculationCompleteBinding_AppliesOnlyToTheRealCalculationKind_NeverTheSet()
+    {
+        // `WP 20.1B` (`TD-181`): a Calculation Set is a container, never
+        // itself a task — narrower than the two-Kind `CalculationKinds`
+        // every other Calculation command above applies to.
+        Assert.Equal(["Calculation"], Binding("calculations.complete").AppliesToKinds);
     }
 
     [Theory]

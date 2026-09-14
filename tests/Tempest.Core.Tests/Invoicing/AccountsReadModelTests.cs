@@ -1,5 +1,4 @@
 using Tempest.Core.BusinessGovernance;
-using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Tests.Plugins;
@@ -33,7 +32,7 @@ public sealed class AccountsReadModelTests
         {
             var domain = InvoicingTestHost.Domain(host);
             var store = new FileAccountsReadingStore(Path.Combine(temp.Path, "accounts"));
-            var readModel = new AccountsReadModel(store, domain, EmptyConfiguration(), refreshService: null, timeProvider: new FixedTimeProvider(AsOf));
+            var readModel = new AccountsReadModel(store, domain, refreshService: null, timeProvider: new FixedTimeProvider(AsOf));
 
             var snapshot = await readModel.ReadAsync();
 
@@ -73,13 +72,16 @@ public sealed class AccountsReadModelTests
                 Connector: "Fake");
             await store.SaveAsync(reading);
 
-            // Two sent requests: issued 40 days before `AsOf` (due 30 days
-            // after issue = 10 days before `AsOf`, so overdue), and issued
-            // 20 days before `AsOf` (due 10 days after `AsOf`, so Due30).
-            var overdue = await CreateSentRequestAsync(domain, "ORG-A", new Money(1000m, CurrencyCode.Gbp), AsOf.AddDays(-40));
-            var due30 = await CreateSentRequestAsync(domain, "ORG-B", new Money(500m, CurrencyCode.Gbp), AsOf.AddDays(-20));
+            // Two sent requests, each `Up front` terms (0 days), so its own
+            // `DueOn` is the date it was sent (`TD-180`, `WP 20.1B`): one
+            // sent 10 days before `AsOf` (due 10 days before `AsOf`, so
+            // overdue), issued (a separate, later-read fact) 40 days
+            // before `AsOf`; one sent 10 days after `AsOf` (so Due30),
+            // issued 20 days before `AsOf`.
+            var overdue = await CreateSentRequestAsync(domain, "ORG-A", new Money(1000m, CurrencyCode.Gbp), AsOf.AddDays(-40), AsOf.AddDays(-10));
+            var due30 = await CreateSentRequestAsync(domain, "ORG-B", new Money(500m, CurrencyCode.Gbp), AsOf.AddDays(-20), AsOf.AddDays(10));
 
-            var readModel = new AccountsReadModel(store, domain, EmptyConfiguration(), refreshService: null, timeProvider: new FixedTimeProvider(AsOf));
+            var readModel = new AccountsReadModel(store, domain, refreshService: null, timeProvider: new FixedTimeProvider(AsOf));
 
             var snapshot = await readModel.ReadAsync();
 
@@ -142,7 +144,18 @@ public sealed class AccountsReadModelTests
         }
     }
 
-    private static async Task<InvoiceRequest> CreateSentRequestAsync(EngineeringDomainContext domain, string organisationId, Money total, DateOnly issuedDate)
+    /// <summary>
+    /// Builds and sends a request — `Up front` terms throughout (the
+    /// constructor's own default), so <paramref name="dueDate"/> is passed
+    /// straight through as <c>MarkSentAsync</c>'s own <c>sentAtUtc</c>
+    /// (0 days out, `InvoiceRequest.DueOn`'s own remarks). <paramref name="issuedDate"/>
+    /// is a separate, later-read fact — the connector's own report, read
+    /// back through <c>RecordStatusReadingAsync</c> exactly as before —
+    /// and no longer drives the due-date arithmetic at all (`TD-180`,
+    /// `WP 20.1B`).
+    /// </summary>
+    private static async Task<InvoiceRequest> CreateSentRequestAsync(
+        EngineeringDomainContext domain, string organisationId, Money total, DateOnly issuedDate, DateOnly dueDate)
     {
         var lines = new List<InvoiceRequestLine> { new("TestSource", Guid.NewGuid(), "Test line", 1m, total, total) };
 
@@ -154,14 +167,12 @@ public sealed class AccountsReadModelTests
             .CreateAsync("Accounts read model test fixture.")
             .ConfigureAwait(false);
 
-        await created.MarkSentAsync($"ext-{organisationId}", $"INV-{organisationId}", DateTimeOffset.UtcNow).ConfigureAwait(false);
+        var sentAtUtc = new DateTimeOffset(dueDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        await created.MarkSentAsync($"ext-{organisationId}", $"INV-{organisationId}", sentAtUtc).ConfigureAwait(false);
         await created.RecordStatusReadingAsync(InvoiceRequestStatus.Sent, "AUTHORISED", null, issuedDate, null).ConfigureAwait(false);
 
         return created;
     }
-
-    private static IConfigurationProvider EmptyConfiguration() =>
-        new ConfigurationBuilder().AddSource(new MemoryConfigurationSource([])).Build();
 
     private sealed class FixedTimeProvider(DateOnly date) : TimeProvider
     {

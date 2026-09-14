@@ -126,12 +126,24 @@ public sealed class TasksReadModelService : ITasksReadModel
                             break;
 
                         case InvoiceRequest.CanonicalKind:
+                            var sentAtUtc = TypeDateTimeOffset(typeState, "SentAtUtc");
+
+                            // `TD-180`: a pre-`WP 20.1B` request carries no
+                            // stored `DueOn` at all — backfilled here
+                            // exactly as `InvoiceRequest.ReadDueOn` itself
+                            // does (due the day it was sent), so the two
+                            // independent readers of this same durable
+                            // state — the domain object and this raw
+                            // read model — agree.
+                            var dueOn = TypeJson<DateOnly?>(typeState, "DueOn")
+                                ?? (sentAtUtc is { } sent ? DateOnly.FromDateTime(sent.UtcDateTime) : null);
+
                             invoiceRequests.Add(new InvoiceChaseFact(
                                 objectId, state.DisplayName ?? string.Empty, state.ParentId,
                                 Enum.TryParse<InvoiceRequestStatus>(TypeString(typeState, "Status"), out var invStatus) ? invStatus : InvoiceRequestStatus.Draft,
-                                TypeDateTimeOffset(typeState, "SentAtUtc"),
+                                sentAtUtc,
                                 TypeJson<DateOnly?>(typeState, "PaidDate"),
-                                TypeJson<DateOnly?>(typeState, "DueOn")));
+                                dueOn));
                             break;
 
                         // `TD-181`: every Calculation, wherever it sits —

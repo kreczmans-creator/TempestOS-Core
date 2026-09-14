@@ -1,5 +1,4 @@
 using Tempest.Core.BusinessGovernance;
-using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Core.Invoicing;
@@ -8,7 +7,7 @@ namespace Tempest.Core.Invoicing;
 /// <param name="RequestId">The <see cref="InvoiceRequest.Id"/> this figure comes from.</param>
 /// <param name="ClientOrganisationId">The client this invoice was raised against.</param>
 /// <param name="IssuedDate">When the invoice was issued, as the connector reported it (<see cref="InvoiceRequest.IssuedDate"/>).</param>
-/// <param name="DueDate"><paramref name="IssuedDate"/> plus <see cref="AccountsReadModel.PaymentTermsDaysConfigurationKey"/>.</param>
+/// <param name="DueDate">The request's own <see cref="InvoiceRequest.DueOn"/> (`TD-180`, `WP 20.1B`) — falls back to <paramref name="IssuedDate"/> itself only for a request whose <see cref="InvoiceRequest.SentAtUtc"/> was never recorded (a pre-existing, latent gap on the "Sent, response lost" path, outside this Work Package's own scope), so this figure is never left unset for a request this list already includes.</param>
 /// <param name="Amount">The request's own total.</param>
 public sealed record ReceivableInvoice(Guid RequestId, string ClientOrganisationId, DateOnly IssuedDate, DateOnly DueDate, Money Amount);
 
@@ -276,31 +275,30 @@ public interface IAccountsReadModel
 /// <summary>The only <see cref="IAccountsReadModel"/> implementation (`WP 19.8B`, scope §3).</summary>
 public sealed class AccountsReadModel : IAccountsReadModel
 {
-    /// <summary>The <see cref="IConfigurationProvider"/> key naming how many days after issue a Tempest-raised invoice falls due.</summary>
-    public const string PaymentTermsDaysConfigurationKey = "Accounts:PaymentTermsDays";
-
-    /// <summary>The payment terms used when <see cref="PaymentTermsDaysConfigurationKey"/> is not configured, or is configured to something other than a positive integer.</summary>
-    public const int DefaultPaymentTermsDays = 30;
-
     private readonly IAccountsReadingStore _store;
     private readonly EngineeringDomainContext _context;
-    private readonly IConfigurationProvider _configuration;
     private readonly AccountsRefreshService? _refreshService;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="AccountsReadModel"/> class.</summary>
     /// <param name="refreshService">Where the reason and time of the most recent failed refresh come from, for the <see cref="AccountsSnapshot.Unavailable"/> case — the same singleton <see cref="AccountsRefreshService"/> the hosted-service manager starts and stops. <see langword="null"/> is honoured (a test exercising this read model alone need not stand one up); the "no reading yet" reason is used regardless.</param>
+    /// <remarks>
+    /// No longer takes an <see cref="Tempest.Core.Configuration.IConfigurationProvider"/>
+    /// (`WP 20.1B`, `TD-180`): due date used to be one configured
+    /// days-after-issue guess every client shared (<c>Accounts:PaymentTermsDays</c>,
+    /// default 30); it now reads each request's own frozen
+    /// <see cref="InvoiceRequest.DueOn"/>, so there is nothing left here to
+    /// configure.
+    /// </remarks>
     public AccountsReadModel(
-        IAccountsReadingStore store, EngineeringDomainContext context, IConfigurationProvider configuration,
+        IAccountsReadingStore store, EngineeringDomainContext context,
         AccountsRefreshService? refreshService = null, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(configuration);
 
         _store = store;
         _context = context;
-        _configuration = configuration;
         _refreshService = refreshService;
         _time = timeProvider ?? TimeProvider.System;
     }
@@ -319,19 +317,16 @@ public sealed class AccountsReadModel : IAccountsReadModel
             return AccountsSnapshot.Unavailable(reason, since, asOf);
         }
 
-        var termsDays = ResolvePaymentTermsDays();
         var all = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
 
+        // `TD-180`, `WP 20.1B`: due date is the request's own `DueOn` — its
+        // client's own payment terms, frozen at raise — not a single
+        // configured days-after-issue guess every client shared alike.
         var receivable = all.OfType<InvoiceRequest>()
             .Where(r => r.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted && r.IssuedDate is not null)
-            .Select(r => new ReceivableInvoice(r.Id, r.ClientOrganisationId, r.IssuedDate!.Value, r.IssuedDate!.Value.AddDays(termsDays), r.Total))
+            .Select(r => new ReceivableInvoice(r.Id, r.ClientOrganisationId, r.IssuedDate!.Value, r.DueOn ?? r.IssuedDate!.Value, r.Total))
             .ToList();
 
         return AccountsSnapshot.From(reading, receivable, asOf);
     }
-
-    private int ResolvePaymentTermsDays() =>
-        _configuration.TryGetValue(PaymentTermsDaysConfigurationKey, out var raw) && int.TryParse(raw, out var days) && days > 0
-            ? days
-            : DefaultPaymentTermsDays;
 }

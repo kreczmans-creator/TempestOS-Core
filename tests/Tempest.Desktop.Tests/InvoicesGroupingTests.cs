@@ -78,13 +78,17 @@ public sealed class InvoicesGroupingTests
 
             var sending = await CreateRequestAsync(domainContext, project.Id, InvoiceRequestStatus.Sending, OneLine(), connector: "Fake");
 
+            var today = DateOnly.FromDateTime(now.UtcDateTime);
+
             var sentRecent = await CreateRequestAsync(
                 domainContext, project.Id, InvoiceRequestStatus.Sent, OneLine(),
-                externalId: "EXT-SENT", externalInvoiceNumber: "INV-SENT", sentAtUtc: now.AddDays(-2), connector: "Fake");
+                externalId: "EXT-SENT", externalInvoiceNumber: "INV-SENT", sentAtUtc: now.AddDays(-2), connector: "Fake",
+                dueOn: today.AddDays(28));
 
             var acceptedRecent = await CreateRequestAsync(
                 domainContext, project.Id, InvoiceRequestStatus.Accepted, OneLine(),
-                externalId: "EXT-ACC", externalInvoiceNumber: "INV-ACC", sentAtUtc: now.AddDays(-3), externalStatus: "AUTHORISED", connector: "Fake");
+                externalId: "EXT-ACC", externalInvoiceNumber: "INV-ACC", sentAtUtc: now.AddDays(-3), externalStatus: "AUTHORISED", connector: "Fake",
+                dueOn: today.AddDays(27));
 
             var rejected = await CreateRequestAsync(
                 domainContext, project.Id, InvoiceRequestStatus.Rejected, OneLine(), lastError: "Not registered for this client.");
@@ -98,10 +102,11 @@ public sealed class InvoicesGroupingTests
             var reauthorise = await CreateRequestAsync(
                 domainContext, project.Id, InvoiceRequestStatus.Reauthorise, OneLine(), lastError: "The stored token has expired.", connector: "Fake");
 
-            // ---- the extra scenario: a Sent request older than thirty days, unpaid ----
+            // ---- the extra scenario: a Sent request past its own due date, unpaid (`TD-180`) ----
             var sentOld = await CreateRequestAsync(
                 domainContext, project.Id, InvoiceRequestStatus.Sent, OneLine(),
-                externalId: "EXT-OLD", externalInvoiceNumber: "INV-OLD", sentAtUtc: now.AddDays(-45), connector: "Fake");
+                externalId: "EXT-OLD", externalInvoiceNumber: "INV-OLD", sentAtUtc: now.AddDays(-45), connector: "Fake",
+                dueOn: today.AddDays(-15));
 
             var commandRegistry = Resolve<ICommandRegistry>(host);
             var view = new InvoicingView(domainContext, commandRegistry, () => project.Id, (_, _) => { });
@@ -123,14 +128,14 @@ public sealed class InvoicesGroupingTests
             AssertOnlyInGroup(groups, "Available to invoice", freeCompletion.Id);
             Assert.False(ContainsRow(view, carriedCompletion.Id), "The carried completion must not appear anywhere in this view.");
 
-            // ---- captions state the counts and, for Outstanding, the thirty-day heuristic ----
+            // ---- captions state the counts and, for Outstanding, the own-due-date rule (`TD-180`) ----
             AssertHeaderPresent(view, "New (1)");
             AssertHeaderPresent(view, "Available to invoice (1)");
             AssertHeaderPresent(view, "Sent (3)");
             Assert.Contains(
                 view.GetLogicalDescendants().OfType<TextBlock>(),
                 t => t.Text != null && t.Text.StartsWith("Outstanding / Overdue (3)", StringComparison.Ordinal)
-                     && t.Text.Contains("30 days", StringComparison.Ordinal));
+                     && t.Text.Contains("its own due date", StringComparison.Ordinal));
 
             // ---- Closed is collapsed by default ----
             var closedExpander = Assert.IsType<Expander>(groups["Closed"]);
@@ -197,7 +202,7 @@ public sealed class InvoicesGroupingTests
         EngineeringDomainContext domainContext, Guid projectId, InvoiceRequestStatus status, IReadOnlyList<InvoiceRequestLine> lines,
         string? externalId = null, string? externalInvoiceNumber = null, string? externalStatus = null,
         DateOnly? issuedDate = null, DateOnly? paidDate = null, string? lastError = null,
-        string? connector = null, DateTimeOffset? sentAtUtc = null)
+        string? connector = null, DateTimeOffset? sentAtUtc = null, DateOnly? dueOn = null)
     {
         var total = Money.Sum(lines.Select(l => l.Amount), CurrencyCode.Gbp);
 
@@ -206,7 +211,8 @@ public sealed class InvoicesGroupingTests
             (doc, rev) => new InvoiceRequest(
                 doc, rev, domainContext, identifier: null, $"Fixture request — {status}", EngineeringObjectMetadata.Empty,
                 ClientOrganisationId, purchaseOrderReference: null, CurrencyCode.Gbp, lines, total, status,
-                externalId, externalInvoiceNumber, externalStatus, issuedDate, paidDate, lastError, connector, sentAtUtc))
+                externalId, externalInvoiceNumber, externalStatus, issuedDate, paidDate, lastError, connector, sentAtUtc,
+                dueOn: dueOn))
             .CreateAsync($"Fixture request — {status}.", CancellationToken.None).ConfigureAwait(true);
 
         if (created is IHasParent hasParent)
