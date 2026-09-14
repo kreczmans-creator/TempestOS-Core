@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (24 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (23 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -49,7 +49,6 @@ and nothing on disk.
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
-| `TD-63` | `TD-40`'s dirty-tab-close fix is not pinned on its production path | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
@@ -282,6 +281,27 @@ or above the WCAG 1.4.11 3:1 floor, so no change was needed in
 `ButtonTreatments_FocusRing_DiffersFromAndContrastsWithEveryOpaqueFillItBorders`
 theory, all eight cases green with `Flat`'s own two states now actually
 measured rather than reported "not a real opaque adjacency, skipped."
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-63`. `WorkspaceViewCoordinator.CloseDocumentAsync`'s
+own dirty-tab confirmation (`TD-40`, `WP 10.5A`) — wired from the tab's
+close glyph (`MainWindowComposer.Coordinators.cs`) and `Ctrl+W`
+(`MainWindowComposer.Wire.cs`) — had no test through the real, composed
+application: every existing coverage called `CloseDocumentAsync`
+directly. Both entry points are now driven through a real `MainWindow`
+in `tests/Tempest.Desktop.Tests/DirtyTabCloseConfirmationJourneyTests.cs`,
+dirtying a real `Part` editor tab the same way a person does — editing
+its Name field, which raises the real `ObjectEditorView.DirtyChanged`
+event — rather than calling the buffered dirty-state seam by hand. No
+production change: `ClosingADirtyTab_ByTheCloseGlyph_ShowsTheConfirmationDialog_AndCancelKeepsTheTabOpen`
+finds the real close glyph by its own automation name and clicks it;
+`ClosingADirtyTab_ByCtrlW_ShowsTheConfirmationDialog_AndCancelKeepsTheTabOpen`
+raises a real `Ctrl+W` `KeyDown` on the window, the same pattern this
+suite's own `MainWindowCompositionTests.CtrlZCtrlY_...` already
+established for `Ctrl+Z`/`Ctrl+Y`. Both assert the real
+`ConfirmationDialog` becomes visible and that clicking its real Cancel
+button dismisses it, leaves the tab count unchanged, and leaves the
+edit intact.
 
 ## Owned by Programme
 
