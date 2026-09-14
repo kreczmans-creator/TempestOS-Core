@@ -40,6 +40,7 @@ public sealed class ProjectsAreaView : UserControl
 
     private readonly TreeView _tree = new() { MinWidth = 260, MaxWidth = 260 };
     private readonly ContentControl _detail = new();
+    private Border? _treeHost;
     private readonly Control _dashboardPlaceholder;
 
     private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
@@ -103,16 +104,16 @@ public sealed class ProjectsAreaView : UserControl
         _tree.SelectionChanged += (_, _) => _ = OnSelectionChangedAsync();
 
         var split = new DockPanel();
-        var treeHost = new Border
+        _treeHost = new Border
         {
             Child = _tree,
             Width = 260,
             BorderThickness = new Thickness(0, 0, 1, 0),
             Padding = new Thickness(0, DesignTokens.SpaceMd, 0, 0),
         };
-        ThemeReactiveBrush.Bind(treeHost, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
-        DockPanel.SetDock(treeHost, Dock.Left);
-        split.Children.Add(treeHost);
+        ThemeReactiveBrush.Bind(_treeHost, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        DockPanel.SetDock(_treeHost, Dock.Left);
+        split.Children.Add(_treeHost);
 
         _detail.Margin = DesignTokens.PagePadding;
         split.Children.Add(_detail);
@@ -133,6 +134,20 @@ public sealed class ProjectsAreaView : UserControl
         var item = new[] { _dashboardNode, _openNode, _closedNode, _archiveNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
+    }
+
+    /// <summary>
+    /// Narrows the tree below the shell's own compact threshold — the same
+    /// one threshold <c>GlobalNavigationRail</c>/<c>RibbonView</c>/
+    /// <c>LibrariesView</c>/<c>EngineeringAreaView</c> already fold on.
+    /// </summary>
+    public void SetCompact(bool compact)
+    {
+        var width = compact ? 160 : 260;
+        _tree.MinWidth = width;
+        _tree.MaxWidth = width;
+        if (_treeHost is not null)
+            _treeHost.Width = width;
     }
 
     /// <summary>Re-reads every project and rebuilds each group's own children.</summary>

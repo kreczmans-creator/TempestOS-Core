@@ -171,6 +171,9 @@ internal sealed partial class MainWindowComposer
             views.Ribbon.SetCompact(compact);
             views.LibrariesView.SetCompact(compact);
             views.ReferenceDataLibrariesView.SetCompact(compact);
+            views.ProjectsAreaView.SetCompact(compact);
+            views.EngineeringAreaView.SetCompact(compact);
+            views.BusinessAreaView.SetCompact(compact);
         };
 
         var shortcutActions = new KeyboardShortcutActions(

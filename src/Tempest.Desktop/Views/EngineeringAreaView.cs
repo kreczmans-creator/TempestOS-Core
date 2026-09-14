@@ -48,8 +48,12 @@ public sealed class EngineeringAreaView : UserControl
 
     private readonly TreeView _tree = new() { MinWidth = 260, MaxWidth = 260 };
     private readonly ContentControl _detail = new();
+    private Border? _treeHost;
     private readonly Control _dashboardPlaceholder;
+    private readonly StackPanel _dashboardStack = new() { Spacing = DesignTokens.SpaceLg };
+    private readonly ScrollViewer _dashboardScroll;
     private readonly StackPanel _tasksPanel = new() { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding };
+    private readonly ScrollViewer _tasksScroll;
 
     private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
     private readonly TreeViewItem _tasksNode = new() { Header = "Tasks" };
@@ -110,9 +114,10 @@ public sealed class EngineeringAreaView : UserControl
             "Engineering dashboard — not built yet",
             "WP 19.7B fills this in: Open tasks and Engineering reviews tiles. The Reports panel below is real today.");
 
-        var dashboardStack = new StackPanel { Spacing = DesignTokens.SpaceLg };
-        dashboardStack.Children.Add(_dashboardPlaceholder);
-        dashboardStack.Children.Add(_reportsView);
+        _dashboardStack.Children.Add(_dashboardPlaceholder);
+        _dashboardStack.Children.Add(_reportsView);
+        _dashboardScroll = new ScrollViewer { Content = _dashboardStack };
+        _tasksScroll = new ScrollViewer { Content = _tasksPanel };
 
         _modulesNode.Items.Add(_mechanicalNode);
         _modulesNode.Items.Add(_calculationsNode);
@@ -133,18 +138,18 @@ public sealed class EngineeringAreaView : UserControl
         _tree.SelectionChanged += (_, _) => _ = OnSelectionChangedAsync();
 
         var split = new DockPanel();
-        var treeHost = new Border
+        _treeHost = new Border
         {
             Child = _tree,
             Width = 260,
             BorderThickness = new Thickness(0, 0, 1, 0),
             Padding = new Thickness(0, DesignTokens.SpaceMd, 0, 0),
         };
-        ThemeReactiveBrush.Bind(treeHost, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
-        DockPanel.SetDock(treeHost, Dock.Left);
-        split.Children.Add(treeHost);
+        ThemeReactiveBrush.Bind(_treeHost, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        DockPanel.SetDock(_treeHost, Dock.Left);
+        split.Children.Add(_treeHost);
 
-        _detail.Content = new ScrollViewer { Content = dashboardStack };
+        _detail.Content = _dashboardScroll;
         split.Children.Add(_detail);
 
         AutomationProperties.SetName(this, "Engineering");
@@ -165,6 +170,22 @@ public sealed class EngineeringAreaView : UserControl
         _tree.SelectedItem = item;
     }
 
+    /// <summary>
+    /// Narrows the tree below the shell's own compact threshold, giving
+    /// embedded content (Engineering Calculations, at the narrowest
+    /// supported width) the room it needs — the same one threshold
+    /// <c>GlobalNavigationRail</c>/<c>RibbonView</c>/<c>LibrariesView</c>
+    /// already fold on.
+    /// </summary>
+    public void SetCompact(bool compact)
+    {
+        var width = compact ? 160 : 260;
+        _tree.MinWidth = width;
+        _tree.MaxWidth = width;
+        if (_treeHost is not null)
+            _treeHost.Width = width;
+    }
+
     /// <summary>Re-reads whichever node is currently shown.</summary>
     public async Task RefreshAsync()
     {
@@ -177,7 +198,7 @@ public sealed class EngineeringAreaView : UserControl
             // only once that later task happens to complete.
             _dashboardNode.IsSelected = true;
             await _reportsView.RefreshAsync().ConfigureAwait(true);
-            _detail.Content = new ScrollViewer { Content = BuildDashboardStack() };
+            _detail.Content = _dashboardScroll;
             return;
         }
 
@@ -195,14 +216,14 @@ public sealed class EngineeringAreaView : UserControl
         if (ReferenceEquals(selected, _dashboardNode))
         {
             await _reportsView.RefreshAsync().ConfigureAwait(true);
-            _detail.Content = new ScrollViewer { Content = BuildDashboardStack() };
+            _detail.Content = _dashboardScroll;
             return;
         }
 
         if (ReferenceEquals(selected, _tasksNode))
         {
             await RenderTasksAsync().ConfigureAwait(true);
-            _detail.Content = new ScrollViewer { Content = _tasksPanel };
+            _detail.Content = _tasksScroll;
             return;
         }
 
@@ -236,14 +257,6 @@ public sealed class EngineeringAreaView : UserControl
             _detail.Content = _referenceData;
             return;
         }
-    }
-
-    private Control BuildDashboardStack()
-    {
-        var stack = new StackPanel { Spacing = DesignTokens.SpaceLg };
-        stack.Children.Add(_dashboardPlaceholder);
-        stack.Children.Add(_reportsView);
-        return stack;
     }
 
     private async Task RenderTasksAsync()

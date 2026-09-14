@@ -82,7 +82,13 @@ public sealed class ShellHeaderView : UserControl
     private readonly Button _notifications = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
     private readonly TextBlock _notificationsBadge = new() { FontSize = DesignTokens.FontSizeLabel, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
     private readonly ListBox _notificationsList = new() { MaxHeight = 320, MinWidth = 280 };
-    private readonly Popup _notificationsFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedRight, IsLightDismissEnabled = true };
+    // `IsVisible = false` explicitly, independent of `IsOpen`: a closed
+    // `Popup` still reports non-zero `Bounds` as a logical child of `root`
+    // (an Avalonia quirk — `IsOpen` gates the overlay window, not this
+    // control's own layout participation), which the layout walk's own
+    // sibling-overlap check would otherwise flag on every single area —
+    // that check explicitly skips an invisible sibling.
+    private readonly Popup _notificationsFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedRight, IsLightDismissEnabled = true, IsVisible = false };
     private readonly TextBlock _principal = new() { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
 
     // A Button, not a Border — `WP 19.7A`, scope item 2: "the signed-in
@@ -221,7 +227,13 @@ public sealed class ShellHeaderView : UserControl
         _notifications.Classes.Add(ChromeStyles.Flat);
         AutomationProperties.SetName(_notifications, "Notifications");
         ToolTip.SetTip(_notifications, "No notifications");
-        _notifications.Click += (_, _) => _notificationsFlyout.IsOpen = !_notificationsFlyout.IsOpen;
+        _notifications.Click += (_, _) =>
+        {
+            var open = !_notificationsFlyout.IsOpen;
+            _notificationsFlyout.IsVisible = open;
+            _notificationsFlyout.IsOpen = open;
+        };
+        _notificationsFlyout.Closed += (_, _) => _notificationsFlyout.IsVisible = false;
         actions.Children.Add(_notifications);
 
         AutomationProperties.SetName(_notificationsList, "Notifications list");
