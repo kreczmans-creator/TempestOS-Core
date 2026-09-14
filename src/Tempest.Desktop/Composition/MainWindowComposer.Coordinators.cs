@@ -6,19 +6,25 @@ using Tempest.Desktop.Editors;
 using Tempest.Desktop.Files;
 using Tempest.Desktop.Viewing;
 using Tempest.Desktop.Views;
+using Tempest.Desktop.Views.Dashboards;
 
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
 /// Every coordinator <see cref="MainWindowComposer.BuildCoordinators"/>
-/// builds, plus the two views (<see cref="CockpitView"/>,
-/// <see cref="EvidenceWorkspaceView"/>) that cannot themselves be built
-/// until <see cref="WorkspaceViewCoordinator"/> exists (`WP 19.2A`).
+/// builds, plus the views (<see cref="CockpitView"/>,
+/// <see cref="HomeDashboardView"/>, <see cref="EvidenceWorkspaceView"/>)
+/// that cannot themselves be built until <see cref="WorkspaceViewCoordinator"/>
+/// exists (`WP 19.2A`; `HomeDashboardView` `WP 19.7B`, the identical
+/// reason — its own Favourite rail action opens through
+/// <see cref="WorkspaceViewCoordinator.NavigateToObject"/> exactly as
+/// <see cref="CockpitView"/>'s own Favourite Projects card always has).
 /// </summary>
 internal sealed record ComposedCoordinators(
     UndoRedoCoordinator UndoRedo,
     WorkspaceViewCoordinator ViewCoordinator,
     CockpitView CockpitView,
+    HomeDashboardView HomeDashboardView,
     WorkspaceDockingComposer DockingComposer,
     AttachmentViewerLauncher AttachmentViewers,
     WorkspaceLayoutPresetCoordinator LayoutPresets,
@@ -128,6 +134,58 @@ internal sealed partial class MainWindowComposer
         views.DocumentArea.SetHomeTab(cockpitView);
         viewCoordinator.Attach(cockpitView);
 
+        // `WP 19.7B` (Product Owner comment item 6, sheets 1-2): the Home
+        // dashboard — the rail's own `ShellArea.Home` destination now,
+        // replacing the engineering surface's own "Home renders the
+        // identical surface" (`WP 19.2B`) shape (`MainWindow`'s own
+        // `_areaRegistry` entry). `CockpitView` above is unchanged and
+        // stays reachable exactly where it always was — the Document
+        // Area's own permanent tab within the shared engineering surface
+        // (standalone Engineering, or a project's own Structure tab) —
+        // this view is a new, separate surface, not a replacement for it.
+        // Continue/Recent/Favourite/Recently changed reuse the identical
+        // `cockpit`/`views.Session.FavouriteObjects` data and open
+        // callbacks `cockpitView`'s own equivalent cards already use,
+        // rearranged into a right rail rather than reimplemented.
+        async Task OpenRecentAsync(int index)
+        {
+            var view = await cockpit.OpenRecentAsync(index).ConfigureAwait(true);
+            views.DocumentArea.ShowTab(view);
+        }
+
+        // `openObjectRightUp` here is `callbacks.OpenEvidenceRecordAsync` —
+        // despite its name, the shell's own general "open any Kind right
+        // up" delegate (every sibling rail view's identical
+        // `openObjectRightUp` local in `BuildViews` wraps the same call):
+        // it navigates to Engineering *first*, which is what actually
+        // makes the opened tab visible. `CockpitView`'s own
+        // `callbacks.OpenObjectAsync` (no navigation step) is safe only
+        // because `CockpitView` is itself already embedded inside the
+        // engineering surface's own Document Area — this view is not.
+        var homeDashboardView = new HomeDashboardView(
+            views.TasksReadModel, views.ProjectStatusReadModel, views.AccountsReadModel, composition.DomainContext, cockpit,
+            views.Session.FavouriteObjects,
+            openObjectRightUp: callbacks.OpenEvidenceRecordAsync,
+            openTasks: () => _ = OpenTasksAsync(),
+            onOpenRecent: OpenRecentAsync,
+            onOpenFavourite: viewCoordinator.NavigateToObject,
+            onOpenRecentlyChanged: async index =>
+            {
+                var items = cockpit.RecentlyChanged;
+                if (index < 1 || index > items.Count)
+                    return;
+
+                var item = items[index - 1];
+                await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
+            })
+        { WorkspaceChanges = composition.WorkspaceChanges };
+
+        async Task OpenTasksAsync()
+        {
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Tasks).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
+
         // Panel construction/resize/hide/collapse/pin/flyout wiring
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
         var dockingComposer = new WorkspaceDockingComposer(workspace, views.ExplorerView, views.InspectorView, views.DocumentArea, views.Session.PanelUiState, views.Session.LayoutStore);
@@ -157,7 +215,7 @@ internal sealed partial class MainWindowComposer
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
         return new ComposedCoordinators(
-            undoRedo, viewCoordinator, cockpitView, dockingComposer, attachmentViewers, layoutPresets,
+            undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
             engineeringCalculationCoordinator, projectDelivery, projectGovernanceCoordinator);
     }
 }

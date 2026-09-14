@@ -69,11 +69,24 @@ public sealed class RailSurfaceContractTests
     // Home
     // ================================================================
 
+    /// <summary>
+    /// `WP 19.7B`: Home renders <c>HomeDashboardView</c> now, not the
+    /// engineering surface `WP 19.2B` had it show — that surface (ribbon,
+    /// docking, mechanical creation) is reached from
+    /// <see cref="ShellArea.EngineeringDepartment"/>'s own Modules →
+    /// Mechanical node now, unaffected by this Work Package and already
+    /// walked by <c>LayoutWalkTests</c>/<c>AutomationNameCoverageTests</c>.
+    /// Home has no domain command of its own, mirroring
+    /// <see cref="Reports_MeetsAllSixChecks"/>'s own honest "edit" (see
+    /// that method's remarks): a manual task created through
+    /// <c>CreateTaskCommand</c> while Home is on screen is the edit,
+    /// Home's own change-feed subscription is what changes what it shows.
+    /// </summary>
     [AvaloniaFact]
     public async Task Home_MeetsAllSixChecks()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        Guid partId;
+        Guid taskId;
 
         var host = new WorkspaceHost(root);
         try
@@ -87,51 +100,55 @@ public sealed class RailSurfaceContractTests
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            Assert.NotNull(window.GetLogicalDescendants().OfType<RibbonView>().FirstOrDefault());
-            Assert.NotNull(window.GetLogicalDescendants().OfType<Tempest.Desktop.Docking.WorkspaceLayoutHost>().FirstOrDefault());
+            var home = window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single();
+            Assert.NotNull(home);
 
-            await host.Workspace!.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
-            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var palette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");
-            var created = await registry.InvokeAsync(
-                "mechanical.create", palette.ContextSource!(),
-                (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(new Dictionary<string, string> { ["kind"] = "Part", ["displayName"] = "Rail Contract Part" }));
-            Assert.True(created.Result!.Succeeded, created.Result.Message);
-            partId = created.Result.SubjectId!.Value;
+            // 4 (raised here, before 2/3, exactly as every other honest-edit
+            // surface in this file does — see the class remarks): Home has
+            // no command of its own; a manual task created elsewhere, due
+            // today, is the edit — proven live, through Home's own
+            // change-feed subscription (not a button inside Home, and not
+            // a subsequent explicit re-entry), while this first attach is
+            // still the one on screen.
+            var dispatcher = (Tempest.Core.Commands.ICommandDispatcher)host.Services!.GetService(typeof(Tempest.Core.Commands.ICommandDispatcher));
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var createResult = await dispatcher.DispatchAsync(new Tempest.Workspace.Tasks.CreateTaskCommand("Rail Contract Task", null, today), CancellationToken.None);
+            Assert.True(createResult.Succeeded, createResult.Message);
+            taskId = createResult.SubjectId!.Value;
 
-            // 2. Select something in it -> the selection has meaning.
-            var explorer = GetPrivateField<ProjectExplorerView>(window, "_explorerView");
-            await explorer.LoadAsync();
-            explorer.Reveal(partId);
-            await host.Workspace.Selection.SelectAsync(partId, "Part");
-            var inspector = GetPrivateField<PropertyInspectorView>(window, "_inspectorView");
-            inspector.SetCurrentSelection(partId, "Part");
-            await inspector.RefreshFromSourceAsync();
-            LayOut(window);
+            await RenderUntilAsync(window, () =>
+                home.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal)));
             Assert.Contains(
-                inspector.GetLogicalDescendants().OfType<TextBox>(),
-                t => (t.Text ?? string.Empty).Contains("Rail Contract Part", StringComparison.Ordinal));
+                home.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
+            LayOut(window);
 
-            // 3. Open it -> usable content.
+            // 2. Select something in it -> the selection has meaning: the
+            // "Due today" tile navigates to the Tasks area.
+            var dueTodayTile = home.GetLogicalDescendants().OfType<Button>()
+                .Single(b => (AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Due today:", StringComparison.Ordinal));
+            dueTodayTile.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => navigator.Current.Area == ShellArea.Tasks);
+            Assert.Equal(ShellArea.Tasks, navigator.Current.Area);
+
+            // 3. Open it -> usable content: back on Home (a fresh,
+            // explicit re-entry — `MainWindow`'s own area registry always
+            // re-reads on entry, independently of live change-feed
+            // reactivity, which is what `RenderCurrentModuleAsync` below
+            // exercises instead of check 4's own live path), the task
+            // row's own Open button.
+            await navigator.GoHomeAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            home = window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single();
+            var openTask = home.GetLogicalDescendants().OfType<Button>().Single(b =>
+                (AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Open ", StringComparison.Ordinal)
+                && (AutomationProperties.GetName(b) ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
+            openTask.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
             var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
-            await ((MainWindow)window).OpenObjectAsync(partId, "Part");
             LayOut(window);
             Assert.NotNull(documentArea.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault());
-
-            // 4. Edit it -> state changes, through its own command.
-            var editor = documentArea.GetLogicalDescendants().OfType<ObjectEditorView>().First();
-            // The Identity section, and its own Name field, is built first
-            // — the same "first TextBox is the name" assumption the
-            // editor's own Identity section relies on throughout this file.
-            var nameBox = editor.GetLogicalDescendants().OfType<TextBox>().First();
-            nameBox.Text = "Rail Contract Part — Renamed";
-            editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () =>
-            {
-                var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-                var current = domain.Repository.FindAsync(partId).GetAwaiter().GetResult() as IHasBusinessIdentifier;
-                return current?.DisplayName == "Rail Contract Part — Renamed";
-            });
 
             // 6. Navigate away and back -> coherent.
             await navigator.GoToProjectsAsync();
@@ -139,7 +156,13 @@ public sealed class RailSurfaceContractTests
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            Assert.NotNull(window.GetLogicalDescendants().OfType<RibbonView>().FirstOrDefault());
+            await RenderUntilAsync(window, () =>
+                window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single()
+                    .GetLogicalDescendants().OfType<TextBlock>()
+                    .Any(t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal)));
+            Assert.Contains(
+                window.GetLogicalDescendants().OfType<Tempest.Desktop.Views.Dashboards.HomeDashboardView>().Single().GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
 
             await host.ShutdownAsync();
         }
@@ -154,8 +177,8 @@ public sealed class RailSurfaceContractTests
         {
             await second.StartAsync();
             var domain = (EngineeringDomainContext)second.Services!.GetService(typeof(EngineeringDomainContext));
-            var reloaded = await domain.Repository.FindAsync(partId) as IHasBusinessIdentifier;
-            Assert.Equal("Rail Contract Part — Renamed", reloaded?.DisplayName);
+            var reloaded = await domain.Repository.FindAsync(taskId) as IHasBusinessIdentifier;
+            Assert.Equal("Rail Contract Task", reloaded?.DisplayName);
         }
         finally
         {

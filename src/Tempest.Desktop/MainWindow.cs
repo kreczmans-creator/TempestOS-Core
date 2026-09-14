@@ -250,14 +250,19 @@ public sealed class MainWindow : Window
             [ShellArea.ProjectWorkspace] = new(() => _projectWorkspace, EnterProjectWorkspaceAsync),
             // `WP 17.9.1`: Engineering alone is not usable without the
             // Project Explorer and Properties panels, so entering it
-            // (never Home) guarantees they are present whatever a saved
-            // layout says. `WP 19.2B`: Home renders the engineering
-            // surface exactly as it did before Engineering left the rail
-            // — the Cockpit is its own permanent tab within it — so this
-            // stays `_engineeringSurface` directly, through the same
-            // reattachment `ResolveEngineeringSurfaceHost` gives standalone
-            // Engineering (see that method's own remarks).
-            [ShellArea.Home] = new(() => ResolveEngineeringSurfaceHost(projectScoped: false), null),
+            // guarantees they are present whatever a saved layout says.
+            // `WP 19.7B` (Product Owner comment item 6, sheets 1-2): Home
+            // is its own dashboard now — `HomeDashboardView`, task tiles,
+            // commercial snapshot, project status and upcoming milestones
+            // — not the engineering surface `WP 19.2B` had it render
+            // (`ResolveEngineeringSurfaceHost`'s own remarks still
+            // describe standalone Engineering's identical reattachment,
+            // now reached only from `EngineeringDepartment`'s own Modules
+            // → Mechanical node or a project's Structure tab). The Cockpit
+            // stays exactly where `WP 19.2B` put it — the engineering
+            // surface's own permanent Document Area tab — just no longer
+            // Home's own first screen.
+            [ShellArea.Home] = new(() => coordinators.HomeDashboardView, () => coordinators.HomeDashboardView.RefreshAsync()),
             // `WP 19.2B`: project-scoped Engineering renders the project
             // workspace with its own Structure tab embedding the surface,
             // never a bare module swap any more — see

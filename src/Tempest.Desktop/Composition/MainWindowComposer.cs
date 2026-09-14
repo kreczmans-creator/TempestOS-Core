@@ -17,6 +17,7 @@ using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Tasks;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
+using Tempest.Desktop.Views.Dashboards;
 
 namespace Tempest.Desktop.Composition;
 
@@ -88,7 +89,14 @@ internal sealed record ComposedViews(
     TasksAreaView TasksAreaView,
     EngineeringAreaView EngineeringAreaView,
     BusinessAreaView BusinessAreaView,
-    LibrariesView ReferenceDataLibrariesView);
+    LibrariesView ReferenceDataLibrariesView,
+    // `WP 19.7B`: the three sibling read models the dashboards draw from —
+    // threaded through here so `BuildCoordinators` (Home's own dashboard,
+    // which needs `WorkspaceViewCoordinator`) reads the identical instance
+    // this phase already built, rather than standing up a second one.
+    Tempest.Workspace.Tasks.ITasksReadModel TasksReadModel,
+    Tempest.Workspace.Projects.IProjectStatusReadModel ProjectStatusReadModel,
+    Tempest.Core.Invoicing.IAccountsReadModel AccountsReadModel);
 
 /// <summary>
 /// <see cref="MainWindow"/>'s own methods, threaded into
@@ -533,6 +541,11 @@ internal sealed partial class MainWindowComposer
         // this Work Package's own brief limits it to "wiring... in".
         var tasksReadModel = new Tempest.Workspace.Tasks.TasksReadModelService(queryableStore);
 
+        // `WP 19.7B`: the Project dashboard's own status read model — the
+        // identical "sibling reader" shape `tasksReadModel` above already
+        // establishes, constructed directly for the same reason.
+        var projectStatusReadModel = new Tempest.Workspace.Projects.ProjectStatusReadModel(queryableStore);
+
         var tasksAreaView = new TasksAreaView(
             tasksReadModel, composition.CommandDispatcher, () => inputDialog.PromptAsync("New task", "Title"), openObjectRightUp)
         {
@@ -540,21 +553,27 @@ internal sealed partial class MainWindowComposer
         };
         tasksAreaView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        var projectsAreaView = new ProjectsAreaView(composition.DomainContext, projectBrowser)
+        var projectsDashboardView = new ProjectsDashboardView(projectStatusReadModel);
+        var projectsAreaView = new ProjectsAreaView(composition.DomainContext, projectBrowser, projectsDashboardView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
 
+        var engineeringDashboardView = new EngineeringDashboardView(tasksReadModel, openObjectRightUp);
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
-            callbacks.EnterEngineeringCalculationAsync)
+            engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
 
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 
-        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, timesheetWeekView, subscriptionsView);
+        var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
+        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, timesheetWeekView, subscriptionsView, businessDashboardView)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
 
         return new ComposedViews(
             composition, diagnostics, session, theme, toastHost, new BusyOverlay(), confirmationDialog, inputDialog, messageDialog,
@@ -565,7 +584,8 @@ internal sealed partial class MainWindowComposer
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
-            projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView);
+            projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
+            tasksReadModel, projectStatusReadModel, accountsReadModel);
     }
 }
 

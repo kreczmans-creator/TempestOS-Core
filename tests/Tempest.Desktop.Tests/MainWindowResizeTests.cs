@@ -59,6 +59,21 @@ public sealed class MainWindowResizeTests
             var window = new MainWindow(host) { Width = 1920, Height = 1080 };
             window.Show();
 
+            // `WP 19.7B`: Home itself no longer carries the ribbon/docking
+            // surface this test's own docking-floor assertion needs — that
+            // surface is standalone Engineering now (reached from
+            // `ShellArea.EngineeringDepartment`'s own Modules → Mechanical
+            // node, or directly here). Waited for `Ready` first so this
+            // explicit navigation lands after, not racing, the window's own
+            // default-area selection in its `Opened` handler.
+            for (var wait = 0; !window.Ready.IsCompleted && wait < 200; wait++)
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+            }
+            await host.ShellNavigator!.GoToStandaloneEngineeringAsync();
+            await window.RenderCurrentModuleAsync();
+
             // The ribbon's own minimise state is a separate, persisted axis
             // (`TD-70`, View menu/settings-controlled) — set once here, then
             // asserted unchanged after every resize below, so a resize that
