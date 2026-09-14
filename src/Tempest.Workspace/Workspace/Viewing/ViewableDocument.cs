@@ -16,6 +16,15 @@ public enum ViewableDocumentFormat
 
     /// <summary>Text: plain text, CSV, Markdown, XML, JSON or similar.</summary>
     Text,
+
+    /// <summary>
+    /// A drawing format this platform stores but does not render — DWG or
+    /// DXF today. Distinct from <see cref="Unsupported"/> so the viewer can
+    /// say, honestly, that the file opens in its own application rather
+    /// than that nothing can be done with it (`TD-99`, Product Owner
+    /// decision 2026-09-15 §5).
+    /// </summary>
+    ExternalOnly,
 }
 
 /// <summary>
@@ -47,11 +56,25 @@ public static class DocumentFormatDetector
     private static readonly byte[] RiffSignature = "RIFF"u8.ToArray();
     private static readonly byte[] WebpSignature = "WEBP"u8.ToArray();
 
+    // DWG and DXF have no IANA-registered media type, so unlike PDF or PNG
+    // there is no single string to check: these are the ones CAD tools and
+    // browsers commonly send. The file extension (checked first, in
+    // FromContentType) is the primary signal for either format; this list
+    // only catches a correctly labelled upload sent with a generic or
+    // missing file name.
+    private static readonly HashSet<string> ExternalOnlyContentTypes = new(StringComparer.Ordinal)
+    {
+        "application/acad", "application/x-acad", "application/autocad_dwg",
+        "image/x-dwg", "application/dwg", "application/x-dwg", "drawing/x-dwg", "image/vnd.dwg",
+        "application/dxf", "application/x-dxf", "image/vnd.dxf", "drawing/x-dxf",
+    };
+
     /// <summary>
     /// The format of <paramref name="content"/>, described as
-    /// <paramref name="contentType"/>.
+    /// <paramref name="contentType"/> and, where known, named
+    /// <paramref name="fileName"/>.
     /// </summary>
-    public static ViewableDocumentFormat Detect(string? contentType, ReadOnlySpan<byte> content)
+    public static ViewableDocumentFormat Detect(string? contentType, ReadOnlySpan<byte> content, string? fileName = null)
     {
         if (StartsWith(content, PdfSignature))
             return ViewableDocumentFormat.Pdf;
@@ -65,12 +88,24 @@ public static class DocumentFormatDetector
             return ViewableDocumentFormat.Image;
         }
 
-        return FromContentType(contentType);
+        return FromContentType(contentType, fileName);
     }
 
-    /// <summary>The format <paramref name="contentType"/> claims, ignoring any content.</summary>
-    public static ViewableDocumentFormat FromContentType(string? contentType)
+    /// <summary>
+    /// The format <paramref name="contentType"/> claims, ignoring any
+    /// content, refined by <paramref name="fileName"/>'s extension where
+    /// the content type alone is ambiguous or absent.
+    /// </summary>
+    public static ViewableDocumentFormat FromContentType(string? contentType, string? fileName = null)
     {
+        // The extension is checked first and unconditionally: DWG and DXF
+        // have no reliable content type at all (see ExternalOnlyContentTypes
+        // above), so a name-only signal has to be enough for them, exactly
+        // as it already is for text (below), which has no magic bytes.
+        var extension = string.IsNullOrWhiteSpace(fileName) ? null : Path.GetExtension(fileName).ToLowerInvariant();
+        if (extension is ".dwg" or ".dxf")
+            return ViewableDocumentFormat.ExternalOnly;
+
         if (string.IsNullOrWhiteSpace(contentType))
             return ViewableDocumentFormat.Unsupported;
 
@@ -81,6 +116,9 @@ public static class DocumentFormatDetector
 
         if (type is "application/pdf" or "application/x-pdf")
             return ViewableDocumentFormat.Pdf;
+
+        if (ExternalOnlyContentTypes.Contains(type))
+            return ViewableDocumentFormat.ExternalOnly;
 
         if (type.StartsWith("image/", StringComparison.Ordinal))
         {

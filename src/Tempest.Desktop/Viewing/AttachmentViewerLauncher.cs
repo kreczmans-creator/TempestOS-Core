@@ -128,7 +128,7 @@ public sealed class AttachmentViewerLauncher
         double viewportWidth,
         double viewportHeight)
     {
-        var format = DocumentFormatDetector.Detect(attachment.ContentType, bytes);
+        var format = DocumentFormatDetector.Detect(attachment.ContentType, bytes, attachment.FileName);
 
         IDocumentPageSource? source;
         try
@@ -147,8 +147,16 @@ public sealed class AttachmentViewerLauncher
 
         if (source is null)
         {
+            // No in-app renderer, whatever the reason — a DWG this
+            // platform was never going to draw, or a format nobody has
+            // written a source for yet. Either way the file itself is
+            // intact, so a real copy is put where the OS shell can hand it
+            // to whatever is registered for it; the viewer's own "Open
+            // externally" button is the only thing that reads this path,
+            // and only when it is not null (`TD-99`).
+            var materialisedPath = MaterialiseForExternalOpen(attachment.Id, attachment.FileName, bytes);
             view.OpenUnavailable(DocumentViewSession.Unavailable(
-                attachment.Id, attachment.FileName, attachment.ContentType, DocumentViewStatus.Unsupported, format));
+                attachment.Id, attachment.FileName, attachment.ContentType, DocumentViewStatus.Unsupported, format, materialisedPath));
             return;
         }
 
@@ -165,6 +173,45 @@ public sealed class AttachmentViewerLauncher
                 viewportWidth,
                 viewportHeight),
             source);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="bytes"/> to a real file on local disk, under
+    /// the attachment's own file name, for the OS shell to open — never
+    /// beside the persistence root, which this launcher has no path to and
+    /// should not need one for a copy that exists only until the OS is
+    /// done with it (`TD-99`).
+    /// </summary>
+    /// <returns>The written path, or <see langword="null"/> if the write itself failed.</returns>
+    /// <remarks>
+    /// One subdirectory per attachment id, under the OS's own temporary
+    /// folder, so two attachments that happen to share a file name never
+    /// collide and a stale copy from an earlier session is easy to
+    /// recognise as this launcher's own.
+    /// </remarks>
+    private static string? MaterialiseForExternalOpen(Guid attachmentId, string fileName, byte[] bytes)
+    {
+        try
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer", attachmentId.ToString("N"));
+            Directory.CreateDirectory(directory);
+
+            var safeName = Path.GetFileName(fileName);
+            if (string.IsNullOrWhiteSpace(safeName))
+                safeName = attachmentId.ToString("N");
+
+            var path = Path.Combine(directory, safeName);
+            File.WriteAllBytes(path, bytes);
+            return path;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private void Dock(DocumentViewerView view, IAttachment attachment)
