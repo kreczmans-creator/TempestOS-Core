@@ -38,13 +38,26 @@ namespace Tempest.Core.DependencyInjection;
 /// created at most once, guarded by a single lock; transient services are constructed
 /// fresh on every resolution.
 /// </para>
+/// <para>
+/// <b>Disposal (`TD-03`).</b> Every singleton this provider itself constructs via
+/// reflection — never one seeded from <see cref="ServiceDescriptor.ExistingInstance"/>,
+/// which the Host that registered it already tracks and disposes on its own path — is
+/// recorded, in construction order, the moment it is cached. <see cref="DisposeAsync"/>
+/// disposes them in the reverse of that order: a later-constructed singleton may have
+/// been handed an earlier one as a constructor dependency and must stop using it first,
+/// exactly the rule <c>TempestHost</c>'s own instance-registration disposal already
+/// follows. Idempotent, and — mirroring that same disposal's own principle — a failing
+/// dispose is logged and the remaining instances are still disposed.
+/// </para>
 /// </remarks>
-public sealed class TempestServiceProvider : ITempestServiceProvider
+public sealed class TempestServiceProvider : ITempestServiceProvider, IAsyncDisposable
 {
     private readonly object _gate = new();
     private readonly Dictionary<Type, ServiceDescriptor> _descriptorsByType;
     private readonly Dictionary<Type, object> _singletonInstances = new();
+    private readonly List<object> _constructedSingletonInstances = new();
     private readonly ILogger? _logger;
+    private bool _disposed;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="TempestServiceProvider"/> class from
@@ -124,7 +137,65 @@ public sealed class TempestServiceProvider : ITempestServiceProvider
 
             var instance = Construct(descriptor.ImplementationType, childChain);
             _singletonInstances[descriptor.ServiceType] = instance;
+
+            // `TD-03`: this is a singleton this provider itself just built
+            // via reflection, as opposed to one seeded in the constructor
+            // from a descriptor's own ExistingInstance — those are already
+            // tracked and disposed by whoever registered them (`TempestHost`'s
+            // own Service Disposal phase). Recorded in construction order,
+            // under the same lock the construction itself just ran under,
+            // so DisposeAsync's own reverse walk is never racing a resolve
+            // still in flight.
+            _constructedSingletonInstances.Add(instance);
+
             return instance;
+        }
+    }
+
+    /// <summary>
+    /// Disposes every singleton this provider constructed via reflection,
+    /// in the reverse of the order it constructed them (`TD-03`). Never
+    /// disposes an instance seeded from a descriptor's own
+    /// <see cref="ServiceDescriptor.ExistingInstance"/> — that remains the
+    /// registering Host's own responsibility. Idempotent; a failing
+    /// dispose is logged and the remaining instances are still disposed.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        List<object> instances;
+
+        lock (_gate)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            instances = _constructedSingletonInstances;
+        }
+
+        for (var i = instances.Count - 1; i >= 0; i--)
+        {
+            var instance = instances[i];
+
+            try
+            {
+                switch (instance)
+                {
+                    case IAsyncDisposable asyncDisposable:
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        break;
+                    case IDisposable disposable:
+                        disposable.Dispose();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warning(
+                    $"Service provider disposal: '{instance.GetType().FullName}' threw while being disposed. " +
+                    "Shutdown continues; the remaining instances are still disposed.",
+                    ex);
+            }
         }
     }
 

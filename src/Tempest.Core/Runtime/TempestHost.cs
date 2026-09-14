@@ -1222,28 +1222,33 @@ public sealed class TempestHost : ITempestHost
     }
 
     /// <summary>
-    /// The Service Disposal lifecycle phase, for the services the Host
-    /// registered as already-constructed instances (`TD-03`, `WP 17.1A`).
+    /// The Service Disposal lifecycle phase, for every disposable service
+    /// this Host is responsible for — registered as an already-constructed
+    /// instance, or built by the container via reflection (`TD-03`,
+    /// `WP 17.1A`).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Disposes every registered instance implementing
+    /// Disposes the container's own reflection-constructed singletons first
+    /// (<see cref="TempestServiceProvider.DisposeAsync"/>, in the reverse of
+    /// the order the container built them), then every registered
+    /// already-constructed instance implementing
     /// <see cref="IAsyncDisposable"/> or <see cref="IDisposable"/>, in
     /// <b>reverse registration order</b> — the order a composition root
-    /// must use, because a service registered later may have been handed a
-    /// service registered earlier and must stop using it first. Async
-    /// disposal is preferred where a type offers both.
+    /// must use, because a service constructed or registered later may have
+    /// been handed one from earlier and must stop using it first, and a
+    /// reflection-constructed singleton may depend on an instance
+    /// registration (the persistence store, `ADR-0144`) exactly that way.
+    /// Async disposal is preferred where a type offers both.
     /// </para>
     /// <para>
-    /// This closes `TD-03` for instance registrations, which is where the
-    /// platform's disposable services actually are: the persistence store
-    /// (`ADR-0144`) is registered this way, and it holds a database file
-    /// and a cross-process lock that a second Host on the same root cannot
-    /// take until this one lets go. It does <b>not</b> close `TD-03` for
-    /// container-constructed singletons; <c>TempestServiceProvider</c>
-    /// keeps no disposal list of what it built, and giving it one is a
-    /// change to the container rather than to the Host. That remains open
-    /// and is deliberately not claimed here.
+    /// This closes `TD-03` for both halves of the singleton population:
+    /// instance registrations, where the platform's own foundational
+    /// disposable services live (the persistence store holds a database
+    /// file and a cross-process lock that a second Host on the same root
+    /// cannot take until this one lets go), and reflection-constructed
+    /// singletons, which <see cref="TempestServiceProvider"/> now tracks and
+    /// disposes itself rather than this Host reaching into the container.
     /// </para>
     /// <para>
     /// Idempotent, and never allowed to fail shutdown: a failing dispose is
@@ -1254,6 +1259,7 @@ public sealed class TempestHost : ITempestHost
     private async Task DisposeRegisteredServiceInstancesAsync()
     {
         IReadOnlyList<object>? instances;
+        ITempestServiceProvider? services;
 
         lock (_gate)
         {
@@ -1262,7 +1268,13 @@ public sealed class TempestHost : ITempestHost
 
             _serviceInstancesDisposed = true;
             instances = _registeredServiceInstances;
+            services = _services;
         }
+
+        // The container's own reflection-constructed singletons, before the
+        // instance registrations they may depend on (see remarks above).
+        if (services is IAsyncDisposable disposableProvider)
+            await disposableProvider.DisposeAsync().ConfigureAwait(false);
 
         if (instances is null)
             return;
