@@ -50,8 +50,18 @@ parameters, the invocation contract over Quotations and Tasks), `19.7A`,
 `19.7B`, `19.7C` (added: a view keeps reacting after it is shown again),
 and `WP 19.9.1` (two idle-machine waits in the quotation journey, the
 cockpit's card buttons named, `PHYSICAL_REVIEW.md` §7c, the backlog
-reconciliation, the release notes, this file). It is a release
-candidate under the Product Owner's manual test; its PR to `main`, tag
+reconciliation, the release notes, this file). Overnight on 2026-09-14/15,
+as lead in the Product Owner's absence, `WP 19.10A`–`19.10R` followed: a
+headless dress rehearsal of §7c whose one blocker and four wording
+defects were fixed (a Deliverable had no view factory at all), the
+technical-debt rationalisation in two documents under
+`docs/releases/v0.19.1/` with every closure verified against the code,
+and twenty backlog rows closed with gates (TD-23, 27, 32, 33, 41, 42, 63,
+92, 93, 131, 134, 141, 150, 154, 156, 157, 158, 176, 177, 179 for the
+shell, four services, the ribbon and the Palette), plus the two evening
+requests (Business → Invoices as sketched; the rail and tree columns
+collapse on demand). The live backlog stands at 17 of its cap of 30. It
+is a release candidate under the Product Owner's manual test; its PR to `main`, tag
 and GitHub Release follow acceptance, the way `v0.18.0` went.
 `release/v0.19.0` (head `947c50d`) is superseded and stays unreleased.
 

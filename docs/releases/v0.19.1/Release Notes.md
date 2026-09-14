@@ -2,9 +2,9 @@
 
 **Status: release candidate on `release/v0.19.1`, cut from the `v0.19.0`
 candidate `947c50d` on 2026-09-14 after the Product Owner's first pass
-over it; the last code change is `df2ebe8` and every commit after it is
-documentation or the CI job ceiling; under the Product Owner's manual
-test.** Nothing in this
+over it; the candidate is the tip of the branch as pushed on 2026-09-15
+after the overnight tranche (`WP 19.10A`–`19.10R`, the What shipped table
+below); under the Product Owner's manual test.** Nothing in this
 document is certification.
 
 ## Summary
