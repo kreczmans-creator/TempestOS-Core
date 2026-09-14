@@ -74,6 +74,7 @@ public sealed class ProjectsAreaView : UserControl
         _projectBrowser = projectBrowser;
         _dashboard = dashboard;
         _dashboard.OpenProjectRequestedAsync += id => OpenProjectRequestedAsync?.Invoke(id) ?? Task.CompletedTask;
+        _projectBrowser.ProjectCreated += OnProjectCreated;
         _time = timeProvider ?? TimeProvider.System;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
@@ -239,6 +240,27 @@ public sealed class ProjectsAreaView : UserControl
 
     /// <summary>Raised when the user selects a project leaf — the shell opens it.</summary>
     public event Func<Guid, Task>? OpenProjectRequestedAsync;
+
+    /// <summary>
+    /// The shared <see cref="ProjectBrowserView"/> just created a project
+    /// (`WP 19.10Q`) — extends the Open group's own visible set
+    /// synchronously, so <see cref="ProjectBrowserView.RefreshAsync"/>'s
+    /// very next call (already under way, as part of that same create
+    /// path) agrees with reality immediately, rather than waiting for
+    /// <see cref="OnWorkspaceChanged"/>'s later, fire-and-forget reaction
+    /// to the change feed. A project just created is open by definition,
+    /// so only the Open node's own set is ever extended here — Closed and
+    /// Archive keep showing whatever they already did.
+    /// </summary>
+    private void OnProjectCreated(Guid projectId)
+    {
+        if (!ReferenceEquals(_tree.SelectedItem, _openNode))
+            return;
+
+        var ids = _openNode.Items.OfType<TreeViewItem>().Select(i => (Guid)i.Tag!).ToHashSet();
+        ids.Add(projectId);
+        _projectBrowser.SetVisibleProjects(ids);
+    }
 
     private void OnWorkspaceChanged(WorkspaceChange change) =>
         Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
