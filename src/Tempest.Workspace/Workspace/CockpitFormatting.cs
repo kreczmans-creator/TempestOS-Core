@@ -19,15 +19,20 @@ internal static class CockpitFormatting
 {
     /// <summary>
     /// Formats a coverage fraction as display text — <c>"— (no
-    /// requirements yet)"</c> for a zero denominator (a fixed string,
-    /// unchanged from <see cref="EngineeringCockpit"/>'s own original
-    /// text, even where reused by a non-Requirements discipline — see
-    /// <see cref="EngineeringCockpit"/>'s own prior remarks on this exact,
-    /// pre-existing, disclosed minor inaccuracy, not introduced or
-    /// corrected by this move), else <c>"{percent}% ({numerator}/{denominator})"</c>.
+    /// {<paramref name="emptyStateNoun"/>} yet)"</c> for a zero
+    /// denominator, else <c>"{percent}% ({numerator}/{denominator})"</c>.
     /// </summary>
-    public static string FormatCoverage(int numerator, int denominator) =>
-        denominator == 0 ? "— (no requirements yet)" : $"{numerator * 100 / denominator}% ({numerator}/{denominator})";
+    /// <param name="emptyStateNoun">
+    /// The short noun the calling discipline owns (for example
+    /// <c>"calculations"</c>, <c>"requirements"</c>, <c>"verification
+    /// results"</c>) — named by the caller so the empty state always
+    /// states what the calling card is actually about; see `TD-33`
+    /// (closed `WP 19.10E`): before this parameter existed the text was
+    /// the fixed, Requirements-only string regardless of which
+    /// discipline called it.
+    /// </param>
+    public static string FormatCoverage(int numerator, int denominator, string emptyStateNoun) =>
+        denominator == 0 ? $"— (no {emptyStateNoun} yet)" : $"{numerator * 100 / denominator}% ({numerator}/{denominator})";
 
     /// <summary>
     /// The numeric twin of <see cref="FormatCoverage"/> — the identical

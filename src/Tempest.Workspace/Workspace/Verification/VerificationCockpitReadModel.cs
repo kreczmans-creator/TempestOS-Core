@@ -167,7 +167,7 @@ internal sealed class VerificationCockpitReadModel
                 new("Failed", FailedVerificationCount.ToString(), IsPlaceholder: false),
                 new("Conditional", ConditionalVerificationCount.ToString(), IsPlaceholder: false),
                 new("Outstanding", OutstandingActions.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", CockpitFormatting.FormatCoverage(recorded, total), IsPlaceholder: false, CockpitFormatting.PercentOf(recorded, total)),
+                new("Verification Coverage", CockpitFormatting.FormatCoverage(recorded, total, "verification results"), IsPlaceholder: false, CockpitFormatting.PercentOf(recorded, total)),
                 new("Project Verification Health", Status.ToString(), IsPlaceholder: false),
             ];
         }

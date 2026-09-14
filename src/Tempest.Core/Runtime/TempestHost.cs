@@ -667,6 +667,27 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRateCardCatalog, RateCardCatalog>();
         services.Singleton<IRateCardValidationService, RateCardValidationService>();
 
+        // `TD-157` (closed `WP 19.10E`): both `CalculationPackValidationService`
+        // and `VerificationArtefactValidationService` already declare an
+        // optional `IEnumerable<IReferencePinResolver>` constructor
+        // parameter — one resolver per library a `ReferencePin` can name,
+        // the same eight libraries `ReferenceLibraryCatalogues`
+        // (`src/Tempest.Desktop/Views/ReferenceRecordView.cs`) lists — but
+        // nothing registered one, so the parameter always fell back to its
+        // declared default (`null`) and the "pinned source superseded"
+        // warning could never fire. This container has no built-in
+        // multi-registration/`IEnumerable<T>` resolution — one descriptor
+        // per exact `Type` (`ServiceCollection._descriptorsByType`), so
+        // registering eight `CatalogPinResolver<TDefinition>` instances
+        // directly under `IReferencePinResolver` would silently keep only
+        // the last. `ReferencePinResolverCollection` (below) is the seam
+        // instead: a plain collaborator whose own constructor lets the
+        // container resolve each of the eight catalogue interfaces exactly
+        // as any other dependency, registered once under the closed
+        // generic `IEnumerable<IReferencePinResolver>` itself so both
+        // validation services above receive the same full set.
+        services.Singleton<IEnumerable<IReferencePinResolver>, ReferencePinResolverCollection>();
+
         // `Group D` (P03, CommercialIntelligence) was frozen to
         // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`
         // (`D-028`): unreachable from any shipped surface. See
@@ -1372,5 +1393,59 @@ public sealed class TempestHost : ITempestHost
         _logger?.Information("Host -> Stopped.");
 
         return null;
+    }
+}
+
+/// <summary>
+/// The full set of <see cref="IReferencePinResolver"/>s — one
+/// <see cref="CatalogPinResolver{TDefinition}"/> per library a
+/// <see cref="ReferencePin"/> can name, over the same eight catalogue
+/// interfaces <c>ReferenceLibraryCatalogues</c>
+/// (<c>src/Tempest.Desktop/Views/ReferenceRecordView.cs</c>) lists —
+/// registered as <see cref="TempestHost"/>'s answer to a constructor asking
+/// for <see cref="IEnumerable{T}"/> of <see cref="IReferencePinResolver"/>
+/// (`TD-157`, closed `WP 19.10E`).
+/// </summary>
+/// <remarks>
+/// Exists only because <c>Tempest.Core.DependencyInjection</c>'s own
+/// container resolves a constructor parameter by its exact declared
+/// <see cref="Type"/> and holds at most one descriptor per type — it has no
+/// ASP.NET-Core-style multi-registration that collects every
+/// <see cref="IReferencePinResolver"/> registration into one
+/// <see cref="IEnumerable{T}"/> automatically. Inheriting
+/// <see cref="List{T}"/> lets this type satisfy
+/// <c>IEnumerable&lt;IReferencePinResolver&gt;</c> directly, so
+/// <c>services.Singleton&lt;IEnumerable&lt;IReferencePinResolver&gt;,
+/// ReferencePinResolverCollection&gt;()</c> is the one registration both
+/// <c>CalculationPackValidationService</c> and
+/// <c>VerificationArtefactValidationService</c> need — the container
+/// resolves this type's own constructor exactly as it would any other
+/// collaborator, recursively supplying each of the eight already-registered
+/// catalogue interfaces below.
+/// </remarks>
+internal sealed class ReferencePinResolverCollection : List<IReferencePinResolver>
+{
+    /// <summary>Initialises a new instance of the <see cref="ReferencePinResolverCollection"/> class.</summary>
+    public ReferencePinResolverCollection(
+        IMaterialCatalog materials,
+        IFastenerCatalog fasteners,
+        IBearingCatalog bearings,
+        IStandardCatalog standards,
+        IConstantCatalog constants,
+        IProcessCatalog manufacturing,
+        IComponentCatalog components,
+        IRateCardCatalog businessRateCards)
+        : base(
+        [
+            new CatalogPinResolver<MaterialDefinition>(materials),
+            new CatalogPinResolver<FastenerDefinition>(fasteners),
+            new CatalogPinResolver<BearingDefinition>(bearings),
+            new CatalogPinResolver<StandardDefinition>(standards),
+            new CatalogPinResolver<ConstantDefinition>(constants),
+            new CatalogPinResolver<ProcessDefinition>(manufacturing),
+            new CatalogPinResolver<ComponentDefinition>(components),
+            new CatalogPinResolver<RateCard>(businessRateCards),
+        ])
+    {
     }
 }

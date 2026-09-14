@@ -215,8 +215,8 @@ internal sealed class RequirementsCockpitReadModel
                 new("Review", InReviewCount.ToString(), IsPlaceholder: false),
                 new("Approved", CountOf(RequirementStatus.Approved).ToString(), IsPlaceholder: false),
                 new("Released", CountOf(RequirementStatus.Satisfied).ToString(), IsPlaceholder: false),
-                new("Verification Coverage", CockpitFormatting.FormatCoverage(VerifiedRequirementCount, total), IsPlaceholder: false, CockpitFormatting.PercentOf(VerifiedRequirementCount, total)),
-                new("Allocation Coverage", CockpitFormatting.FormatCoverage(AllocatedRequirementCount, total), IsPlaceholder: false, CockpitFormatting.PercentOf(AllocatedRequirementCount, total)),
+                new("Verification Coverage", CockpitFormatting.FormatCoverage(VerifiedRequirementCount, total, "requirements"), IsPlaceholder: false, CockpitFormatting.PercentOf(VerifiedRequirementCount, total)),
+                new("Allocation Coverage", CockpitFormatting.FormatCoverage(AllocatedRequirementCount, total, "requirements"), IsPlaceholder: false, CockpitFormatting.PercentOf(AllocatedRequirementCount, total)),
                 new("Requirement Health", Status.ToString(), IsPlaceholder: false),
                 new("Outstanding Actions", OutstandingActions.ToString(), IsPlaceholder: false),
             ];
