@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Tempest.Desktop.Views;
@@ -61,6 +62,120 @@ public sealed class LibrariesTabLoadsOnEntryTests
         finally
         {
             await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>`WP 19.6A`: Add opens the new record right up — the Product Owner guard (`po-comments.md` item 5), exercised through the real Add-a-material form.</summary>
+    [AvaloniaFact]
+    public async Task AddingAMaterial_OpensItInTheDetailPaneRightUp()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var tabs = (TabControl)evidenceWorkspace.Content!;
+            tabs.SelectedIndex = 1;
+            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            LayOut(window);
+
+            var textBoxes = librariesView.GetLogicalDescendants().OfType<TextBox>().ToList();
+            textBoxes.First(t => t.Watermark == "Name").Text = "Detail Pane Alloy";
+            textBoxes.First(t => t.Watermark == "Designation").Text = "mat-detail-pane";
+            textBoxes.First(t => t.Watermark == "Yield strength (MPa)").Text = "250";
+            textBoxes.First(t => t.Watermark == "Density (g/cm3)").Text = "2.7";
+            textBoxes.First(t => t.Watermark == "Source organisation").Text = "Test Handbook Publisher";
+            textBoxes.First(t => t.Watermark == "Source document").Text = "Test Handbook";
+
+            var addButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Material"));
+            addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } detail
+                && detail.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Detail Pane Alloy", StringComparison.Ordinal)));
+
+            var detailView = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
+            Assert.Contains(
+                detailView.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Detail Pane Alloy", StringComparison.Ordinal));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>`WP 19.6A`: Revise opens the new revision right up, through the real dialog — the same guard as Add.</summary>
+    [AvaloniaFact]
+    public async Task RevisingARecord_OpensTheNewRevisionInTheDetailPaneRightUp()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            const string recordId = "mat-lib-detail-revise";
+            var definition = new Tempest.Core.Materials.MaterialDefinition { Name = "Original Alloy", Family = Tempest.Core.Materials.MaterialFamily.Aluminium, Designation = recordId };
+            var provenance = new Tempest.Core.ReferenceData.ReferenceProvenance(SourceOrganisation: "Test Handbook Publisher", SourceDocument: "Test Handbook");
+            await host.Materials!.RegisterAsync(recordId, definition, provenance);
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var tabs = (TabControl)evidenceWorkspace.Content!;
+            tabs.SelectedIndex = 1;
+            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            LayOut(window);
+
+            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
+                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
+            var reviseButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
+            reviseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var reviseEntry = GetPrivateField<ReviseReferenceRecordEntry>(window, "_reviseReferenceRecordEntry");
+            await RenderUntilAsync(window, () => reviseEntry.IsVisible);
+
+            var jsonBox = reviseEntry.GetLogicalDescendants().OfType<TextBox>().First();
+            jsonBox.Text = jsonBox.Text!.Replace("Original Alloy", "Detail Pane Revised Alloy");
+
+            var reviseConfirm = reviseEntry.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Revise"));
+            reviseConfirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !reviseEntry.IsVisible);
+
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } detail
+                && detail.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Detail Pane Revised Alloy", StringComparison.Ordinal)));
+
+            var detailView = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
+            Assert.Contains(
+                detailView.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Detail Pane Revised Alloy", StringComparison.Ordinal));
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    {
+        var deadline = Deadline(20);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+            LayOut(window);
         }
     }
 
