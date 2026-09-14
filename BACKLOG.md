@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (16 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -59,12 +59,26 @@ the close step now runs after `COMMIT;` under a `committed` flag, and an
 exception there is logged and swallowed only once the transaction has
 actually landed — see `ADR-0145`'s own addendum.
 
+`TD-28` — the row's own "bulk" framing undersold the gap:
+`BulkSetRequirementStatusCommandHandler` looped `IRequirementsService.SetStatusAsync`
+per item and raised no change notification, but `RequirementsService`
+wrote through `IEngineeringDocumentStore`/`IPersistenceStore` directly
+for every mutating method, never through `EngineeringDomainContext.ExecuteWriteAsync`
+— the only place `WorkspaceChanges.Publish(...)` was ever called — so no
+Requirements write of any kind reached the `WP 18.1A` change bus. **Closed
+by `WP 20.1A1`**: all fourteen mutating methods now commit through
+`IQueryablePersistenceStore.ExecuteInTransactionAsync` (the only
+operation that advances the store's own sequence counter) and publish
+one `WorkspaceChange` once that transaction has committed, through the
+same `IWorkspaceChangePublisher` `EngineeringDomainContext` already
+used — a test per mutator proves the publish, and one proves a refused
+write publishes nothing.
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
-| `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
@@ -103,10 +117,13 @@ answered. Housekeeping ("`D:/tempest-wt/19.2B` directory still locked by
 a stray testhost") is an environment cleanup, not product debt.
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
-`TD-28` sits in the refresh/notification mechanism `WP 18.1A`
-replaces, but the row is not literally listed (`TD-27` and `TD-150`,
-which sat here on the identical caveat, are closed directly — `WP 19.10N`
-and `WP 19.10J`, above). Owners other than "unowned" that are not one of
+none remain in the table below. `TD-28` was the sole example — it sat
+in the refresh/notification mechanism `WP 18.1A` replaces, but the row
+was not literally listed there — and it is now closed directly by
+`WP 20.1A1` with real code and tests (see the note above), joining
+`TD-27` and `TD-150`, which sat here on the identical caveat and are
+also closed directly (`WP 19.10N` and `WP 19.10J`, above). Owners other
+than "unowned" that are not one of
 the programme Work Packages (`WP 18.0B`, `18.2B`,
 `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
 column in `WorkPackages.md`, but fall outside the specific
