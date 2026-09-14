@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Tempest.Core.Commands;
@@ -132,10 +133,12 @@ public sealed class LayoutWalkTests
 
                 foreach (var module in ShellAreas.RailModules)
                 {
-                    if (module.Area == ShellArea.Engineering)
-                        await navigator.GoToEngineeringAsync();
-                    else
-                        await navigator.GoToModuleAsync(module.Area);
+                    // `WP 19.7A`: every rail button is a plain global
+                    // module now — Engineering's own scope-aware verb is
+                    // reached from `EngineeringDepartment`'s own Modules →
+                    // Mechanical node instead (walked below), not from the
+                    // rail directly.
+                    await navigator.GoToModuleAsync(module.Area);
 
                     await window.RenderCurrentModuleAsync();
                     LayOut(window, size.Width, size.Height);
@@ -151,6 +154,46 @@ public sealed class LayoutWalkTests
                     captureMethod ??= method;
                     pngCount++;
                     findings.AddRange(CollectLayoutFindings(window, area));
+
+                    // `WP 19.7A`: Projects, Engineering and Business are
+                    // each a tree now — walk every real node (never the
+                    // pure group headers "Modules", which carries no
+                    // content of its own) exactly as this loop already
+                    // walks every rail entry.
+                    foreach (var node in TreeNodesFor(module.Area))
+                    {
+                        if (node == "Mechanical")
+                        {
+                            // Real navigation away, to the ribbon-and-docking
+                            // surface (`ShellArea.Engineering`) — walked here
+                            // exactly as this suite always walked it before
+                            // `WP 19.7A` moved it off the rail directly.
+                            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode(node);
+                            await window.RenderCurrentModuleAsync();
+                        }
+                        else
+                        {
+                            SelectAreaNode(window, module.Area, node);
+                            await Task.Delay(10);
+                            Dispatcher.UIThread.RunJobs();
+                        }
+
+                        LayOut(window, size.Width, size.Height);
+
+                        var nodeArea = $"{size.Name} · rail · {module.Title} · {node}";
+                        var nodeMethod = SaveFrame(window, Path.Combine(sizeDir, $"rail-{module.Title}-{node}.png"));
+                        captureMethod ??= nodeMethod;
+                        pngCount++;
+                        findings.AddRange(CollectLayoutFindings(window, nodeArea));
+
+                        if (node == "Mechanical")
+                        {
+                            // Back to the tree for the remaining nodes.
+                            await navigator.GoToModuleAsync(module.Area);
+                            await window.RenderCurrentModuleAsync();
+                            LayOut(window, size.Width, size.Height);
+                        }
+                    }
                 }
 
                 foreach (var descriptor in ProjectAreas.All)
@@ -168,7 +211,8 @@ public sealed class LayoutWalkTests
             }
 
             _output.WriteLine($"Captured {pngCount} PNGs under '{outputRoot}' via {captureMethod}.");
-            Assert.Equal((ShellAreas.RailModules.Count + ProjectAreas.All.Count) * Sizes.Length, pngCount);
+            var treeNodeCount = ShellAreas.RailModules.Sum(m => TreeNodesFor(m.Area).Count);
+            Assert.Equal((ShellAreas.RailModules.Count + treeNodeCount + ProjectAreas.All.Count) * Sizes.Length, pngCount);
 
             // Every PNG is already written above, whether or not the walk
             // found anything — only now, with the complete picture, does it
@@ -347,6 +391,37 @@ public sealed class LayoutWalkTests
         return string.IsNullOrEmpty(custom)
             ? Path.Combine(AppContext.BaseDirectory, "TestResults", "layout")
             : Path.GetFullPath(custom);
+    }
+
+    /// <summary>
+    /// The real, non-placeholder nodes <see cref="ShellArea"/>'s own tree
+    /// area (Projects, Engineering, Business — `WP 19.7A`) offers, in
+    /// <c>SelectNode</c>'s own automation-name form. The pure group header
+    /// "Modules" carries no content of its own (its children, Mechanical
+    /// and Engineering Calculations, do) and is deliberately not walked.
+    /// </summary>
+    private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
+    {
+        ShellArea.Projects => ["Dashboard + Reports", "Open", "Closed", "Archive"],
+        ShellArea.EngineeringDepartment => ["Dashboard + Reports", "Tasks", "Mechanical", "Engineering Calculations", "Reference data"],
+        ShellArea.Business => ["Dashboard & Reports", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
+        _ => [],
+    };
+
+    private static void SelectAreaNode(MainWindow window, ShellArea area, string node)
+    {
+        switch (area)
+        {
+            case ShellArea.Projects:
+                window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode(node);
+                break;
+            case ShellArea.EngineeringDepartment:
+                window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode(node);
+                break;
+            case ShellArea.Business:
+                window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode(node);
+                break;
+        }
     }
 
     /// <summary>Resizes the real window and runs a real layout pass, mirroring <c>MainWindowResizeTests.Resize</c>.</summary>

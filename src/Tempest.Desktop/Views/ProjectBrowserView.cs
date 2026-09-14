@@ -32,6 +32,7 @@ public sealed class ProjectBrowserView : UserControl
     private readonly Button _newButton = new() { Content = "New Project…", MinHeight = DesignTokens.ControlSizeMedium };
 
     private IReadOnlyList<ProjectSummary> _current = [];
+    private IReadOnlySet<Guid>? _visibleProjectIds;
 
     /// <summary>The catalogue's own empty state — shown in place of an empty list, with the one action that fills it.</summary>
     private readonly EmptyStateView _empty = new("▣", "No projects yet", "Engineering work happens inside a project. Create the first one to give requirements, calculations, documents and verification a home.") { IsVisible = false };
@@ -96,10 +97,22 @@ public sealed class ProjectBrowserView : UserControl
         Content = root;
     }
 
-    /// <summary>Re-reads every project from the directory.</summary>
+    /// <summary>
+    /// Restricts the catalogue this view lists to exactly
+    /// <paramref name="projectIds"/> (`WP 19.7A`) — set by
+    /// <see cref="ProjectsAreaView"/> to show one listing group (Open,
+    /// Closed, Archive) at a time from the same single instance, since a
+    /// control can only ever be parented in one place at once.
+    /// <see langword="null"/> restores the unfiltered, every-project view.
+    /// Takes effect on the next <see cref="RefreshAsync"/>.
+    /// </summary>
+    public void SetVisibleProjects(IReadOnlySet<Guid>? projectIds) => _visibleProjectIds = projectIds;
+
+    /// <summary>Re-reads every project from the directory, filtered to <see cref="SetVisibleProjects"/>'s own set when one is set.</summary>
     public async Task RefreshAsync()
     {
-        _current = await _directory.ListAsync().ConfigureAwait(true);
+        var everyProject = await _directory.ListAsync().ConfigureAwait(true);
+        _current = _visibleProjectIds is null ? everyProject : [.. everyProject.Where(p => _visibleProjectIds.Contains(p.Id))];
         _projects.ItemsSource = _current.Select(p => $"{p.Label}  —  {p.Status}").ToList();
 
         _empty.IsVisible = _current.Count == 0;

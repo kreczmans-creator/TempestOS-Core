@@ -159,15 +159,13 @@ internal sealed partial class MainWindowComposer
         // that first render.
         views.ModuleHost.Content = navigator.Current.Area switch
         {
-            ShellArea.Projects => views.ProjectBrowser,
+            // `WP 19.7A`: the rail's own five areas.
+            ShellArea.Projects => views.ProjectsAreaView,
+            ShellArea.Tasks => views.TasksAreaView,
+            ShellArea.EngineeringDepartment => views.EngineeringAreaView,
+            ShellArea.Business => views.BusinessAreaView,
             ShellArea.ProjectWorkspace => views.ProjectWorkspace,
-            ShellArea.EngineeringCalculation => views.EngineeringCalculation,
-            ShellArea.Evidence => coordinators.EvidenceWorkspace,
-            ShellArea.Timesheets => views.TimesheetWeekView,
-            ShellArea.Invoicing => views.InvoicingView,
-            ShellArea.Reports => views.ReportsView,
             ShellArea.Settings => views.SettingsView,
-            ShellArea.Quotes => views.QuotesView,
             _ => engineeringSurface,
         };
 

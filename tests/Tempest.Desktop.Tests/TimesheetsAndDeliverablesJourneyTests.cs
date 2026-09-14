@@ -119,12 +119,15 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             await AssertCommercialSectionResolvesNamesAsync(
                 host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", afterCommercial.RateCardPin.RevisionNumber);
 
-            // ---- rail → Timesheets ----
-            await navigator.GoToModuleAsync(ShellArea.Timesheets);
+            // ---- rail → Business → Timesheets (`WP 19.7A`) ----
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Timesheets");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<TimesheetWeekView>().Any());
+            LayOut(window);
 
-            var week = GetPrivateField<TimesheetWeekView>(window, "_timesheetWeekView");
+            var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
             week.ParameterPrompt = StubAmendDeletePrompt();
 
             await RecordViaRealDialogAsync(window, week, projectId, monday, 4m, true, grade, "Design work");
@@ -242,11 +245,14 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             Assert.NotNull(project);
             await navigator.OpenProjectAsync(project!.Id);
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Timesheets);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Timesheets");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<TimesheetWeekView>().Any());
+            LayOut(window);
 
-            var week = GetPrivateField<TimesheetWeekView>(window, "_timesheetWeekView");
+            var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
             await RenderUntilAsync(window, () =>
                 week.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("Amended design work", StringComparison.Ordinal)));
 
@@ -378,8 +384,12 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
 
             foreach (var (width, height) in new (double, double)[] { (1600, 900), (1180, 760) })
             {
-                await navigator.GoToModuleAsync(ShellArea.Timesheets);
+                await navigator.GoToModuleAsync(ShellArea.Business);
                 await window.RenderCurrentModuleAsync();
+                LayOutWindow(window, width, height);
+                window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Timesheets");
+                await Task.Delay(10);
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
                 LayOutWindow(window, width, height);
                 AssertLayoutIsSound(window, $"{width}x{height} · Timesheets");
 

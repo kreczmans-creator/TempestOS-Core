@@ -93,6 +93,18 @@ internal sealed partial class MainWindowComposer
         views.ProjectWorkspace.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
         views.ProjectWorkspace.ProjectClosed += () => _ = callbacks.RenderCurrentModuleAsync();
 
+        // `WP 19.7A`: the Projects tree's own project leaves open a project
+        // exactly as the retired standalone Projects rail button always
+        // did; the Engineering tree's own Modules → Mechanical node
+        // navigates on to the ribbon-and-docking surface the same way
+        // the project workspace's own "Enter Engineering" button does.
+        views.ProjectsAreaView.OpenProjectRequestedAsync += async projectId =>
+        {
+            await navigator.OpenProjectAsync(projectId).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+        views.EngineeringAreaView.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+
         // The Documents area opens a file through the same `TD-80` launcher
         // the object editor uses.
         views.ProjectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
@@ -134,6 +146,15 @@ internal sealed partial class MainWindowComposer
             await navigator.ReturnToProjectAsync().ConfigureAwait(true);
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         };
+        // `WP 19.7A` (scope item 2): "the signed-in principal's name and
+        // role, which opens Settings" — Settings stays declared and
+        // reachable (`ShellAreas`'s own remarks) even though it left the
+        // rail, and this chip is that reachable path now.
+        views.Header.SettingsRequested += async () =>
+        {
+            await navigator.GoToModuleAsync(ShellArea.Settings).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
 
         // Responsive shell chrome: below the compact threshold the rail
         // folds to its icons, the header's search field to its glyph, the
@@ -149,6 +170,10 @@ internal sealed partial class MainWindowComposer
             views.Header.SetCompact(compact);
             views.Ribbon.SetCompact(compact);
             views.LibrariesView.SetCompact(compact);
+            views.ReferenceDataLibrariesView.SetCompact(compact);
+            views.ProjectsAreaView.SetCompact(compact);
+            views.EngineeringAreaView.SetCompact(compact);
+            views.BusinessAreaView.SetCompact(compact);
         };
 
         var shortcutActions = new KeyboardShortcutActions(

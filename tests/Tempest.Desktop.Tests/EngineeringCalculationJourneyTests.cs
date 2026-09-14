@@ -51,6 +51,7 @@ public sealed class EngineeringCalculationJourneyTests
 {
     /// <summary>The rail entry an engineer looks for. Deliberately the words, not the enum name.</summary>
     private const string CalculationsRailEntry = "Engineering Calculations";
+    private const string EngineeringRailEntry = "Engineering";
 
     private const string EngineerId = "desktop-journey-engineer";
     private const string SourceConsulted = "Aalco 6082-T6 extrusions datasheet, mechanical and physical property tables";
@@ -253,8 +254,7 @@ public sealed class EngineeringCalculationJourneyTests
             // Re-enter the surface and recover the stored calculation.
             await host.ShellNavigator!.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
-            await host.ShellNavigator.GoToModuleAsync(ShellArea.EngineeringCalculation);
-            await window.RenderCurrentModuleAsync();
+            await OpenCalculationsFromTheRailAsync(host, window);
 
             var view = SurfaceOf(window);
             var afterwards = view.DisplayedOutcome!;
@@ -668,8 +668,10 @@ public sealed class EngineeringCalculationJourneyTests
     }
 
     /// <summary>
-    /// Reaches Engineering Calculations the way a person does: by finding
-    /// the entry in the global navigation rail and clicking it.
+    /// Reaches Engineering Calculations the way a person does (`WP 19.7A`):
+    /// by finding the Engineering entry in the global navigation rail,
+    /// clicking it, then selecting Modules → Engineering Calculations in
+    /// the tree it lands on.
     /// </summary>
     /// <remarks>
     /// Located by the name a screen reader announces, which
@@ -683,24 +685,37 @@ public sealed class EngineeringCalculationJourneyTests
 
         var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Distinct().Single();
         var entry = rail.GetLogicalDescendants().OfType<Button>().Distinct()
-            .FirstOrDefault(b => string.Equals(AutomationProperties.GetName(b), CalculationsRailEntry, StringComparison.Ordinal));
+            .FirstOrDefault(b => string.Equals(AutomationProperties.GetName(b), EngineeringRailEntry, StringComparison.Ordinal));
 
-        Assert.True(entry is not null, $"The rail has no '{CalculationsRailEntry}' entry. Present: {string.Join(", ", rail.GetLogicalDescendants().OfType<Button>().Select(AutomationProperties.GetName))}");
-        Assert.True(entry!.IsVisible, $"The '{CalculationsRailEntry}' rail entry exists but IsVisible is false.");
-        Assert.True(entry.Bounds.Width > 0 && entry.Bounds.Height > 0, $"The '{CalculationsRailEntry}' rail entry rendered at {entry.Bounds}.");
+        Assert.True(entry is not null, $"The rail has no '{EngineeringRailEntry}' entry. Present: {string.Join(", ", rail.GetLogicalDescendants().OfType<Button>().Select(AutomationProperties.GetName))}");
+        Assert.True(entry!.IsVisible, $"The '{EngineeringRailEntry}' rail entry exists but IsVisible is false.");
+        Assert.True(entry.Bounds.Width > 0 && entry.Bounds.Height > 0, $"The '{EngineeringRailEntry}' rail entry rendered at {entry.Bounds}.");
 
         entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
         // `TD-119`: the rail navigates on an asynchronous continuation.
         var deadline = DesktopTestHelpers.Deadline(5);
-        while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
+        while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringDepartment && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Equal(ShellArea.EngineeringCalculation, host.ShellNavigator!.Current.Area);
+        Assert.Equal(ShellArea.EngineeringDepartment, host.ShellNavigator!.Current.Area);
         await window.RenderCurrentModuleAsync();
+        LayOut(window);
+
+        window.GetLogicalDescendants().OfType<EngineeringAreaView>().Distinct().Single().SelectNode(CalculationsRailEntry);
+
+        var surfaceDeadline = DesktopTestHelpers.Deadline(5);
+        while (!window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any() && DateTime.UtcNow < surfaceDeadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+            LayOut(window);
+        }
+
+        Assert.True(window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any(), "Engineering Calculations did not render after selecting the tree node.");
     }
 
     /// <summary>Re-renders until <paramref name="condition"/> holds, or a deadline expires. `TD-119`: no fixed wait.</summary>

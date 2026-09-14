@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Workspace.Mechanical;
@@ -61,8 +62,11 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.Equal(ShellArea.Home, navigator.Current.Area);
 
             // --- 2. Navigate to Projects through the real shell -------
+            // `WP 19.7A`: a tree now — Open shows the catalogue.
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
+            await PumpUntilAsync(() => window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any());
             Assert.NotNull(window.GetLogicalDescendants().OfType<ProjectBrowserView>().SingleOrDefault());
 
             // --- 3. Create a project through the production surface ---
@@ -193,6 +197,8 @@ public sealed class ObjectRehydrationAcceptanceTests
             //         the real production surface ------------------
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
+            await PumpUntilAsync(() => window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any());
 
             var browser = window.GetLogicalDescendants().OfType<ProjectBrowserView>().Single();
             var list = browser.GetLogicalDescendants().OfType<ListBox>().Single();
@@ -368,4 +374,15 @@ public sealed class ObjectRehydrationAcceptanceTests
 
     private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>
         (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+    /// <summary>Pumps the dispatcher until <paramref name="condition"/> holds or five seconds pass — for a tree node's own fire-and-forget selection handler to settle.</summary>
+    private static async Task PumpUntilAsync(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
 }

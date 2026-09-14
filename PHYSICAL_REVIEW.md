@@ -122,6 +122,17 @@ Windows).
 > had been placed inside the working tree, and its rail had no
 > *Engineering Calculations* entry. Keep no second clone inside the
 > working tree.
+>
+> **`WP 19.7A`: the rail is five entries now.** Earlier releases' rails
+> (ten-entry, then the eight-entry `WP 19.2B` rail with `Engineering
+> Calculations` as its own button) are gone. The current rail reads
+> **Home, Projects, Tasks, Engineering, Business** — Projects, Engineering
+> and Business are each a tree with a right pane over the selected node
+> (Engineering → Modules → Engineering Calculations is where that surface
+> lives now; Business → Timesheets/Invoices/Quotes/Subscriptions; Settings
+> is reached from the header, not the rail). A build whose rail still
+> shows more than five buttons, or a dimmed "not implemented" badge on
+> any of them, is not this build.
 
 > **One instance per data folder.** A second launch over the same
 > `persistence-data/` is refused with a message naming the folder (§4).
@@ -277,8 +288,8 @@ from the repository root, so data lands in `<repo>/persistence-data`.
 
 | # | Step | Expected result | Counts as a failure if |
 |---|---|---|---|
-| 1 | Launch | A window titled *TempestOS — Engineering Workspace* opens on **Home**, showing the cross-project Cockpit with honest empty states. The left rail lists **Home, Projects, Engineering, Engineering Calculations** as active and **Tasks, Commercial, Resources, Knowledge, Administration** dimmed with a "not implemented" badge. | The window does not appear; an error dialog appears; a dimmed module is clickable and opens something. |
-| 2 | Rail → **Projects** | The project catalogue appears, empty, with **Open Project** and **New Project…** buttons. | The catalogue does not render, or claims projects that do not exist. |
+| 1 | Launch | A window titled *TempestOS — Engineering Workspace* opens on **Home**, showing the cross-project Cockpit with honest empty states. The left rail reads exactly **Home, Projects, Tasks, Engineering, Business** — nothing dimmed, nothing else (`WP 19.7A`). | The window does not appear; an error dialog appears; the rail shows any other entry, or a sixth. |
+| 2 | Rail → **Projects** | A tree — **Dashboard + Reports, Open, Closed, Archive** — with a right pane; **Dashboard + Reports** is a disclosed placeholder naming `WP 19.7B`. Select **Open**: the project catalogue appears, empty, with **Open Project** and **New Project…** buttons. | The catalogue does not render, or claims projects that do not exist. |
 | 3 | **New Project…** | A prompt appears pre-filled with the next free identifier (`P-0001` on a clean machine). Accept it and give a name, e.g. *Apollo Pump Redesign*. The project appears in the list. | No prompt; the project is not listed after creating it. |
 | 4 | Open the project | The **Project Workspace** opens. Tabs: **Overview, Engineering, Documents, Requirements, Tasks, Risks, Timeline** are live; **Reports** and **Settings** are marked not implemented. The status bar names the open project. | The status bar does not name the project; a live tab renders nothing. |
 | 5 | Rail → **Engineering** | The Engineering Workspace opens *inside the project*: Ribbon across the top with one tab per discipline (Calculations, Documents, Manufacturing, Mechanical, Requirements, Verification), Project Explorer, and a docking area. | The Ribbon or Explorer is missing; the project context is lost. |

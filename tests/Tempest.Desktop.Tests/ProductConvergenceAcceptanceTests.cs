@@ -60,9 +60,16 @@ public sealed class ProductConvergenceAcceptanceTests
 
             Assert.Equal(ShellArea.Home, navigator.Current.Area);
 
-            // → Projects
+            // → Projects (`WP 19.7A`: a tree now — Open shows the catalogue)
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
+            var browserDeadline = DateTime.UtcNow.AddSeconds(5);
+            while (!window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any() && DateTime.UtcNow < browserDeadline)
+            {
+                await Task.Delay(10);
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            }
             Assert.NotNull(window.GetLogicalDescendants().OfType<ProjectBrowserView>().SingleOrDefault());
 
             // → Create project
@@ -392,13 +399,14 @@ public sealed class ProductConvergenceAcceptanceTests
             var context = host.ProjectContext!;
             var scope = host.EngineeringScope!;
 
-            // 1. A removed module (`WP 19.2B`, `TD-81`): the navigator
-            // still accepts it — only ProjectWorkspace/Engineering refuse
-            // `GoToModuleAsync` — but rendering it finds no registry
-            // entry (its descriptor left `ShellAreas` with the module)
-            // and redirects Home rather than showing a "not yet
-            // implemented" card that no longer exists.
-            await navigator.GoToModuleAsync(ShellArea.Tasks);
+            // 1. A removed module (`WP 19.2B`, `TD-81`; `WP 19.7A` revives
+            // `Tasks` as a real area, so `Commercial` is this test's own
+            // example now): the navigator still accepts it — only
+            // ProjectWorkspace/Engineering refuse `GoToModuleAsync` — but
+            // rendering it finds no registry entry (its descriptor left
+            // `ShellAreas` with the module) and redirects Home rather than
+            // showing a "not yet implemented" card that no longer exists.
+            await navigator.GoToModuleAsync(ShellArea.Commercial);
             await window.RenderCurrentModuleAsync();
 
             Assert.Equal(ShellArea.Home, navigator.Current.Area);
@@ -515,7 +523,13 @@ public sealed class ProductConvergenceAcceptanceTests
             await window.RenderCurrentModuleAsync();
 
             var workspace = window.GetLogicalDescendants().OfType<ProjectWorkspaceView>().Single();
-            var tabs = workspace.GetLogicalDescendants().OfType<TabItem>().ToList();
+            // `WP 19.7A`: the project's own Evidence tab embeds
+            // `EvidenceWorkspaceView`, which carries two `TabItem`s of its
+            // own (Evidence, Libraries) — real content, not one of
+            // `ProjectAreas.All`'s own top-level areas, so this walk keeps
+            // only the `TabItem`s `ProjectWorkspaceView` itself built
+            // (`Tag` set to the `ProjectArea` each represents).
+            var tabs = workspace.GetLogicalDescendants().OfType<TabItem>().Where(t => t.Tag is ProjectArea).ToList();
 
             Assert.Equal(ProjectAreas.All.Count, tabs.Count);
             foreach (var area in ProjectAreas.All)

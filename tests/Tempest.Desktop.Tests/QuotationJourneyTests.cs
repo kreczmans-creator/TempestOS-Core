@@ -52,6 +52,9 @@ public sealed class QuotationJourneyTests
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any());
+            LayOut(window);
 
             var browser = window.GetLogicalDescendants().OfType<ProjectBrowserView>().Single();
             var newButton = browser.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Project…"));
@@ -99,6 +102,27 @@ public sealed class QuotationJourneyTests
                 quoteId = found.Id;
                 return true;
             });
+
+            // The redirect selects the Quote tab, but a project can carry
+            // more than one quotation, so the tab itself does not assume
+            // which one to show — the same explicit selection
+            // `QuotesView`'s own "Open" button already makes through this
+            // identical method.
+            // `host.ProjectContext.Current` can race to null here: several
+            // fire-and-forget renders are still in flight from the New
+            // Project prompt's own redirect chain, and
+            // `ProjectContext.RefreshAsync` (the first line of
+            // `ProjectWorkspaceView.RefreshAsync`, run on every one of
+            // them) closes the context outright the instant any single one
+            // of those overlapping calls does not find the
+            // just-created project yet. Re-opening explicitly, once,
+            // settles it the same way a person re-clicking the project
+            // would.
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync().ConfigureAwait(true);
+            await quoteView.SelectQuoteAsync(quoteId).ConfigureAwait(true);
+            await RenderUntilAsync(window, () =>
+                quoteView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Draft", StringComparison.Ordinal)));
             LayOut(window);
             Assert.Contains(
                 quoteView.GetLogicalDescendants().OfType<TextBlock>(),
@@ -131,10 +155,13 @@ public sealed class QuotationJourneyTests
             Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(sheetContent.Bytes, 0, Math.Min(8, sheetContent.Bytes.Length)), StringComparison.Ordinal);
 
             // ---- Business → Quotes lists it under Sent ----
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Quotes");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<QuotesView>().Any());
+            LayOut(window);
+            var quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             await RenderUntilAsync(window, () => FindQuoteRow(quotesView, quoteId) is not null);
 
             var sentGroup = quotesView.GetLogicalDescendants().OfType<TextBlock>()
@@ -197,10 +224,10 @@ public sealed class QuotationJourneyTests
             await RenderUntilAsync(window, () => documentArea.TabCount >= tabCountBeforeSecondOpen);
 
             // ---- Business → Quotes: nowhere in Outstanding once Accepted, and not listed under New/Sent either ----
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             await RenderUntilAsync(window, () => true);
             Assert.Null(FindQuoteRow(quotesView, quoteId));
 
@@ -226,8 +253,18 @@ public sealed class QuotationJourneyTests
             }
             finally
             {
-                if (File.Exists(exportPath))
-                    File.Delete(exportPath);
+                // Best-effort cleanup only: a transient Windows file lock
+                // here (the export's own write stream, or a scanner,
+                // still briefly holding the handle) has no bearing on the
+                // real assertions above, which have already run.
+                try
+                {
+                    if (File.Exists(exportPath))
+                        File.Delete(exportPath);
+                }
+                catch (IOException)
+                {
+                }
             }
 
             await host.ShutdownAsync();

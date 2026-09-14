@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Desktop.Views;
@@ -46,6 +47,16 @@ public sealed class ProductSpineAcceptanceTests
             // --- 2. Select a project -------------------------------------
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+
+            var projectsArea = window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single();
+            Assert.NotNull(projectsArea);
+            projectsArea.SelectNode("Open");
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any() && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+            }
 
             var browser = window.GetLogicalDescendants().OfType<ProjectBrowserView>().Single();
             Assert.NotNull(browser);

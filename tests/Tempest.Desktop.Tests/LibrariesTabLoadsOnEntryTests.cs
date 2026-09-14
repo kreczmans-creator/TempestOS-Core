@@ -14,8 +14,9 @@ namespace Tempest.Desktop.Tests;
 /// found nothing but the add-material form: every earlier test had called
 /// <see cref="LibrariesView.RefreshAsync"/> by hand, so the fact that the
 /// application never did went unseen. This test reaches the tab the way
-/// the application does — enter the Evidence area, render it, select the
-/// tab — and refreshes nothing itself.
+/// the application does — enter Engineering, render it, select Reference
+/// data (`WP 19.7A`: moved off Evidence, which is a per-project tab now)
+/// — and refreshes nothing itself.
 /// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class LibrariesTabLoadsOnEntryTests
@@ -30,16 +31,15 @@ public sealed class LibrariesTabLoadsOnEntryTests
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
-            var tabs = (TabControl)evidenceWorkspace.Content!;
-            tabs.SelectedIndex = 1;
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
             LayOut(window);
 
-            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             var headings = librariesView.GetLogicalDescendants().OfType<TextBlock>()
                 .Select(t => t.Text ?? string.Empty)
                 .Where(text => text.EndsWith(")", StringComparison.Ordinal))
@@ -76,14 +76,15 @@ public sealed class LibrariesTabLoadsOnEntryTests
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
-            var tabs = (TabControl)evidenceWorkspace.Content!;
-            tabs.SelectedIndex = 1;
-            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
+
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
             var textBoxes = librariesView.GetLogicalDescendants().OfType<TextBox>().ToList();
@@ -128,14 +129,15 @@ public sealed class LibrariesTabLoadsOnEntryTests
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Evidence);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
-            var tabs = (TabControl)evidenceWorkspace.Content!;
-            tabs.SelectedIndex = 1;
-            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
+
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
             var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()

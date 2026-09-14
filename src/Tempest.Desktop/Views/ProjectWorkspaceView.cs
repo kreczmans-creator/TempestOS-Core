@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -41,9 +42,11 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectTaskRegister _tasks;
     private readonly IProjectGovernanceRegister _governance;
     private readonly IProjectMilestoneRegister _milestones;
+    private readonly EngineeringDomainContext _domainContext;
 
     private readonly TextBlock _title = PageHeading.Title(string.Empty);
     private readonly TextBlock _subtitle = PageHeading.Lead(string.Empty);
+    private readonly TextBlock _lifecycleBanner = new() { FontSize = DesignTokens.FontSizeCaption, FontWeight = FontWeight.Medium, IsVisible = false, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0) };
     private readonly TabControl _areas = new();
     private readonly StackPanel _overview = new() { Spacing = DesignTokens.SpaceSm };
     private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.ControlSizeMedium };
@@ -59,6 +62,8 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectTimelineView _timelineView = new();
     private readonly ProjectDeliverablesView _deliverablesView;
     private readonly ProjectQuoteView _quoteView;
+    private readonly EvidenceWorkspaceView _evidenceView;
+    private readonly ProjectSignOffView _signOffView;
 
     // `WP 19.2B`: the Structure tab's own content host — a stable
     // placeholder built at construction time, before the engineering
@@ -192,6 +197,9 @@ public sealed class ProjectWorkspaceView : UserControl
     /// own area registry.
     /// </param>
     /// <param name="quoteView">This project's own Quote tab (`WP 19.5B`, `ADR-0152`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="evidenceView">This project's own Evidence tab (`WP 19.7A`) — the same Evidence surface (`WP 18.2A`), already scoped to whichever project is open, built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="signOffView">This project's own Sign off tab (`WP 19.7A`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="domainContext">Reads this project's own <c>ClosedOn</c>/<c>Held</c> facts for the lifecycle banner — <see cref="ProjectSummary"/> carries neither.</param>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
         IProjectDirectory directory,
@@ -202,7 +210,10 @@ public sealed class ProjectWorkspaceView : UserControl
         IProjectGovernanceRegister governance,
         IProjectMilestoneRegister milestones,
         ProjectDeliverablesView deliverablesView,
-        ProjectQuoteView quoteView)
+        ProjectQuoteView quoteView,
+        EvidenceWorkspaceView evidenceView,
+        ProjectSignOffView signOffView,
+        EngineeringDomainContext domainContext)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -214,6 +225,9 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(milestones);
         ArgumentNullException.ThrowIfNull(deliverablesView);
         ArgumentNullException.ThrowIfNull(quoteView);
+        ArgumentNullException.ThrowIfNull(evidenceView);
+        ArgumentNullException.ThrowIfNull(signOffView);
+        ArgumentNullException.ThrowIfNull(domainContext);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -225,6 +239,9 @@ public sealed class ProjectWorkspaceView : UserControl
         _milestones = milestones;
         _deliverablesView = deliverablesView;
         _quoteView = quoteView;
+        _evidenceView = evidenceView;
+        _signOffView = signOffView;
+        _domainContext = domainContext;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
@@ -343,6 +360,7 @@ public sealed class ProjectWorkspaceView : UserControl
         header.Children.Add(PageHeading.Label("PROJECT WORKSPACE"));
         header.Children.Add(_title);
         header.Children.Add(_subtitle);
+        header.Children.Add(_lifecycleBanner);
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, Margin = new Thickness(0, DesignTokens.SpaceMd, 0, 0) };
         actions.Children.Add(_enterEngineering);
@@ -424,6 +442,9 @@ public sealed class ProjectWorkspaceView : UserControl
             _timelineView.Show([], null);
             await _deliverablesView.RefreshAsync().ConfigureAwait(true);
             await _quoteView.RefreshAsync().ConfigureAwait(true);
+            await _evidenceView.RefreshAsync().ConfigureAwait(true);
+            await _signOffView.RefreshAsync().ConfigureAwait(true);
+            _lifecycleBanner.IsVisible = false;
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -433,6 +454,29 @@ public sealed class ProjectWorkspaceView : UserControl
         _subtitle.Text = $"Lifecycle: {project.Status}";
         _enterEngineering.IsEnabled = true;
         _closeProject.IsEnabled = true;
+
+        // `WP 19.7A`: the lifecycle banner reads facts `ProjectSummary`
+        // does not carry (`ClosedOn`/`Held`) straight from the real
+        // domain object, exactly as `ProjectsAreaView`'s own grouping does
+        // — an Archived project (`ProjectArchival`, `WP 19.5C`) is read-only
+        // reference data, said out loud here rather than discovered only
+        // when a write is refused.
+        if (await _domainContext.Repository.FindAsync(project.Id).ConfigureAwait(true) is Tempest.Core.EngineeringDomain.Project realProject)
+        {
+            var asOf = DateTimeOffset.UtcNow;
+            _lifecycleBanner.Text = ProjectArchival.ListingGroupOf(realProject, asOf) switch
+            {
+                ProjectListingGroup.Archive => $"Archived — closed {realProject.ClosedOn:d}. Reference data only; nothing here can be changed.",
+                ProjectListingGroup.Closed => $"Closed — signed off {realProject.SignOff?.SignedOn:d}. Most writes are refused; see Sign off to reopen.",
+                _ when realProject.Held => $"On hold: {realProject.HoldReason}",
+                _ => null,
+            } ?? string.Empty;
+            _lifecycleBanner.IsVisible = !string.IsNullOrEmpty(_lifecycleBanner.Text);
+        }
+        else
+        {
+            _lifecycleBanner.IsVisible = false;
+        }
 
         var contents = await _directory.ListProjectContentsAsync(project.Id).ConfigureAwait(true);
         _documentsView.Show(await _documents.ListAsync(project.Id).ConfigureAwait(true), project.Label);
@@ -449,6 +493,8 @@ public sealed class ProjectWorkspaceView : UserControl
         _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         await _deliverablesView.RefreshAsync().ConfigureAwait(true);
         await _quoteView.RefreshAsync().ConfigureAwait(true);
+        await _evidenceView.RefreshAsync().ConfigureAwait(true);
+        await _signOffView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();
         _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
         var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
@@ -499,6 +545,8 @@ public sealed class ProjectWorkspaceView : UserControl
             ProjectArea.Risks => _risksView,
             ProjectArea.Timeline => _timelineView,
             ProjectArea.Deliverables => _deliverablesView,
+            ProjectArea.Evidence => _evidenceView,
+            ProjectArea.SignOff => _signOffView,
             _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Area, "No content is built for this project area."),
         };
 

@@ -128,12 +128,15 @@ public sealed class InvoicingJourneyTests
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase) && t.Text.Contains(request.Id.ToString("N"), StringComparison.OrdinalIgnoreCase)));
             Assert.Single((await domain.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true)).OfType<InvoiceRequest>());
 
-            // ---- rail → Invoicing → Review opens the request right up ----
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            // ---- rail → Business → Invoices → Review opens the request right up (`WP 19.7A`) ----
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Invoices");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<InvoicingView>().Any());
+            LayOut(window);
 
-            var invoicingView = GetPrivateField<InvoicingView>(window, "_invoicingView");
+            var invoicingView = window.GetLogicalDescendants().OfType<InvoicingView>().Single();
             invoicingView.ParameterPrompt = AutoConfirmPrompt();
             await ClickRequestActionAsync(window, invoicingView, request.Id, "Review");
 
@@ -176,8 +179,8 @@ public sealed class InvoicingJourneyTests
             AssertSectionPresent(editor!, "Lines");
             AssertSectionPresent(editor!, "Connector");
 
-            // ---- rail → Invoicing → Send ----
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            // ---- rail → Business → Invoices → Send (`WP 19.7A`) ----
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
@@ -274,11 +277,14 @@ public sealed class InvoicingJourneyTests
                 return raisedAgain.Request!;
             }
 
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Invoices");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<InvoicingView>().Any());
+            LayOut(window);
 
-            var invoicingView = GetPrivateField<InvoicingView>(window, "_invoicingView");
+            var invoicingView = window.GetLogicalDescendants().OfType<InvoicingView>().Single();
             invoicingView.ParameterPrompt = AutoConfirmPrompt();
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 

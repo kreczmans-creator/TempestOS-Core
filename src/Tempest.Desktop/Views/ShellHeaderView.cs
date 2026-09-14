@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Desktop.Branding;
@@ -78,14 +79,38 @@ public sealed class ShellHeaderView : UserControl
 
     private readonly Button _search = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = 220 };
     private readonly Button _theme = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
+    private readonly Button _notifications = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
+    private readonly TextBlock _notificationsBadge = new() { FontSize = DesignTokens.FontSizeLabel, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+    private readonly ListBox _notificationsList = new() { MaxHeight = 320, MinWidth = 280 };
+    // `IsVisible = false` explicitly, independent of `IsOpen`: a closed
+    // `Popup` still reports non-zero `Bounds` as a logical child of `root`
+    // (an Avalonia quirk — `IsOpen` gates the overlay window, not this
+    // control's own layout participation), which the layout walk's own
+    // sibling-overlap check would otherwise flag on every single area —
+    // that check explicitly skips an invisible sibling.
+    private readonly Popup _notificationsFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedRight, IsLightDismissEnabled = true, IsVisible = false };
     private readonly TextBlock _principal = new() { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
-    private readonly StackPanel _principalChip = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+
+    // A Button, not a Border — `WP 19.7A`, scope item 2: "the signed-in
+    // principal's name and role, which opens Settings" — the identical
+    // "this is the one place the shell already names it, so it is the
+    // natural target" reasoning `_projectChip`'s own remarks give.
+    private readonly Button _principalChip = new()
+    {
+        CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+        Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs),
+        VerticalAlignment = VerticalAlignment.Center,
+        IsVisible = false,
+    };
 
     /// <summary>Raised when the user asks for the global search / command palette.</summary>
     public event Action? SearchRequested;
 
     /// <summary>Raised when the user asks to switch theme.</summary>
     public event Action? ThemeToggleRequested;
+
+    /// <summary>Raised when the user clicks the principal chip, asking for Settings (`WP 19.7A`).</summary>
+    public event Action? SettingsRequested;
 
     /// <summary>
     /// Raised when the user clicks the current-project chip (`WP-Z4`
@@ -181,15 +206,64 @@ public sealed class ShellHeaderView : UserControl
         _theme.Click += (_, _) => ThemeToggleRequested?.Invoke();
         actions.Children.Add(_theme);
 
+        // ---- Notifications (`WP 19.7A`, scope item 2) -------------------
+        var bellHost = new Panel();
+        var bellIcon = IconGeometry.Build(IconGeometry.Bell, 15);
+        bellHost.Children.Add(bellIcon);
+        _notificationsBadge.FontWeight = FontWeight.Bold;
+        var badgeFrame = new Border
+        {
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(3, 0),
+            MinWidth = 12,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -4, -6, 0),
+            Child = _notificationsBadge,
+        };
+        ThemeReactiveBrush.Bind(badgeFrame, Border.BackgroundProperty, BrandPalette.AccentBrushKey);
+        bellHost.Children.Add(badgeFrame);
+        _notifications.Content = bellHost;
+        _notifications.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(_notifications, "Notifications");
+        ToolTip.SetTip(_notifications, "No notifications");
+        _notifications.Click += (_, _) =>
+        {
+            var open = !_notificationsFlyout.IsOpen;
+            _notificationsFlyout.IsVisible = open;
+            _notificationsFlyout.IsOpen = open;
+        };
+        _notificationsFlyout.Closed += (_, _) => _notificationsFlyout.IsVisible = false;
+        actions.Children.Add(_notifications);
+
+        AutomationProperties.SetName(_notificationsList, "Notifications list");
+        var flyoutFrame = new Border
+        {
+            CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(DesignTokens.SpaceSm),
+            Child = _notificationsList,
+        };
+        ThemeReactiveBrush.Bind(flyoutFrame, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(flyoutFrame, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
+        _notificationsFlyout.Child = flyoutFrame;
+        _notificationsFlyout.PlacementTarget = _notifications;
+
+        // ---- The signed-in principal (`WP 19.7A`: name, role, opens Settings) ----
         var user = IconGeometry.Build(IconGeometry.User, 14);
-        _principalChip.Children.Add(user);
-        _principalChip.Children.Add(_principal);
+        var principalRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center };
+        principalRow.Children.Add(user);
+        principalRow.Children.Add(_principal);
+        _principalChip.Content = principalRow;
         _principalChip.Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0);
         ThemeReactiveBrush.Bind(_principal, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        AutomationProperties.SetName(_principalChip, "Account — opens Settings");
+        _principalChip.Click += (_, _) => SettingsRequested?.Invoke();
         actions.Children.Add(_principalChip);
 
         Grid.SetColumn(actions, 3);
         root.Children.Add(actions);
+        root.Children.Add(_notificationsFlyout);
 
         var frame = new Border { Child = root, BorderThickness = new Thickness(0, 0, 0, 1) };
         ThemeReactiveBrush.Bind(frame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
@@ -222,12 +296,26 @@ public sealed class ShellHeaderView : UserControl
     }
 
     /// <summary>Names the principal this session operates as (`TD-103`) — hidden when none could be established, never a fabricated name.</summary>
-    public void SetPrincipal(string? displayName)
+    public void SetPrincipal(string? displayName, string? role = null)
     {
-        _principal.Text = displayName ?? string.Empty;
+        _principal.Text = string.IsNullOrWhiteSpace(role) ? displayName ?? string.Empty : $"{displayName} · {role}";
         _principalChip.IsVisible = !string.IsNullOrWhiteSpace(displayName);
         if (!string.IsNullOrWhiteSpace(displayName))
-            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}");
+            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}{(string.IsNullOrWhiteSpace(role) ? string.Empty : $" ({role})")} — click for Settings");
+    }
+
+    /// <summary>
+    /// Shows the notifications bell's own count, and — while the flyout is
+    /// open — the messages themselves (`WP 19.7A`, scope item 2: "a
+    /// notifications bell with the count and a flyout listing the platform
+    /// notifications the status bar counts today").
+    /// </summary>
+    public void SetNotifications(IReadOnlyList<string> messages)
+    {
+        _notificationsBadge.Text = messages.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _notificationsBadge.IsVisible = messages.Count > 0;
+        ToolTip.SetTip(_notifications, messages.Count == 0 ? "No notifications" : $"{messages.Count} notification(s)");
+        _notificationsList.ItemsSource = messages.Count == 0 ? new[] { "No notifications" } : messages;
     }
 
     /// <summary>Hides the search field's own long label when the window is narrow, keeping the icon and shortcut.</summary>

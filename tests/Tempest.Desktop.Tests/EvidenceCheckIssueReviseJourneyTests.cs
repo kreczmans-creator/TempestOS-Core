@@ -323,14 +323,16 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
             var navigator = host.ShellNavigator!;
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            // `WP 19.7A`: Libraries reaches Reference data under Engineering
+            // now, reachable with no project open.
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
-            var tabs = (TabControl)evidenceWorkspace.Content!;
-            tabs.SelectedIndex = 1;
-            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
             var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()

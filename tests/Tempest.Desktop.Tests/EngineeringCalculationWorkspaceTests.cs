@@ -32,6 +32,7 @@ public sealed class EngineeringCalculationWorkspaceTests
 {
     private const string EngineerId = "workspace-test-engineer";
     private const string RailEntry = "Engineering Calculations";
+    private const string EngineeringRailEntry = "Engineering";
 
     // `WP 17.0A`. The `v0.16.0` build set Grid.Column on the StackPanels
     // inside the two ScrollViewers rather than on the viewers themselves,
@@ -293,21 +294,33 @@ public sealed class EngineeringCalculationWorkspaceTests
 
         var rail = window.GetLogicalDescendants().OfType<GlobalNavigationRail>().Distinct().Single();
         var entry = rail.GetLogicalDescendants().OfType<Button>().Distinct()
-            .Single(b => string.Equals(AutomationProperties.GetName(b), RailEntry, StringComparison.Ordinal));
+            .Single(b => string.Equals(AutomationProperties.GetName(b), EngineeringRailEntry, StringComparison.Ordinal));
 
-        AssertUsable(window, entry, $"the '{RailEntry}' rail entry");
+        AssertUsable(window, entry, $"the '{EngineeringRailEntry}' rail entry");
         entry.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
         var deadline = DesktopTestHelpers.Deadline(5);
-        while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringCalculation && DateTime.UtcNow < deadline)
+        while (host.ShellNavigator!.Current.Area != ShellArea.EngineeringDepartment && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Equal(ShellArea.EngineeringCalculation, host.ShellNavigator!.Current.Area);
+        Assert.Equal(ShellArea.EngineeringDepartment, host.ShellNavigator!.Current.Area);
         await window.RenderCurrentModuleAsync();
         LayOut(window);
+
+        // `WP 19.7A`: Engineering Calculations is a tree node under
+        // Engineering now, not its own rail entry.
+        window.GetLogicalDescendants().OfType<EngineeringAreaView>().Distinct().Single().SelectNode(RailEntry);
+
+        var surfaceDeadline = DesktopTestHelpers.Deadline(5);
+        while (!window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any() && DateTime.UtcNow < surfaceDeadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+            LayOut(window);
+        }
     }
 
     private static EngineeringCalculationView SurfaceOf(MainWindow window) =>

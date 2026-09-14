@@ -99,28 +99,25 @@ public sealed class MainWindow : Window
     private readonly Control _engineeringSurface;
     private readonly IProjectDirectory _projectDirectory;
 
-    private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
     private bool _engineeringCalculationLoaded;
 
-    // The Evidence workspace (`WP 18.2A`, `ADR-0148`).
-    private readonly EvidenceWorkspaceView _evidenceWorkspace;
-
-    // The Timesheets area (`WP 19.0A`, `ADR-0150`).
-    private readonly TimesheetWeekView _timesheetWeekView;
-
-    // The Invoicing area (`WP 19.1A` part 3, `ADR-0151`).
-    private readonly InvoicingView _invoicingView;
-
-    // The Reports and Settings areas (`WP 19.2B`).
-    private readonly ReportsView _reportsView;
+    // The Settings area (`WP 19.2B`).
     private readonly SettingsView _settingsView;
 
-    // The Quotes area and the New Project prompt's own "open a quotation"
-    // option (`WP 19.5B`, `ADR-0152`).
-    private readonly QuotesView _quotesView;
+    // The New Project prompt's own "open a quotation" option (`WP 19.5B`, `ADR-0152`).
     private readonly NewProjectPrompt _newProjectPrompt;
     private readonly IQuotationService _quotationService;
+
+    // The rail's own five areas (`WP 19.7A`) — Evidence, Timesheets,
+    // Invoicing, Reports, Engineering Calculations and Quotes are no
+    // longer standalone rail destinations; each is embedded content
+    // inside one of these four now (see each area view's own remarks),
+    // so this window keeps no field of its own for any of them any more.
+    private readonly ProjectsAreaView _projectsAreaView;
+    private readonly TasksAreaView _tasksAreaView;
+    private readonly EngineeringAreaView _engineeringAreaView;
+    private readonly BusinessAreaView _businessAreaView;
 
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
@@ -176,7 +173,8 @@ public sealed class MainWindow : Window
         var composer = new MainWindowComposer();
         var callbacks = new MainWindowCallbacks(
             RecordHistory, RefreshOutputPanelExtras, RefreshStatusBar, SetCurrentArea,
-            OpenObjectAsync, OpenProjectAttachmentAsync, OpenEvidenceRecordAsync, PromptForNewProjectAsync, RenderCurrentModuleAsync);
+            OpenObjectAsync, OpenProjectAttachmentAsync, OpenEvidenceRecordAsync, PromptForNewProjectAsync, RenderCurrentModuleAsync,
+            EnterEngineeringCalculationAsync);
 
         var views = composer.BuildViews(host, this, evidenceFilePickerOverride, callbacks);
         var coordinators = composer.BuildCoordinators(host, this, views, callbacks);
@@ -225,26 +223,30 @@ public sealed class MainWindow : Window
         _moduleHost = views.ModuleHost;
         _engineeringSurface = layout.EngineeringSurface;
         _projectDirectory = views.ProjectDirectory;
-        _engineeringCalculation = views.EngineeringCalculation;
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
-        _evidenceWorkspace = coordinators.EvidenceWorkspace;
-        _timesheetWeekView = views.TimesheetWeekView;
-        _invoicingView = views.InvoicingView;
-        _reportsView = views.ReportsView;
         _settingsView = views.SettingsView;
-        _quotesView = views.QuotesView;
         _newProjectPrompt = views.NewProjectPrompt;
         _quotationService = (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
         _domainContext = views.Composition.DomainContext;
+        _projectsAreaView = views.ProjectsAreaView;
+        _tasksAreaView = views.TasksAreaView;
+        _engineeringAreaView = views.EngineeringAreaView;
+        _businessAreaView = views.BusinessAreaView;
 
         // The area registry (`WP 19.2A`, `TD-109`) — see
         // `RenderCurrentModuleAsync`/`ShellAreaRender`.
         _areaRegistry = new Dictionary<ShellArea, ShellAreaRender>
         {
-            [ShellArea.Projects] = new(() => _projectBrowser, () => _projectBrowser.RefreshAsync()),
+            // `WP 19.7A`: the rail's own five areas — each re-read on
+            // every entry, the same "load when you land here" discipline
+            // every other area has always followed.
+            [ShellArea.Projects] = new(() => _projectsAreaView, () => _projectsAreaView.RefreshAsync()),
+            [ShellArea.Tasks] = new(() => _tasksAreaView, () => _tasksAreaView.RefreshAsync()),
+            [ShellArea.EngineeringDepartment] = new(() => _engineeringAreaView, () => _engineeringAreaView.RefreshAsync()),
+            [ShellArea.Business] = new(() => _businessAreaView, () => _businessAreaView.RefreshAsync()),
             [ShellArea.ProjectWorkspace] = new(() => _projectWorkspace, EnterProjectWorkspaceAsync),
             // `WP 17.9.1`: Engineering alone is not usable without the
             // Project Explorer and Properties panels, so entering it
@@ -260,29 +262,13 @@ public sealed class MainWindow : Window
             // workspace with its own Structure tab embedding the surface,
             // never a bare module swap any more — see
             // `ResolveEngineeringSurfaceHost`/`EnterEngineeringAsync`.
+            // `WP 19.7A`: reached from the rail via `EngineeringDepartment`'s
+            // own Modules → Mechanical node now, not a rail button of its
+            // own — this entry itself is otherwise unchanged.
             [ShellArea.Engineering] = new(
                 () => ResolveEngineeringSurfaceHost(projectScoped: _navigator.Current.ProjectId is not null),
                 EnterEngineeringAsync),
-            // `WP 18.2A`: re-read on every entry, the same "load when you
-            // land here" discipline every other area follows.
-            [ShellArea.Evidence] = new(() => _evidenceWorkspace, () => _evidenceWorkspace.RefreshAsync()),
-            [ShellArea.EngineeringCalculation] = new(() => _engineeringCalculation, EnterEngineeringCalculationAsync),
-            // `WP 19.0A` (`ADR-0150`): re-read on every entry, the same
-            // "load when you land here" discipline every other area
-            // follows.
-            [ShellArea.Timesheets] = new(() => _timesheetWeekView, () => _timesheetWeekView.RefreshAsync()),
-            // `WP 19.1A` part 3 (`ADR-0151`): re-read on every entry, the
-            // same "load when you land here" discipline every other area
-            // follows.
-            [ShellArea.Invoicing] = new(() => _invoicingView, () => _invoicingView.RefreshAsync()),
-            // `WP 19.2B`: re-read on every entry, the same "load when you
-            // land here" discipline every other area follows.
-            [ShellArea.Reports] = new(() => _reportsView, () => _reportsView.RefreshAsync()),
             [ShellArea.Settings] = new(() => _settingsView, () => _settingsView.RefreshAsync()),
-            // `WP 19.5B` (`ADR-0152`): re-read on every entry, the same
-            // "load when you land here" discipline every other area
-            // follows.
-            [ShellArea.Quotes] = new(() => _quotesView, () => _quotesView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the
