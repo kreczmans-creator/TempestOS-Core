@@ -161,6 +161,55 @@ internal static class DesktopTestHelpers
     }
 
     /// <summary>
+    /// Finds <paramref name="content"/> — the actual control a
+    /// <see cref="TabItem"/> puts in <c>Content</c>, rendered inside
+    /// <paramref name="tabControl"/>'s own selected-content presenter
+    /// (<c>PART_SelectedContentHost</c>) — overlapping
+    /// <paramref name="tabControl"/>'s own tab-strip header
+    /// (<c>PART_ItemsPresenter</c>) (`WP 19.4A`). This is deliberately a
+    /// check of the tab's *rendered content*, not of the two template
+    /// parts against each other: a `ContentPresenter` stretches to fill
+    /// whatever its own template gives it regardless of what its child
+    /// does, so a content control's own negative margin — exactly
+    /// `ProjectWorkspaceView`'s old `_structureHost`, `po-comments.md` #1
+    /// — moves only the *child's* bounds, never the presenter's own, and a
+    /// presenter-vs-presenter comparison would stay silent on precisely
+    /// the bug this exists to catch. The strip is looked up by template
+    /// part name, not by type or traversal order: the selected content can
+    /// itself contain further <see cref="TabControl"/>s (the Ribbon's own
+    /// category strip), and a type-only <c>FirstOrDefault</c> over every
+    /// visual descendant could match one of those instead of
+    /// <paramref name="tabControl"/>'s own part. Both bounds are
+    /// translated into <paramref name="tabControl"/>'s own coordinate
+    /// space (<see cref="Visual.TranslatePoint(Point, Visual)"/>) rather
+    /// than compared as raw <see cref="Layoutable.Bounds"/>, since nothing
+    /// guarantees <paramref name="content"/> is an immediate visual child
+    /// of the strip's own parent.
+    /// </summary>
+    private static string? FindTabStripContentOverlap(Control content, TabControl tabControl, string area)
+    {
+        var stripHost = tabControl.GetVisualDescendants().OfType<ItemsPresenter>().FirstOrDefault(p => ReferenceEquals(p.TemplatedParent, tabControl));
+        if (stripHost is null || !stripHost.IsVisible)
+            return null;
+
+        var stripOrigin = stripHost.TranslatePoint(new Point(0, 0), tabControl);
+        var contentOrigin = content.TranslatePoint(new Point(0, 0), tabControl);
+        if (stripOrigin is not { } stripPoint || contentOrigin is not { } contentPoint)
+            return null;
+
+        var stripBounds = new Rect(stripPoint, stripHost.Bounds.Size);
+        var contentBounds = new Rect(contentPoint, content.Bounds.Size);
+        if (stripBounds.Width <= 0 || stripBounds.Height <= 0 || contentBounds.Width <= 0 || contentBounds.Height <= 0)
+            return null;
+
+        var overlap = stripBounds.Intersect(contentBounds);
+        if (overlap.Width <= 0.5 || overlap.Height <= 0.5)
+            return null;
+
+        return $"[{area}] {Describe(content)} at {contentBounds} is drawn over {Describe(tabControl)}'s own tab strip at {stripBounds} (overlap {overlap}).";
+    }
+
+    /// <summary>
     /// The layout walk's own explicit allow-list of intentional overlays
     /// (`WP 19.3A`) — every overlay <c>MainWindow</c> stacks directly in its
     /// root <c>Grid</c> over the shell's real content (`WP 10.5A`'s dialog
@@ -322,6 +371,26 @@ internal static class DesktopTestHelpers
             // actually drawn into, whatever template stands between them.
             if (control.GetVisualParent() is not Control parent || !parent.IsVisible)
                 continue;
+
+            // `WP 19.4A`: a `TabControl`'s own tab-strip header and the
+            // content its selected `TabItem` actually renders are
+            // different template parts, never a pair of `Panel` children
+            // the sibling-overlap walk above ever visits together —
+            // exactly why `ProjectWorkspaceView`'s old negative-margin
+            // Structure tab could bleed up into its own tab strip
+            // (`po-comments.md` #1) with the walk staying green: `control`
+            // here is precisely "a `TabItem`'s own `Content`" the comment
+            // above already identifies as rendering inside the selected-
+            // content host. Checked once per such control, and
+            // deliberately *not* run through the negative-margin tolerance
+            // the bounds-within-parent check below allows: a control
+            // covering its own tab strip is exactly the defect this exists
+            // to catch, not a case `WP 19.3A-R1` ever meant to exempt.
+            if (parent is ContentPresenter { Name: "PART_SelectedContentHost", TemplatedParent: TabControl tabControl }
+                && FindTabStripContentOverlap(control, tabControl, area) is { } tabStripFinding)
+            {
+                findings.Add(tabStripFinding);
+            }
 
             // `ScrollViewer` content is exempt by design (stated above),
             // checked against its own presenter's coextensive bounds; a

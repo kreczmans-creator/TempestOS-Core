@@ -237,6 +237,65 @@ public sealed class LayoutWalkTests
     }
 
     /// <summary>
+    /// Proves the new tab-strip overlap check itself (`WP 19.4A`,
+    /// `po-comments.md` #1) — a synthetic two-tab `TabControl` reproducing
+    /// the historical Structure-tab bug exactly:
+    /// <see cref="Views.ProjectWorkspaceView"/>'s old `_structureHost`
+    /// carried a negative top margin that cancelled an ambient page
+    /// padding elsewhere in the view, and the only visible effect, at the
+    /// `TabControl` itself, was its selected `TabItem`'s own content
+    /// bleeding up into the tab strip's row — invisible to
+    /// <see cref="AssertNoSiblingOverlap"/> because the strip and the
+    /// content are template parts of one control, never `Panel` siblings.
+    /// Fails on that old layout; passes once the same content carries no
+    /// margin at all, exactly the fix this Work Package makes.
+    /// </summary>
+    [AvaloniaFact]
+    public void TabStripContentOverlap_FailsOnTheOldNegativeMargin_PassesOnTheNewLayout()
+    {
+        var firstContent = new Border { Width = 100, Height = 100, Child = new TextBlock { Text = "First" } };
+        var firstTab = new TabItem { Header = "First", Content = firstContent };
+        // A bare `ContentControl` with no explicit size, exactly
+        // `_structureHost`'s own shape — it stretches to fill the tab
+        // content presenter's whole box, which a fixed-size control (a
+        // `Border` with an explicit `Width`/`Height`, centred within that
+        // box instead) would not: a top margin on a *centred* control just
+        // moves it within room that was already there, never reaching the
+        // content presenter's own top edge, so it could never reproduce
+        // the bug this check exists to catch.
+        var secondContent = new ContentControl { Content = new TextBlock { Text = "Second" } };
+        var secondTab = new TabItem { Header = "Second", Content = secondContent };
+
+        var tabs = new TabControl();
+        tabs.Items.Add(firstTab);
+        tabs.Items.Add(secondTab);
+        tabs.SelectedItem = secondTab;
+
+        var window = new Window { Content = tabs, Width = 400, Height = 300 };
+        try
+        {
+            // `WP 19.2B`'s exact technique, reproduced directly on the
+            // selected tab's own content: a negative top margin, which
+            // bleeds the content upward past where the content presenter
+            // would otherwise start it — directly into the tab strip's own
+            // row.
+            secondContent.Margin = new Thickness(0, -16, 0, 0);
+            LayOut(window, 400, 300);
+            var brokenFindings = CollectLayoutFindings(window, "Scratch (negative top margin)");
+            Assert.Contains(brokenFindings, f => f.Contains("tab strip", StringComparison.OrdinalIgnoreCase));
+
+            secondContent.Margin = default;
+            LayOut(window, 400, 300);
+            var fixedFindings = CollectLayoutFindings(window, "Scratch (no margin)");
+            Assert.DoesNotContain(fixedFindings, f => f.Contains("tab strip", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
     /// The layout walk's own real render/fallback (`brief-19.3A.md`'s
     /// "the realisation"): <see cref="HeadlessWindowExtensions.CaptureRenderedFrame"/>
     /// first, and only if it cannot produce a real bitmap in this headless
