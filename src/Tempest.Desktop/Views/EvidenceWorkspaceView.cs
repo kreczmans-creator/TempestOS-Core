@@ -54,7 +54,7 @@ public sealed class EvidenceWorkspaceView : UserControl
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly Button _createButton = new() { Content = "Create", MinHeight = DesignTokens.MinControlSize };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private readonly Control _libraries;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
@@ -81,20 +81,8 @@ public sealed class EvidenceWorkspaceView : UserControl
     /// <summary>The change feed this view reloads its own Evidence list from (`WP 18.1A`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="EvidenceWorkspaceView"/> class.</summary>
@@ -122,7 +110,7 @@ public sealed class EvidenceWorkspaceView : UserControl
         _currentProjectId = currentProjectId;
         _openObject = openObject;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _createButton.Classes.Add(ChromeStyles.Primary);
         _createButton.Click += async (_, _) => await OnCreateAsync().ConfigureAwait(true);

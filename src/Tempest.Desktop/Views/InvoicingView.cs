@@ -70,7 +70,7 @@ public sealed class InvoicingView : UserControl
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly StackPanel _groups = new() { Spacing = DesignTokens.SpaceMd };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -89,20 +89,8 @@ public sealed class InvoicingView : UserControl
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="InvoicingView"/> class.</summary>
@@ -119,7 +107,7 @@ public sealed class InvoicingView : UserControl
         _currentProjectId = currentProjectId;
         _openObject = openObject;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         var heading = new TextBlock
         {

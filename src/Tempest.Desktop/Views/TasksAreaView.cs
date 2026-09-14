@@ -40,7 +40,7 @@ public sealed class TasksAreaView : UserControl
     private readonly StackPanel _sections = new() { Spacing = DesignTokens.SpaceLg };
     private readonly Button _newTaskButton = new() { Content = "New task…", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention.</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -48,20 +48,8 @@ public sealed class TasksAreaView : UserControl
     /// <summary>The change feed this view reloads every bucket from.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="TasksAreaView"/> class.</summary>
@@ -81,7 +69,7 @@ public sealed class TasksAreaView : UserControl
         _promptForTitle = promptForTitle;
         _openObjectRightUp = openObjectRightUp;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _newTaskButton.Classes.Add(ChromeStyles.Primary);
         AutomationProperties.SetName(_newTaskButton, "New task…");
