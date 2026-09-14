@@ -88,6 +88,34 @@ internal sealed class RecordingImportable : IImportable
 }
 
 /// <summary>
+/// A configurable <see cref="IExportSchemaMigration"/> that records every
+/// payload it was asked to migrate, and rewrites the payload to a
+/// caller-supplied replacement (default: the input unchanged) so a test can
+/// tell the migrated payload apart from the original.
+/// </summary>
+internal sealed class RecordingMigration : IExportSchemaMigration
+{
+    private readonly Func<byte[], byte[]> _rewrite;
+
+    public RecordingMigration(string kind, int fromSchemaVersion, Func<byte[], byte[]>? rewrite = null)
+    {
+        Kind = kind;
+        FromSchemaVersion = fromSchemaVersion;
+        _rewrite = rewrite ?? (payload => payload);
+    }
+
+    public string Kind { get; }
+    public int FromSchemaVersion { get; }
+    public List<byte[]> ReceivedPayloads { get; } = [];
+
+    public Task<byte[]> MigrateAsync(byte[] payload, CancellationToken cancellationToken = default)
+    {
+        ReceivedPayloads.Add(payload);
+        return Task.FromResult(_rewrite(payload));
+    }
+}
+
+/// <summary>
 /// A <see cref="Stream"/> wrapper that throws a caller-supplied
 /// <see cref="IOException"/> on every write or read, used to prove a
 /// caller-supplied stream's own failure propagates unmodified.
