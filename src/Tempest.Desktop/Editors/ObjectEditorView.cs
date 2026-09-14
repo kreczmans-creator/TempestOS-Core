@@ -642,9 +642,13 @@ public sealed class ObjectEditorView : UserControl
         }
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads the real object and refreshes every section — never a cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s own identical discipline.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
         var target = await _domainContext.Repository.FindAsync(_objectId).ConfigureAwait(true);
         if (target is not null)
             await PopulateFromAsync(target).ConfigureAwait(true);

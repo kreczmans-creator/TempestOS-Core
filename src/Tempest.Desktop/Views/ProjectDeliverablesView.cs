@@ -120,8 +120,13 @@ public sealed class ProjectDeliverablesView : UserControl
     }
 
     /// <summary>Reloads the open project's own deliverables and their completions — empty, honestly, when no project is open.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var projectId = _currentProjectId();
 
         if (projectId is not { } id)

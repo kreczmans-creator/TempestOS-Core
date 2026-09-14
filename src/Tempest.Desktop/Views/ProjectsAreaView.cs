@@ -139,8 +139,13 @@ public sealed class ProjectsAreaView : UserControl
     }
 
     /// <summary>Re-reads every project and rebuilds each group's own children.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var everyProject = await _domainContext.Repository
             .ListByKindAsync(MechanicalObjectFactoryRegistry.Project)
             .ConfigureAwait(true);

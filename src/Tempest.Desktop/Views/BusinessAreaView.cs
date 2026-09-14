@@ -126,8 +126,13 @@ public sealed class BusinessAreaView : UserControl
     }
 
     /// <summary>Re-reads whichever node is currently shown.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         if (_tree.SelectedItem is null)
         {
             _dashboardNode.IsSelected = true;

@@ -148,8 +148,13 @@ public sealed class QuotesView : UserControl
     }
 
     /// <summary>Reloads every quotation in scope — every live project's own quotations, or the open project's alone when one is open.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var scopedProjectId = _currentProjectId();
 
         var projects = await ProjectsInScopeAsync(scopedProjectId).ConfigureAwait(true);

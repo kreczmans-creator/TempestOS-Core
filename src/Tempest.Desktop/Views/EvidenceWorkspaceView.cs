@@ -166,8 +166,13 @@ public sealed class EvidenceWorkspaceView : UserControl
     }
 
     /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         // The Libraries tab loads with the area, not on its own: nothing
         // else ever asks it to, and the first Windows run of v0.18.0 found
         // it empty for exactly that reason (the tests had refreshed it by

@@ -145,8 +145,13 @@ public sealed class TimesheetWeekView : UserControl
     public DateOnly WeekStart => _weekStart;
 
     /// <summary>Reloads the current principal's own week — empty, honestly, when nobody is signed in.</summary>
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         _weekLabel.Text = $"Week of {_weekStart:yyyy-MM-dd}";
 
         var identityId = _currentPrincipalId();
