@@ -117,4 +117,37 @@ public sealed class ConnectorSelectionTests
     // A local alias, purely to keep the fixture's own KeyValuePair
     // construction lines under a readable width.
     private const string InvocingConnectorKey = InvoicingService.ConnectorConfigurationKey;
+
+    // ====================================================================
+    // `WP 19.8B` — the same instance also answers `IAccountsConnector`
+    // (po-comments.md item 8): whichever connector `Invoicing:Connector`
+    // binds, `IAccountsConnector` resolves to the identical instance, not
+    // a second one.
+    // ====================================================================
+
+    [Fact]
+    public async Task NoConnectorConfigured_IAccountsConnector_ResolvesTheSameFakeInstance()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await ConnectorHostFixture.StartAsync(temp.Path);
+
+        Assert.Same(ConnectorHostFixture.Connector(host), ConnectorHostFixture.AccountsConnector(host));
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ConnectorConfiguredAsXero_IAccountsConnector_ResolvesTheSameXeroInstance()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await ConnectorHostFixture.StartAsync(
+            temp.Path, new(InvoicingService.ConnectorConfigurationKey, "Xero"), new("Invoicing:Xero:ClientId", "test-client-id"));
+
+        Assert.Same(ConnectorHostFixture.Connector(host), ConnectorHostFixture.AccountsConnector(host));
+        Assert.IsType<XeroConnector>(ConnectorHostFixture.AccountsConnector(host));
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
 }

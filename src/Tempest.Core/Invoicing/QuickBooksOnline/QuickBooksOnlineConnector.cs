@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Configuration;
 using Tempest.Core.Invoicing.OAuth;
 
@@ -64,7 +65,7 @@ namespace Tempest.Core.Invoicing.QuickBooksOnline;
 /// best-effort, from its linked <c>Payment</c>'s own <c>TxnDate</c>.
 /// </para>
 /// </remarks>
-public sealed class QuickBooksOnlineConnector : IInvoicingConnector
+public sealed class QuickBooksOnlineConnector : IInvoicingConnector, IAccountsConnector
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
@@ -304,6 +305,185 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector
             AccessTokenOutcome.NotConfigured => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised, access.Reason),
             _ => new ConnectorAuthorisationState(ConnectorAuthorisation.Expired, access.Reason),
         };
+    }
+
+    // ====================================================================
+    // `WP 19.8B` — `IAccountsConnector`: read-only bills, recurring
+    // transactions and bank balances. Secondary to Xero (Product Owner,
+    // 2026-09-14). Every member gates on `EnsureAccessTokenAsync` exactly
+    // as the `IInvoicingConnector` members above, but answers
+    // `Unavailable` rather than `Reauthorise` when there is no usable
+    // access — `IAccountsConnector`'s own remarks explain why.
+    // ====================================================================
+
+    /// <inheritdoc />
+    public async Task<ConnectorResult<IReadOnlyList<BillDue>>> ListBillsDueAsync(DateOnly asOf, int horizonDays, CancellationToken cancellationToken = default)
+    {
+        var access = await EnsureAccountsAccessAsync<IReadOnlyList<BillDue>>(cancellationToken).ConfigureAwait(false);
+        if (access.Failure is not null)
+            return access.Failure;
+
+        var query = Uri.EscapeDataString("select * from Bill");
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"v3/company/{access.Access!.TenantId}/query?query={query}");
+        ApplyAuthHeaders(httpRequest, access.Access);
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+            var outcome = ConnectorHttpOutcome.Classify(response.StatusCode);
+            var body = await ConnectorHttpOutcome.ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
+
+            if (outcome != ConnectorOutcome.Ok)
+                return MapNonOkOutcome<IReadOnlyList<BillDue>>(outcome, response, body);
+
+            var bills = TryParse<QboQueryEnvelope>(body)?.QueryResponse?.Bill ?? [];
+            var cutoff = asOf.AddDays(horizonDays);
+
+            IReadOnlyList<BillDue> due = [.. bills
+                .Where(b => !string.IsNullOrWhiteSpace(b.CurrencyRef?.Value))
+                .Select(ToBillDue)
+                .Where(b => b.Due <= cutoff)];
+
+            return ConnectorResult<IReadOnlyList<BillDue>>.Ok(due);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            return ConnectorResult<IReadOnlyList<BillDue>>.Unavailable(ConnectorHttpOutcome.DescribeTransportFailure(ex));
+        }
+    }
+
+    /// <summary>
+    /// Reads recurring transaction templates of <c>Type == "Bill"</c> — a
+    /// recurring invoice template (<c>"Invoice"</c>) is a receivable, not a
+    /// payable, and is skipped. <b>Disclosed, not verified against a live
+    /// sandbox</b> (`WP 19.8B` kill switch, secondary to Xero per the
+    /// Product Owner): QuickBooks Online's <c>RecurringTransaction</c>
+    /// entity is queried the same way every other resource on this
+    /// connector is.
+    /// </summary>
+    /// <inheritdoc />
+    public async Task<ConnectorResult<IReadOnlyList<RepeatingBill>>> ListRepeatingBillsAsync(CancellationToken cancellationToken = default)
+    {
+        var access = await EnsureAccountsAccessAsync<IReadOnlyList<RepeatingBill>>(cancellationToken).ConfigureAwait(false);
+        if (access.Failure is not null)
+            return access.Failure;
+
+        var query = Uri.EscapeDataString("select * from RecurringTransaction");
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"v3/company/{access.Access!.TenantId}/query?query={query}");
+        ApplyAuthHeaders(httpRequest, access.Access);
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+            var outcome = ConnectorHttpOutcome.Classify(response.StatusCode);
+            var body = await ConnectorHttpOutcome.ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
+
+            if (outcome != ConnectorOutcome.Ok)
+                return MapNonOkOutcome<IReadOnlyList<RepeatingBill>>(outcome, response, body);
+
+            var templates = TryParse<QboQueryEnvelope>(body)?.QueryResponse?.RecurringTransaction ?? [];
+
+            IReadOnlyList<RepeatingBill> repeating = [.. templates
+                .Where(t => string.Equals(t.Type, "Bill", StringComparison.OrdinalIgnoreCase)
+                    && t.Bill is not null
+                    && !string.IsNullOrWhiteSpace(t.Bill.CurrencyRef?.Value)
+                    && t.ScheduleInfo?.NextDate is not null)
+                .Select(ToRepeatingBill)
+                .Where(b => b is not null)
+                .Select(b => b!)];
+
+            return ConnectorResult<IReadOnlyList<RepeatingBill>>.Ok(repeating);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            return ConnectorResult<IReadOnlyList<RepeatingBill>>.Unavailable(ConnectorHttpOutcome.DescribeTransportFailure(ex));
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<ConnectorResult<IReadOnlyList<CashAccountBalance>>> ReadCashPositionAsync(CancellationToken cancellationToken = default)
+    {
+        var access = await EnsureAccountsAccessAsync<IReadOnlyList<CashAccountBalance>>(cancellationToken).ConfigureAwait(false);
+        if (access.Failure is not null)
+            return access.Failure;
+
+        var query = Uri.EscapeDataString("select * from Account where AccountType='Bank'");
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"v3/company/{access.Access!.TenantId}/query?query={query}");
+        ApplyAuthHeaders(httpRequest, access.Access);
+
+        try
+        {
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
+            var outcome = ConnectorHttpOutcome.Classify(response.StatusCode);
+            var body = await ConnectorHttpOutcome.ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
+
+            if (outcome != ConnectorOutcome.Ok)
+                return MapNonOkOutcome<IReadOnlyList<CashAccountBalance>>(outcome, response, body);
+
+            var accounts = TryParse<QboQueryEnvelope>(body)?.QueryResponse?.Account ?? [];
+            var asOf = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            IReadOnlyList<CashAccountBalance> balances = [.. accounts
+                .Where(a => !string.IsNullOrWhiteSpace(a.Name) && !string.IsNullOrWhiteSpace(a.CurrencyRef?.Value))
+                .Select(a => new CashAccountBalance(a.Name!, new Money(a.CurrentBalance ?? 0m, new CurrencyCode(a.CurrencyRef!.Value!)), asOf))];
+
+            return ConnectorResult<IReadOnlyList<CashAccountBalance>>.Ok(balances);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            return ConnectorResult<IReadOnlyList<CashAccountBalance>>.Unavailable(ConnectorHttpOutcome.DescribeTransportFailure(ex));
+        }
+    }
+
+    private async Task<(AccessTokenResult? Access, ConnectorResult<T>? Failure)> EnsureAccountsAccessAsync<T>(CancellationToken cancellationToken)
+    {
+        var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (access.Outcome != AccessTokenOutcome.Ok)
+            return (null, ConnectorResult<T>.Unavailable(access.Reason ?? "QuickBooks Online has not been authorised."));
+
+        if (string.IsNullOrEmpty(access.TenantId))
+            return (null, ConnectorResult<T>.Unavailable("No QuickBooks Online company is connected; re-authorise to select one."));
+
+        return (access, null);
+    }
+
+    private static BillDue ToBillDue(QboBill bill) => new(
+        Supplier: bill.VendorRef?.Name ?? string.Empty,
+        Reference: bill.DocNumber ?? bill.Id ?? string.Empty,
+        Issued: ParseIsoDate(bill.TxnDate) ?? default,
+        Due: ParseIsoDate(bill.DueDate) ?? ParseIsoDate(bill.TxnDate) ?? default,
+        Amount: new Money(bill.TotalAmt ?? 0m, new CurrencyCode(bill.CurrencyRef!.Value!)),
+        Status: (bill.Balance ?? bill.TotalAmt ?? 0m) == 0m ? "PAID" : "OPEN");
+
+    private static RepeatingBill? ToRepeatingBill(QboRecurringTransaction template)
+    {
+        var nextDue = ParseIsoDate(template.ScheduleInfo!.NextDate);
+        if (nextDue is null)
+            return null;
+
+        var bill = template.Bill!;
+        var firstLine = bill.Line?.FirstOrDefault(l => l.AccountBasedExpenseLineDetail?.AccountRef?.Name is not null);
+        var amount = bill.Line?.Sum(l => l.Amount) ?? 0m;
+
+        return new RepeatingBill(
+            Supplier: bill.VendorRef?.Name ?? string.Empty,
+            Description: template.Name ?? "Recurring bill",
+            Amount: new Money(amount, new CurrencyCode(bill.CurrencyRef!.Value!)),
+            Frequency: template.ScheduleInfo.IntervalType ?? "UNKNOWN",
+            NextDue: nextDue.Value,
+            AccountName: firstLine?.AccountBasedExpenseLineDetail?.AccountRef?.Name);
     }
 
     private async Task<(string? CustomerId, ConnectorResult<T>? Failure)> ResolveOrCreateCustomerIdAsync<T>(

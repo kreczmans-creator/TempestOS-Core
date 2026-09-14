@@ -212,6 +212,16 @@ internal sealed partial class MainWindowComposer
         var invoicingConnector = (Tempest.Core.Invoicing.IInvoicingConnector)services.GetService(typeof(Tempest.Core.Invoicing.IInvoicingConnector));
         var secretStore = (Tempest.Core.Secrets.ISecretStore)services.GetService(typeof(Tempest.Core.Secrets.ISecretStore));
 
+        // `WP 19.8B` (po-comments.md item 8): the accounts reading —
+        // resolved the identical way, for the Settings area's own single
+        // line and Refresh now button. `AccountsRefreshService` is
+        // resolved as its own concrete type (not behind an interface, the
+        // same convention `InvoiceReconciliationService` itself follows)
+        // because it is the singleton the hosted-service manager starts
+        // and stops.
+        var accountsReadModel = (Tempest.Core.Invoicing.IAccountsReadModel)services.GetService(typeof(Tempest.Core.Invoicing.IAccountsReadModel));
+        var accountsRefreshService = (Tempest.Core.Invoicing.AccountsRefreshService)services.GetService(typeof(Tempest.Core.Invoicing.AccountsRefreshService));
+
         // `WP 19.2B`: the Settings area's own two read-only sections —
         // the persistence root, resolved from the real store when it is
         // the real `SqlitePersistenceStore` (a test's in-memory store has
@@ -226,7 +236,8 @@ internal sealed partial class MainWindowComposer
 
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
-            workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore);
+            workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
+            accountsReadModel, accountsRefreshService);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();

@@ -156,4 +156,72 @@ public sealed class FakeInvoicingConnectorTests
     {
         Assert.Equal("Fake", new FakeInvoicingConnector().Name);
     }
+
+    // ====================================================================
+    // `WP 19.8B` — `IAccountsConnector` scripting (po-comments.md item 8).
+    // ====================================================================
+
+    [Fact]
+    public async Task ScriptBillsDue_AnswersExactlyWhatWasScripted_FilteredByTheHorizon()
+    {
+        var connector = new FakeInvoicingConnector();
+        connector.ScriptBillsDue(
+        [
+            new BillDue("A", "R1", new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 20), new Money(10m, CurrencyCode.Gbp), "AUTHORISED"),
+            new BillDue("B", "R2", new DateOnly(2026, 3, 1), new DateOnly(2026, 5, 1), new Money(20m, CurrencyCode.Gbp), "AUTHORISED"),
+        ]);
+
+        var result = await connector.ListBillsDueAsync(new DateOnly(2026, 3, 1), 30);
+
+        Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+        Assert.Equal("A", Assert.Single(result.Value!).Supplier);
+    }
+
+    [Fact]
+    public async Task ListBillsDueAsync_NeverScripted_AnswersOkWithAnEmptyList()
+    {
+        var connector = new FakeInvoicingConnector();
+
+        var result = await connector.ListBillsDueAsync(new DateOnly(2026, 3, 1), 90);
+
+        Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+        Assert.Empty(result.Value!);
+    }
+
+    [Fact]
+    public async Task ScriptRepeatingBills_ReplacesWhatWasScriptedBefore()
+    {
+        var connector = new FakeInvoicingConnector();
+        connector.ScriptRepeatingBills([new RepeatingBill("A", "First", new Money(1m, CurrencyCode.Gbp), "MONTHLY", new DateOnly(2026, 4, 1), null)]);
+        connector.ScriptRepeatingBills([new RepeatingBill("B", "Second", new Money(2m, CurrencyCode.Gbp), "MONTHLY", new DateOnly(2026, 4, 1), null)]);
+
+        var result = await connector.ListRepeatingBillsAsync();
+
+        Assert.Equal("B", Assert.Single(result.Value!).Supplier);
+    }
+
+    [Fact]
+    public async Task ScriptCashPosition_AnswersExactlyWhatWasScripted()
+    {
+        var connector = new FakeInvoicingConnector();
+        connector.ScriptCashPosition([new CashAccountBalance("Main", new Money(500m, CurrencyCode.Gbp), new DateOnly(2026, 3, 1))]);
+
+        var result = await connector.ReadCashPositionAsync();
+
+        Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+        Assert.Equal("Main", Assert.Single(result.Value!).Name);
+    }
+
+    [Theory]
+    [InlineData(ConnectorAuthorisation.NotAuthorised)]
+    [InlineData(ConnectorAuthorisation.Expired)]
+    public async Task EveryAccountsRead_WhenNotAuthorised_AnswersUnavailable_NotReauthorise(ConnectorAuthorisation status)
+    {
+        var connector = new FakeInvoicingConnector();
+        connector.ScriptAuthorisationState(new ConnectorAuthorisationState(status));
+
+        Assert.Equal(ConnectorOutcome.Unavailable, (await connector.ListBillsDueAsync(new DateOnly(2026, 3, 1), 90)).Outcome);
+        Assert.Equal(ConnectorOutcome.Unavailable, (await connector.ListRepeatingBillsAsync()).Outcome);
+        Assert.Equal(ConnectorOutcome.Unavailable, (await connector.ReadCashPositionAsync()).Outcome);
+    }
 }

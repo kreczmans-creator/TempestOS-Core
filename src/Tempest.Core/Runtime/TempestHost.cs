@@ -842,15 +842,34 @@ public sealed class TempestHost : ITempestHost
 
         services.AddInstance(invoicingConnector);
 
+        // `WP 19.8B` (po-comments.md item 8): the same connector instance
+        // also answers `IAccountsConnector` — `FakeInvoicingConnector`,
+        // `XeroConnector` and `QuickBooksOnlineConnector` all implement
+        // both interfaces over the identical `HttpClient`/`OAuthAuthoriser`
+        // — registered a second time under the second interface type,
+        // exactly the `IPersistenceStore`/`IBinaryPersistenceStore`/
+        // `IQueryablePersistenceStore` triple-registration above does for
+        // one instance answering more than one service type.
+        services.AddInstance(typeof(IAccountsConnector), invoicingConnector);
+        services.Singleton<IAccountsReadingStore, FileAccountsReadingStore>();
+        services.Singleton<IAccountsReadModel, AccountsReadModel>();
+
         services.Singleton<IInvoicingService, InvoicingService>();
 
-        // `InvoiceReconciliationService` (`IHostedService`) needs no
-        // registration line here: the platform's own reflection-based
-        // hosted-service discovery (this method's own "Hosted Service
-        // Discovery" phase, above) finds it like every other hosted
-        // service, and constructs it from the container once its own
-        // dependencies — `IInvoicingService`, `EngineeringDomainContext`,
-        // `IConfigurationProvider` — are resolvable, which they now are.
+        // `InvoiceReconciliationService` and `AccountsRefreshService`
+        // (`IHostedService`s, the latter `WP 19.8B`) need no registration
+        // line here: the platform's own reflection-based hosted-service
+        // discovery (this method's own "Hosted Service Discovery" phase,
+        // above) finds each like every other hosted service, and
+        // constructs it from the container once its own dependencies —
+        // `IInvoicingService`/`IAccountsConnector`/`IAccountsReadingStore`/
+        // `EngineeringDomainContext`/`IConfigurationProvider` — are
+        // resolvable, which they now are. `AccountsReadModel` above
+        // resolves the same singleton `AccountsRefreshService` instance
+        // for its own "why is there no reading yet" reason (`AddDiscoveredHostedServices`'s
+        // own remarks: the discovered type is registered as a singleton,
+        // so every resolution — this constructor injection included —
+        // shares the one instance the hosted-service manager starts).
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
@@ -1123,7 +1142,7 @@ public sealed class TempestHost : ITempestHost
 
         var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
 
-        return new XeroConnector(httpClient, authoriser);
+        return new XeroConnector(httpClient, authoriser, configuration);
     }
 
     /// <summary>
