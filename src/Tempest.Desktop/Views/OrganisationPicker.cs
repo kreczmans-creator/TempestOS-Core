@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Theming;
@@ -21,6 +22,16 @@ namespace Tempest.Desktop.Views;
 /// established panel styling and real modal behaviour (mirrors
 /// <see cref="SubjectPicker"/>).
 /// </summary>
+/// <remarks>
+/// <b>The Commercial section's own client editor (`WP 20.1B`, `TD-180`).</b>
+/// This is the one place a client's own fields are ever edited today
+/// (`OperationsFixtures`'s own remarks: no dedicated organisation editor
+/// exists), so a selected organisation's own <see cref="Organisation.PaymentTerms"/>
+/// is shown and changed here, through <c>ReviseAsync</c> — the reference
+/// data catalogue's own generic edit path, exactly the way every other
+/// Organisation field would be, with its own audit-carrying document
+/// revision.
+/// </remarks>
 public sealed class OrganisationPicker : Border
 {
     private readonly IOrganisationCatalog _organisations;
@@ -38,7 +49,13 @@ public sealed class OrganisationPicker : Border
     private readonly Button _addButton = new() { Content = "Add organisation", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _addStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
-    private IReadOnlyList<(string RecordId, string Name)> _candidates = [];
+    // `WP 20.1B` (`TD-180`) — the Commercial section's own client editor:
+    // payment terms for whichever organisation is currently selected above.
+    private readonly ComboBox _paymentTerms = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140, IsEnabled = false };
+    private readonly Button _savePaymentTermsButton = new() { Content = "Save payment terms", MinHeight = DesignTokens.ControlSizeMedium, IsEnabled = false };
+    private readonly TextBlock _paymentTermsStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private IReadOnlyList<(string RecordId, string Name, PaymentTerms PaymentTerms)> _candidates = [];
     private TaskCompletionSource<string?>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="OrganisationPicker"/> class, initially hidden.</summary>
@@ -72,11 +89,24 @@ public sealed class OrganisationPicker : Border
         addRow.Children.Add(_newName);
         addRow.Children.Add(_addButton);
 
+        // `WP 20.1B` (`TD-180`): "Payment terms: Up front / 30 days / 60
+        // days" for whichever organisation is selected above.
+        _paymentTerms.Items.Add(new ComboBoxItem { Content = PaymentTerms.UpFront.DisplayName(), Tag = PaymentTerms.UpFront });
+        _paymentTerms.Items.Add(new ComboBoxItem { Content = PaymentTerms.Days30.DisplayName(), Tag = PaymentTerms.Days30 });
+        _paymentTerms.Items.Add(new ComboBoxItem { Content = PaymentTerms.Days60.DisplayName(), Tag = PaymentTerms.Days60 });
+
+        var paymentTermsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        paymentTermsRow.Children.Add(new TextBlock { Text = "Payment terms:", VerticalAlignment = VerticalAlignment.Center });
+        paymentTermsRow.Children.Add(_paymentTerms);
+        paymentTermsRow.Children.Add(_savePaymentTermsButton);
+
         var body = new StackPanel();
         body.Children.Add(_title);
         body.Children.Add(_filter);
         body.Children.Add(_list);
         body.Children.Add(_status);
+        body.Children.Add(paymentTermsRow);
+        body.Children.Add(_paymentTermsStatus);
         body.Children.Add(new Separator { Margin = new Thickness(0, DesignTokens.SpaceMd) });
         body.Children.Add(new TextBlock { Text = "Add organisation", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody });
         body.Children.Add(addRow);
@@ -88,6 +118,7 @@ public sealed class OrganisationPicker : Border
         _clearButton.Classes.Add(ChromeStyles.Subtle);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
         _addButton.Classes.Add(ChromeStyles.Subtle);
+        _savePaymentTermsButton.Classes.Add(ChromeStyles.Subtle);
         AutomationProperties.SetName(_filter, "Filter…");
         AutomationProperties.SetName(_list, "Organisations");
         AutomationProperties.SetName(_chooseButton, "Choose");
@@ -96,13 +127,19 @@ public sealed class OrganisationPicker : Border
         AutomationProperties.SetName(_newReference, "Reference");
         AutomationProperties.SetName(_newName, "New organisation name");
         AutomationProperties.SetName(_addButton, "Add organisation");
+        AutomationProperties.SetName(_paymentTerms, "Payment terms");
+        AutomationProperties.SetName(_savePaymentTermsButton, "Save payment terms");
         ToolTip.SetTip(_chooseButton, "Choose");
         ToolTip.SetTip(_clearButton, "Clear");
         ToolTip.SetTip(_cancelButton, "Cancel");
         ToolTip.SetTip(_addButton, "Add organisation");
+        ToolTip.SetTip(_paymentTerms, "Payment terms");
+        ToolTip.SetTip(_savePaymentTermsButton, "Save payment terms");
 
         _filter.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) ApplyFilter(); };
         _list.DoubleTapped += (_, _) => TryComplete();
+        _list.SelectionChanged += (_, _) => OnSelectionChanged();
+        _savePaymentTermsButton.Click += async (_, _) => await OnSavePaymentTermsAsync().ConfigureAwait(true);
         _chooseButton.Click += (_, _) => TryComplete();
         _clearButton.Click += (_, _) => Complete(string.Empty);
         _cancelButton.Click += (_, _) => Complete(null);
@@ -131,6 +168,10 @@ public sealed class OrganisationPicker : Border
         _newName.Text = string.Empty;
         _addStatus.Text = string.Empty;
         _status.Text = "Loading…";
+        _paymentTermsStatus.Text = string.Empty;
+        _paymentTerms.SelectedItem = null;
+        _paymentTerms.IsEnabled = false;
+        _savePaymentTermsButton.IsEnabled = false;
         IsVisible = true;
 
         await ReloadAsync(cancellationToken).ConfigureAwait(true);
@@ -143,7 +184,7 @@ public sealed class OrganisationPicker : Border
     private async Task ReloadAsync(CancellationToken cancellationToken)
     {
         var all = await _organisations.ListAsync(cancellationToken).ConfigureAwait(true);
-        _candidates = [.. all.Select(r => (RecordId: r.Id, r.Definition.Name)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
+        _candidates = [.. all.Select(r => (RecordId: r.Id, r.Definition.Name, r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
         _status.Text = _candidates.Count == 0 ? "No organisations registered yet — add one below." : string.Empty;
         ApplyFilter();
     }
@@ -157,6 +198,61 @@ public sealed class OrganisationPicker : Border
             : [.. _candidates.Where(c => c.Name.Contains(text, StringComparison.OrdinalIgnoreCase) || c.RecordId.Contains(text, StringComparison.OrdinalIgnoreCase))];
 
         _list.ItemsSource = matches.Select(c => new ListBoxItem { Content = $"{c.Name} ({c.RecordId})", Tag = c.RecordId }).ToList();
+    }
+
+    /// <summary>`WP 20.1B` (`TD-180`): shows the selected organisation's own current payment terms, ready to change.</summary>
+    private void OnSelectionChanged()
+    {
+        _paymentTermsStatus.Text = string.Empty;
+
+        if (_list.SelectedItem is not ListBoxItem { Tag: string recordId } || !_candidates.Any(c => c.RecordId == recordId))
+        {
+            _paymentTerms.SelectedItem = null;
+            _paymentTerms.IsEnabled = false;
+            _savePaymentTermsButton.IsEnabled = false;
+            return;
+        }
+
+        var selected = _candidates.First(c => c.RecordId == recordId);
+
+        _paymentTerms.IsEnabled = true;
+        _savePaymentTermsButton.IsEnabled = true;
+        _paymentTerms.SelectedItem = _paymentTerms.Items.OfType<ComboBoxItem>().Single(i => Equals(i.Tag, selected.PaymentTerms));
+    }
+
+    /// <summary>`WP 20.1B` (`TD-180`): revises the selected organisation's own payment terms through the reference-data catalogue's existing edit path — <c>ReviseAsync</c>, exactly as every other Organisation field is set.</summary>
+    private async Task OnSavePaymentTermsAsync()
+    {
+        if (_list.SelectedItem is not ListBoxItem { Tag: string recordId } || _paymentTerms.SelectedItem is not ComboBoxItem { Tag: PaymentTerms terms })
+        {
+            _paymentTermsStatus.Text = "Choose an organisation and a term first.";
+            return;
+        }
+
+        var current = await _organisations.FindAsync(recordId, CancellationToken.None).ConfigureAwait(true);
+        if (current is null)
+        {
+            _paymentTermsStatus.Text = $"'{recordId}' is no longer registered.";
+            return;
+        }
+
+        await _organisations
+            .ReviseAsync(
+                recordId, current.Definition with { PaymentTerms = terms }, current.Provenance,
+                $"Payment terms set to {terms.DisplayName()}.")
+            .ConfigureAwait(true);
+
+        await ReloadAsync(CancellationToken.None).ConfigureAwait(true);
+
+        // Re-select the same row — `ReloadAsync` rebuilds `_list.ItemsSource`
+        // from scratch, which drops the prior selection.
+        if (_list.ItemsSource is IEnumerable<ListBoxItem> items
+            && items.FirstOrDefault(i => Equals(i.Tag, recordId)) is { } reselected)
+        {
+            _list.SelectedItem = reselected;
+        }
+
+        _paymentTermsStatus.Text = $"Payment terms set to {terms.DisplayName()}.";
     }
 
     private async Task OnAddAsync()
