@@ -57,6 +57,7 @@ status to the Product Owner.
 | 3 | `WP 19.5D` Optional command parameters reach the binding; the invocation contract covers Quotations and Tasks | 19.5B, 19.5C | 0.5 | Sonnet | `InputDialog` allow-blank, `DesktopCommandPrompt`, `CommandInvocationContractTests` — two defects found by 19.5B and 19.5C, added 2026-09-14 |
 | 3 | `WP 19.7C` A view keeps reacting after it has been shown, hidden and shown again | 19.7B | 0.5 | Sonnet | `WorkspaceChangesSubscription` helper, the thirteen views that null their feed on detach, a re-attach test — defect found by 19.7B, present since 18.2A, added 2026-09-14 |
 | 4 | `WP 19.9.1` Release | all | 1.5 | lead | notes, `PHYSICAL_REVIEW.md` §7c, backlog audit, VERSION, CI, the candidate page |
+| 5 | `WP 19.10O` The rail and tree-column collapse on demand, and stay collapsed | — | 1 | Sonnet | `GlobalNavigationRail`, `CollapsibleColumn`, `ProjectsAreaView`/`EngineeringAreaView`/`BusinessAreaView` tree wrappers, `DesktopPanelUiState`, `MainWindowComposer.Wire.cs`/`Layout.cs` |
 
 Effort: 28 days. Status is reported per Work Package as a percentage of its
 own scope and as its effort-weighted share of the 28.
