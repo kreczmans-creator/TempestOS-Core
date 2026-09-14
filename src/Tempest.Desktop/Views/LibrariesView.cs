@@ -246,32 +246,50 @@ public sealed class LibrariesView : UserControl
     }
 
     /// <summary>Reloads every governed library's own records.</summary>
+    /// <remarks>
+    /// `WP 19.10P` (D15): every one of the eight governed libraries gets
+    /// its own heading, whether or not it currently holds a record —
+    /// grouping only the records that exist (as this used to) leaves an
+    /// empty library invisible rather than listed-with-zero, which is
+    /// indistinguishable from "a library missing" (§7c's own named
+    /// failure condition for this surface).
+    /// </remarks>
     public async Task RefreshAsync()
     {
         var all = await ReadAllLibrariesAsync().ConfigureAwait(true);
+        var byLibrary = all.ToLookup(r => r.Library);
 
         _rows.Children.Clear();
 
-        if (all.Count == 0)
+        foreach (var libraryName in AllLibraryNames.OrderBy(name => name, StringComparer.Ordinal))
         {
-            _rows.Children.Add(new TextBlock { Text = "No reference records are seeded.", Opacity = 0.7 });
-            return;
-        }
+            var records = byLibrary[libraryName].OrderBy(r => r.RecordId, StringComparer.Ordinal).ToList();
 
-        foreach (var library in all.GroupBy(r => r.Library).OrderBy(g => g.Key, StringComparer.Ordinal))
-        {
             _rows.Children.Add(new TextBlock
             {
-                Text = $"{library.Key} ({library.Count()})",
+                Text = $"{libraryName} ({records.Count})",
                 FontWeight = DesignTokens.WeightHeading,
                 FontSize = DesignTokens.FontSizeHeading,
                 Margin = new Thickness(0, DesignTokens.SpaceMd, 0, DesignTokens.SpaceXs),
             });
 
-            foreach (var row in library.OrderBy(r => r.RecordId, StringComparer.Ordinal))
+            if (records.Count == 0)
+            {
+                _rows.Children.Add(new TextBlock { Text = "No records yet", Opacity = 0.7 });
+                continue;
+            }
+
+            foreach (var row in records)
                 _rows.Children.Add(BuildRow(row));
         }
     }
+
+    /// <summary>The eight governed libraries' own canonical names, straight from each catalog's own <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/> — never restated as a literal here, so this list can never drift from what each catalog actually reports.</summary>
+    private IEnumerable<string> AllLibraryNames =>
+    [
+        _materials.LibraryName, _fasteners.LibraryName, _bearings.LibraryName, _standards.LibraryName,
+        _constants.LibraryName, _manufacturing.LibraryName, _components.LibraryName, _businessRateCards.LibraryName,
+    ];
 
     /// <summary>
     /// Every record across the five governed libraries evidence may cite —
