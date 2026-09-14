@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
+using Tempest.Core.Persistence;
 
 namespace Tempest.Core.Verification;
 
@@ -44,6 +46,30 @@ namespace Tempest.Core.Verification;
 /// document, avoiding an orphaned "VerificationRecord" document on the
 /// common failure path.
 /// </para>
+/// <para>
+/// <b>The record and every one of its links are one transaction
+/// (`TD-23`, `ADR-0145`).</b> <see cref="RecordAsync"/> writes the new
+/// document and every "verifiedBy"/"references"/"basedOnCalculation"
+/// link it composes through <see cref="ITransactionalDocumentWriter"/>,
+/// inside one <see cref="IQueryablePersistenceStore.ExecuteInTransactionAsync"/>
+/// call — the same primitive <see cref="EngineeringDomain.EngineeringDomainContext.ExecuteWriteAsync"/>
+/// opens for every other durable engineering write. A fault between any
+/// two of those writes now rolls the whole transaction back rather than
+/// leaving a durably committed, partly linked record.
+/// </para>
+/// <para>
+/// <b>The "verifiedBy" link is also recorded with the relationship
+/// repository (`TD-32`).</b> Before this it was written only through
+/// <see cref="IEngineeringDocumentStore.LinkAsync"/>'s durable reference
+/// record, which <see cref="EngineeringDomain.RelationshipDiscoveryService"/>
+/// (the Digital Thread and impact analysis) never reads directly — only
+/// <see cref="EngineeringDomain.IEngineeringRelationshipRepository"/>'s
+/// in-memory index, which nothing populated for this edge until the next
+/// process restart's rehydration walk. <see cref="RecordAsync"/> now
+/// registers it there itself, immediately after the transaction commits,
+/// exactly as every other relationship-creating mutator in this codebase
+/// does.
+/// </para>
 /// </remarks>
 public sealed class VerificationService : IVerificationService
 {
@@ -66,6 +92,9 @@ public sealed class VerificationService : IVerificationService
     public static readonly Permission ReadPermission = new("verification.read");
 
     private readonly IEngineeringDocumentStore _documentStore;
+    private readonly ITransactionalDocumentWriter _documentWriter;
+    private readonly IQueryablePersistenceStore _persistenceStore;
+    private readonly IEngineeringRelationshipRepository _relationshipRepository;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
     private readonly ILogger? _logger;
@@ -73,22 +102,57 @@ public sealed class VerificationService : IVerificationService
     /// <summary>
     /// Initialises a new instance of the <see cref="VerificationService"/> class.
     /// </summary>
-    /// <param name="documentStore">The store this instance's own verification records are durably held in.</param>
+    /// <param name="documentStore">
+    /// The store this instance's own verification records are durably
+    /// held in. Must also implement <see cref="ITransactionalDocumentWriter"/>
+    /// (`ADR-0145`) — the store this platform ships does; a caller-supplied
+    /// double that only implements <see cref="IEngineeringDocumentStore"/>
+    /// is refused rather than silently falling back to a non-transactional
+    /// write (`TD-23`).
+    /// </param>
     /// <param name="currentPrincipalAccessor">The service this instance resolves the acting principal from.</param>
     /// <param name="permissionEvaluator">The service this instance checks <see cref="ReadPermission"/> against.</param>
+    /// <param name="persistenceStore">
+    /// The single durable store <see cref="RecordAsync"/> opens its one
+    /// transaction on (`TD-23`, `ADR-0145`) — the same store
+    /// <paramref name="documentStore"/> is itself built over.
+    /// </param>
+    /// <param name="relationshipRepository">
+    /// The in-memory relationship cache <see cref="RecordAsync"/> records
+    /// the "verifiedBy" link into once its transaction commits (`TD-32`),
+    /// so <see cref="EngineeringDomain.RelationshipDiscoveryService"/> sees
+    /// it in this same session.
+    /// </param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="documentStore"/>, <paramref name="currentPrincipalAccessor"/>, or <paramref name="permissionEvaluator"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documentStore"/>, <paramref name="currentPrincipalAccessor"/>,
+    /// <paramref name="permissionEvaluator"/>, <paramref name="persistenceStore"/>, or
+    /// <paramref name="relationshipRepository"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException"><paramref name="documentStore"/> does not implement <see cref="ITransactionalDocumentWriter"/>.</exception>
     public VerificationService(
         IEngineeringDocumentStore documentStore,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
+        IQueryablePersistenceStore persistenceStore,
+        IEngineeringRelationshipRepository relationshipRepository,
         ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
+        ArgumentNullException.ThrowIfNull(persistenceStore);
+        ArgumentNullException.ThrowIfNull(relationshipRepository);
 
         _documentStore = documentStore;
+        _documentWriter = documentStore as ITransactionalDocumentWriter
+            ?? throw new ArgumentException(
+                $"'{documentStore.GetType().Name}' does not implement '{nameof(ITransactionalDocumentWriter)}' " +
+                "('ADR-0145'), so a verification record and its links cannot be written as one transaction " +
+                "('TD-23'). Use the store this platform ships.",
+                nameof(documentStore));
+        _persistenceStore = persistenceStore;
+        _relationshipRepository = relationshipRepository;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _permissionEvaluator = permissionEvaluator;
         _logger = logger;
@@ -110,29 +174,52 @@ public sealed class VerificationService : IVerificationService
 
         var verifiedAt = DateTimeOffset.UtcNow;
         var verifiedBy = ResolveVerifierPrincipalId();
+        var documentId = Guid.NewGuid();
 
         var dto = new VerificationRecordDto(
             subjectDocumentId, outcome, method, context.Criteria, context.Evidence,
             context.LinkedDocumentIds, context.LinkedCalculationRecordIds, context.ReferencedMaterialIds,
             verifiedBy, verifiedAt);
 
-        var document = await _documentStore.CreateAsync(VerificationRecordDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
-            .ConfigureAwait(false);
+        // TD-23: the record's own creation and every one of its links are
+        // one transaction (`ADR-0145`) - a fault between any two of these
+        // writes now rolls all of them back, rather than leaving a durably
+        // committed, partly linked verification record.
+        await _persistenceStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.CreateAsync(
+                    transaction, documentId, VerificationRecordDocumentKind, JsonSerializer.Serialize(dto), token)
+                    .ConfigureAwait(false);
 
-        await _documentStore.LinkAsync(subjectDocumentId, document.Id, VerifiedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+                await _documentWriter.LinkAsync(transaction, subjectDocumentId, documentId, VerifiedByRelationshipKind, token)
+                    .ConfigureAwait(false);
 
-        foreach (var linkedDocumentId in context.LinkedDocumentIds)
-            await _documentStore.LinkAsync(document.Id, linkedDocumentId, ReferencesRelationshipKind, cancellationToken).ConfigureAwait(false);
+                foreach (var linkedDocumentId in context.LinkedDocumentIds)
+                    await _documentWriter.LinkAsync(transaction, documentId, linkedDocumentId, ReferencesRelationshipKind, token)
+                        .ConfigureAwait(false);
 
-        foreach (var calculationRecordId in context.LinkedCalculationRecordIds)
-            await _documentStore.LinkAsync(document.Id, calculationRecordId, BasedOnCalculationRelationshipKind, cancellationToken).ConfigureAwait(false);
+                foreach (var calculationRecordId in context.LinkedCalculationRecordIds)
+                    await _documentWriter.LinkAsync(transaction, documentId, calculationRecordId, BasedOnCalculationRelationshipKind, token)
+                        .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
 
-        _logger?.Information($"Verification recorded: '{document.Id}' for subject '{subjectDocumentId}' (outcome {outcome}).");
+        // TD-32: committed - recorded with the relationship repository so
+        // RelationshipDiscoveryService (the Digital Thread and impact
+        // analysis) shows this edge in this same session, rather than only
+        // after a restart's rehydration walk finds the durable reference.
+        _relationshipRepository.Record(new EngineeringRelationship(
+            subjectDocumentId, documentId, VerifiedByRelationshipKind,
+            RelationshipKindCategoryMap.InferCategory(VerifiedByRelationshipKind),
+            verifiedBy, verifiedAt));
+
+        _logger?.Information($"Verification recorded: '{documentId}' for subject '{subjectDocumentId}' (outcome {outcome}).");
 
         return new VerificationRecord(
-            document.Id, subjectDocumentId, outcome, method, context.Criteria, context.Evidence,
+            documentId, subjectDocumentId, outcome, method, context.Criteria, context.Evidence,
             context.LinkedDocumentIds, context.LinkedCalculationRecordIds, context.ReferencedMaterialIds,
-            verifiedBy, verifiedAt, document.CurrentRevisionNumber);
+            verifiedBy, verifiedAt, revisionNumber: 1);
     }
 
     /// <inheritdoc />

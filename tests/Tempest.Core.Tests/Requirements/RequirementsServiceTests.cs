@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Requirements;
@@ -10,13 +12,14 @@ namespace Tempest.Core.Tests.Requirements;
 public class RequirementsServiceTests
 {
     private static (RequirementsService Requirements, EngineeringDocumentStore Documents, IVerificationService Verification) BuildServices(
-        IPersistenceStore? persistenceStore = null)
+        InMemoryQueryablePersistenceStore? persistenceStore = null)
     {
-        var store = persistenceStore ?? new InMemoryPersistenceStore();
+        var store = persistenceStore ?? new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         // GetEvidenceAsync transitively requires VerificationService.ReadPermission
@@ -38,9 +41,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullDocumentStore_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
-        var verification = new VerificationService(new EngineeringDocumentStore(store, principalAccessor), principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            new EngineeringDocumentStore(store, principalAccessor), principalAccessor, new PermissionEvaluator(),
+            store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(null!, store, principalAccessor, verification));
     }
@@ -48,10 +53,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullPersistenceStore_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, null!, principalAccessor, verification));
     }
@@ -59,10 +65,11 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullCurrentPrincipalAccessor_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, store, null!, verification));
     }
@@ -70,11 +77,25 @@ public class RequirementsServiceTests
     [Fact]
     public void Constructor_NullVerificationService_ThrowsArgumentNullException()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
 
         Assert.Throws<ArgumentNullException>(() => new RequirementsService(documentStore, store, principalAccessor, null!));
+    }
+
+    [Fact]
+    public void Constructor_PersistenceStoreNotQueryable_ThrowsArgumentException()
+    {
+        var store = new InMemoryPersistenceStore();
+        var principalAccessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(store, principalAccessor);
+        var queryableStore = new InMemoryQueryablePersistenceStore();
+        var verification = new VerificationService(
+            new EngineeringDocumentStore(queryableStore, principalAccessor), principalAccessor, new PermissionEvaluator(),
+            queryableStore, new InMemoryEngineeringRelationshipRepository());
+
+        Assert.Throws<ArgumentException>(() => new RequirementsService(documentStore, store, principalAccessor, verification));
     }
 
     // ------------------------------------------------------------
@@ -726,11 +747,12 @@ public class RequirementsServiceTests
     [Fact]
     public async Task GetEvidenceAsync_InheritsVerificationReadPermissionGate()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         var requirement = await requirementsService.CreateAsync("REQ-001", "Statement.");
@@ -883,7 +905,9 @@ public class RequirementsServiceTests
         var store = new FailingPersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
-        var verification = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var workingStore = new InMemoryQueryablePersistenceStore();
+        var verification = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), workingStore, new InMemoryEngineeringRelationshipRepository());
         var requirements = new RequirementsService(documentStore, store, principalAccessor, verification);
 
         await Assert.ThrowsAsync<PersistenceStoreUnavailableException>(() => requirements.CreateAsync("REQ-001", "Statement."));

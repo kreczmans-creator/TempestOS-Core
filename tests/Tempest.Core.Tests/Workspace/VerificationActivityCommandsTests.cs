@@ -21,7 +21,8 @@ public class VerificationActivityCommandsTests
 
         var permissionEvaluator = new PermissionEvaluator();
         var verificationService = new VerificationService(
-            context.Store, context.CurrentPrincipalAccessor, permissionEvaluator);
+            context.Store, context.CurrentPrincipalAccessor, permissionEvaluator,
+            context.PersistenceStore, context.RelationshipRepository);
 
         return (context, verificationService);
     }

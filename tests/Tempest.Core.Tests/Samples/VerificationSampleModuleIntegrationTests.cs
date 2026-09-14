@@ -184,7 +184,9 @@ public class VerificationSampleModuleIntegrationTests
         ])).Build());
         var accessorTwo = new CurrentPrincipalAccessor();
         var documentStoreTwo = new EngineeringDocumentStore(persistenceStoreTwo, accessorTwo);
-        var serviceTwo = new VerificationService(documentStoreTwo, accessorTwo, new PermissionEvaluator());
+        var serviceTwo = new VerificationService(
+            documentStoreTwo, accessorTwo, new PermissionEvaluator(),
+            persistenceStoreTwo, new Tempest.Core.EngineeringDomain.InMemoryEngineeringRelationshipRepository());
         accessorTwo.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var history = await serviceTwo.GetVerificationHistoryAsync(moduleOne.SampleSubjectDocumentId!.Value);

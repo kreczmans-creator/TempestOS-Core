@@ -28,7 +28,8 @@ public class VerificationActivityNodeProviderAndFacetsTests
         var context = TestEngineeringDomain.NewContext();
 
         var verificationService = new VerificationService(
-            context.Store, context.CurrentPrincipalAccessor, new PermissionEvaluator());
+            context.Store, context.CurrentPrincipalAccessor, new PermissionEvaluator(),
+            context.PersistenceStore, context.RelationshipRepository);
 
         return (context, verificationService);
     }

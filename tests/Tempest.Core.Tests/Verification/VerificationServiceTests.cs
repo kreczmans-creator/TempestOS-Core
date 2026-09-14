@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Verification;
@@ -10,8 +12,10 @@ public class VerificationServiceTests
     private static VerificationService BuildService(out EngineeringDocumentStore documentStore, out CurrentPrincipalAccessor accessor)
     {
         accessor = new CurrentPrincipalAccessor();
-        documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), accessor);
-        return new VerificationService(documentStore, accessor, new PermissionEvaluator());
+        var store = new InMemoryQueryablePersistenceStore();
+        documentStore = new EngineeringDocumentStore(store, accessor);
+        return new VerificationService(
+            documentStore, accessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
     }
 
     private static IPrincipal BuildPrincipal(string id, params Permission[] permissions) =>
@@ -360,7 +364,9 @@ public class VerificationServiceTests
     public void Constructor_NullDocumentStore_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(null!, new CurrentPrincipalAccessor(), new PermissionEvaluator()));
+            () => new VerificationService(
+                null!, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -369,7 +375,9 @@ public class VerificationServiceTests
         var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
 
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(documentStore, null!, new PermissionEvaluator()));
+            () => new VerificationService(
+                documentStore, null!, new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -378,7 +386,42 @@ public class VerificationServiceTests
         var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
 
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(documentStore, new CurrentPrincipalAccessor(), null!));
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), null!,
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
+    }
+
+    [Fact]
+    public void Constructor_NullPersistenceStore_ThrowsArgumentNullException()
+    {
+        var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
+
+        Assert.Throws<ArgumentNullException>(
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                null!, new InMemoryEngineeringRelationshipRepository()));
+    }
+
+    [Fact]
+    public void Constructor_NullRelationshipRepository_ThrowsArgumentNullException()
+    {
+        var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
+
+        Assert.Throws<ArgumentNullException>(
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), null!));
+    }
+
+    [Fact]
+    public void Constructor_DocumentStoreNotTransactional_ThrowsArgumentException()
+    {
+        var nonTransactional = new NonTransactionalDocumentStore();
+
+        Assert.Throws<ArgumentException>(
+            () => new VerificationService(
+                nonTransactional, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -386,7 +429,9 @@ public class VerificationServiceTests
     {
         var accessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(new FailingPersistenceStore(), accessor);
-        var service = new VerificationService(documentStore, accessor, new PermissionEvaluator());
+        var service = new VerificationService(
+            documentStore, accessor, new PermissionEvaluator(),
+            new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository());
 
         await Assert.ThrowsAsync<Tempest.Core.Persistence.PersistenceStoreUnavailableException>(
             () => service.RecordAsync(Guid.NewGuid(), VerificationOutcome.Pass, "inspection", new VerificationContext()));

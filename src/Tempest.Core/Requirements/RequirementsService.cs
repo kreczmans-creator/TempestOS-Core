@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Tempest.Core.Concurrency;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
@@ -88,17 +89,32 @@ public sealed class RequirementsService : IRequirementsService
     public const string UnknownPrincipalId = "unknown";
 
     private readonly IEngineeringDocumentStore _documentStore;
+    private readonly EngineeringDomain.ITransactionalDocumentWriter _documentWriter;
     private readonly IPersistenceStore _persistenceStore;
+    private readonly IQueryablePersistenceStore _transactionalStore;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IVerificationService _verificationService;
     private readonly ILogger? _logger;
     private readonly AsyncKeyedLock _identifierLock = new();
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsService"/> class.</summary>
+    /// <remarks>
+    /// <paramref name="documentStore"/> and <paramref name="persistenceStore"/>
+    /// must also implement <see cref="EngineeringDomain.ITransactionalDocumentWriter"/>
+    /// and <see cref="IQueryablePersistenceStore"/> respectively (`ADR-0144`,
+    /// `ADR-0145`) — the stores this platform ships do; a caller-supplied
+    /// double that implements only the narrower, non-transactional
+    /// interface is refused here rather than letting <see cref="CreateAsync"/>
+    /// silently fall back to two separate writes (`TD-67`).
+    /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentStore"/>, <paramref name="persistenceStore"/>,
     /// <paramref name="currentPrincipalAccessor"/>, or <paramref name="verificationService"/>
     /// is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="documentStore"/> does not implement <see cref="EngineeringDomain.ITransactionalDocumentWriter"/>,
+    /// or <paramref name="persistenceStore"/> does not implement <see cref="IQueryablePersistenceStore"/>.
     /// </exception>
     public RequirementsService(
         IEngineeringDocumentStore documentStore,
@@ -113,13 +129,32 @@ public sealed class RequirementsService : IRequirementsService
         ArgumentNullException.ThrowIfNull(verificationService);
 
         _documentStore = documentStore;
+        _documentWriter = documentStore as EngineeringDomain.ITransactionalDocumentWriter
+            ?? throw new ArgumentException(
+                $"'{documentStore.GetType().Name}' does not implement the transactional document writer contract " +
+                "('ADR-0145'), so a Requirement and its identifier-index entry cannot be written as one " +
+                "transaction ('TD-67'). Use the store this platform ships.",
+                nameof(documentStore));
         _persistenceStore = persistenceStore;
+        _transactionalStore = persistenceStore as IQueryablePersistenceStore
+            ?? throw new ArgumentException(
+                $"'{persistenceStore.GetType().Name}' does not implement '{nameof(IQueryablePersistenceStore)}' " +
+                "('ADR-0144'), so a Requirement and its identifier-index entry cannot be written as one " +
+                "transaction ('TD-67'). Use the store this platform ships.",
+                nameof(persistenceStore));
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _verificationService = verificationService;
         _logger = logger;
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>The document and its identifier-index entry are one transaction
+    /// (`TD-67`, `ADR-0145`).</b> A fault between the two used to leave a
+    /// Requirement that existed as a document but could never be found by
+    /// its own identifier — the same two-write shape `VerificationService.RecordAsync`
+    /// closed under `TD-23`, fixed with the same primitive.
+    /// </remarks>
     public async Task<IRequirement> CreateAsync(string identifier, string statement, string? category = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
@@ -132,17 +167,24 @@ public sealed class RequirementsService : IRequirementsService
 
             var createdAt = DateTimeOffset.UtcNow;
             var createdBy = ResolveCurrentPrincipalId();
+            var documentId = Guid.NewGuid();
 
             var dto = new RequirementDto(identifier, statement, category, RequirementStatus.Draft, createdBy, createdAt);
-            var document = await _documentStore.CreateAsync(RequirementDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
-                .ConfigureAwait(false);
 
-            await _persistenceStore.WriteAsync(IdentifierIndexCollectionName, identifier, document.Id.ToString("N"), cancellationToken)
-                .ConfigureAwait(false);
+            await _transactionalStore.ExecuteInTransactionAsync(
+                async (transaction, token) =>
+                {
+                    await _documentWriter.CreateAsync(transaction, documentId, RequirementDocumentKind, JsonSerializer.Serialize(dto), token)
+                        .ConfigureAwait(false);
 
-            _logger?.Information($"Requirement created: '{identifier}' (document '{document.Id}').");
+                    await transaction.WriteAsync(IdentifierIndexCollectionName, identifier, documentId.ToString("N"), token)
+                        .ConfigureAwait(false);
+                },
+                cancellationToken).ConfigureAwait(false);
 
-            return ToRequirement(document.Id, dto, document.CurrentRevisionNumber);
+            _logger?.Information($"Requirement created: '{identifier}' (document '{documentId}').");
+
+            return ToRequirement(documentId, dto, revisionNumber: 1);
         }
     }
 

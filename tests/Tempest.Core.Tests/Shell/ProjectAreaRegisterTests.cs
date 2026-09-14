@@ -356,7 +356,7 @@ public sealed class ProjectAreaRegisterTests : IDisposable
                 new EvidenceComposer(discovery, repository), principal,
                 new EngineeringObjectStateStore(store), new AttachmentContentStore(store));
 
-            var verification = new VerificationService(documents, principal, new PermissionEvaluator());
+            var verification = new VerificationService(documents, principal, new PermissionEvaluator(), store, relationships);
             var requirements = new RequirementsService(documents, store, principal, verification);
 
             // Verification reads are permission-gated, so the fixture signs
