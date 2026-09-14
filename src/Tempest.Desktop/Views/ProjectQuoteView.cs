@@ -489,7 +489,25 @@ public sealed class ProjectQuoteView : UserControl
                 var open = new Button { Content = "Open deliverable", MinHeight = DesignTokens.MinControlSize };
                 open.Classes.Add(ChromeStyles.Flat);
                 AutomationProperties.SetName(open, $"Open deliverable — {line.Description}");
-                open.Click += (_, _) => _openObject(deliverableId, CanonicalObjectKinds.Deliverable);
+                // `WP 19.10P` (D6): `_openObject` is a fire-and-forget
+                // `Action`, not a `Task` this handler can await — a failure
+                // inside it (there was one: no view was ever registered for
+                // the Deliverable Kind, see `DeliverableCompletionWorkspaceRegistration`)
+                // used to reach only the shell's own global toast, never
+                // this view's own `ActionCompleted`/status line. Guarded
+                // here so a future regression in the open path is not
+                // silently swallowed a second time.
+                open.Click += (_, _) =>
+                {
+                    try
+                    {
+                        _openObject(deliverableId, CanonicalObjectKinds.Deliverable);
+                    }
+                    catch (Exception ex)
+                    {
+                        Report($"The deliverable could not be opened: {ex.Message}", succeeded: false);
+                    }
+                };
                 row.Children.Add(open);
             }
 

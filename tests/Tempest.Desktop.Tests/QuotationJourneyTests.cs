@@ -225,6 +225,14 @@ public sealed class QuotationJourneyTests
             openDeliverableButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => documentArea.TabCount > tabCountBeforeOpen);
 
+            // `WP 19.10P` (D6): the rehearsal's blocker — this used to pass
+            // silently even though nothing opened, because `RenderUntilAsync`
+            // alone never fails on its own timeout. No `IWorkspaceViewFactory`
+            // was ever registered for the Deliverable Kind; asserted here so
+            // a future regression fails this test instead of only a manual
+            // walk.
+            Assert.True(documentArea.TabCount > tabCountBeforeOpen, "Open deliverable must open a new document tab.");
+
             LayOut(window);
             quoteView = projectWorkspace.QuoteView;
             var openRequirementButton = quoteView.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open requirement"));

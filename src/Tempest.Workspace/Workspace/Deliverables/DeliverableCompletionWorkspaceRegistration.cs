@@ -3,6 +3,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Workspace.Mechanical;
 
 namespace Tempest.Workspace.Deliverables;
 
@@ -34,6 +35,22 @@ public static class DeliverableCompletionWorkspaceRegistration
         manager.RegisterFacetProvider(
             DeliverableCompletion.CanonicalKind, new DeliverableCompletionPropertyFacetProvider(DeliverableCompletion.CanonicalKind, domainContext, principalDirectory));
         manager.RegisterView(DeliverableCompletion.CanonicalKind, new DeliverableCompletionObjectViewFactory(domainContext));
+
+        // `WP 19.10P` (D6): no discipline ever registered a view for the
+        // Deliverable itself (only for its own DeliverableCompletion,
+        // above) — every "open this deliverable right up" caller
+        // (`ProjectQuoteView`'s own "Created on acceptance" section,
+        // `ProjectDeliverablesView`'s own Add Deliverable) threw
+        // `WorkspaceViewFactoryNotFoundException("Deliverable")`, swallowed
+        // by the fire-and-forget open delegate, so nothing visibly
+        // happened. `MechanicalWorkspaceViewFactory` is Kind-agnostic — it
+        // reads `IHasBusinessIdentifier.DisplayName` off whatever the
+        // repository hands back — so it is reused here exactly as
+        // `ManufacturingWorkspaceRegistration` already reuses
+        // `DocumentsWorkspaceViewFactory`/`VerificationActivityWorkspaceViewFactory`
+        // for its own "WorkInstruction"/"Inspection" Kinds, rather than a
+        // new near-identical type.
+        manager.RegisterView(CanonicalObjectKinds.Deliverable, new MechanicalWorkspaceViewFactory(CanonicalObjectKinds.Deliverable, domainContext));
 
         commandDispatcher.RegisterHandler<CompleteDeliverableCommand>(new CompleteDeliverableCommandHandler(domainContext, deliverableService));
         commandDispatcher.RegisterHandler<AddDeliverableCommand>(new AddDeliverableCommandHandler(deliverableService));
