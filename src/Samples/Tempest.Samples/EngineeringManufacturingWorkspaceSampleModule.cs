@@ -2,6 +2,8 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Modules;
 using Tempest.Core.Verification;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
 
 namespace Tempest.Samples;
 
@@ -113,17 +115,19 @@ namespace Tempest.Samples;
 /// <para>
 /// Builds its own <see cref="EngineeringObjectFactory{T}"/> instances
 /// directly, in its own composition root — never through
-/// <c>Tempest.App.Workspace.Manufacturing.ManufacturingObjectFactoryRegistry</c>,
-/// which lives in <c>Tempest.App</c> (never referenced by this project),
-/// mirroring <see cref="EngineeringVerificationWorkspaceSampleModule"/>'s
-/// own identical, disclosed precedent. The <c>"Resource"</c>/<c>"Tooling"</c>/
-/// <c>"Fixture"</c>/<c>"Routing"</c>/<c>"Operation"</c>/<c>"Supplier Operation"</c>
-/// <see cref="EngineeringObjectMetadata.Classification"/> literals below
-/// must match <c>DocumentObjectFactoryRegistry"</c>'s/<c>ManufacturingObjectFactoryRegistry</c>'s
-/// own identically-named constants exactly, duplicated here rather than
-/// referenced, the same disclosed boundary
+/// <see cref="ManufacturingObjectFactoryRegistry"/>'s own
+/// <c>CreateOperationAsync</c>, mirroring
+/// <see cref="EngineeringVerificationWorkspaceSampleModule"/>'s own
+/// identical, disclosed precedent. `TD-93`: the
+/// <c>"Tooling"</c>/<c>"Fixture"</c>/<c>"Routing"</c>/<c>"Operation"</c>/
+/// <c>"Supplier Operation"</c> <see cref="EngineeringObjectMetadata.Classification"/>
+/// values below now reference <see cref="DocumentObjectFactoryRegistry"/>'s
+/// and <see cref="ManufacturingObjectFactoryRegistry"/>'s own
+/// identically-named constants directly, the same
 /// <see cref="EngineeringDocumentsWorkspaceSampleModule"/>'s own remarks
-/// already establish.
+/// already establish for its own vocabulary. (Not <c>"Resource"</c>: no
+/// literal by that name is declared in this class — <see cref="DocumentObjectFactoryRegistry.Resource"/>
+/// exists for a future Resource sample this module does not yet build.)
 /// </para>
 /// </remarks>
 [ModuleMetadata("tempest.samples.workspacemanufacturing", "Manufacturing Workspace Sample", "1.0.0")]
@@ -131,12 +135,6 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 {
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.manufacturingworkspace-user";
-
-    private const string Routing = "Routing";
-    private const string Operation = "Operation";
-    private const string SupplierOperation = "Supplier Operation";
-    private const string Tooling = "Tooling";
-    private const string Fixture = "Fixture";
 
     private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
@@ -194,7 +192,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Routing: a Classification="Routing" container, ADR-0091 ----
         var routing = await CreateOperationAsync(
-            "Wing Spar Assembly Routing", Routing, _mechanicalSampleModule.WingAssemblyId ?? Guid.Empty,
+            "Wing Spar Assembly Routing", ManufacturingObjectFactoryRegistry.Routing, _mechanicalSampleModule.WingAssemblyId ?? Guid.Empty,
             "Fictional sample Manufacturing Routing — for demonstration only.", cancellationToken).ConfigureAwait(false);
         objectIds.Add(routing.Id);
         RoutingId = routing.Id;
@@ -204,7 +202,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Step 1: verifies/references the real Wing Assembly ----
         var step1 = await CreateOperationAsync(
-            "Wing Assembly Fit-Up", Operation, _mechanicalSampleModule.WingAssemblyId ?? Guid.Empty,
+            "Wing Assembly Fit-Up", ManufacturingObjectFactoryRegistry.Operation, _mechanicalSampleModule.WingAssemblyId ?? Guid.Empty,
             "Fictional sample Manufacturing Operation — for demonstration only.", cancellationToken, routing.Id).ConfigureAwait(false);
         objectIds.Add(step1.Id);
         WingAssemblyOperationId = step1.Id;
@@ -215,7 +213,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Step 2: verifies/references the real Spar Web Plate; also references the real Beam Calculation ----
         var step2 = await CreateOperationAsync(
-            "Spar Web Plate Machining", Operation, _mechanicalSampleModule.SparWebPlateId ?? Guid.Empty,
+            "Spar Web Plate Machining", ManufacturingObjectFactoryRegistry.Operation, _mechanicalSampleModule.SparWebPlateId ?? Guid.Empty,
             "Fictional sample Manufacturing Operation — for demonstration only.", cancellationToken, routing.Id).ConfigureAwait(false);
         objectIds.Add(step2.Id);
         SparWebPlateOperationId = step2.Id;
@@ -230,7 +228,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Step 3: verifies/references the real Shared Fastener Component — left Draft, the honest, un-started "Open" baseline ----
         var step3 = await CreateOperationAsync(
-            "Shared Fastener Installation", Operation, _mechanicalSampleModule.SharedFastenerComponentId ?? Guid.Empty,
+            "Shared Fastener Installation", ManufacturingObjectFactoryRegistry.Operation, _mechanicalSampleModule.SharedFastenerComponentId ?? Guid.Empty,
             "Fictional sample Manufacturing Operation — for demonstration only.", cancellationToken, routing.Id).ConfigureAwait(false);
         objectIds.Add(step3.Id);
         SharedFastenerOperationId = step3.Id;
@@ -240,7 +238,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Supplier Operation: manufacturedBy the base sample's own real, already-live Supplier (queried, not duplicated) ----
         var supplierOperation = await CreateOperationAsync(
-            "Fastener Kit Supplier Operation", SupplierOperation, _mechanicalSampleModule.SharedFastenerComponentId ?? Guid.Empty,
+            "Fastener Kit Supplier Operation", ManufacturingObjectFactoryRegistry.SupplierOperation, _mechanicalSampleModule.SharedFastenerComponentId ?? Guid.Empty,
             "Fictional sample Supplier Operation — for demonstration only.", cancellationToken).ConfigureAwait(false);
         objectIds.Add(supplierOperation.Id);
         SupplierOperationId = supplierOperation.Id;
@@ -251,12 +249,12 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
         // ---- Tooling / Fixture: plain "Document" objects, WP 9.5A's own Classification extension ----
         var tooling = await CreateDocumentAsync(
-            "Wing Spar Drill Jig", Tooling, "Fictional sample Tooling document — for demonstration only.", cancellationToken).ConfigureAwait(false);
+            "Wing Spar Drill Jig", DocumentObjectFactoryRegistry.Tooling, "Fictional sample Tooling document — for demonstration only.", cancellationToken).ConfigureAwait(false);
         objectIds.Add(tooling.Id);
         ToolingDocumentId = tooling.Id;
 
         var fixture = await CreateDocumentAsync(
-            "Wing Spar Assembly Fixture", Fixture, "Fictional sample Fixture document — for demonstration only.", cancellationToken).ConfigureAwait(false);
+            "Wing Spar Assembly Fixture", DocumentObjectFactoryRegistry.Fixture, "Fictional sample Fixture document — for demonstration only.", cancellationToken).ConfigureAwait(false);
         objectIds.Add(fixture.Id);
         FixtureDocumentId = fixture.Id;
 

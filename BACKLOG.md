@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (23 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (22 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -53,7 +53,6 @@ and nothing on disk.
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
 | `TD-92` | Drag-to-dock has no live preview adorner | unowned |
-| `TD-93` | `Tempest.Samples` redeclares 13 canonical vocabulary strings; can't reference the owner | unowned |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
@@ -302,6 +301,29 @@ established for `Ctrl+Z`/`Ctrl+Y`. Both assert the real
 `ConfirmationDialog` becomes visible and that clicking its real Cancel
 button dismisses it, leaves the tab count unchanged, and leaves the
 edit intact.
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-93`. `Tempest.Samples` redeclared 13 canonical
+vocabulary strings it could not reference the owner for, because
+`Tempest.Samples.csproj` referenced only `Tempest.Core`. Confirmed no
+cycle before changing anything (`Tempest.Workspace` does not reference
+`Tempest.Samples`; only the two test projects and `Tempest.Validation`
+do), then added a direct `Tempest.Workspace` project reference and
+replaced all 13 literals with the owning constants: six in
+`EngineeringDocumentsWorkspaceSampleModule.cs` (`DocumentObjectFactoryRegistry.Specification`/`Report`/`Procedure`/`Standard`/`Datasheet`/`ExternalReference`),
+five in `EngineeringManufacturingWorkspaceSampleModule.cs`
+(`ManufacturingObjectFactoryRegistry.Routing`/`Operation`/`SupplierOperation`,
+`DocumentObjectFactoryRegistry.Tooling`/`Fixture`), and two in
+`EngineeringCalculationsWorkspaceSampleModule.cs`
+(`CalculationTemplateRegistry.CalculatedByRelationshipKind`,
+`VerificationService.BasedOnCalculationRelationshipKind` — the latter
+already in `Tempest.Core`, needing no new reference at all). Also
+corrected the Manufacturing module's own drifted remarks, which named a
+sixth, non-existent literal ("Resource") alongside the five the class
+actually declared. `tests/Tempest.Core.Tests/Workspace/SampleSeparationTests.cs`
+(29 tests) stays green — `Tempest.Samples` still ships nowhere; the new
+reference is a build-time-only dependency in the opposite direction
+from what that suite guards.
 
 ## Owned by Programme
 
