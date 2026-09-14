@@ -8,6 +8,7 @@ using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Quotations;
 using Tempest.Core.Timesheets;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
@@ -84,6 +85,11 @@ public sealed class ProductionRehydrationTests
         // once more: its own discipline registration rather than
         // `CanonicalObjectKinds`.
         data.Add(InvoiceRequest.CanonicalKind, typeof(InvoiceRequest));
+
+        // `WP 19.5A` (`ADR-0152`) — the twenty-second Kind with a
+        // production rehydrator from the day it shipped, the identical
+        // Evidence shape once more.
+        data.Add(Quotation.CanonicalKind, typeof(Quotation));
 
         // The twelve that were registered only by Tempest.Samples.
         data.Add(CanonicalObjectKinds.Portfolio, typeof(Portfolio));
@@ -249,6 +255,7 @@ public sealed class ProductionRehydrationTests
         registry.Register<TimesheetEntry>(TimesheetEntry.CanonicalKind, context);
         registry.Register<DeliverableCompletion>(DeliverableCompletion.CanonicalKind, context);
         registry.Register<InvoiceRequest>(InvoiceRequest.CanonicalKind, context);
+        registry.Register<Quotation>(Quotation.CanonicalKind, context);
         CanonicalObjectKinds.RegisterRehydrators(registry, context);
     }
 
