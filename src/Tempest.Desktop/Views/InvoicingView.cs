@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
@@ -35,10 +36,10 @@ namespace Tempest.Desktop.Views;
 /// <para>
 /// <b>Every request lands in exactly one group.</b> Draft is <b>New</b>.
 /// Sending/Sent/Accepted is <b>Sent</b> unless it is also Outstanding.
-/// <b>Outstanding / Overdue</b> is a Sent or Accepted request unpaid more
-/// than <see cref="TaskEquations.InvoiceTermsDays"/> days after
-/// <see cref="InvoiceRequest.SentAtUtc"/> — the identical heuristic
-/// <c>Tempest.Workspace.Tasks.TaskEquations.InvoiceFinanceItems</c> states
+/// <b>Outstanding / Overdue</b> is a Sent or Accepted request unpaid past
+/// its own <see cref="InvoiceRequest.DueOn"/> (`TD-180`, `WP 20.1B`) — the
+/// identical rule
+/// <c>Tempest.Workspace.Tasks.TaskEquations.InvoiceFinanceItems</c> reads
 /// for the Home/Engineering "Finance" tile, reused here rather than
 /// re-derived — plus Reauthorise and Unknown, which always need attention.
 /// Rejected and Voided are <b>Closed</b>. This partition is exhaustive and
@@ -244,7 +245,7 @@ public sealed class InvoicingView : UserControl
             "Sent", $"Sent ({sentRows.Count})", "Nothing has been sent yet.", sentRows.Select(BuildSentRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
             "Outstanding / Overdue",
-            $"Outstanding / Overdue ({outstandingRows.Count}) — unpaid more than {TaskEquations.InvoiceTermsDays} days after being sent, or needing attention (Reauthorise, Unknown)",
+            $"Outstanding / Overdue ({outstandingRows.Count}) — unpaid past its own due date (`TD-180`), or needing attention (Reauthorise, Unknown)",
             "Nothing is outstanding or overdue.",
             outstandingRows.Select(r => BuildOutstandingRow(r, asOf)).ToList()));
         _groups.Children.Add(BuildClosedGroup(
@@ -252,19 +253,18 @@ public sealed class InvoicingView : UserControl
     }
 
     /// <summary>
-    /// A Sent or Accepted request unpaid more than
-    /// <see cref="TaskEquations.InvoiceTermsDays"/> days after
-    /// <see cref="InvoiceRequest.SentAtUtc"/> — the identical heuristic
-    /// <see cref="TaskEquations.InvoiceFinanceItems"/> reads for the
-    /// Finance tile, reused rather than re-derived — or a Reauthorise or
-    /// Unknown request, which always needs attention regardless of age.
+    /// A Sent or Accepted request unpaid past its own <see cref="InvoiceRequest.DueOn"/>
+    /// (`TD-180`) — the identical rule <see cref="TaskEquations.InvoiceFinanceItems"/>
+    /// reads for the Finance tile, reused rather than re-derived — or a
+    /// Reauthorise or Unknown request, which always needs attention
+    /// regardless of age.
     /// </summary>
     private static bool IsOutstandingOrOverdue(InvoiceRequest request, DateTimeOffset asOf) =>
         request.Status is InvoiceRequestStatus.Reauthorise or InvoiceRequestStatus.Unknown
         || (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted
             && request.PaidDate is null
-            && request.SentAtUtc is { } sent
-            && (asOf - sent).TotalDays > TaskEquations.InvoiceTermsDays);
+            && request.DueOn is { } due
+            && DateOnly.FromDateTime(asOf.UtcDateTime) > due);
 
     private async Task<List<IEngineeringObject>> ProjectsInScopeAsync(Guid? scopedProjectId)
     {
@@ -336,7 +336,9 @@ public sealed class InvoicingView : UserControl
         {
             Text = $"{row.ProjectName} — {request.DisplayName} — Client {request.ClientOrganisationId}"
                 + (request.PurchaseOrderReference is { } po ? $" — PO {po}" : string.Empty)
-                + $" — {MoneyDisplay.Format(request.Total)}",
+                + $" — {MoneyDisplay.Format(request.Total)}"
+                + $" — Terms {request.PaymentTerms.DisplayName()}"
+                + (request.DueOn is { } due ? $" — Due {due:yyyy-MM-dd}" : string.Empty),
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -519,8 +521,8 @@ public sealed class InvoicingView : UserControl
 
     private static string DescribeOutstanding(InvoiceRequest request, DateTimeOffset asOf) => request.Status switch
     {
-        InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted when request.SentAtUtc is { } sent =>
-            $"{(int)(asOf - sent).TotalDays} day(s) outstanding.",
+        InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted when request.DueOn is { } due =>
+            $"{DateOnly.FromDateTime(asOf.UtcDateTime).DayNumber - due.DayNumber} day(s) overdue (due {due:yyyy-MM-dd}).",
         InvoiceRequestStatus.Reauthorise => "Needs attention: the connector needs re-authorising.",
         InvoiceRequestStatus.Unknown => "Needs attention: the response was lost; reconciling.",
         _ => "Needs attention.",

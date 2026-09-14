@@ -17,16 +17,7 @@ public static class TaskEquations
     /// <summary>A due date within this many days of "today" (inclusive) — and not overdue, and not today — is Due this week (Work Package 19.5C's own brief).</summary>
     public const int DueThisWeekWithinDays = 7;
 
-    /// <summary>
-    /// How many days after <see cref="InvoiceChaseFact.SentAtUtc"/> an
-    /// unpaid, Sent invoice request counts as "past terms". No per-request
-    /// terms field exists on <c>InvoiceRequest</c> today (confirmed by the
-    /// seam map: no age/staleness helper exists) — a disclosed heuristic,
-    /// not a value read from anywhere.
-    /// </summary>
-    public const int InvoiceTermsDays = 30;
-
-    /// <summary>A quote Sent more than this many days ago is chased (Work Package 19.5C's own brief: "quotes ... over 7 days old to chase").</summary>
+    /// <summary>A quote Sent more than this many days ago is chased (Work Package 19.5C's own brief: "quotes ... over 7 days old to chase"). No decision was asked of, or given by, the Product Owner on this one (`WP 20.1B` brief) — it stays.</summary>
     public const int QuoteChaseAfterDays = 7;
 
     /// <summary>Which due-date bucket <paramref name="dueDate"/> falls into, as of <paramref name="today"/>.</summary>
@@ -121,14 +112,29 @@ public static class TaskEquations
             .Select(e => new TaskItem(Tempest.Core.Evidence.Evidence.CanonicalKind, e.Title, e.ProjectId, null, e.EvidenceId, TaskBucket.Approvals))
             .ToList();
 
-    /// <summary>Sent, unpaid invoice requests more than <see cref="InvoiceTermsDays"/> days old.</summary>
-    public static IReadOnlyList<TaskItem> InvoiceFinanceItems(IReadOnlyList<InvoiceChaseFact> requests, DateTimeOffset asOf) =>
+    /// <summary>
+    /// Every live, incomplete Calculation under a project (`TD-181`,
+    /// Product Owner decision 2026-09-15 §2) — ordered by due date where
+    /// one is carried, with every calculation carrying none (every
+    /// calculation, until a due date is ever added to the Kind) sorting
+    /// last, "Later" position, mirroring <see cref="ManualTaskItems"/>'s
+    /// own ordering. <paramref name="calculations"/> already excludes a
+    /// calculation with no project ancestor, and one cited by issued
+    /// evidence — both are <see cref="TasksReadModelService"/>'s own
+    /// concern, read once off the durable state, not this pure function's.
+    /// </summary>
+    public static IReadOnlyList<TaskItem> CalculationItems(IReadOnlyList<CalculationChaseFact> calculations) =>
+        calculations
+            .Where(c => !c.Completed)
+            .OrderBy(c => c.Title, StringComparer.Ordinal)
+            .Select(c => new TaskItem("Calculation", c.Title, c.ProjectId, null, c.CalculationId, TaskBucket.Calculations))
+            .ToList();
+
+    /// <summary>Sent, unpaid invoice requests past their own due date (`TD-180`) — the Finance bucket lists a request only after its own <see cref="InvoiceChaseFact.DueOn"/>, replacing the thirty-day heuristic `WP 20.1B` closes out.</summary>
+    public static IReadOnlyList<TaskItem> InvoiceFinanceItems(IReadOnlyList<InvoiceChaseFact> requests, DateOnly today) =>
         requests
-            .Where(r => r.Status == InvoiceRequestStatus.Sent && r.PaidDate is null
-                        && r.SentAtUtc is { } sent && (asOf - sent).TotalDays > InvoiceTermsDays)
-            .Select(r => new TaskItem(
-                InvoiceRequest.CanonicalKind, r.Title, r.ProjectId,
-                r.SentAtUtc is { } s ? DateOnly.FromDateTime(s.UtcDateTime) : null, r.RequestId, TaskBucket.Finance))
+            .Where(r => r.Status == InvoiceRequestStatus.Sent && r.PaidDate is null && r.DueOn is { } due && today > due)
+            .Select(r => new TaskItem(InvoiceRequest.CanonicalKind, r.Title, r.ProjectId, r.DueOn, r.RequestId, TaskBucket.Finance))
             .ToList();
 
     /// <summary>Sent quotations more than <see cref="QuoteChaseAfterDays"/> days old.</summary>

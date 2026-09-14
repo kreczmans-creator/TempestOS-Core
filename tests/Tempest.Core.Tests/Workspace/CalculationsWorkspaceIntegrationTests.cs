@@ -227,6 +227,7 @@ public class CalculationsWorkspaceIntegrationTests
         [
             "calculations.approve",
             "calculations.archive",
+            "calculations.complete",
             "calculations.copy",
             "calculations.create",
             "calculations.delete",

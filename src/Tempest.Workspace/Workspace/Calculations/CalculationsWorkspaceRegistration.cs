@@ -21,6 +21,9 @@ public static class CalculationsCommandIds
     public const string RequestReview = "calculations.request-review";
     public const string Approve = "calculations.approve";
     public const string Archive = "calculations.archive";
+
+    /// <summary>Marks the selected Calculation complete (`TD-181`, Product Owner decision 2026-09-15 §2) — a Calculation only, never a Calculation Set.</summary>
+    public const string Complete = "calculations.complete";
 }
 
 /// <summary>
@@ -49,6 +52,9 @@ public static class CalculationsWorkspaceRegistration
 
     /// <summary>The two Calculation Kinds this Work Package registers a View and a Property Facet Provider for, plus the synthetic <c>"CalculationTemplate"</c> Kind.</summary>
     public static readonly IReadOnlyList<string> SupportedKinds = ["Calculation", "CalculationSet", "CalculationTemplate"];
+
+    /// <summary>The one real Kind <c>calculations.complete</c> (`WP 20.1B`, `TD-181`) applies to — a Calculation Set is a container, never itself a task.</summary>
+    private static readonly IReadOnlyList<string> CalculationOnlyKind = [CalculationObjectFactoryRegistry.CalculationKind];
 
     /// <summary>Registers every Engineering Calculations Workspace extension point, including the five representative Calculation Templates (`WP 9.2A`).</summary>
     public static CalculationTemplateRegistry Register(
@@ -105,6 +111,7 @@ public static class CalculationsWorkspaceRegistration
         commandDispatcher.RegisterHandler<SetCalculationStatusCommand>(new SetCalculationStatusCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ExecuteCalculationCommand>(executeHandler);
         commandDispatcher.RegisterHandler<RecalculateCalculationCommand>(new RecalculateCalculationCommandHandler(executeHandler));
+        commandDispatcher.RegisterHandler<CompleteCalculationCommand>(new CompleteCalculationCommandHandler(domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
         // hand-written lambda closing over the same constructor the handler
@@ -265,6 +272,23 @@ public static class CalculationsWorkspaceRegistration
             description: "Transitions the selected Calculation's own status to Archived, a terminal state (SetCalculationStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Archived, boundKinds),
+        });
+
+        // `WP 20.1B` (`TD-181`): a Calculation is a task from creation —
+        // completing it is its own act, narrower than the five status
+        // transitions above (a Calculation only, never a Calculation Set,
+        // which is a container, not itself task-worthy). No parameter, no
+        // confirmation — the same person may complete it, exactly as
+        // `Tempest.Workspace.Tasks.TaskCommandIds.Complete` already is.
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.Complete, displayName: "Complete Calculation", category: "Calculations",
+            description: "Marks the selected Calculation complete.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new CompleteCalculationCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: CalculationOnlyKind),
         });
 
         return templateRegistry;
