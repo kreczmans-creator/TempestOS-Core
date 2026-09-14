@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Headless.XUnit;
@@ -275,13 +276,14 @@ public sealed class QuotationJourneyTests
             // immediately (`DesktopCommandPrompt.CollectAsync` walks every
             // declared parameter in order), synchronously enough that
             // `IsVisible` never observably goes false between the two —
-            // waited for by the label text changing instead. A real date,
-            // not a blank one: `InputDialog.TryComplete` itself refuses an
-            // empty value unconditionally ("A value is required"), before
-            // ever reaching a parameter's own `Validate` — a pre-existing
-            // platform gap this journey does not need to exercise (also
-            // true, unrelated to this Work Package, of `quotation.create`'s
-            // own optional "reference" parameter).
+            // waited for by the label text changing instead. A real date
+            // here, not a blank one: this journey's own concern is "Add
+            // Deliverable end to end", not the blank-target-date path —
+            // that path (`InputDialog`'s own `allowBlank`, `WP 19.5D`)
+            // has its own dedicated coverage in `DialogFrameworkKeyboardTests`
+            // and, for `quotation.create`'s identical "blank means
+            // generated" shape, in this class's own
+            // <see cref="CreateQuotation_ThroughTheCommandPalette_WithABlankReference_GeneratesAReference"/>.
             await RenderUntilAsync(window, () =>
                 inputDialog.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Target date", StringComparison.Ordinal)));
             var targetDateBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
@@ -325,6 +327,80 @@ public sealed class QuotationJourneyTests
                 return completion is not null;
             });
             Assert.NotNull(completion);
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// `WP 19.5D`, Defect 1: `quotation.create`'s own "reference" parameter
+    /// has no <see cref="CommandParameter.Validate"/> at all — Check
+    /// accepts anything, blank included — so submitting the Command
+    /// Palette's own reference prompt blank must create a quotation with a
+    /// generated <c>Q-&lt;year&gt;-&lt;nnn&gt;</c> reference, exactly as
+    /// <see cref="IQuotationService.CreateAsync"/> already does when handed
+    /// a <see langword="null"/> reference directly. Before `InputDialog`'s
+    /// own <c>allowBlank</c>, `TryComplete` refused this blank
+    /// unconditionally ("A value is required.") before ever reaching that
+    /// permissive Check, so this path — the Ribbon and Command Palette,
+    /// the only surfaces that ever reach `quotation.create`'s binding —
+    /// could not create a quotation with a generated reference at all.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CreateQuotation_ThroughTheCommandPalette_WithABlankReference_GeneratesAReference()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+            var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            await navigator.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            var project = await host.ProjectDirectory!.CreateAsync("P-QJ-PALETTE", "Palette Quotation Project");
+            await navigator.OpenProjectAsync(project.Id, ProjectArea.Overview);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var palette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");
+            palette.Open();
+            var queryBox = palette.GetLogicalDescendants().OfType<TextBox>().Single();
+            // `ApplyFilter` (subscribed to `TextBox.TextProperty`'s own
+            // `PropertyChanged`) filters and selects the first matching row
+            // synchronously, before its own first `await` — so the single
+            // "Create Quotation" row is already selected by the time this
+            // setter returns.
+            queryBox.Text = "Create Quotation";
+
+            queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
+            await RenderUntilAsync(window, () => inputDialog.IsVisible);
+            Assert.False(palette.IsOpen);
+
+            var referenceBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().Single();
+            Assert.Equal(string.Empty, referenceBox.Text);
+            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !inputDialog.IsVisible);
+
+            Quotation? created = null;
+            await RenderUntilAsync(window, () =>
+            {
+                created = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<Quotation>().FirstOrDefault();
+                return created is not null;
+            });
+
+            Assert.NotNull(created);
+            Assert.StartsWith($"Q-{DateTime.UtcNow.Year}-", created!.Reference, StringComparison.Ordinal);
 
             await host.ShutdownAsync();
         }

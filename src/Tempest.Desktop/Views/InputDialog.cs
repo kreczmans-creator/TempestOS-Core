@@ -39,6 +39,7 @@ public sealed class InputDialog : Border
 
     private TaskCompletionSource<string?>? _pending;
     private Func<string, string?>? _validate;
+    private bool _allowBlank;
 
     /// <summary>Initialises a new instance of the <see cref="InputDialog"/> class, initially hidden.</summary>
     public InputDialog()
@@ -97,16 +98,21 @@ public sealed class InputDialog : Border
     }
 
     /// <summary>
-    /// Shows this dialog, returning the entered text if the user confirms
-    /// (never null/blank — validated), or <see langword="null"/> if they
-    /// cancel. <paramref name="validate"/>, if given, returns a non-null
-    /// error message for an invalid value (shown inline, OK stays
-    /// clickable — re-validated on every attempt, never silently
-    /// blocked); only one confirmation may be pending at a time, mirroring
-    /// <see cref="ConfirmationDialog.ConfirmAsync"/>'s own identical
-    /// "a second call cancels the first" discipline.
+    /// Shows this dialog, returning the entered text if the user confirms,
+    /// or <see langword="null"/> if they cancel. Blank is rejected with "A
+    /// value is required." before <paramref name="validate"/> ever runs,
+    /// unless <paramref name="allowBlank"/> is <see langword="true"/>, in
+    /// which case a blank (trimmed) value is passed to
+    /// <paramref name="validate"/> exactly like any other — the field's own
+    /// binding decides, not this dialog. <paramref name="validate"/>, if
+    /// given, returns a non-null error message for an invalid value (shown
+    /// inline, OK stays clickable — re-validated on every attempt, never
+    /// silently blocked); only one confirmation may be pending at a time,
+    /// mirroring <see cref="ConfirmationDialog.ConfirmAsync"/>'s own
+    /// identical "a second call cancels the first" discipline.
     /// </summary>
-    public Task<string?> PromptAsync(string title, string label, string initialValue = "", Func<string, string?>? validate = null)
+    public Task<string?> PromptAsync(
+        string title, string label, string initialValue = "", Func<string, string?>? validate = null, bool allowBlank = false)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(label);
@@ -119,6 +125,7 @@ public sealed class InputDialog : Border
         _input.Text = initialValue;
         AutomationProperties.SetName(_input, label);
         _validate = validate;
+        _allowBlank = allowBlank;
         _validationSlot.IsVisible = false;
         _validationSlot.Content = null;
         IsVisible = true;
@@ -132,7 +139,7 @@ public sealed class InputDialog : Border
     private void TryComplete()
     {
         var value = _input.Text?.Trim() ?? string.Empty;
-        if (string.IsNullOrEmpty(value))
+        if (string.IsNullOrEmpty(value) && !_allowBlank)
         {
             ShowValidationError("A value is required.");
             return;
