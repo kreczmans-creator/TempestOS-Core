@@ -10,6 +10,7 @@ using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Bearings;
@@ -34,6 +35,7 @@ using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Standards;
+using Tempest.Core.Tasks;
 using Tempest.Core.Timesheets;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
@@ -190,6 +192,7 @@ public static class EngineeringWorkspaceComposer
         var deliverableService = (IDeliverableService)services.GetService(typeof(IDeliverableService));
         var invoicingService = (IInvoicingService)services.GetService(typeof(IInvoicingService));
         var quotationService = (IQuotationService)services.GetService(typeof(IQuotationService));
+        var taskService = (ITaskService)services.GetService(typeof(ITaskService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -248,6 +251,13 @@ public static class EngineeringWorkspaceComposer
         // needs `IRequirementsService`, already resolved above).
         QuotationWorkspaceRegistration.Register(manager, domainContext, quotationService, commandDispatcher, commandRegistry);
 
+        // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
+        // Home dashboard's own task tiles and task list. No dependency on
+        // any other discipline registered above, so its own position here
+        // is not load-bearing; kept alongside Quotation as the other
+        // WP 19.5-wave Kind.
+        TaskWorkspaceRegistration.Register(manager, domainContext, taskService, commandDispatcher, commandRegistry);
+
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
         // reusing the handler Verification's own registration above already
@@ -288,6 +298,10 @@ public static class EngineeringWorkspaceComposer
         // `ADR-0152` (`WP 19.5A`) — the same shape once more, for the
         // quotation Kind this Work Package adds.
         rehydrators.Register<Tempest.Core.Quotations.Quotation>(Tempest.Core.Quotations.Quotation.CanonicalKind, domainContext);
+
+        // `WP 19.5C` — the same shape once more, for the manual task Kind
+        // this Work Package adds.
+        rehydrators.Register<Tempest.Core.Tasks.ManualTask>(Tempest.Core.Tasks.ManualTask.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by

@@ -789,6 +789,11 @@ public sealed class TempestHost : ITempestHost
         // can resolve it the same way.
         services.Singleton<IProjectLifecycleService, ProjectLifecycleService>();
 
+        // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
+        // Home dashboard's own task tiles and task list. Registered as an
+        // ordinary Core service, exactly as `IQuotationService` above.
+        services.Singleton<Tempest.Core.Tasks.ITaskService, Tempest.Core.Tasks.TaskService>();
+
         // `ADR-0152` (`WP 19.5A`). Quotation core — depends on the
         // rate-card catalogue above (currency resolution) and Requirements
         // above that (`AcceptAsync`'s per-line requirement). Registered as

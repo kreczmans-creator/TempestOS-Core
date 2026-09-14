@@ -9,6 +9,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Quotations;
+using Tempest.Core.Tasks;
 using Tempest.Core.Timesheets;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
@@ -90,6 +91,10 @@ public sealed class ProductionRehydrationTests
         // production rehydrator from the day it shipped, the identical
         // Evidence shape once more.
         data.Add(Quotation.CanonicalKind, typeof(Quotation));
+
+        // `WP 19.5C` — the twenty-third Kind with a production rehydrator
+        // from the day it shipped, the identical Evidence shape once more.
+        data.Add(ManualTask.CanonicalKind, typeof(ManualTask));
 
         // The twelve that were registered only by Tempest.Samples.
         data.Add(CanonicalObjectKinds.Portfolio, typeof(Portfolio));
@@ -256,6 +261,7 @@ public sealed class ProductionRehydrationTests
         registry.Register<DeliverableCompletion>(DeliverableCompletion.CanonicalKind, context);
         registry.Register<InvoiceRequest>(InvoiceRequest.CanonicalKind, context);
         registry.Register<Quotation>(Quotation.CanonicalKind, context);
+        registry.Register<ManualTask>(ManualTask.CanonicalKind, context);
         CanonicalObjectKinds.RegisterRehydrators(registry, context);
     }
 
