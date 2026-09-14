@@ -169,7 +169,14 @@ public sealed class EngineeringAreaView : UserControl
     {
         if (_tree.SelectedItem is null)
         {
+            // Set synchronously first — `IsSelected` also fires
+            // `_tree.SelectionChanged`, which re-runs the identical
+            // content build fire-and-forget, but a caller awaiting this
+            // method must see real content the instant it returns, not
+            // only once that later task happens to complete.
             _dashboardNode.IsSelected = true;
+            await _reportsView.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = new ScrollViewer { Content = BuildDashboardStack() };
             return;
         }
 

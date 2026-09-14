@@ -174,7 +174,14 @@ public sealed class ProjectsAreaView : UserControl
             _dashboardNode.IsSelected = true;
             _suppressSelection = false;
             _detail.Content = _dashboardPlaceholder;
+            return;
         }
+
+        // A group (Open/Closed/Archive) was already selected on a
+        // previous entry — re-read its own content too, the same "load
+        // when you land here" discipline every other area follows,
+        // rather than leaving whatever it last showed on screen stale.
+        await OnSelectionChangedAsync().ConfigureAwait(true);
     }
 
     private static void Populate(TreeViewItem node, IReadOnlyList<Tempest.Core.EngineeringDomain.Project> projects)
