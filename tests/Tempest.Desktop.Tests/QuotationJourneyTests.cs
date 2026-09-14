@@ -109,28 +109,18 @@ public sealed class QuotationJourneyTests
             // `QuotesView`'s own "Open" button already makes through this
             // identical method.
             //
-            // `WP 19.10B`: `TD-176` (`ProjectContext.RefreshAsync` closing
-            // the context on a losing overlapping refresh) is now fixed at
-            // the source — see `ProjectContext`'s own remarks and
-            // `ProjectContextRefreshRaceTests`, which reproduces that race
-            // directly and fails against the pre-fix code. The explicit
-            // re-open this comment used to justify by that race is kept
-            // here regardless, for a different, still-open reason found
-            // while removing it: `ProjectBrowserView.CreateAsync` looks
-            // for the project it just created in its own just-refreshed
-            // `_current`, but that refresh is filtered to whatever
+            // `WP 19.10Q` fixed `ProjectBrowserView.CreateAsync` at the
+            // source: it used to look for the project it just created in
+            // its own just-refreshed `_current`, filtered to whatever
             // `SetVisibleProjects` set when the "Open" group node above
             // was selected — a snapshot taken before this project existed
-            // — so the just-created project is never in it and
-            // `CreateAsync` silently returns without ever opening the
-            // project at all (`navigator.Current` never leaves the
-            // Projects area through the app's own path). Not this Work
-            // Package's file to fix (`ProjectBrowserView.cs`); reported to
-            // the lead rather than worked around at its own source. Until
-            // then, this re-open reproduces the same recovery a person
-            // would make by hand — re-opening the project themselves.
-            await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
-            await window.RenderCurrentModuleAsync().ConfigureAwait(true);
+            // — so the just-created project was never in it and
+            // `CreateAsync` silently returned without ever opening the
+            // project at all. The explicit re-open this comment once
+            // justified by that defect (and, before it, by `TD-176`,
+            // fixed in `WP 19.10B`) is gone; `navigator.Current` now
+            // settles on the Quote tab through the app's own path alone,
+            // proven by the `RenderUntilAsync` above.
             await quoteView.SelectQuoteAsync(quoteId).ConfigureAwait(true);
             await RenderUntilAsync(window, () =>
                 quoteView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Draft", StringComparison.Ordinal)));

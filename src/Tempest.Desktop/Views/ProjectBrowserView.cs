@@ -40,6 +40,17 @@ public sealed class ProjectBrowserView : UserControl
     /// <summary>Raised after a project is opened, so the shell can render its workspace.</summary>
     public event Action? ProjectOpened;
 
+    /// <summary>
+    /// Raised the instant a new project exists in the directory (`WP
+    /// 19.10Q`), before this view refreshes its own list or opens it — so
+    /// a container that shows this view filtered to one group (<see
+    /// cref="ProjectsAreaView"/>'s Open/Closed/Archive tree) can extend
+    /// its own visible set synchronously, in step with the create path,
+    /// rather than waiting for a later, fire-and-forget change-feed
+    /// reaction to catch up.
+    /// </summary>
+    public event Action<Guid>? ProjectCreated;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectBrowserView"/> class.</summary>
     /// <param name="directory">The project catalogue this view lists.</param>
     /// <param name="navigator">The shell navigator every open goes through.</param>
@@ -144,20 +155,27 @@ public sealed class ProjectBrowserView : UserControl
         if (!await _promptForNewProject(identifier, string.Empty).ConfigureAwait(true))
             return;
 
-        await RefreshAsync().ConfigureAwait(true);
-
-        // "Create your first project" (and every subsequent New Project…)
-        // used to leave the user back on the now-populated, but still
-        // unopened, list — a dead end the empty state's own instruction
-        // ("Create the first one...") never actually resolved. The
-        // identifier generated above is exactly the one the newly created
-        // project carries, so it is found in the just-refreshed list
-        // without a second directory capability — reusing OpenSelectedAsync's
-        // own OpenProjectAsync path, never a second "current project"
-        // notion of this view's own.
-        var created = _current.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+        // The project (and, if requested, its quotation) already exists —
+        // created inside `_promptForNewProject` itself. Finding it here
+        // reads the directory directly, the same service that just
+        // created it (`WP 19.10Q`), rather than this view's own
+        // `_current`: `_current` is whatever `RefreshAsync` last filtered
+        // to `SetVisibleProjects`'s set, and that set is a snapshot taken
+        // before this project existed whenever a group node (Open/Closed/
+        // Archive) is selected — relying on it here left `CreateAsync`
+        // unable to find the very project it just created, and it
+        // returned without ever opening anything.
+        var everyProject = await _directory.ListAsync().ConfigureAwait(true);
+        var created = everyProject.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
         if (created is null)
             return;
+
+        // A project just created is open by definition — let a filtered
+        // container (`ProjectsAreaView`'s Open group) extend its own
+        // visible set before this view's own refresh reads it, so the
+        // list and the filter agree by the moment the project opens.
+        ProjectCreated?.Invoke(created.Id);
+        await RefreshAsync().ConfigureAwait(true);
 
         await _navigator.OpenProjectAsync(created.Id).ConfigureAwait(true);
         _status.Text = $"Opened {created.Label}.";

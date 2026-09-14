@@ -59,6 +59,7 @@ status to the Product Owner.
 | 4 | `WP 19.9.1` Release | all | 1.5 | lead | notes, `PHYSICAL_REVIEW.md` §7c, backlog audit, VERSION, CI, the candidate page |
 | 5 | `WP 19.10D` Business → Invoices grouped as the Product Owner sketched | 19.7A | 0.5 | Sonnet | `InvoicingView` regrouped New / Available to invoice / Sent / Outstanding-Overdue / Closed, `InvoicesGroupingTests` — a `PHYSICAL_REVIEW.md` §7c D11 gap disclosed as a Release Notes Warning at `WP 19.9.1`, closed here |
 | 5 | `WP 19.10I` TD-41: a Requirement opens in its own editor, not the three-line fallback | — | 0.5 | Sonnet | `ObjectEditorView.cs` (the gate and the Requirement body), `CreatedObjectOpensRightUpTests.cs`, `ObjectEditorViewTests.cs`, one assertion in `QuotationJourneyTests.cs`, `BACKLOG.md` |
+| 5 | `WP 19.10Q` New Project from Projects → Open opens the project right up | 19.10B | 0.5 | Sonnet | `ProjectBrowserView.cs` (`CreateAsync`, the `ProjectCreated` event), `ProjectsAreaView.cs` (the Open group's visible set, refreshed synchronously on create), `ProjectBrowserViewTests.cs`, the re-open block in `QuotationJourneyTests.cs` — a `PHYSICAL_REVIEW.md` §7c D2 gap found by `WP 19.10B`'s file-based tracing, closed here |
 
 Effort: 28.5 days. Status is reported per Work Package as a percentage of
 its own scope and as its effort-weighted share of the 28.5.
