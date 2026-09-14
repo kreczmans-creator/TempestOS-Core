@@ -576,12 +576,26 @@ jobs:
           # still running at the timeout and used to pass this job
           # identically to a healthy one. Require a positive late-startup
           # marker in the captured log as well, so a hang before that
-          # point fails even on the timeout branch. The marker is
-          # `TempestHost.EnterRunning`'s own log line.
+          # point fails even on the timeout branch.
+          #
+          # `TD-154`: one marker alone proved too little.
+          # `TempestHost.EnterRunning`'s own "Host -> Running." line fires
+          # deep inside `WorkspaceHost.StartAsync`, before
+          # `MainWindowComposer` has built a single view — accepting it
+          # alone only ever proved the Runtime Host's hosted-service
+          # pipeline started, never that the Desktop shell itself composed.
+          # `MainWindowComposer.Layout`'s own "Desktop -> Composed." line
+          # (the true end of that composition, on the same real
+          # construction path every Desktop test drives) is now required
+          # too, and can only appear after "Host -> Running." does.
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
-            if grep -qs "Host -> Running." launch.log $LOGS; then
-              echo "Still running when the timeout fired, and startup reached 'Host -> Running.' - launched successfully."
+            if grep -qs "Host -> Running." launch.log $LOGS && grep -qs "Desktop -> Composed." launch.log $LOGS; then
+              echo "Still running when the timeout fired, and startup reached 'Host -> Running.' and 'Desktop -> Composed.' - launched successfully."
               exit 0
+            fi
+            if grep -qs "Host -> Running." launch.log $LOGS; then
+              echo "::error::Still running when the timeout fired, and the Runtime Host reached 'Host -> Running.', but the Desktop shell never logged 'Desktop -> Composed.' - the process hung composing the shell, not the Runtime Host."
+              exit 1
             fi
             echo "::error::Still running when the timeout fired, but no log reached 'Host -> Running.' - the process hung during startup rather than launching."
             exit 1

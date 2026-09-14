@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Tempest.Core.Commands;
+using Tempest.Core.Logging;
 using Tempest.Workspace.Shell;
 using Tempest.Desktop.Views;
 
@@ -246,6 +247,26 @@ internal sealed partial class MainWindowComposer
                      views.NewProjectPrompt, views.ProjectPicker,
                  })
             TrackModal(modal);
+
+        // `TD-154`: the CI `linux-launch-smoke` job's own late-startup
+        // marker used to be `TempestHost.EnterRunning`'s "Host -> Running."
+        // line, which fires deep inside `WorkspaceHost.StartAsync` - before
+        // `RegisterEngineeringDisciplines` even runs, let alone this
+        // composer - so the smoke job proved only that the Runtime Host's
+        // hosted-service pipeline started, never that the Desktop shell
+        // itself composed. This is the true end of Desktop composition:
+        // every view, dialog, overlay and the docking workspace this
+        // method assembles already exists by this line, on the identical
+        // construction path (`new MainWindow(host)`) every Desktop test in
+        // this suite already drives - unlike `App.OnFrameworkInitializationCompleted`'s
+        // own later `desktop.MainWindow = window;`, which no test in this
+        // suite exercises (`NoBlockingPersistenceCallsTests`'s own remarks
+        // name `App.cs` as running entirely pre-dispatcher-loop, excepted
+        // by file rather than driven directly) and which does nothing more
+        // than assign this already-fully-built window to a property - an
+        // inert set, not further composition.
+        var composedLogger = (ILogger)host.Services!.GetService(typeof(ILogger));
+        composedLogger.Information("Desktop -> Composed.");
 
         return new ComposedLayout(root, engineeringSurface, dock);
     }
