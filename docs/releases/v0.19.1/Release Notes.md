@@ -80,13 +80,18 @@ counts from the gate).
   core panel comes back on re-entering Engineering or through Reset Layout
   on the Command Palette; the presets had no user beyond the menu. Say if
   any of the three should return.
-- **Archived-project write guards stop at the five Core services**
-  (`WP 19.5C`): the commercial, quotation, deliverable, timesheet and
-  invoicing services refuse writes on an archived project; the
-  Workspace-layer milestone and engineering-task services, the evidence and
-  requirements services and the new task service do not yet. Nothing in
-  the shell offers those writes on an archived project, but the guard is
-  not structural there.
+- **Archived-project write guards stop at `IRequirementsService` and the
+  Structure tab's ribbon** (`WP 19.5C`, narrowed `WP 19.10H`): the
+  commercial, quotation, deliverable, timesheet, invoicing, milestone,
+  engineering-task, evidence and manual-task services all refuse writes on
+  an archived project now, and the project workspace disables every write
+  control it can reach on Evidence, Tasks, Timeline and the Quote tab, with
+  an "Archived project — read only" tooltip. `IRequirementsService.CreateAsync`
+  takes no project id, so guarding it needs a design step rather than a
+  copy of the pattern; the Structure tab's ribbon acts through the
+  engineering command registry, which carries no archived-project check at
+  all, so an engineering object can still be created under an archived
+  project from there. Both disclosed as `TD-179`.
 - **"Finance" tasks use a thirty-day heuristic** (`WP 19.5C`): no payment
   terms field exists on an invoice request, so a Sent request unpaid for
   thirty days, and a Sent quotation older than seven days, are what the
