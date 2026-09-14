@@ -35,6 +35,10 @@ public sealed class DesktopPanelUiStateTests
         Assert.False(state.OutputCollapsed);
         Assert.True(state.OutputPinned);
         Assert.Null(state.LastAppliedPreset);
+        Assert.False(state.RailCollapsed);
+        Assert.False(state.ProjectsTreeCollapsed);
+        Assert.False(state.EngineeringTreeCollapsed);
+        Assert.False(state.BusinessTreeCollapsed);
     }
 
     [Fact]
@@ -52,6 +56,10 @@ public sealed class DesktopPanelUiStateTests
             OutputCollapsed = true,
             OutputPinned = false,
             LastAppliedPreset = "Review",
+            RailCollapsed = true,
+            ProjectsTreeCollapsed = true,
+            EngineeringTreeCollapsed = true,
+            BusinessTreeCollapsed = true,
         };
 
         await saved.SaveAsync();
@@ -68,6 +76,10 @@ public sealed class DesktopPanelUiStateTests
         Assert.True(loaded.OutputCollapsed);
         Assert.False(loaded.OutputPinned);
         Assert.Equal("Review", loaded.LastAppliedPreset);
+        Assert.True(loaded.RailCollapsed);
+        Assert.True(loaded.ProjectsTreeCollapsed);
+        Assert.True(loaded.EngineeringTreeCollapsed);
+        Assert.True(loaded.BusinessTreeCollapsed);
     }
 
     [Fact]
