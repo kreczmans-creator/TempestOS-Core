@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (26 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (25 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -52,7 +52,6 @@ and nothing on disk.
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
-| `TD-92` | Drag-to-dock has no live preview adorner | unowned |
 | `TD-93` | `Tempest.Samples` redeclares 13 canonical vocabulary strings; can't reference the owner | unowned |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
@@ -260,6 +259,57 @@ children — is stable across repeated reads, and
 `GetRealLeafMechanicalObjectNodeAsync`'s own doc comment now explains it
 stays for a real, disclosed business rule (a childless leaf is required
 for delete), not as a workaround for unordered iteration.
+
+**Closed by `WP 19.10N` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-92`. `WorkspaceLayoutController`
+(`src/Tempest.Desktop/Docking/WorkspaceLayoutController.cs`) already
+resolved the drop target on every drag move and raised
+`DropTargetChanged`; nothing subscribed. `WorkspaceLayoutHost`
+(`src/Tempest.Desktop/Docking/WorkspaceLayoutHost.cs`) now carries a
+`_dropTargetHighlight` `Border` — the same absolute-placement-in-a-`Panel`
+technique its own `_flyout` overlay already used — shown by the new
+`SetDropTargetHighlight(DockTarget?)` over the current target's own tab
+group bounds (found via `TabGroups`, translated into the host's own
+coordinates), and hidden when the drag ends. Coloured in
+`BrandPalette.SelectedBackgroundBrushKey` (the platform's own accent at
+0.12 alpha, already used elsewhere and correct in both themes) with a
+`BrandPalette.AccentBrushKey` border, never hit-test visible so it cannot
+itself steal the pointer the drag is tracking. `WorkspaceDockingComposer`
+wires `Layout.DropTargetChanged += Layout.Host.SetDropTargetHighlight;`
+— the one line that turns "the controller already computes this" into
+"the host renders it" — beside its own existing `Layout.LayoutChanged`
+wiring; `WorkspaceLayoutController.cs` itself is unchanged (`DockTarget`
+already carried enough to find the real bounds via `TabGroups`, so no
+payload change was needed). The highlight's automation name is `Drop
+target: {edge}` for a split (`Left`/`Right`/`Above`/`Below`) or `Drop
+target: {panel title}` for `DockRelation.Into`. Proven by four new facts
+in `WorkspaceLayoutHostTests.cs`: a real candidate's bounds are matched
+exactly; the edge/panel naming for both cases; `SetDropTargetHighlight(null)`
+hides it (the drop case — `OnHostPointerReleased` invokes
+`DropTargetChanged(null)` unconditionally on every release); and a raised
+`PointerCaptureLostEvent` hides it (the cancel case). **Disclosed, not
+fixed (out of this row's file scope):** `WorkspaceLayoutController`'s own
+`PointerCaptureLostEvent` handler (`CancelDrag`) is registered with
+`RoutingStrategies.Tunnel`, but reflection against the referenced
+`Avalonia` 11.3.20 confirms `InputElement.PointerCaptureLostEvent` is
+declared `RoutingStrategies.Direct` — a handler registered for a routing
+strategy the event never uses is not invoked, so `CancelDrag` likely never
+runs on a real capture-loss cancel, only on the two pointer-released paths
+that call it directly. This pre-dates this Work Package and sits in a file outside its edit
+permission (read-only beyond the sanctioned bounds exception);
+`WorkspaceLayoutHost`'s own new handler is registered `Direct`
+(correctly), so the highlight itself cannot outlive a cancelled drag
+regardless. The residual exposure is the controller's own internal state:
+`_draggingPanelId`/`_dragActive` likely never reset on a real capture-loss
+cancel (only `CompleteDrag`'s two pointer-released paths reset them
+today), so a stray pointer move or release after an OS-forced capture loss
+could still be read as continuing or completing the old drag. This row's own new `PointerCaptureLost_HidesTheHighlight_TheCancelCase`
+raises a real `PointerCaptureLostEventArgs` against `WorkspaceLayoutHost`
+directly and proves the highlight hides; no test in this tree drives the
+identical event through a real `WorkspaceLayoutController` to prove or
+disprove `CancelDrag` itself runs, so the gap above was found by
+reflection against the referenced `Avalonia` build, not by a failing
+test. Recommend a follow-up row.
 
 ## Owned by Programme
 

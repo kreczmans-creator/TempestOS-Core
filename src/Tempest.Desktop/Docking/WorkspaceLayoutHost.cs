@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
 using Tempest.Desktop.Theming;
 
@@ -49,6 +50,24 @@ public sealed class WorkspaceLayoutHost : UserControl
     private readonly ContentControl _layoutHost = new();
     private readonly Border _flyout = new() { IsVisible = false, MinWidth = 240, MinHeight = 160 };
 
+    /// <summary>
+    /// The `TD-92` drag-to-dock live preview: a translucent overlay shown
+    /// over whichever candidate the pointer is currently over, so a drag
+    /// answers "where will this land" before the user releases. Positioned
+    /// by <see cref="Border.Margin"/> against this host's own top-left
+    /// origin — the same absolute-placement-inside-a-<see cref="Panel"/>
+    /// technique <see cref="_flyout"/> would use if it were not
+    /// edge-anchored — and never hit-test visible, so it can never itself
+    /// steal the pointer the drag is tracking.
+    /// </summary>
+    private readonly Border _dropTargetHighlight = new()
+    {
+        IsVisible = false,
+        IsHitTestVisible = false,
+        HorizontalAlignment = HorizontalAlignment.Left,
+        VerticalAlignment = VerticalAlignment.Top,
+    };
+
     private WorkspaceLayoutTree _tree = WorkspaceLayoutTree.Empty;
     private Guid? _flyoutPanelId;
 
@@ -72,8 +91,17 @@ public sealed class WorkspaceLayoutHost : UserControl
         _flyout.VerticalAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetName(_flyout, "Auto-hide flyout");
 
+        // `SelectedBackgroundBrushKey` is already the platform's own
+        // "accent at low opacity" token (`BrandPalette`: the accent colour
+        // at 0.12 alpha in both themes) — reused here rather than adding a
+        // new brush purely for this overlay.
+        ThemeReactiveBrush.Bind(_dropTargetHighlight, Border.BackgroundProperty, BrandPalette.SelectedBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_dropTargetHighlight, Border.BorderBrushProperty, BrandPalette.AccentBrushKey);
+        _dropTargetHighlight.BorderThickness = new Thickness(2);
+
         _root.Children.Add(_layoutHost);
         _root.Children.Add(_flyout);
+        _root.Children.Add(_dropTargetHighlight);
         Content = _root;
 
         // `TD-70`'s responsive rule was previously never wired to anything
@@ -82,6 +110,19 @@ public sealed class WorkspaceLayoutHost : UserControl
         // for a user resizing the window, and holds for floating windows
         // too, since they render through this same host.
         SizeChanged += (_, e) => ApplyResponsiveLayout(e.NewSize.Width, e.NewSize.Height);
+
+        // `TD-92`: a drag can end by pointer capture being taken away
+        // (`WorkspaceLayoutController`'s own cancel path) rather than by a
+        // pointer release the controller's `DropTargetChanged` already
+        // covers. Hiding here too, independently, means the overlay can
+        // never outlive the drag it previews regardless of which of the
+        // controller's own paths ended it — a defensive second handler on
+        // the same event, not a replacement for the controller's own.
+        // `PointerCaptureLostEvent` is declared `RoutingStrategies.Direct`
+        // (confirmed by reflection against `Avalonia` 11.3.20: the event
+        // never tunnels or bubbles), so the handler is registered `Direct`
+        // here — the strategy the event actually delivers on.
+        AddHandler(InputElement.PointerCaptureLostEvent, (_, _) => HideDropTargetHighlight(), Avalonia.Interactivity.RoutingStrategies.Direct);
     }
 
     /// <summary>The arrangement currently rendered.</summary>
@@ -243,6 +284,61 @@ public sealed class WorkspaceLayoutHost : UserControl
     private bool IsStrip(WorkspaceLayoutNode node) =>
         node is LayoutTabGroupNode group
         && (_tree.PresentationOf(group.SelectedPanelId).IsCollapsed || !_tree.PresentationOf(group.SelectedPanelId).IsPinned);
+
+    // ----------------------------------------------------------------
+    // Drag-to-dock live preview (`TD-92`)
+    // ----------------------------------------------------------------
+
+    /// <summary>Whether the drop-target highlight overlay is currently shown.</summary>
+    public bool IsDropTargetHighlightVisible => _dropTargetHighlight.IsVisible;
+
+    /// <summary>
+    /// Shows a translucent highlight over <paramref name="target"/>'s own
+    /// tab group bounds, or hides it when <paramref name="target"/> is
+    /// <see langword="null"/> — <see cref="WorkspaceLayoutController"/>'s
+    /// own drop-target resolution, rendered. Meant to be driven by
+    /// <see cref="WorkspaceLayoutController.DropTargetChanged"/>: shown as
+    /// the pointer moves over a candidate during a drag, and hidden again
+    /// once the drag ends, dock or float either one, or is cancelled.
+    /// </summary>
+    public void SetDropTargetHighlight(DockTarget? target)
+    {
+        if (target is not { } dock)
+        {
+            HideDropTargetHighlight();
+            return;
+        }
+
+        var group = TabGroups.FirstOrDefault(g => g.NodeId == dock.NodeId);
+        if (group is null || group.GetVisualRoot() is null || group.TranslatePoint(default, this) is not { } origin)
+        {
+            HideDropTargetHighlight();
+            return;
+        }
+
+        _dropTargetHighlight.Width = group.Bounds.Width;
+        _dropTargetHighlight.Height = group.Bounds.Height;
+        _dropTargetHighlight.Margin = new Thickness(origin.X, origin.Y, 0, 0);
+        AutomationProperties.SetName(_dropTargetHighlight, $"Drop target: {DescribeTarget(group, dock.Relation)}");
+        _dropTargetHighlight.IsVisible = true;
+    }
+
+    /// <summary>Hides the drop-target highlight, if shown — a no-op otherwise.</summary>
+    public void HideDropTargetHighlight() => _dropTargetHighlight.IsVisible = false;
+
+    /// <summary>
+    /// Names what dropping now would do: the target panel's own title for
+    /// <see cref="DockRelation.Into"/> (tabbing alongside it), or the edge
+    /// name for a split (`Left`/`Right`/`Above`/`Below`).
+    /// </summary>
+    private string DescribeTarget(LayoutTabGroupView group, DockRelation relation)
+    {
+        if (relation != DockRelation.Into)
+            return relation.ToString();
+
+        var title = _registry.Find(group.SelectedPanelId)?.Title;
+        return string.IsNullOrWhiteSpace(title) ? "panel" : title;
+    }
 
     // ----------------------------------------------------------------
     // Auto-hide flyout
