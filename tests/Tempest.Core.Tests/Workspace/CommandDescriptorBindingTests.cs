@@ -9,6 +9,7 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
@@ -52,7 +53,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     private static readonly IReadOnlyList<string> Disciplines =
         [
             "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
-            "Projects", "Quotations", "Requirements", "Timesheets", "Verification",
+            "Projects", "Quotations", "Requirements", "Tasks", "Timesheets", "Verification",
         ];
 
     /// <summary>U1 — an object picker this platform does not have (FCR-0073).</summary>
@@ -71,8 +72,10 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>
-    /// — every command that can run unattended in a macro, and no other
-    /// (ADR-0098).
+    /// and <c>task.complete</c> (`WP 19.5C` — no parameters, no
+    /// confirmation, a low-stakes status move exactly like the others
+    /// here) — every command that can run unattended in a macro, and no
+    /// other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
@@ -82,6 +85,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
         "mechanical.validate-configuration",
+        "task.complete",
     ];
 
     private static readonly IReadOnlyList<string> CalculationKinds = ["Calculation", "CalculationSet"];
@@ -216,9 +220,13 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // discipline category (Quotations: create, add-line, send, accept,
         // decline), none of them unavailable, so 97 becomes 102 and 79
         // becomes 84; 18 is unchanged.
-        Assert.Equal(102, ProductionDescriptors.Count);
+        // `WP 19.5C` adds two production descriptors in a sixth new
+        // discipline category (Tasks: create, complete), none of them
+        // unavailable, so 102 becomes 104 and 84 becomes 86; 18 is
+        // unchanged.
+        Assert.Equal(104, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(84, bindable.Count);
+        Assert.Equal(86, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -320,7 +328,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The structural guard: a future production descriptor cannot be added
-    /// to one of the eleven discipline registrations without either a
+    /// to one of the thirteen discipline registrations without either a
     /// binding or a stated reason, because this reads the registration
     /// sources themselves and counts what they declare.
     /// </summary>
@@ -355,7 +363,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
         Assert.True(
             declaredOnly.Count == 0 && registeredOnly.Count == 0,
-            $"The eleven registration sources and the live registry disagree.\n"
+            $"The thirteen registration sources and the live registry disagree.\n"
             + $"  Declared in source but not registered: {string.Join(", ", declaredOnly)}\n"
             + $"  Registered but not declared in source: {string.Join(", ", registeredOnly)}");
 
@@ -377,6 +385,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                      ("Projects", "ProjectCommercialWorkspaceRegistration.cs"),
                      ("Quotations", "QuotationWorkspaceRegistration.cs"),
                      ("Requirements", "RequirementsWorkspaceRegistration.cs"),
+                     ("Tasks", "TaskWorkspaceRegistration.cs"),
                      ("Timesheets", "TimesheetsWorkspaceRegistration.cs"),
                      ("Verification", "VerificationWorkspaceRegistration.cs"),
                  })
@@ -440,6 +449,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
         [nameof(QuotationCommandIds)] = typeof(QuotationCommandIds),
         [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
+        [nameof(TaskCommandIds)] = typeof(TaskCommandIds),
         [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
         [nameof(VerificationCommandIds)] = typeof(VerificationCommandIds),
         [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),

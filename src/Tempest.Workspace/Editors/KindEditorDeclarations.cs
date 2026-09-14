@@ -25,6 +25,7 @@ public static class KindEditorDeclarations
         registry.Register(Project());
         registry.Register(InvoiceRequest());
         registry.Register(Quotation());
+        registry.Register(ManualTask());
     }
 
     /// <summary>
@@ -182,6 +183,22 @@ public static class KindEditorDeclarations
                 new EditorFieldDeclaration("Lines", EditorControlKind.ReadOnlyList, Editable: false),
                 new EditorFieldDeclaration("Total", EditorControlKind.Text, Editable: false)),
 
+            LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// A manual task's own declaration (`WP 19.5C`): Identity (Name,
+    /// editable — a task's own title is user-set, unlike a Quotation's/
+    /// InvoiceRequest's derived one) and Lifecycle only. Deliberately no
+    /// bespoke section: <c>Done</c>/<c>DueDate</c> are read from the
+    /// Property Inspector's own facets (<c>TaskPropertyFacetProvider</c>);
+    /// completing a task is a ribbon/palette act (<c>task.complete</c>),
+    /// not an editable field.
+    /// </summary>
+    public static KindEditorDeclaration ManualTask() => new(
+        Core.Tasks.ManualTask.CanonicalKind,
+        [
+            IdentitySection(),
             LifecycleSection(),
         ]);
 

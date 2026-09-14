@@ -781,6 +781,19 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<ITimesheetService, TimesheetService>();
         services.Singleton<IDeliverableService, DeliverableService>();
 
+        // `WP 19.5C`. Hold/resume/sign-off/reopen and the 90-day archival
+        // window — a project's own lifecycle, distinct from the generic,
+        // unused `LifecycleState` every canonical object carries.
+        // Registered as an ordinary Core service, exactly as
+        // `IProjectCommercialService` above, so every Core-only test host
+        // can resolve it the same way.
+        services.Singleton<IProjectLifecycleService, ProjectLifecycleService>();
+
+        // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
+        // Home dashboard's own task tiles and task list. Registered as an
+        // ordinary Core service, exactly as `IQuotationService` above.
+        services.Singleton<Tempest.Core.Tasks.ITaskService, Tempest.Core.Tasks.TaskService>();
+
         // `ADR-0152` (`WP 19.5A`). Quotation core — depends on the
         // rate-card catalogue above (currency resolution) and Requirements
         // above that (`AcceptAsync`'s per-line requirement). Registered as

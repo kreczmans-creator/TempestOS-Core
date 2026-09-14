@@ -17,6 +17,9 @@ public enum DeliverableCompletionRefusal
 
     /// <summary>This completion already carries an <see cref="DeliverableCompletion.InvoicedBy"/> link.</summary>
     CompletionInvoiced,
+
+    /// <summary>The project is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
+    ProjectArchived,
 }
 
 /// <summary>

@@ -7,6 +7,7 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Requirements;
@@ -66,6 +67,9 @@ public static class DisciplineAreas
 
         // `ADR-0152` (`WP 19.5A`).
         map[Tempest.Core.Quotations.Quotation.CanonicalKind] = QuotationWorkspaceRegistration.ExplorerAreaId;
+
+        // `WP 19.5C`.
+        map[Tempest.Core.Tasks.ManualTask.CanonicalKind] = TaskWorkspaceRegistration.ExplorerAreaId;
 
         return map;
     }

@@ -177,7 +177,8 @@ public sealed class NoBlockingPersistenceCallsTests
     /// <c>InvoiceRequestObjectView.cs</c>, taking the total to fourteen
     /// sites across twelve files. `WP 19.5A` (`ADR-0152`) adds a fifteenth,
     /// across a thirteenth file — <c>QuotationObjectView.cs</c>, the same
-    /// shape once more.
+    /// shape once more. `WP 19.5C` adds a sixteenth, across a fourteenth
+    /// file — <c>TaskObjectView.cs</c>, the same shape once more.
     /// </remarks>
     private static readonly Dictionary<string, (int Count, string Reason)> AllowedWorkspaceBlockingCallSites = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -232,6 +233,11 @@ public sealed class NoBlockingPersistenceCallsTests
         // `WP 19.5A` (`ADR-0152`): the same bridge, for the Quotation's
         // own plain-data view.
         [Path.Combine("Workspace", "Quotations", "QuotationObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
+
+        // `WP 19.5C`: the same bridge, for the manual task's own
+        // plain-data view.
+        [Path.Combine("Workspace", "Tasks", "TaskObjectView.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
     };
 
@@ -325,8 +331,8 @@ public sealed class NoBlockingPersistenceCallsTests
     [Fact]
     public void TheWorkspaceAllowList_PinsExactlyFifteenSites_AcrossThirteenFiles()
     {
-        Assert.Equal(13, AllowedWorkspaceBlockingCallSites.Count);
-        Assert.Equal(15, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
+        Assert.Equal(14, AllowedWorkspaceBlockingCallSites.Count);
+        Assert.Equal(16, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
 
         foreach (var (relative, allowed) in AllowedWorkspaceBlockingCallSites)
         {

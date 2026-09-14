@@ -1,5 +1,6 @@
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 
 namespace Tempest.Core.Deliverables;
 
@@ -16,14 +17,17 @@ public sealed class DeliverableService : IDeliverableService
     private const string DeliverableKind = "Deliverable";
 
     private readonly EngineeringDomainContext _context;
+    private readonly TimeProvider _time;
     private Func<Guid, CancellationToken, Task>? _completionHook;
 
     /// <summary>Initialises a new instance of the <see cref="DeliverableService"/> class.</summary>
-    public DeliverableService(EngineeringDomainContext context)
+    /// <param name="timeProvider">The clock the archived-project guard reads "now" from (`WP 19.5C`). <see langword="null"/> — the default — is <see cref="TimeProvider.System"/>.</param>
+    public DeliverableService(EngineeringDomainContext context, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     /// <summary>
@@ -57,11 +61,14 @@ public sealed class DeliverableService : IDeliverableService
         IReadOnlyList<Guid>? issuedEvidenceIds = null, IReadOnlyList<Guid>? documentIds = null, Money? fixedPriceValue = null,
         CancellationToken cancellationToken = default)
     {
-        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project)
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
             throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
 
         if (await _context.Repository.FindAsync(deliverableId, cancellationToken).ConfigureAwait(false) is not Deliverable)
             throw new ArgumentException($"'{deliverableId}' does not identify a live deliverable.", nameof(deliverableId));
+
+        if (Archived(project) is { } archived)
+            return archived;
 
         var existing = await FindExistingCompletionAsync(deliverableId, cancellationToken).ConfigureAwait(false);
         if (existing is not null)
@@ -136,6 +143,9 @@ public sealed class DeliverableService : IDeliverableService
                 completion);
         }
 
+        if (await ArchivedAsync(completion, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await completion.MarkInvoicedAsync(requestId, cancellationToken).ConfigureAwait(false);
 
         return new DeliverableCompletionResult(DeliverableCompletionRefusal.None, null, completion);
@@ -147,8 +157,14 @@ public sealed class DeliverableService : IDeliverableService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
-        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project)
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
             throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
+
+        if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new deliverable can be added to it.");
+        }
 
         var milestoneId = await FindOrCreateUnquotedMilestoneAsync(projectId, targetDate, cancellationToken).ConfigureAwait(false);
         var trimmedTitle = title.Trim();
@@ -199,6 +215,26 @@ public sealed class DeliverableService : IDeliverableService
         return all
             .OfType<DeliverableCompletion>()
             .FirstOrDefault(c => IsLive(c) && c.DeliverableId == deliverableId);
+    }
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private DeliverableCompletionResult? Archived(Project project) =>
+        ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new DeliverableCompletionResult(DeliverableCompletionRefusal.ProjectArchived, $"Project '{project.Id}' is archived (closed {project.ClosedOn:O}); it is read-only.", null)
+            : null;
+
+    /// <summary>The archived-project guard, resolved from a completion's own parent project.</summary>
+    private async Task<DeliverableCompletionResult?> ArchivedAsync(DeliverableCompletion completion, CancellationToken cancellationToken)
+    {
+        if (completion.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new DeliverableCompletionResult(DeliverableCompletionRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this completion is read-only.", completion)
+            : null;
     }
 
     private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };

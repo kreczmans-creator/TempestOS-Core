@@ -2,6 +2,7 @@ using System.Globalization;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 using Tempest.Core.Requirements;
 
 namespace Tempest.Core.Quotations;
@@ -97,6 +98,12 @@ public sealed class QuotationService : IQuotationService
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project))
             return new QuotationResult(QuotationRefusal.ProjectNotFound, $"No project '{projectId}' is registered.", null);
 
+        if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            return new QuotationResult(
+                QuotationRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new quotation can be opened with it.", null);
+        }
+
         var quoteDate = Today();
 
         var resolvedReference = string.IsNullOrWhiteSpace(reference)
@@ -135,6 +142,9 @@ public sealed class QuotationService : IQuotationService
         if (quote.Status != QuotationStatus.Draft)
             return NotDraft(quote, quotationId, "added");
 
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, rate, fixedPrice);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
@@ -161,6 +171,9 @@ public sealed class QuotationService : IQuotationService
         if (quote.Lines.All(l => l.Id != lineId))
             return new QuotationResult(QuotationRefusal.LineNotFound, $"No line '{lineId}' on quotation '{quotationId}'.", quote);
 
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, rate, fixedPrice);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
@@ -184,6 +197,9 @@ public sealed class QuotationService : IQuotationService
         if (line is null)
             return new QuotationResult(QuotationRefusal.LineNotFound, $"No line '{lineId}' on quotation '{quotationId}'.", quote);
 
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await quote.RemoveLineAsync(lineId, line.Description, cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
@@ -204,6 +220,9 @@ public sealed class QuotationService : IQuotationService
 
         if (quote.Lines.Count == 0)
             return new QuotationResult(QuotationRefusal.NothingToSend, $"Quotation '{quotationId}' has no lines; there is nothing to send.", quote);
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
 
         await quote.MarkSentAsync(Today(), cancellationToken).ConfigureAwait(false);
 
@@ -231,6 +250,9 @@ public sealed class QuotationService : IQuotationService
                 $"Quotation '{quotationId}' has no live project — every quotation is parented to the project it was created under, "
                 + "so this should be unreachable.");
         }
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
 
         var milestoneId = await FindOrCreateReferenceMilestoneAsync(quote, projectId, cancellationToken).ConfigureAwait(false);
 
@@ -271,6 +293,9 @@ public sealed class QuotationService : IQuotationService
                 $"Quotation '{quotationId}' is {quote.Status}; only a Sent quotation can be declined.",
                 quote);
         }
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
 
         await quote.MarkDeclinedAsync(Today(), cancellationToken).ConfigureAwait(false);
 
@@ -315,6 +340,20 @@ public sealed class QuotationService : IQuotationService
         }
 
         return (null, QuotationRefusal.InvalidLine, "A line needs either hours and a rate, or a fixed price.");
+    }
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private async Task<QuotationResult?> ArchivedAsync(Quotation quote, CancellationToken cancellationToken)
+    {
+        if (quote.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new QuotationResult(QuotationRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this quotation is read-only.", quote)
+            : null;
     }
 
     private async Task<Guid> FindOrCreateReferenceMilestoneAsync(Quotation quote, Guid projectId, CancellationToken cancellationToken)

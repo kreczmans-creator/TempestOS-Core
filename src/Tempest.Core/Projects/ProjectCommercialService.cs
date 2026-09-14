@@ -28,6 +28,9 @@ public enum ProjectCommercialRefusal
 
     /// <summary>The rate card exists but has not been released, so a project may not pin it.</summary>
     RateCardNotReleased,
+
+    /// <summary>The project is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of a <see cref="IProjectCommercialService"/> act: either it happened, or a refusal that says why it did not.</summary>
@@ -78,15 +81,18 @@ public sealed class ProjectCommercialService : IProjectCommercialService
 {
     private readonly EngineeringDomainContext _context;
     private readonly IRateCardCatalog _rateCards;
+    private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectCommercialService"/> class.</summary>
-    public ProjectCommercialService(EngineeringDomainContext context, IRateCardCatalog rateCards)
+    /// <param name="timeProvider">The clock the archived-project guard reads "now" from (`WP 19.5C`). <see langword="null"/> — the default — is <see cref="TimeProvider.System"/>.</param>
+    public ProjectCommercialService(EngineeringDomainContext context, IRateCardCatalog rateCards, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
 
         _context = context;
         _rateCards = rateCards;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -95,6 +101,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         var project = await FindProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
         if (project is null)
             return NotFound(projectId);
+
+        if (Archived(project) is { } archived)
+            return archived;
 
         await project.SetClientAsync(clientOrganisationId, cancellationToken).ConfigureAwait(false);
 
@@ -108,6 +117,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         if (project is null)
             return NotFound(projectId);
 
+        if (Archived(project) is { } archived)
+            return archived;
+
         await project.SetPurchaseOrderAsync(purchaseOrderReference, cancellationToken).ConfigureAwait(false);
 
         return new ProjectCommercialResult(ProjectCommercialRefusal.None, null, project);
@@ -119,6 +131,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         var project = await FindProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
         if (project is null)
             return NotFound(projectId);
+
+        if (Archived(project) is { } archived)
+            return archived;
 
         await project.SetBudgetAsync(budget, cancellationToken).ConfigureAwait(false);
 
@@ -133,6 +148,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         var project = await FindProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
         if (project is null)
             return NotFound(projectId);
+
+        if (Archived(project) is { } archived)
+            return archived;
 
         var record = await _rateCards.FindAsync(rateCardId, cancellationToken).ConfigureAwait(false);
         if (record is null)
@@ -162,6 +180,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         if (project is null)
             return NotFound(projectId);
 
+        if (Archived(project) is { } archived)
+            return archived;
+
         await project.SetDatesAsync(startDate, targetDate, cancellationToken).ConfigureAwait(false);
 
         return new ProjectCommercialResult(ProjectCommercialRefusal.None, null, project);
@@ -174,6 +195,9 @@ public sealed class ProjectCommercialService : IProjectCommercialService
         if (project is null)
             return NotFound(projectId);
 
+        if (Archived(project) is { } archived)
+            return archived;
+
         await project.SetProjectManagerAsync(projectManagerIdentityId, cancellationToken).ConfigureAwait(false);
 
         return new ProjectCommercialResult(ProjectCommercialRefusal.None, null, project);
@@ -181,6 +205,12 @@ public sealed class ProjectCommercialService : IProjectCommercialService
 
     private async Task<Project?> FindProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
         await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) as Project;
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private ProjectCommercialResult? Archived(Project project) =>
+        ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new ProjectCommercialResult(ProjectCommercialRefusal.ProjectArchived, $"Project '{project.Id}' is archived (closed {project.ClosedOn:O}); it is read-only.", project)
+            : null;
 
     private static ProjectCommercialResult NotFound(Guid projectId) =>
         new(ProjectCommercialRefusal.ProjectNotFound, $"No project '{projectId}' is registered.", null);
