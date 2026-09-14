@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (24 of 30 cap)
+## Live Backlog (34 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -65,6 +65,32 @@ and nothing on disk.
 | `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-157` | "Pinned source superseded" warning can never fire; the resolver is never wired up | `WP 18.0B` (unresolved — see note) |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
+| `TD-176` | `ProjectContext.RefreshAsync` closes the context when an overlapping render does not yet find a just-created project; the New Project with quotation journey exposed it and is fixed at the test, not the source | unowned (raised by v0.19.1 — `WP 19.7A`) |
+| `TD-177` | `CommandPaletteOverlay` has no public seed-query API, so the header's global search cannot pre-fill the typed text into the Objects search it opens | unowned (raised by v0.19.1 — `WP 19.7A`) |
+| `TD-178` | `CockpitView`'s own "Recently changed" row buttons and area-switch buttons carry no automation names — pre-existing (`WP 18.1B`), exempted by ancestry in `AutomationNameCoverageTests`; re-checked at `WP 19.9.1` after `WP 19.7B` merged: `CockpitView` no longer backs Home (`HomeDashboardView` does, with real automation names throughout), but the same unnamed `CockpitView` instance is still live, now permanently docked inside the Structure tab's engineering surface (Documents panel), so the gap and its exemption both still stand, just relocated | unowned (raised by v0.19.1 — `WP 19.7A`, re-checked `WP 19.9.1`) |
+| `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) cover only five Core services (commercial, quotation, deliverable, timesheet, invoicing); the Workspace-layer milestone and engineering-task services, evidence, requirements and the new manual-task service are unguarded | unowned (raised by v0.19.1 — `WP 19.5C`) |
+| `TD-180` | The "Finance" task bucket uses a thirty-day-since-Sent heuristic (and a seven-day-since-Sent one for quotations) because no payment-terms field exists on an invoice request | unowned (raised by v0.19.1 — `WP 19.5C`) |
+| `TD-181` | `ITasksReadModel` has no Calculations bucket, so Engineering → Tasks and the Engineering dashboard's Open tasks panel both disclose and omit the sketched Calculations sub-heading rather than showing it empty | unowned (raised by v0.19.1 — `WP 19.7A`/`WP 19.7B`) |
+| `TD-182` | The quote PDF is one A4 page with no pagination for a quotation whose lines overrun it; `QuotationSheetRenderer` also duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | unowned (raised by v0.19.1 — `WP 19.5B`) |
+| `TD-183` | `PHYSICAL_REVIEW.md` §7's step-by-step still describes the pre-`WP 19.7A` shell; the planned §7c rewrite for the shell-as-sketched flow was not delivered in this pass (out of `WP 19.9.1`'s own backlog-audit file scope) | unowned (raised by v0.19.1 — `WP 19.9.1`) |
+| `TD-184` | Three menu entries dropped with the engineering menu bar have no replacement surface: the View panel toggles (Explorer/Inspector/Output), the three layout presets (Engineering, Review, Documentation) and About | unowned (raised by v0.19.1 — `WP 19.4A`) |
+| `TD-185` | Accounts reads (bills due, repeating bills, cash position) are written to the Xero and QuickBooks Online API documents but are unverified against a live authorised connection of either | unowned (raised by v0.19.1 — `WP 19.8B`) |
+
+**Ten rows added by `WP 19.9.1` (2026-09-14):** `TD-176`–`TD-185`, one
+per limit a v0.19.1 Work Package disclosed in its own report
+(`followups.md`, the lead's collected list) that no row already in this
+table covered — confirmed by keyword search across this file before each
+was added. This takes the Live Backlog to 34 of the stated 30 cap; the
+`WP 19.9.1` backlog audit closed none of the pre-existing 24 by name (no
+row's Closes/Notes column names a v0.19.1 Work Package) or by content (a
+keyword scan of every open row's own text against v0.19.1's delivered
+Kinds and surfaces — quotation, tasks, project sign-off, a record editor,
+drag-and-drop attachments, accounts reads — found no match), so the cap
+is exceeded here rather than re-cut. One `followups.md` item is not a row
+above: housekeeping ("`D:/tempest-wt/19.2B` directory still locked by a
+stray testhost") is an environment cleanup, not product debt, and does
+not belong in a technical-debt register. The next triage pass should
+re-cut the cap.
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
 `TD-27` and `TD-150` sit squarely in the persistence/object-store

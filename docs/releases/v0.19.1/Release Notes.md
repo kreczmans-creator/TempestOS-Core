@@ -85,6 +85,14 @@ attachments, and three defects in the `v0.19.0` Structure tab.
   pre-existing from `WP 18.1B`): Home's Recently changed and area buttons
   are exempt from the coverage test by ancestry with the reason inline.
   `WP 19.7B` replaces that surface.
+- **The cockpit automation-name gap moved, not closed** (`WP 19.9.1`
+  re-check, after `WP 19.7B` merged): `WP 19.7B`'s `HomeDashboardView`
+  does carry real automation names throughout, so the gap above no longer
+  affects Home. But the same unnamed `CockpitView` instance the gap
+  describes is still live — it did not disappear, it moved: it is now
+  permanently docked inside the Structure tab's engineering surface
+  (the Documents panel), still exempted by ancestry in
+  `AutomationNameCoverageTests`. Tracked as `TD-178`.
 - *(further warnings filled at each merge)*
 
 ## Related
