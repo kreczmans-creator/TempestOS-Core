@@ -114,7 +114,8 @@ public static class DocumentsWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, DocumentObjectFactoryRegistry.Document),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Rename, displayName: "Rename Document", category: "Documents",
@@ -130,7 +131,8 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).Kind,
                     values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Edit, displayName: "Edit Document", category: "Documents",
@@ -143,7 +145,8 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).Kind,
                     values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Delete, displayName: "Delete Document", category: "Documents",
@@ -155,7 +158,8 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Document")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Document"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Move, displayName: "Move Document", category: "Documents",
@@ -181,7 +185,8 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Document")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Document"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Attach, displayName: "Attach File", category: "Documents",
@@ -231,5 +236,6 @@ public static class DocumentsWorkspaceRegistration
                 WorkspaceCommandBindings.Target(context).ObjectId,
                 WorkspaceCommandBindings.Target(context).Kind,
                 status),
-            appliesToKinds: appliesToKinds);
+            appliesToKinds: appliesToKinds,
+            mutates: true);
 }

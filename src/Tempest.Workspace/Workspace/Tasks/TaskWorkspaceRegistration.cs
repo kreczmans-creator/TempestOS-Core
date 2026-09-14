@@ -65,7 +65,8 @@ public static class TaskWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Required("title", "Title"),
                     new CommandParameter("dueDate", "Due date (yyyy-mm-dd, blank for none)", DefaultValue: string.Empty, Validate: ValidateOptionalDate),
-                ]),
+                ],
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -75,7 +76,8 @@ public static class TaskWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new CompleteTaskCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
-                appliesToKinds: TaskKind),
+                appliesToKinds: TaskKind,
+                mutates: true),
         });
     }
 
