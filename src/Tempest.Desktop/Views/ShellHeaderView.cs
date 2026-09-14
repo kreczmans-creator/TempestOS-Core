@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Desktop.Branding;
@@ -77,7 +78,35 @@ public sealed class ShellHeaderView : UserControl
         TextTrimming = TextTrimming.CharacterEllipsis,
     };
 
-    private readonly Button _search = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = 220 };
+    // A Border, not a Button — `TD-177`: the header's own search box takes
+    // real text now (previously a static label whose only affordance was
+    // opening the Command Palette empty, forcing a retype there).
+    // `ChromeStyles.Subtle` is a `Button`-only treatment (its own selector
+    // targets `Button` directly), so the identical hairline-sunken look is
+    // bound here the same direct way `_projectChip`'s own remarks already
+    // explain for a bespoke chip.
+    private readonly Border _searchFrame = new()
+    {
+        CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+        BorderThickness = new Thickness(1),
+        MinHeight = DesignTokens.ControlSizeSmall,
+        MinWidth = 220,
+        Padding = new Thickness(DesignTokens.SpaceXs, 0),
+    };
+
+    // The search box's own submit affordance beside it — clicking this
+    // hands over the box's current text exactly as Enter does.
+    private readonly Button _searchButton = new() { Padding = new Thickness(DesignTokens.SpaceSm, 0) };
+
+    private readonly TextBox _searchBox = new()
+    {
+        BorderThickness = new Thickness(0),
+        Background = Brushes.Transparent,
+        FontSize = DesignTokens.FontSizeBody,
+        VerticalAlignment = VerticalAlignment.Center,
+        VerticalContentAlignment = VerticalAlignment.Center,
+        Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
+    };
     private readonly Button _theme = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
     private readonly Button _notifications = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
     private readonly TextBlock _notificationsBadge = new() { FontSize = DesignTokens.FontSizeLabel, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
@@ -103,8 +132,14 @@ public sealed class ShellHeaderView : UserControl
         IsVisible = false,
     };
 
-    /// <summary>Raised when the user asks for the global search / command palette.</summary>
-    public event Action? SearchRequested;
+    /// <summary>
+    /// Raised when the user asks for the global search / command palette —
+    /// carrying whatever text sat in the search box at that moment
+    /// (`TD-177`), or <see langword="null"/> for an empty box, exactly what
+    /// <see cref="CommandPaletteOverlay.Open(string?)"/> treats as an
+    /// empty open.
+    /// </summary>
+    public event Action<string?>? SearchRequested;
 
     /// <summary>Raised when the user asks to switch theme.</summary>
     public event Action? ThemeToggleRequested;
@@ -172,12 +207,31 @@ public sealed class ShellHeaderView : UserControl
         // ---- What can I do here ----------------------------------------
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
 
+        ThemeReactiveBrush.Bind(_searchFrame, Border.BackgroundProperty, BrandPalette.SunkenBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_searchFrame, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+
         var searchContent = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), MinWidth = 200 };
-        var searchIcon = IconGeometry.Build(IconGeometry.Search, 14);
-        searchIcon.Margin = new Thickness(0, 0, DesignTokens.SpaceMd, 0);
-        Grid.SetColumn(searchIcon, 0);
-        var searchLabel = new TextBlock { Text = "Search or run a command", FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(searchLabel, 1);
+
+        _searchButton.Content = IconGeometry.Build(IconGeometry.Search, 14);
+        _searchButton.Classes.Add(ChromeStyles.Flat);
+        Grid.SetColumn(_searchButton, 0);
+        AutomationProperties.SetName(_searchButton, "Run search");
+        ToolTip.SetTip(_searchButton, "Search every registered command (Ctrl+K)");
+        _searchButton.Click += (_, _) => SubmitSearch();
+
+        _searchBox.Watermark = "Search or run a command";
+        Grid.SetColumn(_searchBox, 1);
+        AutomationProperties.SetName(_searchBox, "Search or run a command");
+        ToolTip.SetTip(_searchBox, "Search every registered command (Ctrl+K)");
+        _searchBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                SubmitSearch();
+                e.Handled = true;
+            }
+        };
+
         var shortcut = new TextBlock
         {
             Text = "CTRL K",
@@ -188,16 +242,11 @@ public sealed class ShellHeaderView : UserControl
             Opacity = 0.7,
         };
         Grid.SetColumn(shortcut, 2);
-        searchContent.Children.Add(searchIcon);
-        searchContent.Children.Add(searchLabel);
+        searchContent.Children.Add(_searchButton);
+        searchContent.Children.Add(_searchBox);
         searchContent.Children.Add(shortcut);
-        _search.Content = searchContent;
-        _search.Classes.Add(ChromeStyles.Subtle);
-        _search.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-        AutomationProperties.SetName(_search, "Search or run a command");
-        ToolTip.SetTip(_search, "Search every registered command (Ctrl+K)");
-        _search.Click += (_, _) => SearchRequested?.Invoke();
-        actions.Children.Add(_search);
+        _searchFrame.Child = searchContent;
+        actions.Children.Add(_searchFrame);
 
         _theme.Content = IconGeometry.Build(IconGeometry.Theme, 15);
         _theme.Classes.Add(ChromeStyles.Flat);
@@ -318,21 +367,29 @@ public sealed class ShellHeaderView : UserControl
         _notificationsList.ItemsSource = messages.Count == 0 ? new[] { "No notifications" } : messages;
     }
 
-    /// <summary>Hides the search field's own long label when the window is narrow, keeping the icon and shortcut.</summary>
+    /// <summary>Hides the search box itself when the window is narrow, keeping the icon and shortcut — unchanged from before this box was made editable.</summary>
     public void SetCompact(bool compact)
     {
-        _search.MinWidth = compact ? DesignTokens.ControlSizeSmall : 220;
-        if (_search.Content is Grid grid)
-        {
+        _searchFrame.MinWidth = compact ? DesignTokens.ControlSizeSmall : 220;
+        if (_searchFrame.Child is Grid grid)
             grid.MinWidth = compact ? 0 : 200;
-            foreach (var child in grid.Children)
-            {
-                if (child is TextBlock text && text.Text == "Search or run a command")
-                    text.IsVisible = !compact;
-            }
-        }
+        _searchBox.IsVisible = !compact;
 
         _module.MaxWidth = compact ? 140 : double.PositiveInfinity;
         _projectLabel.MaxWidth = compact ? 160 : 320;
+    }
+
+    /// <summary>
+    /// Hands the search box's current text to <see cref="SearchRequested"/>
+    /// — empty becomes <see langword="null"/>, exactly what
+    /// <see cref="CommandPaletteOverlay.Open(string?)"/> treats as an empty
+    /// open — then clears the box: the palette now holds the text, so
+    /// nobody retypes it a second time there (`TD-177`).
+    /// </summary>
+    private void SubmitSearch()
+    {
+        var query = _searchBox.Text;
+        SearchRequested?.Invoke(string.IsNullOrEmpty(query) ? null : query);
+        _searchBox.Text = string.Empty;
     }
 }
