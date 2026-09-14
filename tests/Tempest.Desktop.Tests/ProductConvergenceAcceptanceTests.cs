@@ -392,13 +392,14 @@ public sealed class ProductConvergenceAcceptanceTests
             var context = host.ProjectContext!;
             var scope = host.EngineeringScope!;
 
-            // 1. A removed module (`WP 19.2B`, `TD-81`): the navigator
-            // still accepts it — only ProjectWorkspace/Engineering refuse
-            // `GoToModuleAsync` — but rendering it finds no registry
-            // entry (its descriptor left `ShellAreas` with the module)
-            // and redirects Home rather than showing a "not yet
-            // implemented" card that no longer exists.
-            await navigator.GoToModuleAsync(ShellArea.Tasks);
+            // 1. A removed module (`WP 19.2B`, `TD-81`; `WP 19.7A` revives
+            // `Tasks` as a real area, so `Commercial` is this test's own
+            // example now): the navigator still accepts it — only
+            // ProjectWorkspace/Engineering refuse `GoToModuleAsync` — but
+            // rendering it finds no registry entry (its descriptor left
+            // `ShellAreas` with the module) and redirects Home rather than
+            // showing a "not yet implemented" card that no longer exists.
+            await navigator.GoToModuleAsync(ShellArea.Commercial);
             await window.RenderCurrentModuleAsync();
 
             Assert.Equal(ShellArea.Home, navigator.Current.Area);
