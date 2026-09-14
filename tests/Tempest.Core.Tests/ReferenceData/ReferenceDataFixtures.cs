@@ -92,6 +92,75 @@ internal sealed class InMemoryPersistenceStore : IPersistenceStore, IQueryablePe
 }
 
 /// <summary>
+/// A counting <see cref="IEngineeringDocumentStore"/> decorator — every
+/// other member forwards straight through to <paramref name="inner"/>
+/// unchanged; only <see cref="GetRevisionHistoryAsync"/> and
+/// <see cref="GetLatestRevisionAsync"/> are counted. Proves `TD-20`: a
+/// latest-only catalogue lookup must call the single-revision fetch, never
+/// the whole-history one.
+/// </summary>
+internal sealed class CountingDocumentStore(IEngineeringDocumentStore inner)
+    : IEngineeringDocumentStore, Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter
+{
+    public int GetRevisionHistoryAsyncCallCount { get; private set; }
+
+    public int GetLatestRevisionAsyncCallCount { get; private set; }
+
+    public Task<IEngineeringDocument> CreateAsync(string kind, string initialContent, CancellationToken cancellationToken = default) =>
+        inner.CreateAsync(kind, initialContent, cancellationToken);
+
+    public Task<IEngineeringDocument?> FindAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        inner.FindAsync(documentId, cancellationToken);
+
+    public Task<IDocumentRevision> ReviseAsync(Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken = default) =>
+        inner.ReviseAsync(documentId, newContent, changeSummary, cancellationToken);
+
+    public Task<IReadOnlyList<IDocumentRevision>> GetRevisionHistoryAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        GetRevisionHistoryAsyncCallCount++;
+        return inner.GetRevisionHistoryAsync(documentId, cancellationToken);
+    }
+
+    public Task<IDocumentRevision> GetLatestRevisionAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        GetLatestRevisionAsyncCallCount++;
+        return inner.GetLatestRevisionAsync(documentId, cancellationToken);
+    }
+
+    public Task LinkAsync(Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken = default) =>
+        inner.LinkAsync(sourceDocumentId, targetDocumentId, relationshipKind, cancellationToken);
+
+    public Task<IReadOnlyList<DocumentReference>> GetReferencesAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        inner.GetReferencesAsync(documentId, cancellationToken);
+
+    // ----------------------------------------------------------------
+    // ITransactionalDocumentWriter — ReferenceDataCatalog's constructor
+    // requires this capability on whatever documentStore it is given
+    // (`TD-158`); forwarded straight through to the real store `inner`
+    // always is in this fixture.
+    // ----------------------------------------------------------------
+
+    private Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter InnerWriter =>
+        (Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter)inner;
+
+    Task<Tempest.Core.EngineeringDomain.DocumentCreation> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.CreateAsync(
+        IPersistenceTransaction transaction, Guid documentId, string kind, string initialContent, CancellationToken cancellationToken) =>
+        InnerWriter.CreateAsync(transaction, documentId, kind, initialContent, cancellationToken);
+
+    Task<IDocumentRevision> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.ReviseAsync(
+        IPersistenceTransaction transaction, Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken) =>
+        InnerWriter.ReviseAsync(transaction, documentId, newContent, changeSummary, cancellationToken);
+
+    Task Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.LinkAsync(
+        IPersistenceTransaction transaction, Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken) =>
+        InnerWriter.LinkAsync(transaction, sourceDocumentId, targetDocumentId, relationshipKind, cancellationToken);
+
+    Task<bool> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.ExistsAsync(
+        IPersistenceTransaction transaction, Guid documentId, CancellationToken cancellationToken) =>
+        InnerWriter.ExistsAsync(transaction, documentId, cancellationToken);
+}
+
+/// <summary>
 /// A deliberately trivial domain, used to test the shared reference-data
 /// machinery without dragging any real library's own engineering semantics
 /// into the test.
@@ -155,6 +224,14 @@ internal static class ReferenceDataFixtures
     {
         persistenceStore = new InMemoryPersistenceStore();
         documentStore = new EngineeringDocumentStore(persistenceStore, new CurrentPrincipalAccessor());
+        return new WidgetCatalog(documentStore, persistenceStore);
+    }
+
+    /// <summary>Builds a catalogue backed by <see cref="CountingDocumentStore"/>, so a test can assert how many times each read shape was called (`TD-20`).</summary>
+    public static WidgetCatalog BuildCatalog(out CountingDocumentStore documentStore)
+    {
+        var persistenceStore = new InMemoryPersistenceStore();
+        documentStore = new CountingDocumentStore(new EngineeringDocumentStore(persistenceStore, new CurrentPrincipalAccessor()));
         return new WidgetCatalog(documentStore, persistenceStore);
     }
 

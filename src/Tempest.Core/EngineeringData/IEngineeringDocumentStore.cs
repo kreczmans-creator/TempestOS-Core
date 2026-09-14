@@ -25,6 +25,17 @@ public interface IEngineeringDocumentStore
     /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="documentId"/> does not exist.</exception>
     Task<IReadOnlyList<IDocumentRevision>> GetRevisionHistoryAsync(Guid documentId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The document's own current revision — the one
+    /// <see cref="IEngineeringDocument.CurrentRevisionNumber"/> names. A
+    /// single-revision fetch (`TD-20`): a caller that only ever wants the
+    /// latest content, not the document's whole history, no longer has to
+    /// read every prior revision through <see cref="GetRevisionHistoryAsync"/>
+    /// to get it.
+    /// </summary>
+    /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="documentId"/> does not exist.</exception>
+    Task<IDocumentRevision> GetLatestRevisionAsync(Guid documentId, CancellationToken cancellationToken = default);
+
     /// <summary>Records a typed, directed relationship between two existing documents.</summary>
     /// <exception cref="ArgumentException"><paramref name="relationshipKind"/> is null, empty, or whitespace.</exception>
     /// <exception cref="EngineeringDocumentNotFoundException"><paramref name="sourceDocumentId"/> or <paramref name="targetDocumentId"/> does not exist.</exception>
