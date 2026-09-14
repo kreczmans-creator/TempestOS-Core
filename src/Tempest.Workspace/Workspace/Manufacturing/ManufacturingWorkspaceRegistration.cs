@@ -176,7 +176,8 @@ public static class ManufacturingWorkspaceRegistration
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, ManufacturingObjectFactoryRegistry.ManufacturingOperationKind),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
                     WorkspaceCommandBindings.Choice("method", "Method (Inspection only)", ["Inspection", "Test", "Analysis", "Demonstration"], "Inspection"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Rename, displayName: "Rename Manufacturing Object", category: "Manufacturing",
@@ -190,7 +191,8 @@ public static class ManufacturingWorkspaceRegistration
                 (context, values) => new RenameManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Edit, displayName: "Edit Manufacturing Object", category: "Manufacturing",
@@ -202,7 +204,8 @@ public static class ManufacturingWorkspaceRegistration
                 (context, values) => new ReviseManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Delete, displayName: "Delete Manufacturing Object", category: "Manufacturing",
@@ -217,7 +220,8 @@ public static class ManufacturingWorkspaceRegistration
                 (context, _) => new DeleteManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Manufacturing object")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Manufacturing object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Move, displayName: "Move Manufacturing Object", category: "Manufacturing",
@@ -242,7 +246,8 @@ public static class ManufacturingWorkspaceRegistration
                 (context, _) => new DuplicateManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Manufacturing object")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Manufacturing object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Release, displayName: "Release", category: "Manufacturing",
@@ -286,7 +291,8 @@ public static class ManufacturingWorkspaceRegistration
                     // this default the same, literal way, for the same reason.
                     WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
                 ],
-                [ManufacturingObjectFactoryRegistry.InspectionKind]),
+                [ManufacturingObjectFactoryRegistry.InspectionKind],
+                mutates: true),
         });
     }
     /// <summary>
@@ -302,6 +308,7 @@ public static class ManufacturingWorkspaceRegistration
                 WorkspaceCommandBindings.Target(context).ObjectId,
                 WorkspaceCommandBindings.Target(context).Kind,
                 status),
-            appliesToKinds: appliesToKinds);
+            appliesToKinds: appliesToKinds,
+            mutates: true);
 
 }

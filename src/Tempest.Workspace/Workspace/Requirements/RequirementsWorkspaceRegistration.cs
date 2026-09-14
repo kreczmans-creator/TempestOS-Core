@@ -136,7 +136,8 @@ public static class RequirementsWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Required("identifier", "Identifier (e.g. REQ-001)"),
                     WorkspaceCommandBindings.Required("statement", "Statement"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Revise, displayName: "Revise Requirement", category: "Requirements",
@@ -152,7 +153,8 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new ReviseRequirementCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, values["newStatement"]),
                 [WorkspaceCommandBindings.Required("newStatement", "New statement")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.SetStatus, displayName: "Set Requirement Status", category: "Requirements",
@@ -164,7 +166,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     Enum.Parse<RequirementStatus>(values["status"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementStatus>("status", "New status")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.SetOwner, displayName: "Set Requirement Owner", category: "Requirements",
@@ -178,7 +181,8 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new SetRequirementOwnerCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.OrNull(values["owner"])),
                 [WorkspaceCommandBindings.Text("owner", "Owner")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.SetPriority, displayName: "Set Requirement Priority", category: "Requirements",
@@ -190,7 +194,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     Enum.Parse<RequirementPriority>(values["priority"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementPriority>("priority", "Priority")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Delete, displayName: "Delete Requirement", category: "Requirements",
@@ -204,7 +209,8 @@ public static class RequirementsWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: RequirementKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Move, displayName: "Move Requirement", category: "Requirements",
@@ -226,7 +232,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId, values["newIdentifier"]),
                 [WorkspaceCommandBindings.Required("newIdentifier", "New identifier for the duplicate")],
                 RequirementKinds,
-                WorkspaceCommandBindings.DuplicateConfirmation("Requirement")),
+                WorkspaceCommandBindings.DuplicateConfirmation("Requirement"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Link, displayName: "Link Requirement", category: "Requirements",
@@ -246,7 +253,8 @@ public static class RequirementsWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (_, values) => new CreateRequirementGroupCommand(values["name"]),
-                [WorkspaceCommandBindings.Required("name", "Name for the new group")]),
+                [WorkspaceCommandBindings.Required("name", "Name for the new group")],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.MoveGroup, displayName: "Move Requirement Group", category: "Requirements",
@@ -263,7 +271,8 @@ public static class RequirementsWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementGroupCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: [RequirementsService.RequirementGroupDocumentKind],
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Group")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Group"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.CreateCollection, displayName: "Create Requirement Collection", category: "Requirements",
@@ -272,7 +281,8 @@ public static class RequirementsWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (_, values) => new CreateRequirementCollectionCommand(values["name"]),
-                [WorkspaceCommandBindings.Required("name", "Name for the new collection")]),
+                [WorkspaceCommandBindings.Required("name", "Name for the new collection")],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.DeleteCollection, displayName: "Delete Requirement Collection", category: "Requirements",
@@ -282,7 +292,8 @@ public static class RequirementsWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementCollectionCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: [RequirementsService.RequirementCollectionDocumentKind],
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Collection")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Collection"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.AddToCollection, displayName: "Add Requirement to Collection", category: "Requirements",
@@ -304,7 +315,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.SelectedIds(context),
                     Enum.Parse<RequirementStatus>(values["status"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementStatus>("status", "New status")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.BulkSetOwner, displayName: "Bulk Set Requirement Owner", category: "Requirements",
@@ -315,7 +327,8 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new BulkSetRequirementOwnerCommand(
                     WorkspaceCommandBindings.SelectedIds(context), WorkspaceCommandBindings.OrNull(values["owner"])),
                 [WorkspaceCommandBindings.Text("owner", "Owner")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.BulkSetPriority, displayName: "Bulk Set Requirement Priority", category: "Requirements",
@@ -327,7 +340,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.SelectedIds(context),
                     Enum.Parse<RequirementPriority>(values["priority"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementPriority>("priority", "Priority")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
     }
     /// <summary>

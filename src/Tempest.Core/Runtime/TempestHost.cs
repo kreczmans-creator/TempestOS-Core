@@ -569,6 +569,15 @@ public sealed class TempestHost : ITempestHost
         // seven collaborators by hand.
         services.Singleton<EngineeringDomainContext>();
 
+        // `WP 19.10R` (`TD-179`'s residual): the one rule CommandRegistry
+        // consults so a mutating command's Evaluate/InvokeAsync refuses
+        // against an archived project — registered after
+        // EngineeringDomainContext, which its own constructor takes.
+        // Resolution is lazy (TempestServiceProvider), so this registration's
+        // own position relative to ICommandRegistry's below does not matter;
+        // it is placed here only because this is where it is read through.
+        services.Singleton<ArchivedProjectCommandGuard>();
+
         // TD-85: rebuilds the live object graph from the two stores above
         // at startup. Registered after EngineeringDomainContext, which it
         // reads through; it stores nothing of its own.

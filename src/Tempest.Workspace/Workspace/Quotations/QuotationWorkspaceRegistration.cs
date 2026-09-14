@@ -104,7 +104,8 @@ public static class QuotationWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (context, values) => new CreateQuotationCommand(context.ProjectId ?? Guid.Empty, WorkspaceCommandBindings.OrNull(values["reference"])),
-                [new CommandParameter("reference", "Reference (blank to generate Q-<year>-<nnn>)", DefaultValue: string.Empty)]),
+                [new CommandParameter("reference", "Reference (blank to generate Q-<year>-<nnn>)", DefaultValue: string.Empty)],
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -122,7 +123,8 @@ public static class QuotationWorkspaceRegistration
                     new CommandParameter("rate", "Rate (\"amount currency\", hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
                     new CommandParameter("fixedPrice", "Fixed price (\"amount currency\", fixed-price lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
                 ],
-                appliesToKinds: QuotationKind),
+                appliesToKinds: QuotationKind,
+                mutates: true),
         });
 
         // `WP 19.5B`: the Quote tab's own editable lines table (brief
@@ -161,7 +163,8 @@ public static class QuotationWorkspaceRegistration
                     new CommandParameter("rate", "Rate (\"amount currency\", hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
                     new CommandParameter("fixedPrice", "Fixed price (\"amount currency\", fixed-price lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
                 ],
-                appliesToKinds: QuotationKind),
+                appliesToKinds: QuotationKind,
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -175,7 +178,8 @@ public static class QuotationWorkspaceRegistration
                 // `WP 19.5D`: see `UpdateLine`'s own identical `lineId` remark above.
                 [new CommandParameter("lineId", "Line id", DefaultValue: EmptyGuidText, Validate: ValidateGuid)],
                 appliesToKinds: QuotationKind,
-                confirmationMessage: "Remove this line from the quotation?"),
+                confirmationMessage: "Remove this line from the quotation?",
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -186,7 +190,8 @@ public static class QuotationWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new SendQuotationCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: QuotationKind,
-                confirmationMessage: "Send the selected quotation?"),
+                confirmationMessage: "Send the selected quotation?",
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -197,7 +202,8 @@ public static class QuotationWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new AcceptQuotationCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: QuotationKind,
-                confirmationMessage: "Accept the selected quotation? This creates a Deliverable and a Requirement for every line."),
+                confirmationMessage: "Accept the selected quotation? This creates a Deliverable and a Requirement for every line.",
+                mutates: true),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -208,7 +214,8 @@ public static class QuotationWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeclineQuotationCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: QuotationKind,
-                confirmationMessage: "Decline the selected quotation? This cannot be undone."),
+                confirmationMessage: "Decline the selected quotation? This cannot be undone.",
+                mutates: true),
         });
     }
 
