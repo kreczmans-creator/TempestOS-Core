@@ -229,6 +229,40 @@ public sealed class DashboardsTests
     }
 
     [AvaloniaFact]
+    public async Task HomeDashboard_WithNoAccountsReading_ShowsTheInvoicesLineExactlyOnce()
+    {
+        // `WP 19.10P` (D1): the rehearsal found `HomeDashboardView` (over
+        // `AccountsSnapshot.UnavailableReason`, which already ends with its
+        // own period) rendering a doubled, mis-cased
+        // "Invoices: unavailable — No accounts reading yet.." Pinned here
+        // exactly, not by substring, so a stray extra period regresses this
+        // test rather than only a manual walk.
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await RenderUntilAsync(window, () => window.Ready.IsCompleted);
+
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Home);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var home = window.GetLogicalDescendants().OfType<HomeDashboardView>().Single();
+            var commercialText = GetPrivateField<TextBlock>(home, "_commercialText");
+
+            Assert.Equal("Invoices: unavailable — No accounts reading yet.", commercialText.Text?.Split('\n').Last());
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task BusinessDashboard_WithNoAccountsReading_ShowsUnavailableWithReason()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());

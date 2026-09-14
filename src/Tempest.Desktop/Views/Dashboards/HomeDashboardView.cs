@@ -196,9 +196,14 @@ public sealed class HomeDashboardView : UserControl
         var quoteValue = Sum(openQuotations.Select(q => q.Total));
         var quotesLine = $"Quotes: {openQuotations.Count} open, {MoneyDisplay.Format(quoteValue)} total value.";
 
+        // `WP 19.10P` (D1): `AccountsSnapshot.UnavailableReason` already
+        // ends with its own trailing period ("No accounts reading yet.")
+        // and is never actually null once `IsAvailable` is false — used
+        // as it is, rather than appending a second period or falling back
+        // to dead text a real reading can never reach.
         var invoicesLine = accounts.IsAvailable
             ? $"Invoices: {accounts.Overdue.Count + accounts.Due30.Count + accounts.Due90.Count} sent, {MoneyDisplay.Format(accounts.InvoicedTotal)} outstanding, {MoneyDisplay.Format(accounts.OverdueTotal)} overdue."
-            : $"Invoices: unavailable — {accounts.UnavailableReason ?? "no accounts reading yet"}.";
+            : $"Invoices: unavailable — {accounts.UnavailableReason}";
 
         _commercialText.Text = $"{quotesLine}\n{invoicesLine}";
     }
