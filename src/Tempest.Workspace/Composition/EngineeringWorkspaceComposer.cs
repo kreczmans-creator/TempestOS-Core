@@ -8,6 +8,7 @@ using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
@@ -26,6 +27,7 @@ using Tempest.Core.Invoicing;
 using Tempest.Core.Macros;
 using Tempest.Core.Materials;
 using Tempest.Core.Projects;
+using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
@@ -187,6 +189,7 @@ public static class EngineeringWorkspaceComposer
         var timesheetService = (ITimesheetService)services.GetService(typeof(ITimesheetService));
         var deliverableService = (IDeliverableService)services.GetService(typeof(IDeliverableService));
         var invoicingService = (IInvoicingService)services.GetService(typeof(IInvoicingService));
+        var quotationService = (IQuotationService)services.GetService(typeof(IQuotationService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -235,6 +238,16 @@ public static class EngineeringWorkspaceComposer
                 (completionId, token) => invoicingService.RaiseFromCompletionAsync(completionId, token));
         }
 
+        // `ADR-0152` (`WP 19.5A`). The quote a project is opened with:
+        // its own discipline registration, mirroring Evidence's/Invoicing's
+        // own shape — the generic Object Editor renders it (a
+        // `KindEditorDeclaration`, not a bespoke view), no rail entry of
+        // its own yet (`WP 19.5B`'s scope). Registered after
+        // `ProjectCommercialWorkspaceRegistration` (needs the project to
+        // exist) and after `RequirementsWorkspaceRegistration` (`AcceptAsync`
+        // needs `IRequirementsService`, already resolved above).
+        QuotationWorkspaceRegistration.Register(manager, domainContext, quotationService, commandDispatcher, commandRegistry);
+
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
         // reusing the handler Verification's own registration above already
@@ -271,6 +284,10 @@ public static class EngineeringWorkspaceComposer
         // `ADR-0151` (`WP 19.1A`) — the same shape once more, for the
         // request Kind this Work Package adds.
         rehydrators.Register<Tempest.Core.Invoicing.InvoiceRequest>(Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind, domainContext);
+
+        // `ADR-0152` (`WP 19.5A`) — the same shape once more, for the
+        // quotation Kind this Work Package adds.
+        rehydrators.Register<Tempest.Core.Quotations.Quotation>(Tempest.Core.Quotations.Quotation.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by

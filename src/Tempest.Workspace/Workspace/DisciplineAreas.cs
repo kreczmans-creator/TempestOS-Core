@@ -5,6 +5,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
@@ -62,6 +63,9 @@ public static class DisciplineAreas
 
         // `ADR-0151` (`WP 19.1A`).
         map[Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind] = InvoicingWorkspaceRegistration.ExplorerAreaId;
+
+        // `ADR-0152` (`WP 19.5A`).
+        map[Tempest.Core.Quotations.Quotation.CanonicalKind] = QuotationWorkspaceRegistration.ExplorerAreaId;
 
         return map;
     }

@@ -38,6 +38,7 @@ using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Reporting;
@@ -779,6 +780,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IWorkingPatternProvider, WorkingPatternProvider>();
         services.Singleton<ITimesheetService, TimesheetService>();
         services.Singleton<IDeliverableService, DeliverableService>();
+
+        // `ADR-0152` (`WP 19.5A`). Quotation core — depends on the
+        // rate-card catalogue above (currency resolution) and Requirements
+        // above that (`AcceptAsync`'s per-line requirement). Registered as
+        // an ordinary Core service, exactly as `IInvoicingService` is
+        // below, so `EngineeringWorkspaceComposer.RegisterEngineeringDisciplines`
+        // and every Core-only test host can resolve it the same way.
+        services.Singleton<IQuotationService, QuotationService>();
 
         // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the token store,
         // then the connector, then the service over both plus Timesheets/

@@ -24,6 +24,7 @@ public static class KindEditorDeclarations
         registry.Register(Component());
         registry.Register(Project());
         registry.Register(InvoiceRequest());
+        registry.Register(Quotation());
     }
 
     /// <summary>
@@ -160,6 +161,28 @@ public static class KindEditorDeclarations
                 new EditorFieldDeclaration("Issued Date", EditorControlKind.Text, Editable: false),
                 new EditorFieldDeclaration("Paid Date", EditorControlKind.Text, Editable: false),
                 new EditorFieldDeclaration("Last Error", EditorControlKind.Text, Editable: false)),
+        ]);
+
+    /// <summary>
+    /// The quotation's own declaration (`WP 19.5A`, `ADR-0152`): Identity
+    /// (Name, read-only — derived from the reference, never renamed);
+    /// Lines (read-only list + Total — the section renders no content yet,
+    /// this Work Package's own scope being the model, not the rendering;
+    /// `WP 19.5B`'s own <c>PopulateQuotationAsync</c> is what makes it
+    /// real, exactly as `InvoiceRequest`'s own Lines section became real
+    /// only once its own <c>Populate*</c> method existed); Lifecycle.
+    /// </summary>
+    public static KindEditorDeclaration Quotation() => new(
+        Core.Quotations.Quotation.CanonicalKind,
+        [
+            new(EditorSectionKeys.Identity, "Identity",
+                new EditorFieldDeclaration("Name", EditorControlKind.Text, Editable: false)),
+
+            new(EditorSectionKeys.QuotationLines, "Lines",
+                new EditorFieldDeclaration("Lines", EditorControlKind.ReadOnlyList, Editable: false),
+                new EditorFieldDeclaration("Total", EditorControlKind.Text, Editable: false)),
+
+            LifecycleSection(),
         ]);
 
     private static EditorSectionDeclaration IdentitySection() => new(
