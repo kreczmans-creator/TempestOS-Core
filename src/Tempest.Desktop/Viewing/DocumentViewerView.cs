@@ -229,16 +229,19 @@ public sealed class DocumentViewerView : UserControl
 
     private void SetRotation(int degrees)
     {
+        // Matches `DocumentViewSession`'s own convention for every other
+        // control when nothing renderable is open (page navigation, zoom):
+        // ignored rather than silently recorded for later, since there is
+        // no document for it to apply to yet.
+        if (Session is not { IsReady: true } session)
+            return;
+
         if (degrees == _rotationDegrees)
             return;
 
         _rotationDegrees = degrees;
-
-        if (Session is { IsReady: true } session)
-        {
-            RenderCurrentPage(session);
-            PositionPage(session);
-        }
+        RenderCurrentPage(session);
+        PositionPage(session);
     }
 
     private static void DefaultExternalLauncher(string path)
