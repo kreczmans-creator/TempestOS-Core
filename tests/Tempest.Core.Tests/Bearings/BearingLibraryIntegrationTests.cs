@@ -4,6 +4,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
+using Tempest.Core.Tests.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Bearings;
@@ -194,5 +195,38 @@ public class BearingLibraryIntegrationTests
 
         Assert.Equal(3, candidates.Count);
         Assert.Equal([0.026, 0.030, 0.035], outsideDiameters.Cells.Select(cell => Math.Round(cell.CanonicalValue!.Value, 6)));
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158` through the shared ReferenceDataTransactionalFacts helper
+    // (`WP 19.10K`) — BearingCatalog runs the same transactional path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = BearingFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("brg-fault", BearingFixtures.DeepGrooveBall("FX-FAULT"), BearingFixtures.SourcedProvenance()),
+            async () => await catalog.FindAsync("brg-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = BearingFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("brg-a", BearingFixtures.DeepGrooveBall("FX-A"), BearingFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("brg-b", BearingFixtures.DeepGrooveBall("FX-B"), BearingFixtures.VerifiedProvenance());
+        await BearingFixtures.ReleaseAsync(catalog, "brg-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<BearingDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("brg-a", "brg-b", "Replaced."),
+            () => catalog.FindAsync("brg-a"),
+            ReferenceValidationState.Released);
     }
 }

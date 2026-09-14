@@ -5,6 +5,7 @@ using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Tests.Materials;
+using ReferenceDataTransactionalFacts = Tempest.Core.Tests.ReferenceData.ReferenceDataTransactionalFacts;
 
 namespace Tempest.Core.Tests.Manufacturing;
 
@@ -731,5 +732,38 @@ public class ProcessLibraryTests
         Assert.Equal(ReferenceValidationState.Superseded, superseded!.ValidationState);
         Assert.Equal("prc-2026", superseded.SupersededByRecordId);
         Assert.Equal("Handbook 2018", (await catalog.GetRevisionAsync("prc-2018", 1)).Definition.Variant);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158` through the shared ReferenceDataTransactionalFacts helper
+    // (`WP 19.10K`) — ProcessCatalog runs the same transactional path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = ProcessFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("prc-fault", ProcessFixtures.Casting("Fixture fault casting"), ProcessFixtures.SourcedProvenance()),
+            async () => await catalog.FindAsync("prc-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = ProcessFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("prc-a", ProcessFixtures.Casting("Fixture casting A"), ProcessFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("prc-b", ProcessFixtures.Casting("Fixture casting B"), ProcessFixtures.VerifiedProvenance());
+        await ProcessFixtures.ReleaseAsync(catalog, "prc-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<ProcessDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("prc-a", "prc-b", "Replaced."),
+            () => catalog.FindAsync("prc-a"),
+            ReferenceValidationState.Released);
     }
 }

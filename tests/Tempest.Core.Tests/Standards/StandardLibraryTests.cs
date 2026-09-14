@@ -1,6 +1,7 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Standards;
+using Tempest.Core.Tests.ReferenceData;
 
 namespace Tempest.Core.Tests.Standards;
 
@@ -724,5 +725,57 @@ public class StandardLibraryTests
         var document = await documentStore.FindAsync(record.UnderlyingDocumentId);
 
         Assert.Equal(StandardCatalog.StandardDocumentKind, document!.Kind);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158`/`TD-156` through the shared ReferenceDataTransactionalFacts
+    // helper (`WP 19.10K`) — StandardCatalog runs the same transactional
+    // path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = StandardFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("std-fault", StandardFixtures.Dimensional("FX-FAULT"), StandardFixtures.Sourced()),
+            async () => await catalog.FindAsync("std-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+        Assert.Null(await catalog.FindByDesignationAsync(StandardFixtures.BodyCode, "FX-FAULT", "2026"));
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = StandardFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("std-a", StandardFixtures.Dimensional("FX-A"), StandardFixtures.Verified());
+        await catalog.RegisterAsync("std-b", StandardFixtures.Dimensional("FX-B"), StandardFixtures.Verified());
+        await StandardFixtures.ReleaseAsync(catalog, "std-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<StandardDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("std-a", "std-b", "Replaced."),
+            () => catalog.FindAsync("std-a"),
+            ReferenceValidationState.Released);
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_ThenTheReplacementClaimsTheFreedDesignation_FindByDesignationReturnsTheReplacement()
+    {
+        var catalog = StandardFixtures.BuildCatalog();
+        await catalog.RegisterAsync("std-a", StandardFixtures.Dimensional("FX-SHARED"), StandardFixtures.Verified());
+        await catalog.RegisterAsync("std-b", StandardFixtures.Dimensional("FX-B"), StandardFixtures.Verified());
+        await StandardFixtures.ReleaseAsync(catalog, "std-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync<StandardDefinition>(
+            () => catalog.SupersedeAsync("std-a", "std-b", "Replaced."),
+            () => catalog.ReviseAsync(
+                "std-b", StandardFixtures.Dimensional("FX-SHARED"), StandardFixtures.Verified(), "Adopts the designation it replaces."),
+            () => catalog.FindByDesignationAsync(StandardFixtures.BodyCode, "FX-SHARED", "2026"),
+            "std-a",
+            "std-b");
     }
 }
