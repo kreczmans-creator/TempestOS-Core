@@ -3,7 +3,8 @@
 **Status: release candidate on `release/v0.19.1`, cut from the `v0.19.0`
 candidate `947c50d` on 2026-09-14 after the Product Owner's first pass
 over it; the last code change is `df2ebe8` and every commit after it is
-documentation; under the Product Owner's manual test.** Nothing in this
+documentation or the CI job ceiling; under the Product Owner's manual
+test.** Nothing in this
 document is certification.
 
 ## Summary
@@ -36,7 +37,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.7C` A view keeps reacting after it has been shown, hidden and shown again | Since `WP 18.2A` every area view and tab that reads the change feed dropped its subscription the first time it left the visual tree and never took it back, so on any second visit it re-read on entry but no longer reacted to a change made while it was showing; `WorkspaceChangesSubscription` now subscribes on attach and unsubscribes on detach for all thirteen views (Home, Projects, Engineering, Business, Tasks, Evidence, Invoicing, Quotes, Reports, Timesheets, the Deliverables and Quote tabs, the object editor); `WorkspaceChangesReattachTests` proves each one reacts, stops while hidden, and reacts again; a Tasks journey leaves and returns before creating a task | 2026-09-14 (df2ebe8) |
 | `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
 
-| `WP 19.9.1` Release | Two idle-machine races in `QuotationJourneyTests` fixed by waiting for the last side effect (the attached sheet after Send; the export file closed, not merely created); every cockpit card action names itself, so the automation-name walk has no exemption left; `PHYSICAL_REVIEW.md` §7c (D1–D19) written from the code, which also corrected this document's own wrong "one page" claim about the quote PDF; the backlog reconciled (nine open rows re-verified unchanged, six raised from the packages' own disclosures, one raised and closed in the same pass, the live list at exactly 30); the nine Product Owner comments checked against the code (five answered, four answered with a disclosed limit, none unanswered); figures, warnings, `PROJECT_STATUS.md`; three green CI Gate runs on the candidate head | 2026-09-14 (df2ebe8) |
+| `WP 19.9.1` Release | Two idle-machine races in `QuotationJourneyTests` fixed by waiting for the last side effect (the attached sheet after Send; the export file closed, not merely created); every cockpit card action names itself, so the automation-name walk has no exemption left; `PHYSICAL_REVIEW.md` §7c (D1–D19) written from the code, which also corrected this document's own wrong "one page" claim about the quote PDF; the backlog reconciled (nine open rows re-verified unchanged, six raised from the packages' own disclosures, one raised and closed in the same pass, the live list at exactly 30); the nine Product Owner comments checked against the code (five answered, four answered with a disclosed limit, none unanswered); figures, warnings, `PROJECT_STATUS.md`; three green CI Gate runs on the candidate head; the CI Build & Test ceiling raised from 45 to 90 minutes after the Desktop leg reached 43 | 2026-09-14 (df2ebe8) |
 
 ## Figures
 
@@ -108,6 +109,13 @@ counts from the gate).
   overlapping render does not yet find a just-created project; the New
   Project with quotation journey exposed it and the test now waits. The
   real fix belongs in `ProjectContext`; carried to the backlog.
+- **The CI Build & Test ceiling is now 90 minutes** (`WP 19.9.1`): at 594
+  Desktop tests under coverage collection the Debug leg took 43 minutes on
+  a hosted runner and the next run was cancelled at 45 on both legs while
+  still passing tests several seconds each; no hang (the per-test
+  five-minute backstop never fired). The ceiling is raised, not the
+  cause: the suite's CI time roughly doubles with coverage collection,
+  which is diagnostic only. Worth deciding whether Debug needs it.
 - **Business → Invoices groups by request status, not by the sketch**
   (`WP 19.7A`, found by the `PHYSICAL_REVIEW.md` §7c walk): the area is
   the existing Invoicing view grouped Draft, Sending, Sent, Accepted,

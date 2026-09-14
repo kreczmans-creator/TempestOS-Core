@@ -71,12 +71,15 @@ jobs:
     # behaviour would be the identical class of risk. Bump deliberately,
     # not automatically.
     runs-on: windows-2022
-    # 45, not 30: the Test step alone measured 14 to 28 minutes for Debug
-    # on hosted runners during the v0.17.0 release (coverage collection and
-    # --blame-hang included), and the 30-minute limit killed one green run
-    # at the line with no diagnostic. The per-test backstop is still
-    # --blame-hang-timeout below; this is the whole-leg ceiling.
-    timeout-minutes: 45
+    # 90, not 45 (`WP 19.9.1`, 2026-09-14): the Test step alone measured
+    # 43 minutes for Debug on a hosted runner at 594 Desktop tests (run
+    # 34882951343, green), and the next dispatched run (34887583111) was
+    # cancelled at the 45-minute line on both legs while tests were still
+    # passing several seconds each under coverage collection — no hang, the
+    # per-test --blame-hang-timeout below never fired. Before that, 45 not
+    # 30 for the same reason at v0.17.0 (14 to 28 minutes then). This is
+    # the whole-leg ceiling; the per-test backstop is unchanged.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
