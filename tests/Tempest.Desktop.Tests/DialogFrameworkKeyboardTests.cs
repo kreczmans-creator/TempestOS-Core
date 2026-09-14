@@ -155,6 +155,84 @@ public sealed class DialogFrameworkKeyboardTests
     }
 
     // ------------------------------------------------------------
+    // InputDialog — allowBlank (`WP 19.5D`, Defect 1): CommandParameter's
+    // own contract ("an empty string is a value, and a binding that will
+    // not accept one says so through Validate") reaches the dialog only
+    // when the caller opts in; every other caller (allowBlank's own
+    // default, false) keeps today's unconditional "A value is required."
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankFalse_StillRequiresAValue()
+    {
+        var dialog = new InputDialog();
+        var promptTask = dialog.PromptAsync("Create Part", "Name:", validate: _ => null, allowBlank: false);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // The dialog's own unconditional rejection, never reaching
+        // `validate` at all — `validate` here always accepts, so a value
+        // of "" completing would prove the opposite of what this asserts.
+        Assert.Contains(
+            dialog.GetLogicalDescendants().OfType<TextBlock>(),
+            t => t.Text == "A value is required.");
+        Assert.True(dialog.IsVisible);
+
+        textBox.Text = "New Part";
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("New Part", await promptTask);
+    }
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankTrue_AndAValidateAcceptingBlank_CompletesWithTheEmptyString()
+    {
+        var dialog = new InputDialog();
+        // `quotation.create`'s own "reference" parameter has no Validate
+        // at all (Check returns null unconditionally), the real production
+        // shape a blank-accepting parameter takes.
+        var promptTask = dialog.PromptAsync("Create Quotation", "Reference:", validate: null, allowBlank: true);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        Assert.Equal(string.Empty, await promptTask);
+        Assert.False(dialog.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankTrue_AndAValidateRejectingBlank_ShowsThatValidatesOwnMessage()
+    {
+        var dialog = new InputDialog();
+        // Mirrors `deliverable.complete`'s own "completedOn" Validate
+        // shape: blank is rejected, a real value is not.
+        var promptTask = dialog.PromptAsync(
+            "Complete Deliverable", "Completed on (yyyy-MM-dd):",
+            validate: v => string.IsNullOrWhiteSpace(v) ? "must be a valid date (yyyy-MM-dd)." : null,
+            allowBlank: true);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // Reaches the parameter's own Validate — the dialog itself never
+        // second-guesses what it says, blank included.
+        Assert.Contains(
+            dialog.GetLogicalDescendants().OfType<TextBlock>(),
+            t => t.Text == "must be a valid date (yyyy-MM-dd).");
+        Assert.True(dialog.IsVisible);
+
+        textBox.Text = "2026-01-01";
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("2026-01-01", await promptTask);
+    }
+
+    // ------------------------------------------------------------
     // CommandPaletteOverlay — live filtering, keyboard nav, real dispatch
     // ------------------------------------------------------------
 
