@@ -171,6 +171,11 @@ public sealed class CockpitCardControl : Border
             Margin = new Thickness(-DesignTokens.SpaceMd, 0, 0, 0),
             FontSize = DesignTokens.FontSizeBody,
         };
+        // `WP 19.9.1`: every row action and area-switch button this card
+        // builds carries its own text as its automation name — the one
+        // surface the automation-name walk had to exempt by ancestry
+        // (`AutomationNameCoverageTests`, `WP 19.7A`'s disclosure).
+        AutomationProperties.SetName(button, text);
         button.Classes.Add(ChromeStyles.Flat);
         ThemeReactiveBrush.Bind(button, TextElement.ForegroundProperty, BrandPalette.AccentBrushKey);
         button.Click += (_, _) => onClick();
