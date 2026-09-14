@@ -372,28 +372,23 @@ public sealed class ObjectEditorViewTests
     }
 
     /// <summary>
-    /// <b>Genuine, disclosed, pre-existing finding — not caused by `WP
-    /// 10.7A`</b>: <see cref="ObjectEditorView.TryCreate"/> gates
-    /// unconditionally on <c>EngineeringDomainContext.Repository.FindAsync</c>
-    /// resolving a real <see cref="IEngineeringObject"/> — and, confirmed
-    /// directly here, that call returns <see langword="null"/> for every
-    /// real Requirement (Requirements are real
-    /// <c>IEngineeringDocument</c>s, `ADR-0058`, but were never wired into
-    /// the general <c>IEngineeringObjectRepository</c>'s own
-    /// Kind-to-object materialisation — only reachable through
-    /// <see cref="IRequirementsService"/> directly, a genuinely different,
-    /// pre-`WP 10.3A` read path). This is why the identical, already-
-    /// existing <c>NavigateToObject_ClickedFromARelationshipRow_...</c>
-    /// test above already defends against a <see langword="null"/> editor
-    /// for a Requirement — this was already true before this Work
-    /// Package. This section's own code (verified correct by direct
-    /// review and by dispatching the identical commands successfully via
-    /// the Ribbon, proven in <c>FeatureCompletionTests</c>) is therefore
-    /// real but currently unreachable specifically through the Object
-    /// Editor for Requirements — honestly disclosed here rather than
-    /// forcing this test to assert something the real running application
-    /// cannot actually do, matching this project's own "never fabricate"
-    /// discipline.
+    /// <b>`TD-41`, closed by `WP 19.10I`.</b> <see cref="ObjectEditorView.TryCreate"/>
+    /// used to gate unconditionally on <c>EngineeringDomainContext.Repository.FindAsync</c>
+    /// resolving a real <see cref="IEngineeringObject"/> — and that call
+    /// always returns <see langword="null"/> for a Requirement
+    /// (Requirements are real <c>IEngineeringDocument</c>s, `ADR-0058`,
+    /// but were never wired into the general
+    /// <c>IEngineeringObjectRepository</c>'s own Kind-to-object
+    /// materialisation — only reachable through
+    /// <see cref="IRequirementsService"/> directly, a genuinely different
+    /// read path). <c>TryCreate</c> now falls back to
+    /// <see cref="IRequirementsService"/> when the repository has nothing
+    /// for a Requirement's own Kind, so this section's own code — real
+    /// since `WP 10.7A`, but unreachable through the Object Editor until
+    /// now — is exercised here exactly as the Ribbon already exercised it
+    /// (<c>FeatureCompletionTests</c>). The statement is asserted too,
+    /// alongside Owner/Priority, since both are now real through this one
+    /// editor.
     /// </summary>
     [AvaloniaFact]
     public async Task RequirementSection_SaveOwnerAndPriority_ActuallyPersistsThem()
@@ -414,10 +409,14 @@ public sealed class ObjectEditorViewTests
                 return; // no real Requirement in this sample set — honestly nothing to prove here.
 
             var editor = ObjectEditorView.TryCreate(target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, requirementsService);
-            if (editor is null)
-                return; // confirmed, disclosed, pre-existing gap (see this test's own remarks) — nothing more to prove here.
+            Assert.NotNull(editor);
 
-            var requirementExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            var sampleRequirement = await requirementsService.FindAsync(target.Id);
+            Assert.NotNull(sampleRequirement);
+            var contentBox = FindContentBox(editor!);
+            Assert.Equal(sampleRequirement!.Statement, contentBox.Text);
+
+            var requirementExpander = editor!.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
             Assert.True(requirementExpander.IsVisible);
 
             var ownerBox = FindByLabelWithin<TextBox>(requirementExpander, "Owner");
@@ -425,7 +424,7 @@ public sealed class ObjectEditorViewTests
             var priorityBox = FindByLabelWithin<ComboBox>(requirementExpander, "Priority");
             priorityBox.SelectedItem = "High";
 
-            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save Owner/Priority"));
+            var saveButton = editor!.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save Owner/Priority"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over

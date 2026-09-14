@@ -145,10 +145,36 @@ public sealed record ProjectCommercialEditorSupport(
 /// already existed at the Domain layer (`ADR-0075`) but was never
 /// reachable from any Workspace/Desktop surface;
 /// <see cref="Tempest.Desktop.Views.PropertyInspectorView"/>'s own "Validation" section
-/// resolves the real object too (`WP 10.8A`) for every Kind except a
-/// Requirement (`TD-41`). This class holds the real object directly, so it
-/// can call the real method — informational only, never blocking Save (see class remarks
-/// on <see cref="OnSaveAsync"/>).
+/// resolves the real object too (`WP 10.8A`). This class holds the real
+/// object directly, so it can call the real method — informational only,
+/// never blocking Save (see class remarks on <see cref="OnSaveAsync"/>).
+/// A Requirement carries no <see cref="IValidatable"/> of its own
+/// (<see cref="IRequirementsService"/> exposes no validation-equivalent
+/// read), so its own Validation section honestly shows the identical
+/// "supports no validation" fallback every non-<see cref="IValidatable"/>
+/// Kind already shows — see <see cref="PopulateFromRequirementAsync"/>.
+/// </para>
+/// <para>
+/// <b>A Requirement opens in this same editor too (`TD-41`, `WP 19.10I`)</b>
+/// — <see cref="TryCreate"/> falls back to <see cref="IRequirementsService"/>
+/// when <see cref="EngineeringDomainContext.Repository"/> has nothing for
+/// the id, since a Requirement is a separate aggregate that never lives
+/// there. <see cref="PopulateFromRequirementAsync"/> is the Requirement-only
+/// analogue of <see cref="PopulateFromAsync"/>, populating only the
+/// sections a Requirement can honestly answer: Identity (its own
+/// Identifier/Id/Revision/Category), Content (its own Statement, revised
+/// through the identical <see cref="IWorkspaceManager.ReviseObjectAsync"/>
+/// path every other Kind's Content field already uses), Owner/Priority
+/// (already real, see above), and Relationships (both "allocated to" and
+/// "verified by" are recorded as outgoing references from the requirement
+/// itself, so <see cref="IRequirementsService.GetRelationshipsAsync"/>
+/// alone — no incoming-relationship query, which this discipline's own
+/// storage has no capability for — renders real data). Every section with
+/// no honest reading for a Requirement (BOM, Calculation, Verification
+/// Result, Attachments, Description, Where used, Commercial, Invoice,
+/// Quotation Lines, Evidence) stays collapsed at its own already-hidden
+/// <see cref="BuildLayout"/> default, never populated with a "not
+/// applicable" placeholder.
 /// </para>
 /// </remarks>
 public sealed class ObjectEditorView : UserControl
@@ -564,12 +590,13 @@ public sealed class ObjectEditorView : UserControl
 
     /// <summary>
     /// Attempts to build a real Object Editor for <paramref name="objectId"/>/
-    /// <paramref name="objectKind"/> — returns <see langword="null"/> if no
-    /// Engineering Domain object with that Id is found (a synthetic,
-    /// non-repository Kind such as Calculations' own <c>"CalculationTemplate"</c>,
-    /// or the Sample Explorer's own fixed, fictional content) — the
-    /// caller's own signal to fall back to the existing generic
-    /// three-line document body instead.
+    /// <paramref name="objectKind"/> — returns <see langword="null"/> if
+    /// neither the engineering-object repository nor (for a Requirement)
+    /// <see cref="IRequirementsService"/> could possibly back the Kind (a
+    /// synthetic, non-repository Kind such as Calculations' own
+    /// <c>"CalculationTemplate"</c>, or the Sample Explorer's own fixed,
+    /// fictional content) — the caller's own signal to fall back to the
+    /// existing generic three-line document body instead.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -593,6 +620,28 @@ public sealed class ObjectEditorView : UserControl
     /// fire-and-forget, typically before the tab is even visible since
     /// every read it awaits resolves against the in-memory object cache.
     /// </para>
+    /// <para>
+    /// <b>A Requirement (`TD-41`, `WP 19.10I`) is never in the
+    /// repository above — it is a separate aggregate owned entirely by
+    /// <see cref="IRequirementsService"/> (a genuinely different store,
+    /// `ADR-0058`).</b> Rather than spend a second synchronous existence
+    /// check here (the Desktop test suite's own <c>NoBlockingPersistenceCallsTests</c>
+    /// pins this file to exactly the one above), <paramref name="objectKind"/> alone
+    /// is the honest routing signal once the repository has nothing: every
+    /// document tab ever opened at <see cref="RequirementsService.RequirementDocumentKind"/>
+    /// is opened by the real Requirements discipline (the Explorer, the
+    /// Create/Revise/Link commands, the Quote tab's own "Open requirement"),
+    /// never a synthetic placeholder the way <c>CalculationTemplate</c> or
+    /// the Sample Explorer's fixed content are. The existence read itself
+    /// still happens, honestly, inside <see cref="PopulateRequirementInBackground"/> —
+    /// asynchronously, exactly like every other Kind's own population — and
+    /// reports failure through <see cref="ActionCompleted"/> rather than
+    /// silently doing nothing on the rare id that turns out not to resolve.
+    /// <paramref name="requirementsService"/> is <see langword="null"/> for
+    /// any caller that has never threaded it through (an existing test,
+    /// chiefly), which still falls back to the generic body exactly as
+    /// before.
+    /// </para>
     /// </remarks>
     public static ObjectEditorView? TryCreate(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
@@ -607,17 +656,30 @@ public sealed class ObjectEditorView : UserControl
 
         // The one disclosed exception — see this method's own remarks.
         var target = domainContext.Repository.FindAsync(objectId).GetAwaiter().GetResult();
-        if (target is null)
+        if (target is not null)
+        {
+            var realEditor = new ObjectEditorView(
+                objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
+                declarations, evidenceSupport, auditQuery, commercialSupport)
+            {
+                WorkspaceChanges = workspaceChanges,
+            };
+            realEditor.PopulateInBackground(target);
+            return realEditor;
+        }
+
+        // TD-41 — see this method's own remarks.
+        if (requirementsService is null || objectKind != RequirementsService.RequirementDocumentKind)
             return null;
 
-        var editor = new ObjectEditorView(
+        var requirementEditor = new ObjectEditorView(
             objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
             declarations, evidenceSupport, auditQuery, commercialSupport)
         {
             WorkspaceChanges = workspaceChanges,
         };
-        editor.PopulateInBackground(target);
-        return editor;
+        requirementEditor.PopulateRequirementInBackground(objectId);
+        return requirementEditor;
     }
 
     /// <summary>
@@ -643,16 +705,67 @@ public sealed class ObjectEditorView : UserControl
         }
     }
 
+    /// <summary>
+    /// The Requirement-only analogue of <see cref="PopulateInBackground"/>
+    /// (`TD-41`, `WP 19.10I`) — <see cref="TryCreate"/>'s own remarks
+    /// explain why the existence read happens here, asynchronously,
+    /// rather than as a second synchronous check inside <see cref="TryCreate"/>
+    /// itself. A requirement id that turns out not to resolve (the rare
+    /// case — see <see cref="TryCreate"/>'s own remarks) reports honestly
+    /// through <see cref="ActionCompleted"/> rather than leaving the
+    /// editor silently blank.
+    /// </summary>
+    private void PopulateRequirementInBackground(Guid requirementId)
+    {
+        _ = RunAsync();
+
+        async Task RunAsync()
+        {
+            try
+            {
+                var requirement = await _requirementsService!.FindAsync(requirementId).ConfigureAwait(true);
+                if (requirement is null)
+                {
+                    ActionCompleted?.Invoke("Requirement not found.", ActionOutcome.Failed);
+                    return;
+                }
+
+                await PopulateFromRequirementAsync(requirement).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                ActionCompleted?.Invoke($"Failed to load: {ex.Message}", ActionOutcome.Failed);
+            }
+        }
+    }
+
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
-    /// <summary>Re-reads the real object and refreshes every section — never a cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s own identical discipline.</summary>
+    /// <summary>
+    /// Re-reads the real object and refreshes every section — never a
+    /// cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s
+    /// own identical discipline. Falls back to <see cref="IRequirementsService"/>
+    /// (`TD-41`, `WP 19.10I`) exactly as <see cref="TryCreate"/> does, for
+    /// the identical reason — a Requirement is never in the repository
+    /// read first.
+    /// </summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;
         var target = await _domainContext.Repository.FindAsync(_objectId).ConfigureAwait(true);
         if (target is not null)
+        {
             await PopulateFromAsync(target).ConfigureAwait(true);
+            return;
+        }
+
+        if (_requirementsService is not null && _objectKind == RequirementsService.RequirementDocumentKind)
+        {
+            var requirement = await _requirementsService.FindAsync(_objectId).ConfigureAwait(true);
+            if (requirement is not null)
+                await PopulateFromRequirementAsync(requirement).ConfigureAwait(true);
+        }
     }
 
     private Control BuildLayout()
@@ -951,7 +1064,7 @@ public sealed class ObjectEditorView : UserControl
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
         PopulateBom(target);
-        await PopulateRequirementAsync(target).ConfigureAwait(true);
+        await PopulateRequirementAsync().ConfigureAwait(true);
         await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
         PopulateVerificationResult(target);
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
@@ -982,6 +1095,93 @@ public sealed class ObjectEditorView : UserControl
             _evidenceLifecycleSection.IsVisible = false;
             _evidenceAuditSection.IsVisible = false;
         }
+
+        _isDirty = false;
+        _statusMessage.Text = string.Empty;
+        ApplyReadOnlyState();
+
+        _suppressDirtyTracking = false;
+    }
+
+    /// <summary>
+    /// The Requirement-only analogue of <see cref="PopulateFromAsync"/>
+    /// (`TD-41`, `WP 19.10I`) — see the class remarks for which sections
+    /// apply to a Requirement and why. <paramref name="requirement"/> is
+    /// <c>Tempest.Core.Requirements.IRequirement</c>, never the unrelated,
+    /// same-named <c>Tempest.Core.EngineeringDomain.IRequirement</c> this
+    /// class's every other method means by a bare "target" — there is no
+    /// real <see cref="IEngineeringObject"/> behind a Requirement at all.
+    /// </summary>
+    private async Task PopulateFromRequirementAsync(Tempest.Core.Requirements.IRequirement requirement)
+    {
+        _suppressDirtyTracking = true;
+
+        // No real IEngineeringObject backs a Requirement (see class
+        // remarks) — the attachment re-population fallback on
+        // OpenAttachmentRequested's first subscriber (this field's own
+        // remarks) has nothing to re-populate from, honestly, since the
+        // Attachments section never applies here (BuildLayout's own
+        // default IsVisible = false, left untouched below).
+        _populatedTarget = null;
+
+        // Identity: the requirement's own Identifier/Id/Revision, plus
+        // Category (the brief's own fourth named field) — there is no
+        // separate UI slot for Category, so it rides along in the same
+        // readout the generic Identity section already shows for every
+        // Kind. "Name" has no Requirement meaning of its own (no
+        // Rename command exists for this Kind — RequirementsWorkspaceRegistration's
+        // own remarks — Statement is the mutable field), so the Name box
+        // honestly shows the Identifier, disabled by the identical
+        // `_manager.CanRename` read every other Kind already uses.
+        var categoryText = requirement.Category ?? "(none)";
+        _identityReadout.Text = $"{requirement.Identifier}  •  Id: {requirement.Id}  •  Revision {requirement.RevisionNumber}  •  Category: {categoryText}";
+
+        _originalName = requirement.Identifier;
+        _nameBox.Text = _originalName;
+        _nameBox.IsEnabled = _manager.CanRename(_objectKind);
+
+        // Content: the requirement's own Statement — revised through the
+        // identical IWorkspaceManager.ReviseObjectAsync -> ReviseRequirementCommand
+        // path OnSaveAsync already dispatches by Kind (CanRevise("Requirement")
+        // is true; RequirementsWorkspaceRegistration registers a Revise
+        // factory, no Rename factory, for this Kind).
+        _originalContent = requirement.Statement;
+        _contentBox.Text = _originalContent;
+        _contentBox.IsEnabled = _manager.CanRevise(_objectKind);
+        _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
+
+        // Owner / Priority: already real (`WP 10.7A`), and already reads
+        // through _requirementsService with no target of its own — this
+        // is the section TryCreate's own gate made unreachable before
+        // this fix.
+        await PopulateRequirementAsync().ConfigureAwait(true);
+
+        // Relationships: both "allocated to" (LinkRequirementCommand) and
+        // "verified by" (VerificationService.RecordAsync) are recorded as
+        // outgoing references from the requirement itself, so the
+        // requirement register's own GetRelationshipsAsync alone covers
+        // both — see PopulateRequirementRelationshipsAsync's own remarks.
+        await PopulateRequirementRelationshipsAsync(requirement.Id).ConfigureAwait(true);
+
+        // Lifecycle / Validation: a Requirement implements neither
+        // IHasLifecycle nor IValidatable (genuinely true, not merely
+        // untested — IRequirementsService exposes no validation-equivalent
+        // read), so both sections show the identical honest fallback text
+        // PopulateLifecycle/PopulateValidationAsync already show for any
+        // Kind that fails the same type-check.
+        _lifecyclePanel.Children.Clear();
+        _lifecyclePanel.Children.Add(new TextBlock { Text = "This object carries no lifecycle.", Opacity = 0.7 });
+
+        _validationPanel.Children.Clear();
+        _validationPanel.Children.Add(new TextBlock { Text = "This object supports no validation.", Opacity = 0.7 });
+
+        // Every other section (BOM, Calculation, Verification Result,
+        // Attachments, Description, Where used, Commercial, Invoice,
+        // Quotation Lines, Evidence) has no honest reading for a
+        // Requirement and is never populated here — each stays at its own
+        // already-collapsed BuildLayout default (IsVisible = false), which
+        // nothing in this method, or in PopulateRequirementAsync/
+        // PopulateRequirementRelationshipsAsync above, ever sets true.
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -1051,6 +1251,44 @@ public sealed class ObjectEditorView : UserControl
         var incoming = await _domainContext.RelationshipRepository.GetIncomingAsync(_objectId).ConfigureAwait(true);
         foreach (var relationship in incoming)
             _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.SourceId, relationship.RelationshipKind, "←").ConfigureAwait(true));
+
+        if (_relationshipsPanel.Children.Count == 0)
+            _relationshipsPanel.Children.Add(new TextBlock { Text = "No relationships recorded.", Opacity = 0.7 });
+    }
+
+    /// <summary>
+    /// The Requirement-only analogue of <see cref="PopulateRelationshipsAsync"/>
+    /// (`TD-41`, `WP 19.10I`) — reuses the identical
+    /// <see cref="_relationshipsPanel"/>/<see cref="BuildRelationshipRowAsync"/>
+    /// rendering, fed from <see cref="IRequirementsService.GetRelationshipsAsync"/>
+    /// instead of an <see cref="IHasRelationships"/> cast (no
+    /// <see cref="IEngineeringObject"/> backs a Requirement to cast).
+    /// </summary>
+    /// <remarks>
+    /// No incoming-relationship query runs here, unlike
+    /// <see cref="PopulateRelationshipsAsync"/>'s own <see cref="EngineeringDomainContext.RelationshipRepository"/>
+    /// read — that repository backs the engineering-object relationship
+    /// store, a different store from the one <see cref="IRequirementsService"/>
+    /// records against (`ADR-0058`), and exposes no "incoming" read of its
+    /// own. This is not a gap for the two relationship kinds the brief
+    /// names: both "allocated to" (<c>LinkRequirementCommand</c> →
+    /// <see cref="IRequirementsService.LinkAsync"/>) and "verified by"
+    /// (<c>VerificationService.RecordAsync</c>'s own
+    /// <c>subjectDocumentId, verificationRecordId, "verifiedBy"</c> link)
+    /// are recorded with the requirement itself as source, so
+    /// <see cref="IRequirementsService.GetRelationshipsAsync"/> alone
+    /// already returns both, as real outgoing references.
+    /// </remarks>
+    private async Task PopulateRequirementRelationshipsAsync(Guid requirementId)
+    {
+        _relationshipsPanel.Children.Clear();
+
+        if (_requirementsService is not null)
+        {
+            var outgoing = await _requirementsService.GetRelationshipsAsync(requirementId).ConfigureAwait(true);
+            foreach (var relationship in outgoing)
+                _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.TargetDocumentId, relationship.RelationshipKind, "→").ConfigureAwait(true));
+        }
 
         if (_relationshipsPanel.Children.Count == 0)
             _relationshipsPanel.Children.Add(new TextBlock { Text = "No relationships recorded.", Opacity = 0.7 });
@@ -2079,17 +2317,18 @@ public sealed class ObjectEditorView : UserControl
     /// <see cref="_objectKind"/> (never a C# type-check: the data lives
     /// entirely in <see cref="IRequirementsService"/>'s own
     /// <c>Tempest.Core.Requirements.IRequirement</c>, a genuinely
-    /// different, unrelated interface from the
-    /// <c>Tempest.Core.EngineeringDomain.IRequirement</c> <paramref name="target"/>
-    /// itself satisfies — casting <paramref name="target"/> can never
-    /// expose Owner/Priority). <see langword="null"/> <see cref="_requirementsService"/>
-    /// (any existing test/caller that never threads it through) leaves
-    /// this section honestly hidden, never a crash.
+    /// different, unrelated interface from the real engineering object
+    /// <see cref="PopulateFromAsync"/> populates every other section
+    /// from). Takes no parameter — unlike every other Populate* method,
+    /// nothing here ever came from the real <see cref="IEngineeringObject"/>
+    /// target, so <see cref="PopulateFromRequirementAsync"/> (`TD-41`,
+    /// `WP 19.10I`) calls this identical method with no target to pass at
+    /// all. <see langword="null"/> <see cref="_requirementsService"/> (any
+    /// existing test/caller that never threads it through) leaves this
+    /// section honestly hidden, never a crash.
     /// </summary>
-    private async Task PopulateRequirementAsync(IEngineeringObject target)
+    private async Task PopulateRequirementAsync()
     {
-        _ = target;
-
         if (_requirementsService is null || _objectKind != RequirementsService.RequirementDocumentKind)
         {
             _requirementSection.IsVisible = false;

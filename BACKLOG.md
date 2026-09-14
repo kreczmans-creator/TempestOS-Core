@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (27 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (26 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -47,7 +47,6 @@ and nothing on disk.
 | `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
-| `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-63` | `TD-40`'s dirty-tab-close fix is not pinned on its production path | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
@@ -220,6 +219,36 @@ no source file under `src/Tempest.Desktop` references
 `ICalculationPackValidationService`, `IVerificationArtefactValidationService`
 or either rule-code type — so none was added; `TD-157`'s own subject was
 only ever the resolver never being wired up, not a missing surface.
+**Closed by `WP 19.10I` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-41`. `ObjectEditorView.TryCreate` (and `RefreshAsync`,
+which repeated the same gate) now falls back to `IRequirementsService`
+when `EngineeringDomainContext.Repository.FindAsync` has nothing for the
+id, since a Requirement is a separate aggregate that never lives in that
+repository (`ADR-0058`) — no second blocking existence check added;
+`NoBlockingPersistenceCallsTests`' one disclosed site is unchanged, since
+the requirement id is resolved asynchronously inside the new
+`PopulateRequirementInBackground`, mirroring `PopulateInBackground`
+exactly. A Requirement now opens on its own real body:
+Identifier/Id/Revision/Category (Identity), Statement (Content, revised
+through the existing `ReviseRequirementCommand` path), Owner/Priority
+(`WP 10.7A`'s own section, real since that Work Package but unreachable
+through this editor until now), and Relationships — both "allocated to"
+and "verified by" are recorded as outgoing references from the
+requirement itself, so `IRequirementsService.GetRelationshipsAsync`
+alone renders both with no incoming-relationship query needed. Lifecycle
+and Validation show the identical honest fallback text every
+non-`IHasLifecycle`/`IValidatable` Kind already shows; every other
+section (BOM, Calculation, Verification Result, Attachments, Description,
+Where used, Commercial, Invoice, Quotation Lines, Evidence) stays at its
+own already-hidden default, never a "not applicable" placeholder. Proven
+by `tests/Tempest.Desktop.Tests/CreatedObjectOpensRightUpTests.cs`'s own
+Palette-created-Requirement journey (statement and Owner control both
+visible on the opened tab), `tests/Tempest.Desktop.Tests/ObjectEditorViewTests.cs`'s
+`RequirementSection_SaveOwnerAndPriority_ActuallyPersistsThem` (now
+asserts the real statement alongside the pre-existing Owner/Priority
+save-and-reread), and one added assertion on
+`tests/Tempest.Desktop.Tests/QuotationJourneyTests.cs`'s existing "Open
+requirement" journey step.
 
 ## Owned by Programme
 
