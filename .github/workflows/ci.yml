@@ -157,7 +157,7 @@ jobs:
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/${{ matrix.configuration }}" `
-             `
+            @collect `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {

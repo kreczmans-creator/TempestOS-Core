@@ -204,6 +204,11 @@ git tag `
     -a "v$Version" `
     -m "TempestOS v$Version"
 
+if ($LASTEXITCODE -ne 0)
+{
+    throw "git tag v$Version failed (exit code $LASTEXITCODE) - nothing was pushed. (TD-42)"
+}
+
 #
 # Push
 #
@@ -215,7 +220,16 @@ if ($Push)
     Write-Host "Pushing..."
 
     git push origin main
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "git push origin main failed (exit code $LASTEXITCODE) - the tag was not pushed; fix the push and run again. (TD-42)"
+    }
+
     git push origin "v$Version"
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "git push origin v$Version failed (exit code $LASTEXITCODE) - main is pushed but the tag is not; push the tag by hand or run again. (TD-42)"
+    }
 
     Write-Host ""
     Write-Host "Pushing the tag triggers .github/workflows/release.yml, which"
