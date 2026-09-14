@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (16 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -59,13 +59,27 @@ the close step now runs after `COMMIT;` under a `committed` flag, and an
 exception there is logged and swallowed only once the transaction has
 actually landed — see `ADR-0145`'s own addendum.
 
+`TD-38` — `EngineeringObjectFactory<T>.CreateAsync` enforced no
+business-identifier uniqueness, so two Parts, Calculations or Documents
+could share an identifier with no warning; `BACKLOG.md`'s own `WP 18.2B`
+owner did not hold (that Work Package never touched this factory — Evidence's
+own creation passed `identifier: null` and had nothing for `WP 18.2B` to
+have made unique, per the `WP 20.1A` audit). **Closed by `WP 20.1A2`**:
+`IEngineeringObject.BusinessIdentifier` — a Part's or Calculation's name, a
+Document's number if it has one else its name, unchanged for Requirement,
+which already has its own correct index — is unique among live objects of
+the same Kind within the same project (`IBusinessIdentifierIndex`,
+maintained by the factory at creation and by `RenameAsync` at rename, both
+under the domain write lock; rebuilt at rehydration), refused with the
+clash named, for the five factory registries' own Kinds and Evidence. It no
+longer appears below.
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
-| `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
