@@ -38,4 +38,8 @@ internal static class ConnectorHostFixture
 
     public static IInvoicingConnector Connector(ITempestHost host) =>
         (IInvoicingConnector)host.Services!.GetService(typeof(IInvoicingConnector));
+
+    /// <summary>The same connector instance <see cref="Connector"/> resolves, bound a second time under <see cref="IAccountsConnector"/> (`WP 19.8B`).</summary>
+    public static IAccountsConnector AccountsConnector(ITempestHost host) =>
+        (IAccountsConnector)host.Services!.GetService(typeof(IAccountsConnector));
 }

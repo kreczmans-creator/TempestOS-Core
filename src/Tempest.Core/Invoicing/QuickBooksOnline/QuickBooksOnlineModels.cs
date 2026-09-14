@@ -15,7 +15,10 @@ internal sealed record QboQueryEnvelope([property: JsonPropertyName("QueryRespon
 internal sealed record QboQueryResponse(
     [property: JsonPropertyName("Invoice")] List<QboInvoice>? Invoice = null,
     [property: JsonPropertyName("Customer")] List<QboCustomer>? Customer = null,
-    [property: JsonPropertyName("Payment")] List<QboPayment>? Payment = null);
+    [property: JsonPropertyName("Payment")] List<QboPayment>? Payment = null,
+    [property: JsonPropertyName("Bill")] List<QboBill>? Bill = null,
+    [property: JsonPropertyName("RecurringTransaction")] List<QboRecurringTransaction>? RecurringTransaction = null,
+    [property: JsonPropertyName("Account")] List<QboAccount>? Account = null);
 
 /// <summary>
 /// One QuickBooks Online invoice — every field this connector actually
@@ -37,12 +40,13 @@ internal sealed record QboInvoice(
     [property: JsonPropertyName("Line")] List<QboLine>? Line = null,
     [property: JsonPropertyName("CurrencyRef")] QboRef? CurrencyRef = null);
 
-/// <summary>One QuickBooks Online invoice line — <c>SalesItemLineDetail</c> only, the one detail type this connector ever writes.</summary>
+/// <summary>One QuickBooks Online invoice or bill line — <c>SalesItemLineDetail</c> is the one detail type this connector ever writes; <c>AccountBasedExpenseLineDetail</c> is read-only, from a recurring bill template (`WP 19.8B`).</summary>
 internal sealed record QboLine(
     [property: JsonPropertyName("Amount")] decimal Amount,
     [property: JsonPropertyName("DetailType")] string DetailType,
     [property: JsonPropertyName("Description")] string? Description,
-    [property: JsonPropertyName("SalesItemLineDetail")] QboSalesItemLineDetail? SalesItemLineDetail);
+    [property: JsonPropertyName("SalesItemLineDetail")] QboSalesItemLineDetail? SalesItemLineDetail,
+    [property: JsonPropertyName("AccountBasedExpenseLineDetail")] QboAccountBasedExpenseLineDetail? AccountBasedExpenseLineDetail = null);
 
 /// <summary>See <see cref="QboLine"/>. <see cref="ItemRef"/> is <see langword="null"/> unless <c>Invoicing:QuickBooksOnline:DefaultItemId</c> is configured — QuickBooks Online's real API requires a valid product/service item per line, which this Work Package's own object model carries no catalogue for; disclosed in <c>QuickBooksOnlineConnector</c>'s own remarks.</summary>
 internal sealed record QboSalesItemLineDetail(
@@ -73,3 +77,62 @@ internal sealed record QboFault([property: JsonPropertyName("Error")] List<QboFa
 internal sealed record QboFaultError(
     [property: JsonPropertyName("Message")] string? Message,
     [property: JsonPropertyName("Detail")] string? Detail);
+
+// ========================================================================
+// `WP 19.8B` — read-only accounts data (`IAccountsConnector`): bills,
+// recurring transactions and bank account balances. Secondary to Xero
+// (Product Owner, 2026-09-14: the consultancy uses Xero) — implemented to
+// the same brief, kept simpler where QuickBooks Online's own API is
+// simpler (a bank <see cref="QboAccount.CurrentBalance"/> is a direct
+// field, unlike Xero's own reporting-grid balance).
+// ========================================================================
+
+/// <summary>
+/// One QuickBooks Online bill — a payable, never entered in Tempest. QBO
+/// carries no single status word (the same disclosed gap
+/// <see cref="QboInvoice"/>'s own remarks describe for an outbound
+/// invoice): <c>QuickBooksOnlineConnector.ToBillDue</c> synthesises
+/// "PAID"/"OPEN" from <see cref="Balance"/>.
+/// </summary>
+internal sealed record QboBill(
+    [property: JsonPropertyName("Id")] string? Id = null,
+    [property: JsonPropertyName("DocNumber")] string? DocNumber = null,
+    [property: JsonPropertyName("VendorRef")] QboRef? VendorRef = null,
+    [property: JsonPropertyName("TxnDate")] string? TxnDate = null,
+    [property: JsonPropertyName("DueDate")] string? DueDate = null,
+    [property: JsonPropertyName("TotalAmt")] decimal? TotalAmt = null,
+    [property: JsonPropertyName("Balance")] decimal? Balance = null,
+    [property: JsonPropertyName("CurrencyRef")] QboRef? CurrencyRef = null);
+
+/// <summary>
+/// One QuickBooks Online recurring transaction template — a subscription,
+/// when <see cref="Type"/> is <c>"Bill"</c> (the only type this connector's
+/// own accounts read maps; a recurring invoice template, <c>"Invoice"</c>,
+/// is not a payable and is skipped).
+/// </summary>
+internal sealed record QboRecurringTransaction(
+    [property: JsonPropertyName("Name")] string? Name = null,
+    [property: JsonPropertyName("Type")] string? Type = null,
+    [property: JsonPropertyName("Bill")] QboRecurringBillTemplate? Bill = null,
+    [property: JsonPropertyName("ScheduleInfo")] QboScheduleInfo? ScheduleInfo = null);
+
+/// <summary>The templated bill inside a <see cref="QboRecurringTransaction"/> of type <c>"Bill"</c>.</summary>
+internal sealed record QboRecurringBillTemplate(
+    [property: JsonPropertyName("VendorRef")] QboRef? VendorRef = null,
+    [property: JsonPropertyName("CurrencyRef")] QboRef? CurrencyRef = null,
+    [property: JsonPropertyName("Line")] List<QboLine>? Line = null);
+
+/// <summary>See <see cref="QboLine"/>. Adds <see cref="AccountRef"/> — the "package's own account or category name" <see cref="Tempest.Core.Invoicing.AccountsCategoriser"/> categorises (`WP 19.8B` brief §1) — read from the templated bill's own line detail, never written by this connector.</summary>
+internal sealed record QboAccountBasedExpenseLineDetail([property: JsonPropertyName("AccountRef")] QboRef? AccountRef = null);
+
+/// <summary>A recurring transaction's own schedule — <see cref="IntervalType"/> is QuickBooks Online's own frequency word (for example <c>"Monthly"</c>), verbatim.</summary>
+internal sealed record QboScheduleInfo(
+    [property: JsonPropertyName("IntervalType")] string? IntervalType = null,
+    [property: JsonPropertyName("NextDate")] string? NextDate = null);
+
+/// <summary>One QuickBooks Online account — matched (for the cash position) by <see cref="AccountType"/> <c>"Bank"</c>. <see cref="CurrentBalance"/> is a direct field on this resource, unlike Xero's own bank balance, which needs a separate report.</summary>
+internal sealed record QboAccount(
+    [property: JsonPropertyName("Name")] string? Name = null,
+    [property: JsonPropertyName("AccountType")] string? AccountType = null,
+    [property: JsonPropertyName("CurrentBalance")] decimal? CurrentBalance = null,
+    [property: JsonPropertyName("CurrencyRef")] QboRef? CurrencyRef = null);

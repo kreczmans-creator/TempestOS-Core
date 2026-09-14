@@ -61,6 +61,8 @@ public sealed class SettingsView : UserControl
     private readonly ICurrentPrincipalAccessor? _principals;
     private readonly IInvoicingConnector? _invoicingConnector;
     private readonly ISecretStore? _secretStore;
+    private readonly IAccountsReadModel? _accountsReadModel;
+    private readonly AccountsRefreshService? _accountsRefreshService;
     private readonly IConfigurationProvider _configuration;
     private readonly string _persistenceRootPath;
 
@@ -80,6 +82,8 @@ public sealed class SettingsView : UserControl
     private readonly TextBlock _invoicingAuthorisationStatus = new() { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
     private readonly Button _invoicingAuthoriseButton = new() { Content = "Authorise", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly NumericUpDown _invoicingPollMinutes = new() { Minimum = 1, Maximum = 1440, Increment = 1, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
+    private readonly TextBlock _accountsReadingStatus = new() { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
+    private readonly Button _accountsRefreshButton = new() { Content = "Refresh now", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _savedStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
@@ -97,7 +101,8 @@ public sealed class SettingsView : UserControl
     public SettingsView(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
-        IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null)
+        IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null,
+        IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -113,6 +118,8 @@ public sealed class SettingsView : UserControl
         _principals = principals;
         _invoicingConnector = invoicingConnector;
         _secretStore = secretStore;
+        _accountsReadModel = accountsReadModel;
+        _accountsRefreshService = accountsRefreshService;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -130,6 +137,7 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_invoicingClientId, "Invoicing client id");
         AutomationProperties.SetName(_invoicingClientSecret, "Invoicing client secret");
         AutomationProperties.SetName(_invoicingPollMinutes, "Invoicing poll interval (minutes)");
+        AutomationProperties.SetName(_accountsRefreshButton, "Refresh accounts reading");
         AutomationProperties.SetName(_saveButton, "Save settings");
         AutomationProperties.SetName(_confirmBeforeDelete, "Confirm before deleting an object");
         AutomationProperties.SetName(_independentCheckRequired, "Independent check required");
@@ -160,12 +168,25 @@ public sealed class SettingsView : UserControl
         invoicingAuthoriseRow.Children.Add(_invoicingAuthoriseButton);
         invoicingAuthoriseRow.Children.Add(_invoicingAuthorisationStatus);
 
+        // `WP 19.8B` (po-comments.md item 8): the accounts reading — bills,
+        // subscriptions and cash, read from the accounting package — never
+        // entered in Tempest and never computed here; the same "unavailable
+        // since <time>" honesty convention as `DescribeAuthorisationState`,
+        // above.
+        var accountsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        accountsRow.Children.Add(_accountsReadingStatus);
+        accountsRow.Children.Add(_accountsRefreshButton);
+
         var invoicingStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
         invoicingStack.Children.Add(LabeledRow("Connector", _invoicingConnectorSelector));
         invoicingStack.Children.Add(LabeledRow("Client Id", _invoicingClientId));
         invoicingStack.Children.Add(LabeledRow("Client Secret", _invoicingClientSecret));
         invoicingStack.Children.Add(invoicingAuthoriseRow);
         invoicingStack.Children.Add(LabeledRow("Poll every (minutes)", _invoicingPollMinutes));
+
+        if (_accountsReadModel is not null)
+            invoicingStack.Children.Add(accountsRow);
+
         var invoicing = BuildSection("Connector authorisation", invoicingStack);
 
         var saveRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
@@ -196,6 +217,7 @@ public sealed class SettingsView : UserControl
         _openPersistenceFolder.Click += (_, _) => OnOpenPersistenceFolder();
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
         _invoicingAuthoriseButton.Click += async (_, _) => await OnAuthoriseInvoicingAsync().ConfigureAwait(true);
+        _accountsRefreshButton.Click += async (_, _) => await OnRefreshAccountsAsync().ConfigureAwait(true);
 
         AutomationProperties.SetName(this, "Settings");
         Content = new ScrollViewer { Content = body };
@@ -239,6 +261,9 @@ public sealed class SettingsView : UserControl
 
         if (_invoicingConnector is not null && _secretStore is not null)
             await LoadInvoicingSectionAsync().ConfigureAwait(true);
+
+        if (_accountsReadModel is not null)
+            await RefreshAccountsReadingStatusAsync().ConfigureAwait(true);
 
         _savedStatus.Text = string.Empty;
     }
@@ -375,6 +400,29 @@ public sealed class SettingsView : UserControl
         await RefreshInvoicingAuthorisationStatusAsync().ConfigureAwait(true);
         ActionCompleted?.Invoke(_invoicingAuthorisationStatus.Text ?? "Authorisation checked.", ActionOutcome.NoChange);
     }
+
+    private async Task RefreshAccountsReadingStatusAsync()
+    {
+        if (_accountsReadModel is null)
+            return;
+
+        var snapshot = await _accountsReadModel.ReadAsync().ConfigureAwait(true);
+        _accountsReadingStatus.Text = DescribeAccountsReading(snapshot);
+    }
+
+    private async Task OnRefreshAccountsAsync()
+    {
+        if (_accountsRefreshService is not null)
+            await _accountsRefreshService.RefreshNowAsync().ConfigureAwait(true);
+
+        await RefreshAccountsReadingStatusAsync().ConfigureAwait(true);
+        ActionCompleted?.Invoke(_accountsReadingStatus.Text ?? "Accounts reading refreshed.", ActionOutcome.Changed);
+    }
+
+    private static string DescribeAccountsReading(AccountsSnapshot snapshot) =>
+        snapshot.IsAvailable
+            ? $"Accounts reading: last at {snapshot.ReadAt!.Value.ToLocalTime():yyyy-MM-dd HH:mm} ({snapshot.Connector})."
+            : $"Accounts reading: unavailable: {snapshot.UnavailableReason}";
 
     private static string DescribeAuthorisationState(ConnectorAuthorisationState state)
     {

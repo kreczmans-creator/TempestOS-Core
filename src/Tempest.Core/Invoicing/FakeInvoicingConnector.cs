@@ -37,7 +37,7 @@ public sealed record FakeConnectorCall(string Member, string? Argument);
 /// system's own idempotent behaviour for a repeated key.
 /// </para>
 /// </remarks>
-public sealed class FakeInvoicingConnector : IInvoicingConnector
+public sealed class FakeInvoicingConnector : IInvoicingConnector, IAccountsConnector
 {
     private readonly object _gate = new();
     private readonly List<FakeConnectorCall> _calls = [];
@@ -45,6 +45,9 @@ public sealed class FakeInvoicingConnector : IInvoicingConnector
     private readonly Dictionary<string, InvoiceStatusReading> _statusByExternalId = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (ConnectorOutcome Outcome, string? Reason)> _scriptedByKey = new(StringComparer.Ordinal);
     private readonly List<ConnectorContact> _contacts = [];
+    private IReadOnlyList<BillDue> _billsDue = [];
+    private IReadOnlyList<RepeatingBill> _repeatingBills = [];
+    private IReadOnlyList<CashAccountBalance> _cashPosition = [];
 
     private (ConnectorOutcome Outcome, string? Reason)? _nextCreateScript;
     private ConnectorAuthorisationState _authorisationState = new(ConnectorAuthorisation.Authorised);
@@ -212,6 +215,78 @@ public sealed class FakeInvoicingConnector : IInvoicingConnector
             _calls.Add(new FakeConnectorCall(nameof(AuthorisationStateAsync), Argument: null));
 
             return Task.FromResult(_authorisationState);
+        }
+    }
+
+    /// <summary>Scripts what <see cref="ListBillsDueAsync"/> answers — modelled on Xero's own ACCPAY invoices (`WP 19.8B`). Replaces whatever was scripted before; empty (never scripted) answers an empty list.</summary>
+    public void ScriptBillsDue(IReadOnlyList<BillDue> bills)
+    {
+        ArgumentNullException.ThrowIfNull(bills);
+
+        lock (_gate)
+            _billsDue = [.. bills];
+    }
+
+    /// <summary>Scripts what <see cref="ListRepeatingBillsAsync"/> answers — modelled on Xero's own repeating invoices (`WP 19.8B`). Replaces whatever was scripted before; empty (never scripted) answers an empty list.</summary>
+    public void ScriptRepeatingBills(IReadOnlyList<RepeatingBill> bills)
+    {
+        ArgumentNullException.ThrowIfNull(bills);
+
+        lock (_gate)
+            _repeatingBills = [.. bills];
+    }
+
+    /// <summary>Scripts what <see cref="ReadCashPositionAsync"/> answers — modelled on Xero's own bank account balances (`WP 19.8B`). Replaces whatever was scripted before; empty (never scripted) answers an empty list.</summary>
+    public void ScriptCashPosition(IReadOnlyList<CashAccountBalance> balances)
+    {
+        ArgumentNullException.ThrowIfNull(balances);
+
+        lock (_gate)
+            _cashPosition = [.. balances];
+    }
+
+    /// <inheritdoc />
+    public Task<ConnectorResult<IReadOnlyList<BillDue>>> ListBillsDueAsync(DateOnly asOf, int horizonDays, CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            _calls.Add(new FakeConnectorCall(nameof(ListBillsDueAsync), asOf.ToString("O")));
+
+            if (_authorisationState.Status != ConnectorAuthorisation.Authorised)
+                return Task.FromResult(ConnectorResult<IReadOnlyList<BillDue>>.Unavailable("Not authorised."));
+
+            var cutoff = asOf.AddDays(horizonDays);
+            IReadOnlyList<BillDue> due = [.. _billsDue.Where(b => b.Due <= cutoff)];
+
+            return Task.FromResult(ConnectorResult<IReadOnlyList<BillDue>>.Ok(due));
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<ConnectorResult<IReadOnlyList<RepeatingBill>>> ListRepeatingBillsAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            _calls.Add(new FakeConnectorCall(nameof(ListRepeatingBillsAsync), Argument: null));
+
+            if (_authorisationState.Status != ConnectorAuthorisation.Authorised)
+                return Task.FromResult(ConnectorResult<IReadOnlyList<RepeatingBill>>.Unavailable("Not authorised."));
+
+            return Task.FromResult(ConnectorResult<IReadOnlyList<RepeatingBill>>.Ok(_repeatingBills));
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<ConnectorResult<IReadOnlyList<CashAccountBalance>>> ReadCashPositionAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_gate)
+        {
+            _calls.Add(new FakeConnectorCall(nameof(ReadCashPositionAsync), Argument: null));
+
+            if (_authorisationState.Status != ConnectorAuthorisation.Authorised)
+                return Task.FromResult(ConnectorResult<IReadOnlyList<CashAccountBalance>>.Unavailable("Not authorised."));
+
+            return Task.FromResult(ConnectorResult<IReadOnlyList<CashAccountBalance>>.Ok(_cashPosition));
         }
     }
 
