@@ -69,7 +69,7 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
-| `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
+| `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned (`ADR-0153`, 2026-09-15, proposes retiring the projection that tries to answer it, rather than widening the frozen contract) |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
@@ -460,7 +460,10 @@ directly and proves the highlight hides; no test in this tree drives the
 identical event through a real `WorkspaceLayoutController` to prove or
 disprove `CancelDrag` itself runs, so the gap above was found by
 reflection against the referenced `Avalonia` build, not by a failing
-test. Recommend a follow-up row.
+test. Recommend a follow-up row — absorbed by `ADR-0153` (2026-09-15),
+which moves this handler's own registration to `RoutingStrategies.Direct`
+and drives a real capture-lost event through the real controller, rather
+than opening a numbered row for a fix already scoped into that package.
 
 ## Owned by Programme
 
@@ -563,7 +566,7 @@ this table can now point at, rather than merely name.
 | `TD-81` | Whole mock-up modules unimplemented: Tasks, Commercial, Resources, Knowledge, Admin | `WP 19.2B` — all five are removed from the rail (`ShellAreas`) rather than left as unimplemented placeholders; the two capabilities Reports named for itself (issued evidence sheets, project documents) are delivered by the new `ReportsView.cs` rail area instead of a dimmed module, and `ProjectAreas.Reports`/`ProjectAreas.Settings` (the project-tab-level counterpart) are removed the same way, so no descriptor anywhere still claims a capability with nothing behind it. |
 | `TD-128` | Digital Thread graph edges are keyboard-unreachable | `WP 19.2B` — `DigitalThreadGraphView`'s own edge hit-test `Line` is now `Focusable`, in a deterministic Tab order following each node's own outgoing edges, named `"<from> → <to>"`, and `Enter`/`Space` selects the edge and moves keyboard focus to its target node; proven end-to-end, no simulated pointer event, by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_SelectsADigitalThreadEdge`. |
 | `TD-132` | Every relationship row's "Open" button shares one accessible name | `WP 19.2B` — `ObjectEditorView.BuildRelationshipRowAsync`'s own Open button is now named `"Open {direction} {relationshipKind} — {displayName}"` per row, mirroring the sibling `BuildObjectReferenceRowAsync`/attachment-row buttons that were already fixed this same way. |
-| `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` — repositioning: with a panel header focused, `Ctrl+Shift+Arrow` moves it to the workspace edge in that direction (`LayoutTabGroupView`'s own `MoveRequested` event, `WorkspaceLayoutHost`'s `DockToEdge`), and `Ctrl+Shift+[`/`Ctrl+Shift+]` resizes its own split share (`WorkspaceLayoutTree.ResizeSplit`), both documented in the panel header's own `AutomationProperties.HelpText`; proven end-to-end by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_MovesADockedPanelToTheOppositeEdge`. Tab *reordering* (dragging one tab before another within a group) is unchanged and stays mouse-only — out of this Work Package's own brief, which named panel repositioning and resizing only. |
+| `TD-133` | Docking-panel repositioning and tab reordering are mouse-only | `WP 19.2B` — repositioning: with a panel header focused, `Ctrl+Shift+Arrow` moves it to the workspace edge in that direction (`LayoutTabGroupView`'s own `MoveRequested` event, `WorkspaceLayoutHost`'s `DockToEdge`), and `Ctrl+Shift+[`/`Ctrl+Shift+]` resizes its own split share (`WorkspaceLayoutTree.ResizeSplit`), both documented in the panel header's own `AutomationProperties.HelpText`; proven end-to-end by `KeyboardOnlyJourneyTests.AKeyboardOnlyJourney_MovesADockedPanelToTheOppositeEdge`. Tab *reordering* (dragging one tab before another within a group) is unchanged and stays mouse-only — out of this Work Package's own brief, which named panel repositioning and resizing only; this residual is absorbed by `ADR-0153` (2026-09-15), which adds `Ctrl+Shift+,`/`Ctrl+Shift+.` alongside the tab-strip generalisation its own package already needs. |
 | `TD-109` | `MainWindow` is a 1,577-line god object | `WP 19.2A` — `MainWindowComposer`'s four phases (`BuildViews` → `BuildCoordinators` → `Wire` → `Layout`, `src/Tempest.Desktop/Composition/MainWindowComposer*.cs`) replace the constructor; `MainWindow.cs` is now 782 lines, and `tests/Tempest.Desktop.Tests/MainWindowCompositionTests.cs:394` (`MainWindowComposer_FourPhases_ExistAndAreCalledInOrder`) pins that all four phases exist and are invoked, in that order, from `MainWindow`'s own constructor. |
 | `TD-23` | `VerificationService.RecordAsync`'s multi-step link sequence is not transactional | `WP 19.10L` (audited not closed by `WP 19.10G`, 2026-09-14) — the record's own document, its "verifiedBy" link and every additional "references"/"basedOnCalculation" link are now written inside one `IQueryablePersistenceStore.ExecuteInTransactionAsync` call through `ITransactionalDocumentWriter` (`ADR-0145`), the same primitive `EngineeringDomainContext.ExecuteWriteAsync` uses; a fault after the whole body runs but before the commit lands leaves nothing durable, proven by `tests/Tempest.Core.Tests/Verification/VerificationServiceTests.cs`'s `RecordAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument` (fault injection, mirroring `R7RegressionProofTests`'s own convention) and `RecordAsync_NonExistentLinkedDocument_LeavesNoVerifiedByReference_NotEvenTheRecord` (a missing linked document no longer leaves a durably-orphaned record). |
 | `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 19.10L` (audited not closed by `WP 19.10G`, 2026-09-14) — `VerificationService.RecordAsync` now records the "verifiedBy" edge with `IEngineeringRelationshipRepository` immediately after its transaction commits, exactly as every other relationship-creating mutator in this codebase does; `RecordVerificationResultCommand`'s own identical edge from the Activity's subject (`TD-173`'s fix) gets the same fix. Proven by `tests/Tempest.Core.Tests/Verification/VerificationServiceTests.cs`'s `RecordAsync_RegistersVerifiedByLink_DiscoverableFromBothEnds_InThisSameSession`, which reads the edge back through `RelationshipDiscoveryService` from both ends in the same session, with no restart or rehydration. |
@@ -592,7 +595,9 @@ Work Packages:** `TD-90` — still no `Focus` reference in
 `WorkspaceLayoutController`, `WorkspaceLayoutHost` or
 `WorkspaceDockingComposer` (`WP 19.2B`'s own keyboard work for `TD-133`
 added `Ctrl+Shift+Arrow`/`Ctrl+Shift+[`/`]` to `LayoutTabGroupView.cs`,
-not a focus-restore path). `TD-108`/`TD-118` stay closed (`WP 18.1A-R1`
+not a focus-restore path). `ADR-0153` (2026-09-15) proposes closing this
+as part of its own tear-out/dock package, since a cross-window re-render
+makes the missing restore worse, not incidental. `TD-108`/`TD-118` stay closed (`WP 18.1A-R1`
 predates this branch's own point of divergence, `8df3466`, and nothing
 in `v0.19.0` touches `EngineeringCockpit.PrimeAsync`). `TD-160` —
 still partial: `CalculationTrace` still has no consumer under
