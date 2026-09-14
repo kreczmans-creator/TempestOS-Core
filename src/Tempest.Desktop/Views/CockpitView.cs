@@ -16,14 +16,35 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The Engineering Cockpit (`WP 10.1A`) — the complete graphical
 /// realisation of <see cref="EngineeringCockpit"/>, the Workspace's own
-/// default landing screen (`ADR-0069`). Every region is bound directly to
-/// an <see cref="EngineeringCockpit"/> member — real data wherever that
-/// member already is (`WP 8.1C`–`WP 9.5A`) or was upgraded to be; an
-/// honest, disclosed placeholder wherever no platform capability exists
-/// to back it, never fabricated content (`WP 10.1A`'s own explicit
-/// instruction).
+/// default landing screen for the engineering surface (`ADR-0069`). Every
+/// region is bound directly to an <see cref="EngineeringCockpit"/> member
+/// — real data wherever that member already is (`WP 8.1C`–`WP 9.5A`) or
+/// was upgraded to be; an honest, disclosed placeholder wherever no
+/// platform capability exists to back it, never fabricated content
+/// (`WP 10.1A`'s own explicit instruction).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>`WP 19.7B`: no longer the rail's own Home screen.</b> `WP 19.2B` had
+/// the rail's Home button render the shared engineering surface directly,
+/// with this view as its own permanent Document Area tab — `WP 19.7B`
+/// gives Home its own dedicated dashboard (<c>Tempest.Desktop.Views.Dashboards.HomeDashboardView</c>,
+/// Product Owner comment item 6, sheets 1-2) instead. This view is
+/// unchanged and stays exactly where it always was — the engineering
+/// surface's own permanent tab, reached from standalone Engineering or a
+/// project's own Structure tab, never from the rail's Home button any
+/// more. Its own Continue/Recent Engineering Activity/Favourite
+/// Projects/Recently changed cards are <em>not</em> removed, despite
+/// duplicating the same four concepts <c>HomeDashboardView</c>'s own
+/// right rail now shows: this view still needs its own copy while it
+/// remains reachable independently of Home (the engineering-scoped
+/// context those cards make sense in has not gone away, only stopped
+/// being the rail's own default screen), and stripping them would break
+/// the pinned coverage <c>CockpitViewHonestyTests</c> already holds for
+/// them (`WP 10.1A`/`WP 10.6A`/`WP 10.7A`/`WP 18.1B`) for no functional
+/// gain — a deliberate, disclosed deviation from a literal reading of
+/// this Work Package's own "remove what Home now renders" instruction.
+/// </para>
 /// <para>
 /// <b>Information architecture, since the Desktop brand alignment.</b>
 /// The Cockpit answers the user's questions in the order they ask them,
