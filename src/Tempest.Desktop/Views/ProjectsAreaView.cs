@@ -121,6 +121,20 @@ public sealed class ProjectsAreaView : UserControl
         Content = split;
     }
 
+    /// <summary>
+    /// Selects the root node named <paramref name="automationName"/>
+    /// ("Dashboard + Reports", "Open", "Closed" or "Archive") — the same
+    /// name a screen reader announces, and what a journey test drives the
+    /// tree by, exactly as <c>ProjectWorkspaceView.SyncSelectedArea</c>
+    /// selects its own <c>TabControl</c> programmatically.
+    /// </summary>
+    public void SelectNode(string automationName)
+    {
+        var item = new[] { _dashboardNode, _openNode, _closedNode, _archiveNode }
+            .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
+        _tree.SelectedItem = item;
+    }
+
     /// <summary>Re-reads every project and rebuilds each group's own children.</summary>
     public async Task RefreshAsync()
     {

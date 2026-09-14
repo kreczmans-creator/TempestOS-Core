@@ -150,6 +150,20 @@ public sealed class EngineeringAreaView : UserControl
         Content = split;
     }
 
+    /// <summary>
+    /// Selects the node named <paramref name="automationName"/>
+    /// ("Dashboard + Reports", "Tasks", "Modules", "Mechanical",
+    /// "Engineering Calculations" or "Reference data") — the same name a
+    /// screen reader announces, and what a journey test drives the tree
+    /// by.
+    /// </summary>
+    public void SelectNode(string automationName)
+    {
+        var item = new[] { _dashboardNode, _tasksNode, _modulesNode, _mechanicalNode, _calculationsNode, _referenceDataNode }
+            .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
+        _tree.SelectedItem = item;
+    }
+
     /// <summary>Re-reads whichever node is currently shown.</summary>
     public async Task RefreshAsync()
     {

@@ -97,6 +97,19 @@ public sealed class BusinessAreaView : UserControl
         Content = split;
     }
 
+    /// <summary>
+    /// Selects the node named <paramref name="automationName"/>
+    /// ("Dashboard &amp; Reports", "Quotes", "Invoices", "Timesheets" or
+    /// "Subscriptions") — the same name a screen reader announces, and
+    /// what a journey test drives the tree by.
+    /// </summary>
+    public void SelectNode(string automationName)
+    {
+        var item = new[] { _dashboardNode, _quotesNode, _invoicesNode, _timesheetsNode, _subscriptionsNode }
+            .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
+        _tree.SelectedItem = item;
+    }
+
     /// <summary>Re-reads whichever node is currently shown.</summary>
     public async Task RefreshAsync()
     {
