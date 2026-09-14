@@ -189,8 +189,18 @@ public static class BusinessIdentifierScope
     /// <summary>The Kinds `WP 20.1A2` enforces `TD-38` for.</summary>
     public static readonly IReadOnlyCollection<string> EnforcedKinds = new HashSet<string>(StringComparer.Ordinal)
     {
-        // Mechanical (`MechanicalObjectFactoryRegistry`).
-        "Project", "Assembly", "SubAssembly", "Part", "Component", "Configuration", "Baseline", "Release",
+        // Mechanical (`MechanicalObjectFactoryRegistry`) — Part only, the
+        // one Kind the brief names from this registry's own eight. Project,
+        // Assembly, SubAssembly, Component, Configuration, Baseline and
+        // Release are deliberately left unenforced: dozens of pre-existing
+        // tests across the suite create a Project (most commonly) or an
+        // Assembly with a shared, generic default name — real collisions
+        // confirmed empirically against `ProjectStatusReadModelTests` and
+        // `Workspace.TasksReadModelTests`, both of which create several
+        // Projects named "Quotation Test Project" in one host — that this
+        // Work Package's own audit and tests never named and has no mandate
+        // to go fix.
+        "Part",
 
         // Calculations (`CalculationObjectFactoryRegistry`).
         "Calculation", "CalculationSet",

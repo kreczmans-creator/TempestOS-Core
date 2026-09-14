@@ -305,6 +305,15 @@ public sealed class MutatorRefusalAdversarialTests
     /// paths stops the set completing and this fact reports it. Every
     /// outcome except a deadlock is accepted, and the accepted exception
     /// types are enumerated so an unexpected one is still a failure.
+    /// <para>
+    /// <b>`TD-38` (`WP 20.1A2`).</b> All four Parts here are concurrently
+    /// renamed to the identical literal "Renamed", which used to be legal
+    /// four times over; now only the first to commit keeps it, and the
+    /// other three are refused with <see cref="DuplicateBusinessIdentifierException"/>
+    /// — a real, expected business refusal, not a hang or a new failure
+    /// mode, so it joins the accepted set rather than loosening what this
+    /// guard-rail actually checks (no deadlock).
+    /// </para>
     /// </remarks>
     [Fact]
     public async Task ConcurrentMutatorsAndRevisions_AllComplete_NoneDeadlock()
@@ -333,7 +342,7 @@ public sealed class MutatorRefusalAdversarialTests
         foreach (var outcome in outcomes.Where(o => o is not null))
         {
             Assert.True(
-                outcome is SupersededEngineeringObjectException or InvalidLifecycleTransitionException,
+                outcome is SupersededEngineeringObjectException or InvalidLifecycleTransitionException or DuplicateBusinessIdentifierException,
                 $"Unexpected failure from a concurrent mutator: {outcome!.GetType().Name}: {outcome.Message}");
         }
     }
