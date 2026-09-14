@@ -14,6 +14,9 @@ public enum TaskRefusal
 
     /// <summary>The task is already done.</summary>
     AlreadyDone,
+
+    /// <summary>The task's own project is Archive — closed 90 days or more ago — and read-only (`WP 19.10H`, `TD-179`).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of an <see cref="ITaskService"/> act: either it happened, or a refusal that says why it did not.</summary>

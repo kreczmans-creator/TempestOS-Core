@@ -35,6 +35,9 @@ public enum EvidenceRefusal
 
     /// <summary>The evidence is <see cref="EvidenceStatus.Issued"/> and its subject tag may no longer be changed — revise it first (`WP 18.2B`).</summary>
     SubjectLockedAfterIssue,
+
+    /// <summary>The evidence's own project is Archive — closed 90 days or more ago — and read-only (`WP 19.10H`, `TD-179`).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of <see cref="IEvidenceService.CiteAsync"/>: either a recorded citation, or a refusal that says exactly what was missing.</summary>
