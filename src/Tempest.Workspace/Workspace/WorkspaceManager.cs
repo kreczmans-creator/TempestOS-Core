@@ -1,3 +1,4 @@
+using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
@@ -105,13 +106,17 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
         var domainContext = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
         var requirementsService = (IRequirementsService)services.GetService(typeof(IRequirementsService));
         var requirementValidationService = (IRequirementValidationService)services.GetService(typeof(IRequirementValidationService));
+        // `WP 18.1B` §4: the durable source of the "Recently changed"
+        // card — the same audit trail every mutator already writes
+        // (`ADR-0145`), so the card survives a restart.
+        var auditQuery = (IAuditQuery)services.GetService(typeof(IAuditQuery));
         _eventBus = eventBus;
 
         var navigationService = new NavigationService(navigationProvider, _viewFactories, _context);
         var projectExplorer = new ProjectExplorer(navigationService, _explorerProviders);
         var propertyInspector = new PropertyInspector(_facetProviders);
         _propertyInspector = propertyInspector;
-        var cockpit = new EngineeringCockpit(navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService);
+        var cockpit = new EngineeringCockpit(navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService, auditQuery: auditQuery);
 
         var defaultPlacements = new List<WorkspacePanelPlacement>
         {

@@ -8,6 +8,18 @@ using Tempest.Desktop.Theming;
 namespace Tempest.Desktop.Views;
 
 /// <summary>
+/// One object the Command Palette's own search source found (`WP 18.1B`
+/// §2), display-ready: <c>MainWindow</c> has already resolved the hit's
+/// own current title and its project's own name, so this overlay never
+/// needs to know anything about persistence or the domain to render it.
+/// </summary>
+/// <param name="ObjectId">The found object's own id.</param>
+/// <param name="Kind">The found object's own canonical Kind.</param>
+/// <param name="Title">The found object's own current title.</param>
+/// <param name="ProjectName">The project the object sits under, or <see langword="null"/> if it sits under none (or is itself a project).</param>
+public sealed record PaletteObjectHit(Guid ObjectId, string Kind, string Title, string? ProjectName);
+
+/// <summary>
 /// The Command Palette Host (`WP 10.0B`) — a real overlay over
 /// <see cref="ICommandRegistry.Items"/>, opened globally (`Ctrl+K`,
 /// Keyboard Shortcut Framework), fuzzy/substring-filtered as the query
@@ -34,14 +46,25 @@ namespace Tempest.Desktop.Views;
 /// with that reason beside them, and <c>Enter</c> reports it instead of
 /// running anything.
 /// </para>
+/// <para>
+/// <b>Objects (`WP 18.1B` §2).</b> When the query is non-empty, an
+/// "Objects" section under the commands lists the top ten global search
+/// hits <see cref="ObjectSearchSource"/> returns, with their Kind and
+/// project; selecting one raises <see cref="ObjectSelected"/> rather than
+/// invoking a command. The search itself runs on a background task
+/// (<see cref="ObjectSearchSource"/> is awaited, never blocked on) with
+/// the latest query winning: a generation counter discards a stale
+/// search's own result if a newer query has already superseded it, so a
+/// slow first keystroke can never overwrite what a fast second one found.
+/// </para>
 /// </remarks>
 public sealed class CommandPaletteOverlay : Border
 {
     private readonly ICommandRegistry _registry;
     private readonly TextBox _query = new() { Watermark = "Type a command...", Margin = new Avalonia.Thickness(8) };
-    private readonly ListBox _results = new() { MaxHeight = 320 };
-    private IReadOnlyList<CommandDescriptor> _filtered = [];
-    private IReadOnlyList<CommandAvailability> _availability = [];
+    private readonly ListBox _results = new() { MaxHeight = 400 };
+    private List<PaletteRow> _rows = [];
+    private int _searchGeneration;
 
     /// <summary>Raised after a command is successfully invoked from this palette.</summary>
     public event Action<CommandDescriptor, CommandResult>? CommandInvoked;
@@ -54,6 +77,9 @@ public sealed class CommandPaletteOverlay : Border
     /// never a generic sentence.
     /// </summary>
     public event Action<CommandDescriptor, string>? CommandUnavailable;
+
+    /// <summary>Raised when the user selects a found object from the Objects section (`WP 18.1B` §2) rather than a command.</summary>
+    public event Action<PaletteObjectHit>? ObjectSelected;
 
     /// <summary>
     /// The Workspace's own current selection, as the Command Framework sees
@@ -80,6 +106,18 @@ public sealed class CommandPaletteOverlay : Border
     /// command continues to invoke directly.
     /// </summary>
     public Func<CommandDescriptor, CommandContext, Task<CommandInvocation>>? InvokeOverride { get; set; }
+
+    /// <summary>
+    /// The global object search this palette's own Objects section reads
+    /// from (`WP 18.1B` §2) — set by <c>MainWindow</c> over
+    /// <c>IQueryablePersistenceStore.SearchAsync</c>. Left unwired, the
+    /// palette shows commands only, exactly as before this Work Package.
+    /// Always awaited, never blocked on: the one search a keystroke
+    /// started may still be running when a later keystroke starts another;
+    /// see this class's own remarks on the generation counter that decides
+    /// which result wins.
+    /// </summary>
+    public Func<string, CancellationToken, Task<IReadOnlyList<PaletteObjectHit>>>? ObjectSearchSource { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="CommandPaletteOverlay"/> class, initially hidden.</summary>
     public CommandPaletteOverlay(ICommandRegistry registry)
@@ -144,42 +182,85 @@ public sealed class CommandPaletteOverlay : Border
     /// <summary>Closes the palette without invoking anything.</summary>
     public void Close() => IsVisible = false;
 
-    private void ApplyFilter()
+    /// <summary>
+    /// Re-filters the command list synchronously, renders it immediately,
+    /// then — if the query is non-empty and <see cref="ObjectSearchSource"/>
+    /// is wired — starts a background object search and appends its own
+    /// "Objects" section once it returns, provided no newer query has
+    /// superseded it in the meantime (`WP 18.1B` §2).
+    /// </summary>
+    private async void ApplyFilter()
     {
         var query = _query.Text ?? string.Empty;
-        _filtered = string.IsNullOrWhiteSpace(query)
+        var generation = ++_searchGeneration;
+
+        var filteredCommands = string.IsNullOrWhiteSpace(query)
             ? _registry.Items
-            : [.. _registry.Items.Where(d => d.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(query, StringComparison.OrdinalIgnoreCase))];
+            : (IReadOnlyList<CommandDescriptor>)
+              [.. _registry.Items.Where(d => d.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(query, StringComparison.OrdinalIgnoreCase))];
 
         // Evaluated once per render, against the same context Enter will
         // use - so what the row shows and what pressing Enter does cannot
         // disagree.
         var context = CurrentContext();
-        _availability = [.. _filtered.Select(d => _registry.Evaluate(d.Id, context))];
+        var availability = filteredCommands.Select(d => _registry.Evaluate(d.Id, context)).ToList();
 
-        // ADR-0070: still listed, still findable, visibly disabled, and
-        // carrying its own reason - never hidden.
-        _results.ItemsSource = _filtered
-            .Select((descriptor, index) => new ListBoxItem
-            {
-                Content = RowText(descriptor, _availability[index]),
-                IsEnabled = _availability[index].IsAvailable,
-            })
-            .ToList();
+        RenderRows(filteredCommands, availability, objectHits: null);
 
-        if (_filtered.Count > 0)
+        if (string.IsNullOrWhiteSpace(query) || ObjectSearchSource is null)
+            return;
+
+        IReadOnlyList<PaletteObjectHit> hits;
+        try
         {
-            _results.SelectedIndex = 0;
-            _results.ScrollIntoView(0);
+            hits = await ObjectSearchSource(query, CancellationToken.None).ConfigureAwait(true);
         }
+        catch (Exception)
+        {
+            // A search failure is not a reason to stop showing commands —
+            // the Objects section simply stays absent for this query.
+            return;
+        }
+
+        // The latest query wins (`WP 18.1B` §2): a search this slow to
+        // return has already been superseded by a later keystroke's own
+        // search, whose result must not be overwritten by this one landing
+        // late.
+        if (generation != _searchGeneration)
+            return;
+
+        RenderRows(filteredCommands, availability, hits);
     }
 
-    /// <summary>The label for one row: the command, and — when it cannot run — why not.</summary>
-    private static string RowText(CommandDescriptor descriptor, CommandAvailability availability)
+    /// <summary>Builds <see cref="_rows"/> and this palette's own visible list from a command render pass and (once it has returned) an object search pass.</summary>
+    private void RenderRows(IReadOnlyList<CommandDescriptor> filteredCommands, IReadOnlyList<CommandAvailability> availability, IReadOnlyList<PaletteObjectHit>? objectHits)
     {
-        var name = descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
+        var rows = new List<PaletteRow>(filteredCommands.Count + (objectHits?.Count ?? 0) + 1);
 
-        return availability.IsAvailable ? name : $"{name} — {availability.Reason}";
+        for (var i = 0; i < filteredCommands.Count; i++)
+            rows.Add(PaletteRow.ForCommand(filteredCommands[i], availability[i]));
+
+        if (objectHits is { Count: > 0 })
+        {
+            rows.Add(PaletteRow.Header("Objects"));
+            foreach (var hit in objectHits)
+                rows.Add(PaletteRow.ForObject(hit));
+        }
+
+        _rows = rows;
+
+        // ADR-0070: an unavailable command stays listed, visibly disabled,
+        // carrying its own reason - never hidden. A header row is
+        // rendered disabled too, purely as a label; InvokeSelectedAsync
+        // never treats it as a target (see IsHeader there).
+        _results.ItemsSource = _rows.Select(row => new ListBoxItem { Content = row.Text, IsEnabled = row.IsEnabled }).ToList();
+
+        var firstSelectable = _rows.FindIndex(r => !r.IsHeader);
+        if (firstSelectable >= 0)
+        {
+            _results.SelectedIndex = firstSelectable;
+            _results.ScrollIntoView(firstSelectable);
+        }
     }
 
     private CommandContext CurrentContext() => ContextSource?.Invoke() ?? CommandContext.Empty;
@@ -197,7 +278,7 @@ public sealed class CommandPaletteOverlay : Border
                 e.Handled = true;
                 break;
             case Key.Down:
-                if (_results.SelectedIndex < _filtered.Count - 1)
+                if (_results.SelectedIndex < _rows.Count - 1)
                 {
                     _results.SelectedIndex++;
                     _results.ScrollIntoView(_results.SelectedIndex);
@@ -217,18 +298,28 @@ public sealed class CommandPaletteOverlay : Border
 
     private async Task InvokeSelectedAsync()
     {
-        if (_results.SelectedIndex < 0 || _results.SelectedIndex >= _filtered.Count)
+        if (_results.SelectedIndex < 0 || _results.SelectedIndex >= _rows.Count)
             return;
 
-        var index = _results.SelectedIndex;
-        var descriptor = _filtered[index];
-        var context = CurrentContext();
+        var row = _rows[_results.SelectedIndex];
+        if (row.IsHeader)
+            return;
+
         Close();
 
-        // The row already showed this, evaluated against this same context.
-        if (index < _availability.Count && !_availability[index].IsAvailable)
+        if (row.ObjectHit is { } hit)
         {
-            CommandUnavailable?.Invoke(descriptor, _availability[index].Reason!);
+            ObjectSelected?.Invoke(hit);
+            return;
+        }
+
+        var descriptor = row.Command!;
+        var context = CurrentContext();
+
+        // The row already showed this, evaluated against this same context.
+        if (!row.Availability!.IsAvailable)
+        {
+            CommandUnavailable?.Invoke(descriptor, row.Availability.Reason!);
             return;
         }
 
@@ -259,4 +350,55 @@ public sealed class CommandPaletteOverlay : Border
 
     /// <summary>Gets whether the palette is currently open.</summary>
     public bool IsOpen => IsVisible;
+
+    /// <summary>
+    /// One visible row (`WP 18.1B` §2): a command (with its own evaluated
+    /// availability), a found object, or a plain section header — exactly
+    /// one of <see cref="Command"/>/<see cref="ObjectHit"/> is set, or
+    /// neither for a header.
+    /// </summary>
+    private sealed class PaletteRow
+    {
+        private PaletteRow(string text, bool isEnabled, bool isHeader, CommandDescriptor? command, CommandAvailability? availability, PaletteObjectHit? objectHit)
+        {
+            Text = text;
+            IsEnabled = isEnabled;
+            IsHeader = isHeader;
+            Command = command;
+            Availability = availability;
+            ObjectHit = objectHit;
+        }
+
+        public string Text { get; }
+
+        public bool IsEnabled { get; }
+
+        public bool IsHeader { get; }
+
+        public CommandDescriptor? Command { get; }
+
+        public CommandAvailability? Availability { get; }
+
+        public PaletteObjectHit? ObjectHit { get; }
+
+        public static PaletteRow ForCommand(CommandDescriptor descriptor, CommandAvailability availability)
+        {
+            var name = descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
+            var text = availability.IsAvailable ? name : $"{name} — {availability.Reason}";
+
+            return new PaletteRow(text, availability.IsAvailable, isHeader: false, descriptor, availability, objectHit: null);
+        }
+
+        public static PaletteRow ForObject(PaletteObjectHit hit)
+        {
+            var text = hit.ProjectName is { Length: > 0 }
+                ? $"◈ {hit.Title} — {hit.Kind} · {hit.ProjectName}"
+                : $"◈ {hit.Title} — {hit.Kind}";
+
+            return new PaletteRow(text, isEnabled: true, isHeader: false, command: null, availability: null, hit);
+        }
+
+        public static PaletteRow Header(string title) =>
+            new(title.ToUpperInvariant(), isEnabled: false, isHeader: true, command: null, availability: null, objectHit: null);
+    }
 }

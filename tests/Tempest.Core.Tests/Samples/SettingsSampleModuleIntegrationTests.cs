@@ -37,7 +37,7 @@ public class SettingsSampleModuleIntegrationTests
 
         var configuration = new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRootPath),
         ])).Build();
 
         var services = new ServiceCollection();
@@ -53,7 +53,7 @@ public class SettingsSampleModuleIntegrationTests
         // registers it (`ADR-0144`). The query shape is required since
         // `ADR-0145`: EngineeringDomainContext commits through it, and
         // AuditQuery answers a by-object lookup with a key prefix listing.
-        var persistenceStore = new PersistenceStore(configuration);
+        var persistenceStore = new SqlitePersistenceStore(configuration);
         services.AddInstance<IPersistenceStore>(persistenceStore);
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
@@ -192,6 +192,11 @@ public class SettingsSampleModuleIntegrationTests
         var commandDispatcherOne = (ICommandDispatcher)serviceProviderOne.GetService(typeof(ICommandDispatcher));
         await commandDispatcherOne.DispatchAsync(new SetSampleSettingCommand("persisted-across-restart"), CancellationToken.None);
 
+        // The first pipeline's store must let go of the root before the
+        // second opens it: SqlitePersistenceStore (`ADR-0144`) holds an
+        // exclusive instance lock for its lifetime.
+        ((IDisposable)serviceProviderOne.GetService(typeof(IPersistenceStore))).Dispose();
+
         // A second, independent pipeline - simulating a fresh process -
         // over the same root path.
         var (runtimeManagerTwo, serviceProviderTwo) = BuildPipeline(temp.Path, typeof(SettingsSampleModule));
@@ -216,7 +221,7 @@ public class SettingsSampleModuleIntegrationTests
         var host = new TempestHostBuilder([typeof(SettingsSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 

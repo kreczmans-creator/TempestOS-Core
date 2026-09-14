@@ -71,7 +71,7 @@ public sealed class KindEligibilityInvariantTests
 
     private static readonly IReadOnlyList<string> DeleteRouted =
     [
-        "calculations.delete", "documents.delete", "manufacturing.delete", "mechanical.delete",
+        "calculations.delete", "documents.delete", "evidence.delete", "manufacturing.delete", "mechanical.delete",
         "verification.delete", "requirements.delete", "requirements.delete-group",
         "requirements.delete-collection",
     ];

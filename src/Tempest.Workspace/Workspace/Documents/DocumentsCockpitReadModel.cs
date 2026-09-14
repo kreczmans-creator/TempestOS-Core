@@ -19,9 +19,21 @@ namespace Tempest.Workspace.Documents;
 /// this discipline never contributed to <see cref="EngineeringCockpit.BlockedItems"/>
 /// before this move either.
 /// </remarks>
+/// <remarks>
+/// <b>`WP 18.1A-R1`.</b> Every persistence-backed read (the per-Kind
+/// listing, and the per-document attachment/relationship reads
+/// <see cref="HasMissingEvidenceAsync"/> needs) now runs inside
+/// <see cref="LoadAsync"/>, awaited once per Cockpit render
+/// (<see cref="EngineeringCockpit.PrimeAsync"/>) rather than blocked on
+/// synchronously from every property access. Every property below is now
+/// a pure, in-memory read of what <see cref="LoadAsync"/> last loaded,
+/// honestly empty until the first call completes.
+/// </remarks>
 internal sealed class DocumentsCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
+    private IReadOnlyList<IEngineeringObject> _liveDocuments = [];
+    private int _missingEvidenceCount;
 
     /// <summary>Initialises a new instance of the <see cref="DocumentsCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
@@ -32,22 +44,31 @@ internal sealed class DocumentsCockpitReadModel
         _domainContext = domainContext;
     }
 
-    /// <summary>Gets every live (non-deleted) Document Domain object — <c>"Document"</c>, <c>"Drawing"</c>, or <c>"CadModel"</c> — a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    public IReadOnlyList<IEngineeringObject> LiveDocuments
+    /// <summary>Loads every live Document and, for each, whether it <see cref="HasMissingEvidenceAsync"/> — the two reads every property below is derived from.</summary>
+    public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        get
+        var documents = new List<IEngineeringObject>();
+
+        foreach (var kind in DocumentObjectFactoryRegistry.SupportedKinds)
         {
-            var documents = new List<IEngineeringObject>();
-
-            foreach (var kind in DocumentObjectFactoryRegistry.SupportedKinds)
-            {
-                documents.AddRange(_domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult()
-                    .Where(o => o is not IDeletable { IsDeleted: true }));
-            }
-
-            return documents;
+            var byKind = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            documents.AddRange(byKind.Where(o => o is not IDeletable { IsDeleted: true }));
         }
+
+        _liveDocuments = documents;
+
+        var missingEvidenceCount = 0;
+        foreach (var document in documents)
+        {
+            if (await HasMissingEvidenceAsync(document, cancellationToken).ConfigureAwait(false))
+                missingEvidenceCount++;
+        }
+
+        _missingEvidenceCount = missingEvidenceCount;
     }
+
+    /// <summary>Gets every live (non-deleted) Document Domain object — <c>"Document"</c>, <c>"Drawing"</c>, or <c>"CadModel"</c> — loaded by <see cref="LoadAsync"/>.</summary>
+    public IReadOnlyList<IEngineeringObject> LiveDocuments => _liveDocuments;
 
     /// <summary>Gets the number of live Documents — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveDocuments.Count;
@@ -59,16 +80,16 @@ internal sealed class DocumentsCockpitReadModel
     /// direction (the existing Digital Thread read, never a new
     /// traversal).
     /// </summary>
-    private bool HasMissingEvidence(IEngineeringObject document)
+    private async Task<bool> HasMissingEvidenceAsync(IEngineeringObject document, CancellationToken cancellationToken)
     {
         var hasAttachment = document is IHasAttachments attachable
-            && attachable.GetAttachmentsAsync().GetAwaiter().GetResult().Count > 0;
+            && (await attachable.GetAttachmentsAsync(cancellationToken).ConfigureAwait(false)).Count > 0;
 
         if (hasAttachment)
             return false;
 
-        var outgoing = _domainContext.RelationshipRepository.GetOutgoingAsync(document.Id).GetAwaiter().GetResult();
-        var incoming = _domainContext.RelationshipRepository.GetIncomingAsync(document.Id).GetAwaiter().GetResult();
+        var outgoing = await _domainContext.RelationshipRepository.GetOutgoingAsync(document.Id, cancellationToken).ConfigureAwait(false);
+        var incoming = await _domainContext.RelationshipRepository.GetIncomingAsync(document.Id, cancellationToken).ConfigureAwait(false);
 
         var hasLink = outgoing.Any(r => r.RelationshipKind is "references" or "documentedBy")
             || incoming.Any(r => r.RelationshipKind is "references" or "documentedBy");
@@ -76,21 +97,21 @@ internal sealed class DocumentsCockpitReadModel
         return !hasLink;
     }
 
-    /// <summary>Gets the number of live Documents with <see cref="HasMissingEvidence"/> — the Cockpit's own "Missing Evidence" KPI.</summary>
-    private int MissingEvidenceCount => LiveDocuments.Count(HasMissingEvidence);
+    /// <summary>Gets the number of live Documents with missing evidence (<see cref="HasMissingEvidenceAsync"/>) — the Cockpit's own "Missing Evidence" KPI.</summary>
+    private int MissingEvidenceCount => _missingEvidenceCount;
 
     /// <summary>Gets the number of live Documents that are <see cref="LifecycleState.InReview"/> — the Cockpit's own "Outstanding Reviews" KPI/"Outstanding Actions" signal.</summary>
     public int OutstandingReviews =>
         LiveDocuments.Count(d => d is IHasLifecycle { Status: LifecycleState.InReview });
 
-    /// <summary>Gets the number of live Documents that are <see cref="LifecycleState.InReview"/> or have <see cref="HasMissingEvidence"/> — the Cockpit's own "Documents need attention"/"Outstanding Actions" signal.</summary>
+    /// <summary>Gets the number of live Documents that are <see cref="LifecycleState.InReview"/> or have missing evidence — the Cockpit's own "Documents need attention"/"Outstanding Actions" signal.</summary>
     public int OutstandingActions => OutstandingReviews + MissingEvidenceCount;
 
     /// <summary>
     /// Gets the Documentation discipline's own status:
     /// <see cref="EngineeringHealthStatus.Unknown"/> if no live Document
     /// exists yet; <see cref="EngineeringHealthStatus.Attention"/> if any
-    /// is awaiting review or has <see cref="HasMissingEvidence"/>;
+    /// is awaiting review or has missing evidence;
     /// <see cref="EngineeringHealthStatus.Healthy"/> otherwise. Never
     /// <see cref="EngineeringHealthStatus.Blocked"/>.
     /// </summary>

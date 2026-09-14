@@ -20,10 +20,18 @@ namespace Tempest.Workspace;
 /// (the object is already held locally to read <c>Title</c>/<c>Kind</c>
 /// from), never a new fetch.
 /// </param>
+/// <param name="Identifier">
+/// The backing object's own business identifier (`WP 18.1B`, the Explorer
+/// filter) — <see langword="null"/> for any node with no backing object,
+/// or whose backing object carries none. The same trailing, defaulted,
+/// additive shape <see cref="Lifecycle"/> already established: every
+/// pre-existing call site compiles unchanged.
+/// </param>
 public sealed record ProjectExplorerNode(
     Guid Id,
     string Title,
     string? Kind,
     bool HasChildren,
     ProjectExplorerNodeType NodeType,
-    LifecycleState? Lifecycle = null);
+    LifecycleState? Lifecycle = null,
+    string? Identifier = null);

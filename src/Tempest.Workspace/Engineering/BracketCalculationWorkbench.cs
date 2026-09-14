@@ -169,14 +169,22 @@ public sealed class BracketCalculationWorkbench
     /// reports how many records that added.
     /// </summary>
     /// <remarks>
-    /// <b>Deliberately a user action, not a start-up side effect.</b>
-    /// <see cref="ReferenceSeedService"/>'s own registration in the host
-    /// says why: "deciding when a library gets populated is a governance
-    /// choice and not a side effect of booting." Every record lands
-    /// <see cref="ReferenceValidationState.Draft"/>, and the seeding is
-    /// additive and idempotent, so pressing it twice is harmless and
-    /// pressing it can never overwrite a value somebody has since
-    /// corrected.
+    /// A manual top-up, kept working alongside the same seeding the host
+    /// now performs automatically on a fresh launch (`WP 18.0B-R1`,
+    /// `TD-163`): <see cref="Tempest.Workspace.Composition.EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync"/>
+    /// already populates the Materials library once, at start, if it was
+    /// still holding no record at all. This button therefore ordinarily
+    /// has nothing left to add — pressing it reports the library already
+    /// held every shipped record rather than duplicating anything — and it
+    /// still matters for the case the automatic pass deliberately leaves
+    /// alone: a library that already held a record of its own (a sample
+    /// module's, or one a person registered by hand) before the shipped
+    /// corpus ever got a chance to seed it. Every record this adds still
+    /// lands <see cref="ReferenceValidationState.Draft"/>, and
+    /// <see cref="ReferenceSeedService.ApplyAsync{TDefinition}"/> is still
+    /// additive and idempotent per record, so pressing it twice, or after
+    /// the automatic pass, is harmless and can never overwrite a value
+    /// somebody has since corrected.
     /// </remarks>
     public async Task<int> PopulateMaterialLibraryAsync(CancellationToken cancellationToken = default)
     {

@@ -128,7 +128,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Siderticino(
                 "S355J2 (S355) technical specifications - Non-alloy structural steels",
-                "Mechanical properties by thickness table and physical properties list")),
+                "Mechanical properties by thickness table and physical properties list"),
+            new SourceCitation("Siderticino SA", "S355J2 (S355) technical specifications - Non-alloy structural steels",
+                TableOrFigure: "Mechanical properties by thickness table")),
 
         new(Stainless1Point4301,
             new MaterialDefinition
@@ -184,7 +186,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Aalco(
                 "Stainless Steel - Austenitic - 1.4301 (304) Bar and Section",
-                "Mechanical properties (bar and section up to 160 mm) and physical properties tables")),
+                "Mechanical properties (bar and section up to 160 mm) and physical properties tables"),
+            new SourceCitation("Aalco Metals Limited", "Stainless Steel - Austenitic - 1.4301 (304) Bar and Section",
+                TableOrFigure: "Mechanical properties table (bar and section up to 160 mm)")),
 
         new(Stainless1Point4404,
             new MaterialDefinition
@@ -237,7 +241,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Aalco(
                 "Stainless Steel - Austenitic - 1.4404 (316L) Bar and Section",
-                "Mechanical properties (bar and section up to 160 mm) and physical properties tables")),
+                "Mechanical properties (bar and section up to 160 mm) and physical properties tables"),
+            new SourceCitation("Aalco Metals Limited", "Stainless Steel - Austenitic - 1.4404 (316L) Bar and Section",
+                TableOrFigure: "Mechanical properties table (bar and section up to 160 mm)")),
 
         new(Aluminium6082T6,
             new MaterialDefinition
@@ -297,7 +303,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Aalco(
                 "Aluminium Alloy - Commercial Alloy - 6082 - T6 Extrusions",
-                "Mechanical properties, rod and bar 20 mm to 150 mm band, and physical properties table")),
+                "Mechanical properties, rod and bar 20 mm to 150 mm band, and physical properties table"),
+            new SourceCitation("Aalco Metals Limited", "Aluminium Alloy - Commercial Alloy - 6082 - T6 Extrusions",
+                TableOrFigure: "Mechanical properties table (rod and bar 20 mm to 150 mm)")),
 
         new(Aluminium5083OH111,
             new MaterialDefinition
@@ -353,7 +361,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Aalco(
                 "Aluminium Alloy - Commercial Alloy - 5083 - '0' - H111 Sheet and Plate",
-                "Mechanical properties, plate 6.3 mm to 80 mm band, and physical properties table")),
+                "Mechanical properties, plate 6.3 mm to 80 mm band, and physical properties table"),
+            new SourceCitation("Aalco Metals Limited", "Aluminium Alloy - Commercial Alloy - 5083 - '0' - H111 Sheet and Plate",
+                TableOrFigure: "Mechanical properties table (plate 6.3 mm to 80 mm)")),
 
         new(CopperCw004A,
             new MaterialDefinition
@@ -415,7 +425,9 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
             },
             SeedSources.Aalco(
                 "Copper and Copper Alloys - Copper (Pure) - CW004A Sheet, Plate and Bar",
-                "Mechanical properties (sheet 0.2 to 15 mm) and physical properties tables")),
+                "Mechanical properties (sheet 0.2 to 15 mm) and physical properties tables"),
+            new SourceCitation("Aalco Metals Limited", "Copper and Copper Alloys - Copper (Pure) - CW004A Sheet, Plate and Bar",
+                TableOrFigure: "Mechanical properties table (sheet 0.2 to 15 mm)")),
     ];
 
     /// <summary>

@@ -189,7 +189,7 @@ public sealed class SampleSeparationTests
         var host = new TempestHostBuilder([])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 
@@ -525,7 +525,7 @@ public sealed class SampleSeparationTests
         [
             new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]),
         ]);
 

@@ -15,6 +15,7 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
     /// <param name="supersededByRecordId">The record that replaced this one, if any.</param>
     /// <param name="underlyingDocumentId">The backing document's Id.</param>
     /// <param name="revisionNumber">The backing document's current revision number.</param>
+    /// <param name="source">A structured citation of the exact line the record's own values were read from, if held.</param>
     public ReferenceRecord(
         string id,
         TDefinition definition,
@@ -22,7 +23,8 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
         ReferenceValidationState validationState,
         string? supersededByRecordId,
         Guid underlyingDocumentId,
-        int revisionNumber)
+        int revisionNumber,
+        SourceCitation? source = null)
     {
         Id = id;
         Definition = definition;
@@ -31,6 +33,7 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
         SupersededByRecordId = supersededByRecordId;
         UnderlyingDocumentId = underlyingDocumentId;
         RevisionNumber = revisionNumber;
+        Source = source;
     }
 
     /// <inheritdoc />
@@ -41,6 +44,9 @@ public sealed class ReferenceRecord<TDefinition> : IReferenceRecord<TDefinition>
 
     /// <inheritdoc />
     public ReferenceProvenance Provenance { get; }
+
+    /// <inheritdoc />
+    public SourceCitation? Source { get; }
 
     /// <inheritdoc />
     public ReferenceValidationState ValidationState { get; }

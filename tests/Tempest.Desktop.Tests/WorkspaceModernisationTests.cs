@@ -102,7 +102,7 @@ public sealed class WorkspaceModernisationTests
 
             var view = new PropertyInspectorView(workspace.PropertyInspector, host.Manager!);
             view.SetCurrentSelection(target.Id, target.Kind!);
-            view.Refresh();
+            await view.RefreshAsync();
 
             Assert.Equal(1, view.CountRenderedRowsWithFacetName(statusFacet.Name));
 
@@ -147,7 +147,7 @@ public sealed class WorkspaceModernisationTests
 
             var view = new PropertyInspectorView(workspace.PropertyInspector, host.Manager!, domainContext);
             view.SetCurrentSelection(target.Id, target.Kind!);
-            view.Refresh();
+            await view.RefreshAsync();
 
             var validationExpander = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Validation"));
             var validationText = validationExpander.GetLogicalDescendants().OfType<TextBlock>()
@@ -186,7 +186,7 @@ public sealed class WorkspaceModernisationTests
 
             var view = new PropertyInspectorView(workspace.PropertyInspector, host.Manager!);
             view.SetCurrentSelection(target.Id, target.Kind!);
-            var exception = Record.Exception(() => view.Refresh());
+            var exception = await Record.ExceptionAsync(() => view.RefreshAsync());
 
             Assert.Null(exception);
 
@@ -231,7 +231,7 @@ public sealed class WorkspaceModernisationTests
 
             var view = new PropertyInspectorView(workspace.PropertyInspector, manager);
             view.SetCurrentSelection(group.Id, RequirementsService.RequirementGroupDocumentKind);
-            view.Refresh();
+            await view.RefreshAsync();
 
             var identitySection = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Identity"));
             var nameRow = identitySection.GetLogicalDescendants().OfType<Grid>()
@@ -274,7 +274,7 @@ public sealed class WorkspaceModernisationTests
 
             var view = new PropertyInspectorView(workspace.PropertyInspector, manager);
             view.SetCurrentSelection(target.Id, target.Kind!);
-            view.Refresh();
+            await view.RefreshAsync();
 
             var identitySection = view.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Identity"));
             var nameRow = identitySection.GetLogicalDescendants().OfType<Grid>()

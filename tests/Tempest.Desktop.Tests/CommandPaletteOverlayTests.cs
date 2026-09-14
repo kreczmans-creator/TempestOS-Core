@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Views;
 
@@ -82,4 +83,61 @@ public sealed class CommandPaletteOverlayTests
             await host.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// `WP 18.1B` §2: a non-empty query, with <see cref="CommandPaletteOverlay.ObjectSearchSource"/>
+    /// wired, appends an Objects section once the background search
+    /// returns; selecting that row raises <see cref="CommandPaletteOverlay.ObjectSelected"/>
+    /// instead of trying to invoke a command.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task TypingAQuery_WithAnObjectSearchSourceWired_ShowsAnObjectsRow_AndSelectingItRaisesObjectSelected()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+            var palette = new CommandPaletteOverlay(registry);
+            var hitId = Guid.NewGuid();
+            var hit = new PaletteObjectHit(hitId, "Part", "Bracket Mounting Plate", "Demo Project");
+            palette.ObjectSearchSource = (_, _) => Task.FromResult<IReadOnlyList<PaletteObjectHit>>([hit]);
+
+            PaletteObjectHit? selected = null;
+            palette.ObjectSelected += h => selected = h;
+
+            palette.Open();
+
+            var queryBox = (TextBox)((StackPanel)palette.Child!).Children[0];
+            var results = (ListBox)((StackPanel)palette.Child!).Children[1];
+
+            queryBox.Text = "bra";
+
+            var deadline = DesktopTestHelpers.Deadline(5);
+            while (!HasObjectRow(results) && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            Assert.True(HasObjectRow(results), "Expected the Objects section to appear once the background search completed.");
+
+            results.SelectedIndex = ((IReadOnlyList<ListBoxItem>)results.ItemsSource!).Count - 1;
+            queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            Assert.NotNull(selected);
+            Assert.Equal(hitId, selected!.ObjectId);
+            Assert.False(palette.IsOpen);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    private static bool HasObjectRow(ListBox results) =>
+        results.ItemsSource is IReadOnlyList<ListBoxItem> items
+            && items.Any(i => i.Content is string s && s.Contains("Bracket Mounting Plate", StringComparison.Ordinal));
 }

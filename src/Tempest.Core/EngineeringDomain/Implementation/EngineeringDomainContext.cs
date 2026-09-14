@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringData;
+using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
@@ -89,7 +90,13 @@ public sealed class EngineeringDomainContext
     /// implementations are).
     /// </param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
-    /// <exception cref="ArgumentNullException">Any parameter other than the three optional ones is <see langword="null"/>.</exception>
+    /// <param name="workspaceChanges">
+    /// Where a committed write's touched set is announced (`WP 18.1A`).
+    /// <see langword="null"/> — the default — is a legitimate, silent
+    /// no-op: a caller that has no feed to publish to (most tests) simply
+    /// gets none, rather than being forced to supply a stub.
+    /// </param>
+    /// <exception cref="ArgumentNullException">Any parameter other than the four optional ones is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="attachmentContentStore"/> was not supplied and
     /// <paramref name="persistenceStore"/> is not also an
@@ -106,7 +113,8 @@ public sealed class EngineeringDomainContext
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IEngineeringObjectStateStore? objectStateStore = null,
         IAttachmentContentStore? attachmentContentStore = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IWorkspaceChangePublisher? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
         ArgumentNullException.ThrowIfNull(store);
@@ -137,6 +145,7 @@ public sealed class EngineeringDomainContext
         DocumentWriter = Require<ITransactionalDocumentWriter>(Store, nameof(store));
         AttachmentWriter = Require<ITransactionalAttachmentWriter>(AttachmentContentStore, nameof(attachmentContentStore));
         StateWriter = Require<ITransactionalStateWriter>(ObjectStateStore, nameof(objectStateStore));
+        WorkspaceChanges = workspaceChanges;
     }
 
     /// <summary>The single durable store every engineering write commits through (`ADR-0145`).</summary>
@@ -174,6 +183,13 @@ public sealed class EngineeringDomainContext
     internal ITransactionalAttachmentWriter AttachmentWriter { get; }
 
     internal ITransactionalStateWriter StateWriter { get; }
+
+    /// <summary>
+    /// Where <see cref="ExecuteWriteAsync"/> announces a committed write's
+    /// touched set (`WP 18.1A`). <see langword="null"/> when this context
+    /// was built without a feed to publish to.
+    /// </summary>
+    internal IWorkspaceChangePublisher? WorkspaceChanges { get; }
 
     /// <summary>
     /// The acting principal's id, or the store's own "unknown" where none
@@ -229,11 +245,24 @@ public sealed class EngineeringDomainContext
     /// <param name="work">The unit of durable work. Must not touch memory.</param>
     /// <param name="afterCommit">Applies the committed change to memory, under the same lock hold.</param>
     /// <param name="cancellationToken">Cancels the wait for the lock, and the transaction.</param>
+    /// <param name="touched">
+    /// Computes the objects this write touched, for <see cref="WorkspaceChanges"/>
+    /// (`WP 18.1A`). Invoked after <paramref name="afterCommit"/>, under
+    /// the same lock hold, so it may read a value the mutator captured
+    /// inside <paramref name="work"/> exactly as <paramref name="afterCommit"/>
+    /// does — it exists as a delegate rather than a precomputed list for
+    /// that reason: a relationship write, for one, does not know the
+    /// source object's own Kind until <paramref name="work"/> has read it.
+    /// <see langword="null"/>, or a delegate returning an empty list, is
+    /// legitimate — nothing is published, exactly as if this write had no
+    /// subscriber at all.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
     internal async Task ExecuteWriteAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work,
         Action? afterCommit = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<IReadOnlyList<WorkspaceChangeEntry>>? touched = null)
     {
         ArgumentNullException.ThrowIfNull(work);
 
@@ -245,6 +274,13 @@ public sealed class EngineeringDomainContext
             // Committed. Memory is updated here, before the lock is
             // released, so the next writer projects from it.
             afterCommit?.Invoke();
+
+            // Raised only now — after memory agrees with the commit, and
+            // still under the write lock, so the sequence this reports can
+            // never be superseded by a second writer's commit before a
+            // subscriber ever hears about this one (`WP 18.1A`).
+            if (touched?.Invoke() is { Count: > 0 } entries && WorkspaceChanges is not null)
+                WorkspaceChanges.Publish(new WorkspaceChange(PersistenceStore.CurrentSequence, entries));
         }
         finally
         {

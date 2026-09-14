@@ -312,6 +312,27 @@ executing or recalculating a calculation with real inputs, keyboard
 shortcuts bound to discipline commands, and the Reports, Settings,
 Commercial, Resources, Knowledge, Administration and cross-project Tasks modules.
 
+### 7a. Evidence journey (`v0.18.0`, about 10 minutes)
+
+Launch per §3. The title bar reads `TempestOS 0.18.0 (<commit>)`. The
+rail shows **Evidence** and still shows **Engineering Calculations**;
+the Engineering workspace still has its **Calculations** tab.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| E1 | Open a project → rail → **Evidence** | The Evidence tab lists nothing and says so; the **Libraries** tab lists the five libraries with 41 records and their source citations. | The list is blank without a message; a library is missing. |
+| E2 | **Create** | A real file picker opens. Pick a workbook or a PDF; choose classification *Calculation*; leave the subject empty. The record opens right up with the file listed, its size and hash shown. | The picker does not open; the record is created but does not open; no file listed. |
+| E3 | **Cite** | The picker lists only *Released* records. Pick two materials; each citation shows library, record, revision and source. | A Draft record is offered; a citation lacks its revision. |
+| E4 | Command Palette → `evidence.cite` with a Draft record's id | Refused; the status bar names the record and its state. | Cited anyway; a raw exception. |
+| E5 | **Declare a figure** twice: `Utilisation`, `0.82`, dimensionless; `Max stress`, `142 MPa` | Both appear with their units. `5 furlongs` is refused. | A figure is lost; an unknown unit is accepted. |
+| E6 | Close and relaunch from the same working directory; open the project → Evidence | The record, file, citations and figures are all there. Command Palette: type part of the title → the Objects section lists it → it opens. | Anything missing; search finds nothing. |
+| E7 | Tag the record to a Part (subject picker); open the Part | The Part editor shows **Where used** (its assembly, as a link) and **no Bill of Materials section**; an Assembly still shows its BOM. | A BOM input on a Part; a GUID where a name should be. |
+| E8 | **Check** → checker name and organisation, statement, outcome | Stored verbatim; the record is *Checked*, with you as *recorded by*. Settings → switch **Independent check required** on → Check again on a new revision: refused because you are the author. | The check is silently altered; the rule on does not refuse. |
+| E9 | **Issue** → reference `ISS-001`, revision `A`, client | The record is *Issued*; the issue sheet PDF is attached; **Open** shows it with the citations and figures; **Export** saves it. | No sheet; the sheet opens blank; the record's status does not change. |
+| E10 | **Revise** the issued record with a new file | A new *Draft* revision; the issued revision is still readable and unchanged in the revision history. | The issued revision changes; the sheet disappears. |
+| E11 | Libraries → a Draft material → **Verify**, **Release** | Its state advances; it now appears in the citation picker without restart. | Requires a restart; a permission refusal is shown as a crash. |
+| E12 | Home cockpit | **Recently changed** lists the evidence at the top; clicking it opens the record. | Stale after a change; a manual refresh is needed anywhere. |
+
 ---
 
 ## 8. Known limitations that affect a physical review

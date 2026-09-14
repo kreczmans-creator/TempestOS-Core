@@ -4,6 +4,12 @@
 
 Accepted — `Group B` (P02 Engineering Intelligence), 2026-09-06.
 
+**Frozen by `WP 18.0C`** (`D-028`, 2026-09-09): `Tempest.Core.EngineeringIntelligence`
+moved to `src/Frozen/Tempest.Core.EngineeringIntelligence` in full —
+unreachable from any shipped surface, `D-028` having decided `v1.0`
+does not run material selection, design-rule or trade-study reasoning
+of its own. See `src/Frozen/README.md`.
+
 ## Context
 
 `P02` introduces four new kinds of authored engineering content: rules,

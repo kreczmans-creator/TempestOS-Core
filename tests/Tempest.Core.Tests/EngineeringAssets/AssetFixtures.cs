@@ -1,28 +1,35 @@
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringAssets;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
-using Tempest.Core.EngineeringAssets.DesignReviews;
-using Tempest.Core.EngineeringAssets.TechnicalDocumentation;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.ReferenceData;
-using Tempest.Core.Tests.EngineeringIntelligence;
+using Tempest.Core.Tests;
 using Tempest.Core.Tests.ReferenceData;
 
 namespace Tempest.Core.Tests.EngineeringAssets;
 
 /// <summary>
-/// Shared construction for the `P05` test suite.
+/// Shared construction for the kept half of the `P05` test suite:
+/// Templates, CalculationPacks, Verification.
 /// </summary>
 /// <remarks>
-/// <b>Every value here is fictional.</b> No real drawing, calculation,
-/// test report, review or document appears anywhere in this suite. The
-/// fixture project is "FIX-PROJ", its documents are numbered "FIX-…", and
-/// nothing is marked as verified against an external source. Fixtures
-/// live only in the test project, backed by in-memory stores that die
-/// with the test, and are registered nowhere at run time.
+/// <para>
+/// <b>Every value here is fictional.</b> No real drawing, calculation or
+/// test report appears anywhere in this suite. Fixtures live only in the
+/// test project, backed by in-memory stores that die with the test, and
+/// are registered nowhere at run time.
+/// </para>
+/// <para>
+/// WP 18.0C (D-028): the DesignReviews (E4) and TechnicalDocumentation
+/// (E5) builders that used to live here moved to
+/// tests/Frozen/Tempest.Core.Tests/EngineeringAssets/AssetFixtures.cs
+/// alongside the namespaces they built for. Governance() and Authority()
+/// stayed: every kept kind's own Governance property is typed
+/// AssetGovernanceFacts, which is kept.
+/// </para>
 /// </remarks>
 internal static class AssetFixtures
 {
@@ -177,58 +184,6 @@ internal static class AssetFixtures
         Evidence = evidenced
             ? [new EngineeringEvidence(EngineeringEvidenceKind.TestReport, "Fictional test report.", Reference: "FIX-TR-1")]
             : [],
-    };
-
-    // ---- E4 -----------------------------------------------------------
-
-    public static DesignReviewCatalog BuildDesignReviewCatalog() => Build((d, p) => new DesignReviewCatalog(d, p));
-
-    public static DesignReviewPack Review(string reference = "DR-1", ReviewOutcome outcome = ReviewOutcome.ProceedWithActions) => new()
-    {
-        Reference = reference,
-        Subject = "Fictional bracket critical design review.",
-        Kind = DesignReviewKind.Critical,
-        HeldOn = Today.AddDays(-5),
-        Outcome = outcome,
-        OutcomeRationale = "Fixture rationale.",
-        Governance = Governance(),
-        RequirementIds = [RequirementId],
-        CalculationPackReferences = ["CALC-1"],
-        Participants =
-        [
-            new ReviewParticipant("engineer-1", ReviewParticipantRole.Presenter),
-            new ReviewParticipant("reviewer-2", ReviewParticipantRole.Reviewer),
-            new ReviewParticipant("chief-1", ReviewParticipantRole.Chair),
-        ],
-        Observations =
-        [
-            new ReviewObservation("OBS-1", "Fixture observation.", ObservationSeverity.Minor, "reviewer-2", "Structure"),
-        ],
-        Actions =
-        [
-            new ReviewAction("ACT-1", "Fixture action.", "engineer-1", Today.AddDays(14), ObservationReferences: ["OBS-1"]),
-        ],
-    };
-
-    // ---- E5 -----------------------------------------------------------
-
-    public static TechnicalDocumentCatalog BuildDocumentCatalog() => Build((d, p) => new TechnicalDocumentCatalog(d, p));
-
-    public static TechnicalDocument Document(
-        string reference = "FIX-DWG-001",
-        DocumentStatus status = DocumentStatus.Issued,
-        string? issueRevision = "B") => new()
-    {
-        Reference = reference,
-        Title = "Fictional bracket general arrangement",
-        Type = TechnicalDocumentType.Drawing,
-        Status = status,
-        IssueRevision = issueRevision,
-        DocumentId = Guid.NewGuid(),
-        ProjectIdentifier = "FIX-PROJ",
-        IssuedOn = status == DocumentStatus.Draft ? null : Today.AddDays(-20),
-        Effectivity = new EffectivePeriod(Today.AddDays(-20), null),
-        Governance = Governance(approval: Authority()),
     };
 
     private static TCatalog Build<TCatalog>(Func<EngineeringDocumentStore, InMemoryPersistenceStore, TCatalog> create)

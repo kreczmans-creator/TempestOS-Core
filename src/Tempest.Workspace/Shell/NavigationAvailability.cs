@@ -70,6 +70,15 @@ public static class ShellAreas
         new(ShellArea.Projects, "Projects", "▤", NavigationAvailability.Implemented,
             "The project catalogue — list, create and open the projects engineering work belongs to."),
 
+        // `WP 18.2A` (`ADR-0148`, `D-028`): evidence is the product — the
+        // files, what they are about, the governed references they cite,
+        // their declared figures, check and issue. Placed right after
+        // Projects, deliberately: evidence belongs beside the project
+        // catalogue in the rail, not buried among the five modules that are
+        // only Declared.
+        new(ShellArea.Evidence, "Evidence", "▧", NavigationAvailability.Implemented,
+            "A project's own evidence — files, citations, declared figures, check and issue — plus the Libraries tab over the five governed reference libraries evidence cites."),
+
         new(ShellArea.ProjectWorkspace, "Project", "◧", NavigationAvailability.Implemented,
             "One project's own workspace. Reached by opening a project, not from the rail."),
 

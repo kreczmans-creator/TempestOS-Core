@@ -4,12 +4,25 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Audit;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Requirements;
 
 namespace Tempest.Workspace;
+
+/// <summary>
+/// One entry in <see cref="EngineeringCockpit.RecentlyChanged"/> (`WP 18.1B`
+/// §4): a live object's own title, Kind, what kind of change it was, and
+/// when — the Home cockpit's own "Recently changed" card.
+/// </summary>
+/// <param name="ObjectId">The changed object's own id.</param>
+/// <param name="Title">The changed object's own current title.</param>
+/// <param name="Kind">The changed object's own canonical Kind.</param>
+/// <param name="ChangeType">A short, human-readable description of what changed — "Created", "Renamed", "Status changed", and so on.</param>
+/// <param name="When">When the change was recorded.</param>
+public sealed record CockpitRecentChange(Guid ObjectId, string Title, string Kind, string ChangeType, DateTimeOffset When);
 
 /// <summary>
 /// The Engineering Cockpit — the Workspace's own default landing screen
@@ -84,9 +97,22 @@ public sealed class EngineeringCockpit
     private readonly DocumentsCockpitReadModel _documents;
     private readonly VerificationCockpitReadModel _verification;
     private readonly ManufacturingCockpitReadModel _manufacturing;
+    private readonly IAuditQuery? _auditQuery;
 
-    /// <summary>The per-refresh read scope every persistence-backed discipline read-model above shares (`WP-E`).</summary>
-    private readonly CockpitReadScope _readScope = new();
+    // `WP 18.1A-R1` — every cross-cutting read this composition root itself
+    // performs (Decisions/Risks/Milestones/Tasks/DigitalThread/RecentlyChanged)
+    // now loads inside PrimeAsync, into these fields, rather than blocking
+    // synchronously on every property access (TD-108, TD-118). Defaulted to
+    // an honest empty/zero state so a caller that reads a property before
+    // ever calling PrimeAsync sees "nothing yet" rather than a null
+    // reference — the same "honest empty" discipline every other Cockpit
+    // region already follows.
+    private IReadOnlyList<IDecision> _liveDecisions = [];
+    private IReadOnlyList<IRisk> _liveRisks = [];
+    private IReadOnlyList<IMilestone> _liveMilestones = [];
+    private IReadOnlyList<ITask> _liveTasks = [];
+    private string _digitalThreadSummary = "0 links tracked (no live Engineering objects exist yet).";
+    private IReadOnlyList<CockpitRecentChange> _recentlyChanged = [];
 
     /// <summary>
     /// Initialises a new instance of the <see cref="EngineeringCockpit"/>
@@ -97,10 +123,16 @@ public sealed class EngineeringCockpit
     /// 17.2B` — reached through <see cref="IWorkspace.Cockpit"/>) while
     /// this constructor stays same-assembly-only.
     /// </summary>
+    /// <param name="auditQuery">
+    /// The durable source <see cref="RecentlyChanged"/> reads (`WP 18.1B`
+    /// §4) — <see langword="null"/> (the default, so every existing caller
+    /// and test compiles unchanged) leaves that card honestly empty rather
+    /// than failing.
+    /// </param>
     internal EngineeringCockpit(
         NavigationService navigationService, ICommandRegistry commandRegistry, EngineeringDomainContext domainContext,
         IRequirementsService requirementsService, IRequirementValidationService requirementValidationService,
-        Func<DateTimeOffset>? now = null)
+        Func<DateTimeOffset>? now = null, IAuditQuery? auditQuery = null)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -112,6 +144,7 @@ public sealed class EngineeringCockpit
         _commandRegistry = commandRegistry;
         _domainContext = domainContext;
         _requirementValidationService = requirementValidationService;
+        _auditQuery = auditQuery;
 
         // The clock "overdue" is measured against. Optional, so every
         // existing caller is unchanged; injectable so a test can state the
@@ -122,37 +155,98 @@ public sealed class EngineeringCockpit
         // exactly once, with `new`, receiving only the dependencies it
         // actually requires — never the whole set above "in case."
         _mechanical = new MechanicalCockpitReadModel(domainContext);
-        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService, _readScope);
-        _calculations = new CalculationsCockpitReadModel(domainContext, _readScope);
+        _requirements = new RequirementsCockpitReadModel(requirementsService, requirementValidationService);
+        _calculations = new CalculationsCockpitReadModel(domainContext);
         _documents = new DocumentsCockpitReadModel(domainContext);
-        _verification = new VerificationCockpitReadModel(domainContext, _readScope);
-        _manufacturing = new ManufacturingCockpitReadModel(domainContext, _readScope);
+        _verification = new VerificationCockpitReadModel(domainContext);
+        _manufacturing = new ManufacturingCockpitReadModel(domainContext);
     }
 
     /// <summary>
-    /// Opens one Cockpit read pass (`WP-E`) — dispose the handle to close
-    /// it. Every persistence-backed read behind these properties runs once
-    /// inside the pass, and every property derived from one sees the same
-    /// snapshot of it.
+    /// Loads one coherent Cockpit render pass (`WP 18.1A-R1`, superseding
+    /// `WP-E`'s own <see cref="IDisposable"/> read-scope handle): awaits
+    /// every persistence-backed read this Cockpit and its six discipline
+    /// collaborators need, exactly once, before returning — no property on
+    /// this class or on any collaborator performs I/O of its own any more.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A surface that renders the whole Cockpit — <c>CockpitView.Refresh</c>
-    /// is the one that does — should wrap its render in this. Without it
-    /// nothing breaks and nothing is cached: every property reads live, as
-    /// it always did, which is what keeps every existing caller and test
-    /// honest. What the pass removes is the repetition: one render read
-    /// <c>LiveRequirements</c> upwards of twenty times and re-ran the
-    /// whole <c>O(N)</c>-per-requirement validation pass eight times, each
-    /// of those synchronously, on the UI thread.
+    /// A surface that renders the whole Cockpit — <c>CockpitView.RefreshAsync</c>
+    /// (`Tempest.Desktop`) is the one that does — awaits this before
+    /// reading anything else. Skipping it leaves every property at its
+    /// last-loaded value (an honest empty/zero state before the first
+    /// call), never at a value read live and never blocking: `TD-108`/`TD-118`
+    /// found `WP-E`'s own scope still blocked synchronously on every read
+    /// taken outside an open pass, which is the shape this method exists
+    /// to remove.
     /// </para>
     /// <para>
-    /// The scope is deliberately not opened here, per read, or for the
-    /// object's lifetime. Per read it would do nothing; for the lifetime
-    /// it would make a live read-model a stale one.
+    /// Each discipline collaborator's own <c>LoadAsync</c> runs in turn
+    /// rather than concurrently — a render is not latency-critical enough
+    /// to justify the added complexity of fanning out across six
+    /// independent I/O sources that do not share a transaction, and
+    /// sequencing keeps the failure mode simple: the first collaborator to
+    /// fault is the one <c>CockpitView.RefreshAsync</c> reports.
     /// </para>
     /// </remarks>
-    public IDisposable BeginReadScope() => _readScope.Begin();
+    public async Task PrimeAsync(CancellationToken cancellationToken = default)
+    {
+        await _mechanical.LoadAsync(cancellationToken).ConfigureAwait(false);
+        await _requirements.LoadAsync(cancellationToken).ConfigureAwait(false);
+        await _calculations.LoadAsync(cancellationToken).ConfigureAwait(false);
+        await _documents.LoadAsync(cancellationToken).ConfigureAwait(false);
+        await _verification.LoadAsync(cancellationToken).ConfigureAwait(false);
+        await _manufacturing.LoadAsync(cancellationToken).ConfigureAwait(false);
+
+        _liveDecisions = (await _domainContext.Repository.ListByKindAsync("Decision", cancellationToken).ConfigureAwait(false))
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<IDecision>()
+            .ToList();
+
+        var risks = new List<IRisk>();
+        foreach (var kind in new[] { "Risk", "Hazard" })
+        {
+            risks.AddRange((await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false))
+                .Where(o => o is not IDeletable { IsDeleted: true })
+                .OfType<IRisk>());
+        }
+
+        _liveRisks = risks;
+
+        _liveMilestones = (await _domainContext.Repository.ListByKindAsync("Milestone", cancellationToken).ConfigureAwait(false))
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .OfType<IMilestone>()
+            .ToList();
+
+        var tasks = new List<ITask>();
+        foreach (var kind in new[] { CanonicalObjectKinds.Task, CanonicalObjectKinds.Action })
+        {
+            tasks.AddRange((await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false))
+                .Where(o => o is not IDeletable { IsDeleted: true })
+                .OfType<ITask>());
+        }
+
+        _liveTasks = tasks;
+
+        var liveObjects = (await _domainContext.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false))
+            .Where(o => o is not IDeletable { IsDeleted: true })
+            .ToList();
+
+        if (liveObjects.Count == 0)
+        {
+            _digitalThreadSummary = "0 links tracked (no live Engineering objects exist yet).";
+        }
+        else
+        {
+            var totalLinks = 0;
+            foreach (var liveObject in liveObjects)
+                totalLinks += (await _domainContext.RelationshipRepository.GetOutgoingAsync(liveObject.Id, cancellationToken).ConfigureAwait(false)).Count;
+
+            _digitalThreadSummary = $"{totalLinks} link(s) tracked across {liveObjects.Count} live object(s).";
+        }
+
+        _recentlyChanged = await LoadRecentlyChangedAsync(cancellationToken).ConfigureAwait(false);
+    }
 
     // ------------------------------------------------------------
     // Where am I?
@@ -251,27 +345,14 @@ public sealed class EngineeringCockpit
         }
     }
 
-    /// <summary>Gets every live (non-deleted) Decision - a real read via <see cref="EngineeringDomainContext.Repository"/>. The first Cockpit consumer of the Governance &amp; Risk family (<see cref="IDecision"/>, `WP 8.2C`) - previously compiled but never read by any Workspace surface until `WP 10.1A`. Not one of the six named `ADR-0103` disciplines - remains a direct, cross-cutting read on this composition root.</summary>
-    private IReadOnlyList<IDecision> LiveDecisions =>
-        _domainContext.Repository.ListByKindAsync("Decision").GetAwaiter().GetResult()
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IDecision>()
-            .ToList();
+    /// <summary>Gets every live (non-deleted) Decision - loaded by <see cref="PrimeAsync"/>. The first Cockpit consumer of the Governance &amp; Risk family (<see cref="IDecision"/>, `WP 8.2C`) - previously compiled but never read by any Workspace surface until `WP 10.1A`. Not one of the six named `ADR-0103` disciplines - remains a direct, cross-cutting read on this composition root.</summary>
+    private IReadOnlyList<IDecision> LiveDecisions => _liveDecisions;
 
-    /// <summary>Gets every live (non-deleted) Risk-family object (`"Risk"`/`"Hazard"` Kinds - <see cref="IHazard"/> is itself an <see cref="IRisk"/>) - a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    private IReadOnlyList<IRisk> LiveRisks =>
-        new[] { "Risk", "Hazard" }
-            .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IRisk>()
-            .ToList();
+    /// <summary>Gets every live (non-deleted) Risk-family object (`"Risk"`/`"Hazard"` Kinds - <see cref="IHazard"/> is itself an <see cref="IRisk"/>) - loaded by <see cref="PrimeAsync"/>.</summary>
+    private IReadOnlyList<IRisk> LiveRisks => _liveRisks;
 
-    /// <summary>Gets every live (non-deleted) Milestone - a real read via <see cref="EngineeringDomainContext.Repository"/>.</summary>
-    private IReadOnlyList<IMilestone> LiveMilestones =>
-        _domainContext.Repository.ListByKindAsync("Milestone").GetAwaiter().GetResult()
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IMilestone>()
-            .ToList();
+    /// <summary>Gets every live (non-deleted) Milestone - loaded by <see cref="PrimeAsync"/>.</summary>
+    private IReadOnlyList<IMilestone> LiveMilestones => _liveMilestones;
 
     /// <summary>
     /// Gets the "Open Decisions" region's own entries - a real read of
@@ -367,13 +448,8 @@ public sealed class EngineeringCockpit
             $"{a.Title} — {a.Owner} · due {a.DueDate:yyyy-MM-dd} ({a.DaysOverdue} day(s) overdue)"),
     ];
 
-    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds).</summary>
-    private IReadOnlyList<ITask> LiveTasks =>
-        new[] { CanonicalObjectKinds.Task, CanonicalObjectKinds.Action }
-            .SelectMany(kind => _domainContext.Repository.ListByKindAsync(kind).GetAwaiter().GetResult())
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<ITask>()
-            .ToList();
+    /// <summary>Gets every live (non-deleted) Task/Action (`"Task"`/`"Action"` Kinds) - loaded by <see cref="PrimeAsync"/>.</summary>
+    private IReadOnlyList<ITask> LiveTasks => _liveTasks;
 
     /// <summary>Gets the number of live Tasks/Actions that still need doing.</summary>
     /// <remarks>
@@ -517,24 +593,10 @@ public sealed class EngineeringCockpit
     /// Gets the Digital Thread Summary's own display text - a real,
     /// honest aggregate: the total number of outgoing relationship links
     /// recorded across every live Engineering object platform-wide, a
-    /// direct-link count, never a multi-hop traversal.
+    /// direct-link count, never a multi-hop traversal. Loaded by
+    /// <see cref="PrimeAsync"/>.
     /// </summary>
-    public string DigitalThreadSummary
-    {
-        get
-        {
-            var liveObjects = _domainContext.Repository.ListAllAsync().GetAwaiter().GetResult()
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .ToList();
-
-            if (liveObjects.Count == 0)
-                return "0 links tracked (no live Engineering objects exist yet).";
-
-            var totalLinks = liveObjects.Sum(o => _domainContext.RelationshipRepository.GetOutgoingAsync(o.Id).GetAwaiter().GetResult().Count);
-
-            return $"{totalLinks} link(s) tracked across {liveObjects.Count} live object(s).";
-        }
-    }
+    public string DigitalThreadSummary => _digitalThreadSummary;
 
     /// <summary>
     /// Gets the Upcoming Milestones region's own entries - a real read of
@@ -622,6 +684,128 @@ public sealed class EngineeringCockpit
     /// <see cref="NavigationService.RecentItems"/>, most recent first.
     /// </summary>
     public IReadOnlyList<RecentNavigationItem> RecentActivity => _navigationService.RecentItems;
+
+    /// <summary>The most audit rows a single <see cref="RecentlyChanged"/> read shows.</summary>
+    public const int RecentlyChangedLimit = 10;
+
+    /// <summary>
+    /// Gets the "Recently changed" card's own entries (`WP 18.1B` §4): the
+    /// last ten committed changes, newest first, each object's own current
+    /// title, Kind, what changed and when — read from the durable audit
+    /// trail every mutator already writes (`ADR-0145`), never a
+    /// session-only list, so this survives a restart exactly as durably as
+    /// the changes themselves did. Honestly empty if no
+    /// <see cref="Audit.IAuditQuery"/> was supplied at construction, or if
+    /// nothing has changed yet.
+    /// </summary>
+    /// <remarks>
+    /// Each row's own title is a live read of the object as it stands
+    /// right now (<see cref="EngineeringDomainContext.Repository"/>), not
+    /// the name it had at the moment of that particular change — a later
+    /// rename still shows its current name against every one of its own
+    /// earlier audit rows, which is what a person expects "Recently
+    /// changed" to show them, not a historical snapshot.
+    /// </remarks>
+    public IReadOnlyList<CockpitRecentChange> RecentlyChanged => _recentlyChanged;
+
+    /// <summary>Loads <see cref="RecentlyChanged"/> — every audit row projected to a <see cref="CockpitRecentChange"/>, newest first, capped at <see cref="RecentlyChangedLimit"/>. Called once per <see cref="PrimeAsync"/> pass.</summary>
+    /// <remarks>
+    /// <b>`WP 18.1A-R1`.</b> A <see cref="PermissionDeniedException"/> from
+    /// the audit query is caught, never let through: this used to be one
+    /// independent property among many, so a principal without
+    /// <c>audit.query</c> only ever broke a caller that actually read
+    /// <see cref="RecentlyChanged"/>. Now every property loads together in
+    /// one <see cref="PrimeAsync"/> pass, so letting this one fault through
+    /// would take the whole Cockpit down with it — the same reasoning
+    /// <see cref="RequirementsCockpitReadModel"/> already applies to its
+    /// own per-requirement validation pass. Honestly empty either way,
+    /// exactly as the <c>_auditQuery is null</c> case already was.
+    /// </remarks>
+    private async Task<IReadOnlyList<CockpitRecentChange>> LoadRecentlyChangedAsync(CancellationToken cancellationToken)
+    {
+        if (_auditQuery is null)
+            return [];
+
+        IReadOnlyList<IAuditRecord> records;
+        try
+        {
+            records = await _auditQuery.QueryAsync(new AuditQueryCriteria(), cancellationToken).ConfigureAwait(false);
+        }
+        catch (PermissionDeniedException)
+        {
+            return [];
+        }
+
+        var changes = new List<CockpitRecentChange>(records.Count);
+        foreach (var record in records)
+        {
+            if (await ToRecentChangeAsync(record, cancellationToken).ConfigureAwait(false) is { } change)
+                changes.Add(change);
+        }
+
+        return changes
+            .OrderByDescending(c => c.When)
+            .Take(RecentlyChangedLimit)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Projects one audit row into a <see cref="CockpitRecentChange"/>, or
+    /// <see langword="null"/> if it does not name an engineering object
+    /// (a row an unrelated service wrote directly through
+    /// <see cref="Audit.IAuditRecorder"/>, never through
+    /// <c>AuditTransactionWriter</c>) or that object can no longer be
+    /// read.
+    /// </summary>
+    private async Task<CockpitRecentChange?> ToRecentChangeAsync(IAuditRecord record, CancellationToken cancellationToken)
+    {
+        // Mirrors AuditTransactionWriter's own well-known Detail keys —
+        // that class is internal to Tempest.Core and not referenceable
+        // here, so the two literal keys it writes are named directly.
+        if (!record.Detail.TryGetValue("ObjectId", out var objectIdText) || !Guid.TryParse(objectIdText, out var objectId))
+            return null;
+
+        var kind = record.Detail.TryGetValue("Kind", out var k) ? k : "Unknown";
+
+        var found = await _domainContext.Repository.FindAsync(objectId, cancellationToken).ConfigureAwait(false);
+        var title = (found as IHasBusinessIdentifier)?.DisplayName ?? objectId.ToString();
+
+        return new CockpitRecentChange(objectId, title, kind, FriendlyChangeType(record.Action), record.OccurredAt);
+    }
+
+    /// <summary>A short, human-readable label for one of <see cref="EngineeringAuditActions"/>'s own action constants.</summary>
+    private static string FriendlyChangeType(string action) => action switch
+    {
+        EngineeringAuditActions.Created => "Created",
+        EngineeringAuditActions.Renamed => "Renamed",
+        EngineeringAuditActions.Revised => "Revised",
+        EngineeringAuditActions.Transitioned => "Status changed",
+        EngineeringAuditActions.Linked => "Linked",
+        EngineeringAuditActions.Attached or EngineeringAuditActions.ContentAttached => "Attachment added",
+        EngineeringAuditActions.Moved => "Moved",
+        EngineeringAuditActions.Deleted => "Deleted",
+        EngineeringAuditActions.BomLineSet => "BOM updated",
+        EngineeringAuditActions.StateChanged => "Updated",
+        _ => "Changed",
+    };
+
+    /// <summary>
+    /// Re-opens or focuses the <paramref name="index"/>-th entry in
+    /// <see cref="RecentlyChanged"/> (1-based) - the Cockpit's own
+    /// "Recently changed" navigation gesture (`WP 18.1B` §4), a real
+    /// dispatch through <see cref="NavigationService.OpenAsync"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is out of range.</exception>
+    public Task<IWorkspaceView> OpenRecentlyChangedAsync(int index, CancellationToken cancellationToken = default)
+    {
+        var items = RecentlyChanged;
+
+        if (index < 1 || index > items.Count)
+            throw new ArgumentOutOfRangeException(nameof(index), index, $"Must be between 1 and {items.Count}.");
+
+        var item = items[index - 1];
+        return _navigationService.OpenAsync(item.ObjectId, item.Kind, cancellationToken);
+    }
 
     /// <summary>Gets the number of areas currently registered - a real Workspace status indicator.</summary>
     public int AreaCount => _navigationService.Areas.Count;

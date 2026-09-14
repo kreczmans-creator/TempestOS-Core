@@ -40,4 +40,15 @@ public interface IEngineeringObjectStateStore
 
     /// <summary>Removes one object's persisted state.</summary>
     Task DeleteAsync(Guid objectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Self-healing (`WP 18.1B`): if the search index is currently empty
+    /// while this store holds object state, walks every persisted,
+    /// non-deleted object and rewrites the index from it, inside one
+    /// transaction. Called once at host start, after rehydration. Does
+    /// nothing if the index already holds anything, or if this store holds
+    /// no state at all.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the rebuild.</param>
+    Task RebuildIndexAsync(CancellationToken cancellationToken = default);
 }

@@ -4,6 +4,17 @@
 
 Accepted — `Group C` (P07 Business Governance & Scale), 2026-09-06.
 
+**Contracts, Risk, Assets (IP/data), Finance (Assumption/Scenario/
+Control), Development (Opportunity/Pipeline), Operating and
+`Pricing.PricingService` frozen by `WP 18.0C`** (`D-028`, 2026-09-09):
+unreachable from any shipped surface. `Money`, `CurrencyCode`,
+`EffectivePeriod`, `RateCard`/`RateCardCatalog` and the shared
+governance/authority/evidence primitives they and the kept `P04`/`P05`
+kinds depend on directly (`BusinessAuthorisation`, `ConfidentialityClassification`,
+`BusinessEvidence`, `BusinessGovernanceFacts`/`ReviewSchedule`/
+`BusinessOwnership`, and the `BusinessGovernanceValidator`) stay live and
+accepted. See `src/Frozen/README.md`.
+
 ## Context
 
 `P07` introduces eleven kinds of governed business record: contract

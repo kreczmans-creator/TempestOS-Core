@@ -3,7 +3,9 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Tempest.Workspace;
+using Tempest.Core.Events;
 using Tempest.Core.Navigation;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
@@ -36,15 +38,16 @@ namespace Tempest.Desktop.Views;
 /// </para>
 /// <para>
 /// Every card is a <see cref="CockpitCardControl"/>, rebuilt on
-/// <see cref="Refresh"/> from one live read scope (`WP-E`).
+/// <see cref="RefreshAsync"/> from one coherent render pass (`WP 18.1A-R1`, superseding `WP-E`).
 /// </para>
 /// </remarks>
 internal sealed class CockpitView : UserControl
 {
     private readonly EngineeringCockpit _cockpit;
     private readonly IReadOnlyList<NavigationItem> _areas;
-    private readonly Action _onContinue;
-    private readonly Action<int> _onOpenRecent;
+    private readonly Func<Task> _onContinue;
+    private readonly Func<int, Task> _onOpenRecent;
+    private readonly Func<int, Task>? _onOpenRecentlyChanged;
     private readonly Action _onOpenCommandPalette;
     private readonly Action<string> _onSwitchArea;
     private readonly FavouriteObjectsState? _favourites;
@@ -66,9 +69,70 @@ internal sealed class CockpitView : UserControl
     /// 10.7A` empty-capability message — never a crash.
     /// </param>
     /// <param name="onOpenFavourite">Opens a favourited Project as a document tab — required whenever <paramref name="favourites"/> is non-null.</param>
+    private IWorkspaceChanges? _workspaceChanges;
+
+    /// <summary>
+    /// The change feed this view refreshes from (`WP 18.1A`) — set once by
+    /// the composition root (<c>MainWindow</c>). <see langword="null"/>
+    /// (the default) leaves this view exactly as every prior Work Package
+    /// shipped it: refreshed only by an explicit <see cref="RefreshAsync"/>
+    /// call, which is what an existing test that constructs this view
+    /// directly, without wiring this, still makes.
+    /// </summary>
+    public IWorkspaceChanges? WorkspaceChanges
+    {
+        get => _workspaceChanges;
+        set
+        {
+            if (ReferenceEquals(_workspaceChanges, value))
+                return;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed -= OnWorkspaceChanged;
+
+            _workspaceChanges = value;
+
+            if (_workspaceChanges is not null)
+                _workspaceChanges.Changed += OnWorkspaceChanged;
+        }
+    }
+
+    /// <summary>
+    /// Refreshes from a committed change. Raised on whatever thread
+    /// completed the commit — never the UI thread — so this marshals
+    /// before touching anything UI-owned (`WP 18.1A`).
+    /// </summary>
+    private void OnWorkspaceChanged(WorkspaceChange change) =>
+        Dispatcher.UIThread.Post(SafeRefreshAsync);
+
+    /// <summary>
+    /// Awaits <see cref="RefreshAsync"/> and swallows any failure —
+    /// the `async void` UI boundary `WP 18.1A-R1`'s own brief sanctions
+    /// for exactly this shape, at exactly this boundary. No status surface
+    /// exists to report a failure through here (unlike
+    /// <c>ProjectExplorerView</c>'s <c>ActionCompleted</c>); swallowed
+    /// rather than left to crash the dispatcher, which every other
+    /// Cockpit action already reaches through its own try/catch-free path.
+    /// Internal rather than private: <c>MainWindow</c>'s own
+    /// <c>refreshCockpit: Action</c> callback (threaded through
+    /// <c>WorkspaceViewCoordinator</c>) fires this the same
+    /// fire-and-forget way for every non-Cockpit action that still wants
+    /// the Cockpit re-rendered.
+    /// </summary>
+    internal async void SafeRefreshAsync()
+    {
+        try
+        {
+            await RefreshAsync().ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     public CockpitView(
-        EngineeringCockpit cockpit, IReadOnlyList<NavigationItem> areas, Action onContinue, Action<int> onOpenRecent, Action onOpenCommandPalette, Action<string> onSwitchArea,
-        FavouriteObjectsState? favourites = null, Action<Guid, string>? onOpenFavourite = null)
+        EngineeringCockpit cockpit, IReadOnlyList<NavigationItem> areas, Func<Task> onContinue, Func<int, Task> onOpenRecent, Action onOpenCommandPalette, Action<string> onSwitchArea,
+        FavouriteObjectsState? favourites = null, Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null)
     {
         ArgumentNullException.ThrowIfNull(cockpit);
         ArgumentNullException.ThrowIfNull(areas);
@@ -80,6 +144,12 @@ internal sealed class CockpitView : UserControl
         _onSwitchArea = onSwitchArea ?? throw new ArgumentNullException(nameof(onSwitchArea));
         _favourites = favourites;
         _onOpenFavourite = onOpenFavourite;
+        // `WP 18.1B` §4: left null, the "Recently changed" card still
+        // renders its real rows but a click is a no-op — the same
+        // defensive shape `_onOpenFavourite` already established for a
+        // test that constructs this view directly without wiring every
+        // optional callback.
+        _onOpenRecentlyChanged = onOpenRecentlyChanged;
 
         _page.Margin = DesignTokens.PagePadding;
         _page.MaxWidth = 1480;
@@ -94,23 +164,33 @@ internal sealed class CockpitView : UserControl
         ThemeReactiveBrush.Bind(this, BackgroundProperty, BrandPalette.PageBackgroundBrushKey);
         Content = scroll;
 
-        Refresh();
+        // `WP 18.1A-R1`: the constructor cannot itself await (Avalonia's
+        // own UserControl contract), and a fire-and-forget first render
+        // here would race any caller that inspects this view's own
+        // children immediately after construction — exactly the shape a
+        // blocking synchronous Refresh() never had to worry about. The
+        // caller awaits RefreshAsync() itself instead: MainWindow's own
+        // Window.Opened handler does, once, right after construction,
+        // before the window is shown; a test that constructs this view
+        // directly does the same.
     }
 
     /// <summary>Rebuilds every region from a fresh, live read of <see cref="EngineeringCockpit"/> — called on first show and after any action taken from the Cockpit itself.</summary>
     /// <remarks>
-    /// <b>`WP-E`.</b> The whole rebuild runs inside one
-    /// <see cref="EngineeringCockpit.BeginReadScope"/> pass. The read is
-    /// still fresh — the scope is opened here and closed on the way out,
-    /// so each rebuild re-reads everything — but each underlying
-    /// persistence read now happens once for the pass instead of once per
-    /// card that needs it. It also makes the cards agree with each other:
-    /// a KPI total and the coverage percentage beside it are now computed
-    /// from the same snapshot rather than from two separate reads.
+    /// <b>`WP 18.1A-R1`, superseding `WP-E`.</b> The whole rebuild awaits
+    /// one <see cref="EngineeringCockpit.PrimeAsync"/> pass rather than
+    /// opening a synchronous <c>BeginReadScope</c> handle: the read is
+    /// still fresh — <c>PrimeAsync</c> is awaited here on every call, so
+    /// each rebuild re-reads everything — but each underlying persistence
+    /// read now happens once for the pass instead of once per card that
+    /// needs it, and none of them block the UI thread while it happens
+    /// (`TD-108`, `TD-118`). It also makes the cards agree with each
+    /// other: a KPI total and the coverage percentage beside it are
+    /// computed from the same pass rather than from two separate reads.
     /// </remarks>
-    public void Refresh()
+    public async Task RefreshAsync()
     {
-        using var readScope = _cockpit.BeginReadScope();
+        await _cockpit.PrimeAsync().ConfigureAwait(true);
 
         _hero.Children.Clear();
         _tiles.Children.Clear();
@@ -129,6 +209,7 @@ internal sealed class CockpitView : UserControl
 
         // The detail cards.
         AddRecentActivityCard();
+        AddRecentlyChangedCard();
 
         // `WP-Z4` Productisation Phase 1 (P1) — `EngineeringCockpit.KpiCards`,
         // the one real cross-discipline aggregate (Requirements/
@@ -195,7 +276,7 @@ internal sealed class CockpitView : UserControl
             resume.Classes.Add(ChromeStyles.Primary);
             AutomationProperties.SetName(resume, "Continue working");
             ToolTip.SetTip(resume, $"Reopen {item.Title}, the last object you worked on");
-            resume.Click += (_, _) => { _onContinue(); Refresh(); };
+            resume.Click += async (_, _) => { await _onContinue().ConfigureAwait(true); await RefreshAsync().ConfigureAwait(true); };
             resume.Margin = new Thickness(0, 0, DesignTokens.SpaceMd, DesignTokens.SpaceMd);
             actions.Children.Add(resume);
         }
@@ -488,7 +569,39 @@ internal sealed class CockpitView : UserControl
             {
                 var item = _cockpit.RecentActivity[i];
                 var index = i + 1;
-                card.AddAction($"{IconRegistry.Resolve(item.Kind)} {item.Title} — {item.OpenedAt:HH:mm:ss}", () => { _onOpenRecent(index); Refresh(); });
+                card.AddAction($"{IconRegistry.Resolve(item.Kind)} {item.Title} — {item.OpenedAt:HH:mm:ss}", async () => { await _onOpenRecent(index).ConfigureAwait(true); await RefreshAsync().ConfigureAwait(true); });
+            }
+        }
+
+        _cards.Children.Add(card);
+    }
+
+    /// <summary>
+    /// The "Recently changed" card (`WP 18.1B` §4): the last ten committed
+    /// changes, durable — from the audit trail while the app is running,
+    /// and on the very first render after a restart too, since
+    /// <see cref="EngineeringCockpit.RecentlyChanged"/> reads the same
+    /// durable audit rows either way rather than a session-only list.
+    /// Clicking a row opens the object right up.
+    /// </summary>
+    private void AddRecentlyChangedCard()
+    {
+        var card = new CockpitCardControl(IconGeometry.Clock, "Recently changed");
+        var changes = _cockpit.RecentlyChanged;
+
+        if (changes.Count == 0)
+        {
+            card.AddLine("Nothing has changed yet.", 0.7);
+        }
+        else
+        {
+            for (var i = 0; i < changes.Count; i++)
+            {
+                var change = changes[i];
+                var index = i + 1;
+                card.AddAction(
+                    $"{IconRegistry.Resolve(change.Kind)} {change.Title} — {change.ChangeType} · {change.When:yyyy-MM-dd HH:mm}",
+                    () => _onOpenRecentlyChanged?.Invoke(index));
             }
         }
 

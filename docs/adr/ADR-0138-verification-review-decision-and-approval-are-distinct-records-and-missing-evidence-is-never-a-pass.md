@@ -4,6 +4,12 @@
 
 Accepted — `Group E` (P05 Engineering Assets), 2026-09-06.
 
+**Subject kept whole by `WP 18.0C`** (`D-028`, 2026-09-09):
+`VerificationArtefact` and `VerificationStanding` — this ADR's own
+subject — stay live and accepted in full; the dormant calculation
+workbench (`BracketEngineeringRecordService`, `EngineeringTraceRegister`)
+depends on them directly. See `src/Frozen/README.md`.
+
 ## Context
 
 This is `ADR-0127`'s rule for engineering conclusions and `ADR-0135`'s for

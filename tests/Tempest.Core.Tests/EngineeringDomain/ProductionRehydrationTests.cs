@@ -5,6 +5,7 @@ using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Evidence;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
@@ -61,6 +62,10 @@ public sealed class ProductionRehydrationTests
         data.Add(ManufacturingObjectFactoryRegistry.WorkInstructionKind, typeof(WorkInstruction));
         data.Add(ManufacturingObjectFactoryRegistry.InspectionKind, typeof(Inspection));
         data.Add(VerificationActivityFactoryRegistry.SupportedKind, typeof(VerificationActivity));
+
+        // `WP 18.0A` (`ADR-0148`) — the eighteenth Kind with a production
+        // rehydrator from the day it shipped.
+        data.Add(Tempest.Core.Evidence.Evidence.CanonicalKind, typeof(Tempest.Core.Evidence.Evidence));
 
         // The twelve that were registered only by Tempest.Samples.
         data.Add(CanonicalObjectKinds.Portfolio, typeof(Portfolio));
@@ -222,6 +227,7 @@ public sealed class ProductionRehydrationTests
         CalculationObjectFactoryRegistry.RegisterRehydrators(registry, context);
         VerificationActivityFactoryRegistry.RegisterRehydrators(registry, context);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(registry, context);
+        registry.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, context);
         CanonicalObjectKinds.RegisterRehydrators(registry, context);
     }
 

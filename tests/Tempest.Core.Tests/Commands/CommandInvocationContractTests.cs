@@ -25,9 +25,9 @@ namespace Tempest.Core.Tests.Commands;
 /// <c>CommandDescriptorBindingTests</c> proves what the production
 /// descriptors <i>declare</i>. Neither answers the question this file
 /// exists for: does <see cref="ICommandRegistry"/> actually carry all
-/// seventy-four real bindings from an Id and a context through to a
-/// registered handler — every one of them, not the handful a
-/// hand-picked example covers.
+/// eighty-two real bindings (`WP 18.0A` added the Evidence discipline's
+/// own eight) from an Id and a context through to a registered handler —
+/// every one of them, not the handful a hand-picked example covers.
 /// </para>
 /// <para>
 /// So nothing here is hand-picked. Every assertion below enumerates the
@@ -39,7 +39,7 @@ namespace Tempest.Core.Tests.Commands;
 public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
-        ["Calculations", "Documents", "Manufacturing", "Mechanical", "Requirements", "Verification"];
+        ["Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification"];
 
     private TempDirectory _temp = null!;
     private ITempestHost _host = null!;
@@ -60,7 +60,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         ])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _temp.Path),
             ]))
             .Build();
         _manager = new WorkspaceManager(_host);
@@ -184,7 +184,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(failures);
-        Assert.Equal(56, built);
+        // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
+        Assert.Equal(65, built);
     }
 
     [Fact]
@@ -240,7 +241,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(failures);
-        Assert.Equal(56, executed);
+        // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
+        Assert.Equal(65, executed);
     }
 
     [Fact]
@@ -367,7 +369,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         }
 
         Assert.Empty(disagreements);
-        Assert.Equal(74 * 4, compared);
+        // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
+        Assert.Equal(83 * 4, compared);
     }
 
     // ==================================================================
@@ -415,15 +418,15 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             }
         }
 
-        // Pinned exactly, not as a threshold: thirty-one of the forty-two
-        // declared parameters (`WP 17.9.3` added manufacturing.create's
-        // "method" choice) carry a rule of their own (a Kind or enum
+        // Pinned exactly, not as a threshold: forty-six of the fifty-seven
+        // declared parameters (`WP 18.0A` added Evidence's own fifteen,
+        // all rule-having) carry a rule of their own (a Kind or enum
         // set, a non-blank requirement, a length limit, a decimal), and
         // every one of them refuses a bad value as an outcome. The other
         // eleven are genuinely free text - the five content fields, two
         // owner fields, and set-bom-line's four optional strings - and
         // have nothing to refuse.
-        Assert.Equal(31, refused);
+        Assert.Equal(46, refused);
     }
 
     [Fact]
@@ -440,6 +443,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             [
                 "calculations.edit.newContent",
                 "documents.edit.newContent",
+                "evidence.set-subject.subjectId",
                 "manufacturing.edit.newContent",
                 "mechanical.edit.newContent",
                 "mechanical.set-bom-line.findNumber",
@@ -452,7 +456,14 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             ],
             freeText);
 
-        Assert.Equal(42, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // `WP 18.0A`: Evidence added eight production descriptors, all
+        // fifteen of whose own declared parameters carry a rule of their
+        // own (ObjectName/Required non-blank, or an EnumChoice set) — none
+        // free text — so 42 becomes 57.
+        // `WP 18.2B` adds "evidence.set-subject" (one free-text parameter,
+        // "subjectId" — a blank clears the tag, so no non-blank rule
+        // applies), so 57 becomes 58.
+        Assert.Equal(58, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -495,7 +506,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             refused++;
         }
 
-        Assert.Equal(42, refused);
+        // `WP 18.0A`: every one of Evidence's own eight descriptors
+        // requires a prompt — "evidence.revise" and "evidence.delete" take
+        // no parameter but each carries a confirmation — so 42 becomes 50.
+        // `WP 18.2B` adds a ninth, "evidence.set-subject" (one field), so
+        // 50 becomes 51.
+        Assert.Equal(51, refused);
     }
 
     [Fact]
@@ -526,6 +542,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             ran++;
         }
 
+        // `WP 18.0A` added no member here: every one of Evidence's own
+        // eight descriptors needs at least a parameter or a confirmation.
         Assert.Equal(14, ran);
     }
 
@@ -551,8 +569,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             confirmed++;
         }
 
-        // Eight deletes and six duplicates.
-        Assert.Equal(14, confirmed);
+        // Nine deletes and six duplicates (`WP 18.0A` added "evidence.delete"
+        // to the deletes), plus "evidence.revise" — the one non-delete,
+        // non-duplicate confirmation in the production set.
+        Assert.Equal(16, confirmed);
     }
 
     [Fact]
@@ -602,7 +622,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     public void NoProductionDescriptor_HasACreateDefault_SoNoSurfaceBehaviourMoved()
     {
         Assert.All(Production, d => Assert.Null(d.CreateDefault));
-        Assert.Equal(74, Production.Count);
+        // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
+        Assert.Equal(83, Production.Count);
     }
 
     [Fact]
@@ -610,9 +631,14 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     {
         // Filtering by availability is the caller's decision, never the
         // registry's - the eighteen unavailable commands are still listed.
-        Assert.Equal(56, Invocable.Count());
+        // `WP 18.0A`: Evidence's own eight production descriptors are all
+        // invocable (none needs an object picker or structured input), so
+        // 56 becomes 64 and 74 becomes 82; 18 is unchanged.
+        // `WP 18.2B` adds a ninth, invocable Evidence descriptor
+        // ("evidence.set-subject"), so 64 becomes 65 and 82 becomes 83.
+        Assert.Equal(65, Invocable.Count());
         Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(74, Production.Count);
+        Assert.Equal(83, Production.Count);
     }
 
     [Fact]
@@ -685,12 +711,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     /// <b>Carried forward, deliberately unchanged.</b> The "one object at a
     /// time" gate is applied to every binding without
     /// <see cref="CommandContextRequirement.MultipleAllowed"/>, including
-    /// the eight creation commands that declare
-    /// <see cref="CommandContextRequirement.None"/> and read no selection
-    /// at all. A creation command is therefore unavailable purely because
-    /// the user happens to have two unrelated objects selected. This pins
-    /// the approved Stage 2 semantics; whether the gate should apply only
-    /// to bindings that actually read a selection is a Stage 5 decision.
+    /// the nine creation commands (`WP 18.0A` added "evidence.create") that
+    /// declare <see cref="CommandContextRequirement.None"/> and read no
+    /// selection at all. A creation command is therefore unavailable purely
+    /// because the user happens to have two unrelated objects selected.
+    /// This pins the approved Stage 2 semantics; whether the gate should
+    /// apply only to bindings that actually read a selection is a Stage 5
+    /// decision.
     /// </summary>
     [Fact]
     public void ACommandNeedingNoSelection_IsStillGatedByAnUnrelatedMultiSelection()
@@ -711,7 +738,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Equal(
             [
-                "calculations.create", "documents.create", "manufacturing.create", "mechanical.create",
+                "calculations.create", "documents.create", "evidence.create", "manufacturing.create", "mechanical.create",
                 "requirements.create", "requirements.create-collection", "requirements.create-group",
             ],
             affected);

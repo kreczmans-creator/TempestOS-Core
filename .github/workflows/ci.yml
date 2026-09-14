@@ -71,7 +71,12 @@ jobs:
     # behaviour would be the identical class of risk. Bump deliberately,
     # not automatically.
     runs-on: windows-2022
-    timeout-minutes: 30
+    # 45, not 30: the Test step alone measured 14 to 28 minutes for Debug
+    # on hosted runners during the v0.17.0 release (coverage collection and
+    # --blame-hang included), and the 30-minute limit killed one green run
+    # at the line with no diagnostic. The per-test backstop is still
+    # --blame-hang-timeout below; this is the whole-leg ceiling.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -119,13 +124,13 @@ jobs:
 
       # `--blame-hang`/`--blame-hang-timeout` (`WP16.4A-R1`): without these,
       # a test that hangs — a gated seam that stops being reached, for
-      # instance — has no backstop but this job's own 30-minute
+      # instance — has no backstop but this job's own 45-minute
       # `timeout-minutes`, which kills the whole matrix leg with no
       # indication of which test caused it. 5 minutes is comfortably above
       # any single test's real run time (the whole Desktop assembly takes
       # roughly fifteen minutes and the Core assembly five, measured `WP 17.0A`;
       # no individual test approaches a minute) and comfortably
-      # below the 30-minute job timeout, so a genuine hang is caught and
+      # below the 45-minute job timeout, so a genuine hang is caught and
       # named — with a hang dump collected — long before the job itself
       # would otherwise be killed with no diagnostic at all.
       # --collect:"XPlat Code Coverage" (WP 17.0C): coverlet.collector is

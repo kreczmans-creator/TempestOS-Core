@@ -353,11 +353,11 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.Contains(incoming, r => r.SourceId == verified.Id && r.RelationshipKind == "verifiedBy");
 
             var model = new DigitalThread.DigitalThreadGraphModel(domain);
-            model.Recentre(verified.Id, verified.Kind!);
+            await model.RecentreAsync(verified.Id, verified.Kind!);
 
             var node = model.Nodes.Single(n => n.ObjectId == recordId);
             Assert.True(node.IsRecord, "A Verification record must stay a result leaf after a relaunch re-indexes its link.");
-            Assert.False(model.ExpandNode(recordId));
+            Assert.False(await model.ExpandNodeAsync(recordId));
         }
         finally
         {

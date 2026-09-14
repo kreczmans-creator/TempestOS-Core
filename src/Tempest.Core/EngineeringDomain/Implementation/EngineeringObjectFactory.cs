@@ -1,5 +1,6 @@
 using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.Events;
 
 namespace Tempest.Core.EngineeringDomain;
 
@@ -79,7 +80,8 @@ public sealed class EngineeringObjectFactory<T> : IEngineeringObjectFactory
             // find it, and nothing after the lock is released can find it
             // missing.
             afterCommit: () => _context.Repository.Register(instance!),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            touched: () => [new WorkspaceChangeEntry(documentId, Kind, WorkspaceChangeType.Created)]).ConfigureAwait(false);
 
         return instance!;
     }
@@ -123,6 +125,7 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
         var principalId = _context.ResolveCurrentPrincipalId();
         var createdAt = DateTimeOffset.UtcNow;
         var relationship = new EngineeringRelationship(sourceId, targetId, RelationshipKind, _category, principalId, createdAt);
+        string? sourceKind = null;
 
         await _context.ExecuteWriteAsync(
             async (transaction, token) =>
@@ -130,11 +133,12 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
                 await _context.DocumentWriter.LinkAsync(transaction, sourceId, targetId, RelationshipKind, token).ConfigureAwait(false);
 
                 var source = await _context.Repository.FindAsync(sourceId, token).ConfigureAwait(false);
+                sourceKind = source?.Kind ?? "Unknown";
 
                 await AuditTransactionWriter.WriteAsync(
                     transaction,
                     sourceId,
-                    source?.Kind ?? "Unknown",
+                    sourceKind,
                     EngineeringAuditActions.Linked,
                     principalId,
                     $"{RelationshipKind} to '{targetId:N}'.",
@@ -142,7 +146,8 @@ public sealed class EngineeringRelationshipFactory : IEngineeringRelationshipFac
                     token).ConfigureAwait(false);
             },
             afterCommit: () => _context.RelationshipRepository.Record(relationship),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            touched: () => [new WorkspaceChangeEntry(sourceId, sourceKind!, WorkspaceChangeType.Updated)]).ConfigureAwait(false);
 
         return relationship;
     }

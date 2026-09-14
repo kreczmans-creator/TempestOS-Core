@@ -58,6 +58,9 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
     public void Release() => Volatile.Read(ref _release)?.TrySetResult();
 
     /// <inheritdoc />
+    public long CurrentSequence => Inner.CurrentSequence;
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
         Inner.ListKeysAsync(collection, keyPrefix, cancellationToken);
 
@@ -91,4 +94,17 @@ public sealed class GatedPersistenceStore(IQueryablePersistenceStore inner) : IQ
             },
             cancellationToken);
     }
+
+    /// <inheritdoc />
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+        Inner.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+        Inner.SearchAsync(query, limit, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+        Inner.IsSearchIndexEmptyAsync(cancellationToken);
 }

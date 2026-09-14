@@ -47,6 +47,27 @@ public interface IReferenceDataCatalog<TDefinition>
         ReferenceProvenance provenance,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Registers a new record, in <see cref="ReferenceValidationState.Draft"/>,
+    /// carrying a structured citation of exactly where its values were read
+    /// from (`ADR-0149`).
+    /// </summary>
+    /// <param name="recordId">The caller-assigned TempestOS identity to register under.</param>
+    /// <param name="definition">The domain engineering description.</param>
+    /// <param name="provenance">Where the data came from. Required — never optional, never fabricated.</param>
+    /// <param name="source">A structured citation of the exact line the values were read from. <see langword="null"/> where none this precise is held.</param>
+    /// <param name="cancellationToken">Cancels the registration.</param>
+    /// <exception cref="ArgumentException"><paramref name="recordId"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="definition"/> or <paramref name="provenance"/> is <see langword="null"/>.</exception>
+    /// <exception cref="DuplicateReferenceRecordException"><paramref name="recordId"/> is already registered.</exception>
+    /// <exception cref="DuplicateReferenceKeyException">Another record already holds this library's own secondary uniqueness key for <paramref name="definition"/>.</exception>
+    Task<IReferenceRecord<TDefinition>> RegisterAsync(
+        string recordId,
+        TDefinition definition,
+        ReferenceProvenance provenance,
+        SourceCitation? source,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Returns the record, or <see langword="null"/> if none is registered under <paramref name="recordId"/>.</summary>
     /// <exception cref="ArgumentException"><paramref name="recordId"/> is null, empty, or whitespace.</exception>
     Task<IReferenceRecord<TDefinition>?> FindAsync(string recordId, CancellationToken cancellationToken = default);
@@ -71,6 +92,34 @@ public interface IReferenceDataCatalog<TDefinition>
         TDefinition definition,
         ReferenceProvenance provenance,
         string? changeSummary,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Records a new revision of a record's own engineering description,
+    /// provenance and source citation. Identity and validation state are
+    /// unaffected.
+    /// </summary>
+    /// <param name="recordId">The record to revise.</param>
+    /// <param name="definition">The revised engineering description.</param>
+    /// <param name="provenance">The revised provenance.</param>
+    /// <param name="changeSummary">Why the values changed. Optional, but a reference-data change without one is a change nobody can later explain.</param>
+    /// <param name="source">
+    /// The revised source citation, replacing whatever the record held
+    /// before — <see langword="null"/> here means "no citation this precise
+    /// as of this revision", not "leave the existing one alone". Callers
+    /// that have nothing to say about the citation use the overload above,
+    /// which carries the record's own current citation forward unchanged.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the revision.</param>
+    /// <exception cref="ReferenceRecordNotFoundException"><paramref name="recordId"/> does not exist.</exception>
+    /// <exception cref="ReleasedReferenceImmutableException">The record is <see cref="ReferenceValidationState.Released"/> or <see cref="ReferenceValidationState.Superseded"/>. Supersede it instead.</exception>
+    /// <exception cref="DuplicateReferenceKeyException">The revision would collide with another record's own secondary key.</exception>
+    Task<IReferenceRecord<TDefinition>> ReviseAsync(
+        string recordId,
+        TDefinition definition,
+        ReferenceProvenance provenance,
+        string? changeSummary,
+        SourceCitation? source,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -4,6 +4,15 @@
 
 Accepted — `Group C` (P07 Business Governance & Scale), 2026-09-06.
 
+**Subject kept whole by `WP 18.0C`** (`D-028`, 2026-09-09): `Money` and
+the `BusinessAuthorisation` pattern this ADR decides both stay live —
+`RateCard` (kept) is quoted from only when a `BusinessAuthorisation`
+approves it, exactly as this ADR requires. The Decision table's other
+rows (IP ownership, compliance, insurance, hiring) illustrate kinds now
+frozen to `src/Frozen/`; the mechanism they illustrated — record an
+authorisation, never perform one — is unchanged in what stays. See
+`src/Frozen/README.md`.
+
 ## Context
 
 Two decisions are recorded together here because they are the same

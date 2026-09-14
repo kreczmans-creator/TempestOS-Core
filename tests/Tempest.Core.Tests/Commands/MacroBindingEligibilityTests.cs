@@ -64,7 +64,7 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
         ])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _temp.Path),
             ]))
             .Build();
         _manager = new WorkspaceManager(_host);

@@ -318,7 +318,7 @@ public sealed class DialogFrameworkKeyboardTests
         {
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider));
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -343,14 +343,14 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
             var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), settings);
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), settings, settingsProvider);
             var window = new Window { Content = dialog };
             window.Show();
 
             var showTask = dialog.ShowAsync();
             Assert.True(dialog.IsVisible);
 
-            var checkbox = dialog.GetLogicalDescendants().OfType<CheckBox>().Single();
+            var checkbox = dialog.GetLogicalDescendants().OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
             checkbox.IsChecked = false; // a pending, unsaved change
 
             dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
@@ -534,7 +534,7 @@ public sealed class DialogFrameworkKeyboardTests
         {
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider));
+            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
             var sibling = new Button { Content = "Sibling" };
             var panel = new Panel();
             panel.Children.Add(sibling);

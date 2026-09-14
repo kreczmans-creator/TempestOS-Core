@@ -4,6 +4,11 @@
 
 Accepted — `Group F` (P06 AI Knowledge & Academy), 2026-09-06.
 
+**Frozen by `WP 18.0C`** (`D-028`, 2026-09-09): `Tempest.Core.Knowledge`
+moved to `src/Frozen/Tempest.Core.Knowledge` in full — unreachable from
+any shipped surface, `D-028` having decided `v1.0` ships no knowledge
+layer or Academy of its own. See `src/Frozen/README.md`.
+
 ## Context
 
 `P06` is named "AI Knowledge & Academy" and holds a prompt library. The

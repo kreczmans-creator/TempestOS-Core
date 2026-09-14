@@ -35,6 +35,14 @@ public interface IReferenceRecord<out TDefinition>
     /// <summary>Where the record's own data came from, and how far it can be trusted.</summary>
     ReferenceProvenance Provenance { get; }
 
+    /// <summary>
+    /// A structured citation of the exact line the record's own values were
+    /// read from — publisher, work, edition, page, table or figure, row or
+    /// entry (`ADR-0149`). <see langword="null"/> where no source this
+    /// precise is held; never fabricated to fill the gap.
+    /// </summary>
+    SourceCitation? Source { get; }
+
     /// <summary>The record's own position in the Group A validation lifecycle.</summary>
     ReferenceValidationState ValidationState { get; }
 

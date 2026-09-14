@@ -177,7 +177,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     /// exploring the graph — opening the object is one more, explicit
     /// press away (`Enter`/click again once selected, unchanged).
     /// </summary>
-    private void OnGraphKeyDown(object? sender, KeyEventArgs e)
+    private async void OnGraphKeyDown(object? sender, KeyEventArgs e)
     {
         switch (e.Key)
         {
@@ -216,14 +216,14 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             case Key.Enter:
             case Key.Space:
                 if (e.Source is Border { Tag: Guid nodeId })
-                    ActivateFocusedNode(nodeId);
+                    await ActivateFocusedNodeAsync(nodeId).ConfigureAwait(true);
                 e.Handled = true;
                 break;
         }
     }
 
     /// <summary>Selects <paramref name="nodeId"/> and, only if it is a real (non-centre, non-record) node — i.e. the one <see cref="BuildNodeVisual"/> gave a chevron to — toggles its expansion, exactly like clicking that chevron.</summary>
-    private void ActivateFocusedNode(Guid nodeId)
+    private async Task ActivateFocusedNodeAsync(Guid nodeId)
     {
         var node = _model.Nodes.FirstOrDefault(n => n.ObjectId == nodeId);
         if (node.ObjectId != nodeId)
@@ -237,7 +237,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         if (node.IsExpanded)
             CollapseNode(nodeId);
         else
-            ExpandNode(nodeId);
+            await ExpandNodeAsync(nodeId).ConfigureAwait(true);
     }
 
     // ------------------------------------------------------------
@@ -260,11 +260,10 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     public bool IsDirty => false;
 
     /// <inheritdoc />
-    public Task RefreshAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
-        _model.Recentre(_model.CentreId, ObjectKind);
+        await _model.RecentreAsync(_model.CentreId, ObjectKind).ConfigureAwait(true);
         Rebuild();
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -281,13 +280,13 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     /// <see cref="Editors.ObjectEditorView.TryCreate"/>'s own identical
     /// contract exactly.
     /// </summary>
-    public static DigitalThreadGraphView? TryCreate(Guid objectId, string objectKind, EngineeringDomainContext domainContext, Action<Guid, string> navigateToObject)
+    public static async Task<DigitalThreadGraphView?> TryCreateAsync(Guid objectId, string objectKind, EngineeringDomainContext domainContext, Action<Guid, string> navigateToObject)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(navigateToObject);
 
         var model = new DigitalThreadGraphModel(domainContext);
-        return model.Recentre(objectId, objectKind)
+        return await model.RecentreAsync(objectId, objectKind).ConfigureAwait(true)
             ? new DigitalThreadGraphView(model, domainContext, navigateToObject)
             : null;
     }
@@ -397,9 +396,9 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     public void PanBy(Vector delta) => PanTo(new Vector(_model.PanOffset.X, _model.PanOffset.Y) + delta);
 
     /// <summary>Expands <paramref name="nodeId"/> ("Expand/collapse relationships", `WP 10.4A` scope).</summary>
-    public bool ExpandNode(Guid nodeId)
+    public async Task<bool> ExpandNodeAsync(Guid nodeId)
     {
-        var expanded = _model.ExpandNode(nodeId);
+        var expanded = await _model.ExpandNodeAsync(nodeId).ConfigureAwait(true);
         if (expanded)
             Rebuild();
         return expanded;
@@ -415,9 +414,9 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
     }
 
     /// <summary>Re-centres the graph on <paramref name="objectId"/> ("Selected object centring"/"Double-click navigation", `WP 10.4A` scope).</summary>
-    public bool Recentre(Guid objectId, string kind)
+    public async Task<bool> RecentreAsync(Guid objectId, string kind)
     {
-        var moved = _model.Recentre(objectId, kind);
+        var moved = await _model.RecentreAsync(objectId, kind).ConfigureAwait(true);
         if (moved)
             Rebuild();
         return moved;
@@ -476,7 +475,7 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             var index = i;
             var crumbButton = new Button { Content = entry.DisplayName, FontSize = DesignTokens.FontSizeCaption, Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
             crumbButton.Classes.Add(ChromeStyles.Flat);
-            crumbButton.Click += (_, _) => { if (_model.JumpToBreadcrumb(index)) Rebuild(); };
+            crumbButton.Click += async (_, _) => { if (await _model.JumpToBreadcrumbAsync(index).ConfigureAwait(true)) Rebuild(); };
             _breadcrumbBar.Children.Add(crumbButton);
             _breadcrumbBar.Children.Add(new TextBlock { Text = "›", VerticalAlignment = VerticalAlignment.Center, Opacity = 0.6 });
         }
@@ -637,12 +636,12 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             var toggleName = $"{(node.IsExpanded ? "Collapse" : "Expand")} {node.DisplayName}";
             AutomationProperties.SetName(toggle, toggleName);
             ToolTip.SetTip(toggle, toggleName);
-            toggle.Click += (_, e) =>
+            toggle.Click += async (_, e) =>
             {
                 if (node.IsExpanded)
                     CollapseNode(node.ObjectId);
                 else
-                    ExpandNode(node.ObjectId);
+                    await ExpandNodeAsync(node.ObjectId).ConfigureAwait(true);
                 e.Handled = true;
             };
             Grid.SetColumn(toggle, col++);
@@ -725,11 +724,11 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
 
         if (!node.IsRecord)
         {
-            border.PointerPressed += (_, e) =>
+            border.PointerPressed += async (_, e) =>
             {
                 if (e.ClickCount >= 2)
                 {
-                    Recentre(node.ObjectId, node.Kind);
+                    await RecentreAsync(node.ObjectId, node.Kind).ConfigureAwait(true);
                 }
                 else
                 {

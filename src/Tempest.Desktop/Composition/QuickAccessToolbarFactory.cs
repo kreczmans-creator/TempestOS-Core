@@ -79,7 +79,7 @@ internal static class QuickAccessToolbarFactory
         // directly via `DocumentAreaView.ShowTab`, the same bypass the
         // Cockpit's own Home tab and `OpenRecentAsync` already use.
         var graphButton = ToolbarButton(IconGeometry.Graph, "View Relationships", "Open the Digital Thread graph for the current selection");
-        graphButton.Click += (_, _) =>
+        graphButton.Click += async (_, _) =>
         {
             var selection = workspace.Selection.Current;
             if (selection is null)
@@ -94,7 +94,7 @@ internal static class QuickAccessToolbarFactory
                 return;
             }
 
-            var graphView = DigitalThread.DigitalThreadGraphView.TryCreate(selection.ObjectId, selection.Kind, domainContext, navigateToObject);
+            var graphView = await DigitalThread.DigitalThreadGraphView.TryCreateAsync(selection.ObjectId, selection.Kind, domainContext, navigateToObject).ConfigureAwait(true);
             if (graphView is null)
             {
                 statusBar.SetText("No Digital Thread graph is available for the current selection.");

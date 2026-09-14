@@ -4,6 +4,14 @@
 
 Accepted — `Group E` (P05 Engineering Assets), 2026-09-06.
 
+**The document half frozen by `WP 18.0C`** (`D-028`, 2026-09-09):
+`E5` (technical documentation, referencing `EngineeringData` documents)
+is frozen along with `E4` (design review). `E2`'s reference to the
+platform's own calculation records and `E3`'s reference to
+`Tempest.Core.Requirements` — the two decisions the kept `CalculationPack`
+and `VerificationArtefact` kinds actually stand on — remain live and
+accepted. See `src/Frozen/README.md`.
+
 ## Context
 
 Three of `P05`'s five packages sit directly on top of machinery TempestOS

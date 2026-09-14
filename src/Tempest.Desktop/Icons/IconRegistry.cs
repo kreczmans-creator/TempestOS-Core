@@ -75,6 +75,9 @@ public static class IconRegistry
         // Manufacturing (WP 9.5A)
         ["ManufacturingOperation"] = "⬢",
         ["WorkInstruction"] = "☰",
+
+        // Evidence (WP 18.0A/18.2A, ADR-0148)
+        ["Evidence"] = "▧",
     };
 
     /// <summary>The glyph shown when <paramref name="kind"/> is unrecognised, or a Category/Group node with no backing object (<see langword="null"/> <c>Kind</c>).</summary>

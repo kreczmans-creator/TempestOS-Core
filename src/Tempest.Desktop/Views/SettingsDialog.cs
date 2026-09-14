@@ -4,6 +4,8 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Tempest.Core.Evidence;
+using Tempest.Core.Settings;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -13,29 +15,38 @@ namespace Tempest.Desktop.Views;
 /// a real, working panel over <see cref="UserSettings"/>: appearance
 /// (Theme, reusing <see cref="ThemeService"/> directly, never a second
 /// theme mechanism), notifications (Toast duration), and workflow
-/// (confirm-before-delete). Initially hidden, shares the Dialog
-/// Framework's own established panel styling.
+/// (confirm-before-delete). Extended `WP 18.2A` with the Evidence
+/// discipline's own governed setting — <em>Independent check
+/// required</em> (<see cref="EvidenceService.IndependentCheckSettingKey"/>),
+/// read and written through the same <see cref="ISettingsProvider"/> every
+/// other runtime-mutable setting already uses (`ADR-0148`, decision 1:
+/// built in, switched off by default). Initially hidden, shares the
+/// Dialog Framework's own established panel styling.
 /// </summary>
 public sealed class SettingsDialog : Border
 {
     private readonly ThemeService _theme;
     private readonly UserSettings _settings;
+    private readonly ISettingsProvider _settingsProvider;
 
     private readonly ComboBox _themeSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140 };
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly CheckBox _confirmBeforeDelete = new() { Content = "Confirm before deleting an object" };
+    private readonly CheckBox _independentCheckRequired = new() { Content = "Independent check required (checker must differ from the evidence's own author)" };
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
     private TaskCompletionSource<bool>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="SettingsDialog"/> class, initially hidden.</summary>
-    public SettingsDialog(ThemeService theme, UserSettings settings)
+    public SettingsDialog(ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(settingsProvider);
         _theme = theme;
         _settings = settings;
+        _settingsProvider = settingsProvider;
 
         IsVisible = false;
         IsHitTestVisible = true;
@@ -58,6 +69,13 @@ public sealed class SettingsDialog : Border
         var notifications = BuildSection("Notifications", LabeledRow("Toast duration (seconds)", _toastDuration));
         var workflow = BuildSection("Workflow", _confirmBeforeDelete);
 
+        // `WP 18.2A` (`ADR-0148`, decision 1): a one-person consultancy has
+        // one login and enters the client's own review by hand until there
+        // is a second member of staff, so this stays off by default;
+        // switched on, the independence rule refuses a checker who is also
+        // the evidence's own author.
+        var evidence = BuildSection("Evidence", _independentCheckRequired);
+
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, DesignTokens.SpaceLg, 0, 0) };
         buttons.Children.Add(_cancelButton);
         buttons.Children.Add(_saveButton);
@@ -67,6 +85,7 @@ public sealed class SettingsDialog : Border
         body.Children.Add(appearance);
         body.Children.Add(notifications);
         body.Children.Add(workflow);
+        body.Children.Add(evidence);
         body.Children.Add(buttons);
         Child = body;
 
@@ -98,7 +117,23 @@ public sealed class SettingsDialog : Border
         }
     }
 
-    /// <summary>Shows this dialog, pre-populated with the current live settings, returning <see langword="true"/> once the user Saves (and the new values are already applied/persisted), <see langword="false"/> on Cancel (nothing changed).</summary>
+    /// <summary>
+    /// Shows this dialog, pre-populated with the current live settings,
+    /// returning <see langword="true"/> once the user Saves (and the new
+    /// values are already applied/persisted), <see langword="false"/> on
+    /// Cancel (nothing changed).
+    /// </summary>
+    /// <remarks>
+    /// Every field this method sets directly is set synchronously, exactly
+    /// as before `WP 18.2A` — a caller that immediately looks for a
+    /// control after calling this must still find it already populated.
+    /// The one setting that lives behind a real, awaited read
+    /// (<see cref="EvidenceService.IndependentCheckSettingKey"/>, an
+    /// <see cref="ISettingsProvider"/> value, not a <see cref="UserSettings"/>
+    /// field) populates its own checkbox in the background instead,
+    /// starting from the safe, off default it already shows the instant
+    /// this dialog opens.
+    /// </remarks>
     public Task<bool> ShowAsync()
     {
         _pending?.TrySetResult(false);
@@ -112,6 +147,9 @@ public sealed class SettingsDialog : Border
         _toastDuration.Value = (decimal)_settings.ToastDurationSeconds;
         _confirmBeforeDelete.IsChecked = _settings.ConfirmBeforeDelete;
 
+        _independentCheckRequired.IsChecked = false;
+        _ = LoadIndependentCheckRequiredAsync();
+
         IsVisible = true;
         // The safe action gets initial focus (mirroring
         // `ConfirmationDialog`'s own identical convention) — Enter before
@@ -122,6 +160,12 @@ public sealed class SettingsDialog : Border
         return _pending.Task;
     }
 
+    private async Task LoadIndependentCheckRequiredAsync()
+    {
+        var value = await _settingsProvider.GetValueAsync(EvidenceService.IndependentCheckSettingKey).ConfigureAwait(true);
+        _independentCheckRequired.IsChecked = bool.TryParse(value, out var required) && required;
+    }
+
     private async Task SaveAsync()
     {
         if (_themeSelector.SelectedItem is ComboBoxItem { Tag: ThemeVariant selectedTheme } && selectedTheme != _theme.Current)
@@ -130,6 +174,10 @@ public sealed class SettingsDialog : Border
         _settings.ToastDurationSeconds = (double)(_toastDuration.Value ?? 4.5m);
         _settings.ConfirmBeforeDelete = _confirmBeforeDelete.IsChecked ?? true;
         await _settings.SaveAsync().ConfigureAwait(true);
+
+        await _settingsProvider.SetValueAsync(
+            EvidenceService.IndependentCheckSettingKey,
+            (_independentCheckRequired.IsChecked ?? false) ? bool.TrueString : bool.FalseString).ConfigureAwait(true);
 
         Complete(true);
     }

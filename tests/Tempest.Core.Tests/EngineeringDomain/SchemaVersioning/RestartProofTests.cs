@@ -100,7 +100,7 @@ public sealed class RestartProofTests
         var rewriteConfiguration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, temp.Path),
             ]))
             .Build();
 
@@ -142,7 +142,7 @@ public sealed class RestartProofTests
         var host = new TempestHostBuilder([typeof(MechanicalWorkspaceExplorerModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, persistenceRoot),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, persistenceRoot),
             ]))
             .Build();
         var manager = new WorkspaceManager(host);

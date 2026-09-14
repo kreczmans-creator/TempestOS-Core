@@ -1,5 +1,6 @@
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -49,6 +50,8 @@ public static class DisciplineAreas
 
         foreach (var kind in ManufacturingObjectFactoryRegistry.SupportedKinds)
             map[kind] = ManufacturingWorkspaceExplorerModule.NavigationItemId;
+
+        map[Tempest.Core.Evidence.Evidence.CanonicalKind] = EvidenceWorkspaceRegistration.ExplorerAreaId;
 
         return map;
     }

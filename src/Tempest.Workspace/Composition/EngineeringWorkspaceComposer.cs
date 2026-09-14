@@ -1,19 +1,32 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
+using Tempest.Core.Constants;
+using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Evidence;
+using Tempest.Core.Fasteners;
+using Tempest.Core.Identity;
 using Tempest.Core.Macros;
+using Tempest.Core.Materials;
+using Tempest.Core.ReferenceData;
+using Tempest.Core.ReferenceData.Seeding;
+using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
+using Tempest.Core.Standards;
 using Tempest.Core.Verification;
+using Tempest.Core.Versioning;
 
 namespace Tempest.Workspace.Composition;
 
@@ -136,7 +149,16 @@ public static class EngineeringWorkspaceComposer
     /// scope). Exposing an already-constructed object a caller was
     /// silently throwing away, not building a new one.
     /// </returns>
-    public static CalculationTemplateRegistry RegisterEngineeringDisciplines(WorkspaceManager manager, ITempestHost host)
+    /// <param name="issueSheetRenderer">
+    /// Renders Evidence's own issue sheet on Issue (`WP 18.2B`, §2) —
+    /// <see langword="null"/> (the default; every caller but
+    /// <c>Tempest.Desktop.WorkspaceHost</c>) for a composition root with no
+    /// renderer available. Issuing still succeeds; only the sheet is
+    /// skipped (<see cref="Evidence.IssueEvidenceCommandHandler"/>'s own
+    /// remarks).
+    /// </param>
+    public static CalculationTemplateRegistry RegisterEngineeringDisciplines(
+        WorkspaceManager manager, ITempestHost host, Tempest.Workspace.Evidence.IIssueSheetRenderer? issueSheetRenderer = null)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(host);
@@ -150,12 +172,22 @@ public static class EngineeringWorkspaceComposer
         var calculationEngine = (ICalculationEngine)services.GetService(typeof(ICalculationEngine));
         var verificationService = (IVerificationService)services.GetService(typeof(IVerificationService));
         var macroManager = (IMacroManager)services.GetService(typeof(IMacroManager));
+        var evidenceService = (IEvidenceService)services.GetService(typeof(IEvidenceService));
+        var principalDirectory = (IPrincipalDirectory)services.GetService(typeof(IPrincipalDirectory));
+        var platformVersionProvider = (IPlatformVersionProvider)services.GetService(typeof(IPlatformVersionProvider));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
         var calculationTemplateRegistry = CalculationsWorkspaceRegistration.Register(manager, domainContext, calculationEngine, commandDispatcher, commandRegistry);
         DocumentsWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry);
         VerificationWorkspaceRegistration.Register(manager, domainContext, verificationService, commandDispatcher, commandRegistry);
+
+        // `ADR-0148` (`WP 18.0A`). Must run after Mechanical — it reuses
+        // Mechanical's own already-registered rename/delete command
+        // handlers (this class's own remarks).
+        EvidenceWorkspaceRegistration.Register(
+            manager, domainContext, evidenceService, commandDispatcher, commandRegistry,
+            issueSheetRenderer, principalDirectory, platformVersionProvider);
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
@@ -181,6 +213,7 @@ public static class EngineeringWorkspaceComposer
         CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
+        rehydrators.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by
@@ -211,16 +244,79 @@ public static class EngineeringWorkspaceComposer
     /// theoretical: without it the documents survive a restart but the
     /// engineering work does not (`ADR-0077`'s own disclosed gap).
     /// </para>
+    /// <para>
+    /// Also self-heals the search index (`WP 18.1B`): once rehydration has
+    /// finished, <c>IEngineeringObjectStateStore.RebuildIndexAsync</c> runs
+    /// — a no-op unless the index is empty while durable state is not, so
+    /// a fresh database is indexed once and a healthy one is never
+    /// redundantly rewalked.
+    /// </para>
+    /// <para>
+    /// Also populates the five shipped reference libraries (`WP 18.0B-R1`,
+    /// `TD-163`) — Standards, Materials, Constants, Fasteners, Bearings —
+    /// each only if that library is still holding no record at all
+    /// (<see cref="ReferenceSeedService.ApplyIfEmptyAsync{TDefinition}"/>).
+    /// A library a person has already populated, edited or seeded is never
+    /// touched again, so a re-launch adds nothing and the shipped corpus
+    /// never overrides a value a person corrected. Every record this seeds
+    /// lands <see cref="ReferenceValidationState.Draft"/>, carrying its
+    /// dataset's own <see cref="SourceCitation"/> — nothing is verified or
+    /// released by starting the application.
+    /// </para>
     /// </remarks>
     /// <returns>A full account of what was recovered, and of anything that could not be.</returns>
     /// <exception cref="InvalidOperationException"><paramref name="host"/>'s own <see cref="ITempestHost.Services"/> is not yet resolvable.</exception>
-    public static Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
+    public static async Task<EngineeringRehydrationResult> RehydrateEngineeringObjectsAsync(ITempestHost host, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(host);
 
         var services = host.Services ?? throw new InvalidOperationException("The Host must be running (ITempestHost.Services resolvable) before engineering objects can be rehydrated.");
+
+        await SeedEmptyReferenceLibrariesAsync(services, cancellationToken).ConfigureAwait(false);
+
         var rehydrationService = (EngineeringObjectRehydrationService)services.GetService(typeof(EngineeringObjectRehydrationService));
 
-        return rehydrationService.RehydrateAsync(cancellationToken);
+        var result = await rehydrationService.RehydrateAsync(cancellationToken).ConfigureAwait(false);
+
+        var stateStore = (IEngineeringObjectStateStore)services.GetService(typeof(IEngineeringObjectStateStore));
+        await stateStore.RebuildIndexAsync(cancellationToken).ConfigureAwait(false);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Populates each of the five shipped reference libraries from its own
+    /// seed dataset, but only where that library is still empty
+    /// (`WP 18.0B-R1`, `TD-163`) — the gap a backlog audit found: `WP 18.0A`
+    /// gave all 41 seeded records a structured source citation, but only
+    /// Materials ever reached a shipped call site
+    /// (<c>BracketCalculationWorkbench.PopulateMaterialLibraryAsync</c>),
+    /// leaving Fasteners, Bearings, Standards and Constants — 35 of the 41
+    /// records — permanently empty in the shipped product.
+    /// </summary>
+    /// <param name="services">The running Host's own resolvable services.</param>
+    /// <param name="cancellationToken">Cancels the seeding.</param>
+    private static async Task SeedEmptyReferenceLibrariesAsync(ITempestServiceProvider services, CancellationToken cancellationToken)
+    {
+        var seeder = (ReferenceSeedService)services.GetService(typeof(ReferenceSeedService));
+
+        // Citation order: Standards first, because the other libraries
+        // cite it — the same order `SeedHarness.SeedEverythingAsync`
+        // already establishes for the test-only equivalent of this pass.
+        await seeder.ApplyIfEmptyAsync(
+            (IStandardCatalog)services.GetService(typeof(IStandardCatalog)), StandardSeed.Instance, cancellationToken)
+            .ConfigureAwait(false);
+        await seeder.ApplyIfEmptyAsync(
+            (IMaterialCatalog)services.GetService(typeof(IMaterialCatalog)), MaterialSeed.Instance, cancellationToken)
+            .ConfigureAwait(false);
+        await seeder.ApplyIfEmptyAsync(
+            (IConstantCatalog)services.GetService(typeof(IConstantCatalog)), ConstantSeed.Instance, cancellationToken)
+            .ConfigureAwait(false);
+        await seeder.ApplyIfEmptyAsync(
+            (IFastenerCatalog)services.GetService(typeof(IFastenerCatalog)), FastenerSeed.Instance, cancellationToken)
+            .ConfigureAwait(false);
+        await seeder.ApplyIfEmptyAsync(
+            (IBearingCatalog)services.GetService(typeof(IBearingCatalog)), BearingSeed.Instance, cancellationToken)
+            .ConfigureAwait(false);
     }
 }

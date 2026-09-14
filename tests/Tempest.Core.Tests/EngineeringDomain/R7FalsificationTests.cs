@@ -28,10 +28,12 @@ namespace Tempest.Core.Tests.EngineeringDomain;
 /// </para>
 /// <para>
 /// What remains is the part that was always about the platform rather than
-/// about the workaround: the store layer's own encoding behaviour (§A), the
-/// whole-mutator sweep against the real durable stack (§B), and the
-/// type-state divergence that `TD-142` disclosed (§C) — which this Work
-/// Package closes, so that fact is inverted here rather than deleted.
+/// about the workaround: the whole-mutator sweep against the real durable
+/// stack (§B), and the type-state divergence that `TD-142` disclosed (§C)
+/// — which this Work Package closes, so that fact is inverted here rather
+/// than deleted. §A, the file-per-key store's own `TD-59` encoding
+/// behaviour, is deleted in turn by `WP 18.1A` (`ADR-0144`): the store it
+/// was a property of no longer exists.
 /// </para>
 /// </remarks>
 public sealed class R7FalsificationTests : IDisposable
@@ -55,50 +57,15 @@ public sealed class R7FalsificationTests : IDisposable
     }
 
     // ================================================================
-    // §A  The store layer — a surviving legacy-encoded record is inert.
-    //
-    //     Unchanged by `ADR-0145`: this is a property of
-    //     `PersistenceStore`'s `TD-59` name encoding, not of the
-    //     engineering write path.
+    // §A (deleted, `WP 18.1A`) — a surviving legacy-encoded record was
+    // inert. That was a property of the file-per-key store's own `TD-59`
+    // name encoding (a reserved-device-stem stem, a legacy-path fallback,
+    // a best-effort forward migration on next write), never of the
+    // engineering write path this suite otherwise tests. `ADR-0144`
+    // deletes that store and every one of those mechanisms with it in
+    // `v0.18.0`; there is no successor claim to invert, only one to
+    // remove.
     // ================================================================
-
-    /// <summary>
-    /// A legacy-encoded record that outlives the best-effort migration
-    /// must never be read in preference to the current-encoding record, on
-    /// either read overload, and must never double a listing.
-    /// </summary>
-    [Fact]
-    public async Task ASurvivingLegacyRecord_IsNeverReadInPreferenceToTheCurrentEncodingRecord()
-    {
-        var root = NewRoot("r7b-legacy");
-        var store = NewStore(root);
-
-        // "CON" is a reserved Win32 device stem, so `TD-59`'s encoding puts
-        // the current record at "%43ON" and the pre-`TD-59` legacy record at
-        // "CON" — the only shape in which the two paths differ at all.
-        await store.WriteAsync("coll", "CON", "current-value");
-
-        var collectionDirectory = Path.Combine(root, "coll");
-        var legacyPath = Path.Combine(collectionDirectory, "CON");
-        var currentPath = Path.Combine(collectionDirectory, "%43ON");
-
-        Assert.True(File.Exists(currentPath), "the current-encoding record should exist");
-
-        // Simulate the residue `MigrateLegacyRecordAfterCommit` is now
-        // allowed to leave behind.
-        await File.WriteAllTextAsync(legacyPath, "STALE-LEGACY-VALUE");
-
-        Assert.Equal("current-value", await store.ReadAsync("coll", "CON"));
-        Assert.Equal("current-value", System.Text.Encoding.UTF8.GetString((await store.ReadBytesAsync("coll", "CON"))!));
-
-        var keys = await store.ListKeysAsync("coll");
-        Assert.Equal(["CON"], keys);
-
-        // And the next successful write retries the removal, as claimed.
-        await store.WriteAsync("coll", "CON", "second-value");
-        Assert.False(File.Exists(legacyPath), "the next successful write should have retried the legacy removal");
-        Assert.Equal("second-value", await store.ReadAsync("coll", "CON"));
-    }
 
     // ================================================================
     // §B  Every mutator, in one sweep, against the real durable stack.
@@ -247,11 +214,6 @@ public sealed class R7FalsificationTests : IDisposable
         return root;
     }
 
-    private static PersistenceStore NewStore(string root) =>
-        new(new ConfigurationBuilder()
-            .AddSource(new MemoryConfigurationSource([new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root)]))
-            .Build());
-
     private DurableRig NewRig(string label)
     {
         var rig = new DurableRig(NewRoot(label));
@@ -279,7 +241,7 @@ public sealed class R7FalsificationTests : IDisposable
         {
             _sqlite = new SqlitePersistenceStore(new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
-                    [new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root)]))
+                    [new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, root)]))
                 .Build());
 
             Store = new CommitFailingPersistenceStore(_sqlite);

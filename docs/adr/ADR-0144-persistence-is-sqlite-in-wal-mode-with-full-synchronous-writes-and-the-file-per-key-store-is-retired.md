@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted — `WP 17.1A` (SQLite persistence), 2026-09-08.
+Accepted — `WP 17.1A` (SQLite persistence), 2026-09-08. The file-per-key
+backend this decision retained for exactly one release is deleted —
+`WP 18.1A`, 2026-09-09: `PersistenceStore.cs`, `Persistence:Backend=files`,
+and the dual-backend test fixture are gone; `SqlitePersistenceStore` is
+the platform's only store, exactly as this ADR's own Decision said it
+would be.
 
 Supersedes `ADR-0041` in part (the storage backend it chose; the
 `IPersistenceStore` shape it drafted stands unchanged) and `ADR-0053` in

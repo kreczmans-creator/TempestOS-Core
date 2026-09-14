@@ -57,4 +57,16 @@ public enum ShellArea
     /// ordinal and inserting would silently relocate every saved session.
     /// </remarks>
     EngineeringCalculation,
+
+    /// <summary>
+    /// The Evidence workspace (`WP 18.2A`, `ADR-0148`): the open project's
+    /// own evidence — records, citations, declared figures, check and
+    /// issue — and the Libraries tab over the five governed reference
+    /// libraries evidence cites.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Evidence,
 }

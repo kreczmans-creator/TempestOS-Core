@@ -50,7 +50,7 @@ public sealed class GovernanceRestartTests : IDisposable
 
         // ---- FIRST LIFETIME ------------------------------------------
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             first.Principal.SetCurrent(new PlatformPrincipal(new PlatformIdentity("ada", "ada"), []));
 
             var project = await CreateProjectAsync(first, "P-1", "Apollo");
@@ -64,7 +64,7 @@ public sealed class GovernanceRestartTests : IDisposable
 
         // ---- SECOND LIFETIME -----------------------------------------
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             var result = await RehydrateAsync(second);
 
             Assert.Empty(result.UnknownKinds);
@@ -86,7 +86,7 @@ public sealed class GovernanceRestartTests : IDisposable
         Guid issueId;
 
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             first.Principal.SetCurrent(new PlatformPrincipal(new PlatformIdentity("grace", "grace"), []));
 
             var project = await CreateProjectAsync(first, "P-1", "Apollo");
@@ -99,7 +99,7 @@ public sealed class GovernanceRestartTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             Assert.True((await RehydrateAsync(second)).IsComplete);
 
             var recovered = Assert.IsType<Issue>(await second.Context.Repository.FindAsync(issueId));
@@ -120,7 +120,7 @@ public sealed class GovernanceRestartTests : IDisposable
         Guid decisionId;
 
         {
-            var first = BuildLifetime(() => Decided);
+            using var first = BuildLifetime(() => Decided);
             first.Principal.SetCurrent(new PlatformPrincipal(new PlatformIdentity("grace", "grace"), []));
 
             var project = await CreateProjectAsync(first, "P-1", "Apollo");
@@ -132,7 +132,7 @@ public sealed class GovernanceRestartTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             Assert.True((await RehydrateAsync(second)).IsComplete);
 
             var recovered = Assert.IsType<Decision>(await second.Context.Repository.FindAsync(decisionId));
@@ -151,7 +151,7 @@ public sealed class GovernanceRestartTests : IDisposable
         Guid hazardId;
 
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             var project = await CreateProjectAsync(first, "P-1", "Apollo");
             var hazard = await first.Workflow.CreateRiskAsync(
                 project.Id, "HAZ-001", "Stored energy in the accumulator", isHazard: true);
@@ -161,7 +161,7 @@ public sealed class GovernanceRestartTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             Assert.True((await RehydrateAsync(second)).IsComplete);
 
             // A safety hazard that came back as an ordinary risk would lose
@@ -180,7 +180,7 @@ public sealed class GovernanceRestartTests : IDisposable
         Guid projectId;
 
         {
-            var first = BuildLifetime();
+            using var first = BuildLifetime();
             var project = await CreateProjectAsync(first, "P-1", "Apollo");
             projectId = project.Id;
 
@@ -198,7 +198,7 @@ public sealed class GovernanceRestartTests : IDisposable
         }
 
         {
-            var second = BuildLifetime();
+            using var second = BuildLifetime();
             Assert.True((await RehydrateAsync(second)).IsComplete);
 
             // The register is asked the same question it answers in the
@@ -215,22 +215,31 @@ public sealed class GovernanceRestartTests : IDisposable
     // Lifetime
     // ================================================================
 
+    /// <summary>
+    /// Disposable because its own <see cref="SqlitePersistenceStore"/>
+    /// holds the root's instance lock exclusively (`ADR-0144`): a caller
+    /// must dispose one lifetime before a later one opens the same root.
+    /// </summary>
     private sealed record Lifetime(
         EngineeringDomainContext Context,
         EngineeringObjectRehydratorRegistry Rehydrators,
         IProjectGovernanceService Workflow,
-        CurrentPrincipalAccessor Principal);
+        CurrentPrincipalAccessor Principal,
+        SqlitePersistenceStore Store) : IDisposable
+    {
+        public void Dispose() => Store.Dispose();
+    }
 
     private Lifetime BuildLifetime(Func<DateTimeOffset>? now = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _root),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _root),
             ]))
             .Build();
 
-        var store = new PersistenceStore(configuration);
+        var store = new SqlitePersistenceStore(configuration);
         var principal = new CurrentPrincipalAccessor();
         var documents = new EngineeringDocumentStore(store, principal);
         var repository = new InMemoryEngineeringObjectRepository();
@@ -248,7 +257,7 @@ public sealed class GovernanceRestartTests : IDisposable
         CanonicalObjectKinds.RegisterRehydrators(rehydrators, context);
         MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, context);
 
-        return new Lifetime(context, rehydrators, new ProjectGovernanceService(context, now), principal);
+        return new Lifetime(context, rehydrators, new ProjectGovernanceService(context, now), principal, store);
     }
 
     private static Task<EngineeringRehydrationResult> RehydrateAsync(Lifetime lifetime) =>

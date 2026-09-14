@@ -332,7 +332,7 @@ public sealed class ProjectAreaRegisterTests : IDisposable
 
         public static Task<RegisterFixture> CreateAsync()
         {
-            // A real PersistenceStore: attachment content is bytes, and the
+            // A real SqlitePersistenceStore: attachment content is bytes, and the
             // in-memory double implements only the text contract. Using the
             // real store also means these tests exercise the same
             // persistence the product does.
@@ -340,11 +340,11 @@ public sealed class ProjectAreaRegisterTests : IDisposable
             var configuration = new ConfigurationBuilder()
                 .AddSource(new MemoryConfigurationSource(
                 [
-                    new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, root),
+                    new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, root),
                 ]))
                 .Build();
 
-            var store = new PersistenceStore(configuration);
+            var store = new SqlitePersistenceStore(configuration);
             var principal = new CurrentPrincipalAccessor();
             var documents = new EngineeringDocumentStore(store, principal);
             var repository = new InMemoryEngineeringObjectRepository();

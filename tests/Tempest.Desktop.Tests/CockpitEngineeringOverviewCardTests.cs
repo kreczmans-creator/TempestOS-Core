@@ -24,14 +24,14 @@ public sealed class CockpitEngineeringOverviewCardTests
             await host.StartAsync();
             var workspace = host.Workspace!;
             var cockpit = workspace.Cockpit;
-
             var view = new CockpitView(
                 cockpit,
                 workspace.Navigation.Areas,
-                onContinue: () => { },
-                onOpenRecent: _ => { },
+                onContinue: () => Task.CompletedTask,
+                onOpenRecent: _ => Task.CompletedTask,
                 onOpenCommandPalette: () => { },
                 onSwitchArea: _ => { });
+            await view.RefreshAsync();
 
             var overviewCard = view.GetLogicalDescendants().OfType<CockpitCardControl>().SingleOrDefault(c => c.Title == "Engineering Overview");
             Assert.NotNull(overviewCard);

@@ -46,7 +46,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     // ==================================================================
 
     private static readonly IReadOnlyList<string> Disciplines =
-        ["Calculations", "Documents", "Manufacturing", "Mechanical", "Requirements", "Verification"];
+        ["Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification"];
 
     /// <summary>U1 — an object picker this platform does not have (FCR-0073).</summary>
     private static readonly IReadOnlyList<string> ObjectPickerUnavailable =
@@ -118,7 +118,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         ])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, _temp.Path),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, _temp.Path),
             ]))
             .Build();
         _manager = new WorkspaceManager(_host);
@@ -188,15 +188,19 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         var bindable = ProductionDescriptors.Where(d => !unavailable.Contains(d.Id)).ToList();
 
         // The canonical reconciliation, and the one place in the suite where
-        // these numbers are asserted (`WP-F`, `F-11`): 74 production
-        // discipline commands, 18 of them explicitly unavailable, so the
-        // remaining 56 must every one be invocable. The arithmetic is the
+        // these numbers are asserted (`WP-F`, `F-11`; updated `WP 18.0A`):
+        // 82 production discipline commands (Evidence added eight, none of
+        // them unavailable), 18 of them explicitly unavailable, so the
+        // remaining 64 must every one be invocable. The arithmetic is the
         // protection — it is what stops a nineteenth unavailable command
         // hiding inside the bindable set — so all three terms are stated,
         // not two of them with the third left in a comment.
-        Assert.Equal(74, ProductionDescriptors.Count);
+        // `WP 18.2B` adds a ninth, invocable Evidence descriptor
+        // ("evidence.set-subject"), so 82 becomes 83 and 64 becomes 65; 18
+        // is unchanged.
+        Assert.Equal(83, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(56, bindable.Count);
+        Assert.Equal(65, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -298,7 +302,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The structural guard: a future production descriptor cannot be added
-    /// to one of the six discipline registrations without either a binding
+    /// to one of the seven discipline registrations without either a binding
     /// or a stated reason, because this reads the registration sources
     /// themselves and counts what they declare.
     /// </summary>
@@ -333,7 +337,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
         Assert.True(
             declaredOnly.Count == 0 && registeredOnly.Count == 0,
-            $"The six registration sources and the live registry disagree.\n"
+            $"The seven registration sources and the live registry disagree.\n"
             + $"  Declared in source but not registered: {string.Join(", ", declaredOnly)}\n"
             + $"  Registered but not declared in source: {string.Join(", ", registeredOnly)}");
 
@@ -347,6 +351,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                  {
                      ("Calculations", "CalculationsWorkspaceRegistration.cs"),
                      ("Documents", "DocumentsWorkspaceRegistration.cs"),
+                     ("Evidence", "EvidenceWorkspaceRegistration.cs"),
                      ("Manufacturing", "ManufacturingWorkspaceRegistration.cs"),
                      ("Mechanical", "MechanicalWorkspaceRegistration.cs"),
                      ("Requirements", "RequirementsWorkspaceRegistration.cs"),

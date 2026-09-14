@@ -37,7 +37,7 @@ public readonly record struct DigitalThreadBreadcrumbEntry(Guid ObjectId, string
 /// <remarks>
 /// <para>
 /// <b>Progressive, client-side, on-demand expansion only</b> — every
-/// <see cref="ExpandNode"/> call issues a fresh read of that node's own
+/// <see cref="ExpandNodeAsync"/> call issues a fresh read of that node's own
 /// direct relationships (never a precomputed or cached transitive
 /// traversal, `ADR-0093`). Nothing here is persisted; the entire graph is
 /// discarded the moment the owning View closes (`WP10.0A` doc §2.2).
@@ -105,7 +105,7 @@ public sealed class DigitalThreadGraphModel
         _domainContext = domainContext;
     }
 
-    /// <summary>The graph's own current centre object — "Selected object centring" (`WP 10.4A` scope), always the object last centred via <see cref="Recentre"/>.</summary>
+    /// <summary>The graph's own current centre object — "Selected object centring" (`WP 10.4A` scope), always the object last centred via <see cref="RecentreAsync"/>.</summary>
     public Guid CentreId { get; private set; }
 
     /// <summary>Every node currently in the graph, in stable insertion order.</summary>
@@ -114,7 +114,7 @@ public sealed class DigitalThreadGraphModel
     /// <summary>Every edge currently in the graph, in stable insertion order.</summary>
     public IReadOnlyList<DigitalThreadEdgeSnapshot> Edges => _edges.Select(ToSnapshot).ToList();
 
-    /// <summary>The centre-navigation trail — every centre this graph has moved through via <see cref="Recentre"/>, oldest first, current centre not included (`WP 10.4A` scope: "Breadcrumb path display").</summary>
+    /// <summary>The centre-navigation trail — every centre this graph has moved through via <see cref="RecentreAsync"/>, oldest first, current centre not included (`WP 10.4A` scope: "Breadcrumb path display").</summary>
     public IReadOnlyList<DigitalThreadBreadcrumbEntry> Breadcrumb => _breadcrumb;
 
     /// <summary>The currently active layout algorithm.</summary>
@@ -151,9 +151,9 @@ public sealed class DigitalThreadGraphModel
     /// <see cref="Breadcrumb"/> first — "Double-click navigation"
     /// (`WP 10.4A` scope) re-centres this way.
     /// </summary>
-    public bool Recentre(Guid objectId, string kind)
+    public async Task<bool> RecentreAsync(Guid objectId, string kind)
     {
-        if (!BuildGraphAround(objectId, kind, pushCurrentCentreToBreadcrumb: true))
+        if (!await BuildGraphAroundAsync(objectId, kind, pushCurrentCentreToBreadcrumb: true).ConfigureAwait(true))
             return false;
         return true;
     }
@@ -163,21 +163,21 @@ public sealed class DigitalThreadGraphModel
     /// <paramref name="index"/>, discarding every later entry — including
     /// the entry for the centre being navigated <i>away</i> from, which
     /// standard breadcrumb "back" semantics never re-adds (unlike
-    /// <see cref="Recentre"/>'s own forward-navigation push).
+    /// <see cref="RecentreAsync"/>'s own forward-navigation push).
     /// </summary>
-    public bool JumpToBreadcrumb(int index)
+    public async Task<bool> JumpToBreadcrumbAsync(int index)
     {
         if (index < 0 || index >= _breadcrumb.Count)
             return false;
 
         var target = _breadcrumb[index];
         _breadcrumb.RemoveRange(index, _breadcrumb.Count - index);
-        return BuildGraphAround(target.ObjectId, target.Kind, pushCurrentCentreToBreadcrumb: false);
+        return await BuildGraphAroundAsync(target.ObjectId, target.Kind, pushCurrentCentreToBreadcrumb: false).ConfigureAwait(true);
     }
 
-    private bool BuildGraphAround(Guid objectId, string kind, bool pushCurrentCentreToBreadcrumb)
+    private async Task<bool> BuildGraphAroundAsync(Guid objectId, string kind, bool pushCurrentCentreToBreadcrumb)
     {
-        var target = _domainContext.Repository.FindAsync(objectId).GetAwaiter().GetResult();
+        var target = await _domainContext.Repository.FindAsync(objectId).ConfigureAwait(true);
         if (target is null)
             return false;
 
@@ -197,7 +197,7 @@ public sealed class DigitalThreadGraphModel
         var status = (target as IHasLifecycle)?.Status;
         AddNode(new GraphNode(objectId, kind, displayName, status, isCentre: true, isExpanded: true, isRecord: false));
 
-        LoadRelationships(objectId);
+        await LoadRelationshipsAsync(objectId).ConfigureAwait(true);
         RecomputeLayout();
         ResetView();
         return true;
@@ -211,13 +211,13 @@ public sealed class DigitalThreadGraphModel
     /// already expanded, or is a synthetic Verification record leaf
     /// (nothing further to expand).
     /// </summary>
-    public bool ExpandNode(Guid nodeId)
+    public async Task<bool> ExpandNodeAsync(Guid nodeId)
     {
         if (!_nodes.TryGetValue(nodeId, out var node) || node.IsExpanded || node.IsRecord)
             return false;
 
         node.IsExpanded = true;
-        LoadRelationships(nodeId);
+        await LoadRelationshipsAsync(nodeId).ConfigureAwait(true);
         RecomputeLayout();
         return true;
     }
@@ -253,7 +253,7 @@ public sealed class DigitalThreadGraphModel
     /// <summary>Offsets <see cref="PanOffset"/> by <paramref name="delta"/> (`WP 10.4A` scope: "Pan").</summary>
     public void PanBy(Vector delta) => PanOffset += delta;
 
-    /// <summary>Resets zoom to 1.0 and pan to the origin — also applied automatically after every <see cref="Recentre"/>, keeping the new centre visually prominent (`WP10.0A` doc §2.3).</summary>
+    /// <summary>Resets zoom to 1.0 and pan to the origin — also applied automatically after every <see cref="RecentreAsync"/>, keeping the new centre visually prominent (`WP10.0A` doc §2.3).</summary>
     public void ResetView()
     {
         ZoomLevel = 1.0;
@@ -305,9 +305,9 @@ public sealed class DigitalThreadGraphModel
     /// for any discipline" (`WP10.0A` doc §4) — this is the identical read
     /// regardless of <paramref name="objectId"/>'s own Kind.
     /// </summary>
-    private void LoadRelationships(Guid objectId)
+    private async Task LoadRelationshipsAsync(Guid objectId)
     {
-        var target = _domainContext.Repository.FindAsync(objectId).GetAwaiter().GetResult();
+        var target = await _domainContext.Repository.FindAsync(objectId).ConfigureAwait(true);
         if (target is null)
             return;
 
@@ -325,7 +325,7 @@ public sealed class DigitalThreadGraphModel
         // store, never through the Domain object's own `LinkAsync`).
         if (string.Equals(target.Kind, VerificationActivityFactoryRegistry.SupportedKind, StringComparison.Ordinal))
         {
-            var records = VerificationRecordReader.GetResultHistoryAsync(_domainContext, objectId).GetAwaiter().GetResult();
+            var records = await VerificationRecordReader.GetResultHistoryAsync(_domainContext, objectId).ConfigureAwait(true);
             foreach (var record in records)
             {
                 var recordNode = new GraphNode(record.RecordId, VerificationService.VerificationRecordDocumentKind, $"{record.Outcome} — {record.Method}", status: null, isCentre: false, isExpanded: true, isRecord: true);
@@ -336,31 +336,31 @@ public sealed class DigitalThreadGraphModel
 
         if (target is IHasRelationships hasRelationships)
         {
-            var outgoing = hasRelationships.GetRelationshipsAsync().GetAwaiter().GetResult();
+            var outgoing = await hasRelationships.GetRelationshipsAsync().ConfigureAwait(true);
             foreach (var relationship in outgoing)
-                AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
+                await AddNeighbourAsync(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category).ConfigureAwait(true);
         }
 
-        var incoming = _domainContext.RelationshipRepository.GetIncomingAsync(objectId).GetAwaiter().GetResult();
+        var incoming = await _domainContext.RelationshipRepository.GetIncomingAsync(objectId).ConfigureAwait(true);
         foreach (var relationship in incoming)
-            AddNeighbour(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category);
+            await AddNeighbourAsync(objectId, relationship.SourceId, relationship.TargetId, relationship.RelationshipKind, relationship.Category).ConfigureAwait(true);
     }
 
     /// <summary>
     /// Adds one relationship read while expanding <paramref name="expandingId"/> —
-    /// both <see cref="LoadRelationships"/> call sites read relationships
+    /// both <see cref="LoadRelationshipsAsync"/> call sites read relationships
     /// naming <paramref name="expandingId"/> on exactly one side (outgoing:
     /// always the source; incoming: always the target), so the neighbour
     /// is simply whichever side is not <paramref name="expandingId"/>,
     /// never inferred from graph state.
     /// </summary>
-    private void AddNeighbour(Guid expandingId, Guid sourceId, Guid targetId, string relationshipKind, RelationshipCategory category)
+    private async Task AddNeighbourAsync(Guid expandingId, Guid sourceId, Guid targetId, string relationshipKind, RelationshipCategory category)
     {
         var neighbourId = sourceId == expandingId ? targetId : sourceId;
 
         if (!_nodes.ContainsKey(neighbourId))
         {
-            var neighbour = _domainContext.Repository.FindAsync(neighbourId).GetAwaiter().GetResult();
+            var neighbour = await _domainContext.Repository.FindAsync(neighbourId).ConfigureAwait(true);
             var displayName = (neighbour as IHasBusinessIdentifier)?.DisplayName ?? neighbourId.ToString();
             var kind = neighbour?.Kind ?? string.Empty;
             var status = (neighbour as IHasLifecycle)?.Status;

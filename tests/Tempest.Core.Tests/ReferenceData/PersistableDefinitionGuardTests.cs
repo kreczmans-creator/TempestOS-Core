@@ -82,12 +82,20 @@ public sealed class PersistableDefinitionGuardTests
             .Select(row => ((Type)row[0]).FullName ?? string.Empty)
             .ToList();
 
-        Assert.InRange(covered.Count, 25, 200);
+        // WP 18.0C (D-028): CommercialIntelligence and Knowledge are
+        // frozen to src/Frozen/ in full, so no live ReferenceDataCatalog<T>
+        // subclass from either namespace remains to be discovered here;
+        // those two assertions are retired rather than reused, matching
+        // the archived-diagnostic-code convention elsewhere in this Work
+        // Package (see CrmValidationRules.SupplierRecordMustResolve).
+        // EngineeringAssets, BusinessOperations and BusinessGovernance
+        // each kept at least one governed library (Templates/
+        // CalculationPacks/Verification; Organisation/Contact/Budget;
+        // RateCard), so those three assertions stand unchanged.
+        Assert.InRange(covered.Count, 10, 200);
 
         Assert.Contains(covered, n => n.Contains("Materials", StringComparison.Ordinal));
-        Assert.Contains(covered, n => n.Contains("CommercialIntelligence", StringComparison.Ordinal));
         Assert.Contains(covered, n => n.Contains("EngineeringAssets", StringComparison.Ordinal));
-        Assert.Contains(covered, n => n.Contains("Knowledge", StringComparison.Ordinal));
         Assert.Contains(covered, n => n.Contains("BusinessOperations", StringComparison.Ordinal));
         Assert.Contains(covered, n => n.Contains("BusinessGovernance", StringComparison.Ordinal));
     }

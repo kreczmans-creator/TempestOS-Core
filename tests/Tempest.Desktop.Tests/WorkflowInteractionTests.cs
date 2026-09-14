@@ -156,10 +156,10 @@ public sealed class WorkflowInteractionTests
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
             var theme = new ThemeService(settingsProvider);
             var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings);
+            var dialog = new SettingsDialog(theme, settings, settingsProvider);
 
             var showTask = dialog.ShowAsync();
-            var checkbox = GetLogicalDescendants(dialog).OfType<CheckBox>().Single();
+            var checkbox = GetLogicalDescendants(dialog).OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
             checkbox.IsChecked = false;
 
             var saveButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Save"));
@@ -189,7 +189,7 @@ public sealed class WorkflowInteractionTests
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
             var theme = new ThemeService(settingsProvider);
             var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings);
+            var dialog = new SettingsDialog(theme, settings, settingsProvider);
 
             var showTask = dialog.ShowAsync();
             var cancelButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Cancel"));

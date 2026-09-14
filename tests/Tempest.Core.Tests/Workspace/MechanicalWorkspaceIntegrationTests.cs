@@ -28,7 +28,7 @@ public class MechanicalWorkspaceIntegrationTests
         var host = new TempestHostBuilder([typeof(MechanicalWorkspaceExplorerModule), typeof(MechanicalProductStructureSampleModule)])
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
         var manager = new WorkspaceManager(host);

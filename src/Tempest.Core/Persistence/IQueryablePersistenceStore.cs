@@ -1,6 +1,23 @@
 namespace Tempest.Core.Persistence;
 
 /// <summary>
+/// One hit from <see cref="IQueryablePersistenceStore.SearchAsync"/>
+/// (`WP 18.1B`): an object the FTS5 search index matched, ordered by
+/// <see cref="Rank"/>.
+/// </summary>
+/// <param name="ObjectId">The matched object's own id.</param>
+/// <param name="Kind">The matched object's own canonical Kind.</param>
+/// <param name="ProjectId">The project the matched object sits under, or <see langword="null"/> if it sits under none (or is itself a project).</param>
+/// <param name="Rank">
+/// SQLite FTS5's own <c>bm25()</c> score for this match — more negative is
+/// a better match; <see cref="IQueryablePersistenceStore.SearchAsync"/>
+/// already orders results by this ascending, so a caller need only render
+/// the list in the order it comes back.
+/// </param>
+/// <param name="Snippet">A short, FTS5-highlighted fragment of the matched text, for display.</param>
+public readonly record struct SearchHit(Guid ObjectId, string Kind, Guid? ProjectId, double Rank, string Snippet);
+
+/// <summary>
 /// The query and transaction shape of the platform's single durable store
 /// (`ADR-0144`) — the four things every consumer of
 /// <see cref="IPersistenceStore"/> has been simulating in application code
@@ -36,6 +53,23 @@ namespace Tempest.Core.Persistence;
 /// </remarks>
 public interface IQueryablePersistenceStore
 {
+    /// <summary>
+    /// The store's own monotonic commit counter (`WP 18.1A`): incremented
+    /// by exactly one on every transaction <see cref="ExecuteInTransactionAsync"/>
+    /// commits, and never on one that rolls back.
+    /// </summary>
+    /// <remarks>
+    /// Persisted in the store, so it survives a restart, and read from the
+    /// same connection a commit's own writes land through, so this value
+    /// is never observed to advance for a commit that has not durably
+    /// landed. A caller that captures this value alongside a read (a
+    /// <c>Tempest.Workspace.WorkspaceSnapshot</c>) has an exact, checkable
+    /// claim about how current that read is — see
+    /// <see cref="Tempest.Core.Events.WorkspaceChange.Sequence"/>, which
+    /// names the same counter.
+    /// </remarks>
+    long CurrentSequence { get; }
+
     /// <summary>
     /// Lists every key in <paramref name="collection"/> that begins with
     /// <paramref name="keyPrefix"/>, in ascending ordinal key order.
@@ -113,6 +147,81 @@ public interface IQueryablePersistenceStore
     /// <exception cref="ArgumentNullException"><paramref name="work"/> is <see langword="null"/>.</exception>
     /// <exception cref="PersistenceStoreUnavailableException">The transaction could not be begun or committed.</exception>
     Task ExecuteInTransactionAsync(Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Runs <paramref name="read"/> against one consistent, read-only view
+    /// of the store — every read <paramref name="read"/> performs, and the
+    /// <see cref="IPersistenceReadTransaction.Sequence"/> it reports, see
+    /// exactly the same committed state, however many statements
+    /// <paramref name="read"/> issues (`WP 18.1A`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the read half of <see cref="ExecuteInTransactionAsync"/>:
+    /// it takes no write lock and never contends with one, so it never
+    /// blocks — and is never blocked by — a concurrent writer, which is
+    /// what makes it safe to call from a UI thread's own async handler.
+    /// What it buys instead is the property a view composing several
+    /// independent reads cannot have: a commit that lands after this call
+    /// begins is invisible to every read inside it, never visible to some
+    /// and not others. A caller that read a parent in one call and a child
+    /// in a second, unrelated call could observe a move that landed
+    /// between them as the parent's old state and the child's new one;
+    /// one call to this method cannot.
+    /// </para>
+    /// <para>
+    /// A snapshot read (<c>Tempest.Workspace.WorkspaceSnapshot</c>) is
+    /// built from exactly one call to this method.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="T">The read's own result type.</typeparam>
+    /// <param name="read">The read to run inside the transaction.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="read"/> is <see langword="null"/>.</exception>
+    /// <exception cref="PersistenceStoreUnavailableException">The transaction could not be begun or completed.</exception>
+    Task<T> ExecuteInReadTransactionAsync<T>(Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Full-text searches the platform's one search index (`WP 18.1B`, SQLite
+    /// FTS5) for <paramref name="query"/>, returning at most
+    /// <paramref name="limit"/> hits ordered by <see cref="SearchHit.Rank"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every whitespace-delimited token in <paramref name="query"/> is
+    /// matched as a <b>prefix</b>, so a partial word finds a whole one —
+    /// searching <c>"bra"</c> finds <c>"Bracket"</c> — and every token must
+    /// match (an implicit AND across tokens), narrowing rather than
+    /// widening as the caller types more.
+    /// </para>
+    /// <para>
+    /// What is indexed is a decision made once, where the index is written
+    /// (<see cref="IPersistenceTransaction.IndexTextAsync"/>, called from
+    /// inside the same transaction as the object state it describes) —
+    /// this method only ever reads what is already there.
+    /// </para>
+    /// </remarks>
+    /// <param name="query">The search text. Blank returns no hits.</param>
+    /// <param name="limit">The maximum number of hits to return. Must be at least 1.</param>
+    /// <param name="cancellationToken">Cancels the search.</param>
+    /// <returns>Every matching hit, best match first; empty if nothing matches or <paramref name="query"/> is blank.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="limit"/> is less than 1.</exception>
+    /// <exception cref="PersistenceStoreUnavailableException">The store could not be queried.</exception>
+    Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the search index (`WP 18.1B`) currently holds no rows at all —
+    /// what a caller checks at host start to decide whether
+    /// <c>EngineeringObjectStateStore.RebuildIndexAsync</c> must walk the
+    /// object state collection and repopulate it (self-healing: an index
+    /// that was never built, or was lost, looks identical to one that is
+    /// legitimately empty because nothing has been indexed yet — both are
+    /// fixed the same way).
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <exception cref="PersistenceStoreUnavailableException">The store could not be queried.</exception>
+    Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -149,6 +258,66 @@ public interface IPersistenceTransaction
     /// <paramref name="keyPrefix"/> (the empty string matches every key),
     /// in ascending ordinal key order, including this transaction's own
     /// uncommitted writes.
+    /// </summary>
+    Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Writes (replacing any existing row for <paramref name="objectId"/>)
+    /// this object's own searchable text into the platform's one search
+    /// index (`WP 18.1B`, SQLite FTS5), inside this same transaction —
+    /// never a separate write, so a rolled-back transaction leaves no index
+    /// row and a committed one is searchable the instant the commit lands.
+    /// </summary>
+    /// <param name="objectId">The object being indexed.</param>
+    /// <param name="kind">The object's own canonical Kind.</param>
+    /// <param name="projectId">The project the object sits under, or <see langword="null"/> if it sits under none (or is itself a project).</param>
+    /// <param name="title">The object's own display name/title.</param>
+    /// <param name="identifier">The object's own business identifier, or <see langword="null"/> if it has none.</param>
+    /// <param name="refs">
+    /// Extra searchable text specific to the object's own Kind — for
+    /// Evidence, its issue reference, each citation's library and record
+    /// id, and each declared figure's name, space-joined; <see langword="null"/>
+    /// for a Kind with nothing extra to index.
+    /// </param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    Task IndexTextAsync(
+        Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Removes <paramref name="objectId"/>'s own row from the search index (`WP 18.1B`), inside this same transaction. Idempotent.</summary>
+    Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// The read-only surface of one in-flight read opened by
+/// <see cref="IQueryablePersistenceStore.ExecuteInReadTransactionAsync{T}"/>
+/// (`WP 18.1A`).
+/// </summary>
+/// <remarks>
+/// Read-only by omission, not by convention: unlike <see cref="IPersistenceTransaction"/>
+/// this carries no <c>Write</c>/<c>Delete</c> member at all, so a caller
+/// cannot write through a handle that was never given a write lock to
+/// write with.
+/// </remarks>
+public interface IPersistenceReadTransaction
+{
+    /// <summary>
+    /// The store sequence every read through this handle is consistent
+    /// with — the same value <see cref="Tempest.Core.Events.WorkspaceChange.Sequence"/>
+    /// reports for the commit that produced this state.
+    /// </summary>
+    long Sequence { get; }
+
+    /// <summary>Reads the text value under <paramref name="key"/>.</summary>
+    Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Reads every text record in <paramref name="collection"/>, in ascending ordinal key order.</summary>
+    Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists every key in <paramref name="collection"/> beginning with
+    /// <paramref name="keyPrefix"/> (the empty string matches every key),
+    /// in ascending ordinal key order.
     /// </summary>
     Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default);
 }

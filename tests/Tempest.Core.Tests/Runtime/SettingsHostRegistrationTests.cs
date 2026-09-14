@@ -17,7 +17,7 @@ public class SettingsHostRegistrationTests
         var host = new TempestHostBuilder(Type.EmptyTypes)
             .AddConfigurationSource(new MemoryConfigurationSource(
             [
-                new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
             ]))
             .Build();
 
@@ -53,7 +53,7 @@ public class SettingsHostRegistrationTests
 
             // `ADR-0144`: the default backend is SQLite. The three store
             // shapes are one instance, not three - which is what actually
-            // matters here, and what two `Singleton<..., PersistenceStore>()`
+            // matters here, and what two `Singleton<..., SqlitePersistenceStore>()`
             // registrations used not to give.
             Assert.IsType<SqlitePersistenceStore>(store);
             Assert.Same(store, host.Services!.GetService(typeof(IBinaryPersistenceStore)));

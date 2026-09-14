@@ -144,7 +144,12 @@ public sealed class ConstantSeed : IReferenceSeed<ConstantDefinition>
                 Applicability = applicability,
                 SourceClassification = "CODATA fundamental physical constant",
             },
-            SeedSources.NistCodata2022(row));
+            SeedSources.NistCodata2022(row),
+            new SourceCitation(
+                "National Institute of Standards and Technology (NIST)",
+                "CODATA Internationally Recommended Values of the Fundamental Physical Constants — Complete Listing (allascii.txt)",
+                Edition: "2022 CODATA adjustment",
+                RowOrEntry: row));
 
     private static ReferenceSeedRecord<ConstantDefinition> Measured(
         string recordId,
@@ -169,5 +174,10 @@ public sealed class ConstantSeed : IReferenceSeed<ConstantDefinition>
                 Category = category,
                 SourceClassification = "CODATA fundamental physical constant",
             },
-            SeedSources.NistCodata2022(row));
+            SeedSources.NistCodata2022(row),
+            new SourceCitation(
+                "National Institute of Standards and Technology (NIST)",
+                "CODATA Internationally Recommended Values of the Fundamental Physical Constants — Complete Listing (allascii.txt)",
+                Edition: "2022 CODATA adjustment",
+                RowOrEntry: row));
 }

@@ -11,17 +11,17 @@ namespace Tempest.Core.Tests.Persistence;
 /// The claims that are <see cref="SqlitePersistenceStore"/>'s own
 /// (`ADR-0144`, `WP 17.1A`): the schema it creates, the durability its
 /// transactions give, the cross-process lock it holds, the file handles it
-/// releases on disposal, and the query costs the file-per-key store could
-/// not pay.
+/// releases on disposal, and the query costs the deleted file-per-key
+/// store could not pay.
 /// </summary>
 /// <remarks>
-/// Everything this store shares with the file store is asserted once, in
-/// the backend-agnostic contract classes
-/// (<see cref="PersistenceStoreTests{TBackend}"/>,
-/// <see cref="BinaryPersistenceStoreTests{TBackend}"/>,
-/// <see cref="PersistenceStoreHostileNameTests{TBackend}"/>,
-/// <see cref="QueryablePersistenceStoreTests{TBackend}"/>), each of which
-/// runs against both backends. Nothing here repeats them.
+/// The store-contract claims this backend shares with every backend a
+/// store could have are asserted once, in the store-contract classes
+/// (<see cref="PersistenceStoreTests"/>, <see cref="BinaryPersistenceStoreTests"/>,
+/// <see cref="PersistenceStoreHostileNameTests"/>,
+/// <see cref="QueryablePersistenceStoreTests"/>) — all four re-pointed
+/// onto this backend alone by `WP 18.1A`, since the file-per-key store
+/// they once also ran against is deleted. Nothing here repeats them.
 /// </remarks>
 public sealed class SqlitePersistenceStoreTests : IDisposable
 {
@@ -36,7 +36,7 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
     private static IConfigurationProvider ConfigurationFor(string rootPath) =>
         new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(
         [
-            new KeyValuePair<string, string>(PersistenceStore.RootPathConfigurationKey, rootPath),
+            new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
         ])).Build();
 
     private SqlitePersistenceStore NewStore(string? rootPath = null)
@@ -76,7 +76,7 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         // folder the shipped application keeps a user's data in, which is
         // the rule `WP 17.0A` set for this suite and `ADR-0144` did not
         // relax.
-        Assert.Equal("persistence-data", PersistenceStore.DefaultRootPath);
+        Assert.Equal("persistence-data", SqlitePersistenceStore.DefaultRootPath);
     }
 
     [Fact]
@@ -536,31 +536,205 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
             $"Listing and reading 10,000 keys took {listing.ElapsedMilliseconds + reading.ElapsedMilliseconds} ms.");
     }
 
+    // The file backend's own answer — that its ExecuteInTransactionAsync
+    // ran the unit of work but could not roll it back — is deleted with
+    // that backend (`WP 18.1A`). The claim this class states instead is
+    // AThrowInsideATransaction_RollsBackEveryWriteItHadMade above: SQLite's
+    // ExecuteInTransactionAsync IS atomic, unconditionally.
+
     // ----------------------------------------------------------------
-    // The file backend's own answer, stated rather than implied
+    // The store sequence (`WP 18.1A`)
     // ----------------------------------------------------------------
 
     [Fact]
-    public async Task TheFileBackend_DoesNotRollBackAUnitOfWork_AndThisIsDocumentedNotAccidental()
+    public async Task CommittingATransaction_AdvancesCurrentSequenceByExactlyOne()
     {
-        // `ADR-0144` retains `Persistence:Backend=files` for one release
-        // and gives it `IQueryablePersistenceStore` so that a consumer
-        // written against the interface still runs there. What it cannot
-        // give it is atomicity. That is stated in capitals on
-        // `PersistenceStore.ExecuteInTransactionAsync`, and asserted here,
-        // so that no reader can acquire the opposite belief from a green
-        // suite: the difference between the two backends is a fact about
-        // the release, not a bug to be found later.
-        using var temporary = new TempDirectory();
-        var store = new PersistenceStore(ConfigurationFor(temporary.Path));
+        var store = NewStore();
+        var before = store.CurrentSequence;
+
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "a", "1", token));
+
+        Assert.Equal(before + 1, store.CurrentSequence);
+    }
+
+    [Fact]
+    public async Task ARolledBackTransaction_DoesNotAdvanceCurrentSequence()
+    {
+        var store = NewStore();
+        var before = store.CurrentSequence;
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            ((IQueryablePersistenceStore)store).ExecuteInTransactionAsync(async (transaction, token) =>
+            store.ExecuteInTransactionAsync(async (transaction, token) =>
             {
-                await transaction.WriteAsync("collection", "first", "a", token);
+                await transaction.WriteAsync("collection", "a", "1", token);
                 throw new InvalidOperationException("no");
             }));
 
-        Assert.Equal("a", await store.ReadAsync("collection", "first"));
+        Assert.Equal(before, store.CurrentSequence);
+    }
+
+    [Fact]
+    public async Task SeveralCommits_EachAdvanceTheSequenceByOne_InCommitOrder()
+    {
+        var store = NewStore();
+        var start = store.CurrentSequence;
+        var observed = new List<long>();
+
+        for (var i = 0; i < 5; i++)
+        {
+            await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", $"k{i}", "v", token));
+            observed.Add(store.CurrentSequence);
+        }
+
+        Assert.Equal(
+            Enumerable.Range(1, 5).Select(i => start + i),
+            observed);
+    }
+
+    [Fact]
+    public async Task TheSequence_SurvivesARestart()
+    {
+        var root = Path.Combine(RootPath, "sequence-restart");
+        var store = NewStore(root);
+
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "a", "1", token));
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "b", "2", token));
+        var beforeRestart = store.CurrentSequence;
+
+        ReleaseStores();
+        var reopened = NewStore(root);
+
+        Assert.Equal(beforeRestart, reopened.CurrentSequence);
+
+        await reopened.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "c", "3", token));
+        Assert.Equal(beforeRestart + 1, reopened.CurrentSequence);
+    }
+
+    // ----------------------------------------------------------------
+    // Read transactions (`WP 18.1A`)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AReadTransaction_ReportsTheSequenceAndDataItSaw()
+    {
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "key", "value", token));
+
+        var (sequence, value) = await store.ExecuteInReadTransactionAsync(async (transaction, token) =>
+            (transaction.Sequence, await transaction.ReadAsync("collection", "key", token)));
+
+        Assert.Equal(store.CurrentSequence, sequence);
+        Assert.Equal("value", value);
+    }
+
+    [Fact]
+    public async Task AReadTransaction_NeverBlocksOnAConcurrentWriter_AndTheReverse()
+    {
+        // The property that makes this safe to call from a UI thread's own
+        // async handler: a read transaction takes no write lock (`BEGIN`,
+        // not `BEGIN IMMEDIATE`), so it never contends with one.
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync((transaction, token) => transaction.WriteAsync("collection", "key", "before", token));
+
+        var writerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseWriter = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var writer = store.ExecuteInTransactionAsync(async (transaction, token) =>
+        {
+            await transaction.WriteAsync("collection", "key", "after", token);
+            writerEntered.TrySetResult();
+            await releaseWriter.Task;
+        });
+
+        await writerEntered.Task;
+
+        // A read started while the writer holds the write lock and has not
+        // yet committed: it must complete, promptly, seeing the value from
+        // before the still-open write.
+        var value = await store.ExecuteInReadTransactionAsync(
+            (transaction, token) => transaction.ReadAsync("collection", "key", token));
+
+        Assert.Equal("before", value);
+
+        releaseWriter.TrySetResult();
+        await writer;
+    }
+
+    [Fact]
+    public async Task AReadTransactionInFlight_NeverObservesACommitThatLandsDuringIt()
+    {
+        // The coherence claim `WP 18.1A` exists for, proved deterministically
+        // through SQLite's own WAL snapshot isolation rather than raced: a
+        // read transaction's snapshot is fixed at its own first statement,
+        // so two objects it reads either both show the change a later
+        // commit made, or neither does — never one of each.
+        var store = NewStore();
+        await store.ExecuteInTransactionAsync(async (transaction, token) =>
+        {
+            await transaction.WriteAsync("collection", "parent", "parent-before", token);
+            await transaction.WriteAsync("collection", "child", "child-before", token);
+        });
+
+        var beforeSequence = store.CurrentSequence;
+        string? parentSeenInFlight = null;
+        string? childSeenInFlight = null;
+        long sequenceSeenInFlight = -1;
+
+        await store.ExecuteInReadTransactionAsync(async (readTransaction, token) =>
+        {
+            // The read's snapshot is established here, by its own first
+            // statement — before the write below has even begun.
+            sequenceSeenInFlight = readTransaction.Sequence;
+            parentSeenInFlight = await readTransaction.ReadAsync("collection", "parent", token);
+
+            // A transaction touching both objects, committed while the read
+            // above is still open.
+            await store.ExecuteInTransactionAsync(async (writeTransaction, writeToken) =>
+            {
+                await writeTransaction.WriteAsync("collection", "parent", "parent-after", writeToken);
+                await writeTransaction.WriteAsync("collection", "child", "child-after", writeToken);
+            }, token);
+
+            // Read inside the SAME still-open read transaction, after that
+            // commit landed elsewhere.
+            childSeenInFlight = await readTransaction.ReadAsync("collection", "child", token);
+            return 0;
+        });
+
+        Assert.Equal(beforeSequence, sequenceSeenInFlight);
+        Assert.Equal("parent-before", parentSeenInFlight);
+        Assert.Equal("child-before", childSeenInFlight);
+
+        // A fresh read transaction, begun after the commit, sees both sides
+        // of the same transaction together — the "or entirely after" half.
+        var (afterSequence, parentAfter, childAfter) = await store.ExecuteInReadTransactionAsync(async (transaction, token) =>
+            (transaction.Sequence, await transaction.ReadAsync("collection", "parent", token), await transaction.ReadAsync("collection", "child", token)));
+
+        Assert.Equal(beforeSequence + 1, afterSequence);
+        Assert.Equal("parent-after", parentAfter);
+        Assert.Equal("child-after", childAfter);
+    }
+
+    [Fact]
+    public async Task AReadTransactionHandle_IsUnusableAfterItsReadReturns()
+    {
+        var store = NewStore();
+        IPersistenceReadTransaction? escaped = null;
+
+        await store.ExecuteInReadTransactionAsync((transaction, _) =>
+        {
+            escaped = transaction;
+            return Task.FromResult(0);
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => escaped!.ReadAsync("collection", "key"));
+    }
+
+    [Fact]
+    public async Task AReadTransaction_NullDelegate_IsRejected()
+    {
+        var store = NewStore();
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => store.ExecuteInReadTransactionAsync<int>(null!));
     }
 }

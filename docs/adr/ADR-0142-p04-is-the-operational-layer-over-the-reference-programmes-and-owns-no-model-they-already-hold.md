@@ -4,6 +4,15 @@
 
 Accepted — `P04` (Business OS), 2026-09-06.
 
+**Interaction, Purchasing, Quality and Records frozen by `WP 18.0C`**
+(`D-028`, 2026-09-09): unreachable from any shipped surface once
+`v0.18.0` records evidence rather than orchestrating a purchasing or
+quality workflow. `Organisation`, `Contact` and `Budget` — the tags a
+project points at and the figure it is measured against — stay live and
+accepted, along with `OperationalGovernance.cs`/`OperationalValidation.cs`
+(`OperationalFacts`, `PartyReference`), which they and `OrganisationValidationService`
+depend on directly. See `src/Frozen/README.md`.
+
 ## Context
 
 `P04` arrived last, after `P01`, `P02`, `P03`, `P05`, `P06` and `P07` were

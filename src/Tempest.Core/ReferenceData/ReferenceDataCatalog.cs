@@ -110,10 +110,19 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
         $"Key '{GetSecondaryKey(definition)}'";
 
     /// <inheritdoc />
+    public Task<IReferenceRecord<TDefinition>> RegisterAsync(
+        string recordId,
+        TDefinition definition,
+        ReferenceProvenance provenance,
+        CancellationToken cancellationToken = default) =>
+        RegisterAsync(recordId, definition, provenance, source: null, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<IReferenceRecord<TDefinition>> RegisterAsync(
         string recordId,
         TDefinition definition,
         ReferenceProvenance provenance,
+        SourceCitation? source,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
@@ -130,7 +139,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
             await RequireSecondaryKeyFreeAsync(definition, recordId, cancellationToken).ConfigureAwait(false);
 
-            var dto = new ReferenceDocumentDto<TDefinition>(recordId, definition, provenance, ReferenceValidationState.Draft, null);
+            var dto = new ReferenceDocumentDto<TDefinition>(recordId, definition, provenance, ReferenceValidationState.Draft, null, source);
             var document = await _documentStore
                 .CreateAsync(DocumentKind, Serialise(dto), cancellationToken)
                 .ConfigureAwait(false);
@@ -142,7 +151,7 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             _logger?.Information($"{LibraryName} record registered: '{recordId}' (document '{document.Id}').");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, definition, provenance, ReferenceValidationState.Draft, null, document.Id, document.CurrentRevisionNumber);
+                recordId, definition, provenance, ReferenceValidationState.Draft, null, document.Id, document.CurrentRevisionNumber, source);
         }
     }
 
@@ -219,12 +228,41 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
     }
 
     /// <inheritdoc />
-    public async Task<IReferenceRecord<TDefinition>> ReviseAsync(
+    public Task<IReferenceRecord<TDefinition>> ReviseAsync(
         string recordId,
         TDefinition definition,
         ReferenceProvenance provenance,
         string? changeSummary,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ReviseCoreAsync(recordId, definition, provenance, changeSummary, sourceSpecified: false, source: null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReferenceRecord<TDefinition>> ReviseAsync(
+        string recordId,
+        TDefinition definition,
+        ReferenceProvenance provenance,
+        string? changeSummary,
+        SourceCitation? source,
+        CancellationToken cancellationToken = default) =>
+        ReviseCoreAsync(recordId, definition, provenance, changeSummary, sourceSpecified: true, source, cancellationToken);
+
+    /// <summary>
+    /// The whole of <see cref="ReviseAsync(string,TDefinition,ReferenceProvenance,string?,CancellationToken)"/>
+    /// and its citation-aware overload. <paramref name="sourceSpecified"/>
+    /// tells the two apart: the citation-unaware overload carries the
+    /// record's own current citation forward untouched (it does not know
+    /// citations exist), while the citation-aware one always writes
+    /// <paramref name="source"/> as given, including <see langword="null"/>
+    /// to withdraw a citation that no longer holds.
+    /// </summary>
+    private async Task<IReferenceRecord<TDefinition>> ReviseCoreAsync(
+        string recordId,
+        TDefinition definition,
+        ReferenceProvenance provenance,
+        string? changeSummary,
+        bool sourceSpecified,
+        SourceCitation? source,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
         ArgumentNullException.ThrowIfNull(definition);
@@ -243,7 +281,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             await RequireSecondaryKeyFreeAsync(definition, recordId, cancellationToken).ConfigureAwait(false);
 
             var previousKey = GetSecondaryKey(current.Definition);
-            var revised = current with { Definition = definition, Provenance = provenance };
+            var effectiveSource = sourceSpecified ? source : current.Source;
+            var revised = current with { Definition = definition, Provenance = provenance, Source = effectiveSource };
             var revision = await _documentStore
                 .ReviseAsync(documentId, Serialise(revised), changeSummary, cancellationToken)
                 .ConfigureAwait(false);
@@ -265,7 +304,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             _logger?.Information($"{LibraryName} record revised: '{recordId}' (revision {revision.RevisionNumber}).");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, definition, provenance, current.ValidationState, current.SupersededByRecordId, documentId, revision.RevisionNumber);
+                recordId, definition, provenance, current.ValidationState, current.SupersededByRecordId, documentId, revision.RevisionNumber,
+                effectiveSource);
         }
     }
 
@@ -301,7 +341,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
             _logger?.Information($"{LibraryName} record '{recordId}' validation state: {current.ValidationState} -> {state}.");
 
             return new ReferenceRecord<TDefinition>(
-                recordId, current.Definition, current.Provenance, state, current.SupersededByRecordId, documentId, revision.RevisionNumber);
+                recordId, current.Definition, current.Provenance, state, current.SupersededByRecordId, documentId, revision.RevisionNumber,
+                current.Source);
         }
     }
 
@@ -358,7 +399,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 ReferenceValidationState.Superseded,
                 replacementRecordId,
                 documentId,
-                revision.RevisionNumber);
+                revision.RevisionNumber,
+                current.Source);
         }
     }
 
@@ -390,7 +432,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
 
         var dto = Deserialise(recordId, documentId, revision.Content);
         return new ReferenceRecord<TDefinition>(
-            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, revision.RevisionNumber);
+            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, revision.RevisionNumber,
+            dto.Source);
     }
 
     private async Task<IDisposable> AcquireSecondaryLockAsync(string? secondaryKey, CancellationToken cancellationToken) =>
@@ -463,7 +506,8 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
         var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
 
         return new ReferenceRecord<TDefinition>(
-            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, history[^1].RevisionNumber);
+            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, history[^1].RevisionNumber,
+            dto.Source);
     }
 
     private static string Serialise(ReferenceDocumentDto<TDefinition> dto) =>

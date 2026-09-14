@@ -10,12 +10,14 @@ using Tempest.Core.Calculations;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
+using Tempest.Core.Audit;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Evidence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Manufacturing;
@@ -74,7 +76,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <param name="persistenceRootPathOverride">
     /// A specific <see cref="Tempest.Core.Persistence.IPersistenceStore"/> root
     /// path to use instead of the conventional, working-directory-relative
-    /// default (`ADR-0041`'s own <c>PersistenceStore.DefaultRootPath</c>) —
+    /// default (`ADR-0144`'s own <c>SqlitePersistenceStore.DefaultRootPath</c>) —
     /// <see langword="null"/> (the default, used by the real running
     /// application) leaves production behaviour completely unchanged.
     /// Exists solely so test code can isolate its own persisted state per
@@ -130,7 +132,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
                 new MemoryConfigurationSource(
                 [
                     new KeyValuePair<string, string>(
-                        Tempest.Core.Persistence.PersistenceStore.RootPathConfigurationKey,
+                        Tempest.Core.Persistence.SqlitePersistenceStore.RootPathConfigurationKey,
                         _persistenceRootPathOverride),
                 ]),
             ];
@@ -148,7 +150,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // single-source-of-truth gap this Work Package exists to close.
         Workspace = await manager.StartAsync(cancellationToken).ConfigureAwait(false);
 
-        CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host);
+        // `WP 18.2B` (part 1): stateless and dependency-free, so it is
+        // simply constructed here over nothing, the same `ADR-0103` shape
+        // as every other Desktop-side collaborator. Built *before*
+        // `RegisterEngineeringDisciplines` (part 2) so the Evidence
+        // discipline's own Issue command handler can be wired to a real
+        // renderer at registration time, rather than an
+        // `IIssueSheetRenderer` this class would otherwise have no way to
+        // hand it after the fact — `Tempest.Workspace`'s own composer has
+        // no DI container to add a late instance to.
+        IssueSheetRenderer = new Tempest.Desktop.IssueSheets.IssueSheetRenderer();
+
+        CalculationTemplates = EngineeringWorkspaceComposer.RegisterEngineeringDisciplines(manager, host, IssueSheetRenderer);
 
         // ---- The Product Spine (`TD-84`) ----------------------------
         // Module -> Project -> Workspace. Composed here, after the
@@ -259,6 +272,18 @@ public sealed class WorkspaceHost : IAsyncDisposable
             logger: hostLogger,
             auditRecorder: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)),
             permissions: (Tempest.Core.Identity.IPermissionEvaluator)host.Services!.GetService(typeof(Tempest.Core.Identity.IPermissionEvaluator)));
+
+        // `WP 18.2A` (`ADR-0148`). The Evidence workspace's own governed
+        // service, audit query and the five governed libraries it cites —
+        // already-registered Platform Services, resolved here the same
+        // `ADR-0103` way as every other collaborator on this class.
+        EvidenceService = (IEvidenceService)host.Services!.GetService(typeof(IEvidenceService));
+        AuditQuery = (IAuditQuery)host.Services!.GetService(typeof(IAuditQuery));
+        Materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
+        Fasteners = (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog));
+        Bearings = (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog));
+        Standards = (IStandardCatalog)host.Services!.GetService(typeof(IStandardCatalog));
+        Constants = (IConstantCatalog)host.Services!.GetService(typeof(IConstantCatalog));
 
         // The Engineering Calculation surface's own read model. It composes
         // the four governed acts a calculation journey needs - populate,
@@ -387,6 +412,32 @@ public sealed class WorkspaceHost : IAsyncDisposable
     public ReferenceReviewService? ReferenceReview { get; private set; }
 
     /// <summary>
+    /// Gets the Evidence discipline's own governed service (`ADR-0148`,
+    /// `WP 18.0A`) — record, revise, cite, declare a figure, check and
+    /// issue. <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public IEvidenceService? EvidenceService { get; private set; }
+
+    /// <summary>Gets the platform's own audit query (`WP 18.2A`) — Evidence's own Audit section reads through this. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IAuditQuery? AuditQuery { get; private set; }
+
+    /// <summary>Gets the Materials Library (`WP 18.2A`) — the Evidence workspace's own Libraries tab reads the five governed libraries directly, rather than through <see cref="ReferenceLibraries"/>'s own six-library, no-source-citation summary. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IMaterialCatalog? Materials { get; private set; }
+
+    /// <summary>Gets the Fastener Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IFastenerCatalog? Fasteners { get; private set; }
+
+    /// <summary>Gets the Bearing Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IBearingCatalog? Bearings { get; private set; }
+
+    /// <summary>Gets the Standards Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IStandardCatalog? Standards { get; private set; }
+
+    /// <summary>Gets the Constants Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IConstantCatalog? Constants { get; private set; }
+
+    /// <summary>
     /// Gets the Engineering Calculation surface's own read model -
     /// <see langword="null"/> before <see cref="StartAsync"/> completes.
     /// </summary>
@@ -399,6 +450,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }
+
+    /// <summary>Gets the issue sheet PDF renderer (`WP 18.2B`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public Tempest.Workspace.Evidence.IIssueSheetRenderer? IssueSheetRenderer { get; private set; }
 
     /// <summary>Persists current session state (`ADR-0064`, unchanged) and shuts the Workspace down — called from the main window's own Closing handler (Window Lifecycle).</summary>
     public async Task ShutdownAsync(CancellationToken cancellationToken = default)

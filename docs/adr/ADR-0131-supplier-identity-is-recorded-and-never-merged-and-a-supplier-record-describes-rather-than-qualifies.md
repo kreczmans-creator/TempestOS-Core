@@ -4,6 +4,12 @@
 
 Accepted — `Group D` (P03 Commercial Intelligence), 2026-09-06.
 
+**Frozen by `WP 18.0C`** (`D-028`, 2026-09-09): `Tempest.Core.CommercialIntelligence`
+moved to `src/Frozen/Tempest.Core.CommercialIntelligence` in full —
+unreachable from any shipped surface, `D-028` having decided `v1.0`
+does not compare suppliers, cost or lead-time data on the engineer's
+behalf. See `src/Frozen/README.md`.
+
 ## Context
 
 A supplier database goes wrong in two ways, and both are the software

@@ -16,8 +16,9 @@ namespace Tempest.Core.Persistence;
 /// Satisfies all three store shapes — <see cref="IPersistenceStore"/>,
 /// <see cref="IBinaryPersistenceStore"/> and
 /// <see cref="IQueryablePersistenceStore"/> — from one instance over one
-/// file, exactly as <see cref="PersistenceStore"/> satisfied the first two
-/// from one directory tree.
+/// file. The platform's only store since <c>v0.18.0</c>: the file-per-key
+/// store this once stood beside, which satisfied the first two shapes
+/// from one directory tree, is deleted (`WP 18.1A`, `ADR-0144`).
 /// </para>
 /// <para>
 /// <b>Schema (version 1).</b>
@@ -50,7 +51,7 @@ namespace Tempest.Core.Persistence;
 /// Unicode string is a legal name and two names differing only in case are
 /// two records. The reserved-device-name encoding, the trailing-dot
 /// encoding, the legacy-path fallback and the case-insensitive-collision
-/// refusal that <see cref="PersistenceStore"/> needed all existed to make
+/// refusal that the deleted file-per-key store needed all existed to make
 /// a caller's key survive a file system; nothing here is a file name, so
 /// none of them exists. <c>CON</c>, <c>..</c>, <c>Rev1.</c> and
 /// <c>Steel</c>/<c>steel</c> are now simply four ordinary, distinct keys.
@@ -92,20 +93,30 @@ public sealed class SqlitePersistenceStore
     : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAsyncDisposable, IDisposable
 {
     /// <summary>
+    /// The configuration key the storage root path is read from.
+    /// Relocated here from the now-deleted file-per-key <c>PersistenceStore</c>
+    /// (`WP 18.1A`, `ADR-0144`); the key string and its default are
+    /// unchanged.
+    /// </summary>
+    public const string RootPathConfigurationKey = "Persistence:RootPath";
+
+    /// <summary>The root path used when <see cref="RootPathConfigurationKey"/> is not configured.</summary>
+    public const string DefaultRootPath = "persistence-data";
+
+    /// <summary>
     /// The configuration key selecting which persistence backend the Host
     /// registers.
     /// </summary>
     public const string BackendConfigurationKey = "Persistence:Backend";
 
-    /// <summary>The <see cref="BackendConfigurationKey"/> value selecting this store. The default.</summary>
-    public const string SqliteBackendValue = "sqlite";
-
     /// <summary>
-    /// The <see cref="BackendConfigurationKey"/> value selecting the
-    /// file-per-key <see cref="PersistenceStore"/>. Retained for exactly
-    /// one release; removed in <c>v0.18.0</c> (`ADR-0144`).
+    /// The <see cref="BackendConfigurationKey"/> value selecting this
+    /// store — the only recognised value since <c>v0.18.0</c>: the
+    /// file-per-key store this once named alongside (<c>files</c>) is
+    /// deleted (`WP 18.1A`, `ADR-0144`), and that value is now unknown
+    /// configuration rather than a second backend.
     /// </summary>
-    public const string FileBackendValue = "files";
+    public const string SqliteBackendValue = "sqlite";
 
     /// <summary>The database file's name within the persistence root.</summary>
     public const string DatabaseFileName = "tempest.db";
@@ -132,6 +143,7 @@ public sealed class SqlitePersistenceStore
     private readonly FileStream _lockFile;
 
     private bool _disposed;
+    private long _currentSequence;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="SqlitePersistenceStore"/>
@@ -162,10 +174,10 @@ public sealed class SqlitePersistenceStore
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _rootPath = configuration.TryGetValue(PersistenceStore.RootPathConfigurationKey, out var configuredPath)
+        _rootPath = configuration.TryGetValue(RootPathConfigurationKey, out var configuredPath)
             && !string.IsNullOrWhiteSpace(configuredPath)
             ? configuredPath
-            : PersistenceStore.DefaultRootPath;
+            : DefaultRootPath;
 
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
@@ -336,6 +348,9 @@ public sealed class SqlitePersistenceStore
     // ----------------------------------------------------------------
 
     /// <inheritdoc />
+    public long CurrentSequence => Volatile.Read(ref _currentSequence);
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
@@ -463,7 +478,23 @@ public sealed class SqlitePersistenceStore
             try
             {
                 await work(transaction, cancellationToken).ConfigureAwait(false);
+
+                // The sequence advances inside the same BEGIN IMMEDIATE …
+                // COMMIT as everything `work` wrote (`WP 18.1A`): a
+                // transaction that throws after this point still rolls the
+                // increment back with everything else, and one that
+                // commits reports a sequence a concurrent reader can never
+                // observe ahead of the data that earned it.
+                var sequence = await IncrementSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
                 await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+
+                // SQLite's own write lock (taken by BEGIN IMMEDIATE, above)
+                // serialises every transaction on this store end to end, so
+                // no later commit's sequence can reach `_currentSequence`
+                // before this one's — a plain write is enough, and Volatile
+                // rather than Interlocked.Exchange because nothing here
+                // races the same slot for supremacy, only for visibility.
+                Volatile.Write(ref _currentSequence, sequence);
             }
             catch
             {
@@ -476,6 +507,160 @@ public sealed class SqlitePersistenceStore
                 transaction.Invalidate();
             }
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        ThrowIfDisposed();
+
+        SqliteConnection connection;
+        try
+        {
+            connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open '{_databasePath}' to begin a read transaction.", ex);
+        }
+
+        await using (connection.ConfigureAwait(false))
+        {
+            // The default deferred BEGIN, not BEGIN IMMEDIATE: a read
+            // transaction takes no write lock and never contends with one,
+            // which is the whole point of a store that never blocks the UI
+            // thread on persistence. WAL mode (`ADR-0144`) gives it its own
+            // consistent snapshot as of its first statement, regardless of
+            // any commit that lands after that statement runs.
+            await ExecuteNonQueryAsync(connection, "BEGIN;", cancellationToken).ConfigureAwait(false);
+
+            var transaction = new SqliteReadTransactionScope(
+                connection, await ReadSequenceAsync(connection, cancellationToken).ConfigureAwait(false));
+            try
+            {
+                var result = await read(transaction, cancellationToken).ConfigureAwait(false);
+                transaction.Invalidate();
+
+                // COMMIT rather than ROLLBACK on a read-only transaction:
+                // either ends it correctly on SQLite, and COMMIT is the one
+                // that never logs a warning about an active statement.
+                await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+                return result;
+            }
+            catch
+            {
+                transaction.Invalidate();
+                await RollBackQuietlyAsync(connection).ConfigureAwait(false);
+                throw;
+            }
+            finally
+            {
+                transaction.Invalidate();
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (limit < 1)
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "The search limit must be at least 1.");
+        ThrowIfDisposed();
+
+        var matchExpression = BuildMatchExpression(query);
+        if (matchExpression is null)
+            return [];
+
+        return await ExecuteAsync(
+            $"search for '{query}'",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    "SELECT object_id, kind, project_id, bm25(search_index) AS match_rank, " +
+                    "snippet(search_index, -1, '[', ']', '…', 8) AS match_snippet " +
+                    "FROM search_index WHERE search_index MATCH $match ORDER BY match_rank LIMIT $limit;";
+                command.Parameters.AddWithValue("$match", matchExpression);
+                command.Parameters.AddWithValue("$limit", limit);
+
+                var hits = new List<SearchHit>();
+                await using var reader = await command.ExecuteReaderAsync(token).ConfigureAwait(false);
+                while (await reader.ReadAsync(token).ConfigureAwait(false))
+                {
+                    var objectId = Guid.ParseExact(reader.GetString(0), "N");
+                    var kind = reader.GetString(1);
+                    Guid? projectId = await reader.IsDBNullAsync(2, token).ConfigureAwait(false)
+                        ? null
+                        : Guid.ParseExact(reader.GetString(2), "N");
+                    var rank = reader.GetDouble(3);
+                    var snippet = reader.GetString(4);
+
+                    hits.Add(new SearchHit(objectId, kind, projectId, rank, snippet));
+                }
+
+                return (IReadOnlyList<SearchHit>)hits;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+
+        return await ExecuteAsync(
+            "check whether the search index is empty",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = "SELECT NOT EXISTS (SELECT 1 FROM search_index);";
+                var value = await command.ExecuteScalarAsync(token).ConfigureAwait(false);
+                return Convert.ToInt64(value, CultureInfo.InvariantCulture) != 0;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Turns a caller's free-text <paramref name="query"/> into an FTS5
+    /// <c>MATCH</c> expression: every alphanumeric run becomes its own
+    /// double-quoted prefix token (<c>"bra"*</c>), space-joined, so tokens
+    /// implicitly AND — narrowing, not widening, as more is typed — and
+    /// each one matches as a prefix, so a partial word finds a whole one.
+    /// </summary>
+    /// <returns><see langword="null"/> if <paramref name="query"/> has no searchable token (blank, or punctuation only).</returns>
+    private static string? BuildMatchExpression(string query)
+    {
+        var tokens = new List<string>();
+        var current = new System.Text.StringBuilder();
+
+        void Flush()
+        {
+            if (current.Length > 0)
+            {
+                tokens.Add(current.ToString());
+                current.Clear();
+            }
+        }
+
+        foreach (var ch in query)
+        {
+            if (char.IsLetterOrDigit(ch))
+                current.Append(ch);
+            else
+                Flush();
+        }
+
+        Flush();
+
+        if (tokens.Count == 0)
+            return null;
+
+        return string.Join(" ", tokens.Select(t => $"\"{t.Replace("\"", "\"\"", StringComparison.Ordinal)}\"*"));
     }
 
     // ----------------------------------------------------------------
@@ -534,7 +719,7 @@ public sealed class SqlitePersistenceStore
                 $"The persistence root '{_rootPath}' is already in use: another TempestOS instance holds its " +
                 $"instance lock '{_lockFilePath}'. Two instances must not share one database file, because " +
                 "each keeps in-memory indexes over it that the other cannot invalidate. Close the other " +
-                $"instance, or point this one at a different root with '{PersistenceStore.RootPathConfigurationKey}'.",
+                $"instance, or point this one at a different root with '{RootPathConfigurationKey}'.",
                 ex);
         }
     }
@@ -582,15 +767,70 @@ public sealed class SqlitePersistenceStore
 
                 INSERT INTO schema_info (version)
                 SELECT $version WHERE NOT EXISTS (SELECT 1 FROM schema_info);
+
+                -- `WP 18.1A`: the store's own monotonic commit counter
+                -- (IQueryablePersistenceStore.CurrentSequence). A single
+                -- row rather than a bare PRAGMA user_version, because it
+                -- must be advanced inside the very transaction it counts
+                -- (a PRAGMA cannot be) and read back through the same
+                -- table a coherent snapshot read reads its data from.
+                CREATE TABLE IF NOT EXISTS store_sequence (
+                    id    INTEGER PRIMARY KEY CHECK (id = 1),
+                    value INTEGER NOT NULL
+                );
+
+                INSERT INTO store_sequence (id, value)
+                SELECT 1, 0 WHERE NOT EXISTS (SELECT 1 FROM store_sequence WHERE id = 1);
+
+                -- `WP 18.1B`: the platform's one full-text search index.
+                -- `object_id`/`kind`/`project_id` are UNINDEXED — carried
+                -- alongside a match, never tokenised or matched against —
+                -- while `title`/`identifier`/`refs` are the searchable
+                -- columns. A separate virtual table rather than columns on
+                -- `records`, because FTS5's own tokeniser and ranking apply
+                -- to a table, not to a subset of another table's columns.
+                CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
+                    object_id UNINDEXED,
+                    kind UNINDEXED,
+                    project_id UNINDEXED,
+                    title,
+                    identifier,
+                    refs
+                );
                 """;
             command.Parameters.AddWithValue("$version", SchemaVersion);
             command.ExecuteNonQuery();
+
+            using var readSequence = connection.CreateCommand();
+            readSequence.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
+            _currentSequence = Convert.ToInt64(readSequence.ExecuteScalar(), CultureInfo.InvariantCulture);
         }
         catch (Exception ex)
         {
             throw new PersistenceStoreUnavailableException(
                 $"Failed to open or initialise the persistence database '{_databasePath}'.", ex);
         }
+    }
+
+    /// <summary>
+    /// Advances <c>store_sequence</c> by one and returns its new value,
+    /// inside the caller's already-open transaction.
+    /// </summary>
+    private static async Task<long> IncrementSequenceAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await ExecuteNonQueryAsync(connection, "UPDATE store_sequence SET value = value + 1 WHERE id = 1;", cancellationToken)
+            .ConfigureAwait(false);
+
+        return await ReadSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Reads <c>store_sequence</c>'s current value inside the caller's already-open transaction.</summary>
+    private static async Task<long> ReadSequenceAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
+        var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+        return Convert.ToInt64(value, CultureInfo.InvariantCulture);
     }
 
     private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
@@ -852,12 +1092,130 @@ public sealed class SqlitePersistenceStore
             return await ReadKeysAsync(command, cancellationToken).ConfigureAwait(false);
         }
 
+        public async Task IndexTextAsync(
+            Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+            ArgumentNullException.ThrowIfNull(title);
+            ThrowIfFinished();
+
+            // Delete-then-insert, not an upsert: a plain FTS5 table carries
+            // no unique constraint over its own UNINDEXED columns to
+            // conflict on, so this is the only way to replace a row rather
+            // than accumulate a second one for the same object every time
+            // its state is written.
+            await using (var delete = _connection.CreateCommand())
+            {
+                delete.CommandText = "DELETE FROM search_index WHERE object_id = $objectId;";
+                delete.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+                await delete.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            await using var insert = _connection.CreateCommand();
+            insert.CommandText =
+                "INSERT INTO search_index (object_id, kind, project_id, title, identifier, refs) " +
+                "VALUES ($objectId, $kind, $projectId, $title, $identifier, $refs);";
+            insert.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+            insert.Parameters.AddWithValue("$kind", kind);
+            insert.Parameters.AddWithValue("$projectId", (object?)projectId?.ToString("N") ?? DBNull.Value);
+            insert.Parameters.AddWithValue("$title", title);
+            insert.Parameters.AddWithValue("$identifier", (object?)identifier ?? DBNull.Value);
+            insert.Parameters.AddWithValue("$refs", (object?)refs ?? DBNull.Value);
+            await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        public async Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText = "DELETE FROM search_index WHERE object_id = $objectId;";
+            command.Parameters.AddWithValue("$objectId", objectId.ToString("N"));
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         private void ThrowIfFinished()
         {
             if (_finished)
                 throw new InvalidOperationException(
                     "This IPersistenceTransaction has already committed or rolled back. A transaction handle is " +
                     "valid only for the duration of the ExecuteInTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The <see cref="IPersistenceReadTransaction"/> handed to a caller's
+    /// read (`WP 18.1A`): every statement on the one connection that holds
+    /// the open, write-lock-free <c>BEGIN</c>, so every read this hands out
+    /// sees the same WAL snapshot as <see cref="Sequence"/> was read from.
+    /// </summary>
+    private sealed class SqliteReadTransactionScope : IPersistenceReadTransaction
+    {
+        private readonly SqliteConnection _connection;
+        private bool _finished;
+
+        internal SqliteReadTransactionScope(SqliteConnection connection, long sequence)
+        {
+            _connection = connection;
+            Sequence = sequence;
+        }
+
+        public long Sequence { get; }
+
+        internal void Invalidate() => _finished = true;
+
+        public async Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText = "SELECT text_value FROM records WHERE collection = $collection AND key = $key;";
+            command.Parameters.AddWithValue("$collection", collection);
+            command.Parameters.AddWithValue("$key", key);
+
+            var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            return value is null or DBNull ? null : (string)value;
+        }
+
+        public async Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            command.CommandText =
+                "SELECT key, text_value FROM records " +
+                "WHERE collection = $collection AND text_value IS NOT NULL ORDER BY key;";
+            command.Parameters.AddWithValue("$collection", collection);
+
+            var results = new List<KeyValuePair<string, string>>();
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                results.Add(new KeyValuePair<string, string>(reader.GetString(0), reader.GetString(1)));
+
+            return results;
+        }
+
+        public async Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+            ArgumentNullException.ThrowIfNull(keyPrefix);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            PrepareListKeys(command, collection, keyPrefix);
+            return await ReadKeysAsync(command, cancellationToken).ConfigureAwait(false);
+        }
+
+        private void ThrowIfFinished()
+        {
+            if (_finished)
+                throw new InvalidOperationException(
+                    "This IPersistenceReadTransaction has already ended. A read transaction handle is valid only " +
+                    "for the duration of the ExecuteInReadTransactionAsync call that produced it.");
         }
     }
 }

@@ -57,6 +57,8 @@ public sealed class InMemoryQueryablePersistenceStore
     private readonly object _publishLock = new();
 
     private Dictionary<(string Collection, string Key), Entry> _committed = new();
+    private Dictionary<Guid, IndexEntry> _indexCommitted = new();
+    private long _sequence;
 
     /// <summary>The number of transactions that committed.</summary>
     public int CommitCount { get; private set; }
@@ -177,6 +179,12 @@ public sealed class InMemoryQueryablePersistenceStore
     // ================================================================
 
     /// <inheritdoc />
+    public long CurrentSequence
+    {
+        get { lock (_publishLock) return _sequence; }
+    }
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
     {
         ValidateCollection(collection);
@@ -230,10 +238,14 @@ public sealed class InMemoryQueryablePersistenceStore
         try
         {
             Dictionary<(string, string), Entry> working;
+            Dictionary<Guid, IndexEntry> indexWorking;
             lock (_publishLock)
+            {
                 working = new Dictionary<(string, string), Entry>(_committed);
+                indexWorking = new Dictionary<Guid, IndexEntry>(_indexCommitted);
+            }
 
-            var transaction = new Transaction(working);
+            var transaction = new Transaction(working, indexWorking);
 
             try
             {
@@ -250,7 +262,11 @@ public sealed class InMemoryQueryablePersistenceStore
             transaction.Close();
 
             lock (_publishLock)
+            {
                 _committed = working;
+                _indexCommitted = indexWorking;
+                _sequence++;
+            }
 
             CommitCount++;
         }
@@ -258,6 +274,73 @@ public sealed class InMemoryQueryablePersistenceStore
         {
             _writeLock.Release();
         }
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (limit < 1)
+            throw new ArgumentOutOfRangeException(nameof(limit), limit, "The search limit must be at least 1.");
+
+        var tokens = Tokenize(query);
+        if (tokens.Count == 0)
+            return Task.FromResult<IReadOnlyList<SearchHit>>([]);
+
+        Dictionary<Guid, IndexEntry> snapshot;
+        lock (_publishLock)
+            snapshot = _indexCommitted;
+
+        var hits = snapshot
+            .Where(kv => tokens.All(t => MatchesToken(kv.Value, t)))
+            .OrderBy(kv => kv.Value.Title, StringComparer.OrdinalIgnoreCase)
+            .Take(limit)
+            .Select(kv => new SearchHit(kv.Key, kv.Value.Kind, kv.Value.ProjectId, 0d, kv.Value.Title))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<SearchHit>>(hits);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_publishLock)
+            return Task.FromResult(_indexCommitted.Count == 0);
+    }
+
+    /// <summary>Splits <paramref name="text"/> into alphanumeric words, mirroring FTS5's own default tokeniser closely enough for this double's purposes.</summary>
+    private static List<string> Tokenize(string text) =>
+        System.Text.RegularExpressions.Regex.Matches(text, "[\\p{L}\\p{N}]+").Select(m => m.Value).ToList();
+
+    /// <summary>Whether any word in <paramref name="entry"/>'s title, identifier or refs starts with <paramref name="token"/> — a prefix match, mirroring the real store's own FTS5 <c>MATCH "token"*</c>.</summary>
+    private static bool MatchesToken(IndexEntry entry, string token)
+    {
+        bool WordPrefixMatch(string? text) =>
+            text is not null && Tokenize(text).Any(w => w.StartsWith(token, StringComparison.OrdinalIgnoreCase));
+
+        return WordPrefixMatch(entry.Title) || WordPrefixMatch(entry.Identifier) || WordPrefixMatch(entry.Refs);
+    }
+
+    /// <inheritdoc />
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+
+        // No lock needed beyond the one that captures the pair: `_committed`
+        // is replaced wholesale on every commit (copy-on-write), never
+        // mutated in place, so a captured reference is an immutable
+        // snapshot for as long as this method holds it — true isolation
+        // from every later writer, without contending with one.
+        Dictionary<(string, string), Entry> committed;
+        long sequence;
+        lock (_publishLock)
+        {
+            committed = _committed;
+            sequence = _sequence;
+        }
+
+        return read(new ReadTransaction(committed, sequence), cancellationToken);
     }
 
     private static void Validate(string collection, string key)
@@ -281,11 +364,14 @@ public sealed class InMemoryQueryablePersistenceStore
         public static Entry OfBytes(byte[] bytes) => new(null, bytes);
     }
 
+    /// <summary>One search-index row (`WP 18.1B`), held in memory the same copy-on-write way as every other committed record.</summary>
+    private sealed record IndexEntry(string Kind, Guid? ProjectId, string Title, string? Identifier, string? Refs);
+
     /// <summary>
     /// The handle handed to a transaction body. Reads and writes the
     /// working copy only; unusable once the transaction has closed.
     /// </summary>
-    private sealed class Transaction(Dictionary<(string Collection, string Key), Entry> working) : IPersistenceTransaction
+    private sealed class Transaction(Dictionary<(string Collection, string Key), Entry> working, Dictionary<Guid, IndexEntry> indexWorking) : IPersistenceTransaction
     {
         private bool _closed;
 
@@ -349,12 +435,75 @@ public sealed class InMemoryQueryablePersistenceStore
             return Task.FromResult<IReadOnlyList<string>>(matching);
         }
 
+        public Task IndexTextAsync(
+            Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfClosed();
+            ArgumentException.ThrowIfNullOrWhiteSpace(kind);
+            ArgumentNullException.ThrowIfNull(title);
+
+            indexWorking[objectId] = new IndexEntry(kind, projectId, title, identifier, refs);
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default)
+        {
+            ThrowIfClosed();
+            indexWorking.Remove(objectId);
+            return Task.CompletedTask;
+        }
+
         private void ThrowIfClosed()
         {
             if (_closed)
                 throw new InvalidOperationException(
                     "This transaction handle was used after its body returned. A handle is valid only for the duration " +
                     "of the ExecuteInTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The handle handed to a read. Reads the captured, immutable snapshot
+    /// only — never <c>_committed</c> itself, which may already have moved
+    /// on by the time this runs.
+    /// </summary>
+    private sealed class ReadTransaction(Dictionary<(string Collection, string Key), Entry> snapshot, long sequence) : IPersistenceReadTransaction
+    {
+        public long Sequence => sequence;
+
+        public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+        {
+            Validate(collection, key);
+            return Task.FromResult(snapshot.TryGetValue((collection, key), out var entry) ? entry.Text : null);
+        }
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default)
+        {
+            ValidateCollection(collection);
+
+            var all = snapshot
+                .Where(e => string.Equals(e.Key.Collection, collection, StringComparison.Ordinal) && e.Value.Text is not null)
+                .OrderBy(e => e.Key.Key, StringComparer.Ordinal)
+                .Select(e => new KeyValuePair<string, string>(e.Key.Key, e.Value.Text!))
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<KeyValuePair<string, string>>>(all);
+        }
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default)
+        {
+            ValidateCollection(collection);
+            ArgumentNullException.ThrowIfNull(keyPrefix);
+
+            var matching = snapshot.Keys
+                .Where(k => string.Equals(k.Collection, collection, StringComparison.Ordinal)
+                            && k.Key.StartsWith(keyPrefix, StringComparison.Ordinal))
+                .Select(k => k.Key)
+                .OrderBy(k => k, StringComparer.Ordinal)
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<string>>(matching);
         }
     }
 }
