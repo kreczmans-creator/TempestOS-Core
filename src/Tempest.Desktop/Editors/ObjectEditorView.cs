@@ -3,6 +3,7 @@ using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -223,9 +224,26 @@ public sealed class ObjectEditorView : UserControl
     private readonly TextBox _attachmentContentTypeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _attachmentSizeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _attachmentAddButton = new() { Content = "Attach", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _addFileViaPickerButton = new() { Content = "Add File…", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _addFileViaPickerButton = new() { Content = "Browse…", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly TextBlock _attachmentStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _attachmentsSection = null!;
+
+    // `WP 19.4B` — the drop target every `IHasAttachments` Kind's
+    // Attachments section now offers, alongside the un-gated
+    // `_addFileViaPickerButton` (`Browse…`) it hosts inline: "Drop a file
+    // here, or Browse…". `_attachmentReferenceExpander` demotes the old
+    // typed-metadata mini-form (File Name/Content Type/Size/Attach) below
+    // the drop zone, collapsed by default — the honest path for an
+    // attachment whose file lives elsewhere, kept exactly as it validated
+    // before.
+    private readonly TextBlock _attachmentsDropZoneLabel = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Border _attachmentsDropZone = new()
+    {
+        BorderThickness = new Thickness(1.5),
+        CornerRadius = new CornerRadius(DesignTokens.PanelCornerRadius),
+        Padding = new Thickness(DesignTokens.SpaceMd),
+    };
+    private Expander _attachmentReferenceExpander = null!;
 
     // `WP 18.2A` — declaration-per-Kind: the Description (read-only
     // mechanical metadata) and Where-used sections Part/Assembly/Component
@@ -509,6 +527,19 @@ public sealed class ObjectEditorView : UserControl
         _verificationConditionalButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Conditional).ConfigureAwait(true);
         _attachmentAddButton.Click += async (_, _) => await OnAttachAsync().ConfigureAwait(true);
         _addFileViaPickerButton.Click += async (_, _) => await OnAddFileViaPickerAsync().ConfigureAwait(true);
+
+        // `WP 19.4B` — the Attachments section's own drop target, mirroring
+        // `EvidenceWorkspaceView`'s identical `SetAllowDrop`/`DragOverEvent`/
+        // `DropEvent` wiring (that class's own remarks explain why the
+        // obsolete `IDataObject`/`GetFiles` API is used narrowly, suppressed
+        // rather than migrated). `DragEnterEvent`/`DragLeaveEvent` add only
+        // the highlight the brief asks for; the accept/reject decision is
+        // still made in `OnAttachmentsDragOver`.
+        DragDrop.SetAllowDrop(_attachmentsDropZone, true);
+        _attachmentsDropZone.AddHandler(DragDrop.DragEnterEvent, OnAttachmentsDragEnter);
+        _attachmentsDropZone.AddHandler(DragDrop.DragOverEvent, OnAttachmentsDragOver);
+        _attachmentsDropZone.AddHandler(DragDrop.DragLeaveEvent, OnAttachmentsDragLeave);
+        _attachmentsDropZone.AddHandler(DragDrop.DropEvent, OnAttachmentsDrop);
         _citeButton.Click += async (_, _) => await OnCiteAsync().ConfigureAwait(true);
         _declareFigureButton.Click += async (_, _) => await OnDeclareFigureAsync().ConfigureAwait(true);
         _changeSubjectButton.Click += async (_, _) => await OnChangeSubjectAsync().ConfigureAwait(true);
@@ -697,14 +728,36 @@ public sealed class ObjectEditorView : UserControl
         _verificationResultSection = BuildSection("Record Result", verificationResultPanel);
         _verificationResultSection.IsVisible = false;
 
+        var dropZoneContent = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = DesignTokens.SpaceXs,
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        dropZoneContent.Children.Add(_attachmentsDropZoneLabel);
+        dropZoneContent.Children.Add(_addFileViaPickerButton);
+        _attachmentsDropZone.Child = dropZoneContent;
+        Avalonia.Automation.AutomationProperties.SetName(_attachmentsDropZone, "Drop a file here, or Browse…");
+        ThemeReactiveBrush.Bind(_attachmentsDropZone, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+        ThemeReactiveBrush.Bind(_attachmentsDropZone, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
+
+        var referencePanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        referencePanel.Children.Add(LabeledRow("File Name", _attachmentFileNameBox));
+        referencePanel.Children.Add(LabeledRow("Content Type", _attachmentContentTypeBox));
+        referencePanel.Children.Add(LabeledRow("Size (bytes)", _attachmentSizeBox));
+        referencePanel.Children.Add(_attachmentAddButton);
+        _attachmentReferenceExpander = new Expander
+        {
+            Header = "Record a reference without the file",
+            IsExpanded = false,
+            Content = referencePanel,
+        };
+
         var attachmentsPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         attachmentsPanel.Children.Add(_attachmentsListPanel);
         attachmentsPanel.Children.Add(new Separator());
-        attachmentsPanel.Children.Add(LabeledRow("File Name", _attachmentFileNameBox));
-        attachmentsPanel.Children.Add(LabeledRow("Content Type", _attachmentContentTypeBox));
-        attachmentsPanel.Children.Add(LabeledRow("Size (bytes)", _attachmentSizeBox));
-        attachmentsPanel.Children.Add(_attachmentAddButton);
-        attachmentsPanel.Children.Add(_addFileViaPickerButton);
+        attachmentsPanel.Children.Add(_attachmentsDropZone);
+        attachmentsPanel.Children.Add(_attachmentReferenceExpander);
         attachmentsPanel.Children.Add(_attachmentStatusMessage);
         _attachmentsSection = BuildSection("Attachments", attachmentsPanel);
         _attachmentsSection.IsVisible = false;
@@ -1862,6 +1915,99 @@ public sealed class ObjectEditorView : UserControl
     }
 
     /// <summary>
+    /// Reads each path's bytes straight off disk and attaches it through
+    /// <see cref="IHasAttachments.AttachContentAsync"/> — the same
+    /// real-bytes path <see cref="OnAddFileViaPickerAsync"/> uses, minus the
+    /// <see cref="IFilePicker"/> indirection a drop does not need (the
+    /// dropped files already name real paths). One attachment per path
+    /// (`WP 19.4B`, Scope §2).
+    /// </summary>
+    /// <remarks>
+    /// Both <see cref="OnAttachmentsDrop"/> and <c>Tempest.Desktop.Tests</c>
+    /// (`InternalsVisibleTo`) call this directly — headless Avalonia cannot
+    /// raise a real OS drag/drop reliably, the identical reasoning
+    /// <c>EvidenceWorkspaceView.CreateFromFilesAsync</c>'s own remarks give
+    /// for the same shape (a real drop handler funnelling into one shared
+    /// method a test can call without a real `DragEventArgs`).
+    /// </remarks>
+    internal async Task AttachFilesAsync(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+
+        if (paths.Count == 0 || _populatedTarget is not IHasAttachments attachable)
+            return;
+
+        foreach (var path in paths)
+        {
+            var fileName = Path.GetFileName(path);
+            var content = await File.ReadAllBytesAsync(path).ConfigureAwait(true);
+            await attachable.AttachContentAsync(fileName, FileContentTypes.ForFileName(fileName), content).ConfigureAwait(true);
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        var message = paths.Count == 1 ? $"Attached '{Path.GetFileName(paths[0])}'." : $"Attached {paths.Count} file(s).";
+        _attachmentStatusMessage.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(true));
+    }
+
+    /// <summary>
+    /// The Attachments section's own drop target (`WP 19.4B`, Scope §2):
+    /// highlights on <c>DragEnter</c>, decides Copy-vs-reject on
+    /// <c>DragOver</c> (files only, mirroring
+    /// <c>EvidenceWorkspaceView.OnListDragOver</c>), un-highlights on
+    /// <c>DragLeave</c>/<c>Drop</c>, and funnels a real drop into
+    /// <see cref="AttachFilesAsync"/> — the same "read real bytes, attach,
+    /// refresh, report" path <see cref="OnAddFileViaPickerAsync"/> already
+    /// established.
+    /// </summary>
+    private void OnAttachmentsDragEnter(object? sender, DragEventArgs e) => SetAttachmentsDropZoneHighlighted(true);
+
+    private void OnAttachmentsDragLeave(object? sender, DragEventArgs e) => SetAttachmentsDropZoneHighlighted(false);
+
+#pragma warning disable CS0618 // 'DragEventArgs.Data' is obsolete — see EvidenceWorkspaceView.OnListDragOver's own identical remark: the old IDataObject API is fully functional, Avalonia only warns, and the typed DataTransfer/DataFormat<T> replacement has no built-in file format.
+    private void OnAttachmentsDragOver(object? sender, DragEventArgs e)
+    {
+        var isFileDrag = e.Data.Contains(DataFormats.Files);
+        e.DragEffects = isFileDrag ? DragDropEffects.Copy : DragDropEffects.None;
+        SetAttachmentsDropZoneHighlighted(isFileDrag);
+    }
+
+    private async void OnAttachmentsDrop(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = DragDropEffects.None;
+        SetAttachmentsDropZoneHighlighted(false);
+
+        var dropped = e.Data.GetFiles()?.OfType<Avalonia.Platform.Storage.IStorageFile>()
+            .Select(f => f.Path.LocalPath).ToList();
+        if (dropped is not { Count: > 0 })
+            return;
+
+        await AttachFilesAsync(dropped).ConfigureAwait(true);
+    }
+#pragma warning restore CS0618
+
+    /// <summary>
+    /// Paints the drop zone's border/background from the accent/hover
+    /// tokens while a file drag is over it, or back to the resting hairline
+    /// tokens otherwise — a one-off resource lookup (not another
+    /// <see cref="ThemeReactiveBrush.Bind"/> registration) since the
+    /// resting state is already theme-reactive from construction and a
+    /// drag interaction is always over a control already attached and
+    /// themed.
+    /// </summary>
+    private void SetAttachmentsDropZoneHighlighted(bool highlighted)
+    {
+        var borderKey = highlighted ? BrandPalette.AccentBrushKey : BrandPalette.HairlineStrongBrushKey;
+        var backgroundKey = highlighted ? BrandPalette.HoverBackgroundBrushKey : BrandPalette.SurfaceBackgroundBrushKey;
+        var variant = _attachmentsDropZone.ActualThemeVariant;
+
+        if (Application.Current?.TryGetResource(borderKey, variant, out var border) == true && border is IBrush borderBrush)
+            _attachmentsDropZone.BorderBrush = borderBrush;
+        if (Application.Current?.TryGetResource(backgroundKey, variant, out var background) == true && background is IBrush backgroundBrush)
+            _attachmentsDropZone.Background = backgroundBrush;
+    }
+
+    /// <summary>
     /// The Requirements Owner/Priority section (`WP 10.7A`) — gated on
     /// <see cref="_objectKind"/> (never a C# type-check: the data lives
     /// entirely in <see cref="IRequirementsService"/>'s own
@@ -2077,10 +2223,18 @@ public sealed class ObjectEditorView : UserControl
         _attachmentsSection.IsVisible = true;
         _attachmentsListPanel.Children.Clear();
 
-        // `WP 18.2A`, §4: Evidence's own Files section shows size and hash,
-        // and — when a picker is wired — real bytes can be added directly,
-        // never only the metadata-only mini-form below.
-        _addFileViaPickerButton.IsVisible = _evidenceSupport is not null && string.Equals(_objectKind, Core.Evidence.Evidence.CanonicalKind, StringComparison.Ordinal);
+        // `WP 19.4B`: every `IHasAttachments` Kind gets the drop zone and
+        // Browse — the Evidence-only `Kind` gate this used to carry is
+        // gone; real bytes can be added directly on a Calculation exactly
+        // as they always could on Evidence
+        // (`IHasAttachments.AttachContentAsync` was never Evidence-only,
+        // only this button's own visibility was). `_evidenceSupport` being
+        // `null` (no `IFilePicker` wired) still leaves Browse — and, since
+        // it sits inside the drop zone's own label, the "or Browse…" half
+        // of that label — honestly unavailable rather than run without one;
+        // the drop zone itself and `AttachFilesAsync` need no picker at all.
+        _addFileViaPickerButton.IsVisible = _evidenceSupport is not null;
+        _attachmentsDropZoneLabel.Text = _evidenceSupport is not null ? "Drop a file here, or" : "Drop a file here.";
 
         var attachments = await attachable.GetAttachmentsAsync().ConfigureAwait(true);
         if (attachments.Count == 0)
