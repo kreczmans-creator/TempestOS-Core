@@ -267,7 +267,11 @@ public sealed class LibrariesView : UserControl
 
             _rows.Children.Add(new TextBlock
             {
-                Text = $"{libraryName} ({records.Count})",
+                // `WP 19.10P` (D15): sorted and looked up by the routing
+                // key (unchanged, and shared with `EvidenceLibraryRow.Library`),
+                // but shown by its own display name — "Rate cards" for the
+                // one library whose key and screen text differ.
+                Text = $"{ReferenceLibraryAccess.DisplayNameFor(libraryName)} ({records.Count})",
                 FontWeight = DesignTokens.WeightHeading,
                 FontSize = DesignTokens.FontSizeHeading,
                 Margin = new Thickness(0, DesignTokens.SpaceMd, 0, DesignTokens.SpaceXs),
