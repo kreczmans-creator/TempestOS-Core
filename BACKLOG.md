@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (26 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (25 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -59,7 +59,6 @@ and nothing on disk.
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-131` | Focus-ring contrast test can't see any `Flat`-treatment state | unowned |
-| `TD-134` | `SettingsDocument<TDocument>` has no per-consumer notion of "current version" | unowned |
 | `TD-150` | `PersistenceStore`'s post-commit failure window: 0 of 3,330 tests would notice a revert | `WP 17.0C` |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-176` | `ProjectContext.RefreshAsync` closes the context when an overlapping render does not yet find a just-created project; the New Project with quotation journey exposed it and is fixed at the test, not the source | unowned (raised by v0.19.1 — `WP 19.7A`) |
@@ -239,6 +238,31 @@ markers, in order, on its timeout branch. Proven by
 through a real `WorkspaceHost`/`MainWindow` pair over an isolated
 persistence root: both markers reach the rolling file log, and
 "Desktop -> Composed." always logs strictly after "Host -> Running.".
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-134`. `SettingsDocument<TDocument>`
+(`src/Tempest.Core/Settings/SettingsDocument.cs`) gained an optional
+`currentVersion` constructor parameter — the `SchemaVersion` this build
+itself writes, not merely the highest one a supplied migration chain
+happens to reach (those two were the same thing for
+`EngineeringObjectStateStore`'s fixed, platform-wide
+`CurrentSchemaVersion`, but never for this seam's own per-consumer
+`targetVersion`, which is why the row's own "no notion of a current
+version" gap existed). `ApplyMigrations` now checks a stored document's
+version against it, before the migration loop, and discards and logs a
+document strictly ahead of it — the same asymmetry
+`EngineeringObjectStateStore.LoadAsync` already applies against its own
+`TargetSchemaVersion`. `null` — the default, and every one of the nine
+real consumers (`UserSettings`, `WindowUiState`, `WorkspaceState`,
+`ProjectContext`, `ShellNavigator`, `DesktopPanelUiState`,
+`FavouriteObjectsState`, `RecentObjectsState`, `MacroManager`) — is a
+strict no-op; none was changed to pass it. Proven by
+`tests/Tempest.Core.Tests/Settings/SettingsDocumentSchemaVersionTests.cs`:
+`WithACurrentVersionSupplied_ADocumentStrictlyAheadOfIt_IsDiscardedAndLogged`,
+`WithACurrentVersionSupplied_ADocumentAtExactlyThatVersion_IsNotDiscarded`,
+`WithACurrentVersionSupplied_ADocumentBelowIt_StillMigratesNormallyUpToIt`,
+and `WithNoCurrentVersionSupplied_ADocumentAheadOfEveryMigration_IsStillReturned`
+re-affirming the pre-existing, unaffected default behaviour.
 
 ## Owned by Programme
 
