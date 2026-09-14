@@ -147,21 +147,42 @@ jobs:
       # coverage figure per run is all the summary step ever reports on;
       # the summary step already states plainly when no coverage file
       # exists, so the Debug leg's summary says so rather than lying.
-      - name: Test (${{ matrix.configuration }})
+      # Two steps, one per configuration, rather than one step with a
+      # conditional argument: splatting a conditional array into a native
+      # command under pwsh handed dotnet the switch one character at a
+      # time (run 34895195651), so each leg spells its own command out.
+      - name: Test (Release)
+        if: matrix.configuration == 'Release'
         shell: pwsh
         run: |
-          $collect = if ('${{ matrix.configuration }}' -eq 'Release') { @('--collect:XPlat Code Coverage') } else { @() }
           dotnet test "${{ env.SOLUTION_PATH }}" `
-            --configuration ${{ matrix.configuration }} `
+            --configuration Release `
             --no-build `
             --logger trx `
             --logger "console;verbosity=normal" `
-            --results-directory "TestResults/${{ matrix.configuration }}" `
-            @collect `
+            --results-directory "TestResults/Release" `
+            --collect:"XPlat Code Coverage" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more tests failed for configuration '${{ matrix.configuration }}' (exit code $LASTEXITCODE)."
+            Write-Error "One or more tests failed for configuration 'Release' (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+          }
+
+      - name: Test (Debug)
+        if: matrix.configuration == 'Debug'
+        shell: pwsh
+        run: |
+          dotnet test "${{ env.SOLUTION_PATH }}" `
+            --configuration Debug `
+            --no-build `
+            --logger trx `
+            --logger "console;verbosity=normal" `
+            --results-directory "TestResults/Debug" `
+            --blame-hang `
+            --blame-hang-timeout 5m
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "One or more tests failed for configuration 'Debug' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
           }
 
