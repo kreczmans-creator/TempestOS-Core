@@ -73,11 +73,18 @@ internal sealed class DesktopCommandPrompt
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            // allowBlank: true — CommandParameter's own contract
+            // (`CommandParameter.cs` remarks): "an empty string is a value,
+            // and a binding that will not accept one says so through
+            // Validate." Whether blank is acceptable is entirely the
+            // parameter's own Check to decide; this prompt never
+            // pre-empts it with a dialog-level "a value is required".
             var value = await _inputDialog.PromptAsync(
                 descriptor.DisplayName,
                 LabelFor(parameter),
                 initialValue: parameter.DefaultValue ?? string.Empty,
-                validate: parameter.Check).ConfigureAwait(true);
+                validate: parameter.Check,
+                allowBlank: true).ConfigureAwait(true);
 
             // Declined, at any step. Nothing collected so far is used.
             if (value is null)

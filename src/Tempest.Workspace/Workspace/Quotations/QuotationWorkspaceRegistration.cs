@@ -141,7 +141,21 @@ public static class QuotationWorkspaceRegistration
                     ParseGuidOrEmpty(values["lineId"]), values["description"], ParseDecimalOrNull(values["hours"]),
                     ParseMoneyOrNull(values["rate"]), ParseMoneyOrNull(values["fixedPrice"])),
                 [
-                    new CommandParameter("lineId", "Line id", Validate: ValidateGuid),
+                    // `WP 19.5D`: `Guid.Empty` as `DefaultValue` — no
+                    // caller reaches this parameter without already
+                    // knowing the real line's own id (the Quote tab's own
+                    // Edit/Remove buttons dispatch `UpdateQuotationLineCommand`/
+                    // `RemoveQuotationLineCommand` directly, bypassing this
+                    // binding entirely — `ProjectQuoteView.OnUpdateLineAsync`/
+                    // `OnRemoveLineAsync`), but the Command Palette and Ribbon
+                    // still reach this descriptor generically and need one
+                    // value `ValidateGuid` accepts to complete the contract
+                    // (`CommandInvocationContractTests.EveryDeclaredParameter_HasAtLeastOneValueThatSatisfiesIt`)
+                    // — a parameter with no satisfying value at all is a
+                    // command nobody can invoke by Id. A default of
+                    // `Guid.Empty` still refuses cleanly downstream
+                    // (`IQuotationService`'s own "no line found").
+                    new CommandParameter("lineId", "Line id", DefaultValue: EmptyGuidText, Validate: ValidateGuid),
                     WorkspaceCommandBindings.Required("description", "Description"),
                     new CommandParameter("hours", "Hours (hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalDecimal),
                     new CommandParameter("rate", "Rate (\"amount currency\", hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
@@ -158,7 +172,8 @@ public static class QuotationWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, values) => new RemoveQuotationLineCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, ParseGuidOrEmpty(values["lineId"])),
-                [new CommandParameter("lineId", "Line id", Validate: ValidateGuid)],
+                // `WP 19.5D`: see `UpdateLine`'s own identical `lineId` remark above.
+                [new CommandParameter("lineId", "Line id", DefaultValue: EmptyGuidText, Validate: ValidateGuid)],
                 appliesToKinds: QuotationKind,
                 confirmationMessage: "Remove this line from the quotation?"),
         });
@@ -196,6 +211,13 @@ public static class QuotationWorkspaceRegistration
                 confirmationMessage: "Decline the selected quotation? This cannot be undone."),
         });
     }
+
+    /// <summary>
+    /// A syntactically valid, semantically meaningless line id — every
+    /// real caller supplies the actual line's own id directly (this
+    /// class's own `WP 19.5D` remarks on `lineId`'s `DefaultValue`).
+    /// </summary>
+    private static readonly string EmptyGuidText = Guid.Empty.ToString();
 
     private static string? ValidateGuid(string value) =>
         Guid.TryParse(value, out _) ? null : "must be a valid line id.";
