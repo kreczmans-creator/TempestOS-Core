@@ -1,16 +1,20 @@
-using System.Text.Json;
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Tempest.Core.Bearings;
+using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.Components;
 using Tempest.Core.Constants;
 using Tempest.Core.Fasteners;
+using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Standards;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace.Engineering;
+using Tempest.Workspace.Evidence;
 
 namespace Tempest.Desktop.Views;
 
@@ -28,13 +32,12 @@ public sealed record EvidenceLibraryRow(
 }
 
 /// <summary>
-/// The Evidence workspace's own <em>Libraries</em> tab (`WP 18.2A`, §5): the
-/// five governed reference libraries evidence cites (Materials, Fasteners,
-/// Bearings, Standards, Constants — deliberately not the sixth,
-/// Manufacturing Processes, which nothing in this Work Package's own scope
-/// cites), each record shown with its source citation, released and
-/// governed through the one existing review flow
-/// (<see cref="ReferenceReviewService"/>) — never a second one.
+/// The Evidence workspace's own <em>Libraries</em> tab (`WP 18.2A`, §5;
+/// master/detail and the three remaining libraries added `WP 19.6A`):
+/// every governed reference library, each record shown with its source
+/// citation, opened in a real record view (<see cref="ReferenceRecordView"/>)
+/// beside the list, released and governed through the one existing review
+/// flow (<see cref="ReferenceReviewService"/>) — never a second one.
 /// </summary>
 public sealed class LibrariesView : UserControl
 {
@@ -43,6 +46,10 @@ public sealed class LibrariesView : UserControl
     private readonly IBearingCatalog _bearings;
     private readonly IStandardCatalog _standards;
     private readonly IConstantCatalog _constants;
+    private readonly IProcessCatalog _manufacturing;
+    private readonly IComponentCatalog _components;
+    private readonly IRateCardCatalog _businessRateCards;
+    private readonly ReferenceLibraryCatalogues _catalogues;
     private readonly ReferenceReviewService _review;
     private readonly BracketCalculationWorkbench _bracketCalculations;
 
@@ -58,6 +65,26 @@ public sealed class LibrariesView : UserControl
     private readonly TextBox _newMaterialSourceDocument = new() { Watermark = "Source document", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _addMaterialButton = new() { Content = "Add Material", MinHeight = DesignTokens.MinControlSize };
 
+    // `WP 19.6A`: master/detail — a row's own Open action or double-tap
+    // shows the record view beside the list at typical widths, or in
+    // place of it (with Back) below `DesignTokens.CompactShellWidth`.
+    // A `DockPanel`, deliberately not a `Grid`: a test (this file's own
+    // and `EvidenceWorkspaceJourneyTests`/`EvidenceCheckIssueReviseJourneyTests`)
+    // finds one row by `GetLogicalDescendants().OfType<Grid>().First(g =>
+    // g ... contains the record's own text)` — if this container were
+    // itself a `Grid`, that same search would match the container before
+    // ever reaching an actual row, since the container's own descendants
+    // transitively contain every row's text too.
+    private readonly DockPanel _container = new();
+    private readonly ScrollViewer _listScroll;
+    private readonly ScrollViewer _detailScroll;
+    private readonly Button _backButton = new() { Content = "← Back to Libraries", MinHeight = DesignTokens.MinControlSize };
+    private readonly ReferenceRecordView _detail;
+
+    private (string Library, string RecordId)? _openRecord;
+    private bool _compact;
+    private Func<string, string, SourceCitation?, CancellationToken, Task<ReviseReferenceRecordInput?>>? _reviseRecordPrompt;
+
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
@@ -70,31 +97,60 @@ public sealed class LibrariesView : UserControl
     /// view directly without it) leaves Revise honestly unavailable rather
     /// than run with no dialog on screen, mirroring
     /// <see cref="Editors.EvidenceEditorSupport"/>'s own identical
-    /// discipline for the Object Editor's own pickers.
+    /// discipline for the Object Editor's own pickers. Also forwarded to
+    /// the detail pane's own identical prompt, so Revise behaves the same
+    /// whether started from a row or from the open record itself.
     /// </summary>
-    public Func<string, string, SourceCitation?, CancellationToken, Task<ReviseReferenceRecordInput?>>? ReviseRecordPrompt { get; set; }
+    public Func<string, string, SourceCitation?, CancellationToken, Task<ReviseReferenceRecordInput?>>? ReviseRecordPrompt
+    {
+        get => _reviseRecordPrompt;
+        set
+        {
+            _reviseRecordPrompt = value;
+            _detail.ReviseRecordPrompt = value;
+        }
+    }
 
     /// <summary>Initialises a new instance of the <see cref="LibrariesView"/> class.</summary>
     public LibrariesView(
         IMaterialCatalog materials, IFastenerCatalog fasteners, IBearingCatalog bearings,
-        IStandardCatalog standards, IConstantCatalog constants,
-        ReferenceReviewService review, BracketCalculationWorkbench bracketCalculations)
+        IStandardCatalog standards, IConstantCatalog constants, IProcessCatalog manufacturing,
+        IComponentCatalog components, IRateCardCatalog businessRateCards,
+        ReferenceReviewService review, BracketCalculationWorkbench bracketCalculations,
+        IReferenceCitationIndex citationIndex, Action<Guid, string> openObjectRightUp)
     {
         ArgumentNullException.ThrowIfNull(materials);
         ArgumentNullException.ThrowIfNull(fasteners);
         ArgumentNullException.ThrowIfNull(bearings);
         ArgumentNullException.ThrowIfNull(standards);
         ArgumentNullException.ThrowIfNull(constants);
+        ArgumentNullException.ThrowIfNull(manufacturing);
+        ArgumentNullException.ThrowIfNull(components);
+        ArgumentNullException.ThrowIfNull(businessRateCards);
         ArgumentNullException.ThrowIfNull(review);
         ArgumentNullException.ThrowIfNull(bracketCalculations);
+        ArgumentNullException.ThrowIfNull(citationIndex);
+        ArgumentNullException.ThrowIfNull(openObjectRightUp);
 
         _materials = materials;
         _fasteners = fasteners;
         _bearings = bearings;
         _standards = standards;
         _constants = constants;
+        _manufacturing = manufacturing;
+        _components = components;
+        _businessRateCards = businessRateCards;
+        _catalogues = new ReferenceLibraryCatalogues(materials, fasteners, bearings, standards, constants, manufacturing, components, businessRateCards);
         _review = review;
         _bracketCalculations = bracketCalculations;
+
+        _detail = new ReferenceRecordView(_catalogues, review, citationIndex, openObjectRightUp);
+        _detail.ActionCompleted += (message, outcome) =>
+        {
+            _status.Text = message;
+            ActionCompleted?.Invoke(message, outcome);
+        };
+        _detail.RecordChanged += () => _ = RefreshAsync();
 
         _addMaterialButton.Classes.Add(ChromeStyles.Primary);
         _addMaterialButton.Click += async (_, _) => await OnAddMaterialAsync().ConfigureAwait(true);
@@ -116,11 +172,11 @@ public sealed class LibrariesView : UserControl
                      _newMaterialDensity, _newMaterialSourceOrganisation, _newMaterialSourceDocument, _addMaterialButton,
                  })
         {
-            field.Margin = new Avalonia.Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
+            field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
             addMaterialForm.Children.Add(field);
         }
 
-        var addMaterialSection = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Avalonia.Thickness(0, 0, 0, DesignTokens.SpaceLg) };
+        var addMaterialSection = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg) };
         addMaterialSection.Children.Add(new TextBlock { Text = "Add a material", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
         addMaterialSection.Children.Add(addMaterialForm);
 
@@ -130,13 +186,69 @@ public sealed class LibrariesView : UserControl
         body.Children.Add(addMaterialSection);
         body.Children.Add(_rows);
 
-        Content = new ScrollViewer { Content = body };
+        _listScroll = new ScrollViewer { Content = body };
+
+        _backButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_backButton, "Back to Libraries");
+        _backButton.Click += (_, _) => CloseRecord();
+
+        var detailBody = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
+        detailBody.Children.Add(_backButton);
+        detailBody.Children.Add(_detail);
+        _detailScroll = new ScrollViewer { Content = detailBody };
+
+        DockPanel.SetDock(_listScroll, Dock.Left);
+        _container.Children.Add(_listScroll);
+        _container.Children.Add(_detailScroll);
+        Content = _container;
+        UpdateLayoutMode();
     }
 
-    /// <summary>Reloads every one of the five libraries' own records.</summary>
+    /// <summary>Below <see cref="DesignTokens.CompactShellWidth"/> the open record replaces the list (with Back) rather than sitting beside it — the same threshold the rail, header and ribbon already fold at.</summary>
+    public void SetCompact(bool compact)
+    {
+        if (_compact == compact)
+            return;
+
+        _compact = compact;
+        UpdateLayoutMode();
+    }
+
+    private void UpdateLayoutMode()
+    {
+        var hasOpenRecord = _openRecord is not null;
+        var sideBySide = hasOpenRecord && !_compact;
+        var detailOnly = hasOpenRecord && _compact;
+
+        _listScroll.IsVisible = !detailOnly;
+        _detailScroll.IsVisible = hasOpenRecord;
+        _backButton.IsVisible = detailOnly;
+
+        // Side by side: the list keeps a fixed rail width and the open
+        // record fills what remains (`_detailScroll` is the DockPanel's
+        // last child, so it always fills whatever the list does not
+        // take). List-only or detail-only: whichever side is visible
+        // gets the whole pane back the moment the other is hidden.
+        _listScroll.Width = sideBySide ? 480 : double.NaN;
+    }
+
+    private async Task OpenRecordAsync(string library, string recordId)
+    {
+        _openRecord = (library, recordId);
+        UpdateLayoutMode();
+        await _detail.LoadAsync(library, recordId).ConfigureAwait(true);
+    }
+
+    private void CloseRecord()
+    {
+        _openRecord = null;
+        UpdateLayoutMode();
+    }
+
+    /// <summary>Reloads every governed library's own records.</summary>
     public async Task RefreshAsync()
     {
-        var all = await ReadAllAsync(_materials, _fasteners, _bearings, _standards, _constants).ConfigureAwait(true);
+        var all = await ReadAllLibrariesAsync().ConfigureAwait(true);
 
         _rows.Children.Clear();
 
@@ -153,7 +265,7 @@ public sealed class LibrariesView : UserControl
                 Text = $"{library.Key} ({library.Count()})",
                 FontWeight = DesignTokens.WeightHeading,
                 FontSize = DesignTokens.FontSizeHeading,
-                Margin = new Avalonia.Thickness(0, DesignTokens.SpaceMd, 0, DesignTokens.SpaceXs),
+                Margin = new Thickness(0, DesignTokens.SpaceMd, 0, DesignTokens.SpaceXs),
             });
 
             foreach (var row in library.OrderBy(r => r.RecordId, StringComparer.Ordinal))
@@ -161,7 +273,15 @@ public sealed class LibrariesView : UserControl
         }
     }
 
-    /// <summary>Every record across the five governed libraries evidence may cite — read fresh, never cached, so a release recorded anywhere is seen the next time this is called (`WP 18.2A`, no-restart requirement).</summary>
+    /// <summary>
+    /// Every record across the five governed libraries evidence may cite —
+    /// read fresh, never cached, so a release recorded anywhere is seen
+    /// the next time this is called (`WP 18.2A`, no-restart requirement).
+    /// Deliberately still only the five (`ADR-0148`'s own citable set):
+    /// Manufacturing, Components and BusinessRateCards are reviewable
+    /// (`WP 19.6A`) but nothing in this Work Package's own scope extends
+    /// what Evidence may cite.
+    /// </summary>
     public static async Task<IReadOnlyList<EvidenceLibraryRow>> ReadAllAsync(
         IMaterialCatalog materials, IFastenerCatalog fasteners, IBearingCatalog bearings,
         IStandardCatalog standards, IConstantCatalog constants, CancellationToken cancellationToken = default)
@@ -177,6 +297,18 @@ public sealed class LibrariesView : UserControl
         return rows;
     }
 
+    /// <summary>Every record across all eight governed libraries — what the Libraries tab itself lists, wider than <see cref="ReadAllAsync"/>'s citable five (`WP 19.6A`).</summary>
+    private async Task<IReadOnlyList<EvidenceLibraryRow>> ReadAllLibrariesAsync()
+    {
+        var rows = new List<EvidenceLibraryRow>(await ReadAllAsync(_materials, _fasteners, _bearings, _standards, _constants).ConfigureAwait(false));
+
+        rows.AddRange(await ReadLibraryAsync(_manufacturing, d => d.Name, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_components, d => d.Designation, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_businessRateCards, d => d.Name, default).ConfigureAwait(false));
+
+        return rows;
+    }
+
     private static async Task<IReadOnlyList<EvidenceLibraryRow>> ReadLibraryAsync<TDefinition>(
         IReferenceDataCatalog<TDefinition> catalog, Func<TDefinition, string> displayName, CancellationToken cancellationToken)
         where TDefinition : class
@@ -188,7 +320,7 @@ public sealed class LibrariesView : UserControl
 
     private Control BuildRow(EvidenceLibraryRow row)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"), Margin = new Avalonia.Thickness(0, DesignTokens.SpaceXs) };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
 
         var text = new TextBlock
         {
@@ -200,14 +332,20 @@ public sealed class LibrariesView : UserControl
         Grid.SetColumn(text, 0);
         grid.Children.Add(text);
 
-        var verify = new Button { Content = "Verify", Padding = new Avalonia.Thickness(10, 2), IsVisible = row.ValidationState == ReferenceValidationState.Draft };
+        // `WP 19.6A`: Open, and a double-tap on the row itself, show the
+        // record view — the row's text stays a plain label rather than a
+        // second clickable target, so the automation walk still sees
+        // exactly one named control per action.
+        grid.DoubleTapped += async (_, _) => await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
+
+        var verify = new Button { Content = "Verify", Padding = new Thickness(10, 2), IsVisible = row.ValidationState == ReferenceValidationState.Draft };
         verify.Classes.Add(ChromeStyles.Subtle);
         verify.Click += async (_, _) => await OnVerifyAsync(row).ConfigureAwait(true);
         AutomationProperties.SetName(verify, $"Verify {row.RecordId}");
         Grid.SetColumn(verify, 1);
         grid.Children.Add(verify);
 
-        var release = new Button { Content = "Release", Padding = new Avalonia.Thickness(10, 2), IsVisible = row.ValidationState is ReferenceValidationState.Draft or ReferenceValidationState.Checked or ReferenceValidationState.Validated };
+        var release = new Button { Content = "Release", Padding = new Thickness(10, 2), IsVisible = row.ValidationState is ReferenceValidationState.Draft or ReferenceValidationState.Checked or ReferenceValidationState.Validated };
         release.Classes.Add(ChromeStyles.Primary);
         release.Click += async (_, _) => await OnReleaseAsync(row).ConfigureAwait(true);
         AutomationProperties.SetName(release, $"Release {row.RecordId}");
@@ -222,7 +360,7 @@ public sealed class LibrariesView : UserControl
         var revise = new Button
         {
             Content = "Revise",
-            Padding = new Avalonia.Thickness(10, 2),
+            Padding = new Thickness(10, 2),
             IsVisible = ReviseRecordPrompt is not null && ReferenceValidationStates.IsRevisable(row.ValidationState),
         };
         revise.Classes.Add(ChromeStyles.Subtle);
@@ -230,6 +368,13 @@ public sealed class LibrariesView : UserControl
         AutomationProperties.SetName(revise, $"Revise {row.RecordId}");
         Grid.SetColumn(revise, 3);
         grid.Children.Add(revise);
+
+        var open = new Button { Content = "Open", Padding = new Thickness(10, 2) };
+        open.Classes.Add(ChromeStyles.Flat);
+        open.Click += async (_, _) => await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
+        AutomationProperties.SetName(open, $"Open {row.RecordId}");
+        Grid.SetColumn(open, 4);
+        grid.Children.Add(open);
 
         return grid;
     }
@@ -278,20 +423,24 @@ public sealed class LibrariesView : UserControl
 
         try
         {
-            var current = await ReadCurrentDefinitionJsonAsync(row).ConfigureAwait(true);
+            var (definitionJson, source, provenance) = await ReferenceLibraryAccess.ReadDefinitionJsonAsync(_catalogues, row.Library, row.RecordId).ConfigureAwait(true);
 
-            var input = await ReviseRecordPrompt($"{row.Library} — {row.RecordId}", current.DefinitionJson, current.Source, CancellationToken.None).ConfigureAwait(true);
+            var input = await ReviseRecordPrompt($"{row.Library} — {row.RecordId}", definitionJson, source, CancellationToken.None).ConfigureAwait(true);
             if (input is null)
             {
                 Report("Revise was cancelled.", succeeded: true);
                 return;
             }
 
-            await ReviseAsync(row, input, current.Provenance).ConfigureAwait(true);
+            await ReferenceLibraryAccess.ReviseAsync(_catalogues, row.Library, row.RecordId, input.DefinitionJson, provenance, input.ChangeSummary, input.Source).ConfigureAwait(true);
             await RefreshAsync().ConfigureAwait(true);
             Report($"Revised '{row.RecordId}'.", succeeded: true);
+
+            // The Product Owner guard (`po-comments.md` item 5): Revise
+            // opens the new revision right up, exactly as Add does below.
+            await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
         }
-        catch (JsonException ex)
+        catch (System.Text.Json.JsonException ex)
         {
             Report($"The definition is not valid JSON for {row.Library}: {ex.Message}", succeeded: false);
         }
@@ -302,95 +451,16 @@ public sealed class LibrariesView : UserControl
         }
     }
 
-    private static readonly JsonSerializerOptions ReviseJsonOptions = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
-
-    /// <summary>The current record's own definition (as JSON), source citation and provenance — read once, so <see cref="ReviseAsync(EvidenceLibraryRow, ReviseReferenceRecordInput, ReferenceProvenance)"/> never re-reads (a blocking re-read on the Desktop thread is exactly what `NoBlockingPersistenceCallsTests` forbids) just to carry the provenance forward unchanged.</summary>
-    private async Task<(string DefinitionJson, SourceCitation? Source, ReferenceProvenance Provenance)> ReadCurrentDefinitionJsonAsync(EvidenceLibraryRow row)
-    {
-        switch (row.Library)
-        {
-            case "Materials":
-            {
-                var record = await _materials.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
-            }
-            case "Fasteners":
-            {
-                var record = await _fasteners.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
-            }
-            case "Bearings":
-            {
-                var record = await _bearings.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
-            }
-            case "Standards":
-            {
-                var record = await _standards.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
-            }
-            case "Constants":
-            {
-                var record = await _constants.FindAsync(row.RecordId).ConfigureAwait(false) ?? throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-                return (JsonSerializer.Serialize(record.Definition, ReviseJsonOptions), record.Source, record.Provenance);
-            }
-            default:
-                throw new ReferenceRecordNotFoundException(row.Library, row.RecordId);
-        }
-    }
-
-    private Task ReviseAsync(EvidenceLibraryRow row, ReviseReferenceRecordInput input, ReferenceProvenance provenance)
-    {
-        return row.Library switch
-        {
-            "Materials" => _materials.ReviseAsync(
-                row.RecordId, Deserialise<MaterialDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
-            "Fasteners" => _fasteners.ReviseAsync(
-                row.RecordId, Deserialise<FastenerDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
-            "Bearings" => _bearings.ReviseAsync(
-                row.RecordId, Deserialise<BearingDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
-            "Standards" => _standards.ReviseAsync(
-                row.RecordId, Deserialise<StandardDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
-            "Constants" => _constants.ReviseAsync(
-                row.RecordId, Deserialise<ConstantDefinition>(row.Library, input.DefinitionJson), provenance, input.ChangeSummary, input.Source),
-            _ => throw new ReferenceRecordNotFoundException(row.Library, row.RecordId),
-        };
-    }
-
-    private static TDefinition Deserialise<TDefinition>(string library, string definitionJson) where TDefinition : class =>
-        JsonSerializer.Deserialize<TDefinition>(definitionJson, ReviseJsonOptions)
-            ?? throw new JsonException($"The definition for '{library}' deserialised to nothing.");
-
     private Task VerifyAsync(EvidenceLibraryRow row)
     {
         var statement = new ReferenceReviewStatement(
             SourceConsulted: row.Source?.ToString() ?? "the record's own recorded provenance");
 
-        return row.Library switch
-        {
-            "Materials" => _review.VerifyAsync(_materials, row.RecordId, statement),
-            "Fasteners" => _review.VerifyAsync(_fasteners, row.RecordId, statement),
-            "Bearings" => _review.VerifyAsync(_bearings, row.RecordId, statement),
-            "Standards" => _review.VerifyAsync(_standards, row.RecordId, statement),
-            "Constants" => _review.VerifyAsync(_constants, row.RecordId, statement),
-            _ => Task.CompletedTask,
-        };
+        return ReferenceLibraryAccess.VerifyAsync(_catalogues, _review, row.Library, row.RecordId, statement);
     }
 
-    private Task ReleaseAsync(EvidenceLibraryRow row)
-    {
-        const string rationale = "Released via the Evidence workspace's own Libraries tab.";
-
-        return row.Library switch
-        {
-            "Materials" => _review.ReleaseAsync(_materials, row.RecordId, rationale),
-            "Fasteners" => _review.ReleaseAsync(_fasteners, row.RecordId, rationale),
-            "Bearings" => _review.ReleaseAsync(_bearings, row.RecordId, rationale),
-            "Standards" => _review.ReleaseAsync(_standards, row.RecordId, rationale),
-            "Constants" => _review.ReleaseAsync(_constants, row.RecordId, rationale),
-            _ => Task.CompletedTask,
-        };
-    }
+    private Task ReleaseAsync(EvidenceLibraryRow row) =>
+        ReferenceLibraryAccess.ReleaseAsync(_catalogues, _review, row.Library, row.RecordId, "Released via the Evidence workspace's own Libraries tab.");
 
     private async Task OnAddMaterialAsync()
     {
@@ -422,6 +492,10 @@ public sealed class LibrariesView : UserControl
 
             await RefreshAsync().ConfigureAwait(true);
             Report($"Added material '{added.Designation}'.", succeeded: true);
+
+            // The Product Owner guard (`po-comments.md` item 5): Add opens
+            // the new record right up.
+            await OpenRecordAsync("Materials", added.RecordId).ConfigureAwait(true);
         }
         catch (ArgumentException ex)
         {

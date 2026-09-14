@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Tempest.Workspace;
 using Tempest.Workspace.Editors;
+using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Files;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
@@ -320,6 +321,13 @@ internal sealed partial class MainWindowComposer
         var rateCardCatalog = (Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog)services.GetService(typeof(Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog));
         var timesheetService = (Tempest.Core.Timesheets.ITimesheetService)services.GetService(typeof(Tempest.Core.Timesheets.ITimesheetService));
 
+        // `WP 19.6A`: the two remaining governed reference libraries the
+        // Libraries tab itself lists but Evidence's own citation picker
+        // deliberately still does not (Manufacturing resolves the same
+        // way, just below, since `LibrariesView` needs it too).
+        var componentCatalog = (Tempest.Core.Components.IComponentCatalog)services.GetService(typeof(Tempest.Core.Components.IComponentCatalog));
+        var processCatalog = (Tempest.Core.Manufacturing.IProcessCatalog)services.GetService(typeof(Tempest.Core.Manufacturing.IProcessCatalog));
+
         var organisationPicker = new OrganisationPicker(organisationCatalog);
         var rateCardPicker = new RateCardPicker(rateCardCatalog);
         var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog);
@@ -395,9 +403,16 @@ internal sealed partial class MainWindowComposer
 
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
+        // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
+        // over the same already-composed domain, holding no state of its
+        // own (`Workspace/Evidence/ReferenceCitationIndex.cs`'s own
+        // remarks).
+        var referenceCitationIndex = new ReferenceCitationIndex(composition.DomainContext, projectDirectory);
+
         var librariesView = new LibrariesView(
-            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
-            host.ReferenceReview!, host.BracketCalculations!)
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
+            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
