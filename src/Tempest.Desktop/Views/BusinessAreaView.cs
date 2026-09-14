@@ -37,25 +37,13 @@ public sealed class BusinessAreaView : UserControl
     private readonly TreeViewItem _timesheetsNode = new() { Header = "Timesheets" };
     private readonly TreeViewItem _subscriptionsNode = new() { Header = "Subscriptions" };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>The change feed the Dashboard &amp; Reports node reloads from while shown (`WP 19.7B` — `WP 19.7A` left this property inert, "kept wired now so that Work Package needs no further plumbing here"; this is that plumbing).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="BusinessAreaView"/> class.</summary>
@@ -73,7 +61,7 @@ public sealed class BusinessAreaView : UserControl
         _subscriptions = subscriptions;
         _dashboard = dashboard;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_quotesNode);
@@ -137,9 +125,14 @@ public sealed class BusinessAreaView : UserControl
             _treeHost.Width = width;
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads whichever node is currently shown.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         if (_tree.SelectedItem is null)
         {
             _dashboardNode.IsSelected = true;

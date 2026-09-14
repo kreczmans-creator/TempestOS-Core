@@ -65,7 +65,7 @@ public sealed class ReportsView : UserControl
     private Guid? _selectedProjectId;
 
     private IReadOnlyList<ProjectSummary> _projects = [];
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private bool _suppressFilterSelection;
     private TaskCompletionSource? _refreshCompletion;
     private bool _refreshPending;
@@ -73,20 +73,8 @@ public sealed class ReportsView : UserControl
     /// <summary>The change feed this view reloads its own issued-sheet and document lists from (`WP 19.2B`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="ReportsView"/> class.</summary>
@@ -111,7 +99,7 @@ public sealed class ReportsView : UserControl
         _openObject = openObject;
         _openAttachment = openAttachment;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _projectFilter.Items.Add(new ComboBoxItem { Content = AllProjectsFilter, Tag = null });
         _projectFilter.SelectedIndex = 0;
@@ -145,6 +133,9 @@ public sealed class ReportsView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call (including one coalesced into an in-flight call below), proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>
     /// Reloads the project filter, every issued evidence sheet, and every
     /// project document — filtered to the currently selected project, or
@@ -176,6 +167,8 @@ public sealed class ReportsView : UserControl
     /// </remarks>
     public Task RefreshAsync()
     {
+        RefreshCount++;
+
         if (_refreshCompletion is { Task.IsCompleted: false } inFlight)
         {
             _refreshPending = true;

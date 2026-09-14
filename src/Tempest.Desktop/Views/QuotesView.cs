@@ -76,7 +76,7 @@ public sealed class QuotesView : UserControl
     private readonly StackPanel _groups = new() { Spacing = DesignTokens.SpaceMd };
     private readonly Button _newQuoteButton = new() { Content = "New Quote", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -84,20 +84,8 @@ public sealed class QuotesView : UserControl
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="QuotesView"/> class.</summary>
@@ -132,7 +120,7 @@ public sealed class QuotesView : UserControl
         _openQuote = openQuote;
         _time = timeProvider ?? TimeProvider.System;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         var heading = new TextBlock
         {
@@ -159,9 +147,14 @@ public sealed class QuotesView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Reloads every quotation in scope — every live project's own quotations, or the open project's alone when one is open.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var scopedProjectId = _currentProjectId();
 
         var projects = await ProjectsInScopeAsync(scopedProjectId).ConfigureAwait(true);

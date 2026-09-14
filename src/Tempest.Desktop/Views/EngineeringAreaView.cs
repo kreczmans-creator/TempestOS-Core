@@ -65,7 +65,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _calculationsNode = new() { Header = "Engineering Calculations" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private bool _suppressSelection;
 
     /// <summary>Raised after the user asks to enter the Mechanical module, so the shell can render the ribbon-and-docking surface.</summary>
@@ -74,20 +74,8 @@ public sealed class EngineeringAreaView : UserControl
     /// <summary>The change feed the Dashboard + Reports and Tasks nodes reload from while shown.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
@@ -112,7 +100,7 @@ public sealed class EngineeringAreaView : UserControl
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _dashboardStack.Children.Add(_dashboard);
         _dashboardStack.Children.Add(_reportsView);
@@ -186,9 +174,14 @@ public sealed class EngineeringAreaView : UserControl
             _treeHost.Width = width;
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads whichever node is currently shown.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         if (_tree.SelectedItem is null)
         {
             // Set synchronously first — `IsSelected` also fires

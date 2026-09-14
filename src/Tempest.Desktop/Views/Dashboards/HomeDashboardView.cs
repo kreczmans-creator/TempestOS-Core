@@ -69,25 +69,13 @@ public sealed class HomeDashboardView : UserControl
     private readonly StackPanel _favouriteList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _recentlyChangedList = new() { Spacing = DesignTokens.SpaceXs };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>The change feed this view re-reads every source from while shown — settable by the composition root exactly as every sibling rail view's identical property already is.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="HomeDashboardView"/> class.</summary>
@@ -118,7 +106,7 @@ public sealed class HomeDashboardView : UserControl
         _onOpenFavourite = onOpenFavourite;
         _onOpenRecentlyChanged = onOpenRecentlyChanged;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         ThemeReactiveBrush.Bind(_commercialText, TextBlock.ForegroundProperty, BrandPalette.BodyTextBrushKey);
 
@@ -152,9 +140,14 @@ public sealed class HomeDashboardView : UserControl
         Content = new ScrollViewer { Content = page };
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads every source and rebuilds every region.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var tasksTask = _tasksReadModel.ReadAsync();
         var projectsTask = _projectStatusReadModel.ReadAsync();
         var accountsTask = _accountsReadModel.ReadAsync();

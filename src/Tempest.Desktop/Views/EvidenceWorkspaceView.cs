@@ -54,7 +54,7 @@ public sealed class EvidenceWorkspaceView : UserControl
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly Button _createButton = new() { Content = "Create", MinHeight = DesignTokens.MinControlSize };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private readonly Control _libraries;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
@@ -81,20 +81,8 @@ public sealed class EvidenceWorkspaceView : UserControl
     /// <summary>The change feed this view reloads its own Evidence list from (`WP 18.1A`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="EvidenceWorkspaceView"/> class.</summary>
@@ -122,7 +110,7 @@ public sealed class EvidenceWorkspaceView : UserControl
         _currentProjectId = currentProjectId;
         _openObject = openObject;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _createButton.Classes.Add(ChromeStyles.Primary);
         _createButton.Click += async (_, _) => await OnCreateAsync().ConfigureAwait(true);
@@ -177,9 +165,14 @@ public sealed class EvidenceWorkspaceView : UserControl
         Content = tabs;
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         // The Libraries tab loads with the area, not on its own: nothing
         // else ever asks it to, and the first Windows run of v0.18.0 found
         // it empty for exactly that reason (the tests had refreshed it by

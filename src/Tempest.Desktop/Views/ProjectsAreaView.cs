@@ -49,26 +49,14 @@ public sealed class ProjectsAreaView : UserControl
     private readonly TreeViewItem _closedNode = new() { Header = "Closed (under 90 days)" };
     private readonly TreeViewItem _archiveNode = new() { Header = "Archive (90 days and over)" };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private bool _suppressSelection;
 
     /// <summary>The change feed this view re-groups every project from.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="ProjectsAreaView"/> class.</summary>
@@ -88,7 +76,7 @@ public sealed class ProjectsAreaView : UserControl
         _dashboard.OpenProjectRequestedAsync += id => OpenProjectRequestedAsync?.Invoke(id) ?? Task.CompletedTask;
         _time = timeProvider ?? TimeProvider.System;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_openNode);
@@ -150,9 +138,14 @@ public sealed class ProjectsAreaView : UserControl
             _treeHost.Width = width;
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads every project and rebuilds each group's own children.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var everyProject = await _domainContext.Repository
             .ListByKindAsync(MechanicalObjectFactoryRegistry.Project)
             .ConfigureAwait(true);

@@ -48,7 +48,7 @@ public sealed class ProjectDeliverablesView : UserControl
     private readonly StackPanel _list = new() { Spacing = DesignTokens.SpaceSm };
     private readonly Button _addButton = new() { Content = "Add Deliverable", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -66,20 +66,8 @@ public sealed class ProjectDeliverablesView : UserControl
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="ProjectDeliverablesView"/> class.</summary>
@@ -101,7 +89,7 @@ public sealed class ProjectDeliverablesView : UserControl
         _completionPrompt = completionPrompt;
         _openObject = openObject;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         var heading = new TextBlock
         {
@@ -131,9 +119,14 @@ public sealed class ProjectDeliverablesView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Reloads the open project's own deliverables and their completions — empty, honestly, when no project is open.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         var projectId = _currentProjectId();
 
         if (projectId is not { } id)

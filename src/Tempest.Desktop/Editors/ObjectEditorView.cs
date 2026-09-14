@@ -368,7 +368,7 @@ public sealed class ObjectEditorView : UserControl
     /// </summary>
     public event Action<UndoableAction>? UndoableActionRecorded;
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>
     /// The change feed this editor reloads from (`WP 18.1A`) — set once by
@@ -386,20 +386,8 @@ public sealed class ObjectEditorView : UserControl
     /// </summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     private void OnWorkspaceChanged(WorkspaceChange change)
@@ -485,8 +473,11 @@ public sealed class ObjectEditorView : UserControl
 
         // `WP 18.1A`: once this tab closes and the control leaves the
         // visual tree, drop the change-feed subscription — see
-        // WorkspaceChanges's own remarks.
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        // WorkspaceChanges's own remarks. `WP 19.7C`: the same
+        // <see cref="WorkspaceChangesSubscription"/> helper every sibling
+        // view now takes, for uniformity — this editor closes rather than
+        // hides, so it never shared the reattach defect the helper fixes.
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         Content = BuildLayout();
 
@@ -651,9 +642,13 @@ public sealed class ObjectEditorView : UserControl
         }
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>Re-reads the real object and refreshes every section — never a cached copy, mirroring <see cref="IWorkspaceView.RefreshAsync"/>'s own identical discipline.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
         var target = await _domainContext.Repository.FindAsync(_objectId).ConfigureAwait(true);
         if (target is not null)
             await PopulateFromAsync(target).ConfigureAwait(true);
