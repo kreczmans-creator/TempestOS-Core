@@ -138,10 +138,10 @@ public sealed class ProjectsAreaView : UserControl
             _treeHost.Width = width;
     }
 
-    /// <summary>Re-reads every project and rebuilds each group's own children.</summary>
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
+    /// <summary>Re-reads every project and rebuilds each group's own children.</summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;

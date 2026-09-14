@@ -92,10 +92,10 @@ public sealed class TasksAreaView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
-    /// <summary>Re-reads every bucket from the Tasks read model.</summary>
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
+    /// <summary>Re-reads every bucket from the Tasks read model.</summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;

@@ -171,10 +171,10 @@ public sealed class ProjectQuoteView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
-    /// <summary>Reloads the open project's own quotation(s) — empty, honestly, when no project is open.</summary>
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
+    /// <summary>Reloads the open project's own quotation(s) — empty, honestly, when no project is open.</summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;

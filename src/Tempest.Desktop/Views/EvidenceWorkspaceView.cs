@@ -165,10 +165,10 @@ public sealed class EvidenceWorkspaceView : UserControl
         Content = tabs;
     }
 
-    /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
+    /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;

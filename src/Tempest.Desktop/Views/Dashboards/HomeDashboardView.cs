@@ -140,10 +140,10 @@ public sealed class HomeDashboardView : UserControl
         Content = new ScrollViewer { Content = page };
     }
 
-    /// <summary>Re-reads every source and rebuilds every region.</summary>
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
 
+    /// <summary>Re-reads every source and rebuilds every region.</summary>
     public async Task RefreshAsync()
     {
         RefreshCount++;

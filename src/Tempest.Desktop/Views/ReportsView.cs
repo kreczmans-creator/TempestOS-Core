@@ -133,6 +133,9 @@ public sealed class ReportsView : UserControl
         Content = new ScrollViewer { Content = body };
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call (including one coalesced into an in-flight call below), proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
     /// <summary>
     /// Reloads the project filter, every issued evidence sheet, and every
     /// project document — filtered to the currently selected project, or
@@ -162,9 +165,6 @@ public sealed class ReportsView : UserControl
     /// pass that covers every joiner's own request has actually run.
     /// </para>
     /// </remarks>
-    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call (including one coalesced into an in-flight call below), proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
-    internal int RefreshCount { get; private set; }
-
     public Task RefreshAsync()
     {
         RefreshCount++;
