@@ -277,7 +277,10 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
-    public async Task<EvidenceActionResult> IssueAsync(Guid evidenceId, string issueReference, string revision, string client, CancellationToken cancellationToken = default)
+    public async Task<EvidenceActionResult> IssueAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<Guid?>>? attachIssueSheetAsync = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
         ArgumentException.ThrowIfNullOrWhiteSpace(revision);
@@ -303,7 +306,22 @@ public sealed class EvidenceService : IEvidenceService
                 evidence);
         }
 
-        var issue = new IssueRecord(issueReference, revision, client, _time.GetUtcNow(), IssueSheetAttachmentId: null);
+        var issuedAtUtc = _time.GetUtcNow();
+
+        // B2: every refusal has now been decided, so what remains is the
+        // durable write. The sheet — bytes and its attachment metadata, one
+        // transaction (`WP 17.1B`) — is rendered and attached first; its id
+        // is folded straight into the IssueRecord the one call below
+        // commits, so "the record" and "the pointer" are the same write. A
+        // fault in attachIssueSheetAsync leaves this evidence merely
+        // Checked; a fault in RecordIssueAsync leaves it Checked with, at
+        // worst, one harmless unreferenced attachment — never Issued
+        // without its sheet.
+        var issueSheetAttachmentId = attachIssueSheetAsync is null
+            ? null
+            : await attachIssueSheetAsync(evidence, issuedAtUtc, cancellationToken).ConfigureAwait(false);
+
+        var issue = new IssueRecord(issueReference, revision, client, issuedAtUtc, issueSheetAttachmentId);
         await evidence.RecordIssueAsync(issue, cancellationToken).ConfigureAwait(false);
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
