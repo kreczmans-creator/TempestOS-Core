@@ -441,7 +441,9 @@ public sealed class ProjectWorkspaceView : UserControl
             _risksView.Show([], [], [], null);
             _timelineView.Show([], null);
             await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+            _quoteView.SetArchived(false);
             await _quoteView.RefreshAsync().ConfigureAwait(true);
+            _evidenceView.SetArchived(false);
             await _evidenceView.RefreshAsync().ConfigureAwait(true);
             await _signOffView.RefreshAsync().ConfigureAwait(true);
             _lifecycleBanner.IsVisible = false;
@@ -461,9 +463,17 @@ public sealed class ProjectWorkspaceView : UserControl
         // — an Archived project (`ProjectArchival`, `WP 19.5C`) is read-only
         // reference data, said out loud here rather than discovered only
         // when a write is refused.
+        //
+        // `WP 19.10H`: this same read is where `isArchived` comes from —
+        // resolved once, here, and handed to every tab below, rather than
+        // each tab re-deriving it from its own read of the domain (`TD-179`:
+        // the banner said "nothing here can be changed" while Evidence,
+        // Tasks and Timeline kept their write controls enabled).
+        var isArchived = false;
         if (await _domainContext.Repository.FindAsync(project.Id).ConfigureAwait(true) is Tempest.Core.EngineeringDomain.Project realProject)
         {
             var asOf = DateTimeOffset.UtcNow;
+            isArchived = ProjectArchival.IsArchived(realProject, asOf);
             _lifecycleBanner.Text = ProjectArchival.ListingGroupOf(realProject, asOf) switch
             {
                 ProjectListingGroup.Archive => $"Archived — closed {realProject.ClosedOn:d}. Reference data only; nothing here can be changed.",
@@ -484,15 +494,18 @@ public sealed class ProjectWorkspaceView : UserControl
         _tasksView.Show(
             await _tasks.ListAsync(project.Id).ConfigureAwait(true),
             await _tasks.ListBoardAsync(project.Id).ConfigureAwait(true),
-            project.Label);
+            project.Label,
+            isArchived);
         _risksView.Show(
             await _governance.ListRisksAsync(project.Id).ConfigureAwait(true),
             await _governance.ListIssuesAsync(project.Id).ConfigureAwait(true),
             await _governance.ListDecisionsAsync(project.Id).ConfigureAwait(true),
             project.Label);
-        _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
+        _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label, isArchived);
         await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+        _quoteView.SetArchived(isArchived);
         await _quoteView.RefreshAsync().ConfigureAwait(true);
+        _evidenceView.SetArchived(isArchived);
         await _evidenceView.RefreshAsync().ConfigureAwait(true);
         await _signOffView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();

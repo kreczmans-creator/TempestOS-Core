@@ -90,6 +90,20 @@ public sealed class ProjectQuoteView : UserControl
     private List<Quotation> _quotations = [];
     private Guid? _selectedQuotationId;
     private Guid? _editingLineId;
+    private bool _isArchived;
+
+    /// <summary>
+    /// Whether the open project is archived — Add line/Edit/Remove/Send/
+    /// Accept/Decline are disabled, with a tooltip, while this is true
+    /// (`WP 19.10H`, `TD-179`). Export stays enabled: it reads and saves a
+    /// copy, never writes. New Quote also stays enabled — this Work
+    /// Package's brief names only the four above — but
+    /// <see cref="QuotationService.CreateAsync"/> already refuses it on an
+    /// archived project (`ArchivedAsync`'s own sibling check at the top of
+    /// that method), so a click there still ends in an honest refusal
+    /// message rather than a silent write.
+    /// </summary>
+    public const string ArchivedTooltip = "Archived project — read only";
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
@@ -173,6 +187,16 @@ public sealed class ProjectQuoteView : UserControl
 
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
+
+    /// <summary>
+    /// Sets whether the open project is archived — see this class's own
+    /// remarks on <see cref="ArchivedTooltip"/> for exactly which controls
+    /// that disables. Takes effect on the next render (call before
+    /// <see cref="RefreshAsync"/>, as <c>ProjectWorkspaceView</c> does) —
+    /// this class's own detail panel is rebuilt from scratch on every
+    /// render, so no re-render is forced here (`WP 19.10H`, `TD-179`).
+    /// </summary>
+    public void SetArchived(bool archived) => _isArchived = archived;
 
     /// <summary>Reloads the open project's own quotation(s) — empty, honestly, when no project is open.</summary>
     public async Task RefreshAsync()
@@ -332,6 +356,7 @@ public sealed class ProjectQuoteView : UserControl
                 AutomationProperties.SetName(edit, $"Edit {line.Description}");
                 var editLine = line;
                 edit.Click += (_, _) => BeginEditLine(quote, editLine);
+                ApplyArchivedState(edit);
                 Grid.SetColumn(edit, 1);
                 row.Children.Add(edit);
 
@@ -340,6 +365,7 @@ public sealed class ProjectQuoteView : UserControl
                 AutomationProperties.SetName(remove, $"Remove {line.Description}");
                 var removeId = line.Id;
                 remove.Click += async (_, _) => await OnRemoveLineAsync(quote.Id, removeId).ConfigureAwait(true);
+                ApplyArchivedState(remove);
                 Grid.SetColumn(remove, 2);
                 row.Children.Add(remove);
             }
@@ -377,6 +403,7 @@ public sealed class ProjectQuoteView : UserControl
         var saveButton = new Button { Content = _editingLineId is null ? "Add line" : "Save line", MinHeight = DesignTokens.MinControlSize };
         saveButton.Classes.Add(ChromeStyles.Primary);
         AutomationProperties.SetName(saveButton, saveButton.Content?.ToString() ?? "Add line");
+        ApplyArchivedState(saveButton);
 
         var cancelButton = new Button { Content = "Cancel edit", MinHeight = DesignTokens.MinControlSize, IsVisible = _editingLineId is not null };
         cancelButton.Classes.Add(ChromeStyles.Subtle);
@@ -447,6 +474,7 @@ public sealed class ProjectQuoteView : UserControl
             send.Classes.Add(ChromeStyles.Primary);
             AutomationProperties.SetName(send, $"Send {quote.Reference}");
             send.Click += async (_, _) => await OnSendAsync(quote.Id).ConfigureAwait(true);
+            ApplyArchivedState(send);
             actions.Children.Add(send);
         }
 
@@ -456,12 +484,14 @@ public sealed class ProjectQuoteView : UserControl
             accept.Classes.Add(ChromeStyles.Primary);
             AutomationProperties.SetName(accept, $"Accept {quote.Reference}");
             accept.Click += async (_, _) => await OnAcceptAsync(quote.Id).ConfigureAwait(true);
+            ApplyArchivedState(accept);
             actions.Children.Add(accept);
 
             var decline = new Button { Content = "Decline", MinHeight = DesignTokens.MinControlSize };
             decline.Classes.Add(ChromeStyles.Flat);
             AutomationProperties.SetName(decline, $"Decline {quote.Reference}");
             decline.Click += async (_, _) => await OnDeclineAsync(quote.Id).ConfigureAwait(true);
+            ApplyArchivedState(decline);
             actions.Children.Add(decline);
         }
 
@@ -784,6 +814,13 @@ public sealed class ProjectQuoteView : UserControl
         var invalid = Path.GetInvalidFileNameChars();
         var chars = value.Select(c => invalid.Contains(c) ? '-' : c).ToArray();
         return new string(chars);
+    }
+
+    /// <summary>Disables <paramref name="control"/>, with the archived tooltip, while the open project is archived (`WP 19.10H`, `TD-179`).</summary>
+    private void ApplyArchivedState(Button control)
+    {
+        control.IsEnabled = !_isArchived;
+        ToolTip.SetTip(control, _isArchived ? ArchivedTooltip : null);
     }
 
     private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
