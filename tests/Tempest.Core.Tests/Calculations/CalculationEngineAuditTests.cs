@@ -19,7 +19,7 @@ public class CalculationEngineAuditTests
         public const string Id = "test.audit.add-one";
         public string CalculationId => Id;
         public CalculationMetadata Metadata { get; } = new("Add One", null, null, [], []);
-        public double Calculate(double input, CalculationContext context) => input + 1;
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default) => input + 1;
     }
 
     [Fact]

@@ -28,7 +28,7 @@ public sealed class DoubleLengthCalculationDefinition : ICalculationDefinition<Q
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own value is not positive.</exception>
-    public Quantity<Length> Calculate(Quantity<Length> input, CalculationContext context)
+    public Quantity<Length> Calculate(Quantity<Length> input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var isPositive = input.Value > 0;
         context.RecordConstraintCheck("Input length must be positive.", isPositive, $"Input value was {input.Value}.");

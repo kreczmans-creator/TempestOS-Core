@@ -206,7 +206,7 @@ public sealed class BracketSectionCheckCalculationDefinition
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException">Any input that must be positive is zero or negative.</exception>
-    public BracketSectionCheckResult Calculate(BracketSectionCheckInput input, CalculationContext context)
+    public BracketSectionCheckResult Calculate(BracketSectionCheckInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(context);

@@ -428,7 +428,7 @@ public class CalculationsCommandsTests
             [new CalculationAssumption("The input represents a valid physical length.", null)],
             [new CalculationConstraint("Input length must be positive.")]);
 
-        public Quantity<Length> Calculate(Quantity<Length> input, CalculationContext context)
+        public Quantity<Length> Calculate(Quantity<Length> input, CalculationContext context, CancellationToken cancellationToken = default)
         {
             var isPositive = input.Value > 0;
             context.RecordConstraintCheck("Input length must be positive.", isPositive, $"Input value was {input.Value}.");

@@ -17,6 +17,16 @@ public interface ICalculationDefinition<TInput, TResult>
     /// discards after reading it back, never observable by any other
     /// execution.
     /// </summary>
+    /// <param name="input">The calculation's own input.</param>
+    /// <param name="context">The fresh recorder this execution's intermediate results and referenced material Ids are written to.</param>
+    /// <param name="cancellationToken">
+    /// Observed between steps by a definition whose own work is iterative
+    /// or long-running (`TD-21`) — most definitions are a handful of closed-form
+    /// expressions and have nothing worth checking it against, so ignoring it
+    /// is a legitimate implementation. <see cref="ICalculationEngine.ExecuteAsync{TInput, TResult}"/>'s
+    /// own token reaches here unchanged.
+    /// </param>
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/> fails this calculation's own validation.</exception>
-    TResult Calculate(TInput input, CalculationContext context);
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled and the definition observed it.</exception>
+    TResult Calculate(TInput input, CalculationContext context, CancellationToken cancellationToken = default);
 }
