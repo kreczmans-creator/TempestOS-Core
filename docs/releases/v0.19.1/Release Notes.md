@@ -19,7 +19,10 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 
 ## What shipped, by Work Package
 
-*(filled at each merge)*
+| Work Package | Delivered | Merged |
+|---|---|---|
+| `WP 19.4B` Real files on every Attachments section | Browse on every Kind with attachments (every canonical Kind), a drop zone that stores the dropped files' bytes, size and SHA-256 through the same path, the typed metadata form kept under "Record a reference without the file"; a Calculation's attachment opens in the viewer; seven tests | 2026-09-14 (6710d64) |
+| `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
 
 ## Figures
 
@@ -27,7 +30,15 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 
 ## Warnings
 
-*(filled at `WP 19.9.1`)*
+- **Accounts reads are written to the API documents, not proven live**
+  (`WP 19.8B`): Xero's bank summary is parsed by column title rather than
+  position and carries no per-account currency, so
+  `Invoicing:Xero:BaseCurrency` (default GBP) applies; the account name on
+  a Xero repeating invoice is read from its tracking and account code
+  fields as documented; QuickBooks Online's `RecurringTransaction` query
+  and nested `Bill` shape follow the documentation. The first live
+  authorisation is the test.
+- *(further warnings filled at each merge)*
 
 ## Related
 
