@@ -68,7 +68,14 @@ public sealed class LibrariesView : UserControl
     // `WP 19.6A`: master/detail — a row's own Open action or double-tap
     // shows the record view beside the list at typical widths, or in
     // place of it (with Back) below `DesignTokens.CompactShellWidth`.
-    private readonly Grid _container = new();
+    // A `DockPanel`, deliberately not a `Grid`: a test (this file's own
+    // and `EvidenceWorkspaceJourneyTests`/`EvidenceCheckIssueReviseJourneyTests`)
+    // finds one row by `GetLogicalDescendants().OfType<Grid>().First(g =>
+    // g ... contains the record's own text)` — if this container were
+    // itself a `Grid`, that same search would match the container before
+    // ever reaching an actual row, since the container's own descendants
+    // transitively contain every row's text too.
+    private readonly DockPanel _container = new();
     private readonly ScrollViewer _listScroll;
     private readonly ScrollViewer _detailScroll;
     private readonly Button _backButton = new() { Content = "← Back to Libraries", MinHeight = DesignTokens.MinControlSize };
@@ -190,6 +197,7 @@ public sealed class LibrariesView : UserControl
         detailBody.Children.Add(_detail);
         _detailScroll = new ScrollViewer { Content = detailBody };
 
+        DockPanel.SetDock(_listScroll, Dock.Left);
         _container.Children.Add(_listScroll);
         _container.Children.Add(_detailScroll);
         Content = _container;
@@ -216,9 +224,12 @@ public sealed class LibrariesView : UserControl
         _detailScroll.IsVisible = hasOpenRecord;
         _backButton.IsVisible = detailOnly;
 
-        _container.ColumnDefinitions = new ColumnDefinitions(sideBySide ? "*,*" : "*");
-        Grid.SetColumn(_listScroll, 0);
-        Grid.SetColumn(_detailScroll, sideBySide ? 1 : 0);
+        // Side by side: the list keeps a fixed rail width and the open
+        // record fills what remains (`_detailScroll` is the DockPanel's
+        // last child, so it always fills whatever the list does not
+        // take). List-only or detail-only: whichever side is visible
+        // gets the whole pane back the moment the other is hidden.
+        _listScroll.Width = sideBySide ? 480 : double.NaN;
     }
 
     private async Task OpenRecordAsync(string library, string recordId)
