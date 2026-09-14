@@ -140,17 +140,24 @@ jobs:
       # already referenced by both test projects: this only switches the
       # collector on. Writes one coverage.cobertura.xml per test project
       # under TestResults/<configuration>/<guid>/ - read back, purely
-      # diagnostically, by the summary step below.
+      # diagnostically, by the summary step below. Release leg only since
+      # `WP 19.9.1` (2026-09-14): the instrumentation roughly doubles the
+      # Desktop suite's time on a hosted runner (43 minutes for the Debug
+      # leg at 594 tests, against the old 45-minute ceiling), and one
+      # coverage figure per run is all the summary step ever reports on;
+      # the summary step already states plainly when no coverage file
+      # exists, so the Debug leg's summary says so rather than lying.
       - name: Test (${{ matrix.configuration }})
         shell: pwsh
         run: |
+          $collect = if ('${{ matrix.configuration }}' -eq 'Release') { @('--collect:XPlat Code Coverage') } else { @() }
           dotnet test "${{ env.SOLUTION_PATH }}" `
             --configuration ${{ matrix.configuration }} `
             --no-build `
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/${{ matrix.configuration }}" `
-            --collect:"XPlat Code Coverage" `
+             `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
