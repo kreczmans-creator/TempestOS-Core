@@ -45,6 +45,23 @@ namespace Tempest.Core.Settings;
 /// applying whichever migration's <c>FromVersion</c> matches the
 /// document's current version, until none does.
 /// </para>
+/// <para>
+/// <b>`TD-134`: an optional, per-consumer "current version."</b> Unlike
+/// <c>EngineeringObjectStateStore</c>, this type has no fixed,
+/// platform-wide schema version to compare a stored document against —
+/// <see cref="ApplyMigrations"/>'s own <c>targetVersion</c> is derived
+/// from whatever chain the caller happens to supply, which means "past
+/// everything this caller's chain transforms" and "written by a newer
+/// build" are not the same thing (see that method's own remarks). A
+/// caller that also knows its own current version — the schema version
+/// <em>this build</em> writes, not merely the highest one a supplied
+/// migration happens to reach — can now say so via
+/// <paramref name="currentVersion"/>: a stored document strictly ahead of
+/// it is discarded and logged, the same asymmetry
+/// <c>EngineeringObjectStateStore</c> applies. <see langword="null"/> —
+/// every current caller — is a strict no-op, unchanged from before this
+/// parameter existed.
+/// </para>
 /// </remarks>
 public sealed class SettingsDocument<TDocument>
     where TDocument : class
@@ -60,6 +77,7 @@ public sealed class SettingsDocument<TDocument>
     private readonly ISettingsProvider _settingsProvider;
     private readonly ILogger? _logger;
     private readonly IReadOnlyList<ISettingsMigration<TDocument>>? _migrations;
+    private readonly int? _currentVersion;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="SettingsDocument{TDocument}"/>
@@ -79,6 +97,18 @@ public sealed class SettingsDocument<TDocument>
     /// Decision 6). <see langword="null"/> — the default — runs no
     /// normalisation and no chain at all: today's behaviour, unchanged.
     /// </param>
+    /// <param name="currentVersion">
+    /// The <c>SchemaVersion</c> this build itself writes (`TD-134`) — not
+    /// necessarily the highest one <paramref name="migrations"/> can reach.
+    /// A stored document strictly ahead of it is discarded and logged
+    /// rather than handed back or migrated, since no migration this build
+    /// carries can ever have been written for a version it does not yet
+    /// know about. Only compared when <paramref name="migrations"/> is
+    /// also supplied — this seam's normalisation and version machinery
+    /// engages at all only then, unchanged from before this parameter
+    /// existed (see <see cref="ApplyMigrations"/>). <see langword="null"/>
+    /// — the default, and every current caller — is a strict no-op.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="settingsProvider"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><paramref name="key"/> or <paramref name="displayName"/> is <see langword="null"/>, empty, or whitespace.</exception>
     public SettingsDocument(
@@ -86,7 +116,8 @@ public sealed class SettingsDocument<TDocument>
         string key,
         string displayName,
         ILogger? logger = null,
-        IReadOnlyList<ISettingsMigration<TDocument>>? migrations = null)
+        IReadOnlyList<ISettingsMigration<TDocument>>? migrations = null,
+        int? currentVersion = null)
     {
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
@@ -95,6 +126,7 @@ public sealed class SettingsDocument<TDocument>
         _settingsProvider = settingsProvider;
         _logger = logger;
         _migrations = migrations;
+        _currentVersion = currentVersion;
         Key = key;
 
         try
@@ -173,6 +205,28 @@ public sealed class SettingsDocument<TDocument>
             SchemaVersionProperty.SetValue(document, version);
         }
 
+        // `TD-134`: a document from a newer build than this one declares as
+        // current cannot be bridged forward — there is nothing to migrate
+        // it "back" with, and no migration will ever be registered for a
+        // version this build does not yet know about (the same asymmetry
+        // `EngineeringObjectStateStore.LoadAsync` already applies against
+        // its own fixed `TargetSchemaVersion`). Checked before the
+        // migration loop below, which would otherwise simply find nothing
+        // to apply and fall through to the "no migration path" check
+        // further down anyway — this earlier, more specific check exists
+        // only to log a clearer, distinct reason ("ahead", not merely
+        // "stuck"). Engages only when a caller actually supplies
+        // `currentVersion`; every one of today's nine consumers supplies
+        // none, so this is a strict no-op for them.
+        if (_currentVersion is { } currentVersion && version > currentVersion)
+        {
+            _logger?.Warning(
+                $"Stored setting '{Key}' is at schema version {version}, newer than this build's current schema " +
+                $"version {currentVersion}; it was discarded and the caller's own defaults apply.");
+
+            return null;
+        }
+
         while (FindMigration(version) is { } migration)
         {
             document = migration.Migrate(document);
@@ -211,12 +265,14 @@ public sealed class SettingsDocument<TDocument>
         // run, the change was written, and it broke
         // `ADocumentAlreadyPastEveryRegisteredMigration_IsLeftAlone`, a
         // pre-existing test that encodes this intent. Reverted rather than
-        // overridden. The residual risk the reviewer correctly identified
-        // — an older build silently reading a document a newer build gave
-        // a new meaning to — is real but needs a per-consumer declared
-        // current version, which this seam does not have; recorded as
-        // `TD-134` rather than approximated with a target that means
-        // something else.
+        // overridden — `targetVersion` below still never doubles as an
+        // "ahead" check; that reasoning stands. The residual risk the
+        // reviewer correctly identified — an older build silently reading
+        // a document a newer build gave a new meaning to — needed a
+        // per-consumer declared current version, which this seam did not
+        // have; closed by `TD-134`, above, as a separate, earlier check
+        // against the caller's own supplied `currentVersion` rather than
+        // approximated with a target that means something else.
         if (version < targetVersion)
         {
             _logger?.Warning(

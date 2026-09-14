@@ -4,6 +4,8 @@ using Tempest.Core.Identity;
 using Tempest.Core.Modules;
 using Tempest.Core.Requirements;
 using Tempest.Core.UnitsAndQuantities;
+using Tempest.Core.Verification;
+using Tempest.Workspace.Calculations;
 
 namespace Tempest.Samples;
 
@@ -60,10 +62,14 @@ namespace Tempest.Samples;
 /// <para>
 /// Builds its own <see cref="EngineeringObjectFactory{T}"/> instances
 /// directly, in its own composition root — never through
-/// <c>Tempest.App.Workspace.Calculations.CalculationObjectFactoryRegistry</c>,
-/// which lives in <c>Tempest.App</c> (never referenced by this project),
+/// <see cref="CalculationObjectFactoryRegistry"/>'s own <c>CreateAsync</c>,
 /// mirroring <see cref="MechanicalProductStructureSampleModule"/>'s own
-/// identical, disclosed precedent.
+/// identical, disclosed precedent. `TD-93`: this project now carries a
+/// direct <c>Tempest.Workspace</c> project reference solely so the two
+/// relationship-kind constants below can reference
+/// <see cref="CalculationTemplateRegistry"/>'s and
+/// <see cref="VerificationService"/>'s own named constants rather than
+/// re-spelling them.
 /// </para>
 /// </remarks>
 [ModuleMetadata("tempest.samples.workspacecalculations", "Calculations Workspace Sample", "1.0.0")]
@@ -71,12 +77,6 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
 {
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.calculationsworkspace-user";
-
-    /// <summary>The relationship kind linking a Calculation Domain object to its own executed <see cref="CalculationRecord{TResult}"/> document — must match <c>Tempest.App.Workspace.Calculations.CalculationTemplateRegistry.CalculatedByRelationshipKind</c> exactly; also reused, in the opposite direction, for cross-discipline Digital Thread links (a Requirement/Part "is calculatedBy" a Calculation).</summary>
-    public const string CalculatedByRelationshipKind = "calculatedBy";
-
-    /// <summary>The relationship kind linking one Calculation to another it depends on.</summary>
-    public const string BasedOnCalculationRelationshipKind = "basedOnCalculation";
 
     private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly EngineeringDomainContext _context;
@@ -141,7 +141,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
             BoltShearCapacityCalculationDefinition.Id,
             new BoltShearCapacityInput(new Quantity<Length>(6.35, LengthUnits.Millimetre), new Quantity<Pressure>(310, PressureUnits.Megapascal), ShearPlanes: 2, SafetyFactor: 1.5),
             cancellationToken).ConfigureAwait(false);
-        await boltShear.LinkAsync(boltShearRecord.Id, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await boltShear.LinkAsync(boltShearRecord.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
         await boltShear.TransitionAsync(LifecycleState.InReview, cancellationToken).ConfigureAwait(false);
         await boltShear.TransitionAsync(LifecycleState.Approved, cancellationToken).ConfigureAwait(false);
 
@@ -154,8 +154,8 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
             BearingLoadCapacityCalculationDefinition.Id,
             new BearingLoadCapacityInput(new Quantity<Length>(6.35, LengthUnits.Millimetre), new Quantity<Length>(3.2, LengthUnits.Millimetre), new Quantity<Pressure>(690, PressureUnits.Megapascal), SafetyFactor: 1.5),
             cancellationToken).ConfigureAwait(false);
-        await bearing.LinkAsync(bearingRecord.Id, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
-        await bearing.LinkAsync(boltShear.Id, BasedOnCalculationRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await bearing.LinkAsync(bearingRecord.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await bearing.LinkAsync(boltShear.Id, VerificationService.BasedOnCalculationRelationshipKind, cancellationToken).ConfigureAwait(false);
 
         var boltSet = await CreateCalculationSetAsync("Wing Attach Bolt Calculations", "CALC-SET-001", [boltShear.Id, bearing.Id], cancellationToken).ConfigureAwait(false);
         BoltCalculationSetId = boltSet.Id;
@@ -173,7 +173,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
                 new Quantity<Length>(40, LengthUnits.Millimetre), new Quantity<Length>(100, LengthUnits.Millimetre),
                 new Quantity<Pressure>(310, PressureUnits.Megapascal)),
             cancellationToken).ConfigureAwait(false);
-        await beam.LinkAsync(beamRecord.Id, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await beam.LinkAsync(beamRecord.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
         await beam.TransitionAsync(LifecycleState.InReview, cancellationToken).ConfigureAwait(false);
 
         // ---- Fuselage Pressure Vessel Wall Thickness -> revised after execution (the Cockpit's own "Out-of-date" signal) ----
@@ -187,7 +187,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
                 new Quantity<Pressure>(0.62, PressureUnits.Megapascal), new Quantity<Length>(1000, LengthUnits.Millimetre),
                 new Quantity<Pressure>(276, PressureUnits.Megapascal), JointEfficiency: 0.85, SafetyFactor: 1.5),
             cancellationToken).ConfigureAwait(false);
-        await pressureVessel.LinkAsync(pressureRecord.Id, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await pressureVessel.LinkAsync(pressureRecord.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
         await pressureVessel.ReviseAsync(
             "Cabin altitude assumption updated after this calculation was last executed — now out of date; a fresh execution is required.",
             "Updated cabin altitude assumption.", cancellationToken).ConfigureAwait(false);
@@ -202,7 +202,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
             new MaterialSelectionMarginInput(
                 MaterialsSampleModule.SampleMaterialId, new Quantity<Pressure>(250, PressureUnits.Megapascal), new Quantity<Pressure>(300, PressureUnits.Megapascal)),
             cancellationToken).ConfigureAwait(false);
-        await materialSelection.LinkAsync(materialRecord.Id, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+        await materialSelection.LinkAsync(materialRecord.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
 
         // ---- Digital Thread: real cross-discipline links to the Mechanical/Requirements sample data ----
         if (_mechanicalSampleModule.WingAssemblyId is { } wingAssemblyId)
@@ -214,7 +214,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
         if (_requirementsSampleModule.AllSampleRequirementIds.Count > 0)
         {
             await _requirementsService.LinkAsync(
-                _requirementsSampleModule.AllSampleRequirementIds[0], beam.Id, CalculatedByRelationshipKind, cancellationToken)
+                _requirementsSampleModule.AllSampleRequirementIds[0], beam.Id, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -239,12 +239,12 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
         return (CalculationSet)created;
     }
 
-    /// <summary>Links a Mechanical Domain object (an Assembly/Part, already an <see cref="IHasRelationships"/>-composing <see cref="EngineeringObjectBase"/>) to a Calculation via <see cref="CalculatedByRelationshipKind"/> — "this object's own value is calculatedBy this Calculation."</summary>
+    /// <summary>Links a Mechanical Domain object (an Assembly/Part, already an <see cref="IHasRelationships"/>-composing <see cref="EngineeringObjectBase"/>) to a Calculation via <see cref="CalculationTemplateRegistry.CalculatedByRelationshipKind"/> — "this object's own value is calculatedBy this Calculation."</summary>
     private async Task LinkSubjectToCalculationAsync(Guid subjectId, Guid calculationId, CancellationToken cancellationToken)
     {
         var subject = await _context.Repository.FindAsync(subjectId, cancellationToken).ConfigureAwait(false);
 
         if (subject is IHasRelationships hasRelationships)
-            await hasRelationships.LinkAsync(calculationId, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+            await hasRelationships.LinkAsync(calculationId, CalculationTemplateRegistry.CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
     }
 }

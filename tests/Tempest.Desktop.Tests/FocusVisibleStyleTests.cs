@@ -123,9 +123,24 @@ public sealed class FocusVisibleStyleTests
         var button = new Button { Content = "Test" };
         button.Classes.Add(TreatmentClass(treatment));
 
-        var window = new Window { RequestedThemeVariant = theme, Content = button };
+        // `TD-131`: the real ancestor surface a `Flat`/`Danger`-at-rest
+        // transparent fill, or `Flat`'s own translucent hover/press wash,
+        // actually shows through to — the identical brush a real window
+        // binds (`MainWindow`'s own `ThemeReactiveBrush.Bind(this,
+        // BackgroundProperty, BrandPalette.PageBackgroundBrushKey)`), set
+        // explicitly here rather than left to whatever the Fluent theme's
+        // own default window background resource happens to be, which is
+        // not a colour this product ever actually shows behind a button.
+        var window = new Window
+        {
+            RequestedThemeVariant = theme,
+            Background = BrandPalette.Brush(BrandPalette.PageBackgroundBrushKey, theme),
+            Content = button,
+        };
         ChromeStyles.Install(window);
         window.Show();
+
+        var ancestorColour = ((ISolidColorBrush)window.Background!).Color;
 
         var presenter = button.GetVisualDescendants().OfType<ContentPresenter>().First();
 
@@ -158,31 +173,49 @@ public sealed class FocusVisibleStyleTests
             var ring = presenter.BorderBrush;
             var background = presenter.Background;
 
-            // Only a real, fully-opaque solid fill is a genuine adjacency
-            // the ring must clear 3:1 against. A fully transparent rest
-            // fill (`Flat`/`Danger` at rest, `Brushes.Transparent` — a
-            // zero-alpha `ISolidColorBrush`) or a translucent brand wash
-            // (`Flat`'s own 5%/12% tints — a fully-opaque `Color` carried
-            // at a fractional `IBrush.Opacity`, confirmed directly: the
-            // `Color` itself never encodes the wash's own alpha) lets the
-            // real page/parent background show through — a colour this
-            // button's own resolved brushes cannot tell us, and (per
-            // `ButtonTreatments_PointerFocus_NeverDrawsTheFocusRing`'s own
-            // remarks) a coincidental match there would not be evidence
-            // either way.
-            if (ring is not ISolidColorBrush ringSolid || background is not ISolidColorBrush bgSolid || bgSolid.Color.A != 255 || bgSolid.Opacity < 1.0)
+            // The ring itself must be a real, single solid colour to
+            // measure against anything — true for every treatment's own
+            // focus-ring rule, never anything else here.
+            if (ring is not ISolidColorBrush ringSolid)
+            {
+                measured.Add($"{treatment}/{theme} {label}: ring={Describe(ring)} background={Describe(background)} — ring not a solid brush, skipped.");
+                return;
+            }
+
+            // `TD-131`: a fully transparent rest fill (`Flat`/`Danger` at
+            // rest, `Brushes.Transparent` — a zero-alpha
+            // `ISolidColorBrush`) or a translucent brand wash (`Flat`'s
+            // own 5%/12% tints — a fully-opaque `Color` carried at a
+            // fractional `IBrush.Opacity`, confirmed directly: the
+            // `Color` itself never encodes the wash's own alpha) is not
+            // itself the colour a person actually sees — the real
+            // ancestor surface shows through it. Composited here exactly
+            // the way Avalonia's own renderer paints it (source-over
+            // alpha compositing against `ancestorColour`, the window's
+            // own real background — see this method's own remarks) rather
+            // than skipped as unmeasurable, which previously let both of
+            // `Flat`'s own states — its transparent rest fill and its 5%
+            // hover wash — pass every assertion below vacuously, never
+            // once actually measured.
+            if (background is not ISolidColorBrush bgSolid)
             {
                 measured.Add($"{treatment}/{theme} {label}: ring={Describe(ring)} background={Describe(background)} — not a real opaque adjacency, skipped.");
                 return;
             }
 
-            var ratio = ContrastRatio(ringSolid.Color, bgSolid.Color);
-            measured.Add($"{treatment}/{theme} {label}: ring={ringSolid.Color} background={bgSolid.Color} ratio={ratio:F2}:1");
+            var effectiveBackground = bgSolid.Color.A == 255 && bgSolid.Opacity >= 1.0
+                ? bgSolid.Color
+                : CompositeOverAncestor(bgSolid, ancestorColour);
 
-            if (ringSolid.Color == bgSolid.Color)
-                failures.Add($"{treatment}/{theme} {label}: the focus ring is painted the exact same colour ({ringSolid.Color}) as its own background — invisible to a keyboard user.");
+            var ratio = ContrastRatio(ringSolid.Color, effectiveBackground);
+            measured.Add(
+                $"{treatment}/{theme} {label}: ring={ringSolid.Color} background={Describe(background)} " +
+                $"effective={effectiveBackground} ratio={ratio:F2}:1");
+
+            if (ringSolid.Color == effectiveBackground)
+                failures.Add($"{treatment}/{theme} {label}: the focus ring is painted the exact same colour ({ringSolid.Color}) as its own effective background — invisible to a keyboard user.");
             else if (ratio < MinimumNonTextContrastRatio)
-                failures.Add($"{treatment}/{theme} {label}: ring {ringSolid.Color} on background {bgSolid.Color} measured {ratio:F2}:1, need >= {MinimumNonTextContrastRatio}:1 (WCAG 1.4.11).");
+                failures.Add($"{treatment}/{theme} {label}: ring {ringSolid.Color} on effective background {effectiveBackground} measured {ratio:F2}:1, need >= {MinimumNonTextContrastRatio}:1 (WCAG 1.4.11).");
         }
     }
 
@@ -286,6 +319,29 @@ public sealed class FocusVisibleStyleTests
         ISolidColorBrush solid => solid.Color.ToString(),
         _ => brush.GetType().Name,
     };
+
+    /// <summary>
+    /// `TD-131`: standard source-over alpha compositing of
+    /// <paramref name="overlay"/> (its own <c>Color.A</c> combined with
+    /// its <see cref="IBrush.Opacity"/> — the pair
+    /// <see cref="BrandPalette"/>'s own washes actually split
+    /// their translucency across, confirmed directly: the <c>Color</c>
+    /// itself never encodes a wash's own alpha) over
+    /// <paramref name="ancestor"/> — the real colour a person actually
+    /// sees where <paramref name="overlay"/> is not itself fully opaque.
+    /// </summary>
+    private static Color CompositeOverAncestor(ISolidColorBrush overlay, Color ancestor)
+    {
+        var alpha = (overlay.Color.A / 255.0) * overlay.Opacity;
+
+        byte Blend(byte source, byte destination) =>
+            (byte)Math.Round(source * alpha + destination * (1 - alpha), MidpointRounding.AwayFromZero);
+
+        return Color.FromRgb(
+            Blend(overlay.Color.R, ancestor.R),
+            Blend(overlay.Color.G, ancestor.G),
+            Blend(overlay.Color.B, ancestor.B));
+    }
 
     /// <summary>The real WCAG 2.1 relative-luminance/contrast-ratio formula (§1.4.3), computed directly rather than trusted from a comment — the identical formula <see cref="HealthColorContrastTests"/> already established for this suite.</summary>
     private static double ContrastRatio(Color a, Color b)

@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (24 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (19 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -68,18 +68,13 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
-| `TD-63` | `TD-40`'s dirty-tab-close fix is not pinned on its production path | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
 | `TD-92` | Drag-to-dock has no live preview adorner | unowned |
-| `TD-93` | `Tempest.Samples` redeclares 13 canonical vocabulary strings; can't reference the owner | unowned |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
-| `TD-131` | Focus-ring contrast test can't see any `Flat`-treatment state | unowned |
-| `TD-134` | `SettingsDocument<TDocument>` has no per-consumer notion of "current version" | unowned |
-| `TD-154` | CI's `linux-launch-smoke` marker now fires before the composition root runs | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` (no project id parameter — guarding it needs a design step, not a copy of the pattern) or the Structure tab's ribbon (its commands act through the engineering command registry, which carries no archived-project check, so an engineering object can still be created under an archived project from there) | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task now guarded) |
 | `TD-180` | The "Finance" task bucket uses a thirty-day-since-Sent heuristic (and a seven-day-since-Sent one for quotations) because no payment-terms field exists on an invoice request | unowned (raised by v0.19.1 — `WP 19.5C`) |
@@ -269,6 +264,115 @@ asserts the real statement alongside the pre-existing Owner/Priority
 save-and-reread), and one added assertion on
 `tests/Tempest.Desktop.Tests/QuotationJourneyTests.cs`'s existing "Open
 requirement" journey step.
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-154`. CI's `linux-launch-smoke` job used to grep only
+for `TempestHost.EnterRunning`'s own "Host -> Running." line, which fires
+deep inside `WorkspaceHost.StartAsync` — before `MainWindowComposer` has
+built a single view — so the job proved only that the Runtime Host's
+hosted-service pipeline started, never that the Desktop shell itself
+composed. `MainWindowComposer.Layout`
+(`src/Tempest.Desktop/Composition/MainWindowComposer.Layout.cs`) now logs
+a second marker, "Desktop -> Composed.", once every view, dialog, overlay
+and the docking workspace it assembles already exists — the true end of
+Desktop composition, on the identical real construction path
+(`new MainWindow(host)`) every Desktop test in this suite already drives;
+`.github/workflows/ci.yml`'s `linux-launch-smoke` job now requires both
+markers, in order, on its timeout branch. Proven by
+`tests/Tempest.Desktop.Tests/DesktopCompositionMarkerTests.cs`'s
+`ConstructingTheRealMainWindow_LogsDesktopComposed_AfterHostRunning`,
+through a real `WorkspaceHost`/`MainWindow` pair over an isolated
+persistence root: both markers reach the rolling file log, and
+"Desktop -> Composed." always logs strictly after "Host -> Running.".
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-134`. `SettingsDocument<TDocument>`
+(`src/Tempest.Core/Settings/SettingsDocument.cs`) gained an optional
+`currentVersion` constructor parameter — the `SchemaVersion` this build
+itself writes, not merely the highest one a supplied migration chain
+happens to reach (those two were the same thing for
+`EngineeringObjectStateStore`'s fixed, platform-wide
+`CurrentSchemaVersion`, but never for this seam's own per-consumer
+`targetVersion`, which is why the row's own "no notion of a current
+version" gap existed). `ApplyMigrations` now checks a stored document's
+version against it, before the migration loop, and discards and logs a
+document strictly ahead of it — the same asymmetry
+`EngineeringObjectStateStore.LoadAsync` already applies against its own
+`TargetSchemaVersion`. `null` — the default, and every one of the nine
+real consumers (`UserSettings`, `WindowUiState`, `WorkspaceState`,
+`ProjectContext`, `ShellNavigator`, `DesktopPanelUiState`,
+`FavouriteObjectsState`, `RecentObjectsState`, `MacroManager`) — is a
+strict no-op; none was changed to pass it. Proven by
+`tests/Tempest.Core.Tests/Settings/SettingsDocumentSchemaVersionTests.cs`:
+`WithACurrentVersionSupplied_ADocumentStrictlyAheadOfIt_IsDiscardedAndLogged`,
+`WithACurrentVersionSupplied_ADocumentAtExactlyThatVersion_IsNotDiscarded`,
+`WithACurrentVersionSupplied_ADocumentBelowIt_StillMigratesNormallyUpToIt`,
+and `WithNoCurrentVersionSupplied_ADocumentAheadOfEveryMigration_IsStillReturned`
+re-affirming the pre-existing, unaffected default behaviour.
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-131`.
+`tests/Tempest.Desktop.Tests/FocusVisibleStyleTests.cs`'s own contrast
+check skipped any state whose `ContentPresenter.Background` was not a
+fully-opaque solid brush — which was every one of `Flat`'s own states
+(`Brushes.Transparent` at rest, a 5% wash hovered), so the row's own
+title was literal: the test could not see any `Flat`-treatment state at
+all, twice passing vacuously rather than measuring. The check now
+composites a translucent or transparent background over the real
+ancestor surface (`BrandPalette.PageBackgroundBrushKey`, the same brush
+a real window binds) with standard source-over alpha compositing before
+measuring contrast, so both of `Flat`'s states are now genuinely
+measured rather than skipped. No contrast defect surfaced: all sixteen
+measured states (four treatments, two states, two themes) still pass at
+or above the WCAG 1.4.11 3:1 floor, so no change was needed in
+`ChromeStyles`/`BrandPalette`. Proven by the same
+`ButtonTreatments_FocusRing_DiffersFromAndContrastsWithEveryOpaqueFillItBorders`
+theory, all eight cases green with `Flat`'s own two states now actually
+measured rather than reported "not a real opaque adjacency, skipped."
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-63`. `WorkspaceViewCoordinator.CloseDocumentAsync`'s
+own dirty-tab confirmation (`TD-40`, `WP 10.5A`) — wired from the tab's
+close glyph (`MainWindowComposer.Coordinators.cs`) and `Ctrl+W`
+(`MainWindowComposer.Wire.cs`) — had no test through the real, composed
+application: every existing coverage called `CloseDocumentAsync`
+directly. Both entry points are now driven through a real `MainWindow`
+in `tests/Tempest.Desktop.Tests/DirtyTabCloseConfirmationJourneyTests.cs`,
+dirtying a real `Part` editor tab the same way a person does — editing
+its Name field, which raises the real `ObjectEditorView.DirtyChanged`
+event — rather than calling the buffered dirty-state seam by hand. No
+production change: `ClosingADirtyTab_ByTheCloseGlyph_ShowsTheConfirmationDialog_AndCancelKeepsTheTabOpen`
+finds the real close glyph by its own automation name and clicks it;
+`ClosingADirtyTab_ByCtrlW_ShowsTheConfirmationDialog_AndCancelKeepsTheTabOpen`
+raises a real `Ctrl+W` `KeyDown` on the window, the same pattern this
+suite's own `MainWindowCompositionTests.CtrlZCtrlY_...` already
+established for `Ctrl+Z`/`Ctrl+Y`. Both assert the real
+`ConfirmationDialog` becomes visible and that clicking its real Cancel
+button dismisses it, leaves the tab count unchanged, and leaves the
+edit intact.
+
+**Closed by `WP 19.10M` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-93`. `Tempest.Samples` redeclared 13 canonical
+vocabulary strings it could not reference the owner for, because
+`Tempest.Samples.csproj` referenced only `Tempest.Core`. Confirmed no
+cycle before changing anything (`Tempest.Workspace` does not reference
+`Tempest.Samples`; only the two test projects and `Tempest.Validation`
+do), then added a direct `Tempest.Workspace` project reference and
+replaced all 13 literals with the owning constants: six in
+`EngineeringDocumentsWorkspaceSampleModule.cs` (`DocumentObjectFactoryRegistry.Specification`/`Report`/`Procedure`/`Standard`/`Datasheet`/`ExternalReference`),
+five in `EngineeringManufacturingWorkspaceSampleModule.cs`
+(`ManufacturingObjectFactoryRegistry.Routing`/`Operation`/`SupplierOperation`,
+`DocumentObjectFactoryRegistry.Tooling`/`Fixture`), and two in
+`EngineeringCalculationsWorkspaceSampleModule.cs`
+(`CalculationTemplateRegistry.CalculatedByRelationshipKind`,
+`VerificationService.BasedOnCalculationRelationshipKind` — the latter
+already in `Tempest.Core`, needing no new reference at all). Also
+corrected the Manufacturing module's own drifted remarks, which named a
+sixth, non-existent literal ("Resource") alongside the five the class
+actually declared. `tests/Tempest.Core.Tests/Workspace/SampleSeparationTests.cs`
+(29 tests) stays green — `Tempest.Samples` still ships nowhere; the new
+reference is a build-time-only dependency in the opposite direction
+from what that suite guards.
 
 ## Owned by Programme
 

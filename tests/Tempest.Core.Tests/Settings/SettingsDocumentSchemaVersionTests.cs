@@ -1,5 +1,7 @@
 using Tempest.Core.Events;
+using Tempest.Core.Logging;
 using Tempest.Core.Settings;
+using Tempest.Core.Tests.Logging;
 
 namespace Tempest.Core.Tests.Settings;
 
@@ -205,5 +207,79 @@ public class SettingsDocumentSchemaVersionTests
         Assert.NotNull(loaded);
         Assert.Equal(2, loaded!.SchemaVersion);
         Assert.Equal("current", loaded.Name);
+    }
+
+    // ==================================================================
+    // `TD-134`: an optional, per-consumer "current version" — the
+    // asymmetry `EngineeringObjectStateStore` already applies against its
+    // own fixed `CurrentSchemaVersion`/`TargetSchemaVersion`, now
+    // available here too, opt-in only. Every test above this block never
+    // supplies `currentVersion` and is unaffected by any of the below —
+    // proof the nine real consumers (none of which pass it) see no
+    // behaviour change.
+    // ==================================================================
+
+    [Fact]
+    public async Task WithNoCurrentVersionSupplied_ADocumentAheadOfEveryMigration_IsStillReturned()
+    {
+        // Re-affirms `ADocumentAlreadyPastEveryRegisteredMigration_IsLeftAlone`
+        // under the new parameter's default (null): unchanged.
+        var provider = Provider();
+        var document = new SettingsDocument<TestDto>(provider, Key, "Test", migrations: [new RenameMigration()]);
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":5,\"Name\":\"bracket\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(5, loaded!.SchemaVersion);
+    }
+
+    [Fact]
+    public async Task WithACurrentVersionSupplied_ADocumentStrictlyAheadOfIt_IsDiscardedAndLogged()
+    {
+        var provider = Provider();
+        var sink = new RecordingLogSink();
+        var logger = new Logger("Test", LogLevel.Information, sink);
+        var document = new SettingsDocument<TestDto>(
+            provider, Key, "Test", logger, migrations: [new RenameMigration()], currentVersion: 2);
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":5,\"Name\":\"bracket\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.Null(loaded);
+        Assert.Contains(
+            sink.Entries,
+            entry => entry.Message.Contains("schema version 5", StringComparison.Ordinal)
+                && entry.Message.Contains("current schema version 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task WithACurrentVersionSupplied_ADocumentAtExactlyThatVersion_IsNotDiscarded()
+    {
+        var provider = Provider();
+        var document = new SettingsDocument<TestDto>(
+            provider, Key, "Test", migrations: [new RenameMigration()], currentVersion: 5);
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":5,\"Name\":\"bracket\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(5, loaded!.SchemaVersion);
+        Assert.Equal("bracket", loaded.Name);
+    }
+
+    [Fact]
+    public async Task WithACurrentVersionSupplied_ADocumentBelowIt_StillMigratesNormallyUpToIt()
+    {
+        var provider = Provider();
+        var document = new SettingsDocument<TestDto>(
+            provider, Key, "Test", migrations: [new RenameMigration()], currentVersion: 2);
+        await provider.SetValueAsync(Key, "{\"SchemaVersion\":1,\"Name\":\"bracket\"}");
+
+        var loaded = await document.LoadAsync();
+
+        Assert.NotNull(loaded);
+        Assert.Equal(2, loaded!.SchemaVersion);
+        Assert.Equal("bracket-migrated", loaded.Name);
     }
 }
