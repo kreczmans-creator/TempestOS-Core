@@ -34,6 +34,9 @@ public enum QuotationRefusal
 
     /// <summary>This quotation's own <see cref="Quotation.Status"/> does not permit the requested act.</summary>
     TransitionNotPermitted,
+
+    /// <summary>The project this quotation belongs to is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of an <see cref="IQuotationService"/> act: either it happened, or a refusal that says why it did not.</summary>

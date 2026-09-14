@@ -45,6 +45,7 @@ public interface IDeliverableService
     /// fixed at creation.
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="projectId"/> does not identify a live project, or <paramref name="title"/> is null, empty, or whitespace.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="projectId"/> is archived (`WP 19.5C`) — closed 90 days or more ago, and read-only.</exception>
     Task<Deliverable> AddDeliverableAsync(
         Guid projectId, string title, DateOnly? targetDate = null, CancellationToken cancellationToken = default);
 }

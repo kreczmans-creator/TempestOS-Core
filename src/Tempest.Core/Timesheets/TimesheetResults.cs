@@ -25,6 +25,9 @@ public enum TimesheetRefusal
 
     /// <summary>This entry already carries an <see cref="TimesheetEntry.InvoicedBy"/> link — its rate, hours, task and billable flag are frozen.</summary>
     EntryInvoiced,
+
+    /// <summary>The project is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of an <see cref="ITimesheetService"/> act: either it happened, or a refusal that says why it did not.</summary>

@@ -37,6 +37,9 @@ public enum InvoiceRequestRefusal
 
     /// <summary>This request's own <see cref="InvoiceRequest.Status"/> does not permit the requested act.</summary>
     TransitionNotPermitted,
+
+    /// <summary>The project is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
+    ProjectArchived,
 }
 
 /// <summary>The outcome of an <see cref="IInvoicingService"/> act: either it happened, or a refusal that says why it did not.</summary>

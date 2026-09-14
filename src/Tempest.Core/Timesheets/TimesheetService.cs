@@ -1,5 +1,6 @@
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 
 namespace Tempest.Core.Timesheets;
 
@@ -9,9 +10,12 @@ public sealed class TimesheetService : ITimesheetService
     private readonly EngineeringDomainContext _context;
     private readonly IRateCardCatalog _rateCards;
     private readonly IWorkingPatternProvider _workingPatterns;
+    private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="TimesheetService"/> class.</summary>
-    public TimesheetService(EngineeringDomainContext context, IRateCardCatalog rateCards, IWorkingPatternProvider workingPatterns)
+    /// <param name="timeProvider">The clock the archived-project guard reads "now" from (`WP 19.5C`). <see langword="null"/> — the default — is <see cref="TimeProvider.System"/>.</param>
+    public TimesheetService(
+        EngineeringDomainContext context, IRateCardCatalog rateCards, IWorkingPatternProvider workingPatterns, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -20,6 +24,7 @@ public sealed class TimesheetService : ITimesheetService
         _context = context;
         _rateCards = rateCards;
         _workingPatterns = workingPatterns;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -45,6 +50,12 @@ public sealed class TimesheetService : ITimesheetService
 
         if (!resolution.Succeeded)
             return new TimesheetResult(TimesheetRefusal.GradeNotOnCard, resolution.Reason, null);
+
+        if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            return new TimesheetResult(
+                TimesheetRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new time can be recorded against it.", null);
+        }
 
         var principalId = _context.ResolveCurrentPrincipalId();
 
@@ -77,6 +88,9 @@ public sealed class TimesheetService : ITimesheetService
         if (entry.InvoicedBy is not null)
             return Invoiced(entry);
 
+        if (await ArchivedAsync(entry, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await entry.AmendAsync(hours, task, billable, cancellationToken).ConfigureAwait(false);
 
         return new TimesheetResult(TimesheetRefusal.None, null, entry);
@@ -92,6 +106,9 @@ public sealed class TimesheetService : ITimesheetService
         if (entry.InvoicedBy is not null)
             return Invoiced(entry);
 
+        if (await ArchivedAsync(entry, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await entry.DeleteAsync(cancellationToken).ConfigureAwait(false);
 
         return new TimesheetResult(TimesheetRefusal.None, null, entry);
@@ -106,6 +123,9 @@ public sealed class TimesheetService : ITimesheetService
 
         if (entry.InvoicedBy is not null)
             return Invoiced(entry);
+
+        if (await ArchivedAsync(entry, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
 
         await entry.MarkInvoicedAsync(requestId, cancellationToken).ConfigureAwait(false);
 
@@ -140,6 +160,20 @@ public sealed class TimesheetService : ITimesheetService
 
     private async Task<TimesheetEntry?> FindEntryAsync(Guid entryId, CancellationToken cancellationToken) =>
         await _context.Repository.FindAsync(entryId, cancellationToken).ConfigureAwait(false) as TimesheetEntry;
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private async Task<TimesheetResult?> ArchivedAsync(TimesheetEntry entry, CancellationToken cancellationToken)
+    {
+        if (entry.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new TimesheetResult(TimesheetRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this entry is read-only.", entry)
+            : null;
+    }
 
     private static TimesheetResult NotFound(Guid entryId) =>
         new(TimesheetRefusal.EntryNotFound, $"No timesheet entry '{entryId}' is registered.", null);

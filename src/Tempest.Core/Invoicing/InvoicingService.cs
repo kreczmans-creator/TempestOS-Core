@@ -3,6 +3,7 @@ using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 using Tempest.Core.Timesheets;
 
 namespace Tempest.Core.Invoicing;
@@ -119,6 +120,12 @@ public sealed class InvoicingService : IInvoicingService
                 $"Deliverable completion '{deliverableCompletionId}' has no live project — every completion is parented to the project it was completed under, so this should be unreachable.");
         }
 
+        if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new invoice request can be raised against it.", null);
+        }
+
         if (string.IsNullOrWhiteSpace(project.ClientOrganisationId))
         {
             return new InvoiceRequestResult(
@@ -208,6 +215,9 @@ public sealed class InvoicingService : IInvoicingService
                 request);
         }
 
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
 
         var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
@@ -255,6 +265,9 @@ public sealed class InvoicingService : IInvoicingService
         if (request is null)
             return NotFound(requestId);
 
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         switch (request.Status)
         {
             case InvoiceRequestStatus.Unknown:
@@ -291,6 +304,9 @@ public sealed class InvoicingService : IInvoicingService
                 + "A request that reached the provider is voided there, and read back through reconciliation.",
                 request);
         }
+
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
 
         await request.VoidLocallyAsync(cancellationToken).ConfigureAwait(false);
 
@@ -383,6 +399,20 @@ public sealed class InvoicingService : IInvoicingService
 
     private static InvoiceRequestResult NotFound(Guid requestId) =>
         new(InvoiceRequestRefusal.RequestNotFound, $"No invoice request '{requestId}' is registered.", null);
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private async Task<InvoiceRequestResult?> ArchivedAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new InvoiceRequestResult(InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this request is read-only.", request)
+            : null;
+    }
 
     /// <summary>
     /// Builds the plain-data projection a connector is actually handed —
