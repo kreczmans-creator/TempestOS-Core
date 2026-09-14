@@ -475,8 +475,9 @@ public sealed class ObjectEditorView : UserControl
         // visual tree, drop the change-feed subscription — see
         // WorkspaceChanges's own remarks. `WP 19.7C`: the same
         // <see cref="WorkspaceChangesSubscription"/> helper every sibling
-        // view now takes, for uniformity — this editor closes rather than
-        // hides, so it never shared the reattach defect the helper fixes.
+        // view now takes — a Document Area tab left for another one is
+        // detached, not closed, so this editor shared the reattach defect
+        // (the helper's own remarks; the v0.19.1 warning on hidden editors).
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         Content = BuildLayout();

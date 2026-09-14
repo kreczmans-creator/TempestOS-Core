@@ -38,10 +38,14 @@ namespace Tempest.Desktop.Views;
 /// each of which visits its own surface exactly once (`WP 19.7B`'s own
 /// audit is what first left and returned to a surface and noticed); and
 /// <see cref="Tempest.Desktop.Editors.ObjectEditorView"/>, the one
-/// per-object editor, which closes rather than hides, so its own single
-/// subscribe/detach lifecycle never needed to survive a reattach at all —
-/// it takes this helper only for the uniformity of one subscription shape
-/// across every view, not because it shared the defect.
+/// per-object editor, which looked as if it only ever closed. It does not:
+/// the Document Area is a <see cref="TabControl"/>, and a tab control
+/// detaches the content of the tab it leaves and reattaches it on return
+/// (pinned by <c>TabControlDetachTests</c>), so an editor on a background
+/// tab shared the defect exactly and takes this helper for that reason.
+/// What remains, disclosed in the v0.19.1 notes: no host re-reads an editor
+/// when its tab is reselected, so a change made while it was hidden shows
+/// only at the next change or its own Save.
 /// </para>
 /// <para>
 /// This type replaces each view's own setter-managed subscription: it
