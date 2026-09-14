@@ -5,7 +5,9 @@ namespace Tempest.Desktop.Tests;
 
 /// <summary>
 /// WP-H (`AT-23`) — the keyboard input-binding path is wired, registered,
-/// and bound to nothing. That is now a product choice and nothing else.
+/// and bound to nothing beyond one disclosed exception (`WP 19.10O`'s own
+/// rail-collapse shortcut, named in <see cref="DisclosedBindings"/>). That
+/// is a product choice and nothing else.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -47,9 +49,30 @@ namespace Tempest.Desktop.Tests;
 /// not that <c>MainWindow</c> does not. The claim is about production call
 /// sites, so it is asserted against them.
 /// </para>
+/// <para>
+/// <b>`WP 19.10O`: the first disclosed exception, named exactly.</b> The
+/// Product Owner asked for one keyboard shortcut collapsing the navigation
+/// rail ("when I'm not using those menus I get the maximum real estate…") —
+/// a genuine product decision to bind something, not a defect. Rather than
+/// loosen this guard generally (which would let any future binding land
+/// silently), <see cref="DisclosedBindings"/> names the one call site
+/// exactly; any binding elsewhere still fails this test, and
+/// <see cref="TheDisclosedBinding_IsStillWhereThisTestExpectsIt"/> keeps the
+/// allow-list itself honest against a rename or removal.
+/// </para>
 /// </remarks>
 public sealed class DormantKeyboardBindingTests
 {
+    /// <summary>
+    /// The exact, exhaustive list of production gesture bindings this guard
+    /// no longer flags — see the class remarks. A binding not named here,
+    /// anywhere in <c>src/</c>, still fails <see cref="NoProductionCode_BindsAGestureToACommandId"/>.
+    /// </summary>
+    private static readonly (string File, string LineContains)[] DisclosedBindings =
+    [
+        ("src/Tempest.Desktop/Composition/MainWindowComposer.Wire.cs", "Bind(new KeyGesture(Key.B, KeyModifiers.Control), \"shell.toggleNavigationRail\")"),
+    ];
+
     [Fact]
     public void NoProductionCode_BindsAGestureToACommandId()
     {
@@ -83,6 +106,9 @@ public sealed class DormantKeyboardBindingTests
                     || line.Contains("Bind(new KeyGesture", StringComparison.Ordinal)
                     || line.Contains("Bind(gesture,", StringComparison.Ordinal))
                 {
+                    if (DisclosedBindings.Any(d => relative == d.File && line.Contains(d.LineContains, StringComparison.Ordinal)))
+                        continue;
+
                     offenders.Add($"{relative}: {line}");
                 }
             }
@@ -92,9 +118,32 @@ public sealed class DormantKeyboardBindingTests
             offenders.Count == 0,
             "Production code now binds a keyboard gesture to a command Id. The routing itself is sound —\n"
             + "WP-A2 put InputBindingRouter on the canonical Evaluate/InvokeAsync(id, context, prompt, ct)\n"
-            + "path — so this is not a defect report. It is AT-23: the keyboard ships with zero default\n"
-            + "bindings and no remapping UI by product decision. Shipping one means amending AT-23 first.\n\n"
+            + "path — so this is not a defect report. It is AT-23: the keyboard ships with zero undisclosed\n"
+            + "default bindings and no remapping UI by product decision (WP 19.10O disclosed the one\n"
+            + "exception this guard already names — DisclosedBindings). Shipping another means naming it\n"
+            + "there first.\n\n"
             + string.Join("\n", offenders));
+    }
+
+    /// <summary>
+    /// The allow-list's own honesty check (`WP 19.10O`): every entry in
+    /// <see cref="DisclosedBindings"/> must still be found, verbatim, in the
+    /// file it names — otherwise the exception in
+    /// <see cref="NoProductionCode_BindsAGestureToACommandId"/> is stale
+    /// (the binding was renamed or removed) and should be deleted rather
+    /// than silently continuing to widen the guard for nothing.
+    /// </summary>
+    [Fact]
+    public void TheDisclosedBinding_IsStillWhereThisTestExpectsIt()
+    {
+        foreach (var (file, lineContains) in DisclosedBindings)
+        {
+            var fullPath = Path.Combine(RepositoryRoot, file.Replace('/', Path.DirectorySeparatorChar));
+            Assert.True(File.Exists(fullPath), $"{file}: no longer exists — remove its DisclosedBindings entry.");
+
+            var found = File.ReadAllLines(fullPath).Any(line => line.Trim().Contains(lineContains, StringComparison.Ordinal));
+            Assert.True(found, $"{file}: no longer contains '{lineContains}' — remove or update its DisclosedBindings entry.");
+        }
     }
 
     /// <summary>

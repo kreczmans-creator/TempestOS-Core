@@ -50,9 +50,9 @@ public sealed class EngineeringAreaView : UserControl
 
     private readonly EngineeringDashboardView _dashboard;
 
-    private readonly TreeView _tree = new() { MinWidth = 260, MaxWidth = 260 };
+    private readonly TreeView _tree = new();
     private readonly ContentControl _detail = new();
-    private Border? _treeHost;
+    private readonly CollapsibleColumn _treeColumn;
     private readonly StackPanel _dashboardStack = new() { Spacing = DesignTokens.SpaceLg };
     private readonly ScrollViewer _dashboardScroll;
     private readonly StackPanel _tasksPanel = new() { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding };
@@ -126,16 +126,9 @@ public sealed class EngineeringAreaView : UserControl
         _tree.SelectionChanged += (_, _) => _ = OnSelectionChangedAsync();
 
         var split = new DockPanel();
-        _treeHost = new Border
-        {
-            Child = _tree,
-            Width = 260,
-            BorderThickness = new Thickness(0, 0, 1, 0),
-            Padding = new Thickness(0, DesignTokens.SpaceMd, 0, 0),
-        };
-        ThemeReactiveBrush.Bind(_treeHost, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
-        DockPanel.SetDock(_treeHost, Dock.Left);
-        split.Children.Add(_treeHost);
+        _treeColumn = new CollapsibleColumn("Engineering", _tree);
+        DockPanel.SetDock(_treeColumn, Dock.Left);
+        split.Children.Add(_treeColumn);
 
         _detail.Content = _dashboardScroll;
         split.Children.Add(_detail);
@@ -165,13 +158,19 @@ public sealed class EngineeringAreaView : UserControl
     /// <c>GlobalNavigationRail</c>/<c>RibbonView</c>/<c>LibrariesView</c>
     /// already fold on.
     /// </summary>
-    public void SetCompact(bool compact)
+    public void SetCompact(bool compact) => _treeColumn.SetCompact(compact);
+
+    /// <summary>Gets whether the tree column is currently manually collapsed to its own strip (`WP 19.10O`).</summary>
+    public bool IsTreeCollapsed => _treeColumn.IsCollapsed;
+
+    /// <summary>Collapses the tree column to its own strip, or restores it (`WP 19.10O`).</summary>
+    public void SetTreeCollapsed(bool collapsed) => _treeColumn.SetCollapsed(collapsed);
+
+    /// <summary>Raised after <see cref="SetTreeCollapsed"/> changes the tree column's own collapsed state — the caller's own cue to persist it.</summary>
+    public event Action<bool>? TreeCollapsedChanged
     {
-        var width = compact ? 160 : 260;
-        _tree.MinWidth = width;
-        _tree.MaxWidth = width;
-        if (_treeHost is not null)
-            _treeHost.Width = width;
+        add => _treeColumn.CollapsedChanged += value;
+        remove => _treeColumn.CollapsedChanged -= value;
     }
 
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>

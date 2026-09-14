@@ -38,7 +38,9 @@ namespace Tempest.Desktop.Views;
 /// edge over the 12% selection fill — never by colour alone (the title is
 /// also set in the heading weight). Below <see cref="DesignTokens.CompactShellWidth"/>
 /// the rail folds to its icons (<see cref="SetCompact"/>), keeping every
-/// module reachable in a narrow window with its title in the tooltip.
+/// module reachable in a narrow window with its title in the tooltip. A
+/// chevron at the rail's own foot (`WP 19.10O`) folds it the same way on
+/// demand, at any width, and the choice is persisted (<see cref="SetCollapsed"/>).
 /// </para>
 /// </remarks>
 public sealed class GlobalNavigationRail : UserControl
@@ -47,10 +49,16 @@ public sealed class GlobalNavigationRail : UserControl
     private readonly StackPanel _buttons = new() { Spacing = DesignTokens.SpaceXs };
     private readonly List<ModuleItem> _modules = [];
     private readonly TextBlock _sectionLabel;
+    private readonly Button _collapseChevron;
+    private readonly ContentControl _collapseChevronIconHost;
     private bool _compact;
+    private bool _collapsedByUser;
 
     /// <summary>Raised after the user picks a module, so the shell can render it.</summary>
     public event Action? NavigationRequested;
+
+    /// <summary>Raised after <see cref="SetCollapsed"/> changes the rail's own manually-collapsed state, carrying the new state — the caller's own cue to persist it (`WP 19.10O`), exactly as <see cref="RibbonView.CollapsedChanged"/> already does for `TD-70`.</summary>
+    public event Action<bool>? CollapsedChanged;
 
     /// <summary>Initialises a new instance of the <see cref="GlobalNavigationRail"/> class.</summary>
     /// <param name="navigator">The shell navigator this rail is a view over.</param>
@@ -79,9 +87,37 @@ public sealed class GlobalNavigationRail : UserControl
             AddModule(module, () => _navigator.GoToModuleAsync(area));
         }
 
+        // `WP 19.10O`: a collapse control at the rail's own foot — a
+        // chevron toggling the manual collapse independent of the
+        // responsive fold above, matching `RibbonView`'s own `TD-70`
+        // minimise affordance rather than inventing a second interaction
+        // language for the same idea.
+        _collapseChevronIconHost = new ContentControl
+        {
+            Width = 14,
+            Height = 14,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        _collapseChevron = new Button
+        {
+            Content = _collapseChevronIconHost,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            MinHeight = DesignTokens.ControlSizeMedium,
+            Margin = new Thickness(DesignTokens.SpaceMd, DesignTokens.SpaceSm),
+        };
+        _collapseChevron.Classes.Add(ChromeStyles.Flat);
+        _collapseChevron.Click += (_, _) => ToggleCollapsed();
+
+        var footer = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Child = _collapseChevron };
+        ThemeReactiveBrush.Bind(footer, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
+        DockPanel.SetDock(footer, Dock.Bottom);
+
         var body = new DockPanel();
         DockPanel.SetDock(_sectionLabel, Dock.Top);
         body.Children.Add(_sectionLabel);
+        body.Children.Add(footer);
         body.Children.Add(new ScrollViewer { Content = _buttons, Padding = new Thickness(DesignTokens.SpaceMd, 0), HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
 
         var frame = new Border { Child = body, BorderThickness = new Thickness(0, 0, 1, 0) };
@@ -90,27 +126,63 @@ public sealed class GlobalNavigationRail : UserControl
 
         ActualThemeVariantChanged += (_, _) => RefreshSelection();
         RefreshSelection();
+        ApplyFoldState();
     }
 
-    /// <summary>Gets whether the rail is currently folded to its icons.</summary>
+    /// <summary>Gets whether the rail is currently folded to its icons — either the responsive rule (<see cref="IsCompact"/>) or the manual toggle (<see cref="IsCollapsed"/>), or both.</summary>
+    public bool IsFolded => _compact || _collapsedByUser;
+
+    /// <summary>Gets whether the shell's own responsive rule is currently narrowing the rail (below <see cref="DesignTokens.CompactShellWidth"/>).</summary>
     public bool IsCompact => _compact;
 
-    /// <summary>Folds the rail to icons only, or restores its titles — the shell calls this from its own width, so a narrow window keeps every module reachable.</summary>
+    /// <summary>Gets whether the rail is manually collapsed to its icon width (`WP 19.10O`) — independent of <see cref="IsCompact"/>.</summary>
+    public bool IsCollapsed => _collapsedByUser;
+
+    /// <summary>Folds the rail to icons only below the shell's own compact threshold, or restores its titles above it — the shell calls this from its own width, so a narrow window keeps every module reachable. Below the threshold this always wins over <see cref="SetCollapsed"/>'s own manual state (`WP 19.10O`, "the responsive rule wins").</summary>
     public void SetCompact(bool compact)
     {
         if (_compact == compact)
             return;
 
         _compact = compact;
-        Width = compact ? DesignTokens.RailCompactWidth : DesignTokens.RailWidth;
-        _sectionLabel.IsVisible = !compact;
+        ApplyFoldState();
+    }
+
+    /// <summary>Manually collapses the rail to its icon width, or restores it — reachable at any window width above the compact threshold (`WP 19.10O`), independent of <see cref="SetCompact"/>.</summary>
+    public void SetCollapsed(bool collapsed)
+    {
+        if (_collapsedByUser == collapsed)
+            return;
+
+        _collapsedByUser = collapsed;
+        ApplyFoldState();
+        CollapsedChanged?.Invoke(collapsed);
+    }
+
+    /// <summary>Toggles <see cref="IsCollapsed"/> — the footer chevron's own target, and the Command Palette's "Collapse navigation" shell action's own target.</summary>
+    public void ToggleCollapsed() => SetCollapsed(!_collapsedByUser);
+
+    private void ApplyFoldState()
+    {
+        var folded = IsFolded;
+        Width = folded ? DesignTokens.RailCompactWidth : DesignTokens.RailWidth;
+        _sectionLabel.IsVisible = !folded;
 
         foreach (var item in _modules)
         {
-            item.Title.IsVisible = !compact;
-            item.Button.HorizontalContentAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Left;
-            item.Button.Padding = compact ? new Thickness(0, DesignTokens.SpaceMd) : new Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceMd);
+            item.Title.IsVisible = !folded;
+            item.Button.HorizontalContentAlignment = folded ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            item.Button.Padding = folded ? new Thickness(0, DesignTokens.SpaceMd) : new Thickness(DesignTokens.SpaceLg, DesignTokens.SpaceMd);
         }
+
+        // The chevron's own name/tooltip/icon reflect the manual toggle's
+        // own next action — not whether the rail happens to be folded right
+        // now for the unrelated, responsive reason (`CollapsibleColumn`'s
+        // own identical distinction).
+        var actionName = _collapsedByUser ? "Expand navigation" : "Collapse navigation";
+        AutomationProperties.SetName(_collapseChevron, actionName);
+        ToolTip.SetTip(_collapseChevron, $"{actionName} (Ctrl+B)");
+        _collapseChevronIconHost.Content = IconGeometry.Build(_collapsedByUser ? IconGeometry.ChevronRight : IconGeometry.ChevronLeft, 14);
     }
 
     /// <summary>Re-highlights whichever module the navigator currently reports — called after every shell move, and again on a theme switch so the state brushes re-resolve for the new variant.</summary>
