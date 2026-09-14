@@ -3,6 +3,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
@@ -73,6 +74,7 @@ public class RequirementsSampleModuleIntegrationTests
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
         services.Singleton<IVerificationService, VerificationService>();
         services.Singleton<IRequirementsService, RequirementsService>();
         services.Singleton<IReportingService, ReportingService>();
