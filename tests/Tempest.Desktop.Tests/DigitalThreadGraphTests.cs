@@ -396,8 +396,12 @@ public sealed class DigitalThreadGraphModelTests
             // remarks) — a genuine, disclosed test-precision defect found
             // and fixed here, `WP 10.5A` (the original, broader assertion
             // intermittently failed depending on `InMemoryEngineeringObjectRepository`'s
-            // own unspecified iteration order, `TD-27`'s own identical class
-            // of risk).
+            // own then-unspecified iteration order — closed by `TD-27`,
+            // which now guarantees `ListByKindAsync` a stable registration
+            // order, asserted directly below rather than merely trusted).
+            var repeatRead = await domainContext.Repository.ListByKindAsync("VerificationActivity");
+            Assert.Equal(activities.Select(a => a.Id), repeatRead.Select(a => a.Id));
+
             var recordId = expectedRecords![0].RecordId;
             var directlyLinked = await domainContext.RelationshipRepository.GetIncomingAsync(recordId);
             Assert.DoesNotContain(directlyLinked, r => r.SourceId == verifiedActivity.Id && r.RelationshipKind == "verifiedBy");

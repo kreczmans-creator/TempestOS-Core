@@ -609,6 +609,44 @@ public sealed class WorkflowInteractionTests
     }
 
     // ------------------------------------------------------------
+    // `TD-27`: Project Explorer node order is deterministic
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+
+            var firstRoots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            var secondRoots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            Assert.Equal(firstRoots.Select(n => n.Id), secondRoots.Select(n => n.Id));
+
+            var parentWithChildren = firstRoots.FirstOrDefault(n => n.HasChildren);
+            if (parentWithChildren is not null)
+            {
+                var firstChildren = await workspace.ProjectExplorer.GetChildrenAsync(parentWithChildren.Id);
+                var secondChildren = await workspace.ProjectExplorer.GetChildrenAsync(parentWithChildren.Id);
+
+                // `InMemoryEngineeringObjectRepository`'s registration order
+                // guarantee (`TD-27`) reaches all the way to this surface:
+                // the same parent's children come back in the same order
+                // every time, never reshuffled between renders.
+                Assert.Equal(firstChildren.Select(n => n.Id), secondChildren.Select(n => n.Id));
+            }
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------
 
@@ -630,12 +668,16 @@ public sealed class WorkflowInteractionTests
     /// (which genuinely has children), and <c>IDeletable.DeleteAsync</c>
     /// throws <c>EngineeringObjectHasChildrenException</c> for any object
     /// a live child still parents — a real, disclosed business rule, not
-    /// a defect. Depending on
-    /// <c>InMemoryEngineeringObjectRepository</c>'s own unspecified
-    /// iteration order (`TD-27`'s identical risk class), the plain
-    /// "first object" helper could non-deterministically pick either a
-    /// deletable leaf or the non-deletable root — found directly, by a
-    /// flaking test, before this helper existed.
+    /// a defect, so this helper stays even now that
+    /// <c>InMemoryEngineeringObjectRepository</c> guarantees a stable
+    /// registration order (`TD-27`, asserted directly by
+    /// <see cref="ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads"/>
+    /// above): the *first* node found is still whichever real node happens
+    /// to sit first in that order, and the root can genuinely be it. Before
+    /// this helper existed, the plain "first object" search could also
+    /// non-deterministically land on either the leaf or the root, found
+    /// directly by a flaking test — a second, now-closed risk from the
+    /// same unspecified-order class.
     /// </summary>
     private static async Task<ProjectExplorerNode> GetRealLeafMechanicalObjectNodeAsync(IWorkspace workspace)
     {

@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (27 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (26 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-147` — an object creation whose initial durable write failed still
 registered the object in memory, so its next successful write made a
@@ -44,7 +44,6 @@ and nothing on disk.
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
-| `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-41` | `ObjectEditorView` never resolves a real Requirement; always falls back to the generic body | unowned (claimed by `WP 18.1B`/`WP 18.2A`, not actually closed — see note) |
@@ -92,9 +91,10 @@ answered. Housekeeping ("`D:/tempest-wt/19.2B` directory still locked by
 a stray testhost") is an environment cleanup, not product debt.
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
-`TD-27` and `TD-150` sit squarely in the persistence/object-store
-mechanism `WP 17.1A`/`WP 17.1B` replace, but neither row is literally
-listed; `TD-28` sits in the refresh/notification mechanism `WP 18.1A`
+`TD-150` sits squarely in the persistence/object-store mechanism
+`WP 17.1A`/`WP 17.1B` replace, but the row is not literally listed
+(`TD-27`, which sat here on the identical caveat, is closed directly —
+see below); `TD-28` sits in the refresh/notification mechanism `WP 18.1A`
 replaces, same caveat. Owners other than "unowned" that are not one of
 the programme Work Packages (`WP 18.0B`, `18.2B`,
 `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
@@ -220,6 +220,46 @@ no source file under `src/Tempest.Desktop` references
 `ICalculationPackValidationService`, `IVerificationArtefactValidationService`
 or either rule-code type — so none was added; `TD-157`'s own subject was
 only ever the resolver never being wired up, not a missing surface.
+
+**Closed by `WP 19.10N` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-27`. `InMemoryEngineeringObjectRepository`
+(`src/Tempest.Core/EngineeringDomain/Implementation/InMemoryEngineeringObjectRepository.cs`)
+now returns every list — `ListAllAsync`, `ListByKindAsync`,
+`ListChildrenAsync` — in registration order: the order `Register` first
+saw each object's id, tracked in an ordered key sequence maintained
+under the same lock (`_sync`) `Register` and `ParentChanged` take, so a
+concurrent registration is assigned exactly one position, never raced.
+A later revision or a rehydration re-registering an id already seen
+keeps that id's original position rather than moving to the back.
+`ListChildrenAsync` keeps its `WP 17.9.3` indexed-lookup cost — it sorts
+only the (already-found) children by their registration position, never
+rescans the whole repository. `EngineeringObjectRehydrationService`
+(`RehydrateAsync`) now sorts the durable state list by object id before
+registering, since the durable record carries no reliable creation-order
+field of its own for `IEngineeringObjectStateStore.ListAsync` to
+preserve: rehydration of identical disk state now registers in the same
+order on every run, not whatever order the backing store's own scan
+happened to return. Every affected method's own XML doc states the
+guarantee. Proven by
+`tests/Tempest.Core.Tests/EngineeringDomain/InMemoryEngineeringObjectRepositoryOrderTests.cs`
+(sequential and interleaved registration order, order after a move,
+re-registration keeping its original position, and two concurrency
+tests: `ConcurrentRegistrations_AllLand_AndProduceAnOrderStableAcrossRepeatedReads`
+registers 200 objects from concurrent tasks and asserts no loss and a
+stable repeat read; `ConcurrentRegistrationsAcrossDifferentParents_ListChildrenAsyncIsAlsoStableAcrossRepeatedReads`
+does the same through the by-parent index) and
+`EngineeringObjectRehydrationTests.Rehydration_RegistersObjectsInTheSameOrder_EveryTimeItRunsOverTheSameDiskState`.
+The two tests that previously only tolerated the risk in a comment now
+assert the order directly:
+`DigitalThreadGraphTests.cs`'s `Recentre_VerificationActivityWithARecordedResult_AddsTheResultAsAVisibleLeafNode`
+asserts a repeat `ListByKindAsync` read matches the first;
+`WorkflowInteractionTests.cs` gains
+`ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads`,
+asserting the Project Explorer surface — root nodes and a parent's
+children — is stable across repeated reads, and
+`GetRealLeafMechanicalObjectNodeAsync`'s own doc comment now explains it
+stays for a real, disclosed business rule (a childless leaf is required
+for delete), not as a workaround for unordered iteration.
 
 ## Owned by Programme
 
