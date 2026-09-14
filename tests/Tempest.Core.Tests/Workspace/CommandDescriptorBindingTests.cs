@@ -7,6 +7,7 @@ using Tempest.Workspace.Evidence;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
@@ -51,7 +52,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     private static readonly IReadOnlyList<string> Disciplines =
         [
             "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
-            "Projects", "Requirements", "Timesheets", "Verification",
+            "Projects", "Quotations", "Requirements", "Timesheets", "Verification",
         ];
 
     /// <summary>U1 — an object picker this platform does not have (FCR-0073).</summary>
@@ -211,9 +212,13 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // `WP 19.1A` adds four production descriptors in a fourth new
         // discipline category (Invoicing), none of them unavailable, so 93
         // becomes 97 and 75 becomes 79; 18 is unchanged.
-        Assert.Equal(97, ProductionDescriptors.Count);
+        // `WP 19.5A` adds five production descriptors in a fifth new
+        // discipline category (Quotations: create, add-line, send, accept,
+        // decline), none of them unavailable, so 97 becomes 102 and 79
+        // becomes 84; 18 is unchanged.
+        Assert.Equal(102, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(79, bindable.Count);
+        Assert.Equal(84, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -370,6 +375,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                      ("Manufacturing", "ManufacturingWorkspaceRegistration.cs"),
                      ("Mechanical", "MechanicalWorkspaceRegistration.cs"),
                      ("Projects", "ProjectCommercialWorkspaceRegistration.cs"),
+                     ("Quotations", "QuotationWorkspaceRegistration.cs"),
                      ("Requirements", "RequirementsWorkspaceRegistration.cs"),
                      ("Timesheets", "TimesheetsWorkspaceRegistration.cs"),
                      ("Verification", "VerificationWorkspaceRegistration.cs"),
@@ -432,6 +438,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         [nameof(InvoicingCommandIds)] = typeof(InvoicingCommandIds),
         [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
         [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
+        [nameof(QuotationCommandIds)] = typeof(QuotationCommandIds),
         [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
         [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
         [nameof(VerificationCommandIds)] = typeof(VerificationCommandIds),

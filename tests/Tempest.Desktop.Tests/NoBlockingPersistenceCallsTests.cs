@@ -175,7 +175,9 @@ public sealed class NoBlockingPersistenceCallsTests
     /// disclose — <c>TimesheetEntryObjectView.cs</c>,
     /// <c>DeliverableCompletionObjectView.cs</c> and
     /// <c>InvoiceRequestObjectView.cs</c>, taking the total to fourteen
-    /// sites across twelve files.
+    /// sites across twelve files. `WP 19.5A` (`ADR-0152`) adds a fifteenth,
+    /// across a thirteenth file — <c>QuotationObjectView.cs</c>, the same
+    /// shape once more.
     /// </remarks>
     private static readonly Dictionary<string, (int Count, string Reason)> AllowedWorkspaceBlockingCallSites = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -225,6 +227,11 @@ public sealed class NoBlockingPersistenceCallsTests
         // `WP 19.1A` (`ADR-0151`): the same bridge, for the InvoiceRequest's
         // own plain-data view.
         [Path.Combine("Workspace", "Invoicing", "InvoiceRequestObjectView.cs")] =
+            (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
+
+        // `WP 19.5A` (`ADR-0152`): the same bridge, for the Quotation's
+        // own plain-data view.
+        [Path.Combine("Workspace", "Quotations", "QuotationObjectView.cs")] =
             (1, "Same IWorkspaceViewFactory.Create sync/async boundary as RequirementsWorkspaceViewFactory.cs."),
     };
 
@@ -303,23 +310,23 @@ public sealed class NoBlockingPersistenceCallsTests
     }
 
     /// <summary>
-    /// Pins the Workspace allow-list itself: fourteen disclosed sites
-    /// across twelve files — eleven across nine as of `WP 18.1A-R1`, down
+    /// Pins the Workspace allow-list itself: fifteen disclosed sites
+    /// across thirteen files — eleven across nine as of `WP 18.1A-R1`, down
     /// from the thirty-six this Work Package found across the whole of
     /// <c>src/Tempest.Workspace</c> once the twenty-five sites across the
     /// seven Cockpit-owned files (<c>EngineeringCockpit.cs</c> and all six
     /// <c>*CockpitReadModel.cs</c> collaborators) were fixed;
-    /// <c>WP 19.0A</c>/<c>WP 19.1A</c> each add one more disclosed site for
-    /// their own Kind's plain-data view, the identical
+    /// <c>WP 19.0A</c>/<c>WP 19.1A</c>/<c>WP 19.5A</c> each add one more
+    /// disclosed site for their own Kind's plain-data view, the identical
     /// <c>IWorkspaceViewFactory.Create</c> bridge six other files already
-    /// disclose. A future fix that closes one of these fourteen must
+    /// disclose. A future fix that closes one of these fifteen must
     /// shrink this test deliberately; nothing here can silently widen.
     /// </summary>
     [Fact]
-    public void TheWorkspaceAllowList_PinsExactlyFourteenSites_AcrossTwelveFiles()
+    public void TheWorkspaceAllowList_PinsExactlyFifteenSites_AcrossThirteenFiles()
     {
-        Assert.Equal(12, AllowedWorkspaceBlockingCallSites.Count);
-        Assert.Equal(14, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
+        Assert.Equal(13, AllowedWorkspaceBlockingCallSites.Count);
+        Assert.Equal(15, AllowedWorkspaceBlockingCallSites.Values.Sum(v => v.Count));
 
         foreach (var (relative, allowed) in AllowedWorkspaceBlockingCallSites)
         {
