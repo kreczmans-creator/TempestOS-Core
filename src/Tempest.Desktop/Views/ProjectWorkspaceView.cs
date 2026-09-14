@@ -67,27 +67,25 @@ public sealed class ProjectWorkspaceView : UserControl
     // instance for standalone engineering instead (see both methods' own
     // remarks).
     //
-    // Its `Margin` cancels `root`'s own `DesignTokens.PagePadding` exactly
-    // (the same "negative margin cancels a margin" technique
-    // `CockpitCardControl`/`CockpitView` already use) — the ribbon and
-    // docking surface is not page-shaped content and is meant to fill the
-    // tab edge-to-edge, exactly as it does standalone at Home. This is
-    // more than cosmetic: `root`'s padding otherwise narrows this one
-    // shared surface by 48px relative to Home, which is just enough, with
-    // this project's real engineering-object and evidence content on the
-    // Home cockpit, to push one of its card rows past the two-cards-per-row
-    // wrap threshold the wider Home width clears — one extra wrapped row
-    // and every row beneath it shifts down, and the last row's own bottom
-    // edge then lands past the card grid's own arranged height (a genuine
-    // `WrapPanel` measure/arrange sizing difference at the narrower width,
-    // not a bug this Work Package introduced in `CockpitView` itself, which
-    // WP 19.2B does not own or touch — matching Home's width removes the
-    // narrower trigger rather than papering over that surface's own
-    // layout).
-    private readonly ContentControl _structureHost = new()
-    {
-        Margin = new Thickness(-DesignTokens.PagePadding.Left, -DesignTokens.PagePadding.Top, -DesignTokens.PagePadding.Right, -DesignTokens.PagePadding.Bottom),
-    };
+    // `WP 19.4A`: no `Margin` at all — this host's parent bounds (the
+    // `TabControl`'s own selected-content presenter, `root`'s remarks
+    // below) *are* the surface's bounds now, not a padded box a negative
+    // margin then escapes past. WP 19.2B's negative margin cancelled
+    // `root`'s own page padding so the surface reached the window edges
+    // exactly as it does standalone at Home, but `root`'s single ambient
+    // margin wrapped the tab strip along with the content, so escaping it
+    // meant bleeding 16px upward into the tab strip's own row too — the
+    // PO's "the surface sits over other things" (`po-comments.md` #1,
+    // `seam-map-shell.md` §3). `root` no longer carries that ambient
+    // margin (below): the same Home-matching width this host relied on
+    // (avoiding `CockpitView`'s card-grid wrap threshold at the narrower
+    // width — the reason WP 19.2B gave the negative margin in the first
+    // place) now comes from `_areas` itself having no side margin either,
+    // so nothing needs cancelling and the tab strip can never be covered.
+    // Every *other* tab's content keeps its own page padding directly
+    // (`BuildAreaContent`), since only this one surface is not page-shaped
+    // content.
+    private readonly ContentControl _structureHost = new();
 
     private bool _suppressAreaSelection;
 
@@ -343,8 +341,21 @@ public sealed class ProjectWorkspaceView : UserControl
         actions.Children.Add(_closeProject);
         header.Children.Add(actions);
 
-        var root = new DockPanel { Margin = DesignTokens.PagePadding };
-        header.Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg);
+        // `WP 19.4A`: `root` itself carries no ambient margin any more —
+        // the single blanket `Margin` WP 19.2B gave it inset the tab strip
+        // right along with the header and every tab's content, which is
+        // exactly what the negative-margin trick on `_structureHost` then
+        // had to escape (and, escaping upward, covered). `header` now
+        // carries the page padding directly on its own three outer edges
+        // (its existing bottom margin below is the gap to the tab strip,
+        // unchanged); `_areas` carries none, so the tab strip and every
+        // tab's content-presenter box reach the window edges exactly as
+        // the engineering surface does standalone at Home — each
+        // page-shaped tab then adds its own left/right/bottom padding
+        // back in `BuildAreaContent`, and the Structure tab (not
+        // page-shaped content) does not.
+        var root = new DockPanel();
+        header.Margin = new Thickness(DesignTokens.PagePadding.Left, DesignTokens.PagePadding.Top, DesignTokens.PagePadding.Right, DesignTokens.SpaceLg);
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
         root.Children.Add(_areas);
@@ -460,21 +471,38 @@ public sealed class ProjectWorkspaceView : UserControl
     /// declared) — so this is a closed mapping, not a fallback chain.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="descriptor"/>'s area has no case here — <see cref="ProjectAreas.All"/> declared an area this view does not yet know how to render.</exception>
-    private Control BuildAreaContent(ProjectAreaDescriptor descriptor) => descriptor.Area switch
+    private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
     {
-        ProjectArea.Overview => _overview,
-        // `WP 19.2B`: the Structure tab embeds the engineering surface
-        // (ribbon + docking) through `_structureHost`, filled once
-        // `MainWindow`/`MainWindowComposer` has built that surface (see
-        // `SetEngineeringSurface`) — never built here, which would be too
-        // early.
-        ProjectArea.Engineering => _structureHost,
-        ProjectArea.Documents => _documentsView,
-        ProjectArea.Requirements => _requirementsView,
-        ProjectArea.Tasks => _tasksView,
-        ProjectArea.Risks => _risksView,
-        ProjectArea.Timeline => _timelineView,
-        ProjectArea.Deliverables => _deliverablesView,
-        _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Area, "No content is built for this project area."),
-    };
+        var content = descriptor.Area switch
+        {
+            ProjectArea.Overview => _overview,
+            // `WP 19.2B`: the Structure tab embeds the engineering surface
+            // (ribbon + docking) through `_structureHost`, filled once
+            // `MainWindow`/`MainWindowComposer` has built that surface (see
+            // `SetEngineeringSurface`) — never built here, which would be too
+            // early.
+            ProjectArea.Engineering => (Control)_structureHost,
+            ProjectArea.Documents => _documentsView,
+            ProjectArea.Requirements => _requirementsView,
+            ProjectArea.Tasks => _tasksView,
+            ProjectArea.Risks => _risksView,
+            ProjectArea.Timeline => _timelineView,
+            ProjectArea.Deliverables => _deliverablesView,
+            _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Area, "No content is built for this project area."),
+        };
+
+        // `WP 19.4A`: `_areas` (the `TabControl`) and `root` now carry no
+        // ambient margin of their own (the constructor's own remarks), so
+        // every page-shaped tab's content applies its own page padding
+        // here instead of inheriting one — every tab except the Structure
+        // tab, whose engineering surface (ribbon + docking) fills the tab
+        // content presenter's bounds exactly, matching the width it has
+        // standalone at Home (`_structureHost`'s own remarks).
+        if (descriptor.Area != ProjectArea.Engineering)
+        {
+            content.Margin = new Thickness(DesignTokens.PagePadding.Left, 0, DesignTokens.PagePadding.Right, DesignTokens.PagePadding.Bottom);
+        }
+
+        return content;
+    }
 }

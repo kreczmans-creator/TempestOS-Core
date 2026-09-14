@@ -72,6 +72,7 @@ public sealed class RibbonView : UserControl
     private bool _suppressTabSelection;
     private bool _isCollapsed;
     private bool _isCompact;
+    private IReadOnlySet<string>? _categoryAllowList;
 
     /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -208,7 +209,32 @@ public sealed class RibbonView : UserControl
         Rebuild();
     }
 
-    /// <summary>Rebuilds every tab from <see cref="ICommandRegistry.Items"/>'s own current contents — called once at construction; safe to call again if a future caller ever registers commands after construction (none does today, but no assumption is baked in that none ever will).</summary>
+    /// <summary>
+    /// Restricts which <see cref="CommandDescriptor.Category"/> values this
+    /// ribbon shows a tab for — an allow-list, driven by the host
+    /// embedding this ribbon (`WP 19.4A`, `po-comments.md` #3:
+    /// "Deliverables, Invoicing, Projects and Timesheets categories appear
+    /// inside the engineering ribbon although those commands belong to
+    /// other rail areas"), never by unregistering the commands themselves
+    /// — <see cref="ICommandRegistry.Items"/> is untouched, so the Command
+    /// Palette still lists every one, filtered here or not. An allow-list
+    /// rather than a deny-list deliberately: a category this ribbon has
+    /// never heard of (a future Quotations area's own commands, `WP
+    /// 19.5A`) is excluded by simply never being named here, with no
+    /// second edit needed when one more business-scoped category joins
+    /// Deliverables/Invoicing/Timesheets/Projects. <see langword="null"/>
+    /// (the default) shows every category, exactly as before this Work
+    /// Package — <see cref="RibbonView"/> itself stays a plain view over
+    /// the registry with no opinion of its own about which categories are
+    /// "engineering"; that judgement is the host's.
+    /// </summary>
+    public void SetCategoryFilter(IReadOnlySet<string>? allowedCategories)
+    {
+        _categoryAllowList = allowedCategories;
+        Rebuild();
+    }
+
+    /// <summary>Rebuilds every tab from <see cref="ICommandRegistry.Items"/>'s own current contents (through <see cref="SetCategoryFilter"/>'s own allow-list, if one is set) — called once at construction; safe to call again if a future caller ever registers commands after construction (none does today, but no assumption is baked in that none ever will).</summary>
     public void Rebuild()
     {
         var selected = (_tabs.SelectedItem as TabItem)?.Tag as string;
@@ -219,6 +245,7 @@ public sealed class RibbonView : UserControl
         _commandLabels.Clear();
 
         var byCategory = _commandRegistry.Items
+            .Where(d => _categoryAllowList is null || _categoryAllowList.Contains(d.Category ?? "General"))
             .GroupBy(d => d.Category ?? "General")
             .OrderBy(g => g.Key, StringComparer.Ordinal);
 

@@ -3,7 +3,9 @@ using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Styling;
 using Tempest.Workspace;
+using Tempest.Core.Commands;
 using Tempest.Core.Notifications;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
@@ -14,15 +16,20 @@ using static Tempest.Desktop.Tests.DesktopTestHelpers;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// Characterization coverage for `WP 12.0B`'s own two stateless factory
-/// collaborators (<c>MainMenuFactory</c>/<c>QuickAccessToolbarFactory</c>)
-/// and the layout-preset coordinator they both call through — added
-/// before the `ADR-0103` extraction moved their bodies out of
-/// <see cref="MainWindow"/>'s own constructor, closing a real,
-/// confirmed-by-direct-search gap: no existing test constructed the Menu
-/// System or clicked a Quick Access Toolbar button before this file.
-/// Every test here constructs a real <see cref="MainWindow"/> over a
-/// real, running <see cref="WorkspaceHost"/> — never a mock.
+/// Characterization coverage for the layout-preset coordinator and (`WP
+/// 19.4A`) the Command Palette routes that replaced the Menu System and
+/// Quick Access Toolbar <c>MainMenuFactory</c>/<c>QuickAccessToolbarFactory</c>
+/// used to provide — deleted (the former) or left unreferenced from here
+/// (the latter, whose <c>ToolbarButton</c> helper <see cref="UndoRedoCoordinator"/>
+/// still uses) when the Product Owner asked for "this taskbar" gone
+/// (`po-comments.md` #3): the strip is a layer over the engineering
+/// surface everywhere it renders, not something a person reaches through
+/// once the menu and toolbar row are gone. Every test here constructs a
+/// real <see cref="MainWindow"/> over a real, running
+/// <see cref="WorkspaceHost"/> — never a mock — and every capability the
+/// old menu/toolbar offered that still matters is proven reachable
+/// through its own real replacement route, never through the retired
+/// controls themselves.
 /// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class MainWindowCompositionTests
@@ -56,25 +63,27 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A` acceptance: "no <see cref="Menu"/> control in the
+    /// window's visual tree" — the direct, load-bearing proof the menu bar
+    /// (`po-comments.md` #3) is actually gone, not merely hidden or
+    /// re-styled. Replaces <c>ViewMenu_ToggleProjectExplorer_ActuallyFlipsTheRealWorkspaceLayoutVisibility</c>,
+    /// whose own capability (toggling one panel's visibility) has no
+    /// named replacement route in the brief — only Reset Layout, Theme,
+    /// Macros and View Relationships do — so this test proves the removal
+    /// itself instead of a capability the Product Owner did not ask to
+    /// keep.
+    /// </summary>
     [AvaloniaFact]
-    public async Task ViewMenu_ToggleProjectExplorer_ActuallyFlipsTheRealWorkspaceLayoutVisibility()
+    public async Task NoMenuControl_ExistsAnywhereInTheWindowsVisualTree()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
-            var workspace = host.Workspace!;
             var window = new MainWindow(host);
 
-            var wasVisible = workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id).IsVisible;
-
-            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
-            var view = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_View"));
-            var toggleExplorer = view.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "Project Explorer"));
-
-            toggleExplorer.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
-
-            Assert.Equal(!wasVisible, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id).IsVisible);
+            Assert.Empty(window.GetLogicalDescendants().OfType<Menu>());
         }
         finally
         {
@@ -83,45 +92,36 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A`: Reset Layout's replacement route — the Command Palette,
+    /// dispatching the real <c>shell.resetLayout</c> descriptor
+    /// (<c>MainWindowComposer.Layout.RegisterShellAction</c>) through to
+    /// the identical <see cref="Tempest.Workspace.Layout.WorkspaceLayoutPresetCoordinator.Reset"/>
+    /// the retired Layout menu's own "Reset Layout" item called. Replaces
+    /// <c>LayoutMenu_ApplyingEngineeringPreset_ActuallyAppliesTheRealNamedPlacement</c>
+    /// — the three named presets (Engineering/Review/Documentation) have
+    /// no replacement route the brief names, only Reset Layout does, so
+    /// this test proves that one specifically, exactly as
+    /// <c>QuickAccessToolbar_ResetLayoutButton_ActuallyResetsTheRealWorkspaceLayout</c>
+    /// did for the toolbar's own copy of the same action.
+    /// </summary>
     [AvaloniaFact]
-    public async Task LayoutMenu_ApplyingEngineeringPreset_ActuallyAppliesTheRealNamedPlacement()
+    public async Task CommandPalette_ResetLayout_ActuallyResetsTheRealWorkspaceLayout()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
             var workspace = host.Workspace!;
+            workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = false });
+
             var window = new MainWindow(host);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
-            var view = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_View"));
-            var layout = view.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "_Layout"));
-            var engineering = layout.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "Engineering"));
+            var invocation = await registry.InvokeAsync("shell.resetLayout", CommandContext.Empty, prompt: null, CancellationToken.None).ConfigureAwait(true);
 
-            engineering.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
-
-            // A preset is now a whole layout tree, replaced in one
-            // operation (`TD-72`), so the assertion is against the
-            // arrangement itself rather than a per-panel placement record.
-            var expected = Tempest.Workspace.Layout.WorkspaceLayoutPresets.Build(
-                Tempest.Workspace.Layout.WorkspaceLayoutPreset.Engineering,
-                window.WorkspaceLayout.Tree.DockedPanels.First(),
-                Tempest.Desktop.Composition.WorkspaceDockingComposer.DocumentAreaPanelId,
-                workspace.PropertyInspector.Id,
-                Guid.NewGuid());
-
-            Assert.NotNull(expected.Root);
-            Assert.Contains(workspace.ProjectExplorer.Id, window.WorkspaceLayout.Tree.AllPanels);
-            Assert.Contains(workspace.PropertyInspector.Id, window.WorkspaceLayout.Tree.AllPanels);
-
-            // Reset Layout, right below the three presets, reverses it —
-            // proving WorkspaceLayoutPresetCoordinator's own two public
-            // methods both actually run, not just Apply.
-            var resetItem = layout.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "Reset Layout"));
-            resetItem.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
-
-            var afterReset = workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id);
-            Assert.True(afterReset.IsVisible);
+            Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+            Assert.True(workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id).IsVisible);
         }
         finally
         {
@@ -130,8 +130,18 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A`: document switching's replacement route — Ctrl+Tab was
+    /// never actually routed through the retired Document menu
+    /// (`KeyboardShortcuts.Register`'s own fixed binding always called
+    /// <see cref="Views.DocumentAreaView.SelectNextTab"/> directly), so
+    /// removing the menu changes nothing here; this proves it, replacing
+    /// <c>DocumentMenu_NextAndPreviousTab_ActuallyMoveTheRealDocumentAreaSelection</c>
+    /// with the identical real scenario driven by the one route that was
+    /// always the actual mechanism.
+    /// </summary>
     [AvaloniaFact]
-    public async Task DocumentMenu_NextAndPreviousTab_ActuallyMoveTheRealDocumentAreaSelection()
+    public async Task CtrlTab_StillMovesTheRealDocumentAreaSelection_WithoutTheMenu()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -147,57 +157,11 @@ public sealed class MainWindowCompositionTests
             var view1 = await workspace.Navigation.OpenAsync(objectNode.Id, objectNode.Kind!);
             documentArea.ShowTab(view1);
 
-            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
-            var document = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Document"));
-            var nextDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Next Tab"));
-
-            // With only the Home tab plus one real document tab open,
-            // Next Tab is a real, harmless no-throw round trip back to
-            // itself — proving the menu item really calls SelectNextTab
-            // on the real DocumentAreaView, not a no-op stub.
-            var exception = Record.Exception(() => nextDoc.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent)));
-            Assert.Null(exception);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    [AvaloniaFact]
-    public async Task MenuItems_DisplayTheExactGesture_KeyboardShortcuts_ActuallyBinds()
-    {
-        // `WP-Z4` Productisation Phase 1 (backlog item 1) — MenuItem.InputGesture
-        // is a purely presentational Avalonia property; the real key
-        // handling lives entirely in KeyboardShortcuts.Register's own
-        // KeyDown handler (Ctrl+K / Ctrl+Tab / Ctrl+Shift+Tab). This proves
-        // the two never drift apart: whatever a menu item claims to be
-        // bound to is the literal gesture the handler dispatches on.
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var window = new MainWindow(host);
-            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
-
-            var commands = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Commands"));
-            var openPalette = commands.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Command Palette..."));
-            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.K, Avalonia.Input.KeyModifiers.Control), openPalette.InputGesture);
-
-            var document = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_Document"));
-            var nextDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Next Tab"));
-            var prevDoc = document.Items.OfType<MenuItem>().Single(m => Equals((string)m.Header!, "Previous Tab"));
-            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.Tab, Avalonia.Input.KeyModifiers.Control), nextDoc.InputGesture);
-            Assert.Equal(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.Tab, Avalonia.Input.KeyModifiers.Control | Avalonia.Input.KeyModifiers.Shift), prevDoc.InputGesture);
-
-            // Raising the identical KeyDown on the real window must reach
-            // the identical real handler the menu item's own Click calls
-            // (proven separately by DocumentMenu_NextAndPreviousTab_...
-            // above) — both paths lead to KeyboardShortcuts' one KeyDown
-            // handler, never two independently-maintained mechanisms. With
-            // only the Home tab open this is a harmless no-throw round
-            // trip, exactly like that test's own click path.
+            // With only the Home tab plus one real document tab open, a
+            // real Ctrl+Tab KeyDown is a harmless no-throw round trip back
+            // to itself — proving the fixed binding really calls
+            // SelectNextTab on the real DocumentAreaView, with no menu in
+            // the tree at all.
             var exception = Record.Exception(() => window.RaiseEvent(new Avalonia.Input.KeyEventArgs
             {
                 RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
@@ -214,22 +178,28 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A` acceptance: "the Command Palette lists Reset Layout,
+    /// Theme, Macros and View Relationships" — the one test proving the
+    /// core claim directly, replacing
+    /// <c>MenuItems_DisplayTheExactGesture_KeyboardShortcuts_ActuallyBinds</c>,
+    /// whose own concern (a menu item's displayed gesture text) has no
+    /// menu left to display it.
+    /// </summary>
     [AvaloniaFact]
-    public async Task QuickAccessToolbar_ResetLayoutButton_ActuallyResetsTheRealWorkspaceLayout()
+    public async Task CommandPalette_ListsResetLayoutThemeMacrosAndViewRelationships()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
-            var workspace = host.Workspace!;
-            workspace.Layout.SetPlacement(workspace.ProjectExplorer.Id, workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id) with { IsVisible = false });
+            _ = new MainWindow(host);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
-            var window = new MainWindow(host);
-            var resetButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Reset Layout");
-
-            resetButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            Assert.True(workspace.Layout.GetPlacement(workspace.ProjectExplorer.Id).IsVisible);
+            Assert.Contains(registry.Items, d => d.DisplayName == "Reset Layout");
+            Assert.Contains(registry.Items, d => d.DisplayName == "Toggle Theme");
+            Assert.Contains(registry.Items, d => d.DisplayName == "Macros");
+            Assert.Contains(registry.Items, d => d.DisplayName == "View Relationships");
         }
         finally
         {
@@ -238,19 +208,62 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A`: Theme's replacement route — the Command Palette,
+    /// dispatching <c>shell.toggleTheme</c> through to the identical
+    /// <see cref="Theming.ThemeService.ToggleAsync"/> the retired Theme
+    /// menu's own "Toggle Light/Dark" item called (Theme's other route,
+    /// <see cref="Views.SettingsView"/>'s own Appearance section, already
+    /// existed before this Work Package and is untouched). Replaces
+    /// <c>QuickAccessToolbar_ResetLayoutButton_ActuallyResetsTheRealWorkspaceLayout</c>'s
+    /// slot in this file's original eight — Reset Layout's own toolbar
+    /// test is superseded by <see cref="CommandPalette_ResetLayout_ActuallyResetsTheRealWorkspaceLayout"/>
+    /// above, so this slot covers Theme instead.
+    /// </summary>
     [AvaloniaFact]
-    public async Task QuickAccessToolbar_ViewRelationshipsButton_WithNoSelection_ReportsHonestlyRatherThanThrowing()
+    public async Task CommandPalette_ToggleTheme_ActuallyTogglesTheRealTheme()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            _ = new MainWindow(host);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var before = Avalonia.Application.Current!.RequestedThemeVariant;
+
+            var invocation = await registry.InvokeAsync("shell.toggleTheme", CommandContext.Empty, prompt: null, CancellationToken.None).ConfigureAwait(true);
+
+            Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+            Assert.NotEqual(before, Avalonia.Application.Current!.RequestedThemeVariant);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// `WP 19.4A`: View Relationships' replacement route — direct
+    /// successor to <c>QuickAccessToolbar_ViewRelationshipsButton_WithNoSelection_ReportsHonestlyRatherThanThrowing</c>,
+    /// the identical no-selection scenario, dispatched through
+    /// <c>shell.viewRelationships</c> instead of the retired toolbar
+    /// button.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CommandPalette_ViewRelationships_WithNoSelection_ReportsHonestlyRatherThanThrowing()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
             var window = new MainWindow(host);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
-            var graphButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "View Relationships");
 
-            graphButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            var invocation = await registry.InvokeAsync("shell.viewRelationships", CommandContext.Empty, prompt: null, CancellationToken.None).ConfigureAwait(true);
 
+            Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
             var statusText = statusBar.GetLogicalDescendants().OfType<TextBlock>()
                 .FirstOrDefault(t => t.Text != null && t.Text.Contains("Select an object first", StringComparison.Ordinal));
             Assert.NotNull(statusText);
@@ -262,35 +275,54 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A` acceptance: "Ctrl+Z and Ctrl+Y still undo and redo" —
+    /// driven end to end through the real keyboard handler with no button
+    /// or menu anywhere in the tree, replacing
+    /// <c>QuickAccessToolbar_UndoRedoButtons_StartDisabled_AndReactivelyEnableAfterARealRecordedAction</c>'s
+    /// own concern (a button's enablement) with the functional route the
+    /// brief actually names: the keystrokes themselves really reverse and
+    /// re-apply a real recorded action, proven by the recorded delegates
+    /// actually running rather than by a button's <c>IsEnabled</c> flag.
+    /// </summary>
     [AvaloniaFact]
-    public async Task QuickAccessToolbar_UndoRedoButtons_StartDisabled_AndReactivelyEnableAfterARealRecordedAction()
+    public async Task CtrlZCtrlY_ActuallyUndoAndRedoARealRecordedAction_WithoutTheMenuOrToolbar()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
-            var workspace = host.Workspace!;
-            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
             var window = new MainWindow(host);
-
-            var undoButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Undo");
-            Assert.False(undoButton.IsEnabled);
-
-            // Ctrl+D (Toggle Favourite) records a real, trivially
-            // self-inverting UndoableAction (WorkspaceViewCoordinator's
-            // own ToggleFavourite) — real proof that UndoRedoCoordinator's
-            // own reactive Stack.Changed subscription (no explicit refresh
-            // call anywhere in the new collaborators) actually enables the
-            // button.
-            var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
-            var objectNode = (await FindFirstObjectNodeAsync(workspace.ProjectExplorer, roots))!;
-            await workspace.Selection.SelectAsync(objectNode.Id, objectNode.Kind!);
 
             var undoRedo = GetPrivateField<object>(window, "_undoRedo");
             var stack = (IUndoRedoStack)undoRedo.GetType().GetProperty("Stack")!.GetValue(undoRedo)!;
-            stack.Record(new UndoableAction("Test action", undo: _ => Task.FromResult(Tempest.Core.Commands.CommandResult.Success()), redo: _ => Task.FromResult(Tempest.Core.Commands.CommandResult.Success())));
 
-            Assert.True(undoButton.IsEnabled);
+            var undoCount = 0;
+            var redoCount = 0;
+            stack.Record(new UndoableAction(
+                "Test action",
+                undo: _ => { undoCount++; return Task.FromResult(CommandResult.Success()); },
+                redo: _ => { redoCount++; return Task.FromResult(CommandResult.Success()); }));
+
+            void PressKey(Avalonia.Input.Key key) => window.RaiseEvent(new Avalonia.Input.KeyEventArgs
+            {
+                RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent,
+                Key = key,
+                KeyModifiers = Avalonia.Input.KeyModifiers.Control,
+                Source = window,
+            });
+
+            PressKey(Avalonia.Input.Key.Z);
+            var undoDeadline = DesktopTestHelpers.Deadline(2);
+            while (undoCount == 0 && DateTime.UtcNow < undoDeadline)
+                await Task.Delay(10);
+            Assert.Equal(1, undoCount);
+
+            PressKey(Avalonia.Input.Key.Y);
+            var redoDeadline = DesktopTestHelpers.Deadline(2);
+            while (redoCount == 0 && DateTime.UtcNow < redoDeadline)
+                await Task.Delay(10);
+            Assert.Equal(1, redoCount);
         }
         finally
         {
@@ -299,25 +331,32 @@ public sealed class MainWindowCompositionTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A`: Macros' replacement route — direct successor to
+    /// <c>QuickAccessToolbar_MacrosButton_ActuallyOpensTheRealMacroManagerDialog</c>,
+    /// the identical real dialog, opened through <c>shell.openMacros</c>
+    /// instead of the retired toolbar button.
+    /// </summary>
     [AvaloniaFact]
-    public async Task QuickAccessToolbar_MacrosButton_ActuallyOpensTheRealMacroManagerDialog()
+    public async Task CommandPalette_Macros_ActuallyOpensTheRealMacroManagerDialog()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
             var window = new MainWindow(host);
-            var macrosButton = window.GetLogicalDescendants().OfType<Button>().Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Macros");
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var macroManagerDialog = GetPrivateField<MacroManagerDialog>(window, "_macroManagerDialog");
 
             Assert.False(macroManagerDialog.IsVisible);
 
-            macrosButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            _ = registry.InvokeAsync("shell.openMacros", CommandContext.Empty, prompt: null, CancellationToken.None);
 
-            // `TD-119`: the Macros click opens the dialog on an asynchronous
-            // continuation; bounded poll on the real visibility, assertion unchanged.
+            // `TD-119`: the Macros invocation opens the dialog on an
+            // asynchronous continuation; bounded poll on the real
+            // visibility, assertion unchanged.
             var macrosDeadline = DesktopTestHelpers.Deadline(2);
-            while (!(macroManagerDialog.IsVisible) && DateTime.UtcNow < macrosDeadline)
+            while (!macroManagerDialog.IsVisible && DateTime.UtcNow < macrosDeadline)
                 await Task.Delay(10);
 
             Assert.True(macroManagerDialog.IsVisible);

@@ -97,8 +97,24 @@ public sealed class ResponsiveWorkspaceTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.4A`: the menu bar's own "Minimise Ribbon" item is gone
+    /// (`po-comments.md` #3) — it only ever duplicated the real UI path
+    /// every ribbon application shares, double-clicking a tab header
+    /// (`TD-70`, <see cref="RibbonView"/>'s own <c>_tabs.DoubleTapped</c>
+    /// handler), which calls the identical public
+    /// <see cref="RibbonView.ToggleCollapsed"/> this test calls directly
+    /// on the real, running window. Minimising is not one of the six
+    /// capabilities `brief-19.4A.md` names as needing a Command Palette
+    /// route (Undo, Redo, Reset Layout, Theme, Macros, View Relationships)
+    /// — it never lost a route at all, since the double-click gesture was
+    /// always independent of the menu. What this test still proves, on
+    /// the real window, is what the retired menu item never did itself:
+    /// the collapsed state survives a real save/load round trip through
+    /// <see cref="DesktopPanelUiState"/>.
+    /// </summary>
     [AvaloniaFact]
-    public async Task Ribbon_MinimiseIsReachableFromTheViewMenu_AndIsPersisted()
+    public async Task Ribbon_MinimiseIsReachableWithoutTheMenu_AndIsPersisted()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -107,12 +123,8 @@ public sealed class ResponsiveWorkspaceTests
             var window = new MainWindow(host);
             var ribbon = window.GetLogicalDescendants().OfType<RibbonView>().Single();
 
-            var menu = window.GetLogicalDescendants().OfType<Menu>().Single();
-            var view = menu.ItemsSource!.Cast<MenuItem>().Single(m => Equals(m.Header, "_View"));
-            var minimise = view.Items.OfType<MenuItem>().Single(m => Equals(m.Header, "Minimise Ribbon"));
-
             Assert.False(ribbon.IsCollapsed);
-            minimise.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+            ribbon.ToggleCollapsed();
             Assert.True(ribbon.IsCollapsed);
 
             // Persisted for the next session.
