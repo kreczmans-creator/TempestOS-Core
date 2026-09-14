@@ -24,8 +24,7 @@ internal sealed record ComposedCoordinators(
     WorkspaceLayoutPresetCoordinator LayoutPresets,
     EngineeringCalculationCoordinator EngineeringCalculationCoordinator,
     ProjectDeliveryCoordinator ProjectDelivery,
-    ProjectGovernanceCoordinator ProjectGovernanceCoordinator,
-    EvidenceWorkspaceView EvidenceWorkspace);
+    ProjectGovernanceCoordinator ProjectGovernanceCoordinator);
 
 internal sealed partial class MainWindowComposer
 {
@@ -35,11 +34,14 @@ internal sealed partial class MainWindowComposer
     /// Builds every coordinator — Undo/Redo, the Workspace View
     /// coordinator, docking, layout presets, project delivery/governance,
     /// the Engineering Calculation coordinator — and, alongside
-    /// <see cref="WorkspaceViewCoordinator"/> once it exists, the two views
-    /// that genuinely need it first: <see cref="CockpitView"/> (its own
+    /// <see cref="WorkspaceViewCoordinator"/> once it exists, the one view
+    /// that genuinely needs it first: <see cref="CockpitView"/> (its own
     /// Favourite Projects card opens through
-    /// <see cref="WorkspaceViewCoordinator.NavigateToObject"/>) and
-    /// <see cref="EvidenceWorkspaceView"/>.
+    /// <see cref="WorkspaceViewCoordinator.NavigateToObject"/>).
+    /// <see cref="EvidenceWorkspaceView"/> moved to <see cref="BuildViews"/>
+    /// (`WP 19.7A`) — it never actually depended on this coordinator, and
+    /// <see cref="ProjectWorkspaceView"/>'s own new Evidence tab needs it
+    /// built before this phase runs.
     /// </summary>
     public ComposedCoordinators BuildCoordinators(WorkspaceHost host, Window window, ComposedViews views, MainWindowCallbacks callbacks)
     {
@@ -154,20 +156,8 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103`, the same shape as the two above).
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
-        // The Evidence workspace's own Create flow and the Object Editor's
-        // own declared Evidence sections both need a real prompt (`WP 18.2A`).
-        var evidenceWorkspace = new EvidenceWorkspaceView(
-            composition.DomainContext, composition.CommandDispatcher, views.EvidenceFilePicker,
-            () => host.ProjectContext!.Current?.Id, (id, kind) => _ = callbacks.OpenEvidenceRecordAsync(id, kind), views.LibrariesView)
-        {
-            ParameterPrompt = views.CommandPrompt.Prompt,
-            SubjectPrompt = ct => views.SubjectPicker.PickAsync(ct),
-            WorkspaceChanges = composition.WorkspaceChanges,
-        };
-        evidenceWorkspace.ActionCompleted += (message, outcome) => _ = views.ActionReporter.ReportAsync(message, outcome);
-
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, dockingComposer, attachmentViewers, layoutPresets,
-            engineeringCalculationCoordinator, projectDelivery, projectGovernanceCoordinator, evidenceWorkspace);
+            engineeringCalculationCoordinator, projectDelivery, projectGovernanceCoordinator);
     }
 }

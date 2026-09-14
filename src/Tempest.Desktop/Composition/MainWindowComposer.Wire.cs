@@ -93,6 +93,18 @@ internal sealed partial class MainWindowComposer
         views.ProjectWorkspace.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
         views.ProjectWorkspace.ProjectClosed += () => _ = callbacks.RenderCurrentModuleAsync();
 
+        // `WP 19.7A`: the Projects tree's own project leaves open a project
+        // exactly as the retired standalone Projects rail button always
+        // did; the Engineering tree's own Modules → Mechanical node
+        // navigates on to the ribbon-and-docking surface the same way
+        // the project workspace's own "Enter Engineering" button does.
+        views.ProjectsAreaView.OpenProjectRequestedAsync += async projectId =>
+        {
+            await navigator.OpenProjectAsync(projectId).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+        views.EngineeringAreaView.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+
         // The Documents area opens a file through the same `TD-80` launcher
         // the object editor uses.
         views.ProjectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
@@ -149,6 +161,7 @@ internal sealed partial class MainWindowComposer
             views.Header.SetCompact(compact);
             views.Ribbon.SetCompact(compact);
             views.LibrariesView.SetCompact(compact);
+            views.ReferenceDataLibrariesView.SetCompact(compact);
         };
 
         var shortcutActions = new KeyboardShortcutActions(

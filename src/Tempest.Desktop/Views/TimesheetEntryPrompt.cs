@@ -73,11 +73,14 @@ public sealed class TimesheetEntryPrompt : Border
         buttons.Children.Add(_cancelButton);
         buttons.Children.Add(_recordButton);
 
+        // `WP 19.7A` (Product Owner comment item 7): "drop down to select
+        // the project worked and the time" — Project and Hours lead the
+        // form now, ahead of Date, exactly as the Product Owner asked.
         var body = new StackPanel();
         body.Children.Add(_title);
         body.Children.Add(_project);
-        body.Children.Add(_date);
         body.Children.Add(_hours);
+        body.Children.Add(_date);
         body.Children.Add(_billable);
         body.Children.Add(_grade);
         body.Children.Add(_task);
@@ -130,11 +133,15 @@ public sealed class TimesheetEntryPrompt : Border
     {
         var everyProject = await _domainContext.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(true);
 
+        // `WP 19.7A` (Product Owner comment item 7): "the project drop-down
+        // lists open projects only" — `ClosedOn is null` is
+        // `ProjectArchival.ListingGroupOf`'s own Open test; a held project
+        // is still Open (only paused), so it stays listed.
         _projects =
         [
             .. everyProject
                 .OfType<Project>()
-                .Where(p => p is not IDeletable { IsDeleted: true } && p.RateCardPin is not null)
+                .Where(p => p is not IDeletable { IsDeleted: true } && p.RateCardPin is not null && p.ClosedOn is null)
                 .Select(p => (p.Id, p.DisplayName, p.RateCardPin!))
                 .OrderBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase),
         ];

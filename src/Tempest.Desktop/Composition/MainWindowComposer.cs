@@ -80,7 +80,15 @@ internal sealed record ComposedViews(
     KeyboardCommandBindingProvider KeyboardBindingProvider,
     IWorkspace Workspace,
     WorkspaceManager Manager,
-    Tempest.Core.Identity.IPrincipalDirectory Principals);
+    Tempest.Core.Identity.IPrincipalDirectory Principals,
+    // `WP 19.7A`: the rail's own five areas — Projects and Business/
+    // Engineering/Tasks are each a tree over an already-built view, per
+    // that Work Package's own brief.
+    ProjectsAreaView ProjectsAreaView,
+    TasksAreaView TasksAreaView,
+    EngineeringAreaView EngineeringAreaView,
+    BusinessAreaView BusinessAreaView,
+    LibrariesView ReferenceDataLibrariesView);
 
 /// <summary>
 /// <see cref="MainWindow"/>'s own methods, threaded into
@@ -101,7 +109,8 @@ internal sealed record MainWindowCallbacks(
     Func<Guid, Guid, CancellationToken, Task> OpenProjectAttachmentAsync,
     Func<Guid, string, Task> OpenEvidenceRecordAsync,
     Func<string, string, Task<bool>> PromptForNewProjectAsync,
-    Func<Task> RenderCurrentModuleAsync);
+    Func<Task> RenderCurrentModuleAsync,
+    Func<Task> EnterEngineeringCalculationAsync);
 
 /// <summary>
 /// Assembles <see cref="MainWindow"/>'s entire object graph — every view,
@@ -439,10 +448,6 @@ internal sealed partial class MainWindowComposer
         };
         quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        var projectWorkspace = new ProjectWorkspaceView(
-            host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
-            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView);
-
         // `WP 19.2B`: the Reports area — issued evidence sheets and
         // project documents, across every live project, filterable to one.
         var reportsView = new ReportsView(
@@ -468,6 +473,79 @@ internal sealed partial class MainWindowComposer
         };
         librariesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // `WP 19.7A`: the Evidence workspace never actually depended on
+        // `WorkspaceViewCoordinator` — moved here (from what used to be
+        // `BuildCoordinators`) so the project workspace's own new Evidence
+        // tab (below) can be handed the real instance rather than waiting
+        // for a later phase.
+        var evidenceWorkspace = new EvidenceWorkspaceView(
+            composition.DomainContext, composition.CommandDispatcher, evidenceFilePicker,
+            () => host.ProjectContext!.Current?.Id, (id, kind) => _ = callbacks.OpenEvidenceRecordAsync(id, kind), librariesView)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            SubjectPrompt = ct => subjectPicker.PickAsync(ct),
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        evidenceWorkspace.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // `WP 19.7A` (`po-comments.md` item 6, sheet 8): a second
+        // `LibrariesView` instance for Engineering → Reference data — the
+        // first is already parented inside `evidenceWorkspace` above, and a
+        // control can only ever be parented once.
+        var referenceDataLibrariesView = new LibrariesView(
+            host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
+            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            referenceCitationIndex, openObjectRightUp)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
+        referenceDataLibrariesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // `WP 19.7A` (Product Owner comment item 6 delta (c)): the
+        // project's own Sign off tab — `IProjectLifecycleService` (`WP
+        // 19.5C`) is already registered in DI with zero prior UI
+        // consumers.
+        var projectLifecycleService = (Tempest.Core.Projects.IProjectLifecycleService)services.GetService(typeof(Tempest.Core.Projects.IProjectLifecycleService));
+        var signOffView = new ProjectSignOffView(projectLifecycleService, composition.DomainContext, () => host.ProjectContext!.Current?.Id);
+        signOffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        var projectWorkspace = new ProjectWorkspaceView(
+            host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
+            host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
+            evidenceWorkspace, signOffView, composition.DomainContext);
+
+        // `WP 19.7A` (`po-comments.md` item 6 delta (a)): the Tasks
+        // read model — a "sibling reader" over the identical persistence
+        // store other read models (`ProjectStatusReadModel`) already use,
+        // constructed directly rather than through DI (its own
+        // constructor takes only the store and an optional clock, exactly
+        // as that sibling does) since neither is registered there yet and
+        // this Work Package's own brief limits it to "wiring... in".
+        var tasksReadModel = new Tempest.Workspace.Tasks.TasksReadModelService(queryableStore);
+
+        var tasksAreaView = new TasksAreaView(
+            tasksReadModel, composition.CommandDispatcher, () => inputDialog.PromptAsync("New task", "Title"), openObjectRightUp)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        tasksAreaView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        var projectsAreaView = new ProjectsAreaView(composition.DomainContext, projectBrowser)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+
+        var engineeringAreaView = new EngineeringAreaView(
+            host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
+            callbacks.EnterEngineeringCalculationAsync)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+
+        var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
+
+        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, timesheetWeekView, subscriptionsView);
+
         return new ComposedViews(
             composition, diagnostics, session, theme, toastHost, new BusyOverlay(), confirmationDialog, inputDialog, messageDialog,
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
@@ -476,6 +554,7 @@ internal sealed partial class MainWindowComposer
             engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
-            workspace, manager, principals);
+            workspace, manager, principals,
+            projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView);
     }
 }
