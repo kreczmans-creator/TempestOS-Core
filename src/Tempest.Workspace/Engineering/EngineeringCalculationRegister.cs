@@ -2,6 +2,7 @@ using Tempest.Workspace.Projects;
 using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Logging;
 
 namespace Tempest.Workspace.Engineering;
 
@@ -72,13 +73,20 @@ public sealed class EngineeringCalculationRegister
     private readonly ICommandDispatcher _dispatcher;
     private readonly CalculationObjectFactoryRegistry _factories;
     private readonly IProjectContext? _projects;
+    private readonly ILogger? _logger;
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationRegister"/> class.</summary>
     /// <param name="domain">The engineering domain the named calculations live in.</param>
     /// <param name="dispatcher">The dispatcher every governed mutation goes through.</param>
     /// <param name="projects">The open project, where the shell has one — a calculation created inside a project belongs to it. <see langword="null"/> where no project context is composed.</param>
+    /// <param name="logger">
+    /// An optional logger this instance records a compensating withdrawal's
+    /// own failure through (`TD-170`) — the naming exception already carries
+    /// it for the caller, so this is a diagnostic trail, not the only
+    /// record. May be <see langword="null"/> if logging is not required.
+    /// </param>
     public EngineeringCalculationRegister(
-        EngineeringDomainContext domain, ICommandDispatcher dispatcher, IProjectContext? projects = null)
+        EngineeringDomainContext domain, ICommandDispatcher dispatcher, IProjectContext? projects = null, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(domain);
         ArgumentNullException.ThrowIfNull(dispatcher);
@@ -86,6 +94,7 @@ public sealed class EngineeringCalculationRegister
         _domain = domain;
         _dispatcher = dispatcher;
         _projects = projects;
+        _logger = logger;
         _factories = new CalculationObjectFactoryRegistry(domain);
     }
 
@@ -150,10 +159,27 @@ public sealed class EngineeringCalculationRegister
                 //
                 // The compensation can itself fail — most likely for the
                 // very reason the link did — so its outcome is carried in
-                // the exception rather than assumed.
-                var compensated = await TryWithdrawAsync(created, cancellationToken).ConfigureAwait(false);
+                // the exception rather than assumed. `TD-170`: a failure of
+                // the compensation itself used to collapse into the same
+                // "could not be withdrawn" case as "not IDeletable at all",
+                // discarding the compensation's own exception entirely.
+                // Both are now preserved and reported.
+                var withdrawal = await TryWithdrawAsync(created, cancellationToken).ConfigureAwait(false);
 
-                throw new EngineeringCalculationNamingException(created.Id, recordId, displayName, compensated, ex);
+                CalculationCompensationFailedException? compensationFailed = null;
+
+                if (!withdrawal.Succeeded && withdrawal.Failure is not null)
+                {
+                    compensationFailed = new CalculationCompensationFailedException(ex, withdrawal.Failure);
+
+                    _logger?.Warning(
+                        $"Engineering calculation naming: linking calculation object '{created.Id}' to record " +
+                        $"'{recordId}' failed, and the compensating withdrawal that should have removed the " +
+                        "half-created object also failed. It remains in the repository.",
+                        compensationFailed);
+                }
+
+                throw new EngineeringCalculationNamingException(created.Id, recordId, displayName, withdrawal.Succeeded, ex, compensationFailed);
             }
         }
 
@@ -188,7 +214,8 @@ public sealed class EngineeringCalculationRegister
 
     /// <summary>
     /// Withdraws an object whose creation did not complete, and reports
-    /// whether that succeeded.
+    /// whether that succeeded — and, if not because the withdrawal itself
+    /// threw, what it threw (`TD-170`).
     /// </summary>
     /// <remarks>
     /// Soft-deleting it is the only withdrawal the platform offers, and it
@@ -197,23 +224,32 @@ public sealed class EngineeringCalculationRegister
     /// is returned rather than thrown, because the caller is already
     /// reporting a failure and a second exception thrown from inside the
     /// first one's handling would replace the accurate account with a
-    /// less accurate one.
+    /// less accurate one; the compensation's own exception is carried in
+    /// the result instead, so nothing is lost.
     /// </remarks>
-    private static async Task<bool> TryWithdrawAsync(IEngineeringObject created, CancellationToken cancellationToken)
+    private static async Task<WithdrawalOutcome> TryWithdrawAsync(IEngineeringObject created, CancellationToken cancellationToken)
     {
         if (created is not IDeletable deletable)
-            return false;
+            return new WithdrawalOutcome(Succeeded: false, Failure: null);
 
         try
         {
             await deletable.DeleteAsync(cancellationToken).ConfigureAwait(false);
-            return true;
+            return new WithdrawalOutcome(Succeeded: true, Failure: null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return false;
+            return new WithdrawalOutcome(Succeeded: false, Failure: ex);
         }
     }
+
+    /// <summary>
+    /// The outcome of a compensating withdrawal (`TD-170`): whether it
+    /// succeeded, and — when it did not, because the withdrawal itself
+    /// threw rather than because the object was never <see cref="IDeletable"/> —
+    /// the exception it threw.
+    /// </summary>
+    private readonly record struct WithdrawalOutcome(bool Succeeded, Exception? Failure);
 
     /// <summary>The named calculation carrying <paramref name="recordId"/>, or <see langword="null"/> where nobody has named that record.</summary>
     /// <param name="recordId">The calculation record to look up.</param>
@@ -468,21 +504,39 @@ public sealed class EngineeringCalculationNamingException : Exception
     /// <param name="displayName">The name it carries.</param>
     /// <param name="wasWithdrawn">Whether the half-created object was successfully withdrawn afterwards.</param>
     /// <param name="innerException">What the link failed with.</param>
+    /// <param name="compensationFailed">
+    /// Set when the compensating withdrawal itself threw (`TD-170`) —
+    /// distinct from <paramref name="wasWithdrawn"/> being
+    /// <see langword="false"/> because the object was never
+    /// <see cref="IDeletable"/> at all, which carries no exception of its
+    /// own to report. <see langword="null"/> where the withdrawal
+    /// succeeded, or was never attempted for that reason.
+    /// </param>
     public EngineeringCalculationNamingException(
-        Guid calculationObjectId, Guid recordId, string displayName, bool wasWithdrawn, Exception innerException)
+        Guid calculationObjectId,
+        Guid recordId,
+        string displayName,
+        bool wasWithdrawn,
+        Exception innerException,
+        CalculationCompensationFailedException? compensationFailed = null)
         : base(
             $"The calculation object '{calculationObjectId}' was created and named \"{displayName}\", durably, but could not be linked to record "
             + $"'{recordId}': {innerException.Message} The calculation itself is recorded and unaffected. "
             + (wasWithdrawn
                 ? "The half-created object was withdrawn, so nothing was left behind."
-                : "The half-created object could not be withdrawn either, so it remains in the repository, carrying that name and belonging to whatever "
-                  + "project was open, and will not appear in this workspace's list, which finds a named calculation by its record link (TD-170)."),
+                : compensationFailed is not null
+                    ? $"The compensating withdrawal that should have removed the half-created object also failed, with: {compensationFailed.WithdrawalFailure.Message} "
+                      + "It remains in the repository, carrying that name and belonging to whatever project was open, and will not appear in this "
+                      + "workspace's list, which finds a named calculation by its record link (TD-170)."
+                    : "The half-created object could not be withdrawn either, so it remains in the repository, carrying that name and belonging to whatever "
+                      + "project was open, and will not appear in this workspace's list, which finds a named calculation by its record link (TD-170)."),
             innerException)
     {
         CalculationObjectId = calculationObjectId;
         RecordId = recordId;
         DisplayName = displayName;
         WasWithdrawn = wasWithdrawn;
+        CompensationFailed = compensationFailed;
     }
 
     /// <summary>Whether the half-created object was withdrawn afterwards, leaving nothing behind.</summary>
@@ -496,6 +550,58 @@ public sealed class EngineeringCalculationNamingException : Exception
 
     /// <summary>The name the created object carries.</summary>
     public string DisplayName { get; }
+
+    /// <summary>
+    /// Set when the compensating withdrawal itself failed (`TD-170`),
+    /// carrying both the original link failure and the withdrawal's own —
+    /// <see langword="null"/> whenever <see cref="WasWithdrawn"/> is
+    /// <see langword="true"/>, and also <see langword="null"/> where the
+    /// object was simply never <see cref="IDeletable"/>, which is not a
+    /// compensation failure.
+    /// </summary>
+    public CalculationCompensationFailedException? CompensationFailed { get; }
+}
+
+/// <summary>
+/// The compensating withdrawal of a half-created calculation object itself
+/// failed, after the link it was compensating for also failed (`TD-170`).
+/// Carries both errors: reporting only one would hide the other from
+/// whoever reads this exception.
+/// </summary>
+/// <remarks>
+/// Reached only from <see cref="EngineeringCalculationRegister.NameAsync"/>'s
+/// own compensation path, and only when the object was <see cref="IDeletable"/>
+/// but its <see cref="IDeletable.DeleteAsync"/> itself threw — the narrower
+/// of the two ways a compensation can fail (the other, the object never
+/// being <see cref="IDeletable"/> at all, carries no exception of its own to
+/// wrap).
+/// </remarks>
+public sealed class CalculationCompensationFailedException : Exception
+{
+    /// <summary>Initialises a new instance of the <see cref="CalculationCompensationFailedException"/> class.</summary>
+    /// <param name="linkFailure">What the original link attempt failed with.</param>
+    /// <param name="withdrawalFailure">What the compensating withdrawal itself failed with.</param>
+    public CalculationCompensationFailedException(Exception linkFailure, Exception withdrawalFailure)
+        : base(BuildMessage(linkFailure, withdrawalFailure), withdrawalFailure)
+    {
+        LinkFailure = linkFailure;
+        WithdrawalFailure = withdrawalFailure;
+    }
+
+    /// <summary>What the original link attempt failed with.</summary>
+    public Exception LinkFailure { get; }
+
+    /// <summary>What the compensating withdrawal itself failed with. Also this exception's own <see cref="Exception.InnerException"/>.</summary>
+    public Exception WithdrawalFailure { get; }
+
+    private static string BuildMessage(Exception linkFailure, Exception withdrawalFailure)
+    {
+        ArgumentNullException.ThrowIfNull(linkFailure);
+        ArgumentNullException.ThrowIfNull(withdrawalFailure);
+
+        return $"Linking failed with: {linkFailure.Message} The compensating withdrawal that should have removed the "
+            + $"half-created object also failed, with: {withdrawalFailure.Message}";
+    }
 }
 
 /// <summary>What happened when a surface asked for a rename or a retirement, in words the engineer should read.</summary>

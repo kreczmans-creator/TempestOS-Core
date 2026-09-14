@@ -6,8 +6,11 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Logging;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.UnitsAndQuantities;
 
@@ -176,6 +179,79 @@ public class EngineeringCalculationRegisterTests
         Assert.Null(await register.FindByRecordAsync(absentRecordId));
     }
 
+    /// <summary>
+    /// `TD-170`: a failure of the compensating withdrawal itself, on top of
+    /// the link failure it was compensating for, is surfaced completely —
+    /// both errors reach the caller, and the register logs it — rather than
+    /// collapsing into the same "could not be withdrawn either" case a
+    /// withdrawal that simply found nothing <see cref="IDeletable"/> would.
+    /// </summary>
+    /// <remarks>
+    /// A hand-built rig, not <see cref="StartAsync"/>'s real SQLite-backed
+    /// composition: this needs to fail one specific, later durable write
+    /// (the compensating soft delete) while an earlier one (the
+    /// calculation's own creation) still lands, which the real composition
+    /// offers no seam for. <see cref="NthCommitFailingPersistenceStore"/>
+    /// fails the second transaction whose own body completes — the link
+    /// attempt's own transaction body never completes at all, because it
+    /// throws before writing anything, so it consumes no slot in that
+    /// count; the creation's is the first, and the compensating delete's is
+    /// the second.
+    /// </remarks>
+    [Fact]
+    public async Task ANamingThatFailsToLinkAndFailsToCompensate_SurfacesBothFailures_AndLogsIt()
+    {
+        var rawStore = new InMemoryQueryablePersistenceStore();
+        var principal = new CurrentPrincipalAccessor();
+        var repository = new InMemoryEngineeringObjectRepository();
+        var relationships = new InMemoryEngineeringRelationshipRepository();
+        var discovery = new RelationshipDiscoveryService(relationships, repository);
+        var documentStore = new EngineeringDocumentStore(rawStore, principal);
+
+        var domain = new EngineeringDomainContext(
+            new NthCommitFailingPersistenceStore(rawStore, failOnBodyNumber: 2),
+            documentStore,
+            repository,
+            relationships,
+            new LifecycleTransitionTable(),
+            new ValidationRuleSet(),
+            new EvidenceComposer(discovery, repository),
+            principal,
+            new EngineeringObjectStateStore(rawStore),
+            new AttachmentContentStore(rawStore));
+
+        var logger = new RecordingLogger();
+        var register = new EngineeringCalculationRegister(domain, new NeverDispatchedCommandDispatcher(), projects: null, logger);
+
+        // An absent record Id fails the link on its own, exactly as the
+        // test above — no store fault is needed for that half; the fault
+        // injector above is reserved entirely for the compensation.
+        var absentRecordId = Guid.NewGuid();
+
+        var thrown = await Assert.ThrowsAsync<EngineeringCalculationNamingException>(
+            () => register.NameAsync(absentRecordId, "Bracket check — both fail"));
+
+        Assert.False(thrown.WasWithdrawn, "The compensating withdrawal was made to fail and must not be reported as having succeeded.");
+        Assert.NotNull(thrown.CompensationFailed);
+        Assert.Same(thrown.InnerException, thrown.CompensationFailed!.LinkFailure);
+        Assert.IsType<PersistenceStoreUnavailableException>(thrown.CompensationFailed.WithdrawalFailure);
+        Assert.Same(thrown.CompensationFailed.WithdrawalFailure, thrown.CompensationFailed.InnerException);
+        Assert.Contains("compensating withdrawal", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains("also failed", thrown.Message, StringComparison.Ordinal);
+
+        // The register itself records the double failure - the exception
+        // reaching the caller is not the only trail (`TD-170`).
+        Assert.Contains(
+            logger.Messages,
+            m => m.Contains("compensating withdrawal", StringComparison.Ordinal) && m.Contains("also failed", StringComparison.Ordinal));
+
+        // The half-created object really is still there, undeleted — a
+        // failed compensation must leave it exactly where it was.
+        var stillThere = await domain.Repository.FindAsync(thrown.CalculationObjectId);
+        Assert.NotNull(stillThere);
+        Assert.False(((IDeletable)stillThere!).IsDeleted);
+    }
+
     [Fact]
     public async Task ACalculationThatReachedSupersededRetiresToArchived_NotToCancelled()
     {
@@ -262,5 +338,73 @@ public class EngineeringCalculationRegisterTests
         // No project context: a calculation named outside a project is
         // top-level, which is the honest shape for this layer's tests.
         return (new EngineeringCalculationRegister(domain, dispatcher), domain, host);
+    }
+
+    /// <summary>
+    /// A dispatcher that is never actually reached: <see cref="EngineeringCalculationRegister.NameAsync"/>
+    /// creates and links directly (see that type's own remarks on why), and
+    /// this file's own `TD-170` rig never calls
+    /// <see cref="EngineeringCalculationRegister.RenameAsync"/> or
+    /// <see cref="EngineeringCalculationRegister.RetireAsync"/> — the two
+    /// operations that would. Throwing rather than silently no-opping means
+    /// a test that starts relying on this dispatcher by accident fails
+    /// loudly instead of passing on an unintended path.
+    /// </summary>
+    private sealed class NeverDispatchedCommandDispatcher : ICommandDispatcher
+    {
+        public void RegisterHandler<TCommand>(ICommandHandler<TCommand> handler) where TCommand : ICommand =>
+            throw new NotSupportedException("Not used by this test's own rig.");
+
+        public Task<CommandResult> DispatchAsync<TCommand>(TCommand command, CancellationToken cancellationToken) where TCommand : ICommand =>
+            throw new NotSupportedException("Not used by this test's own rig.");
+    }
+
+    /// <summary>
+    /// Fails the transaction whose own body is the <paramref name="failOnBodyNumber"/>th
+    /// to complete, counting from 1 — every other transaction commits
+    /// normally (`TD-170`). Lets a test put one specific, later write under
+    /// fault injection without also failing the writes that must
+    /// legitimately succeed before it: a transaction whose own body throws
+    /// before finishing — the link attempt against an absent record, here —
+    /// never completes at all, so it is not counted.
+    /// </summary>
+    private sealed class NthCommitFailingPersistenceStore(IQueryablePersistenceStore inner, int failOnBodyNumber) : IQueryablePersistenceStore
+    {
+        private int _bodiesCompleted;
+
+        public long CurrentSequence => inner.CurrentSequence;
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
+            inner.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default) =>
+            inner.ReadAllAsync(collection, cancellationToken);
+
+        public Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(
+            string collection, IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default) =>
+            inner.ReadManyAsync(collection, keys, cancellationToken);
+
+        public Task ExecuteInTransactionAsync(
+            Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
+            inner.ExecuteInTransactionAsync(
+                async (transaction, token) =>
+                {
+                    await work(transaction, token).ConfigureAwait(false);
+
+                    if (Interlocked.Increment(ref _bodiesCompleted) == failOnBodyNumber)
+                        throw new PersistenceStoreUnavailableException(
+                            $"Injected commit failure: transaction body #{failOnBodyNumber} completed but the commit did not land (test double).");
+                },
+                cancellationToken);
+
+        public Task<T> ExecuteInReadTransactionAsync<T>(
+            Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+            inner.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+        public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+            inner.SearchAsync(query, limit, cancellationToken);
+
+        public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+            inner.IsSearchIndexEmptyAsync(cancellationToken);
     }
 }
