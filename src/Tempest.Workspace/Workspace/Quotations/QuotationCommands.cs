@@ -201,6 +201,130 @@ public sealed class AcceptQuotationCommandHandler : ICommandHandler<AcceptQuotat
     }
 }
 
+/// <summary>Replaces a line on the selected, Draft <see cref="Quotation"/> (<see cref="IQuotationService.UpdateLineAsync"/>).</summary>
+/// <remarks>
+/// `WP 19.5B`: the Quote tab's own editable lines table (brief scope item
+/// 2, "add, edit, remove rows") needs a real command for the "edit"
+/// half — <c>Tempest.Core.Quotations.IQuotationService.UpdateLineAsync</c>
+/// already existed (`WP 19.5A`), but no Workspace command wrapped it yet,
+/// mirroring <see cref="AddQuotationLineCommand"/>'s own identical shape.
+/// A disclosed extension of this Work Package's own "files you own" list
+/// (see this Work Package's report): mutating only through a Command,
+/// never a domain service called directly from a Desktop view, is this
+/// platform's one rule for every write (`ADR-0063`).
+/// </remarks>
+public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
+{
+    /// <summary>Initialises a new instance of the <see cref="UpdateQuotationLineCommand"/> class.</summary>
+    public UpdateQuotationLineCommand(
+        Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        LineId = lineId;
+        Description = description;
+        Hours = hours;
+        Rate = rate;
+        FixedPrice = fixedPrice;
+    }
+
+    /// <inheritdoc />
+    public Guid TargetObjectId { get; }
+
+    /// <inheritdoc />
+    public string TargetKind { get; }
+
+    /// <summary>The line to replace.</summary>
+    public Guid LineId { get; }
+
+    /// <summary>What the line is.</summary>
+    public string Description { get; }
+
+    /// <summary>Billable hours, for an hourly line. <see langword="null"/> for a fixed-price line.</summary>
+    public decimal? Hours { get; }
+
+    /// <summary>The rate one hour bills at, for an hourly line. <see langword="null"/> for a fixed-price line.</summary>
+    public Money? Rate { get; }
+
+    /// <summary>The line's own fixed price. <see langword="null"/> for an hourly line.</summary>
+    public Money? FixedPrice { get; }
+}
+
+/// <summary>Handles <see cref="UpdateQuotationLineCommand"/>.</summary>
+public sealed class UpdateQuotationLineCommandHandler : ICommandHandler<UpdateQuotationLineCommand>
+{
+    private readonly IQuotationService _service;
+
+    /// <summary>Initialises a new instance of the <see cref="UpdateQuotationLineCommandHandler"/> class.</summary>
+    public UpdateQuotationLineCommandHandler(IQuotationService service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        _service = service;
+    }
+
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(UpdateQuotationLineCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _service
+            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken)
+            .ConfigureAwait(false);
+
+        return result.Succeeded
+            ? CommandResult.Success($"Line updated — total now {result.Quotation!.Total}.", command.TargetObjectId, command.TargetKind)
+            : CommandResult.Failure(result.Reason ?? "The line could not be updated.");
+    }
+}
+
+/// <summary>Removes a line from the selected, Draft <see cref="Quotation"/> (<see cref="IQuotationService.RemoveLineAsync"/>).</summary>
+/// <remarks>`WP 19.5B`: see <see cref="UpdateQuotationLineCommand"/>'s own remarks — the "remove" half of the same disclosed extension.</remarks>
+public sealed class RemoveQuotationLineCommand : IWorkspaceCommand
+{
+    /// <summary>Initialises a new instance of the <see cref="RemoveQuotationLineCommand"/> class.</summary>
+    public RemoveQuotationLineCommand(Guid targetObjectId, string targetKind, Guid lineId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        LineId = lineId;
+    }
+
+    /// <inheritdoc />
+    public Guid TargetObjectId { get; }
+
+    /// <inheritdoc />
+    public string TargetKind { get; }
+
+    /// <summary>The line to remove.</summary>
+    public Guid LineId { get; }
+}
+
+/// <summary>Handles <see cref="RemoveQuotationLineCommand"/>.</summary>
+public sealed class RemoveQuotationLineCommandHandler : ICommandHandler<RemoveQuotationLineCommand>
+{
+    private readonly IQuotationService _service;
+
+    /// <summary>Initialises a new instance of the <see cref="RemoveQuotationLineCommandHandler"/> class.</summary>
+    public RemoveQuotationLineCommandHandler(IQuotationService service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        _service = service;
+    }
+
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(RemoveQuotationLineCommand command, CancellationToken cancellationToken)
+    {
+        var result = await _service.RemoveLineAsync(command.TargetObjectId, command.LineId, cancellationToken).ConfigureAwait(false);
+
+        return result.Succeeded
+            ? CommandResult.Success($"Line removed — total now {result.Quotation!.Total}.", command.TargetObjectId, command.TargetKind)
+            : CommandResult.Failure(result.Reason ?? "The line could not be removed.");
+    }
+}
+
 /// <summary>Declines the selected, Sent <see cref="Quotation"/> (<see cref="IQuotationService.DeclineAsync"/>). Creates nothing.</summary>
 public sealed class DeclineQuotationCommand : IWorkspaceCommand
 {

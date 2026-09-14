@@ -216,9 +216,17 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // discipline category (Quotations: create, add-line, send, accept,
         // decline), none of them unavailable, so 97 becomes 102 and 79
         // becomes 84; 18 is unchanged.
-        Assert.Equal(102, ProductionDescriptors.Count);
+        // `WP 19.5B` adds three production descriptors, none of them
+        // unavailable: two more Quotations commands the Quote tab's own
+        // editable lines table needs (update-line, remove-line — `WP
+        // 19.5A` built `IQuotationService.UpdateLineAsync`/`RemoveLineAsync`
+        // but no Workspace command wrapped either yet) and one more
+        // Deliverables command (add — a deliverable added directly, with
+        // no quotation, `ADR-0152` §7). So 102 becomes 105 and 84 becomes
+        // 87; 18 is unchanged.
+        Assert.Equal(105, ProductionDescriptors.Count);
         Assert.Equal(18, unavailable.Count);
-        Assert.Equal(84, bindable.Count);
+        Assert.Equal(87, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();

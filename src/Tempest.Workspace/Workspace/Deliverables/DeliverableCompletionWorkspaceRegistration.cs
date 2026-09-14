@@ -36,6 +36,7 @@ public static class DeliverableCompletionWorkspaceRegistration
         manager.RegisterView(DeliverableCompletion.CanonicalKind, new DeliverableCompletionObjectViewFactory(domainContext));
 
         commandDispatcher.RegisterHandler<CompleteDeliverableCommand>(new CompleteDeliverableCommandHandler(domainContext, deliverableService));
+        commandDispatcher.RegisterHandler<AddDeliverableCommand>(new AddDeliverableCommandHandler(deliverableService));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: "deliverable.complete", displayName: "Complete Deliverable", category: "Deliverables",
@@ -52,7 +53,39 @@ public static class DeliverableCompletionWorkspaceRegistration
                     Validate: ValidateRequiredDate)],
                 BoundKinds),
         });
+
+        // `WP 19.5B` (`ADR-0152` §7, Product Owner comment item 4's second
+        // half): a deliverable added directly, with no quotation — the
+        // Deliverables tab's own Add action, and the ribbon's Deliverables
+        // category gaining the same command. `CommandContextRequirement.None`:
+        // the target is the shell's own ambient `CommandContext.ProjectId`,
+        // mirroring `Quotations.QuotationCommandIds.Create`'s identical
+        // "opened with whatever project is open" shape.
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: "deliverable.add", displayName: "Add Deliverable", category: "Deliverables",
+            description: "Adds a deliverable directly to the open project, with no quotation — grouped under a default 'Unquoted' milestone.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.None,
+                (context, values) => new AddDeliverableCommand(
+                    context.ProjectId ?? Guid.Empty, values["title"], ParseOptionalDate(values["targetDate"])),
+                [
+                    new CommandParameter("title", "Title", Validate: ValidateRequiredTitle),
+                    new CommandParameter("targetDate", "Target date (yyyy-MM-dd, blank for 90 days out)", DefaultValue: string.Empty, Validate: ValidateOptionalDate),
+                ]),
+        });
     }
+
+    private static string? ValidateRequiredTitle(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "'Title' is required." : null;
+
+    private static string? ValidateOptionalDate(string value) =>
+        string.IsNullOrWhiteSpace(value) || DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
+            ? null
+            : "must be a valid date (yyyy-MM-dd), or blank.";
+
+    private static DateOnly? ParseOptionalDate(string value) =>
+        !string.IsNullOrWhiteSpace(value) && DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ? date : null;
 
     private static string? ValidateRequiredDate(string value) =>
         !string.IsNullOrWhiteSpace(value) && DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
