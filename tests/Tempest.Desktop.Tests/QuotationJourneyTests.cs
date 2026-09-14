@@ -232,6 +232,14 @@ public sealed class QuotationJourneyTests
             openRequirementButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => documentArea.TabCount >= tabCountBeforeSecondOpen);
 
+            // WP 19.10I (TD-41): the requirement now opens on its own real
+            // body, not the three-line fallback — its statement is visible
+            // in the tab that just opened.
+            var openedRequirementsService = (Tempest.Core.Requirements.IRequirementsService)host.Services!.GetService(typeof(Tempest.Core.Requirements.IRequirementsService));
+            var openedRequirement = await openedRequirementsService.FindAsync(acceptedQuote.Lines[0].RequirementId!.Value);
+            Assert.NotNull(openedRequirement);
+            await RenderUntilAsync(window, () => documentArea.GetLogicalDescendants().OfType<TextBox>().Any(t => t.Text == openedRequirement!.Statement));
+
             // ---- Business → Quotes: nowhere in Outstanding once Accepted, and not listed under New/Sent either ----
             await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();

@@ -133,27 +133,22 @@ public sealed class CreatedObjectOpensRightUpTests
             Assert.True(explorer.IsRevealed(invocation.Result.SubjectId.Value), "The new Requirement is not selected with its path expanded.");
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
             Assert.Contains(roots, r => r.Id == RequirementsNodeProvider.UngroupedNodeId);
-            // A Requirement opens in its own discipline view (the generic editor
-            // cannot resolve a Requirement yet, `TD-41`); what matters here is
-            // that a tab for it is open in front of the user.
-            Assert.True(TabOpenedFor(window, "REQ-SMOKE-1"), "No document tab shows the new Requirement.");
+
+            // The Requirement now opens on its own real Object Editor body
+            // (`TD-41`) — its statement is visible, and so is the real
+            // Owner control (`WP 10.7A`'s Owner/Priority section, made
+            // reachable for a Requirement for the first time).
+            var editor = EditorFor(window, "REQ-SMOKE-1");
+            Assert.NotNull(editor);
+            Assert.Contains(editor!.GetLogicalDescendants().OfType<TextBox>(), t => t.Text == "The bracket shall not drop out of sight.");
+            var ownerExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            Assert.True(ownerExpander.IsVisible);
         }
         finally
         {
             await host.ShutdownAsync();
             await host.DisposeAsync();
         }
-    }
-
-    private static bool TabOpenedFor(MainWindow window, string text)
-    {
-        var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
-        var tabs = GetPrivateField<TabControl>(documentArea, "_tabs");
-        return tabs.Items.OfType<TabItem>().Any(tab =>
-            (tab.Header?.ToString() ?? string.Empty).Contains(text, StringComparison.Ordinal)
-            || (tab.Content as Control)?.GetLogicalDescendants().Any(c =>
-                c is TextBlock { Text: { } t } && t.Contains(text, StringComparison.Ordinal)
-                || c is TextBox { Text: { } b } && b.Contains(text, StringComparison.Ordinal)) == true);
     }
 
     private static ObjectEditorView? EditorFor(MainWindow window, string nameOrIdentifier) =>
