@@ -153,10 +153,19 @@ internal sealed partial class MainWindowComposer
             views.DocumentArea.ShowTab(view);
         }
 
+        // `openObjectRightUp` here is `callbacks.OpenEvidenceRecordAsync` —
+        // despite its name, the shell's own general "open any Kind right
+        // up" delegate (every sibling rail view's identical
+        // `openObjectRightUp` local in `BuildViews` wraps the same call):
+        // it navigates to Engineering *first*, which is what actually
+        // makes the opened tab visible. `CockpitView`'s own
+        // `callbacks.OpenObjectAsync` (no navigation step) is safe only
+        // because `CockpitView` is itself already embedded inside the
+        // engineering surface's own Document Area — this view is not.
         var homeDashboardView = new HomeDashboardView(
             views.TasksReadModel, views.ProjectStatusReadModel, views.AccountsReadModel, composition.DomainContext, cockpit,
             views.Session.FavouriteObjects,
-            openObjectRightUp: callbacks.OpenObjectAsync,
+            openObjectRightUp: callbacks.OpenEvidenceRecordAsync,
             openTasks: () => _ = OpenTasksAsync(),
             onOpenRecent: OpenRecentAsync,
             onOpenFavourite: viewCoordinator.NavigateToObject,

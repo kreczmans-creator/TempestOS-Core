@@ -148,8 +148,13 @@ public sealed class ProjectsDashboardView : UserControl
         var axisStart = today.AddDays(-84);
         var axisEnd = today.AddDays(84);
 
+        // Only a project that actually carries both dates gets a row — a
+        // Gantt with no start/end means nothing to draw, never a row with
+        // an honest-but-cluttering "no dates" label for every project that
+        // has not been scheduled yet.
         var rows = snapshot.Projects
-            .OrderBy(p => p.StartDate ?? DateOnly.MaxValue)
+            .Where(p => p.StartDate is not null && p.TargetDate is not null)
+            .OrderBy(p => p.StartDate)
             .Select(p => new DashboardChart.GanttRow(
                 p.ProjectName, p.StartDate, p.TargetDate,
                 $"quoted {(p.QuotedHours.HasValue ? p.QuotedHours.Value.ToString("0.#", CultureInfo.InvariantCulture) : "—")}h / recorded {p.RecordedHours.ToString("0.#", CultureInfo.InvariantCulture)}h",
@@ -158,7 +163,9 @@ public sealed class ProjectsDashboardView : UserControl
 
         if (rows.Count == 0)
         {
-            _ganttHost.Content = Muted("No open projects to schedule.");
+            _ganttHost.Content = Muted(snapshot.Projects.Count == 0
+                ? "No open projects."
+                : "No open project carries both a start and a target date yet.");
             return;
         }
 
