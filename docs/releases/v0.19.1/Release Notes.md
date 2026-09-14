@@ -39,6 +39,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 
 | `WP 19.9.1` Release | Two idle-machine races in `QuotationJourneyTests` fixed by waiting for the last side effect (the attached sheet after Send; the export file closed, not merely created); every cockpit card action names itself, so the automation-name walk has no exemption left; `PHYSICAL_REVIEW.md` §7c (D1–D19) written from the code, which also corrected this document's own wrong "one page" claim about the quote PDF; the backlog reconciled (nine open rows re-verified unchanged, six raised from the packages' own disclosures, one raised and closed in the same pass, the live list at exactly 30); the nine Product Owner comments checked against the code (five answered, four answered with a disclosed limit, none unanswered); figures, warnings, `PROJECT_STATUS.md`; three green CI Gate runs on the candidate head; the CI Build & Test ceiling raised from 45 to 90 minutes after the Desktop leg reached 43 | 2026-09-14 (df2ebe8) |
 | `WP 19.10D` Business → Invoices grouped as the Product Owner sketched | `InvoicingView` regroups New (Draft — Review, Send, Void) / Available to invoice (a live `DeliverableCompletion` not yet invoiced and not carried by any live request's own lines — Open completion, Raise invoice) / Sent (Sending, Sent, Accepted not yet Outstanding — Review, Reconcile now) / Outstanding-Overdue (Sent/Accepted unpaid more than thirty days after being sent — the identical heuristic the Finance task bucket uses — plus Reauthorise and Unknown, which always need attention) / Closed (Rejected, Voided — Review only, collapsed by default); Raise invoice dispatches the identical `invoicing.raise` command the Deliverables tab already uses; every `InvoiceRequestStatus` this platform ever persists lands in exactly one group; `InvoicesGroupingTests` proves the placement, the group captions and each group's own empty text | 2026-09-14 (0e069a76) |
+| `WP 19.10R` The Structure tab's ribbon and the Command Palette refuse a write on an archived project (`TD-179` residual) | `CommandBinding.Mutates` (defaults `false`, so every untouched binding is unaffected); `ArchivedProjectCommandGuard` resolves the project a command would mutate (the selected object's own ancestry via `IHasParent`, else the shell's open project scope) and refuses "Project '{code}' is archived — read only." when it is Archive; `CommandRegistry.Evaluate` consults the guard for any binding whose `Mutates` is set, so the Ribbon, the Palette and a macro replaying either all see the identical refusal from the one place availability is already decided; `mutates: true` set on every genuine write across the five discipline registrations (Mechanical, Manufacturing, Documents, Verification, Requirements) plus Quotations, Deliverables, Tasks and Evidence — sixty binding sites, seventy-seven commands — with `mechanical.validate-configuration` the one deliberate exception (a read-only consistency check); registered in `TempestHost`'s own container so the shipped `CommandRegistry` singleton carries a real guard; `ArchivedProjectCommandGuardTests` (Core) and an extension to `ArchivedProjectReadOnlyTests` (Desktop, the Structure tab) | 2026-09-14 (pending merge) |
 
 ## Figures
 
@@ -81,18 +82,27 @@ counts from the gate).
   core panel comes back on re-entering Engineering or through Reset Layout
   on the Command Palette; the presets had no user beyond the menu. Say if
   any of the three should return.
-- **Archived-project write guards stop at `IRequirementsService` and the
-  Structure tab's ribbon** (`WP 19.5C`, narrowed `WP 19.10H`): the
+- **Archived-project write guards stop at `IRequirementsService`**
+  (`WP 19.5C`, narrowed `WP 19.10H`, narrowed again `WP 19.10R`): the
   commercial, quotation, deliverable, timesheet, invoicing, milestone,
   engineering-task, evidence and manual-task services all refuse writes on
-  an archived project now, and the project workspace disables every write
-  control it can reach on Evidence, Tasks, Timeline and the Quote tab, with
-  an "Archived project — read only" tooltip. `IRequirementsService.CreateAsync`
-  takes no project id, so guarding it needs a design step rather than a
-  copy of the pattern; the Structure tab's ribbon acts through the
-  engineering command registry, which carries no archived-project check at
-  all, so an engineering object can still be created under an archived
-  project from there. Both disclosed as `TD-179`.
+  an archived project now, the project workspace disables every write
+  control it can reach on Evidence, Tasks, Timeline and the Quote tab with
+  an "Archived project — read only" tooltip, and the Structure tab's Ribbon
+  and the Command Palette (and a macro replaying either) now refuse too:
+  `Tempest.Core.Commands.CommandRegistry.Evaluate` consults one
+  `ArchivedProjectCommandGuard`, resolving the project a command would
+  mutate (the selected object's own ancestry, else the shell's open
+  project) for every binding across the five discipline registrations
+  (Mechanical, Manufacturing, Documents, Verification, Requirements) plus
+  Quotations, Deliverables, Tasks and Evidence whose own
+  `CommandBinding.Mutates` marker is set, refusing "Project '{code}' is
+  archived — read only." — the disabled Ribbon button carries this as its
+  own tooltip, and the Palette lists the command with the same reason.
+  `IRequirementsService.CreateAsync` still takes no project id, so guarding
+  it needs a design step rather than a copy of the pattern every other
+  guarded write now follows — the one remaining residual, disclosed as
+  `TD-179`.
 - **"Finance" tasks use a thirty-day heuristic** (`WP 19.5C`): no payment
   terms field exists on an invoice request, so a Sent request unpaid for
   thirty days, and a Sent quotation older than seven days, are what the

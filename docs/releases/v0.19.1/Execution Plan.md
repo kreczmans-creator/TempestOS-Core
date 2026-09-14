@@ -60,9 +60,10 @@ status to the Product Owner.
 | 5 | `WP 19.10D` Business → Invoices grouped as the Product Owner sketched | 19.7A | 0.5 | Sonnet | `InvoicingView` regrouped New / Available to invoice / Sent / Outstanding-Overdue / Closed, `InvoicesGroupingTests` — a `PHYSICAL_REVIEW.md` §7c D11 gap disclosed as a Release Notes Warning at `WP 19.9.1`, closed here |
 | 5 | `WP 19.10I` TD-41: a Requirement opens in its own editor, not the three-line fallback | — | 0.5 | Sonnet | `ObjectEditorView.cs` (the gate and the Requirement body), `CreatedObjectOpensRightUpTests.cs`, `ObjectEditorViewTests.cs`, one assertion in `QuotationJourneyTests.cs`, `BACKLOG.md` |
 | 5 | `WP 19.10H` TD-179: an archived project offers no write, and the remaining services refuse one | 19.5C | 1 | Sonnet | `ProjectMilestoneService`, `ProjectTaskService`, `EvidenceService`, `Tempest.Core.Tasks.TaskService` archived-project guards; `ProjectWorkspaceView` hands the archived flag to `ProjectTasksView`, `ProjectTimelineView`, `EvidenceWorkspaceView`, `ProjectQuoteView`; `ArchivedProjectReadOnlyTests` |
+| 5 | `WP 19.10R` TD-179 residual: no engineering command mutates an archived project, from the Ribbon, the Palette or a macro | 19.10H | 1 | Sonnet | `CommandBinding.cs` (`Mutates` marker), `ArchivedProjectCommandGuard.cs`, `CommandRegistry.cs` (`Evaluate` consults it), `TempestHost.cs` (DI registration); `mutates: true` set across the five discipline registrations plus Quotations, Deliverables, Tasks and Evidence; `ArchivedProjectCommandGuardTests` (Core), `ArchivedProjectReadOnlyTests` extended for the Structure tab (Desktop) |
 
-Effort: 28.5 days. Status is reported per Work Package as a percentage of
-its own scope and as its effort-weighted share of the 28.5.
+Effort: 29.5 days. Status is reported per Work Package as a percentage of
+its own scope and as its effort-weighted share of the 29.5.
 
 ## 3. Engineering decisions taken while planning
 
