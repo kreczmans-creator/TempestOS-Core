@@ -130,10 +130,13 @@ public sealed class QuotationJourneyTests
             Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(sheetContent.Bytes, 0, Math.Min(8, sheetContent.Bytes.Length)), StringComparison.Ordinal);
 
             // ---- Business → Quotes lists it under Sent ----
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Quotes");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<QuotesView>().Any());
+            LayOut(window);
+            var quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             await RenderUntilAsync(window, () => FindQuoteRow(quotesView, quoteId) is not null);
 
             var sentGroup = quotesView.GetLogicalDescendants().OfType<TextBlock>()
@@ -196,10 +199,10 @@ public sealed class QuotationJourneyTests
             await RenderUntilAsync(window, () => documentArea.TabCount >= tabCountBeforeSecondOpen);
 
             // ---- Business → Quotes: nowhere in Outstanding once Accepted, and not listed under New/Sent either ----
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             await RenderUntilAsync(window, () => true);
             Assert.Null(FindQuoteRow(quotesView, quoteId));
 

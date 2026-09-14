@@ -185,9 +185,15 @@ public sealed class RailSurfaceContractTests
             var apollo = await host.ProjectDirectory!.CreateAsync("P-RSC-A", "Rail Contract Apollo");
             var vulcan = await host.ProjectDirectory!.CreateAsync("P-RSC-V", "Rail Contract Vulcan");
 
-            // 1. Click it -> something real renders.
+            // 1. Click it -> something real renders: the Projects tree,
+            // then its own Open group.
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var projectsArea = window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single();
+            Assert.NotNull(projectsArea);
+            projectsArea.SelectNode("Open");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any());
             LayOut(window);
             var browser = window.GetLogicalDescendants().OfType<ProjectBrowserView>().Single();
             Assert.NotNull(browser);
@@ -307,11 +313,12 @@ public sealed class RailSurfaceContractTests
             var evidence = await host.EvidenceService!.CreateAsync(project.Id, "Rail Contract Evidence", EvidenceClassification.Calculation);
             evidenceId = evidence.Id;
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            // 1. Click it -> something real renders: `WP 19.7A` moved
+            // Evidence into this project's own tab.
+            await navigator.GoToProjectAreaAsync(ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single();
             Assert.NotNull(evidenceWorkspace);
             await RenderUntilAsync(window, () => evidenceWorkspace.GetLogicalDescendants().OfType<ListBoxItem>().Any());
 
@@ -347,11 +354,11 @@ public sealed class RailSurfaceContractTests
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             await RenderUntilAsync(window, () =>
-                GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace").GetLogicalDescendants().OfType<ListBoxItem>().Any());
+                window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single().GetLogicalDescendants().OfType<ListBoxItem>().Any());
 
             await host.ShutdownAsync();
         }
@@ -411,11 +418,16 @@ public sealed class RailSurfaceContractTests
             Assert.True((await commercial.SetClientAsync(project.Id, organisationId)).Succeeded);
             Assert.True((await commercial.PinRateCardAsync(project.Id, rateCardId)).Succeeded);
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.Timesheets);
+            // 1. Click it -> something real renders: `WP 19.7A` moved
+            // Timesheets under Business.
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var week = GetPrivateField<TimesheetWeekView>(window, "_timesheetWeekView");
+            var businessArea = window.GetLogicalDescendants().OfType<BusinessAreaView>().Single();
+            businessArea.SelectNode("Timesheets");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<TimesheetWeekView>().Any());
+            LayOut(window);
+            var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
             Assert.NotNull(week);
 
             // 2. Select something in it -> the selection has meaning:
@@ -464,11 +476,11 @@ public sealed class RailSurfaceContractTests
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Timesheets);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             await RenderUntilAsync(window, () =>
-                GetPrivateField<TimesheetWeekView>(window, "_timesheetWeekView").GetLogicalDescendants().OfType<TextBlock>()
+                window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single().GetLogicalDescendants().OfType<TextBlock>()
                     .Any(t => (t.Text ?? string.Empty).Contains("Rail contract test task", StringComparison.Ordinal)));
 
             await host.ShutdownAsync();
@@ -560,11 +572,16 @@ public sealed class RailSurfaceContractTests
             });
             requestId = request!.Id;
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            // 1. Click it -> something real renders: `WP 19.7A` moved
+            // Invoicing under Business, as "Invoices".
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var invoicingView = GetPrivateField<InvoicingView>(window, "_invoicingView");
+            var businessArea = window.GetLogicalDescendants().OfType<BusinessAreaView>().Single();
+            businessArea.SelectNode("Invoices");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<InvoicingView>().Any());
+            LayOut(window);
+            var invoicingView = window.GetLogicalDescendants().OfType<InvoicingView>().Single();
             invoicingView.ParameterPrompt = (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(new Dictionary<string, string>());
             await RenderUntilAsync(window, () => FindRequestRow(invoicingView, requestId) is not null);
 
@@ -580,10 +597,10 @@ public sealed class RailSurfaceContractTests
             Assert.NotNull(editor);
 
             // 4. Edit it -> state changes, through its own command: Send.
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var refreshedRow = FindRequestRow(GetPrivateField<InvoicingView>(window, "_invoicingView"), requestId)!;
+            var refreshedRow = FindRequestRow(window.GetLogicalDescendants().OfType<InvoicingView>().Single(), requestId)!;
             var sendButton = refreshedRow.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Send"));
             sendButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
@@ -592,10 +609,10 @@ public sealed class RailSurfaceContractTests
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Invoicing);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            await RenderUntilAsync(window, () => FindRequestRow(GetPrivateField<InvoicingView>(window, "_invoicingView"), requestId) is not null);
+            await RenderUntilAsync(window, () => FindRequestRow(window.GetLogicalDescendants().OfType<InvoicingView>().Single(), requestId) is not null);
 
             await host.ShutdownAsync();
         }
@@ -650,11 +667,16 @@ public sealed class RailSurfaceContractTests
             Assert.True((await quotationService.AddLineAsync(quoteId, "Rail Contract Quote Line", 5m, new Tempest.Core.BusinessGovernance.Money(100m, Tempest.Core.BusinessGovernance.CurrencyCode.Gbp), null)).Succeeded);
             Assert.True((await quotationService.SendAsync(quoteId)).Succeeded);
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            // 1. Click it -> something real renders: `WP 19.7A` moved
+            // Quotes under Business.
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            var businessArea = window.GetLogicalDescendants().OfType<BusinessAreaView>().Single();
+            businessArea.SelectNode("Quotes");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<QuotesView>().Any());
+            LayOut(window);
+            var quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             Assert.NotNull(quotesView);
             await RenderUntilAsync(window, () => FindRow(quotesView, quoteId) is not null);
 
@@ -688,19 +710,19 @@ public sealed class RailSurfaceContractTests
                 domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Tempest.Core.Quotations.Quotation q && q.Status == Tempest.Core.Quotations.QuotationStatus.Accepted);
 
             // Accepted quotations list nowhere in Quotes (New/Sent/Outstanding).
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            quotesView = window.GetLogicalDescendants().OfType<QuotesView>().Single();
             Assert.Null(FindRow(quotesView, quoteId));
 
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            Assert.NotNull(GetPrivateField<QuotesView>(window, "_quotesView"));
+            Assert.NotNull(window.GetLogicalDescendants().OfType<QuotesView>().Single());
 
             await host.ShutdownAsync();
         }
@@ -754,11 +776,12 @@ public sealed class RailSurfaceContractTests
 
             var firstSheet = await IssueWithSheetAsync(host, project.Id, "Rail Contract First Sheet", "ISS-RSC-1");
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.Reports);
+            // 1. Click it -> something real renders: `WP 19.7A` embeds
+            // Reports under Engineering's own Dashboard + Reports node.
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var reportsView = GetPrivateField<ReportsView>(window, "_reportsView");
+            var reportsView = window.GetLogicalDescendants().OfType<ReportsView>().Single();
             Assert.NotNull(reportsView);
             await RenderUntilAsync(window, () =>
                 reportsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("ISS-RSC-1", StringComparison.Ordinal)));
@@ -774,10 +797,10 @@ public sealed class RailSurfaceContractTests
             // filtering to a different, empty project hides the sheet.
             var otherProject = await host.ProjectDirectory!.CreateAsync("P-RSC-R2", "Rail Contract Reports Project Two");
             await navigator.OpenProjectAsync(project.Id);
-            await navigator.GoToModuleAsync(ShellArea.Reports);
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            reportsView = GetPrivateField<ReportsView>(window, "_reportsView");
+            reportsView = window.GetLogicalDescendants().OfType<ReportsView>().Single();
             await RenderUntilAsync(window, () => reportsView.GetLogicalDescendants().OfType<ComboBox>().Any());
 
             var filter = reportsView.GetLogicalDescendants().OfType<ComboBox>().Single();
@@ -817,11 +840,11 @@ public sealed class RailSurfaceContractTests
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Reports);
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             await RenderUntilAsync(window, () =>
-                GetPrivateField<ReportsView>(window, "_reportsView").GetLogicalDescendants().OfType<TextBlock>()
+                window.GetLogicalDescendants().OfType<ReportsView>().Single().GetLogicalDescendants().OfType<TextBlock>()
                     .Any(t => (t.Text ?? string.Empty).Contains("ISS-RSC-2", StringComparison.Ordinal)));
 
             await host.ShutdownAsync();
@@ -865,11 +888,17 @@ public sealed class RailSurfaceContractTests
             LayOut(window);
             var navigator = host.ShellNavigator!;
 
-            // 1. Click it -> something real renders.
-            await navigator.GoToModuleAsync(ShellArea.EngineeringCalculation);
+            // 1. Click it -> something real renders: `WP 19.7A` moved
+            // Engineering Calculations under Engineering's own Modules
+            // node.
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var view = GetPrivateField<EngineeringCalculationView>(window, "_engineeringCalculation");
+            var engineeringArea = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
+            engineeringArea.SelectNode("Engineering Calculations");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any());
+            LayOut(window);
+            var view = window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Single();
             Assert.NotNull(view);
 
             ClickAsync(window, view, EngineeringCalculationView.PopulateCaption);
@@ -902,11 +931,11 @@ public sealed class RailSurfaceContractTests
             // 6. Navigate away and back -> coherent.
             await navigator.GoHomeAsync();
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.EngineeringCalculation);
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             await RenderUntilAsync(window, () =>
-                GetPrivateField<EngineeringCalculationView>(window, "_engineeringCalculation").Materials
+                window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Single().Materials
                     .Any(m => m.RecordId == MaterialSeed.Aluminium6082T6 && m.IsUsableForEngineering));
 
             await host.ShutdownAsync();
@@ -926,11 +955,14 @@ public sealed class RailSurfaceContractTests
             window.Show();
             var navigator = second.ShellNavigator!;
 
-            await navigator.GoToModuleAsync(ShellArea.EngineeringCalculation);
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Engineering Calculations");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Any());
+            LayOut(window);
 
-            var view = GetPrivateField<EngineeringCalculationView>(window, "_engineeringCalculation");
+            var view = window.GetLogicalDescendants().OfType<EngineeringCalculationView>().Single();
             await RenderUntilAsync(window, () => view.DisplayedOutcome is { Performed: true });
             Assert.Equal(recordId, view.DisplayedOutcome!.CalculationRecordId);
             Assert.Equal("12", view.CurrentInputs.LoadKilonewtons);
