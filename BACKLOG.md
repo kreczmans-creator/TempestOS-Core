@@ -70,8 +70,8 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
-| `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
-| `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
+| `TD-98` | Document viewer has no markup or annotation (rotation closed by `WP 20.2B`) | `WP 18.2B` (partial) |
+| `TD-99` | SVG attachments still report `Unsupported` in the viewer — no SVG rasteriser (`Svg.Skia`, `SkiaSharp.Extended` or `Avalonia.Svg.Skia`) is referenced anywhere in this solution | unowned (narrowed by `WP 20.2B` — DWG/DXF closed: Product Owner decision 2026-09-15 §5 chose "stored attachment, opened externally" over a licensed SDK, and the viewer now says so honestly and offers the action; SVG stayed open because that decision's "small" in-app source needs a rendering library this build does not have, and the brief's own fallback for that case was to add none and report rather than implement) |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` (no project id parameter — guarding it needs a design step, not a copy of the pattern) or the Structure tab's ribbon (its commands act through the engineering command registry, which carries no archived-project check, so an engineering object can still be created under an archived project from there) | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task now guarded) |
@@ -461,6 +461,59 @@ identical event through a real `WorkspaceLayoutController` to prove or
 disprove `CancelDrag` itself runs, so the gap above was found by
 reflection against the referenced `Avalonia` build, not by a failing
 test. Recommend a follow-up row.
+
+**Partly closed by `WP 20.2B` (2026-09-15) — DWG/DXF half only; SVG stays
+in the Live Backlog, row edited above:** `TD-99`. Per the Product Owner's
+2026-09-15 decision §5 ("if it is easier to keep DWG as a stored
+attachment opened externally, that is also fine"), `ViewableDocumentFormat`
+(`src/Tempest.Workspace/Workspace/Viewing/ViewableDocument.cs`) gains
+`ExternalOnly`, distinct from `Unsupported`; `DocumentFormatDetector`
+recognises `.dwg`/`.dxf` by extension (case-insensitive, checked before
+content type — neither format has an IANA-registered one) and by the
+content types CAD tools commonly send. `AttachmentViewerLauncher`
+materialises the real, intact bytes to a file under the OS temp folder
+(never beside the persistence root) whenever no in-app source exists;
+`DocumentViewerView` gains an Open externally button
+(`Process.Start`/`UseShellExecute` via an injectable `ExternalLauncher`)
+offered for `ExternalOnly` and for any plain `Unsupported` format alike,
+with `ExternalOnly`'s own honest headline, "This drawing opens in its own
+application," replacing the generic "cannot be displayed" text a DWG used
+to get. Proven by `DocumentViewerAcceptanceTests.ADwgAttachment_OpensExternally_RatherThanReportingUnsupported`
+(a real materialised copy's bytes read back and compared, and the
+injected launcher asserted called with that path — no real application
+opened during the test run) and `ADxfAttachment_IsAlsoExternalOnly_ByItsExtensionAlone`.
+SVG was not attempted: neither `Svg.Skia`, `SkiaSharp.Extended` nor
+`Avalonia.Svg.Skia` is referenced anywhere in this solution (confirmed via
+`project.assets.json` after a restore), and the brief's own instruction
+for that case was to add no new NuGet package and report rather than
+implement — `DocumentFormatDetectorTests.AnSvgIsStillUnsupported_NoRendererIsReferencedInThisBuild`
+pins the unchanged behaviour. TD-99's row above is edited to describe only
+the SVG half now open; it is not removed from the Live Backlog and the
+cap count is unchanged.
+
+**Closed by `WP 20.2B` (2026-09-15), with evidence — moved out of the
+Live Backlog:** rotation, TD-98's own third listed gap (markup and
+annotation remain, ADR-0115's own disclosed scope cut — the row's title is
+edited above rather than removed, since two of its three gaps stand).
+`DocumentViewerView` gains Rotate left/Rotate right (90° steps,
+automation-named "Rotate left"/"Rotate right"), applied at render only:
+the page source is never asked to rotate anything — proven by
+`DocumentViewerRotationTests.RotationDoesNotChangeWhatThePageSourceIsAskedToRender`,
+a recording `IDocumentPageSource` asserting the same page index and scale
+before and after a turn — the view itself turns the rasterised bitmap
+into a new one with its own pixel width and height swapped for a 90°/270°
+turn (`RotateForDisplay`, the standard rotate-about-centre `Matrix`
+composition). Rotation is remembered for as long as a tab shows its
+document — a zoom, a page turn, a pan and a resize all leave it exactly as
+set — and reset to zero when a different document opens into the same
+tab; proven by `RotationIsRemembered_ThroughZoomPageTurnAndPan` and
+`OpeningADifferentDocumentIntoTheSameTab_ResetsRotationToZero`. Disclosed,
+not fixed: the viewport's own fit/zoom maths still runs over the page's
+un-rotated size throughout (only the rendered box's displayed width and
+height are swapped, in `PositionPage`, to match the bitmap actually
+produced) — a render-only feature exactly as scoped, not a viewport-model
+change, so "Fit" on a 90°-rotated page does not itself re-derive a new fit
+zoom for the now-landscape shape.
 
 ## Owned by Programme
 
