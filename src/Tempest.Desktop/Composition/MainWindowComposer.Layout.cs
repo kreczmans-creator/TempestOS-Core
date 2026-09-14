@@ -74,6 +74,19 @@ internal sealed partial class MainWindowComposer
                     return CommandResult.Success("Theme toggled.");
                 });
 
+            // `WP 19.10O`: the rail's own manual collapse, reachable from
+            // the Command Palette (and Ctrl+B, bound in `Wire`) — a toggle,
+            // exactly like Toggle Theme above, so the descriptor's own
+            // display name never needs the current state to read sensibly.
+            RegisterShellAction(
+                composition.CommandRegistry, "shell.toggleNavigationRail", "Collapse navigation", "Workspace",
+                () =>
+                {
+                    views.NavigationRail.ToggleCollapsed();
+                    return Task.FromResult(CommandResult.Success(
+                        views.NavigationRail.IsCollapsed ? "Navigation rail collapsed." : "Navigation rail expanded."));
+                });
+
             RegisterShellAction(
                 composition.CommandRegistry, "shell.openMacros", "Macros", "Workspace",
                 async () =>

@@ -61,6 +61,32 @@ internal sealed partial class MainWindowComposer
         views.Ribbon.SetCollapsed(views.Session.PanelUiState.RibbonCollapsed);
         views.Ribbon.CollapsedChanged += collapsed => views.Session.PanelUiState.RibbonCollapsed = collapsed;
 
+        // `WP 19.10O`: the rail's own manual collapse and each area tree's
+        // own manual collapse — restored before first render, exactly like
+        // the ribbon's identical pattern above, so nothing jumps once the
+        // window is shown.
+        views.NavigationRail.SetCollapsed(views.Session.PanelUiState.RailCollapsed);
+        views.NavigationRail.CollapsedChanged += collapsed => views.Session.PanelUiState.RailCollapsed = collapsed;
+
+        views.ProjectsAreaView.SetTreeCollapsed(views.Session.PanelUiState.ProjectsTreeCollapsed);
+        views.ProjectsAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.ProjectsTreeCollapsed = collapsed;
+
+        views.EngineeringAreaView.SetTreeCollapsed(views.Session.PanelUiState.EngineeringTreeCollapsed);
+        views.EngineeringAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.EngineeringTreeCollapsed = collapsed;
+
+        views.BusinessAreaView.SetTreeCollapsed(views.Session.PanelUiState.BusinessTreeCollapsed);
+        views.BusinessAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.BusinessTreeCollapsed = collapsed;
+
+        // `WP 19.10O`: Ctrl+B toggles the rail — free (checked against
+        // `KeyboardShortcuts`'s own fixed bindings, `KeyboardCommandBindingProvider`'s
+        // own then-empty default set, and the Command Palette's own listed
+        // descriptors). Routed through the generic, already-proven
+        // `IInputBindingProvider` mechanism (`WP 10.6A`, `ADR-0100`) rather
+        // than a new fixed binding in `KeyboardShortcuts`, so it reaches
+        // `shell.toggleNavigationRail` through the identical
+        // Evaluate-then-InvokeAsync path every other command dispatch uses.
+        views.KeyboardBindingProvider.Bind(new KeyGesture(Key.B, KeyModifiers.Control), "shell.toggleNavigationRail");
+
         views.Ribbon.CategorySelected += async category =>
         {
             var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
