@@ -70,8 +70,11 @@ own scope and as its effort-weighted share of the 27.
    check or issue, invoice requests to chase — plus a small manual Task.
 3. **A quote line becomes one Deliverable and one Requirement** on
    acceptance, both named from the line; the engineer refines them
-   afterwards. Declining a quote creates nothing. Sending records the date;
-   a PDF of the quote is out of scope until the Product Owner asks.
+   afterwards. Declining a quote creates nothing. Sending records the date
+   and offers the export: the quote rendered as a PDF (reference, date,
+   client, lines with hours and price, totals, terms) through the same
+   SkiaSharp path as the issue sheet — the Product Owner wants to test it
+   before running the consultancy on it.
 4. **Sign off** closes a project: who, when, a statement; the project moves
    to Closed, and to Archive (read-only) 90 days after that.
 5. **Accounts payable is read, never written.** Bills due, repeating bills
@@ -81,20 +84,20 @@ own scope and as its effort-weighted share of the 27.
    documents with recorded-response tests and cannot be proven against a
    live sandbox from here. The last reading is cached with its time and
    shown as "unavailable since" when the connector is not authorised.
-   Subscription categories (Hardware, Software, Premises) map from the
-   package's own account or category names, editable in Settings.
+   The consultancy uses Xero, so the Xero reads are the primary, best-tested
+   path and QuickBooks Online is secondary. Subscription categories
+   (Hardware, Software, Premises) map from Xero's own account names and
+   tracking categories with keyword defaults, editable in Settings.
 6. **Timesheets under Business**, the project chosen from a drop-down of
    open projects, hours first.
 7. **The constants library** seeds a small cited set (standard gravity, π,
    e, common material constants) through the same reference-record path as
    the other libraries; the Product Owner extends it.
 
-## 4. Questions the Product Owner may answer during the build (not blocking)
+## 4. Questions answered by the Product Owner on 2026-09-14
 
-1. Does a quote need an export to send to the client in this release, or
-   is recording "Sent" with a date enough for now? (Assumed: enough.)
-2. Which accounting categories map to Hardware, Software and Premises?
-   (Assumed: by account name, editable in Settings.)
+1. A quote export is wanted in this release (WP 19.5B).
+2. The accounting package is Xero; categories map from its account names and tracking categories.
 
 ## 5. Risks
 
