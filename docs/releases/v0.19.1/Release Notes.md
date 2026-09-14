@@ -25,6 +25,7 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 | `WP 19.4B` Real files on every Attachments section | Browse on every Kind with attachments (every canonical Kind), a drop zone that stores the dropped files' bytes, size and SHA-256 through the same path, the typed metadata form kept under "Record a reference without the file"; a Calculation's attachment opens in the viewer; seven tests | 2026-09-14 (6710d64) |
 | `WP 19.6A` A real editor for library records | `ReferenceRecordView`: identity, the definition's fields rendered generically with units (every library's definition types, nested groups and tables), revision history with the current marked, source citation, cited by (one Evidence scan through `ReferenceCitationIndex`), Verify, Release and Revise on the record; Libraries becomes master and detail with Open and double-tap, folding to a Back control when compact; all eight libraries listed (Manufacturing, Components and rate cards newly wired); Add and Revise open the record right up | 2026-09-14 (e9aeabc) |
 | `WP 19.5A` Quotation core (ADR-0152) | The `Quotation` Kind under a project: reference (`Q-yyyy-nnn` or given), date, client, currency, validity, terms, lines with hours × rate or a fixed price, totals; Draft → Sent → Accepted / Declined with refusals as results; Accept creates one Deliverable per line under a milestone named after the reference and one Requirement per line allocated to the quotation and so to the project; `AddDeliverableAsync` for deliverables added directly; five `quotation.*` commands under the Quotations category; explorer area, editor declaration, registration guards | 2026-09-14 (564a074) |
+| `WP 19.5C` Project lifecycle, status and tasks read models, the ManualTask Kind | `ProjectLifecycleService`: Hold, Resume, Sign off (statement and record) and Reopen, one transaction and audit row each; a project's listing group (Open, Closed under 90 days, Archive over 90 days) derived from its closed date; writes on an archived project refused in the commercial, quotation, deliverable, timesheet and invoicing services; `ProjectStatusReadModel`: one scan giving each project one of On hold, Blocked, Overdue, At risk, Ready to invoice or On track with the reason, counts and the Gantt schedule fields; `ManualTask` Kind with its own service, commands (`task.create`, `task.complete`) and registration; `ITasksReadModel`: Overdue, Due today, Due this week, Later, Reviews, Approvals and Finance buckets over deliverables, milestones, manual tasks, evidence, invoice requests and quotations | 2026-09-14 (ab505b3) |
 | `WP 19.8B` Accounts reads through the connector | Read-only `IAccountsConnector` (bills due, repeating bills, cash position) on the Fake, Xero (primary: ACCPAY invoices, repeating invoices, the bank summary) and QuickBooks Online connectors; a cached reading at `<persistence root>/accounts/last-reading.json` refreshed hourly and on demand; Hardware / Software / Premises from Xero account names with keyword defaults; `AccountsSnapshot` with the four tiles, receivable and payable buckets and a twelve-week cash-flow series; one Settings line with Refresh now | 2026-09-14 (901ce26) |
 
 ## Figures
@@ -47,6 +48,18 @@ attachments, and three defects in the `v0.19.0` Structure tab.
   core panel comes back on re-entering Engineering or through Reset Layout
   on the Command Palette; the presets had no user beyond the menu. Say if
   any of the three should return.
+- **Archived-project write guards stop at the five Core services**
+  (`WP 19.5C`): the commercial, quotation, deliverable, timesheet and
+  invoicing services refuse writes on an archived project; the
+  Workspace-layer milestone and engineering-task services, the evidence and
+  requirements services and the new task service do not yet. Nothing in
+  the shell offers those writes on an archived project, but the guard is
+  not structural there.
+- **"Finance" tasks use a thirty-day heuristic** (`WP 19.5C`): no payment
+  terms field exists on an invoice request, so a Sent request unpaid for
+  thirty days, and a Sent quotation older than seven days, are what the
+  Finance bucket lists. When terms are recorded the bucket should read
+  them.
 - *(further warnings filled at each merge)*
 
 ## Related
