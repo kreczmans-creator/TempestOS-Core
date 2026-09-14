@@ -108,16 +108,27 @@ public sealed class QuotationJourneyTests
             // which one to show — the same explicit selection
             // `QuotesView`'s own "Open" button already makes through this
             // identical method.
-            // `host.ProjectContext.Current` can race to null here: several
-            // fire-and-forget renders are still in flight from the New
-            // Project prompt's own redirect chain, and
-            // `ProjectContext.RefreshAsync` (the first line of
-            // `ProjectWorkspaceView.RefreshAsync`, run on every one of
-            // them) closes the context outright the instant any single one
-            // of those overlapping calls does not find the
-            // just-created project yet. Re-opening explicitly, once,
-            // settles it the same way a person re-clicking the project
-            // would.
+            //
+            // `WP 19.10B`: `TD-176` (`ProjectContext.RefreshAsync` closing
+            // the context on a losing overlapping refresh) is now fixed at
+            // the source — see `ProjectContext`'s own remarks and
+            // `ProjectContextRefreshRaceTests`, which reproduces that race
+            // directly and fails against the pre-fix code. The explicit
+            // re-open this comment used to justify by that race is kept
+            // here regardless, for a different, still-open reason found
+            // while removing it: `ProjectBrowserView.CreateAsync` looks
+            // for the project it just created in its own just-refreshed
+            // `_current`, but that refresh is filtered to whatever
+            // `SetVisibleProjects` set when the "Open" group node above
+            // was selected — a snapshot taken before this project existed
+            // — so the just-created project is never in it and
+            // `CreateAsync` silently returns without ever opening the
+            // project at all (`navigator.Current` never leaves the
+            // Projects area through the app's own path). Not this Work
+            // Package's file to fix (`ProjectBrowserView.cs`); reported to
+            // the lead rather than worked around at its own source. Until
+            // then, this re-open reproduces the same recovery a person
+            // would make by hand — re-opening the project themselves.
             await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
             await window.RenderCurrentModuleAsync().ConfigureAwait(true);
             await quoteView.SelectQuoteAsync(quoteId).ConfigureAwait(true);

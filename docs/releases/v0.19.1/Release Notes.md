@@ -101,11 +101,6 @@ counts from the gate).
   the tasks read model has no Calculations bucket (a calculation is not a
   task until someone asks for one), so the sketched Calculations node is
   not shown rather than shown empty.
-- **A project-context refresh race is fixed at the test, not the source**
-  (`WP 19.7A`): `ProjectContext.RefreshAsync` closes the context when an
-  overlapping render does not yet find a just-created project; the New
-  Project with quotation journey exposed it and the test now waits. The
-  real fix belongs in `ProjectContext`; carried to the backlog.
 - **The CI Build & Test ceiling is now 90 minutes** (`WP 19.9.1`): at 594
   Desktop tests under coverage collection the Debug leg took 43 minutes on
   a hosted runner and the next run was cancelled at 45 on both legs while

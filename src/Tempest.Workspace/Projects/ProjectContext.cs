@@ -79,22 +79,72 @@ public sealed class ProjectContext : IProjectContext
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>`TD-176`.</b> Two callers overlap around the New Project +
+    /// quotation journey: <c>ProjectBrowserView.CreateAsync</c>'s own
+    /// "open right up" (<c>ProjectOpened</c>, wired fire-and-forget to
+    /// <c>MainWindow.RenderCurrentModuleAsync</c> in
+    /// <c>MainWindowComposer.Wire.cs</c>) and, separately, every other
+    /// fire-and-forget <c>ProjectWorkspaceView.RefreshAsync</c> reachable
+    /// from the same redirect chain — each begins with this method, and
+    /// nothing before this fix stopped two of them running at once
+    /// against the same <see cref="Current"/>. Before this fix, whichever
+    /// call's own <see cref="IProjectDirectory.FindAsync"/> happened to
+    /// return <em>last</em> decided <see cref="Current"/> outright — so a
+    /// call that read the project before it was visible to that
+    /// particular caller (a transient "not found", not a real deletion)
+    /// could close a context a second, later call had already opened
+    /// correctly, moments after opening it.
+    /// <para>
+    /// The fix: a generation token, bumped at the start of every call.
+    /// Only the call that is still the <em>latest</em> one started when
+    /// its own read comes back is allowed to act on that read — an
+    /// overlapping call that finishes after a newer one has already
+    /// moved on discards its own result instead of undoing the newer
+    /// one's work, whether that discarded result was a project or
+    /// nothing at all. The same check also refuses to act once
+    /// <see cref="Current"/> no longer names the project this call went
+    /// looking for (an <see cref="OpenAsync"/> or <see cref="CloseAsync"/>
+    /// ran while this call's own read was in flight) — reaching the
+    /// "not found" branch therefore means a genuine deletion, never a
+    /// losing race against a just-created project's own write.
+    /// </para>
+    /// </remarks>
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         if (Current is null)
             return;
 
-        var refreshed = await _directory.FindAsync(Current.Id, cancellationToken).ConfigureAwait(false);
+        var wantId = Current.Id;
+        var generation = Interlocked.Increment(ref _refreshGeneration);
+
+        var refreshed = await _directory.FindAsync(wantId, cancellationToken).ConfigureAwait(false);
+
+        // Stale: a later `RefreshAsync` call, or an `OpenAsync`/
+        // `CloseAsync`, has already moved `Current` on since this call's
+        // own read started. This call's result — found or not — must not
+        // overwrite what the newer one already decided.
+        if (generation != _refreshGeneration || Current?.Id != wantId)
+            return;
+
         if (refreshed is null)
         {
-            // The open project has been deleted — close rather than keep
-            // serving a snapshot of something that no longer exists.
+            // The open project has genuinely been deleted — close rather
+            // than keep serving a snapshot of something that no longer
+            // exists.
             await SetCurrentAsync(null, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         Current = refreshed;
     }
+
+    /// <summary>
+    /// Bumped at the start of every <see cref="RefreshAsync"/> call
+    /// (`TD-176`) — the mechanism that lets a call recognise its own read
+    /// as stale once a later call has already run.
+    /// </summary>
+    private int _refreshGeneration;
 
     /// <inheritdoc />
     public async Task SaveAsync(CancellationToken cancellationToken = default)
