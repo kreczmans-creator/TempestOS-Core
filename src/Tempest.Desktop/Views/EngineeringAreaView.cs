@@ -59,6 +59,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private IWorkspaceChanges? _workspaceChanges;
+    private bool _suppressSelection;
 
     /// <summary>Raised after the user asks to enter the Mechanical module, so the shell can render the ribbon-and-docking surface.</summary>
     public event Action? EngineeringRequested;
@@ -185,6 +186,9 @@ public sealed class EngineeringAreaView : UserControl
 
     private async Task OnSelectionChangedAsync()
     {
+        if (_suppressSelection)
+            return;
+
         if (_tree.SelectedItem is not TreeViewItem selected)
             return;
 
@@ -204,6 +208,16 @@ public sealed class EngineeringAreaView : UserControl
 
         if (ReferenceEquals(selected, _mechanicalNode))
         {
+            // Real navigation away, to the ribbon-and-docking surface —
+            // reset the tree's own selection first, suppressed so it does
+            // not re-enter this handler: leaving Mechanical selected would
+            // make the next entry into this area navigate straight back
+            // out again (`RefreshAsync`'s own "something is already
+            // selected, re-read it" branch) instead of showing the tree.
+            _suppressSelection = true;
+            _tree.SelectedItem = null;
+            _suppressSelection = false;
+
             await _navigator.GoToEngineeringAsync().ConfigureAwait(true);
             EngineeringRequested?.Invoke();
             return;

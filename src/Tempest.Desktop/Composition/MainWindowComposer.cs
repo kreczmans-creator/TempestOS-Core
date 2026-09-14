@@ -208,6 +208,14 @@ internal sealed partial class MainWindowComposer
         composition.EventBus.Subscribe(toastBridge);
         composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(toastBridge);
 
+        // `WP 19.7A` (scope item 2): the header's own notifications bell —
+        // the identical dual subscription `toastBridge` above already
+        // establishes, over the same platform notifications the status bar
+        // counts, kept as its own bounded list for the flyout.
+        var headerNotifications = new HeaderNotificationsCollector();
+        composition.EventBus.Subscribe(headerNotifications);
+        composition.NotificationDispatcher.Subscribe<Tempest.Core.Notifications.IPlatformNotification>(headerNotifications);
+
         var theme = new ThemeService(composition.SettingsProvider);
 
         // `WP 19.0A` (`ADR-0150`): the Timesheets section — hours per week
@@ -322,7 +330,9 @@ internal sealed partial class MainWindowComposer
         var navigationRail = new GlobalNavigationRail(host.ShellNavigator!);
 
         var header = new ShellHeaderView();
-        header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName);
+        header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName, host.SessionPrincipal?.Role.ToString());
+        header.SetNotifications(headerNotifications.Messages);
+        headerNotifications.Changed = () => header.SetNotifications(headerNotifications.Messages);
 
         var moduleHost = new ContentControl();
 
@@ -556,5 +566,49 @@ internal sealed partial class MainWindowComposer
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView);
+    }
+}
+
+/// <summary>
+/// The header's own notifications bell (`WP 19.7A`, scope item 2): the
+/// last <see cref="Capacity"/> platform notifications, kept in memory only
+/// (never persisted — mirrors <see cref="PlatformNotificationToastBridge"/>'s
+/// own identical dual subscription over the same <see cref="Tempest.Core.Notifications.IPlatformNotification"/>
+/// the status bar's own count already draws from).
+/// </summary>
+internal sealed class HeaderNotificationsCollector :
+    Tempest.Core.Events.IEventHandler<Tempest.Core.Notifications.IPlatformNotification>,
+    Tempest.Core.Notifications.INotificationHandler<Tempest.Core.Notifications.IPlatformNotification>
+{
+    private const int Capacity = 20;
+    private readonly List<string> _messages = [];
+
+    /// <summary>Every message currently held, newest first.</summary>
+    public IReadOnlyList<string> Messages => _messages;
+
+    /// <summary>Raised after a new notification is recorded, so the header can re-read <see cref="Messages"/>.</summary>
+    public Action? Changed { get; set; }
+
+    /// <inheritdoc cref="Tempest.Core.Events.IEventHandler{TEvent}.HandleAsync" />
+    public Task HandleAsync(Tempest.Core.Notifications.IPlatformNotification @event, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(@event);
+
+        var message = $"[{@event.Category}] {@event.Message}";
+
+        void Record()
+        {
+            _messages.Insert(0, message);
+            if (_messages.Count > Capacity)
+                _messages.RemoveAt(_messages.Count - 1);
+            Changed?.Invoke();
+        }
+
+        if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess())
+            Record();
+        else
+            Avalonia.Threading.Dispatcher.UIThread.Post(Record);
+
+        return Task.CompletedTask;
     }
 }

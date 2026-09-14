@@ -146,6 +146,15 @@ internal sealed partial class MainWindowComposer
             await navigator.ReturnToProjectAsync().ConfigureAwait(true);
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         };
+        // `WP 19.7A` (scope item 2): "the signed-in principal's name and
+        // role, which opens Settings" — Settings stays declared and
+        // reachable (`ShellAreas`'s own remarks) even though it left the
+        // rail, and this chip is that reachable path now.
+        views.Header.SettingsRequested += async () =>
+        {
+            await navigator.GoToModuleAsync(ShellArea.Settings).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
 
         // Responsive shell chrome: below the compact threshold the rail
         // folds to its icons, the header's search field to its glyph, the
