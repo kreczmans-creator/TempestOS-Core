@@ -141,8 +141,17 @@ public sealed class QuotationJourneyTests
             await RenderUntilAsync(window, () => confirmationDialog.IsVisible);
             confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Continue")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
+            // `WP 19.9.1`: wait for the sheet as well as the status. The
+            // view attaches the rendered PDF *after* `quotation.send`
+            // has flipped the status (`ProjectQuoteView.OnSendAsync`), so
+            // a poll on the status alone can win the race on an idle
+            // machine and read an attachment list the attach has not yet
+            // reached — seen twice in isolation, never under the loaded
+            // full-suite gate, which is the signature of exactly that.
             await RenderUntilAsync(window, () =>
-                domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Status == QuotationStatus.Sent);
+                domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q
+                && q.Status == QuotationStatus.Sent
+                && ((IHasAttachments)q).GetAttachmentsAsync().GetAwaiter().GetResult().Any(a => a.ContentType == "application/pdf"));
 
             var sentQuote = (Quotation)(await domain.Repository.FindAsync(quoteId))!;
             Assert.Equal(QuotationStatus.Sent, sentQuote.Status);
@@ -243,7 +252,14 @@ public sealed class QuotationJourneyTests
             {
                 var exportButton = quoteView.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Export"));
                 exportButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                await RenderUntilAsync(window, () => File.Exists(exportPath));
+                // `WP 19.9.1`: wait for the export to have *finished*, not
+                // merely started — the file exists the instant the view's
+                // `File.WriteAllBytesAsync` opens its stream, and reading
+                // it while that write handle is still open is a sharing
+                // violation on Windows (seen once under a loaded machine
+                // in the v0.19.1 gate). "Finished" here means the file can
+                // be opened with no other handle on it.
+                await RenderUntilAsync(window, () => ExportIsComplete(exportPath));
 
                 var bytes = await File.ReadAllBytesAsync(exportPath);
                 Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, Math.Min(8, bytes.Length)), StringComparison.Ordinal);
@@ -483,6 +499,28 @@ public sealed class QuotationJourneyTests
         var field = instance.GetType().GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
             ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
         return (T)field.GetValue(instance)!;
+    }
+
+    /// <summary>
+    /// True once <paramref name="path"/> exists, has content, and can be
+    /// opened with no other handle on it — the view's own write stream
+    /// has closed. See the export step's remark for why existence alone
+    /// is not enough.
+    /// </summary>
+    private static bool ExportIsComplete(string path)
+    {
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            using var exclusive = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+            return exclusive.Length > 0;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
     }
 
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
