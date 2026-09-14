@@ -94,6 +94,12 @@ internal sealed class WorkspaceDockingComposer
         Layout.LayoutChanged += _ => _uiState.LayoutIsUserArranged = true;
         Layout.LayoutChanged += tree => SyncWorkspacePlacements(workspace, tree);
 
+        // `TD-92`: `WorkspaceLayoutController` already resolves the drop
+        // target on every drag move and raises `DropTargetChanged`; the
+        // host renders the live preview, but only once something actually
+        // subscribes it to the controller that computes it.
+        Layout.DropTargetChanged += Layout.Host.SetDropTargetHighlight;
+
         // The workspace carries a real arrangement from construction, not
         // from a later window event. A window that exists but whose layout
         // is empty is a window whose panels, splitters and menu toggles all

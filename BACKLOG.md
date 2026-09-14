@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (19 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -64,14 +64,12 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
-| `TD-27` | `InMemoryEngineeringObjectRepository` iteration order is unguaranteed | `WP 17.1B` (judgement — see note) |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned |
-| `TD-92` | Drag-to-dock has no live preview adorner | unowned |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
@@ -105,11 +103,10 @@ answered. Housekeeping ("`D:/tempest-wt/19.2B` directory still locked by
 a stray testhost") is an environment cleanup, not product debt.
 
 **Judgement calls, not named in any Work Package's "Closes" column:**
-`TD-27` sits squarely in the persistence/object-store mechanism
-`WP 17.1A`/`WP 17.1B` replace, but the row is not literally listed;
-`TD-28` sits in the refresh/notification mechanism `WP 18.1A` replaces,
-same caveat. (`TD-150` was once a third example here; `WP 19.10J` closes
-it by name, above, rather than by judgement.) Owners other than "unowned" that are not one of
+`TD-28` sits in the refresh/notification mechanism `WP 18.1A`
+replaces, but the row is not literally listed (`TD-27` and `TD-150`,
+which sat here on the identical caveat, are closed directly — `WP 19.10N`
+and `WP 19.10J`, above). Owners other than "unowned" that are not one of
 the programme Work Packages (`WP 18.0B`, `18.2B`,
 `19.1B`, `17.0C`) are real, named in that WP's own "Closes"
 column in `WorkPackages.md`, but fall outside the specific
@@ -373,6 +370,97 @@ actually declared. `tests/Tempest.Core.Tests/Workspace/SampleSeparationTests.cs`
 (29 tests) stays green — `Tempest.Samples` still ships nowhere; the new
 reference is a build-time-only dependency in the opposite direction
 from what that suite guards.
+
+**Closed by `WP 19.10N` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-27`. `InMemoryEngineeringObjectRepository`
+(`src/Tempest.Core/EngineeringDomain/Implementation/InMemoryEngineeringObjectRepository.cs`)
+now returns every list — `ListAllAsync`, `ListByKindAsync`,
+`ListChildrenAsync` — in registration order: the order `Register` first
+saw each object's id, tracked in an ordered key sequence maintained
+under the same lock (`_sync`) `Register` and `ParentChanged` take, so a
+concurrent registration is assigned exactly one position, never raced.
+A later revision or a rehydration re-registering an id already seen
+keeps that id's original position rather than moving to the back.
+`ListChildrenAsync` keeps its `WP 17.9.3` indexed-lookup cost — it sorts
+only the (already-found) children by their registration position, never
+rescans the whole repository. `EngineeringObjectRehydrationService`
+(`RehydrateAsync`) now sorts the durable state list by object id before
+registering, since the durable record carries no reliable creation-order
+field of its own for `IEngineeringObjectStateStore.ListAsync` to
+preserve: rehydration of identical disk state now registers in the same
+order on every run, not whatever order the backing store's own scan
+happened to return. Every affected method's own XML doc states the
+guarantee. Proven by
+`tests/Tempest.Core.Tests/EngineeringDomain/InMemoryEngineeringObjectRepositoryOrderTests.cs`
+(sequential and interleaved registration order, order after a move,
+re-registration keeping its original position, and two concurrency
+tests: `ConcurrentRegistrations_AllLand_AndProduceAnOrderStableAcrossRepeatedReads`
+registers 200 objects from concurrent tasks and asserts no loss and a
+stable repeat read; `ConcurrentRegistrationsAcrossDifferentParents_ListChildrenAsyncIsAlsoStableAcrossRepeatedReads`
+does the same through the by-parent index) and
+`EngineeringObjectRehydrationTests.Rehydration_RegistersObjectsInTheSameOrder_EveryTimeItRunsOverTheSameDiskState`.
+The two tests that previously only tolerated the risk in a comment now
+assert the order directly:
+`DigitalThreadGraphTests.cs`'s `Recentre_VerificationActivityWithARecordedResult_AddsTheResultAsAVisibleLeafNode`
+asserts a repeat `ListByKindAsync` read matches the first;
+`WorkflowInteractionTests.cs` gains
+`ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads`,
+asserting the Project Explorer surface — root nodes and a parent's
+children — is stable across repeated reads, and
+`GetRealLeafMechanicalObjectNodeAsync`'s own doc comment now explains it
+stays for a real, disclosed business rule (a childless leaf is required
+for delete), not as a workaround for unordered iteration.
+
+**Closed by `WP 19.10N` (2026-09-14), with evidence — moved out of the
+Live Backlog:** `TD-92`. `WorkspaceLayoutController`
+(`src/Tempest.Desktop/Docking/WorkspaceLayoutController.cs`) already
+resolved the drop target on every drag move and raised
+`DropTargetChanged`; nothing subscribed. `WorkspaceLayoutHost`
+(`src/Tempest.Desktop/Docking/WorkspaceLayoutHost.cs`) now carries a
+`_dropTargetHighlight` `Border` — the same absolute-placement-in-a-`Panel`
+technique its own `_flyout` overlay already used — shown by the new
+`SetDropTargetHighlight(DockTarget?)` over the current target's own tab
+group bounds (found via `TabGroups`, translated into the host's own
+coordinates), and hidden when the drag ends. Coloured in
+`BrandPalette.SelectedBackgroundBrushKey` (the platform's own accent at
+0.12 alpha, already used elsewhere and correct in both themes) with a
+`BrandPalette.AccentBrushKey` border, never hit-test visible so it cannot
+itself steal the pointer the drag is tracking. `WorkspaceDockingComposer`
+wires `Layout.DropTargetChanged += Layout.Host.SetDropTargetHighlight;`
+— the one line that turns "the controller already computes this" into
+"the host renders it" — beside its own existing `Layout.LayoutChanged`
+wiring; `WorkspaceLayoutController.cs` itself is unchanged (`DockTarget`
+already carried enough to find the real bounds via `TabGroups`, so no
+payload change was needed). The highlight's automation name is `Drop
+target: {edge}` for a split (`Left`/`Right`/`Above`/`Below`) or `Drop
+target: {panel title}` for `DockRelation.Into`. Proven by four new facts
+in `WorkspaceLayoutHostTests.cs`: a real candidate's bounds are matched
+exactly; the edge/panel naming for both cases; `SetDropTargetHighlight(null)`
+hides it (the drop case — `OnHostPointerReleased` invokes
+`DropTargetChanged(null)` unconditionally on every release); and a raised
+`PointerCaptureLostEvent` hides it (the cancel case). **Disclosed, not
+fixed (out of this row's file scope):** `WorkspaceLayoutController`'s own
+`PointerCaptureLostEvent` handler (`CancelDrag`) is registered with
+`RoutingStrategies.Tunnel`, but reflection against the referenced
+`Avalonia` 11.3.20 confirms `InputElement.PointerCaptureLostEvent` is
+declared `RoutingStrategies.Direct` — a handler registered for a routing
+strategy the event never uses is not invoked, so `CancelDrag` likely never
+runs on a real capture-loss cancel, only on the two pointer-released paths
+that call it directly. This pre-dates this Work Package and sits in a file outside its edit
+permission (read-only beyond the sanctioned bounds exception);
+`WorkspaceLayoutHost`'s own new handler is registered `Direct`
+(correctly), so the highlight itself cannot outlive a cancelled drag
+regardless. The residual exposure is the controller's own internal state:
+`_draggingPanelId`/`_dragActive` likely never reset on a real capture-loss
+cancel (only `CompleteDrag`'s two pointer-released paths reset them
+today), so a stray pointer move or release after an OS-forced capture loss
+could still be read as continuing or completing the old drag. This row's own new `PointerCaptureLost_HidesTheHighlight_TheCancelCase`
+raises a real `PointerCaptureLostEventArgs` against `WorkspaceLayoutHost`
+directly and proves the highlight hides; no test in this tree drives the
+identical event through a real `WorkspaceLayoutController` to prove or
+disprove `CancelDrag` itself runs, so the gap above was found by
+reflection against the referenced `Avalonia` build, not by a failing
+test. Recommend a follow-up row.
 
 ## Owned by Programme
 

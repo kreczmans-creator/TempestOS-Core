@@ -664,6 +664,39 @@ public class EngineeringObjectRehydrationTests
     }
 
     // ----------------------------------------------------------------
+    // `TD-27`: rehydration registers in a deterministic order, not
+    // whatever order the state store's own collection scan happens to
+    // return
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task Rehydration_RegistersObjectsInTheSameOrder_EveryTimeItRunsOverTheSameDiskState()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+
+        var created = new List<Part>();
+        for (var i = 0; i < 6; i++)
+            created.Add(await CreatePartAsync(first.Domain, $"PN-{i:D4}", $"Part {i}"));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var firstOrder = (await second.Domain.Repository.ListAllAsync()).Select(o => o.Id).ToList();
+
+        var third = NewLifetime(persistence);
+        await third.Service.RehydrateAsync();
+        var secondOrder = (await third.Domain.Repository.ListAllAsync()).Select(o => o.Id).ToList();
+
+        Assert.Equal(created.Count, firstOrder.Count);
+        Assert.Equal(firstOrder, secondOrder);
+
+        // The specific guarantee this Work Package fixes it to: sorted by
+        // id, since the durable state carries no reliable creation-order
+        // field of its own for `ListAsync` to preserve.
+        Assert.Equal(created.Select(p => p.Id).Order().ToList(), firstOrder);
+    }
+
+    // ----------------------------------------------------------------
     // The registry itself
     // ----------------------------------------------------------------
 

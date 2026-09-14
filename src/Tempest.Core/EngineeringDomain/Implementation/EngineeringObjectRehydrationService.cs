@@ -74,7 +74,15 @@ public sealed class EngineeringObjectRehydrationService
             return EngineeringRehydrationResult.Empty;
         }
 
-        var states = await stateStore.ListAsync(cancellationToken).ConfigureAwait(false);
+        // `TD-27`: `ListAsync` makes no ordering promise (it reads whatever
+        // order the backing store's own collection scan returns), so the
+        // registration order this loop feeds `_context.Repository.Register`
+        // would otherwise vary run to run for the identical durable state.
+        // Sorted by id, every rehydration of the same disk state registers
+        // in the same order, every time.
+        var states = (await stateStore.ListAsync(cancellationToken).ConfigureAwait(false))
+            .OrderBy(state => state.Id)
+            .ToList();
         var rehydrated = new List<IEngineeringObject>(states.Count);
         var unknownKinds = new SortedSet<string>(StringComparer.Ordinal);
         var orphanedStateIds = new List<Guid>();
