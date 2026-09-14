@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
@@ -12,7 +13,7 @@ namespace Tempest.Core.Tests.Requirements;
 public class RequirementsServiceTests
 {
     private static (RequirementsService Requirements, EngineeringDocumentStore Documents, IVerificationService Verification) BuildServices(
-        InMemoryQueryablePersistenceStore? persistenceStore = null)
+        InMemoryQueryablePersistenceStore? persistenceStore = null, IWorkspaceChangePublisher? workspaceChanges = null)
     {
         var store = persistenceStore ?? new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
@@ -20,7 +21,7 @@ public class RequirementsServiceTests
         var permissionEvaluator = new PermissionEvaluator();
         var verificationService = new VerificationService(
             documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
-        var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
+        var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService, logger: null, workspaceChanges);
 
         // GetEvidenceAsync transitively requires VerificationService.ReadPermission
         // (ADR-0061 — RequirementsService itself gates nothing internally).
@@ -1014,6 +1015,226 @@ public class RequirementsServiceTests
 
         public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
             _backing.IsSearchIndexEmptyAsync(cancellationToken);
+    }
+
+    // ------------------------------------------------------------
+    // Change feed publishing (`TD-28`) — every mutator publishes exactly
+    // once, after its own commit, naming the touched object, its Kind, and
+    // the right WorkspaceChangeType; a refused write publishes nothing.
+    // ------------------------------------------------------------
+
+    /// <summary>Captures every <see cref="WorkspaceChange"/> published, in order — a docked-style subscriber stand-in.</summary>
+    private sealed class FakeWorkspaceChangePublisher : IWorkspaceChangePublisher
+    {
+        public List<WorkspaceChange> Published { get; } = [];
+
+        public void Publish(WorkspaceChange change) => Published.Add(change);
+    }
+
+    private static void AssertPublishedOnce(FakeWorkspaceChangePublisher publisher, Guid objectId, string kind, WorkspaceChangeType changeType)
+    {
+        var change = Assert.Single(publisher.Published);
+        var entry = Assert.Single(change.Entries, e => e.ObjectId == objectId);
+        Assert.Equal(kind, entry.Kind);
+        Assert.Equal(changeType, entry.ChangeType);
+        Assert.True(change.Sequence > 0, "A committed write must report a real, advanced sequence number.");
+    }
+
+    [Fact]
+    public async Task CreateAsync_PublishesCreated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+
+        var created = await requirements.CreateAsync("REQ-PUB-001", "Statement.");
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Created);
+    }
+
+    [Fact]
+    public async Task ReviseAsync_PublishesUpdated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-002", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.ReviseAsync(created.Id, "Revised.", null);
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Updated);
+    }
+
+    [Fact]
+    public async Task SetStatusAsync_PublishesStatusChanged()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-003", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.SetStatusAsync(created.Id, RequirementStatus.Reviewed);
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.StatusChanged);
+    }
+
+    [Fact]
+    public async Task SetOwnerAsync_PublishesUpdated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-004", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.SetOwnerAsync(created.Id, "owner-1");
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Updated);
+    }
+
+    [Fact]
+    public async Task SetPriorityAsync_PublishesUpdated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-005", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.SetPriorityAsync(created.Id, RequirementPriority.Critical);
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Updated);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_PublishesDeleted()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-006", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.DeleteAsync(created.Id);
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Deleted);
+    }
+
+    [Fact]
+    public async Task MoveToGroupAsync_PublishesMoved()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-007", "Statement.");
+        var group = await requirements.CreateGroupAsync("Group 1");
+        publisher.Published.Clear();
+
+        await requirements.MoveToGroupAsync(created.Id, group.Id);
+
+        AssertPublishedOnce(publisher, created.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Moved);
+    }
+
+    [Fact]
+    public async Task LinkAsync_PublishesUpdated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var first = await requirements.CreateAsync("REQ-PUB-008", "Statement.");
+        var second = await requirements.CreateAsync("REQ-PUB-009", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.LinkAsync(first.Id, second.Id, RequirementRelationshipKinds.References);
+
+        AssertPublishedOnce(publisher, first.Id, RequirementsService.RequirementDocumentKind, WorkspaceChangeType.Updated);
+    }
+
+    [Fact]
+    public async Task CreateCollectionAsync_PublishesCreated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+
+        var collection = await requirements.CreateCollectionAsync("Baseline 1");
+
+        AssertPublishedOnce(publisher, collection.Id, RequirementsService.RequirementCollectionDocumentKind, WorkspaceChangeType.Created);
+    }
+
+    [Fact]
+    public async Task AddToCollectionAsync_PublishesUpdated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var collection = await requirements.CreateCollectionAsync("Baseline 1");
+        var requirement = await requirements.CreateAsync("REQ-PUB-010", "Statement.");
+        publisher.Published.Clear();
+
+        await requirements.AddToCollectionAsync(collection.Id, requirement.Id);
+
+        AssertPublishedOnce(publisher, collection.Id, RequirementsService.RequirementCollectionDocumentKind, WorkspaceChangeType.Updated);
+    }
+
+    [Fact]
+    public async Task DeleteCollectionAsync_PublishesDeleted()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var collection = await requirements.CreateCollectionAsync("Baseline 1");
+        publisher.Published.Clear();
+
+        await requirements.DeleteCollectionAsync(collection.Id);
+
+        AssertPublishedOnce(publisher, collection.Id, RequirementsService.RequirementCollectionDocumentKind, WorkspaceChangeType.Deleted);
+    }
+
+    [Fact]
+    public async Task CreateGroupAsync_PublishesCreated()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+
+        var group = await requirements.CreateGroupAsync("Structural");
+
+        AssertPublishedOnce(publisher, group.Id, RequirementsService.RequirementGroupDocumentKind, WorkspaceChangeType.Created);
+    }
+
+    [Fact]
+    public async Task MoveGroupAsync_PublishesMoved()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var parent = await requirements.CreateGroupAsync("Parent");
+        var child = await requirements.CreateGroupAsync("Child");
+        publisher.Published.Clear();
+
+        await requirements.MoveGroupAsync(child.Id, parent.Id);
+
+        AssertPublishedOnce(publisher, child.Id, RequirementsService.RequirementGroupDocumentKind, WorkspaceChangeType.Moved);
+    }
+
+    [Fact]
+    public async Task DeleteGroupAsync_PublishesDeleted()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var group = await requirements.CreateGroupAsync("Structural");
+        publisher.Published.Clear();
+
+        await requirements.DeleteGroupAsync(group.Id);
+
+        AssertPublishedOnce(publisher, group.Id, RequirementsService.RequirementGroupDocumentKind, WorkspaceChangeType.Deleted);
+    }
+
+    [Fact]
+    public async Task SetStatusAsync_ForbiddenTransition_PublishesNothing()
+    {
+        var publisher = new FakeWorkspaceChangePublisher();
+        var (requirements, _, _) = BuildServices(workspaceChanges: publisher);
+        var created = await requirements.CreateAsync("REQ-PUB-011", "Statement.");
+        publisher.Published.Clear();
+
+        // Draft -> Verified is not a permitted transition (see the
+        // exhaustive lifecycle table above) — refused before any
+        // transaction is ever opened.
+        await Assert.ThrowsAsync<InvalidRequirementStatusTransitionException>(
+            () => requirements.SetStatusAsync(created.Id, RequirementStatus.Verified));
+
+        Assert.Empty(publisher.Published);
     }
 
     // ------------------------------------------------------------
