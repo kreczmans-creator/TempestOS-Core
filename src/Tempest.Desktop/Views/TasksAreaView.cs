@@ -215,5 +215,20 @@ public sealed class TasksAreaView : UserControl
     }
 
     private void OnWorkspaceChanged(WorkspaceChange change) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(async () => await RefreshAsync().ConfigureAwait(true));
+        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // Best-effort background refresh — a surface the user is
+                // not currently looking at re-reads correctly the next
+                // time it is entered regardless (`OnEnter` in the area
+                // registry), mirroring every sibling rail view's own
+                // identical "the next real entry is the backstop" shape
+                // (`ReportsView.OnWorkspaceChanged`).
+            }
+        });
 }

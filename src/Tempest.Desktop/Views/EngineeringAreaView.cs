@@ -292,5 +292,17 @@ public sealed class EngineeringAreaView : UserControl
     }
 
     private void OnWorkspaceChanged(WorkspaceChange change) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(async () => await RefreshAsync().ConfigureAwait(true));
+        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            try
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
+            catch (Exception)
+            {
+                // Best-effort background refresh — mirrors ReportsView's
+                // own identical "the next real entry is the backstop"
+                // shape (`OnWorkspaceChanged`'s own remarks there).
+            }
+        });
 }

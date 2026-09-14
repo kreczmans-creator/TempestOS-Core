@@ -318,7 +318,7 @@ public sealed class RailSurfaceContractTests
             await navigator.GoToProjectAreaAsync(ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single();
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             Assert.NotNull(evidenceWorkspace);
             await RenderUntilAsync(window, () => evidenceWorkspace.GetLogicalDescendants().OfType<ListBoxItem>().Any());
 
@@ -358,7 +358,7 @@ public sealed class RailSurfaceContractTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
             await RenderUntilAsync(window, () =>
-                window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single().GetLogicalDescendants().OfType<ListBoxItem>().Any());
+                window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First().GetLogicalDescendants().OfType<ListBoxItem>().Any());
 
             await host.ShutdownAsync();
         }

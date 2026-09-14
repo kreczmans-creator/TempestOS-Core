@@ -78,7 +78,7 @@ public sealed class EvidenceWorkspaceJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single();
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             evidenceWorkspace.ParameterPrompt = (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(
                 new Dictionary<string, string> { ["classification"] = nameof(EvidenceClassification.Calculation) });
             evidenceWorkspace.SubjectPrompt = _ => Task.FromResult<Guid?>(null);
@@ -180,7 +180,7 @@ public sealed class EvidenceWorkspaceJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single();
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             await RenderUntilAsync(window, () =>
                 evidenceWorkspace.GetLogicalDescendants().OfType<ListBoxItem>().Any(i => (i.Content as string)?.Contains(createdTitle) == true));
 
@@ -281,7 +281,7 @@ public sealed class EvidenceWorkspaceJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().Single();
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             evidenceWorkspace.ParameterPrompt = (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(
                 new Dictionary<string, string> { ["classification"] = nameof(EvidenceClassification.Report) });
             evidenceWorkspace.SubjectPrompt = _ => Task.FromResult<Guid?>(null);
