@@ -196,10 +196,13 @@ public sealed class DashboardsTests
                 .ToList();
             var businessText = string.Join(" | ", businessDashboard.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
 
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Invoiced: 2000.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Overdue: 2000.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 30: 0.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 90: 0.00 GBP");
+            // `WP 19.10P` (D1): the tile's own displayed value now goes
+            // through MoneyDisplay, a symbol before the amount rather than
+            // the ISO code after it.
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Invoiced: £2,000.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Overdue: £2,000.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 30: £0.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 90: £0.00");
 
             Assert.Contains(fixture.ReceivableClientId, businessText, StringComparison.Ordinal);
             Assert.Contains("Contoso Cloud", businessText, StringComparison.Ordinal);
@@ -217,6 +220,40 @@ public sealed class DashboardsTests
             openReceivable.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
             Assert.Contains(fixture.ReceivableInvoiceId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task HomeDashboard_WithNoAccountsReading_ShowsTheInvoicesLineExactlyOnce()
+    {
+        // `WP 19.10P` (D1): the rehearsal found `HomeDashboardView` (over
+        // `AccountsSnapshot.UnavailableReason`, which already ends with its
+        // own period) rendering a doubled, mis-cased
+        // "Invoices: unavailable — No accounts reading yet.." Pinned here
+        // exactly, not by substring, so a stray extra period regresses this
+        // test rather than only a manual walk.
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await RenderUntilAsync(window, () => window.Ready.IsCompleted);
+
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Home);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var home = window.GetLogicalDescendants().OfType<HomeDashboardView>().Single();
+            var commercialText = GetPrivateField<TextBlock>(home, "_commercialText");
+
+            Assert.Equal("Invoices: unavailable — No accounts reading yet.", commercialText.Text?.Split('\n').Last());
         }
         finally
         {

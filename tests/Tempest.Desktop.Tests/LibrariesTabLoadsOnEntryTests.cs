@@ -57,6 +57,21 @@ public sealed class LibrariesTabLoadsOnEntryTests
                 Assert.True(count >= 1, $"{library} lists no records.");
             }
 
+            // `WP 19.10P` (D15): every one of the eight governed libraries
+            // gets its own heading, whether or not it currently holds a
+            // record — Manufacturing, Components and the rate-card
+            // library (its own routing key stays "BusinessRateCards";
+            // its screen name is "Rate cards") carry no baseline seed
+            // (only the five above do), so on a genuinely fresh root they
+            // are the three that read "(0)" with "No records yet"
+            // beneath, rather than being missing entirely.
+            foreach (var library in new[] { "Manufacturing", "Components", "Rate cards" })
+                Assert.Contains(headings, h => h == $"{library} (0)");
+
+            var emptyLibraryTexts = librariesView.GetLogicalDescendants().OfType<TextBlock>()
+                .Count(t => t.Text == "No records yet");
+            Assert.Equal(3, emptyLibraryTexts);
+
             Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "No reference records are seeded.");
         }
         finally

@@ -7,6 +7,7 @@ using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Quotations;
+using Tempest.Desktop;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -113,10 +114,10 @@ public sealed class BusinessDashboardView : UserControl
         }
 
         _accountsStatus.Text = $"Read from {accounts.Connector} at {accounts.ReadAt:g}.";
-        _tiles.Children.Add(Tile("Invoiced", accounts.InvoicedTotal.ToString()));
-        _tiles.Children.Add(Tile("Overdue", accounts.OverdueTotal.ToString()));
-        _tiles.Children.Add(Tile("Due 30", accounts.Due30Total.ToString()));
-        _tiles.Children.Add(Tile("Due 90", accounts.Due90Total.ToString()));
+        _tiles.Children.Add(Tile("Invoiced", MoneyDisplay.Format(accounts.InvoicedTotal)));
+        _tiles.Children.Add(Tile("Overdue", MoneyDisplay.Format(accounts.OverdueTotal)));
+        _tiles.Children.Add(Tile("Due 30", MoneyDisplay.Format(accounts.Due30Total)));
+        _tiles.Children.Add(Tile("Due 90", MoneyDisplay.Format(accounts.Due90Total)));
     }
 
     private static Control Tile(string label, string value)
@@ -153,7 +154,7 @@ public sealed class BusinessDashboardView : UserControl
 
         foreach (var row in rows)
         {
-            var label = $"{row.DueDate:d}  —  Client {row.ClientOrganisationId}: {row.Amount}";
+            var label = $"{row.DueDate:d}  —  Client {row.ClientOrganisationId}: {MoneyDisplay.Format(row.Amount)}";
             _receivableList.Children.Add(Row(label, row.RequestId, InvoiceRequest.CanonicalKind));
         }
     }
@@ -175,10 +176,10 @@ public sealed class BusinessDashboardView : UserControl
         }
 
         foreach (var subscription in accounts.SubscriptionsDueWithin60.OrderBy(s => s.Bill.NextDue))
-            _payableList.Children.Add(Muted($"{subscription.Bill.NextDue:d}  —  {subscription.Bill.Supplier}: {subscription.Bill.Description}  ({subscription.Category})  {subscription.Bill.Amount}"));
+            _payableList.Children.Add(Muted($"{subscription.Bill.NextDue:d}  —  {subscription.Bill.Supplier}: {subscription.Bill.Description}  ({subscription.Category})  {MoneyDisplay.Format(subscription.Bill.Amount)}"));
 
         foreach (var bill in accounts.BillsDueWithin30.OrderBy(b => b.Due))
-            _payableList.Children.Add(Muted($"{bill.Due:d}  —  {bill.Supplier} ({bill.Reference}): {bill.Amount}  [{bill.Status}]"));
+            _payableList.Children.Add(Muted($"{bill.Due:d}  —  {bill.Supplier} ({bill.Reference}): {MoneyDisplay.Format(bill.Amount)}  [{bill.Status}]"));
     }
 
     private void RenderQuotes(IReadOnlyList<Quotation> sentQuotations)
@@ -187,7 +188,7 @@ public sealed class BusinessDashboardView : UserControl
             ? Money.Zero(CurrencyCode.Gbp)
             : Money.Sum(sentQuotations.Select(q => q.Total), sentQuotations[0].Total.Currency);
 
-        _quotesSummary.Text = $"{sentQuotations.Count} open quote(s), {openValue} total value.";
+        _quotesSummary.Text = $"{sentQuotations.Count} open quote(s), {MoneyDisplay.Format(openValue)} total value.";
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var toChase = sentQuotations
@@ -203,7 +204,7 @@ public sealed class BusinessDashboardView : UserControl
         }
 
         foreach (var quote in toChase)
-            _quotesChaseList.Children.Add(Row($"{quote.SentOn:d}  —  {quote.DisplayName}: {quote.Total}", quote.Id, Quotation.CanonicalKind));
+            _quotesChaseList.Children.Add(Row($"{quote.SentOn:d}  —  {quote.DisplayName}: {MoneyDisplay.Format(quote.Total)}", quote.Id, Quotation.CanonicalKind));
     }
 
     private void RenderCashFlow(AccountsSnapshot accounts)
@@ -218,7 +219,7 @@ public sealed class BusinessDashboardView : UserControl
         _cashFlowStatus.Text = $"Read from {accounts.Connector} at {accounts.ReadAt:g}.";
 
         var points = accounts.CashFlowSeries
-            .Select(week => new DashboardChart.Point(week.WeekStart.ToString("d", CultureInfo.InvariantCulture), week.ClosingCash.Amount, week.ClosingCash.ToString()))
+            .Select(week => new DashboardChart.Point(week.WeekStart.ToString("d", CultureInfo.InvariantCulture), week.ClosingCash.Amount, MoneyDisplay.Format(week.ClosingCash)))
             .ToList();
 
         _cashFlowHost.Content = DashboardChart.Line(points);

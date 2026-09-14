@@ -62,6 +62,16 @@ internal static class ReferenceLibraryAccess
 {
     private static readonly JsonSerializerOptions ReviseJsonOptions = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
+    /// <summary>
+    /// The name a person reads for <paramref name="library"/>'s own
+    /// routing key (`WP 19.10P`, D15) — identical to the key for every
+    /// library except the rate-card one, whose own
+    /// <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/> stays
+    /// the literal <c>"BusinessRateCards"</c> every switch above routes
+    /// on; only what reaches the screen changes.
+    /// </summary>
+    public static string DisplayNameFor(string library) => library == "BusinessRateCards" ? "Rate cards" : library;
+
     /// <summary>Reads one record generically, projected to <see cref="ReferenceRecordSnapshot"/> — <see langword="null"/> if no such record is registered.</summary>
     public static Task<ReferenceRecordSnapshot?> FindAsync(ReferenceLibraryCatalogues c, string library, string recordId, CancellationToken cancellationToken = default) =>
         library switch
@@ -336,7 +346,7 @@ public sealed class ReferenceRecordView : UserControl
         if (snapshot is null)
         {
             _current = null;
-            _titleText.Text = $"{_library} — {_recordId}";
+            _titleText.Text = $"{ReferenceLibraryAccess.DisplayNameFor(_library)} — {_recordId}";
             _identityText.Text = "This record no longer exists.";
             _createdText.Text = string.Empty;
             _definitionPanel.Children.Clear();
@@ -360,7 +370,7 @@ public sealed class ReferenceRecordView : UserControl
 
     private void PopulateIdentity(ReferenceRecordSnapshot snapshot)
     {
-        _titleText.Text = $"{snapshot.Library} — {snapshot.RecordId}";
+        _titleText.Text = $"{ReferenceLibraryAccess.DisplayNameFor(snapshot.Library)} — {snapshot.RecordId}";
         _identityText.Text = $"{snapshot.DisplayName}  •  rev {snapshot.RevisionNumber}  •  {snapshot.ValidationState}";
     }
 

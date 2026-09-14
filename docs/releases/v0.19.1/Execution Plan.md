@@ -62,9 +62,10 @@ status to the Product Owner.
 | 5 | `WP 19.10H` TD-179: an archived project offers no write, and the remaining services refuse one | 19.5C | 1 | Sonnet | `ProjectMilestoneService`, `ProjectTaskService`, `EvidenceService`, `Tempest.Core.Tasks.TaskService` archived-project guards; `ProjectWorkspaceView` hands the archived flag to `ProjectTasksView`, `ProjectTimelineView`, `EvidenceWorkspaceView`, `ProjectQuoteView`; `ArchivedProjectReadOnlyTests` |
 | 5 | `WP 19.10Q` New Project from Projects → Open opens the project right up | 19.10B | 0.5 | Sonnet | `ProjectBrowserView.cs` (`CreateAsync`, the `ProjectCreated` event), `ProjectsAreaView.cs` (the Open group's visible set, refreshed synchronously on create), `ProjectBrowserViewTests.cs`, the re-open block in `QuotationJourneyTests.cs` — a `PHYSICAL_REVIEW.md` §7c D2 gap found by `WP 19.10B`'s file-based tracing, closed here |
 | 5 | `WP 19.10O` The rail and tree-column collapse on demand, and stay collapsed | — | 1 | Sonnet | `GlobalNavigationRail`, `CollapsibleColumn`, `ProjectsAreaView`/`EngineeringAreaView`/`BusinessAreaView` tree wrappers, `DesktopPanelUiState`, `MainWindowComposer.Wire.cs`/`Layout.cs` |
+| 5 | `WP 19.10P` The rehearsal's own findings: Open deliverable opens, money shows its symbol, empty libraries show a heading | 19.10A | 0.5 | Sonnet | `DeliverableCompletionWorkspaceRegistration.cs`, `ProjectQuoteView.cs`, `MoneyDisplay.cs` and every surface using it, `HomeDashboardView.cs`, `LibrariesView.cs`, `ReferenceRecordView.cs`, `QuotationJourneyTests.cs`, `MoneyDisplayTests.cs`, `DashboardsTests.cs`, `LibrariesTabLoadsOnEntryTests.cs` — `docs/releases/v0.19.1/Rehearsal.md`'s D6 blocker and four D1/D15 differences, closed here |
 
-Effort: 28.5 days. Status is reported per Work Package as a percentage of
-its own scope and as its effort-weighted share of the 28.5.
+Effort: 29 days. Status is reported per Work Package as a percentage of
+its own scope and as its effort-weighted share of the 29.
 
 ## 3. Engineering decisions taken while planning
 
