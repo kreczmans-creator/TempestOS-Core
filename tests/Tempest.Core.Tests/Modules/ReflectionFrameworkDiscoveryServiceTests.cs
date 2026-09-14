@@ -81,7 +81,7 @@ public class ReflectionFrameworkDiscoveryServiceTests
             service.DiscoverModules(new[] { typeof(ConstructorDependencyModuleWithoutMetadata) }));
 
         Assert.Contains("ConstructorDependencyModuleWithoutMetadata", exception.Message);
-        Assert.Contains("ModuleMetadataAttribute", exception.Message);
+        Assert.Contains("[ModuleMetadata", exception.Message, StringComparison.Ordinal);
         Assert.Contains("parameterless constructor", exception.Message);
     }
 

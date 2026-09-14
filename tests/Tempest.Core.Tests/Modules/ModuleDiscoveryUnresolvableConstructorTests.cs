@@ -16,7 +16,7 @@ namespace Tempest.Core.Tests.Modules;
 // tests/Frozen/Tempest.Core.Tests/Modules/ModuleDiscoveryUnresolvableConstructorTests.cs.
 // This narrowness proof needs none of that machinery and stays live: the
 // ordinary, long-documented "no parameterless constructor and no
-// [ModuleMetadataAttribute]" case must still throw its own actionable
+// [ModuleMetadata]" case must still throw its own actionable
 // ModuleDiscoveryException, never be silently swallowed by that same catch.
 // (ReflectionFrameworkDiscoveryServiceTests guards this same behaviour on
 // its own terms; this test guards it specifically against that fix.)
@@ -31,7 +31,7 @@ public class ModuleDiscoveryUnresolvableConstructorTests
             service.DiscoverModules([typeof(ConstructorDependencyModuleWithoutMetadata)]));
 
         Assert.Contains("ConstructorDependencyModuleWithoutMetadata", exception.Message);
-        Assert.Contains("ModuleMetadataAttribute", exception.Message);
+        Assert.Contains("[ModuleMetadata", exception.Message, StringComparison.Ordinal);
         Assert.Contains("parameterless constructor", exception.Message);
     }
 }

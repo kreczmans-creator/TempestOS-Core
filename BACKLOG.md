@@ -27,7 +27,20 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (16 of 30 cap — see the `WP 19.9.1` note below the table)
+
+`TD-05` — module discovery outside `[ModuleMetadata]` requires a public
+parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
+`IModule` types this platform's own `src/` assemblies declare (25 in
+`Tempest.Samples`, 6 in `Tempest.Workspace`, 1 in `Tempest.Validation`)
+already carry the attribute, so nothing takes the parameterless-constructor
+fallback path today; `ModuleMetadataCoverageTests.EveryConcreteModuleType_CarriesTheModuleMetadataAttribute`
+now pins that count structurally, so a future module added without the
+attribute is caught here rather than falling onto the old path silently.
+`ReflectionFrameworkDiscoveryService.CreateDescriptor`'s own exception text
+also now names the attribute the way it is actually written in code
+(`[ModuleMetadata(id, name, version)]`, not the type's own
+`ModuleMetadataAttribute` class name). It no longer appears below.
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -61,7 +74,6 @@ actually landed — see `ADR-0145`'s own addendum.
 
 | ID | Title | Owner |
 |---|---|---|
-| `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-28` | Bulk requirement commands don't auto-refresh an already-open view | `WP 18.1A` (judgement — see note) |
