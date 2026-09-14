@@ -196,10 +196,13 @@ public sealed class DashboardsTests
                 .ToList();
             var businessText = string.Join(" | ", businessDashboard.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
 
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Invoiced: 2000.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Overdue: 2000.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 30: 0.00 GBP");
-            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 90: 0.00 GBP");
+            // `WP 19.10P` (D1): the tile's own displayed value now goes
+            // through MoneyDisplay, a symbol before the amount rather than
+            // the ISO code after it.
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Invoiced: £2,000.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Overdue: £2,000.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 30: £0.00");
+            Assert.Contains(businessTiles, t => AutomationName(t) == "Due 90: £0.00");
 
             Assert.Contains(fixture.ReceivableClientId, businessText, StringComparison.Ordinal);
             Assert.Contains("Contoso Cloud", businessText, StringComparison.Ordinal);

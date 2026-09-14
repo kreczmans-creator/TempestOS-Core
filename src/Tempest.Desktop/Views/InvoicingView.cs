@@ -8,6 +8,7 @@ using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Invoicing;
+using Tempest.Desktop;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Projects;
@@ -335,7 +336,7 @@ public sealed class InvoicingView : UserControl
         {
             Text = $"{row.ProjectName} — {request.DisplayName} — Client {request.ClientOrganisationId}"
                 + (request.PurchaseOrderReference is { } po ? $" — PO {po}" : string.Empty)
-                + $" — {request.Total}",
+                + $" — {MoneyDisplay.Format(request.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -439,7 +440,7 @@ public sealed class InvoicingView : UserControl
         rows.Children.Add(new TextBlock
         {
             Text = $"{candidate.ProjectName} — {deliverableName} — Completed {completion.CompletedOn:yyyy-MM-dd}"
-                + (completion.FixedPriceValue is { } price ? $" — fixed price {price}" : " — time-billed"),
+                + (completion.FixedPriceValue is { } price ? $" — fixed price {MoneyDisplay.Format(price)}" : " — time-billed"),
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,

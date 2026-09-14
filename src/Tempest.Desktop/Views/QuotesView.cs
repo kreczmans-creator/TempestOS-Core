@@ -9,6 +9,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Quotations;
+using Tempest.Desktop;
 using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace.Files;
@@ -246,7 +247,7 @@ public sealed class QuotesView : UserControl
 
         rows.Children.Add(new TextBlock
         {
-            Text = $"{quote.Reference} — {row.ProjectName} — Client {row.ClientName} — {quote.Total}",
+            Text = $"{quote.Reference} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -340,8 +341,8 @@ public sealed class QuotesView : UserControl
         var lines = quote.Lines.Select(l => new QuotationSheetLineRow(
             l.Description,
             l.Basis == QuotationLineBasis.Hourly ? l.Hours?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null,
-            l.Basis == QuotationLineBasis.Hourly ? l.Rate?.ToString() : null,
-            l.Amount.ToString())).ToList();
+            l.Basis == QuotationLineBasis.Hourly ? MoneyDisplay.Format(l.Rate!.Value) : null,
+            MoneyDisplay.Format(l.Amount))).ToList();
 
         var model = new QuotationSheetModel(
             IssuerName: _issuerName(),
@@ -353,7 +354,7 @@ public sealed class QuotesView : UserControl
             ValidityDays: quote.ValidityDays,
             Currency: quote.Currency.ToString(),
             Lines: lines,
-            Total: quote.Total.ToString(),
+            Total: MoneyDisplay.Format(quote.Total),
             Terms: quote.Terms,
             Status: quote.Status.ToString(),
             GeneratedAtUtc: _time.GetUtcNow(),

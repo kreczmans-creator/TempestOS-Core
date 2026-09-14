@@ -12,6 +12,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Quotations;
 using Tempest.Core.Requirements;
+using Tempest.Desktop;
 using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace;
@@ -316,8 +317,8 @@ public sealed class ProjectQuoteView : UserControl
             var text = new TextBlock
             {
                 Text = line.Basis == QuotationLineBasis.Hourly
-                    ? $"{line.Description}  •  {line.Hours:0.##} × {line.Rate}  =  {line.Amount}"
-                    : $"{line.Description}  •  {line.Amount} (fixed)",
+                    ? $"{line.Description}  •  {line.Hours:0.##} × {MoneyDisplay.Format(line.Rate!.Value)}  =  {MoneyDisplay.Format(line.Amount)}"
+                    : $"{line.Description}  •  {MoneyDisplay.Format(line.Amount)} (fixed)",
                 FontSize = DesignTokens.FontSizeBody,
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -349,7 +350,7 @@ public sealed class ProjectQuoteView : UserControl
 
         panel.Children.Add(new TextBlock
         {
-            Text = $"Total {quote.Total}",
+            Text = $"Total {MoneyDisplay.Format(quote.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0),
@@ -731,8 +732,8 @@ public sealed class ProjectQuoteView : UserControl
         var lines = quote.Lines.Select(l => new QuotationSheetLineRow(
             l.Description,
             l.Basis == QuotationLineBasis.Hourly ? l.Hours?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null,
-            l.Basis == QuotationLineBasis.Hourly ? l.Rate?.ToString() : null,
-            l.Amount.ToString())).ToList();
+            l.Basis == QuotationLineBasis.Hourly ? MoneyDisplay.Format(l.Rate!.Value) : null,
+            MoneyDisplay.Format(l.Amount))).ToList();
 
         var model = new QuotationSheetModel(
             IssuerName: _issuerName(),
@@ -744,7 +745,7 @@ public sealed class ProjectQuoteView : UserControl
             ValidityDays: quote.ValidityDays,
             Currency: quote.Currency.ToString(),
             Lines: lines,
-            Total: quote.Total.ToString(),
+            Total: MoneyDisplay.Format(quote.Total),
             Terms: quote.Terms,
             Status: quote.Status.ToString(),
             GeneratedAtUtc: _time.GetUtcNow(),

@@ -194,10 +194,10 @@ public sealed class HomeDashboardView : UserControl
     private void RenderCommercial(IReadOnlyList<Quotation> openQuotations, AccountsSnapshot accounts)
     {
         var quoteValue = Sum(openQuotations.Select(q => q.Total));
-        var quotesLine = $"Quotes: {openQuotations.Count} open, {quoteValue} total value.";
+        var quotesLine = $"Quotes: {openQuotations.Count} open, {MoneyDisplay.Format(quoteValue)} total value.";
 
         var invoicesLine = accounts.IsAvailable
-            ? $"Invoices: {accounts.Overdue.Count + accounts.Due30.Count + accounts.Due90.Count} sent, {accounts.InvoicedTotal} outstanding, {accounts.OverdueTotal} overdue."
+            ? $"Invoices: {accounts.Overdue.Count + accounts.Due30.Count + accounts.Due90.Count} sent, {MoneyDisplay.Format(accounts.InvoicedTotal)} outstanding, {MoneyDisplay.Format(accounts.OverdueTotal)} overdue."
             : $"Invoices: unavailable — {accounts.UnavailableReason ?? "no accounts reading yet"}.";
 
         _commercialText.Text = $"{quotesLine}\n{invoicesLine}";
