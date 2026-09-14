@@ -2,7 +2,9 @@ using Tempest.Workspace.Composition;
 using Tempest.Core.Audit;
 using Tempest.Core.Evidence;
 using Tempest.Core.Materials;
+using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Materials;
 using Tempest.Core.Tests.Plugins;
 
@@ -325,6 +327,308 @@ public sealed class EvidenceJourneyTests
             Assert.Equal("ISS-PLUMB-01", afterAttach.Issue.IssueReference);
             Assert.Equal("A", afterAttach.Issue.Revision);
             Assert.Equal("Client Co", afterAttach.Issue.Client);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ================================================================
+    // The archived-project guard (`WP 19.10H`, `TD-179`)
+    // ================================================================
+    //
+    // Every test below signs off the evidence's own project with a clock
+    // 91 days before real "now" (so `ClosedOn` lands 91 days in the past),
+    // then exercises the real, system-clock EvidenceService the host's own
+    // DI registers — `ProjectArchival.IsArchived` reads that gap against
+    // the real current time, so no custom TimeProvider needs threading
+    // into the service under test itself.
+
+    private static Task CloseProjectAsync(ITempestHost host, Guid projectId, int daysAgo) =>
+        new ProjectLifecycleService(EvidenceTestHost.Domain(host), new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(-daysAgo)))
+            .SignOffAsync(projectId, "Closed for the archive test.");
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesNewEvidence()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var service = EvidenceTestHost.Service(host);
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.CreateAsync(projectId, "Too late", EvidenceClassification.Calculation));
+            Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesACitation_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Cite guard evidence", EvidenceClassification.Calculation);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var result = await service.CiteAsync(evidence.Id, "materials", "whatever-it-does-not-matter");
+            Assert.False(result.Succeeded);
+            Assert.Equal(EvidenceRefusal.ProjectArchived, result.Refusal);
+            Assert.Contains("archived", result.Reason, StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(result.Evidence!.Citations);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesRemovingACitation_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var materials = EvidenceTestHost.Materials(host);
+            var evidence = await service.CreateAsync(projectId, "Remove citation guard evidence", EvidenceClassification.Calculation);
+
+            const string materialId = "FX-STEEL-ARCHIVED-GUARD";
+            await materials.RegisterAsync(materialId, MaterialFixtures.Steel(materialId), MaterialFixtures.Verified());
+            await MaterialFixtures.ReleaseAsync((MaterialCatalog)materials, materialId);
+            var cite = await service.CiteAsync(evidence.Id, materials.LibraryName, materialId);
+            Assert.True(cite.Succeeded);
+
+            await CloseProjectAsync(host, projectId, 91);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.RemoveCitationAsync(evidence.Id, cite.Citation!.Pin));
+            Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+            var reloaded = await EvidenceTestHost.Domain(host).Repository.FindAsync(evidence.Id) as Core.Evidence.Evidence;
+            Assert.Single(reloaded!.Citations);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesADeclaredFigure_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Declare figure guard evidence", EvidenceClassification.Calculation);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.DeclareFigureAsync(evidence.Id, "Utilisation", DeclaredFigureRole.Result, "0.82 1"));
+            Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+            var reloaded = await EvidenceTestHost.Domain(host).Repository.FindAsync(evidence.Id) as Core.Evidence.Evidence;
+            Assert.Empty(reloaded!.DeclaredFigures);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesACheck_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Check guard evidence", EvidenceClassification.Calculation);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var result = await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Reviewed.", CheckOutcome.Accepted);
+            Assert.False(result.Succeeded);
+            Assert.Equal(EvidenceRefusal.ProjectArchived, result.Refusal);
+            Assert.Equal(EvidenceStatus.Draft, result.Evidence!.Status);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesAnIssue_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Issue guard evidence", EvidenceClassification.Calculation);
+
+            // Checked before the project closes — Checked->Issued is a
+            // permitted transition, so the refusal proven below is
+            // genuinely the archived guard, not the transition table.
+            var checked_ = await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Reviewed.", CheckOutcome.Accepted);
+            Assert.True(checked_.Succeeded);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var result = await service.IssueAsync(evidence.Id, "ISS-ARCH-01", "A", "Client Co");
+            Assert.False(result.Succeeded);
+            Assert.Equal(EvidenceRefusal.ProjectArchived, result.Refusal);
+            Assert.Equal(EvidenceStatus.Checked, result.Evidence!.Status);
+            Assert.Null(result.Evidence.Issue);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesARevision_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Revise guard evidence", EvidenceClassification.Calculation);
+
+            // Checked and Issued before the project closes — Issued->Draft
+            // (a revision) is a permitted transition, so the refusal
+            // proven below is genuinely the archived guard.
+            await service.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Reviewed.", CheckOutcome.Accepted);
+            var issued = await service.IssueAsync(evidence.Id, "ISS-ARCH-02", "A", "Client Co");
+            Assert.True(issued.Succeeded);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var result = await service.ReviseAsync(evidence.Id);
+            Assert.False(result.Succeeded);
+            Assert.Equal(EvidenceRefusal.ProjectArchived, result.Refusal);
+            Assert.Equal(EvidenceStatus.Issued, result.Evidence!.Status);
+            Assert.Equal(1, result.Evidence.CurrentRevisionNumber);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesChangingTheSubject_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Subject guard evidence", EvidenceClassification.Calculation);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var result = await service.SetSubjectAsync(evidence.Id, Guid.NewGuid());
+            Assert.False(result.Succeeded);
+            Assert.Equal(EvidenceRefusal.ProjectArchived, result.Refusal);
+            Assert.Null(result.Evidence!.SubjectId);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesRecordingTheIssueSheet_AndTheStoreStaysUnchanged()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Issue sheet guard evidence", EvidenceClassification.Calculation);
+            await CloseProjectAsync(host, projectId, 91);
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.RecordIssueSheetAsync(evidence.Id, Guid.NewGuid()));
+            Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task AProjectClosedTodayButNotYetArchived_StillAcceptsAWrite()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await EvidenceTestHost.StartAsync(temp.Path);
+
+        try
+        {
+            EvidenceTestHost.SignIn(host);
+            var projectId = await EvidenceTestHost.CreateProjectAsync(host);
+
+            // Not backdated at all: closed today is Closed, not yet
+            // Archive (`ProjectArchival.ArchiveAfterDays` = 90) — the
+            // write still goes through.
+            await CloseProjectAsync(host, projectId, 0);
+
+            var service = EvidenceTestHost.Service(host);
+            var evidence = await service.CreateAsync(projectId, "Still open for writes", EvidenceClassification.Calculation);
+
+            Assert.Equal(projectId, evidence.ParentId);
         }
         finally
         {

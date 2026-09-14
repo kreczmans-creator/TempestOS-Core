@@ -122,12 +122,24 @@ public sealed class ProjectTasksView : UserControl
     public string SummaryText => _summary.Text ?? string.Empty;
 
     private string? _projectLabel;
+    private bool _isArchived;
 
-    /// <summary>Renders <paramref name="entries"/> and <paramref name="board"/> for the project named <paramref name="projectLabel"/>.</summary>
+    /// <summary>Whether the open project is archived — every control here that would write is disabled, with a tooltip, while this is true (`WP 19.10H`, `TD-179`).</summary>
+    public const string ArchivedTooltip = "Archived project — read only";
+
+    /// <summary>
+    /// Renders <paramref name="entries"/> and <paramref name="board"/> for
+    /// the project named <paramref name="projectLabel"/>.
+    /// <paramref name="isArchived"/> disables New Task and every per-entry
+    /// write control (Edit, Assign to me, Due date, every work-state move)
+    /// — the project workspace resolves this once per refresh and hands it
+    /// to every tab, rather than each tab re-deriving it (`WP 19.10H`, `TD-179`).
+    /// </summary>
     public void Show(
         IReadOnlyList<ProjectTaskEntry> entries,
         IReadOnlyList<ProjectTaskBoardColumn> board,
-        string? projectLabel)
+        string? projectLabel,
+        bool isArchived = false)
     {
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(board);
@@ -135,6 +147,7 @@ public sealed class ProjectTasksView : UserControl
         Entries = entries;
         Board = board;
         _projectLabel = projectLabel;
+        _isArchived = isArchived;
 
         Render();
     }
@@ -146,6 +159,9 @@ public sealed class ProjectTasksView : UserControl
     {
         _list.Children.Clear();
         UpdateToggleCaption();
+
+        _newTask.IsEnabled = !_isArchived;
+        ToolTip.SetTip(_newTask, _isArchived ? ArchivedTooltip : null);
 
         var project = string.IsNullOrWhiteSpace(_projectLabel) ? "this project" : _projectLabel;
 
@@ -338,6 +354,7 @@ public sealed class ProjectTasksView : UserControl
         var edit = new Button { Content = "Edit", MinHeight = DesignTokens.MinControlSize, Margin = ActionSpacing, Tag = entry.ObjectId };
         AutomationProperties.SetName(edit, $"Edit {entry.DisplayName}");
         edit.Click += (_, _) => EditRequested?.Invoke(entry.ObjectId);
+        ApplyArchivedState(edit);
         actions.Children.Add(edit);
 
         if (entry.IsUnassigned)
@@ -345,12 +362,14 @@ public sealed class ProjectTasksView : UserControl
             var assign = new Button { Content = "Assign to me", MinHeight = DesignTokens.MinControlSize, Margin = ActionSpacing, Tag = entry.ObjectId };
             AutomationProperties.SetName(assign, $"Assign {entry.DisplayName} to me");
             assign.Click += (_, _) => AssignToMeRequested?.Invoke(entry.ObjectId);
+            ApplyArchivedState(assign);
             actions.Children.Add(assign);
         }
 
         var due = new Button { Content = "Due date", MinHeight = DesignTokens.MinControlSize, Margin = ActionSpacing, Tag = entry.ObjectId };
         AutomationProperties.SetName(due, $"Set the due date for {entry.DisplayName}");
         due.Click += (_, _) => DueDateChangeRequested?.Invoke(entry.ObjectId);
+        ApplyArchivedState(due);
         actions.Children.Add(due);
 
         // Only the moves the domain actually permits from here get a
@@ -369,10 +388,18 @@ public sealed class ProjectTasksView : UserControl
 
             AutomationProperties.SetName(move, $"Move {entry.DisplayName} to {Describe(target)}");
             move.Click += (_, _) => WorkStateChangeRequested?.Invoke(entry.ObjectId, target);
+            ApplyArchivedState(move);
             actions.Children.Add(move);
         }
 
         return actions;
+    }
+
+    /// <summary>Disables <paramref name="control"/>, with the archived tooltip, while the open project is archived (`WP 19.10H`, `TD-179`).</summary>
+    private void ApplyArchivedState(Control control)
+    {
+        control.IsEnabled = !_isArchived;
+        ToolTip.SetTip(control, _isArchived ? ArchivedTooltip : null);
     }
 
     private static Thickness ActionSpacing => new(0, DesignTokens.SpaceXs, DesignTokens.SpaceSm, 0);

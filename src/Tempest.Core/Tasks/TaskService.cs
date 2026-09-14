@@ -1,4 +1,5 @@
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 
 namespace Tempest.Core.Tasks;
 
@@ -23,10 +24,16 @@ public sealed class TaskService : ITaskService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
-        if (projectId is { } id
-            && (await _context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project)))
+        if (projectId is { } id)
         {
-            return new TaskActResult(TaskRefusal.ProjectNotFound, $"No project '{id}' is registered.", null);
+            if (await _context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project))
+                return new TaskActResult(TaskRefusal.ProjectNotFound, $"No project '{id}' is registered.", null);
+
+            if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+            {
+                return new TaskActResult(
+                    TaskRefusal.ProjectArchived, $"Project '{id}' is archived (closed {project.ClosedOn:O}); no new task can be added to it.", null);
+            }
         }
 
         var trimmed = title.Trim();
@@ -54,6 +61,9 @@ public sealed class TaskService : ITaskService
         if (task.Done)
             return new TaskActResult(TaskRefusal.AlreadyDone, $"Task '{taskId}' is already done ({task.CompletedOn:O}).", task);
 
+        if (await ArchivedAsync(task, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await task.MarkDoneAsync(Today(), cancellationToken).ConfigureAwait(false);
 
         return new TaskActResult(TaskRefusal.None, null, task);
@@ -66,9 +76,26 @@ public sealed class TaskService : ITaskService
         if (task is null)
             return NotFound(taskId);
 
+        if (await ArchivedAsync(task, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
         await task.DeleteAsync(cancellationToken).ConfigureAwait(false);
 
         return new TaskActResult(TaskRefusal.None, null, task);
+    }
+
+    /// <summary>The archived-project guard (`WP 19.10H`, `TD-179`): every mutating command on a manual task belonging to an archived project is refused, here, before its own mutator ever runs.</summary>
+    private async Task<TaskActResult?> ArchivedAsync(ManualTask task, CancellationToken cancellationToken)
+    {
+        if (task.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new TaskActResult(TaskRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this task is read-only.", task)
+            : null;
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

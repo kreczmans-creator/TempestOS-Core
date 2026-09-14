@@ -55,6 +55,10 @@ public sealed class ProjectTimelineView : UserControl
     private readonly Button _newMilestone = new() { Content = "Set Milestone", MinHeight = DesignTokens.MinControlSize };
 
     private string? _projectLabel;
+    private bool _isArchived;
+
+    /// <summary>Whether the open project is archived — every control here that would write is disabled, with a tooltip, while this is true (`WP 19.10H`, `TD-179`).</summary>
+    public const string ArchivedTooltip = "Archived project — read only";
 
     /// <summary>Raised when the user asks to set a milestone.</summary>
     public event Action? CreateMilestoneRequested;
@@ -107,13 +111,21 @@ public sealed class ProjectTimelineView : UserControl
     /// <summary>The summary line, exactly as a user reads it.</summary>
     public string SummaryText => _summary.Text ?? string.Empty;
 
-    /// <summary>Renders <paramref name="milestones"/> for the project named <paramref name="projectLabel"/>.</summary>
-    public void Show(IReadOnlyList<ProjectMilestoneEntry> milestones, string? projectLabel)
+    /// <summary>
+    /// Renders <paramref name="milestones"/> for the project named
+    /// <paramref name="projectLabel"/>. <paramref name="isArchived"/>
+    /// disables Set Milestone and every per-entry write control (Edit, Add
+    /// Deliverable) — the project workspace resolves this once per refresh
+    /// and hands it to every tab, rather than each tab re-deriving it
+    /// (`WP 19.10H`, `TD-179`).
+    /// </summary>
+    public void Show(IReadOnlyList<ProjectMilestoneEntry> milestones, string? projectLabel, bool isArchived = false)
     {
         ArgumentNullException.ThrowIfNull(milestones);
 
         Milestones = milestones;
         _projectLabel = projectLabel;
+        _isArchived = isArchived;
 
         Render();
     }
@@ -121,6 +133,9 @@ public sealed class ProjectTimelineView : UserControl
     private void Render()
     {
         _list.Children.Clear();
+
+        _newMilestone.IsEnabled = !_isArchived;
+        ToolTip.SetTip(_newMilestone, _isArchived ? ArchivedTooltip : null);
 
         var project = string.IsNullOrWhiteSpace(_projectLabel) ? "this project" : _projectLabel;
 
@@ -249,11 +264,15 @@ public sealed class ProjectTimelineView : UserControl
         var edit = new Button { Content = "Edit", MinHeight = DesignTokens.MinControlSize, Margin = ActionSpacing, Tag = entry.ObjectId };
         AutomationProperties.SetName(edit, $"Edit {entry.DisplayName}");
         edit.Click += (_, _) => EditMilestoneRequested?.Invoke(entry.ObjectId);
+        edit.IsEnabled = !_isArchived;
+        ToolTip.SetTip(edit, _isArchived ? ArchivedTooltip : null);
         actions.Children.Add(edit);
 
         var deliverable = new Button { Content = "Add Deliverable", MinHeight = DesignTokens.MinControlSize, Margin = ActionSpacing, Tag = entry.ObjectId };
         AutomationProperties.SetName(deliverable, $"Add a deliverable against {entry.DisplayName}");
         deliverable.Click += (_, _) => AddDeliverableRequested?.Invoke(entry.ObjectId);
+        deliverable.IsEnabled = !_isArchived;
+        ToolTip.SetTip(deliverable, _isArchived ? ArchivedTooltip : null);
         actions.Children.Add(deliverable);
 
         return actions;

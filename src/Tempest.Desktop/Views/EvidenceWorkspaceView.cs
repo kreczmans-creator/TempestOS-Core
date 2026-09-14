@@ -57,6 +57,11 @@ public sealed class EvidenceWorkspaceView : UserControl
     private readonly WorkspaceChangesSubscription _workspaceChanges;
     private readonly Control _libraries;
 
+    private bool _isArchived;
+
+    /// <summary>Whether the open project is archived — Create is disabled, with a tooltip, while this is true (`WP 19.10H`, `TD-179`).</summary>
+    public const string ArchivedTooltip = "Archived project — read only";
+
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
@@ -167,6 +172,26 @@ public sealed class EvidenceWorkspaceView : UserControl
 
     /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
     internal int RefreshCount { get; private set; }
+
+    /// <summary>
+    /// Sets whether the open project is archived — disables Create, with a
+    /// tooltip, while <paramref name="archived"/> is <see langword="true"/>.
+    /// The project workspace resolves this once per refresh and hands it to
+    /// every tab, rather than each tab re-deriving it (`WP 19.10H`, `TD-179`).
+    /// </summary>
+    /// <remarks>
+    /// Cite, Declare a figure, Check, Issue and Revise are reached through
+    /// the Object Editor's own command bar (<c>EvidenceWorkspaceRegistration</c>),
+    /// not this view — <see cref="EvidenceService"/>'s own guard (`WP 19.10H`)
+    /// refuses those writes structurally; this view has no reach into that
+    /// command bar's own enablement.
+    /// </remarks>
+    public void SetArchived(bool archived)
+    {
+        _isArchived = archived;
+        _createButton.IsEnabled = !archived;
+        ToolTip.SetTip(_createButton, archived ? ArchivedTooltip : "Create evidence from picked files");
+    }
 
     /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     public async Task RefreshAsync()

@@ -6,6 +6,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Projects;
 
 namespace Tempest.Core.Tests.Projects;
 
@@ -374,6 +375,98 @@ public sealed class ProjectMilestoneTests : IDisposable
 
         var reloaded = (EngineeringObjectBase)(await fixture.Domain.Repository.FindAsync(milestone.Id))!;
         Assert.True(reloaded.CurrentRevisionNumber > revisionBefore);
+    }
+
+    // ================================================================
+    // The archived-project guard (`WP 19.10H`, `TD-179`)
+    // ================================================================
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesANewMilestone_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectMilestoneService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.CreateMilestoneAsync(project.Id, "MS-999", "Too late", Today.AddDays(30)));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Empty(await fixture.Register.ListAsync(project.Id));
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesANewDeliverable_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectMilestoneService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.CreateDeliverableAsync(project.Id, milestone.Id, "DEL-999", "Too late"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Empty(Assert.Single(await fixture.Register.ListAsync(project.Id)).Deliverables);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesEditingAMilestone_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectMilestoneService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.EditMilestoneAsync(milestone.Id, "Renamed"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal("CDR", Assert.Single(await fixture.Register.ListAsync(project.Id)).DisplayName);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesEditingADeliverable_AndTheStoreStaysUnchanged_EvenThoughItReachesTheProjectThroughItsMilestone()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
+        var deliverable = await fixture.Workflow.CreateDeliverableAsync(project.Id, milestone.Id, "DEL-001", "Stress report");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectMilestoneService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.EditDeliverableAsync(deliverable.Id, "Renamed"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        var entry = Assert.Single(await fixture.Register.ListAsync(project.Id));
+        Assert.Equal("Stress report", Assert.Single(entry.Deliverables).DisplayName);
+    }
+
+    [Fact]
+    public async Task AProjectClosedTodayButNotYetArchived_StillAcceptsAWrite()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed today.");
+
+        // Not backdated at all: closed today is Closed, not yet Archive
+        // (`ProjectArchival.ArchiveAfterDays` = 90) — the write still goes
+        // through.
+        var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "Still open for writes", Today.AddDays(30));
+
+        Assert.Equal(milestone.Id, Assert.Single(await fixture.Register.ListAsync(project.Id)).ObjectId);
     }
 
     // ================================================================

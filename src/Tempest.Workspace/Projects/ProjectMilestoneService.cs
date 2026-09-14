@@ -1,5 +1,6 @@
 using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 
 namespace Tempest.Workspace.Projects;
 
@@ -71,13 +72,16 @@ public interface IProjectMilestoneService
 public sealed class ProjectMilestoneService : IProjectMilestoneService
 {
     private readonly EngineeringDomainContext _context;
+    private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectMilestoneService"/> class.</summary>
-    public ProjectMilestoneService(EngineeringDomainContext context)
+    /// <param name="timeProvider">The clock the archived-project guard reads "now" from (`WP 19.10H`, `TD-179`). <see langword="null"/> — the default — is <see cref="TimeProvider.System"/>; a test supplies a controllable one.</param>
+    public ProjectMilestoneService(EngineeringDomainContext context, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -94,6 +98,12 @@ public sealed class ProjectMilestoneService : IProjectMilestoneService
 
         var project = await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false)
             ?? throw new ProjectNotFoundException(projectId);
+
+        if (project is Project realProject && ProjectArchival.IsArchived(realProject, _time.GetUtcNow()))
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is archived (closed {realProject.ClosedOn:O}); no new milestone can be set on it.");
+        }
 
         var factory = new EngineeringObjectFactory<Milestone>(
             CanonicalObjectKinds.Milestone,
@@ -123,8 +133,14 @@ public sealed class ProjectMilestoneService : IProjectMilestoneService
         ArgumentException.ThrowIfNullOrWhiteSpace(identifier);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
-        _ = await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false)
+        var project = await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false)
             ?? throw new ProjectNotFoundException(projectId);
+
+        if (project is Project realProject && ProjectArchival.IsArchived(realProject, _time.GetUtcNow()))
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is archived (closed {realProject.ClosedOn:O}); no new deliverable can be added to it.");
+        }
 
         var milestone = await _context.Repository.FindAsync(milestoneId, cancellationToken).ConfigureAwait(false) as Milestone
             ?? throw new MilestoneNotFoundException(milestoneId);
@@ -152,6 +168,8 @@ public sealed class ProjectMilestoneService : IProjectMilestoneService
         var milestone = await _context.Repository.FindAsync(milestoneId, cancellationToken).ConfigureAwait(false) as Milestone
             ?? throw new MilestoneNotFoundException(milestoneId);
 
+        await EnsureNotArchivedAsync(milestone.Id, cancellationToken).ConfigureAwait(false);
+
         await EditAsync(milestone, title, description, "Milestone description edited.", cancellationToken).ConfigureAwait(false);
     }
 
@@ -161,7 +179,22 @@ public sealed class ProjectMilestoneService : IProjectMilestoneService
         var deliverable = await _context.Repository.FindAsync(deliverableId, cancellationToken).ConfigureAwait(false) as Deliverable
             ?? throw new DeliverableNotFoundException(deliverableId);
 
+        await EnsureNotArchivedAsync(deliverable.Id, cancellationToken).ConfigureAwait(false);
+
         await EditAsync(deliverable, title, description, "Deliverable description edited.", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The archived-project guard (`WP 19.10H`, `TD-179`): every mutating command on an object belonging to an archived project is refused, here, before its own mutator ever runs. Walks the parent chain — a Deliverable reaches its project through its Milestone, not directly.</summary>
+    private async Task EnsureNotArchivedAsync(Guid objectId, CancellationToken cancellationToken)
+    {
+        if (await ProjectMembership.ResolveOwningProjectAsync(_context.Repository, objectId, cancellationToken).ConfigureAwait(false) is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project
+            || !ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"Project '{projectId}' is archived (closed {project.ClosedOn:O}); it is read-only.");
     }
 
     /// <remarks>
