@@ -75,6 +75,21 @@ public sealed class CommandRegistry : ICommandRegistry
     }
 
     /// <inheritdoc />
+    public void Unregister(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+
+        bool removed;
+        lock (_gate)
+        {
+            removed = _descriptorsById.Remove(id);
+        }
+
+        if (removed)
+            _logger?.Information($"Command descriptor unregistered: '{id}'.");
+    }
+
+    /// <inheritdoc />
     public IReadOnlyList<CommandDescriptor> Items
     {
         get

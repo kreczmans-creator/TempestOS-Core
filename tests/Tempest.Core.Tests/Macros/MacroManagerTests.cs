@@ -64,7 +64,7 @@ public class MacroManagerTests
 
     [Fact]
     public async Task CreateAsync_EmptySteps_ThrowsArgumentException() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => CreateHarness().MacroManager.CreateAsync("Empty", []));
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateHarness().MacroManager.CreateAsync("Empty", Array.Empty<string>()));
 
     [Fact]
     public async Task CreateAsync_BlankName_ThrowsArgumentException() =>

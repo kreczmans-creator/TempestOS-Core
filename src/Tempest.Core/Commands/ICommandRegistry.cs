@@ -24,6 +24,26 @@ public interface ICommandRegistry
     void RegisterDescriptor(CommandDescriptor descriptor);
 
     /// <summary>
+    /// Removes the descriptor registered under <paramref name="id"/>, if
+    /// one is — a no-op otherwise.
+    /// </summary>
+    /// <param name="id">The Id of the descriptor to remove.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="id"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// The confirmed absence <c>ADR-0037</c> and <c>ADR-0099</c> both once
+    /// documented — "no unregistration exists" — no longer holds
+    /// (`WP 20.2C`, `ADR-0099`'s own addendum): once removed, the Id is
+    /// gone from <see cref="Items"/> immediately, so a menu, the Command
+    /// Palette or the Ribbon next reads a registry that never lists it —
+    /// each already reads <see cref="Items"/> fresh rather than caching
+    /// it, so no separate change notification is needed for that to be
+    /// true. Invoking a removed Id afterwards throws
+    /// <see cref="CommandNotFoundException"/>, exactly as it would for an
+    /// Id nothing ever registered.
+    /// </remarks>
+    void Unregister(string id);
+
+    /// <summary>
     /// Gets every registered descriptor. Never <see langword="null"/>;
     /// empty if none have been registered. Ordered deterministically:
     /// ascending ordinal by <see cref="CommandDescriptor.Category"/> (nulls

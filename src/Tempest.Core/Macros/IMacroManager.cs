@@ -35,23 +35,52 @@ public interface IMacroManager
     Task<ICommandMacro?> FindAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Creates and persists a new macro, and registers its own
+    /// Creates and persists a new macro from bare command Ids — each step
+    /// recording no values — and registers its own
     /// <see cref="Commands.CommandDescriptor"/> against the shared
     /// <see cref="Commands.ICommandRegistry"/> so it is immediately
     /// invokable.
     /// </summary>
     /// <param name="name">The macro's own display name.</param>
-    /// <param name="stepCommandIds">The ordered Command Ids this macro invokes when run — each must currently be a registered <see cref="Commands.CommandDescriptor.Id"/>.</param>
-    /// <exception cref="ArgumentException"><paramref name="name"/> is null/empty/whitespace, <paramref name="stepCommandIds"/> is empty, or a step Id is not a registered command.</exception>
+    /// <param name="stepCommandIds">The ordered Command Ids this macro invokes when run — each must currently be a registered, invocable <see cref="Commands.CommandDescriptor.Id"/>.</param>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is null/empty/whitespace; <paramref name="stepCommandIds"/>
+    /// is empty; a step Id is not a registered command; or a step's own
+    /// binding is declared unavailable (`WP 20.2C`) — see
+    /// <see cref="CreateAsync(string, IReadOnlyList{MacroStep}, CancellationToken)"/>.
+    /// </exception>
     Task<ICommandMacro> CreateAsync(string name, IReadOnlyList<string> stepCommandIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates and persists a new macro, and registers its own
+    /// <see cref="Commands.CommandDescriptor"/> against the shared
+    /// <see cref="Commands.ICommandRegistry"/> so it is immediately
+    /// invokable (`WP 20.2C`).
+    /// </summary>
+    /// <param name="name">The macro's own display name.</param>
+    /// <param name="steps">
+    /// The ordered steps this macro invokes when run — each
+    /// <see cref="MacroStep.CommandId"/> must currently be a registered
+    /// <see cref="Commands.CommandDescriptor.Id"/> whose own binding is
+    /// invocable (not declared <see cref="Commands.CommandBinding.Unavailable"/> —
+    /// today, the object-picker set).
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is null, empty, or whitespace;
+    /// <paramref name="steps"/> is empty; a step's own Id is not a
+    /// registered command; or a step's own binding is declared
+    /// unavailable, named with its own reason.
+    /// </exception>
+    Task<ICommandMacro> CreateAsync(string name, IReadOnlyList<MacroStep> steps, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes the macro with the given <paramref name="id"/>, if one
     /// exists — a no-op otherwise. Its own <see cref="Commands.CommandDescriptor"/>
-    /// is <b>not</b> unregistered (<see cref="Commands.ICommandRegistry"/>
-    /// exposes no removal method, confirmed, frozen) — a subsequent
-    /// invocation of the stale descriptor fails honestly
-    /// (<c>RunMacroCommandHandler</c>), rather than throwing.
+    /// is unregistered alongside it (`WP 20.2C`,
+    /// <see cref="Commands.ICommandRegistry.Unregister"/>) — a menu, the
+    /// Command Palette or the Ribbon no longer lists it, and invoking its
+    /// Id afterwards throws <see cref="Commands.CommandNotFoundException"/>,
+    /// exactly as any other unregistered Id does.
     /// </summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

@@ -408,7 +408,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -433,7 +434,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -460,7 +462,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -574,7 +577,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var sibling = new Button { Content = "Sibling" };
             var panel = new Panel();
             panel.Children.Add(sibling);

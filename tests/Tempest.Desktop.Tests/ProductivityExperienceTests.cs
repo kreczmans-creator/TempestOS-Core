@@ -393,7 +393,7 @@ public sealed class ProductivityExperienceTests
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
             var ranMacroIds = new List<Guid>();
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: id =>
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: id =>
             {
                 ranMacroIds.Add(id);
                 return Task.FromResult(CommandResult.Success());
