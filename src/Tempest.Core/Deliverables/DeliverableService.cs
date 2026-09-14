@@ -6,6 +6,15 @@ namespace Tempest.Core.Deliverables;
 /// <summary>The concrete <see cref="IDeliverableService"/> implementation.</summary>
 public sealed class DeliverableService : IDeliverableService
 {
+    /// <summary>The default milestone a directly-added deliverable is grouped under when no quotation has created one yet (`WP 19.5A`, Product Owner comment item 4).</summary>
+    public const string UnquotedMilestoneTitle = "Unquoted";
+
+    /// <summary>The Kind string for a Milestone — <c>Tempest.Workspace.CanonicalObjectKinds.Milestone</c>'s own value, repeated here because <c>Tempest.Core</c> cannot reference <c>Tempest.Workspace</c>, mirroring <c>Tempest.Core.Quotations.QuotationService</c>'s own identical disclosure.</summary>
+    private const string MilestoneKind = "Milestone";
+
+    /// <summary>The Kind string for a Deliverable — <c>Tempest.Workspace.CanonicalObjectKinds.Deliverable</c>'s own value, repeated for the identical reason as <see cref="MilestoneKind"/>.</summary>
+    private const string DeliverableKind = "Deliverable";
+
     private readonly EngineeringDomainContext _context;
     private Func<Guid, CancellationToken, Task>? _completionHook;
 
@@ -130,6 +139,57 @@ public sealed class DeliverableService : IDeliverableService
         await completion.MarkInvoicedAsync(requestId, cancellationToken).ConfigureAwait(false);
 
         return new DeliverableCompletionResult(DeliverableCompletionRefusal.None, null, completion);
+    }
+
+    /// <inheritdoc />
+    public async Task<Deliverable> AddDeliverableAsync(
+        Guid projectId, string title, DateOnly? targetDate = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project)
+            throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
+
+        var milestoneId = await FindOrCreateUnquotedMilestoneAsync(projectId, targetDate, cancellationToken).ConfigureAwait(false);
+        var trimmedTitle = title.Trim();
+
+        var created = await new EngineeringObjectFactory<Deliverable>(
+            DeliverableKind,
+            _context,
+            (doc, rev) => new Deliverable(doc, rev, _context, identifier: null, trimmedTitle, EngineeringObjectMetadata.Empty, milestoneId))
+            .CreateAsync($"Deliverable '{trimmedTitle}' added directly to project '{projectId}', with no quotation.", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (created is IHasParent hasParent)
+            await hasParent.MoveAsync(milestoneId, cancellationToken).ConfigureAwait(false);
+
+        return (Deliverable)created;
+    }
+
+    private async Task<Guid> FindOrCreateUnquotedMilestoneAsync(Guid projectId, DateOnly? targetDate, CancellationToken cancellationToken)
+    {
+        var children = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var existing = children
+            .OfType<Milestone>()
+            .FirstOrDefault(m => IsLive(m) && string.Equals(m.DisplayName, UnquotedMilestoneTitle, StringComparison.Ordinal));
+
+        if (existing is not null)
+            return existing.Id;
+
+        var resolvedTargetDate = (targetDate ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(90))
+            .ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+        var created = await new EngineeringObjectFactory<Milestone>(
+            MilestoneKind,
+            _context,
+            (doc, rev) => new Milestone(doc, rev, _context, identifier: null, UnquotedMilestoneTitle, EngineeringObjectMetadata.Empty, resolvedTargetDate))
+            .CreateAsync("Default milestone created for a deliverable added directly, with no quotation.", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (created is IHasParent hasParent)
+            await hasParent.MoveAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+        return created.Id;
     }
 
     private async Task<DeliverableCompletion?> FindExistingCompletionAsync(Guid deliverableId, CancellationToken cancellationToken)

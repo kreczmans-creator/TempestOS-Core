@@ -117,6 +117,9 @@ public static class EditorSectionKeys
     /// <summary>An invoice request's own connector and every external field it has reported — external id, invoice number, status, issued and paid dates, and the last error (`WP 19.1A`, `ADR-0151`).</summary>
     public const string InvoicingExternal = "invoicing-external";
 
+    /// <summary>A quotation's own lines and total — rendered here by declaration alone in this Work Package (no <c>Populate*</c> method exists in <c>ObjectEditorView</c> yet; that, and the section's own real rendering, are `WP 19.5B`'s) (`WP 19.5A`, `ADR-0152`).</summary>
+    public const string QuotationLines = "quotation-lines";
+
     /// <summary>The object's own audit trail.</summary>
     public const string Audit = "audit";
 }
