@@ -222,13 +222,20 @@ public sealed class RailSurfaceContractTests
                 .GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Project…"));
             newProjectButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
-            await RenderUntilAsync(window, () => inputDialog.IsVisible);
-            var nameBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
+            // `WP 19.5B`: the New Project prompt is now `NewProjectPrompt`
+            // (name + "open a quotation" option), not the shared
+            // `InputDialog` — unchecking the option here keeps this test's
+            // own scope exactly what it always was (project creation),
+            // never a quotation's own journey (`QuotationJourneyTests`'s).
+            var newProjectPrompt = GetPrivateField<NewProjectPrompt>(window, "_newProjectPrompt");
+            await RenderUntilAsync(window, () => newProjectPrompt.IsVisible);
+            var nameBox = newProjectPrompt.GetLogicalDescendants().OfType<TextBox>().First();
             nameBox.Text = "Rail Contract Created Project";
-            var okButton = inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+            var openQuotationBox = newProjectPrompt.GetLogicalDescendants().OfType<CheckBox>().Single();
+            openQuotationBox.IsChecked = false;
+            var okButton = newProjectPrompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
             okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => !inputDialog.IsVisible);
+            await RenderUntilAsync(window, () => !newProjectPrompt.IsVisible);
 
             IReadOnlyList<Tempest.Workspace.Projects.ProjectSummary> all = [];
             await RenderUntilAsync(window, () =>
@@ -612,6 +619,114 @@ public sealed class RailSurfaceContractTests
             await second.DisposeAsync();
         }
     }
+
+    // ================================================================
+    // Quotes
+    // ================================================================
+
+    [AvaloniaFact]
+    public async Task Quotes_MeetsAllSixChecks()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        Guid quoteId;
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+            var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            await navigator.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            var project = await host.ProjectDirectory!.CreateAsync("P-RSC-Q", "Rail Contract Quotes Project");
+
+            var quotationService = (Tempest.Core.Quotations.IQuotationService)host.Services!.GetService(typeof(Tempest.Core.Quotations.IQuotationService));
+            var created = await quotationService.CreateAsync(project.Id);
+            Assert.True(created.Succeeded, created.Reason);
+            quoteId = created.Quotation!.Id;
+            Assert.True((await quotationService.AddLineAsync(quoteId, "Rail Contract Quote Line", 5m, new Tempest.Core.BusinessGovernance.Money(100m, Tempest.Core.BusinessGovernance.CurrencyCode.Gbp), null)).Succeeded);
+            Assert.True((await quotationService.SendAsync(quoteId)).Succeeded);
+
+            // 1. Click it -> something real renders.
+            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            Assert.NotNull(quotesView);
+            await RenderUntilAsync(window, () => FindRow(quotesView, quoteId) is not null);
+
+            // 2. Select something in it -> the selection has meaning:
+            // the row shown is genuinely this quotation's own reference.
+            var row = FindRow(quotesView, quoteId)!;
+            var quote = (Tempest.Core.Quotations.Quotation)domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult()!;
+            Assert.Contains(
+                row.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains(quote.Reference, StringComparison.Ordinal));
+
+            // 3. Open it -> usable content: the project's own Quote tab.
+            var openButton = row.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Open"));
+            openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                navigator.Current is { Area: ShellArea.ProjectWorkspace, ProjectArea: ProjectArea.Quote } location && location.ProjectId == project.Id);
+            LayOut(window);
+            var projectWorkspace = GetPrivateField<ProjectWorkspaceView>(window, "_projectWorkspace");
+            Assert.NotNull(projectWorkspace.QuoteView);
+
+            // 4. Edit it -> state changes, through its own command: Accept.
+            var quoteView = projectWorkspace.QuoteView;
+            await RenderUntilAsync(window, () => quoteView.GetLogicalDescendants().OfType<Button>().Any(b => Equals(b.Content, "Accept")));
+            var acceptButton = quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Accept"));
+            acceptButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
+            await RenderUntilAsync(window, () => confirmationDialog.IsVisible);
+            confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Continue")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Tempest.Core.Quotations.Quotation q && q.Status == Tempest.Core.Quotations.QuotationStatus.Accepted);
+
+            // Accepted quotations list nowhere in Quotes (New/Sent/Outstanding).
+            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            Assert.Null(FindRow(quotesView, quoteId));
+
+            // 6. Navigate away and back -> coherent.
+            await navigator.GoHomeAsync();
+            await window.RenderCurrentModuleAsync();
+            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            Assert.NotNull(GetPrivateField<QuotesView>(window, "_quotesView"));
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+
+        // 5. Restart -> the state remains.
+        var second = new WorkspaceHost(root);
+        try
+        {
+            await second.StartAsync();
+            var domain = (EngineeringDomainContext)second.Services!.GetService(typeof(EngineeringDomainContext));
+            var reloaded = await domain.Repository.FindAsync(quoteId) as Tempest.Core.Quotations.Quotation;
+            Assert.Equal(Tempest.Core.Quotations.QuotationStatus.Accepted, reloaded?.Status);
+        }
+        finally
+        {
+            await second.ShutdownAsync();
+            await second.DisposeAsync();
+        }
+    }
+
+    private static Border? FindRow(Control root, Guid quoteId) =>
+        root.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => Equals(b.Tag, quoteId));
 
     // ================================================================
     // Reports

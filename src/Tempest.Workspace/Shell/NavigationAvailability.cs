@@ -94,6 +94,15 @@ public static class ShellAreas
         new(ShellArea.Invoicing, "Invoicing", "▥", NavigationAvailability.Implemented,
             "Every invoice request across open projects (or the open project when one is open), grouped by status — raised from a completed deliverable, sent to a connector, reconciled, and voided, with every outcome shown."),
 
+        // `WP 19.5B` (`ADR-0152`, Product Owner comment item 9): every
+        // quotation across open projects, placed right after Invoicing —
+        // the commercial siblings sit together, and `WP 19.7A` will move
+        // both under a single Business module later; a one-line
+        // registration here in the meantime, per this Work Package's own
+        // brief.
+        new(ShellArea.Quotes, "Quotes", "◐", NavigationAvailability.Implemented,
+            "Every quotation across open projects (or the open project when one is open) — New (Draft), Sent, and Outstanding (Sent more than seven days ago) — opened right up in the project's own Quote tab."),
+
         // `WP 19.2B`: issued evidence sheets and project documents,
         // filterable by project — placed right after Invoicing, the last
         // of the day-to-day project areas, and before Engineering

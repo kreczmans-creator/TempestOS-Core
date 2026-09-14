@@ -1,0 +1,398 @@
+using Avalonia;
+using Avalonia.Automation;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using Tempest.Core.Commands;
+using Tempest.Core.Deliverables;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Quotations;
+using Tempest.Desktop.Editors;
+using Tempest.Desktop.Quotations;
+using Tempest.Desktop.Tests.Quotations;
+using Tempest.Desktop.Views;
+using Tempest.Workspace.Shell;
+
+namespace Tempest.Desktop.Tests;
+
+/// <summary>
+/// The whole quote journey (`WP 19.5B`, `ADR-0152`, Product Owner comment
+/// items 4 and 9): New Project with "open a quotation" on (the default) →
+/// the quote opens right up in the Quote tab → two lines, one hourly, one
+/// fixed → Send (status Sent, a PDF sheet attached, <c>SentOn</c> set) →
+/// Accept (a Deliverable and a Requirement per line, both opening right
+/// up) → Business → Quotes lists it under Sent, then nowhere in Outstanding
+/// once Accepted → Export through the stub picker writes a real PDF whose
+/// text names the reference.
+/// </summary>
+[Collection("Tempest.Desktop WorkspaceHost persistence")]
+public sealed class QuotationJourneyTests
+{
+    [AvaloniaFact]
+    public async Task NewProjectWithQuoteOption_ThroughSendAcceptExportAndBusinessQuotes()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+        Guid projectId;
+        Guid quoteId;
+
+        try
+        {
+            await host.StartAsync();
+            var filePicker = new StubFilePicker();
+            var window = new MainWindow(host, filePicker);
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+            var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            // ---- New Project, "open a quotation" left on (the default) ----
+            await navigator.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var browser = window.GetLogicalDescendants().OfType<ProjectBrowserView>().Single();
+            var newButton = browser.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Project…"));
+            newButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var newProjectPrompt = GetPrivateField<NewProjectPrompt>(window, "_newProjectPrompt");
+            await RenderUntilAsync(window, () => newProjectPrompt.IsVisible);
+            var nameBox = newProjectPrompt.GetLogicalDescendants().OfType<TextBox>().First();
+            nameBox.Text = "Quotation Journey Project";
+            var openQuotationBox = newProjectPrompt.GetLogicalDescendants().OfType<CheckBox>().Single();
+            Assert.True(openQuotationBox.IsChecked, "\"Open a quotation for this project\" must be checked by default.");
+            var okButton = newProjectPrompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+            okButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !newProjectPrompt.IsVisible);
+
+            projectId = Guid.Empty;
+            await RenderUntilAsync(window, () =>
+            {
+                var all = host.ProjectDirectory!.ListAsync().GetAwaiter().GetResult();
+                var found = all.FirstOrDefault(p => p.DisplayName == "Quotation Journey Project");
+                if (found is null)
+                    return false;
+
+                projectId = found.Id;
+                return true;
+            });
+            Assert.NotEqual(Guid.Empty, projectId);
+
+            // The quote opens right up in the Quote tab.
+            await RenderUntilAsync(window, () =>
+                navigator.Current is { Area: ShellArea.ProjectWorkspace, ProjectArea: ProjectArea.Quote } location && location.ProjectId == projectId);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var projectWorkspace = GetPrivateField<ProjectWorkspaceView>(window, "_projectWorkspace");
+            var quoteView = projectWorkspace.QuoteView;
+
+            quoteId = Guid.Empty;
+            await RenderUntilAsync(window, () =>
+            {
+                var found = domain.Repository.ListChildrenAsync(projectId).GetAwaiter().GetResult().OfType<Quotation>().FirstOrDefault();
+                if (found is null)
+                    return false;
+
+                quoteId = found.Id;
+                return true;
+            });
+            LayOut(window);
+            Assert.Contains(
+                quoteView.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains("Draft", StringComparison.Ordinal));
+
+            // ---- Two lines: one hourly, one fixed price ----
+            await AddLineAsync(window, quoteView, domain, quoteId, "Concept design", hours: 10m, rate: 100m, fixedPrice: null, expectedLineCount: 1);
+            await AddLineAsync(window, quoteView, domain, quoteId, "Detailed calculation pack", hours: null, rate: null, fixedPrice: 2500m, expectedLineCount: 2);
+
+            // ---- Send: status Sent, a PDF sheet attached, SentOn set ----
+            LayOut(window);
+            var sendButton = quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Send"));
+            sendButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
+            await RenderUntilAsync(window, () => confirmationDialog.IsVisible);
+            confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Continue")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            await RenderUntilAsync(window, () =>
+                domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Status == QuotationStatus.Sent);
+
+            var sentQuote = (Quotation)(await domain.Repository.FindAsync(quoteId))!;
+            Assert.Equal(QuotationStatus.Sent, sentQuote.Status);
+            Assert.NotNull(sentQuote.SentOn);
+
+            var attachmentsAfterSend = await ((IHasAttachments)sentQuote).GetAttachmentsAsync();
+            var sheetAttachment = Assert.Single(attachmentsAfterSend, a => a.ContentType == "application/pdf");
+            var sheetContent = await ((IHasAttachments)sentQuote).ReadAttachmentContentAsync(sheetAttachment.Id);
+            Assert.True(sheetContent.IsAvailable, $"The attached quote sheet's own stored bytes must verify; status was {sheetContent.Status}.");
+            Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(sheetContent.Bytes, 0, Math.Min(8, sheetContent.Bytes.Length)), StringComparison.Ordinal);
+
+            // ---- Business → Quotes lists it under Sent ----
+            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            await RenderUntilAsync(window, () => FindQuoteRow(quotesView, quoteId) is not null);
+
+            var sentGroup = quotesView.GetLogicalDescendants().OfType<TextBlock>()
+                .Where(t => (t.Text ?? string.Empty).StartsWith("Sent (", StringComparison.Ordinal))
+                .Single();
+            Assert.Contains(((Panel)sentGroup.Parent!).GetLogicalDescendants().OfType<Border>(), b => Equals(b.Tag, quoteId));
+
+            // ---- Accept: a Deliverable and a Requirement per line ----
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            quoteView = projectWorkspace.QuoteView;
+
+            var acceptButton = quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Accept"));
+            acceptButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => confirmationDialog.IsVisible);
+            confirmationDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Continue")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            await RenderUntilAsync(window, () =>
+                domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Status == QuotationStatus.Accepted);
+
+            var acceptedQuote = (Quotation)(await domain.Repository.FindAsync(quoteId))!;
+            Assert.Equal(2, acceptedQuote.Lines.Count);
+            Assert.All(acceptedQuote.Lines, l => Assert.NotNull(l.DeliverableId));
+            Assert.All(acceptedQuote.Lines, l => Assert.NotNull(l.RequirementId));
+
+            // The two deliverables show on the Deliverables tab.
+            var deliverableTitles = acceptedQuote.Lines.Select(l => l.Description).ToHashSet(StringComparer.Ordinal);
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Deliverables).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            var deliverablesView = projectWorkspace.DeliverablesView;
+            await RenderUntilAsync(window, () =>
+                deliverableTitles.All(title => deliverablesView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(title, StringComparison.Ordinal))));
+
+            // The two requirements are allocated to the project (Requirements tab's own read model).
+            var requirementRegister = host.ProjectRequirements!;
+            var allocatedRequirements = await requirementRegister.ListAsync(projectId);
+            Assert.True(
+                acceptedQuote.Lines.All(l => allocatedRequirements.Any(r => r.RequirementId == l.RequirementId)),
+                "Every Requirement an accepted quote creates must be allocated to the project (ProjectRequirementRegister).");
+
+            // Both open right up, from the Quote tab's own "Created on acceptance" section.
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            quoteView = projectWorkspace.QuoteView;
+            var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
+            var tabCountBeforeOpen = documentArea.TabCount;
+
+            var openDeliverableButton = quoteView.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open deliverable"));
+            openDeliverableButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => documentArea.TabCount > tabCountBeforeOpen);
+
+            LayOut(window);
+            quoteView = projectWorkspace.QuoteView;
+            var openRequirementButton = quoteView.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Open requirement"));
+            var tabCountBeforeSecondOpen = documentArea.TabCount;
+            openRequirementButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => documentArea.TabCount >= tabCountBeforeSecondOpen);
+
+            // ---- Business → Quotes: nowhere in Outstanding once Accepted, and not listed under New/Sent either ----
+            await navigator.GoToModuleAsync(ShellArea.Quotes);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            quotesView = GetPrivateField<QuotesView>(window, "_quotesView");
+            await RenderUntilAsync(window, () => true);
+            Assert.Null(FindQuoteRow(quotesView, quoteId));
+
+            // ---- Export through the stub picker: a real PDF naming the reference ----
+            await navigator.OpenProjectAsync(projectId, ProjectArea.Quote).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            quoteView = projectWorkspace.QuoteView;
+
+            var exportPath = Path.Combine(Path.GetTempPath(), $"quote-export-{Guid.NewGuid():N}.pdf");
+            filePicker.SetNextSavePath(exportPath);
+            try
+            {
+                var exportButton = quoteView.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Export"));
+                exportButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await RenderUntilAsync(window, () => File.Exists(exportPath));
+
+                var bytes = await File.ReadAllBytesAsync(exportPath);
+                Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(bytes, 0, Math.Min(8, bytes.Length)), StringComparison.Ordinal);
+
+                var text = PdfTextExtractor.ExtractText(bytes);
+                Assert.Contains(acceptedQuote.Reference, text, StringComparison.Ordinal);
+            }
+            finally
+            {
+                if (File.Exists(exportPath))
+                    File.Delete(exportPath);
+            }
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>Brief scope item 4's second half — "Add deliverable from the Deliverables tab → it opens right up and can be completed."</summary>
+    [AvaloniaFact]
+    public async Task AddDeliverableFromTheDeliverablesTab_OpensRightUp_AndCanBeCompleted()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var host = new WorkspaceHost(root);
+
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            var navigator = host.ShellNavigator!;
+            var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+
+            await navigator.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            var project = await host.ProjectDirectory!.CreateAsync("P-QJ-ADD", "Add Deliverable Journey Project");
+            await navigator.OpenProjectAsync(project.Id, ProjectArea.Deliverables);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
+            var projectWorkspace = GetPrivateField<ProjectWorkspaceView>(window, "_projectWorkspace");
+            var deliverablesView = projectWorkspace.DeliverablesView;
+
+            var addButton = deliverablesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Deliverable"));
+            addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
+            await RenderUntilAsync(window, () => inputDialog.IsVisible);
+            var titleBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
+            titleBox.Text = "Directly added deliverable";
+            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            // A second `InputDialog.PromptAsync` for "targetDate" follows
+            // immediately (`DesktopCommandPrompt.CollectAsync` walks every
+            // declared parameter in order), synchronously enough that
+            // `IsVisible` never observably goes false between the two —
+            // waited for by the label text changing instead. A real date,
+            // not a blank one: `InputDialog.TryComplete` itself refuses an
+            // empty value unconditionally ("A value is required"), before
+            // ever reaching a parameter's own `Validate` — a pre-existing
+            // platform gap this journey does not need to exercise (also
+            // true, unrelated to this Work Package, of `quotation.create`'s
+            // own optional "reference" parameter).
+            await RenderUntilAsync(window, () =>
+                inputDialog.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Target date", StringComparison.Ordinal)));
+            var targetDateBox = inputDialog.GetLogicalDescendants().OfType<TextBox>().First();
+            targetDateBox.Text = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(90).ToString("yyyy-MM-dd");
+            inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !inputDialog.IsVisible);
+
+            Deliverable? created = null;
+            await RenderUntilAsync(window, () =>
+            {
+                created = domain.Repository.ListByKindAsync(Tempest.Workspace.CanonicalObjectKinds.Deliverable).GetAwaiter().GetResult()
+                    .OfType<Deliverable>()
+                    .FirstOrDefault(d => d.DisplayName == "Directly added deliverable");
+                return created is not null;
+            });
+            Assert.NotNull(created);
+
+            // Opens right up.
+            var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
+            await RenderUntilAsync(window, () => documentArea.TabCount > 0);
+
+            // Can be completed, exactly like any other deliverable.
+            await navigator.OpenProjectAsync(project.Id, ProjectArea.Deliverables).ConfigureAwait(true);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            deliverablesView = projectWorkspace.DeliverablesView;
+            await RenderUntilAsync(window, () => deliverablesView.GetLogicalDescendants().OfType<Button>().Any(b => Equals(b.Content, "Complete")));
+
+            var completePrompt = GetPrivateField<DeliverableCompletionPrompt>(window, "_deliverableCompletionPrompt");
+            deliverablesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Complete")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => completePrompt.IsVisible);
+            completePrompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Complete")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => !completePrompt.IsVisible);
+
+            DeliverableCompletion? completion = null;
+            await RenderUntilAsync(window, () =>
+            {
+                completion = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult()
+                    .OfType<DeliverableCompletion>()
+                    .FirstOrDefault(c => c.DeliverableId == created!.Id);
+                return completion is not null;
+            });
+            Assert.NotNull(completion);
+
+            await host.ShutdownAsync();
+        }
+        finally
+        {
+            await host.DisposeAsync();
+        }
+    }
+
+    private static async Task AddLineAsync(
+        MainWindow window, ProjectQuoteView quoteView, EngineeringDomainContext domain, Guid quoteId,
+        string description, decimal? hours, decimal? rate, decimal? fixedPrice, int expectedLineCount)
+    {
+        LayOut(window);
+        var descriptionBox = quoteView.GetLogicalDescendants().OfType<TextBox>().First(t => AutomationProperties.GetName(t) == "Line description");
+        descriptionBox.Text = description;
+
+        if (hours is not null)
+        {
+            var hoursBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line hours");
+            hoursBox.Value = hours;
+            var rateBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line rate");
+            rateBox.Value = rate;
+        }
+        else
+        {
+            var fixedPriceBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line fixed price");
+            fixedPriceBox.Value = fixedPrice;
+        }
+
+        var addLineButton = quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add line"));
+        addLineButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+        await RenderUntilAsync(window, () =>
+            domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Lines.Count == expectedLineCount);
+    }
+
+    private static Border? FindQuoteRow(Control root, Guid quoteId) =>
+        root.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => Equals(b.Tag, quoteId));
+
+    private static T GetPrivateField<T>(object instance, string fieldName)
+    {
+        var field = instance.GetType().GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+            ?? throw new InvalidOperationException($"Field '{fieldName}' not found on {instance.GetType().Name}.");
+        return (T)field.GetValue(instance)!;
+    }
+
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+            LayOut(window);
+        }
+    }
+
+    private static void LayOut(Window window)
+    {
+        if (!window.IsVisible)
+            window.Show();
+
+        for (var pass = 0; pass < 2; pass++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.Measure(new Size(1400, 900));
+            window.Arrange(new Rect(0, 0, 1400, 900));
+        }
+    }
+}

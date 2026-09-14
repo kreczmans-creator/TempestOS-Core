@@ -108,3 +108,73 @@ public sealed class CompleteDeliverableCommandHandler : ICommandHandler<Complete
             : CommandResult.Failure(result.Reason ?? "The completion was refused.");
     }
 }
+
+/// <summary>
+/// Adds a deliverable directly to the shell's own open project, with no
+/// quotation involved (<see cref="IDeliverableService.AddDeliverableAsync"/>,
+/// `WP 19.5A`/`WP 19.5B`, `ADR-0152` §7, Product Owner comment item 4's
+/// second half: "no way to add a deliverable").
+/// </summary>
+/// <remarks>
+/// `WP 19.5B`: the Deliverables tab's own Add action, and the ribbon's
+/// Deliverables category gaining the same command, both need a real
+/// Command — mutating only through one, never a domain service called
+/// directly from a Desktop view (`ADR-0063`). This Work Package's own
+/// "files you own" list did not name this file; a disclosed, minimal
+/// extension, exactly as `ADR-0152` §9 discloses its own single deviation
+/// (see this Work Package's report).
+/// </remarks>
+public sealed class AddDeliverableCommand : ICommand
+{
+    /// <summary>Initialises a new instance of the <see cref="AddDeliverableCommand"/> class.</summary>
+    public AddDeliverableCommand(Guid projectId, string title, DateOnly? targetDate)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+
+        ProjectId = projectId;
+        Title = title;
+        TargetDate = targetDate;
+    }
+
+    /// <summary>The project this deliverable is added to — the shell's own open project, or <see cref="Guid.Empty"/> when none was, refused as an outcome rather than thrown.</summary>
+    public Guid ProjectId { get; }
+
+    /// <summary>The deliverable's own title.</summary>
+    public string Title { get; }
+
+    /// <summary>The default "Unquoted" milestone's own target date, used only the first time it is created for this project. <see langword="null"/> defaults to ninety days out.</summary>
+    public DateOnly? TargetDate { get; }
+}
+
+/// <summary>Handles <see cref="AddDeliverableCommand"/>.</summary>
+public sealed class AddDeliverableCommandHandler : ICommandHandler<AddDeliverableCommand>
+{
+    private readonly IDeliverableService _service;
+
+    /// <summary>Initialises a new instance of the <see cref="AddDeliverableCommandHandler"/> class.</summary>
+    public AddDeliverableCommandHandler(IDeliverableService service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        _service = service;
+    }
+
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(AddDeliverableCommand command, CancellationToken cancellationToken)
+    {
+        if (command.ProjectId == Guid.Empty)
+            return CommandResult.Failure("Open a project first — a deliverable is added to the project currently open.");
+
+        try
+        {
+            var deliverable = await _service
+                .AddDeliverableAsync(command.ProjectId, command.Title, command.TargetDate, cancellationToken)
+                .ConfigureAwait(false);
+
+            return CommandResult.Success($"Deliverable '{deliverable.DisplayName}' added.", deliverable.Id, CanonicalObjectKinds.Deliverable);
+        }
+        catch (ArgumentException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
+    }
+}

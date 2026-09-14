@@ -119,4 +119,17 @@ public enum ShellArea
     /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
     /// </remarks>
     Settings,
+
+    /// <summary>
+    /// The Quotes area (`WP 19.5B`, `ADR-0152`): every quotation across
+    /// open projects, as New (Draft), Sent and Outstanding (Sent longer
+    /// than seven days ago) — opened right up in the project's own Quote
+    /// tab. `WP 19.7A` will move this registration under a Business
+    /// module; kept as a single rail entry here in the meantime.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted — see <see cref="EngineeringCalculation"/>'s
+    /// own identical remark; <c>ShellLocation</c> is persisted by ordinal.
+    /// </remarks>
+    Quotes,
 }

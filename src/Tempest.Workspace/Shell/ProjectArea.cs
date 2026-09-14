@@ -46,4 +46,12 @@ public enum ProjectArea
     /// </summary>
     /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
     Deliverables,
+
+    /// <summary>
+    /// This project's own quotation(s) — opened with the project, defining
+    /// its initial deliverables and requirements once accepted
+    /// (`WP 19.5B`, `ADR-0152`).
+    /// </summary>
+    /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
+    Quote,
 }

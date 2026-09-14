@@ -16,6 +16,12 @@ public static class QuotationCommandIds
     /// <summary>Adds a line to the selected quotation.</summary>
     public const string AddLine = "quotation.add-line";
 
+    /// <summary>Replaces a line on the selected quotation (`WP 19.5B`).</summary>
+    public const string UpdateLine = "quotation.update-line";
+
+    /// <summary>Removes a line from the selected quotation (`WP 19.5B`).</summary>
+    public const string RemoveLine = "quotation.remove-line";
+
     /// <summary>Sends the selected quotation.</summary>
     public const string Send = "quotation.send";
 
@@ -77,6 +83,8 @@ public static class QuotationWorkspaceRegistration
 
         commandDispatcher.RegisterHandler<CreateQuotationCommand>(new CreateQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<AddQuotationLineCommand>(new AddQuotationLineCommandHandler(quotationService));
+        commandDispatcher.RegisterHandler<UpdateQuotationLineCommand>(new UpdateQuotationLineCommandHandler(quotationService));
+        commandDispatcher.RegisterHandler<RemoveQuotationLineCommand>(new RemoveQuotationLineCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<SendQuotationCommand>(new SendQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<AcceptQuotationCommand>(new AcceptQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<DeclineQuotationCommand>(new DeclineQuotationCommandHandler(quotationService));
@@ -117,6 +125,44 @@ public static class QuotationWorkspaceRegistration
                 appliesToKinds: QuotationKind),
         });
 
+        // `WP 19.5B`: the Quote tab's own editable lines table (brief
+        // scope item 2) needs a real command for "edit" and "remove", not
+        // only "add" — see `QuotationCommands.UpdateQuotationLineCommand`'s
+        // own remarks for why this file is touched beyond this Work
+        // Package's own brief.
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.UpdateLine, displayName: "Update Quotation Line", category: "Quotations",
+            description: "Replaces a line on the selected, Draft quotation — either hours and a rate, or a fixed price, never both.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new UpdateQuotationLineCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
+                    ParseGuidOrEmpty(values["lineId"]), values["description"], ParseDecimalOrNull(values["hours"]),
+                    ParseMoneyOrNull(values["rate"]), ParseMoneyOrNull(values["fixedPrice"])),
+                [
+                    new CommandParameter("lineId", "Line id", Validate: ValidateGuid),
+                    WorkspaceCommandBindings.Required("description", "Description"),
+                    new CommandParameter("hours", "Hours (hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalDecimal),
+                    new CommandParameter("rate", "Rate (\"amount currency\", hourly lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
+                    new CommandParameter("fixedPrice", "Fixed price (\"amount currency\", fixed-price lines only)", DefaultValue: string.Empty, Validate: ValidateOptionalMoney),
+                ],
+                appliesToKinds: QuotationKind),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.RemoveLine, displayName: "Remove Quotation Line", category: "Quotations",
+            description: "Removes a line from the selected, Draft quotation.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new RemoveQuotationLineCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, ParseGuidOrEmpty(values["lineId"])),
+                [new CommandParameter("lineId", "Line id", Validate: ValidateGuid)],
+                appliesToKinds: QuotationKind,
+                confirmationMessage: "Remove this line from the quotation?"),
+        });
+
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.Send, displayName: "Send Quotation", category: "Quotations",
             description: "Sends the selected, Draft quotation to its client — refused if it carries no lines.")
@@ -150,6 +196,12 @@ public static class QuotationWorkspaceRegistration
                 confirmationMessage: "Decline the selected quotation? This cannot be undone."),
         });
     }
+
+    private static string? ValidateGuid(string value) =>
+        Guid.TryParse(value, out _) ? null : "must be a valid line id.";
+
+    private static Guid ParseGuidOrEmpty(string value) =>
+        Guid.TryParse(value, out var id) ? id : Guid.Empty;
 
     private static string? ValidateOptionalDecimal(string value) =>
         string.IsNullOrWhiteSpace(value) || WorkspaceCommandBindings.ParseDecimal(value) is not null

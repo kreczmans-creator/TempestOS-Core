@@ -33,6 +33,14 @@ public static class ProjectAreas
         new(ProjectArea.Overview, "Overview", "◉", NavigationAvailability.Implemented,
             "The project's own identity, lifecycle and real engineering contents."),
 
+        // `WP 19.5B` (`ADR-0152`, Product Owner comment item 4): a quote
+        // is opened with the project and defines its initial deliverables
+        // and requirements once accepted — placed right after Overview,
+        // ahead of Structure, since the Product Owner's own words put it
+        // first ("a quote is opened with the project").
+        new(ProjectArea.Quote, "Quote", "◐", NavigationAvailability.Implemented,
+            "This project's own quotation(s) — identity, lines and totals while Draft, Send/Accept/Decline/Export, and the deliverables and requirements a quote creates once accepted."),
+
         // `WP 19.2B`: this tab's own title changed from "Engineering" to
         // "Structure" — the surface itself is unchanged (still the real
         // Engineering Workspace, ribbon and docking, scoped to this

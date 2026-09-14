@@ -328,6 +328,16 @@ public sealed class ObjectEditorView : UserControl
     private readonly StackPanel _invoiceExternalPanel = new() { Spacing = DesignTokens.SpaceXs };
     private Expander _invoiceExternalSection = null!;
 
+    // `WP 19.5B` (`ADR-0152`): a quotation's own Lines section, read-only
+    // here exactly as `InvoiceRequest`'s own Lines section is — editing a
+    // quotation's lines is the Quote tab's own job
+    // (`Tempest.Desktop.Views.ProjectQuoteView`), reached when the project
+    // is open; a quotation opened from the Explorer or the Command
+    // Palette (no project workspace on screen) still shows its lines and
+    // total here.
+    private readonly StackPanel _quotationLinesPanel = new() { Spacing = DesignTokens.SpaceXs };
+    private Expander _quotationLinesSection = null!;
+
     private string _originalName = string.Empty;
     private string _originalContent = string.Empty;
     private bool _isDirty;
@@ -867,6 +877,11 @@ public sealed class ObjectEditorView : UserControl
         _invoiceExternalSection = BuildSection("Connector", _invoiceExternalPanel);
         _invoiceExternalSection.IsVisible = false;
 
+        // `WP 19.5B`: a quotation's own Lines section — read-only here,
+        // mirroring `_invoiceLinesSection` immediately above.
+        _quotationLinesSection = BuildSection("Lines", _quotationLinesPanel);
+        _quotationLinesSection.IsVisible = false;
+
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(header);
         body.Children.Add(_statusMessage);
@@ -875,6 +890,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_descriptionSection);
         body.Children.Add(_commercialSection);
         body.Children.Add(_invoiceLinesSection);
+        body.Children.Add(_quotationLinesSection);
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
         body.Children.Add(_bomSection);
@@ -947,6 +963,7 @@ public sealed class ObjectEditorView : UserControl
         await PopulateWhereUsedAsync(target).ConfigureAwait(true);
         await PopulateCommercialAsync(target).ConfigureAwait(true);
         PopulateInvoiceRequest(target);
+        PopulateQuotation(target);
 
         PopulateLifecycle(target);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
@@ -1374,6 +1391,60 @@ public sealed class ObjectEditorView : UserControl
                 FontSize = DesignTokens.FontSizeBody,
             });
         }
+    }
+
+    /// <summary>
+    /// The quotation's own Lines section (`WP 19.5B`, `ADR-0152`) — mirrors
+    /// <see cref="PopulateInvoiceRequest"/> exactly, read-only: editing a
+    /// quotation's own lines is <c>ProjectQuoteView</c>'s job, reached
+    /// through the project's own Quote tab; this is what a quotation
+    /// opened from the Explorer or the Command Palette shows instead.
+    /// </summary>
+    private void PopulateQuotation(IEngineeringObject target)
+    {
+        var declaration = _declarations?.For(_objectKind);
+
+        if (declaration is null || target is not Core.Quotations.Quotation quotation)
+        {
+            _quotationLinesSection.IsVisible = false;
+            return;
+        }
+
+        _quotationLinesSection.IsVisible = declaration.HasSection(Tempest.Workspace.Editors.EditorSectionKeys.QuotationLines);
+        _quotationLinesPanel.Children.Clear();
+
+        _quotationLinesPanel.Children.Add(new TextBlock
+        {
+            Text = $"{quotation.Reference}  •  {quotation.Status}  •  {quotation.QuoteDate:yyyy-MM-dd}  •  {quotation.Currency}",
+            FontWeight = DesignTokens.WeightHeading,
+            FontSize = DesignTokens.FontSizeBody,
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        if (quotation.Lines.Count == 0)
+        {
+            _quotationLinesPanel.Children.Add(new TextBlock { Text = "(no lines)", Opacity = 0.5, FontSize = DesignTokens.FontSizeBody });
+        }
+
+        foreach (var line in quotation.Lines)
+        {
+            _quotationLinesPanel.Children.Add(new TextBlock
+            {
+                Text = line.Basis == Core.Quotations.QuotationLineBasis.Hourly
+                    ? $"{line.Description}  •  {line.Hours:0.##} × {line.Rate}  =  {line.Amount}"
+                    : $"{line.Description}  •  {line.Amount} (fixed)",
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = DesignTokens.FontSizeBody,
+            });
+        }
+
+        _quotationLinesPanel.Children.Add(new TextBlock
+        {
+            Text = $"Total {quotation.Total}",
+            FontWeight = DesignTokens.WeightHeading,
+            FontSize = DesignTokens.FontSizeBody,
+            Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0),
+        });
     }
 
     private async Task PopulateCommercialAsync(IEngineeringObject target)

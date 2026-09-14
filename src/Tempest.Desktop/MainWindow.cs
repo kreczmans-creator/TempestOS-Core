@@ -9,6 +9,7 @@ using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Quotations;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.History;
 using Tempest.Desktop.Tasks;
@@ -115,6 +116,12 @@ public sealed class MainWindow : Window
     private readonly ReportsView _reportsView;
     private readonly SettingsView _settingsView;
 
+    // The Quotes area and the New Project prompt's own "open a quotation"
+    // option (`WP 19.5B`, `ADR-0152`).
+    private readonly QuotesView _quotesView;
+    private readonly NewProjectPrompt _newProjectPrompt;
+    private readonly IQuotationService _quotationService;
+
     // WP 10.6A — Command Execution & Productivity Experience.
     private readonly CommandHistoryLog _commandHistory;
     private readonly IBackgroundTaskRunner _backgroundTaskRunner;
@@ -124,6 +131,14 @@ public sealed class MainWindow : Window
 
     /// <summary>The area registry (`WP 19.2A`, `TD-109`) — see <see cref="ShellAreaRender"/>.</summary>
     private readonly Dictionary<ShellArea, ShellAreaRender> _areaRegistry;
+
+    /// <summary>
+    /// The project a just-created quotation should redirect to its own
+    /// Quote tab for, the next time <see cref="RenderCurrentModuleAsync"/>
+    /// runs against it (`WP 19.5B`) — see that method's own remarks for
+    /// why this indirection exists at all.
+    /// </summary>
+    private Guid? _pendingQuoteTabProjectId;
 
     /// <summary>Initialises a new instance of the <see cref="MainWindow"/> class over an already-started <see cref="WorkspaceHost"/>.</summary>
     /// <param name="host">The already-started Workspace Host this window presents.</param>
@@ -217,6 +232,9 @@ public sealed class MainWindow : Window
         _invoicingView = views.InvoicingView;
         _reportsView = views.ReportsView;
         _settingsView = views.SettingsView;
+        _quotesView = views.QuotesView;
+        _newProjectPrompt = views.NewProjectPrompt;
+        _quotationService = (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -261,6 +279,10 @@ public sealed class MainWindow : Window
             // land here" discipline every other area follows.
             [ShellArea.Reports] = new(() => _reportsView, () => _reportsView.RefreshAsync()),
             [ShellArea.Settings] = new(() => _settingsView, () => _settingsView.RefreshAsync()),
+            // `WP 19.5B` (`ADR-0152`): re-read on every entry, the same
+            // "load when you land here" discipline every other area
+            // follows.
+            [ShellArea.Quotes] = new(() => _quotesView, () => _quotesView.RefreshAsync()),
         };
 
         // `TD-84`: no Explorer area is selected by default — the
@@ -422,6 +444,22 @@ public sealed class MainWindow : Window
     /// </remarks>
     public async Task RenderCurrentModuleAsync()
     {
+        // `WP 19.5B` (`ADR-0152`): the New Project prompt's own "open a
+        // quotation for this project" option creates the quote inside
+        // `PromptForNewProjectAsync`, before `ProjectBrowserView.CreateAsync`'s
+        // own subsequent `IShellNavigator.OpenProjectAsync(created.Id)`
+        // call runs (unconditionally, to the default `ProjectArea.Overview`)
+        // and would otherwise overwrite any area this method set directly.
+        // Redirecting here, the one place every navigation ultimately
+        // renders through, is what makes the quote actually open right up
+        // rather than losing a race with that later call.
+        if (_pendingQuoteTabProjectId is { } pendingProjectId
+            && _navigator.Current is { Area: ShellArea.ProjectWorkspace, ProjectId: { } currentProjectId } && currentProjectId == pendingProjectId)
+        {
+            _pendingQuoteTabProjectId = null;
+            await _navigator.GoToProjectAreaAsync(ProjectArea.Quote).ConfigureAwait(true);
+        }
+
         var location = _navigator.Current;
 
         if (!_areaRegistry.ContainsKey(location.Area))
@@ -628,29 +666,54 @@ public sealed class MainWindow : Window
         };
     }
 
-    /// <summary>Collects an identifier and name for a new project, creating it on confirmation. Returns whether a project was created.</summary>
+    /// <summary>
+    /// Collects a name for a new project — and, `WP 19.5B` (`ADR-0152`,
+    /// Product Owner comment item 4), whether to open a quotation with it,
+    /// checked by default — creating both on confirmation. Returns whether
+    /// a project was created.
+    /// </summary>
     private async Task<bool> PromptForNewProjectAsync(string suggestedIdentifier, string _)
     {
-        var name = await _inputDialog.PromptAsync(
-            "New Project",
-            $"Name for {suggestedIdentifier}:",
-            validate: value => value.Length > 200 ? "Name is too long (200 characters max)." : null).ConfigureAwait(true);
+        var input = await _newProjectPrompt.PromptAsync("New Project", $"Name for {suggestedIdentifier}:").ConfigureAwait(true);
 
-        if (name is null)
+        if (input is null)
             return false;
+
+        Tempest.Workspace.Projects.ProjectSummary created;
 
         try
         {
-            var created = await _projectDirectory.CreateAsync(suggestedIdentifier, name).ConfigureAwait(true);
+            created = await _projectDirectory.CreateAsync(suggestedIdentifier, input.Name).ConfigureAwait(true);
             _toastHost.Show($"Created {created.Label}.", FeedbackSeverity.Success);
             RecordHistory($"Created project {created.Label}.");
-            return true;
         }
         catch (DuplicateProjectIdentifierException ex)
         {
             _toastHost.Show(ex.Message, FeedbackSeverity.Error);
             return false;
         }
+
+        if (input.OpenQuotation)
+        {
+            var quotationResult = await _quotationService.CreateAsync(created.Id).ConfigureAwait(true);
+
+            if (quotationResult.Succeeded)
+            {
+                // `RenderCurrentModuleAsync`'s own remarks: the caller
+                // (`ProjectBrowserView.CreateAsync`) still opens this
+                // project to its default Overview right after this method
+                // returns — this flag is what redirects that render to the
+                // Quote tab instead, once it actually happens.
+                _pendingQuoteTabProjectId = created.Id;
+                RecordHistory($"Opened quotation '{quotationResult.Quotation!.Reference}' with {created.Label}.");
+            }
+            else
+            {
+                _toastHost.Show($"'{created.Label}' was created, but its quotation could not be opened: {quotationResult.Reason}", FeedbackSeverity.Warning);
+            }
+        }
+
+        return true;
     }
 
     private void RefreshOutputPanelExtras()
