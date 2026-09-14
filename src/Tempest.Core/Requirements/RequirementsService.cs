@@ -2,6 +2,7 @@ using System.Text.Json;
 using Tempest.Core.Concurrency;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
@@ -64,6 +65,25 @@ namespace Tempest.Core.Requirements;
 /// <see cref="VerificationService.RecordAsync"/> already established for
 /// its own subject-document check.
 /// </para>
+/// <para>
+/// <b>Every mutating write announces itself on the platform's change
+/// feed</b> (`WP 18.1A`, `TD-28` closure). Before this, every write here
+/// went straight through <see cref="IEngineeringDocumentStore"/>/
+/// <see cref="IPersistenceStore"/> and never through
+/// <see cref="EngineeringDomain.EngineeringDomainContext.ExecuteWriteAsync"/>
+/// — the only place the change feed was ever published from — so a
+/// docked Requirements Explorer or Cockpit went stale until the user
+/// navigated away and back. Each of the fourteen mutators now commits its
+/// document-store write(s) through <see cref="_transactionalStore"/>'s own
+/// <see cref="IQueryablePersistenceStore.ExecuteInTransactionAsync"/> —
+/// the only operation that advances <see cref="IQueryablePersistenceStore.CurrentSequence"/>
+/// — and, once that transaction has committed, publishes exactly one
+/// <see cref="WorkspaceChange"/> naming the touched object, its own Kind,
+/// and what happened to it, through the same <see cref="IWorkspaceChangePublisher"/>
+/// and the same store-wide sequence counter every other engineering write
+/// announces itself through (`ADR-0145`). Never published before commit;
+/// never published for a write this service refused.
+/// </para>
 /// </remarks>
 public sealed class RequirementsService : IRequirementsService
 {
@@ -95,6 +115,7 @@ public sealed class RequirementsService : IRequirementsService
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IVerificationService _verificationService;
     private readonly ILogger? _logger;
+    private readonly IWorkspaceChangePublisher? _workspaceChanges;
     private readonly AsyncKeyedLock _identifierLock = new();
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsService"/> class.</summary>
@@ -106,6 +127,15 @@ public sealed class RequirementsService : IRequirementsService
     /// double that implements only the narrower, non-transactional
     /// interface is refused here rather than letting <see cref="CreateAsync"/>
     /// silently fall back to two separate writes (`TD-67`).
+    /// <paramref name="workspaceChanges"/> (`TD-28` closure) is where every
+    /// mutator publishes once its own write has committed — the same
+    /// <see cref="IWorkspaceChangePublisher"/> instance
+    /// <see cref="EngineeringDomain.EngineeringDomainContext"/> is given
+    /// (`TempestHost`'s composition root registers one <see cref="WorkspaceChangeFeed"/>
+    /// under both publish and subscribe interfaces before either consumer
+    /// resolves it). <see langword="null"/> — the default — is a
+    /// legitimate, silent no-op, mirroring <see cref="EngineeringDomain.EngineeringDomainContext"/>'s
+    /// own identical optional collaborator.
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentStore"/>, <paramref name="persistenceStore"/>,
@@ -121,7 +151,8 @@ public sealed class RequirementsService : IRequirementsService
         IPersistenceStore persistenceStore,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IVerificationService verificationService,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        IWorkspaceChangePublisher? workspaceChanges = null)
     {
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(persistenceStore);
@@ -145,6 +176,7 @@ public sealed class RequirementsService : IRequirementsService
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _verificationService = verificationService;
         _logger = logger;
+        _workspaceChanges = workspaceChanges;
     }
 
     /// <inheritdoc />
@@ -182,6 +214,8 @@ public sealed class RequirementsService : IRequirementsService
                 },
                 cancellationToken).ConfigureAwait(false);
 
+            PublishChange(documentId, RequirementDocumentKind, WorkspaceChangeType.Created);
+
             _logger?.Information($"Requirement created: '{identifier}' (document '{documentId}').");
 
             return ToRequirement(documentId, dto, revisionNumber: 1);
@@ -216,12 +250,21 @@ public sealed class RequirementsService : IRequirementsService
             ?? throw new RequirementNotFoundException(requirementId);
 
         var dto = current with { Statement = newStatement };
-        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), changeSummary, cancellationToken)
-            .ConfigureAwait(false);
+        IDocumentRevision? revision = null;
 
-        _logger?.Information($"Requirement revised: '{dto.Identifier}' (revision {revision.RevisionNumber}).");
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), changeSummary, token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
 
-        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.Updated);
+
+        _logger?.Information($"Requirement revised: '{dto.Identifier}' (revision {revision!.RevisionNumber}).");
+
+        return ToRequirement(requirementId, dto, revision!.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -234,8 +277,12 @@ public sealed class RequirementsService : IRequirementsService
             throw new InvalidRequirementStatusTransitionException(current.Status, status);
 
         var dto = current with { Status = status };
-        await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Status changed to {status}.", cancellationToken)
-            .ConfigureAwait(false);
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            (transaction, token) => _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), $"Status changed to {status}.", token),
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.StatusChanged);
 
         _logger?.Information($"Requirement status changed: '{dto.Identifier}' → '{status}'.");
     }
@@ -247,12 +294,21 @@ public sealed class RequirementsService : IRequirementsService
             ?? throw new RequirementNotFoundException(requirementId);
 
         var dto = current with { Owner = owner };
-        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Owner changed to '{owner ?? "(none)"}'.", cancellationToken)
-            .ConfigureAwait(false);
+        IDocumentRevision? revision = null;
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), $"Owner changed to '{owner ?? "(none)"}'.", token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.Updated);
 
         _logger?.Information($"Requirement owner changed: '{dto.Identifier}' → '{owner ?? "(none)"}'.");
 
-        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+        return ToRequirement(requirementId, dto, revision!.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -262,12 +318,21 @@ public sealed class RequirementsService : IRequirementsService
             ?? throw new RequirementNotFoundException(requirementId);
 
         var dto = current with { Priority = priority };
-        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Priority changed to '{priority?.ToString() ?? "(none)"}'.", cancellationToken)
-            .ConfigureAwait(false);
+        IDocumentRevision? revision = null;
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), $"Priority changed to '{priority?.ToString() ?? "(none)"}'.", token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.Updated);
 
         _logger?.Information($"Requirement priority changed: '{dto.Identifier}' → '{priority?.ToString() ?? "(none)"}'.");
 
-        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+        return ToRequirement(requirementId, dto, revision!.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -277,12 +342,21 @@ public sealed class RequirementsService : IRequirementsService
             ?? throw new RequirementNotFoundException(requirementId);
 
         var dto = current with { IsDeleted = true };
-        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
-            .ConfigureAwait(false);
+        IDocumentRevision? revision = null;
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), "Deleted.", token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.Deleted);
 
         _logger?.Information($"Requirement deleted: '{dto.Identifier}'.");
 
-        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+        return ToRequirement(requirementId, dto, revision!.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -295,15 +369,28 @@ public sealed class RequirementsService : IRequirementsService
             throw new EngineeringDocumentNotFoundException(groupId.Value);
 
         var dto = current with { GroupId = groupId };
-        var revision = await _documentStore.ReviseAsync(requirementId, JsonSerializer.Serialize(dto), $"Moved to group '{groupId?.ToString() ?? "(none)"}'.", cancellationToken)
-            .ConfigureAwait(false);
+        IDocumentRevision? revision = null;
 
-        if (groupId is not null)
-            await _documentStore.LinkAsync(requirementId, groupId.Value, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+        // The revision and the GroupedUnder link land in one transaction
+        // (`TD-28`) — a single logical move is one committed fact, and one
+        // WorkspaceChange entry, never two.
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                revision = await _documentWriter.ReviseAsync(transaction, requirementId, JsonSerializer.Serialize(dto), $"Moved to group '{groupId?.ToString() ?? "(none)"}'.", token)
+                    .ConfigureAwait(false);
+
+                if (groupId is not null)
+                    await _documentWriter.LinkAsync(transaction, requirementId, groupId.Value, RequirementRelationshipKinds.GroupedUnder, token)
+                        .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(requirementId, RequirementDocumentKind, WorkspaceChangeType.Moved);
 
         _logger?.Information($"Requirement moved to group: '{dto.Identifier}' → '{groupId?.ToString() ?? "(none)"}'.");
 
-        return ToRequirement(requirementId, dto, revision.RevisionNumber);
+        return ToRequirement(requirementId, dto, revision!.RevisionNumber);
     }
 
     /// <inheritdoc />
@@ -314,7 +401,11 @@ public sealed class RequirementsService : IRequirementsService
         if (await _documentStore.FindAsync(sourceRequirementId, cancellationToken).ConfigureAwait(false) is null)
             throw new RequirementNotFoundException(sourceRequirementId);
 
-        await _documentStore.LinkAsync(sourceRequirementId, targetDocumentId, relationshipKind, cancellationToken).ConfigureAwait(false);
+        await _transactionalStore.ExecuteInTransactionAsync(
+            (transaction, token) => _documentWriter.LinkAsync(transaction, sourceRequirementId, targetDocumentId, relationshipKind, token),
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(sourceRequirementId, RequirementDocumentKind, WorkspaceChangeType.Updated);
 
         _logger?.Information($"Requirement relationship recorded: '{sourceRequirementId}' --[{relationshipKind}]--> '{targetDocumentId}'.");
     }
@@ -354,15 +445,28 @@ public sealed class RequirementsService : IRequirementsService
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         var dto = new RequirementCollectionDto(name);
-        var document = await _documentStore.CreateAsync(RequirementCollectionDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
-            .ConfigureAwait(false);
+        var documentId = Guid.NewGuid();
 
-        await _persistenceStore.WriteAsync(CollectionRegistryCollectionName, document.Id.ToString("N"), document.Id.ToString("N"), cancellationToken)
-            .ConfigureAwait(false);
+        // The document and its registry entry land in one transaction
+        // (`TD-28`) — the same one-write-per-logical-change shape
+        // CreateAsync's own TD-67 closure already established for
+        // Requirements' identifier index.
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.CreateAsync(transaction, documentId, RequirementCollectionDocumentKind, JsonSerializer.Serialize(dto), token)
+                    .ConfigureAwait(false);
 
-        _logger?.Information($"Requirement collection created: '{name}' (document '{document.Id}').");
+                await transaction.WriteAsync(CollectionRegistryCollectionName, documentId.ToString("N"), documentId.ToString("N"), token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
 
-        return new RequirementCollection(document.Id, name, [], dto.IsDeleted);
+        PublishChange(documentId, RequirementCollectionDocumentKind, WorkspaceChangeType.Created);
+
+        _logger?.Information($"Requirement collection created: '{name}' (document '{documentId}').");
+
+        return new RequirementCollection(documentId, name, [], dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -395,8 +499,12 @@ public sealed class RequirementsService : IRequirementsService
         var current = DeserialiseContent<RequirementCollectionDto>(history[^1].Content, $"Requirement collection '{collectionId}'");
 
         var dto = current with { IsDeleted = true };
-        await _documentStore.ReviseAsync(collectionId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
-            .ConfigureAwait(false);
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            (transaction, token) => _documentWriter.ReviseAsync(transaction, collectionId, JsonSerializer.Serialize(dto), "Deleted.", token),
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(collectionId, RequirementCollectionDocumentKind, WorkspaceChangeType.Deleted);
 
         _logger?.Information($"Requirement collection deleted: '{dto.Name}'.");
 
@@ -419,7 +527,11 @@ public sealed class RequirementsService : IRequirementsService
         if (await _documentStore.FindAsync(requirementId, cancellationToken).ConfigureAwait(false) is null)
             throw new RequirementNotFoundException(requirementId);
 
-        await _documentStore.LinkAsync(collectionId, requirementId, RequirementRelationshipKinds.CollectedIn, cancellationToken).ConfigureAwait(false);
+        await _transactionalStore.ExecuteInTransactionAsync(
+            (transaction, token) => _documentWriter.LinkAsync(transaction, collectionId, requirementId, RequirementRelationshipKinds.CollectedIn, token),
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(collectionId, RequirementCollectionDocumentKind, WorkspaceChangeType.Updated);
 
         _logger?.Information($"Requirement '{requirementId}' added to collection '{collectionId}'.");
     }
@@ -433,18 +545,32 @@ public sealed class RequirementsService : IRequirementsService
             throw new EngineeringDocumentNotFoundException(parentGroupId.Value);
 
         var dto = new RequirementGroupDto(name, parentGroupId);
-        var document = await _documentStore.CreateAsync(RequirementGroupDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
-            .ConfigureAwait(false);
+        var documentId = Guid.NewGuid();
 
-        await _persistenceStore.WriteAsync(GroupRegistryCollectionName, document.Id.ToString("N"), document.Id.ToString("N"), cancellationToken)
-            .ConfigureAwait(false);
+        // The document, its registry entry, and the optional GroupedUnder
+        // link to the parent all land in one transaction (`TD-28`) — the
+        // same one-write-per-logical-change shape CreateCollectionAsync
+        // now uses.
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.CreateAsync(transaction, documentId, RequirementGroupDocumentKind, JsonSerializer.Serialize(dto), token)
+                    .ConfigureAwait(false);
 
-        if (parentGroupId is not null)
-            await _documentStore.LinkAsync(document.Id, parentGroupId.Value, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+                await transaction.WriteAsync(GroupRegistryCollectionName, documentId.ToString("N"), documentId.ToString("N"), token)
+                    .ConfigureAwait(false);
 
-        _logger?.Information($"Requirement group created: '{name}' (document '{document.Id}').");
+                if (parentGroupId is not null)
+                    await _documentWriter.LinkAsync(transaction, documentId, parentGroupId.Value, RequirementRelationshipKinds.GroupedUnder, token)
+                        .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
 
-        return new RequirementGroup(document.Id, name, parentGroupId, dto.IsDeleted);
+        PublishChange(documentId, RequirementGroupDocumentKind, WorkspaceChangeType.Created);
+
+        _logger?.Information($"Requirement group created: '{name}' (document '{documentId}').");
+
+        return new RequirementGroup(documentId, name, parentGroupId, dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -500,11 +626,22 @@ public sealed class RequirementsService : IRequirementsService
         }
 
         var dto = current with { ParentGroupId = newParentGroupId };
-        await _documentStore.ReviseAsync(groupId, JsonSerializer.Serialize(dto), $"Moved under group '{newParentGroupId?.ToString() ?? "(none)"}'.", cancellationToken)
-            .ConfigureAwait(false);
 
-        if (newParentGroupId is not null)
-            await _documentStore.LinkAsync(groupId, newParentGroupId.Value, RequirementRelationshipKinds.GroupedUnder, cancellationToken).ConfigureAwait(false);
+        // The revision and the GroupedUnder link land in one transaction
+        // (`TD-28`), mirroring MoveToGroupAsync's own identical reasoning.
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.ReviseAsync(transaction, groupId, JsonSerializer.Serialize(dto), $"Moved under group '{newParentGroupId?.ToString() ?? "(none)"}'.", token)
+                    .ConfigureAwait(false);
+
+                if (newParentGroupId is not null)
+                    await _documentWriter.LinkAsync(transaction, groupId, newParentGroupId.Value, RequirementRelationshipKinds.GroupedUnder, token)
+                        .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(groupId, RequirementGroupDocumentKind, WorkspaceChangeType.Moved);
 
         _logger?.Information($"Requirement group moved: '{dto.Name}' → '{newParentGroupId?.ToString() ?? "(none)"}'.");
 
@@ -522,8 +659,12 @@ public sealed class RequirementsService : IRequirementsService
             throw new RequirementGroupHasChildrenException(groupId, liveChildren);
 
         var dto = current with { IsDeleted = true };
-        await _documentStore.ReviseAsync(groupId, JsonSerializer.Serialize(dto), "Deleted.", cancellationToken)
-            .ConfigureAwait(false);
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            (transaction, token) => _documentWriter.ReviseAsync(transaction, groupId, JsonSerializer.Serialize(dto), "Deleted.", token),
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(groupId, RequirementGroupDocumentKind, WorkspaceChangeType.Deleted);
 
         _logger?.Information($"Requirement group deleted: '{dto.Name}'.");
 
@@ -590,6 +731,27 @@ public sealed class RequirementsService : IRequirementsService
 
         return groups;
     }
+
+    /// <summary>
+    /// Announces one committed write on the platform's change feed
+    /// (`WP 18.1A`, `TD-28` closure) — always called after the transaction
+    /// that made the change has committed, naming the object it touched,
+    /// that object's own Kind, and what happened to it.
+    /// </summary>
+    /// <remarks>
+    /// Reads <see cref="IQueryablePersistenceStore.CurrentSequence"/> from
+    /// <see cref="_transactionalStore"/> at the moment of the call — the
+    /// same store, and the same counter,
+    /// <see cref="EngineeringDomain.EngineeringDomainContext.ExecuteWriteAsync"/>
+    /// reads for every other engineering write, since both resolve to the
+    /// one platform persistence store instance (`ADR-0144`). A caller with
+    /// no feed to publish to (most tests) leaves <see cref="_workspaceChanges"/>
+    /// <see langword="null"/>, making this a legitimate, silent no-op —
+    /// exactly as <see cref="EngineeringDomain.EngineeringDomainContext.ExecuteWriteAsync"/>'s
+    /// own identical <c>WorkspaceChanges is not null</c> guard.
+    /// </remarks>
+    private void PublishChange(Guid objectId, string kind, WorkspaceChangeType changeType) =>
+        _workspaceChanges?.Publish(new WorkspaceChange(_transactionalStore.CurrentSequence, [new WorkspaceChangeEntry(objectId, kind, changeType)]));
 
     /// <summary>
     /// Resolves <paramref name="identifier"/>'s backing document Id from
