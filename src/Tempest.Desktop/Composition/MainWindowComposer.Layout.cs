@@ -208,6 +208,7 @@ internal sealed partial class MainWindowComposer
         root.Children.Add(views.MacroManagerDialog);
         root.Children.Add(views.CitationPicker);
         root.Children.Add(views.SubjectPicker);
+        root.Children.Add(views.ObjectPickerDialog);
         root.Children.Add(views.DeclaredFigureEntry);
         root.Children.Add(views.CheckEntry);
         root.Children.Add(views.IssueEntry);
@@ -255,7 +256,7 @@ internal sealed partial class MainWindowComposer
         foreach (var modal in new Border[]
                  {
                      views.ConfirmationDialog, views.InputDialog, views.MessageDialog, views.MacroManagerDialog, views.CommandPalette,
-                     views.CitationPicker, views.SubjectPicker, views.DeclaredFigureEntry, views.CheckEntry, views.IssueEntry, views.ReviseReferenceRecordEntry,
+                     views.CitationPicker, views.SubjectPicker, views.ObjectPickerDialog, views.DeclaredFigureEntry, views.CheckEntry, views.IssueEntry, views.ReviseReferenceRecordEntry,
                      views.OrganisationPicker, views.RateCardPicker, views.TimesheetEntryPrompt, views.DeliverableCompletionPrompt,
                      views.NewProjectPrompt, views.ProjectPicker,
                  })

@@ -29,12 +29,18 @@ namespace Tempest.Desktop.Composition;
 internal sealed class DesktopCommandPrompt
 {
     private readonly InputDialog _inputDialog;
+    private readonly ObjectPickerDialog _objectPicker;
     private readonly Func<CommandDescriptor, string, Task<bool>> _confirm;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="DesktopCommandPrompt"/> class.
     /// </summary>
     /// <param name="inputDialog">The shell's own single-value input dialog.</param>
+    /// <param name="objectPicker">
+    /// The shell's own object-reference picker (`WP 20.2A`, FCR-0073) —
+    /// substituted for <paramref name="inputDialog"/> whenever a parameter
+    /// declares <see cref="CommandParameter.ObjectPickerKinds"/>.
+    /// </param>
     /// <param name="confirm">
     /// Asks the person to confirm an action, given the command being
     /// invoked and the binding's own message. Separate from the dialog
@@ -44,12 +50,14 @@ internal sealed class DesktopCommandPrompt
     /// class.
     /// </param>
     /// <exception cref="ArgumentNullException">Any argument is <see langword="null"/>.</exception>
-    public DesktopCommandPrompt(InputDialog inputDialog, Func<CommandDescriptor, string, Task<bool>> confirm)
+    public DesktopCommandPrompt(InputDialog inputDialog, ObjectPickerDialog objectPicker, Func<CommandDescriptor, string, Task<bool>> confirm)
     {
         ArgumentNullException.ThrowIfNull(inputDialog);
+        ArgumentNullException.ThrowIfNull(objectPicker);
         ArgumentNullException.ThrowIfNull(confirm);
 
         _inputDialog = inputDialog;
+        _objectPicker = objectPicker;
         _confirm = confirm;
     }
 
@@ -73,18 +81,28 @@ internal sealed class DesktopCommandPrompt
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // allowBlank: true — CommandParameter's own contract
-            // (`CommandParameter.cs` remarks): "an empty string is a value,
-            // and a binding that will not accept one says so through
-            // Validate." Whether blank is acceptable is entirely the
-            // parameter's own Check to decide; this prompt never
-            // pre-empts it with a dialog-level "a value is required".
-            var value = await _inputDialog.PromptAsync(
-                descriptor.DisplayName,
-                LabelFor(parameter),
-                initialValue: parameter.DefaultValue ?? string.Empty,
-                validate: parameter.Check,
-                allowBlank: true).ConfigureAwait(true);
+            // WP 20.2A (FCR-0073): a parameter declaring ObjectPickerKinds
+            // is a destination chosen from the object picker, never typed —
+            // the one substitution point in this loop. Both dialogs share
+            // the identical string? contract (null declines the whole
+            // command; an empty string is a value, checked exactly like any
+            // other by CheckValues below), so nothing else in this method
+            // needs to know which one ran.
+            string? value = parameter.ObjectPickerKinds is { } kinds
+                ? await _objectPicker.PickAsync(descriptor.DisplayName, kinds, cancellationToken).ConfigureAwait(true)
+                // allowBlank: true — CommandParameter's own contract
+                // (`CommandParameter.cs` remarks): "an empty string is a
+                // value, and a binding that will not accept one says so
+                // through Validate." Whether blank is acceptable is
+                // entirely the parameter's own Check to decide; this prompt
+                // never pre-empts it with a dialog-level "a value is
+                // required".
+                : await _inputDialog.PromptAsync(
+                    descriptor.DisplayName,
+                    LabelFor(parameter),
+                    initialValue: parameter.DefaultValue ?? string.Empty,
+                    validate: parameter.Check,
+                    allowBlank: true).ConfigureAwait(true);
 
             // Declined, at any step. Nothing collected so far is used.
             if (value is null)

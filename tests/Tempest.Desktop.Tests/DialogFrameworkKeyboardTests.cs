@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;
@@ -321,8 +322,10 @@ public sealed class DialogFrameworkKeyboardTests
             var descriptor = registry.Items.Single(d => d.Id == "mechanical.create");
 
             var inputDialog = new InputDialog();
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            var objectPicker = new ObjectPickerDialog(domainContext);
             var confirmationDialog = new ConfirmationDialog();
-            var commandPrompt = new DesktopCommandPrompt(inputDialog, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
+            var commandPrompt = new DesktopCommandPrompt(inputDialog, objectPicker, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
 
             var palette = new CommandPaletteOverlay(registry)
             {
@@ -371,9 +374,8 @@ public sealed class DialogFrameworkKeyboardTests
             Assert.NotNull(result);
             Assert.True(result!.Succeeded);
 
-            var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
+            Assert.Contains(created, o => (o as IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
         }
         finally
         {
