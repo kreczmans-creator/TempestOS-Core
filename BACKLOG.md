@@ -651,6 +651,22 @@ closed by earlier Desktop work — `WorkspaceHost` was already
 establishing a session principal before this Work Package began — so,
 like `TD-02`, it was never a row here to move.
 
+**Closed by `WP 20.3D` (2026-09-15), not a `TD-` row — never a row here
+to move:** `B6`, raised by `docs/releases/v0.19.1/Technical Debt
+Rationalisation — Part 1.md` ("`.github/workflows/ci.yml:73-82` — the
+90-minute ceiling is still in place and still trending up ... `S-M, 1-3d
+— shard the suite, or a further structural split`"), a process/CI-only
+item outside this file's own `TD-` numbering and never entered into the
+Live Backlog triage above (raised after that triage). `.github/workflows/ci.yml`'s
+`build-and-test` job now shards `tests/Tempest.Desktop.Tests` across
+three parallel `matrix.shard` legs per configuration (`desktop-1`/`2`/`3`,
+a `--filter` split by the first letter of each class's own namespace
+segment, roughly 200 tests each) alongside an unsharded `core` leg for
+`tests/Tempest.Core.Tests`, so no single leg need approach the whole
+suite's combined time; `timeout-minutes` returns to 45 from the 90 `WP
+19.9.1` raised it to. See `docs/releases/v0.20.0/Release Notes.md`'s own
+`WP 20.3D` row for the shard split and counts.
+
 ## Archived with the Layer
 
 Not debt in a product that does not ship the layer:
