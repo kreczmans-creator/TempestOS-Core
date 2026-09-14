@@ -107,13 +107,28 @@ public class ProductConvergenceTests
         }
     }
 
-    /// <summary>The other half of "removed, not dimmed": the five ordinals with no descriptor throw exactly like any other undeclared area, rather than being silently tolerated.</summary>
+    /// <summary>
+    /// The other half of "removed, not dimmed": these ordinals have no
+    /// descriptor and throw exactly like any other undeclared area, rather
+    /// than being silently tolerated. `WP 19.7A`: Tasks re-joins the
+    /// declared set (see <see cref="TheProductsDesignedModuleAndAreaSets_AreBothPresent"/>);
+    /// Evidence, Timesheets, Invoicing, Reports, EngineeringCalculation and
+    /// Quotes join this list instead — each one's own real capability is
+    /// reached from inside Projects/Tasks/Engineering/Business now (see
+    /// each area view's own remarks), never lost, only no longer a
+    /// standalone declared module of its own.
+    /// </summary>
     [Theory]
-    [InlineData(ShellArea.Tasks)]
     [InlineData(ShellArea.Commercial)]
     [InlineData(ShellArea.Resources)]
     [InlineData(ShellArea.Knowledge)]
     [InlineData(ShellArea.Administration)]
+    [InlineData(ShellArea.Evidence)]
+    [InlineData(ShellArea.Timesheets)]
+    [InlineData(ShellArea.Invoicing)]
+    [InlineData(ShellArea.Reports)]
+    [InlineData(ShellArea.EngineeringCalculation)]
+    [InlineData(ShellArea.Quotes)]
     public void ARemovedGlobalModule_HasNoDescriptor(ShellArea area)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => ShellAreas.For(area));
@@ -147,27 +162,33 @@ public class ProductConvergenceTests
     {
         // The shell shows the product TempestOS is, not only the part that
         // is finished — with everything unfinished removed rather than
-        // faked (`WP 19.2B`, `TD-81`).
+        // faked (`WP 19.2B`, `TD-81`). `WP 19.7A`: the rail's own five
+        // areas replace the ten-entry rail `WP 19.2B` left behind.
         Assert.Contains(ShellArea.Home, ShellAreas.All.Select(m => m.Area));
         Assert.Contains(ShellArea.Projects, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Evidence, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Timesheets, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Invoicing, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Reports, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.EngineeringCalculation, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.Tasks, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.EngineeringDepartment, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.Business, ShellAreas.All.Select(m => m.Area));
         Assert.Contains(ShellArea.Settings, ShellAreas.All.Select(m => m.Area));
 
         Assert.Contains(ProjectArea.Tasks, ProjectAreas.All.Select(a => a.Area));
         Assert.Contains(ProjectArea.Risks, ProjectAreas.All.Select(a => a.Area));
         Assert.Contains(ProjectArea.Timeline, ProjectAreas.All.Select(a => a.Area));
         Assert.Contains(ProjectArea.Deliverables, ProjectAreas.All.Select(a => a.Area));
+        Assert.Contains(ProjectArea.Evidence, ProjectAreas.All.Select(a => a.Area));
+        Assert.Contains(ProjectArea.SignOff, ProjectAreas.All.Select(a => a.Area));
 
-        // The rail never offers the project workspace: it is reached by
-        // opening a project. `WP 19.2B`: Engineering leaves the rail too
-        // — it is reached inside a project, as its own Structure tab, or
-        // from open-right-up.
+        // The rail is exactly Home, Projects, Tasks, Engineering, Business
+        // — never the project workspace (reached by opening a project),
+        // the engineering surface itself (reached from Engineering's own
+        // Modules → Mechanical node), or Settings (reached from the
+        // header).
         Assert.DoesNotContain(ShellArea.ProjectWorkspace, ShellAreas.RailModules.Select(m => m.Area));
         Assert.DoesNotContain(ShellArea.Engineering, ShellAreas.RailModules.Select(m => m.Area));
+        Assert.DoesNotContain(ShellArea.Settings, ShellAreas.RailModules.Select(m => m.Area));
+        Assert.Equal(
+            new[] { ShellArea.Home, ShellArea.Projects, ShellArea.Tasks, ShellArea.EngineeringDepartment, ShellArea.Business },
+            ShellAreas.RailModules.Select(m => m.Area));
     }
 
     /// <summary>
@@ -176,18 +197,20 @@ public class ProductConvergenceTests
     /// ordinal exactly as it always did (only <c>ProjectWorkspace</c>/
     /// <c>Engineering</c> refuse <c>GoToModuleAsync</c>, for their own,
     /// unrelated reason). What changed is one level up: the module has
-    /// no descriptor left to be a real destination with.
+    /// no descriptor left to be a real destination with. `WP 19.7A`:
+    /// Tasks re-joins the declared set, so <c>Commercial</c> is this
+    /// test's own example now.
     /// </summary>
     [Fact]
     public async Task ARemovedModule_StillMoves_ButHasNoDescriptorLeftToBeARealDestinationWith()
     {
         var spine = await BuildAsync();
 
-        await spine.Navigator.GoToModuleAsync(ShellArea.Tasks);
+        await spine.Navigator.GoToModuleAsync(ShellArea.Commercial);
 
-        Assert.Equal(ShellArea.Tasks, spine.Navigator.Current.Area);
+        Assert.Equal(ShellArea.Commercial, spine.Navigator.Current.Area);
         Assert.False(spine.Navigator.Current.IsProjectScoped);
-        Assert.Throws<ArgumentOutOfRangeException>(() => ShellAreas.For(ShellArea.Tasks));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ShellAreas.For(ShellArea.Commercial));
     }
 
     [Fact]
