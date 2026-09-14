@@ -7,6 +7,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Persistence;
 using Tempest.Core.Projects;
 using Tempest.Core.Quotations;
@@ -64,6 +65,16 @@ internal static class QuotationTestHost
 
     public static IQuotationService Quotations(ITempestHost host) =>
         (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
+
+    public static IInvoicingService Invoicing(ITempestHost host) =>
+        (IInvoicingService)host.Services!.GetService(typeof(IInvoicingService));
+
+    /// <summary>The one live request whose lines carry <paramref name="completionId"/> — the request completing raised through the completion hook, exactly as <c>Invoicing.InvoicingTestHost.RequestRaisedByCompletionAsync</c> reads it.</summary>
+    public static async Task<InvoiceRequest> RequestRaisedByCompletionAsync(ITempestHost host, Guid completionId)
+    {
+        var requests = await Domain(host).Repository.ListByKindAsync(InvoiceRequest.CanonicalKind);
+        return requests.OfType<InvoiceRequest>().Single(r => r.Lines.Any(l => l.SourceId == completionId));
+    }
 
     /// <summary>Signs in <paramref name="id"/> with a local session's own broad permission set.</summary>
     public static void SignIn(ITempestHost host, string id = PrincipalId)

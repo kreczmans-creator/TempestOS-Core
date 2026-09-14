@@ -157,7 +157,12 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(Lines), next);
                 return state;
             },
-            () => _lines.Add(line),
+            // A no-op: ApplyTypeState (below) already reads the committed
+            // Lines value back — MutateAndPersistAsync's own afterCommit
+            // calls it before this apply callback ever runs, so adding the
+            // line again here would double it (found, then fixed, by this
+            // Work Package's own first test run).
+            static () => { },
             $"Line added: '{line.Description}' ({line.Amount}).",
             cancellationToken);
     }
@@ -175,12 +180,8 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(Lines), next);
                 return state;
             },
-            () =>
-            {
-                var index = _lines.FindIndex(l => l.Id == line.Id);
-                if (index >= 0)
-                    _lines[index] = line;
-            },
+            // A no-op — see AddLineAsync's own identical remark.
+            static () => { },
             $"Line updated: '{line.Description}' ({line.Amount}).",
             cancellationToken);
     }
@@ -195,7 +196,8 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(Lines), next);
                 return state;
             },
-            () => _lines.RemoveAll(l => l.Id == lineId),
+            // A no-op — see AddLineAsync's own identical remark.
+            static () => { },
             $"Line removed: '{removedDescription}'.",
             cancellationToken);
 
@@ -208,11 +210,9 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(SentOn), sentOn);
                 return state;
             },
-            () =>
-            {
-                _status = QuotationStatus.Sent;
-                _sentOn = sentOn;
-            },
+            // A no-op — ApplyTypeState (below) already reads Status and
+            // SentOn back from the committed state.
+            static () => { },
             $"Sent on {sentOn:O}.",
             cancellationToken,
             WorkspaceChangeType.StatusChanged);
@@ -239,13 +239,10 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(Lines), fulfilledLines);
                 return state;
             },
-            () =>
-            {
-                _status = QuotationStatus.Accepted;
-                _decidedOn = decidedOn;
-                _lines.Clear();
-                _lines.AddRange(fulfilledLines);
-            },
+            // A no-op — ApplyTypeState (below) already reads Status,
+            // DecidedOn and Lines (with every created id) back from the
+            // committed state.
+            static () => { },
             "Accepted — a Deliverable and a Requirement created for every line.",
             cancellationToken,
             WorkspaceChangeType.StatusChanged);
@@ -260,11 +257,9 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
                 WriteJson(state, nameof(DecidedOn), decidedOn);
                 return state;
             },
-            () =>
-            {
-                _status = QuotationStatus.Declined;
-                _decidedOn = decidedOn;
-            },
+            // A no-op — ApplyTypeState (below) already reads Status and
+            // DecidedOn back from the committed state.
+            static () => { },
             $"Declined on {decidedOn:O}.",
             cancellationToken,
             WorkspaceChangeType.StatusChanged);
