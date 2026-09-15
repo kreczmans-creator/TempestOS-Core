@@ -387,6 +387,58 @@ public sealed class InvoicingServiceJourneyTests
         await host.DisposeAsync();
     }
 
+    /// <summary>
+    /// `TD-180` (`WP 20.1B`): a client on <see cref="PaymentTerms.Days30"/>
+    /// terms — the request raised against it freezes that term at raise
+    /// time, and computes <see cref="InvoiceRequest.DueOn"/> only once
+    /// actually sent, from <see cref="InvoiceRequest.SentAtUtc"/>'s own
+    /// date plus those thirty days (decided against
+    /// <see cref="InvoiceRequest.SentAtUtc"/>, not the moment the request
+    /// was raised — the Product Owner's own worked example, "existing
+    /// requests read as `UpFront` with `DueOn == SentOn`", only makes
+    /// sense read that way: an invoice's real terms count from the date it
+    /// is actually sent to the client, not from an internal draft's own
+    /// creation moment). A later change to the client's own standing terms
+    /// never moves the already-raised request's own due date.
+    /// </summary>
+    [Fact]
+    public async Task RaisedFromAClientOnThirtyDayTerms_CarriesDays30_AndComputesDueOnOnlyOnceSent()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await InvoicingTestHost.StartAsync(temp.Path);
+        InvoicingTestHost.SignIn(host);
+
+        var organisationId = "INV-CLIENT-TERMS30";
+        var organisations = InvoicingTestHost.Organisations(host);
+
+        var projectId = await SetUpBillableProjectAsync(host, "TERMS30", PaymentTerms.Days30);
+        var domain = InvoicingTestHost.Domain(host);
+        var invoicing = InvoicingTestHost.Invoicing(host);
+
+        var request = await RaiseSingleLineDraftRequestAsync(host, projectId, domain, "TERMS30");
+
+        // Frozen at raise, before it is ever sent — Draft carries the
+        // term already, but no due date yet (nothing is due before an
+        // invoice exists to be due).
+        Assert.Equal(PaymentTerms.Days30, request.PaymentTerms);
+        Assert.Null(request.DueOn);
+
+        // A later change to the client's own standing terms must not
+        // move this already-raised request.
+        await organisations.ReviseAsync(
+            organisationId, OperationsFixtures.Organisation(organisationId) with { PaymentTerms = PaymentTerms.Days60 },
+            OperationsFixtures.Verified(), "Terms changed after the request was raised.");
+
+        var sent = await invoicing.SendAsync(request.Id);
+        Assert.True(sent.Succeeded, sent.Reason);
+
+        Assert.Equal(PaymentTerms.Days30, sent.Request!.PaymentTerms);
+        Assert.Equal(DateOnly.FromDateTime(sent.Request.SentAtUtc!.Value.UtcDateTime).AddDays(30), sent.Request.DueOn);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
     /// <summary>Captures the snapshot the last <see cref="CreateDraftInvoiceAsync"/> call received, so a test can inspect what <see cref="InvoicingService"/> actually filled onto it — <c>InvoiceReconciliationServiceTests.ThrowingConnector</c>'s own direct-construction pattern, applied here to observe rather than to fail.</summary>
     private sealed class SpyConnector : IInvoicingConnector
     {
@@ -417,7 +469,10 @@ public sealed class InvoicingServiceJourneyTests
     // Fixtures
     // ====================================================================
 
-    private static async Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix)
+    private static Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix) =>
+        SetUpBillableProjectAsync(host, suffix, PaymentTerms.UpFront);
+
+    private static async Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix, PaymentTerms paymentTerms)
     {
         var organisationId = $"INV-CLIENT-{suffix}";
         var rateCardId = $"INV-CARD-{suffix}";
@@ -426,7 +481,8 @@ public sealed class InvoicingServiceJourneyTests
         var rateCards = InvoicingTestHost.RateCards(host);
         var commercial = InvoicingTestHost.ProjectCommercial(host);
 
-        await organisations.RegisterAsync(organisationId, OperationsFixtures.Organisation(organisationId), OperationsFixtures.Verified());
+        await organisations.RegisterAsync(
+            organisationId, OperationsFixtures.Organisation(organisationId) with { PaymentTerms = paymentTerms }, OperationsFixtures.Verified());
 
         var card = OneGradeCard(rateCardId, "Senior", 150m, 90m);
         await rateCards.RegisterAsync(rateCardId, card, BusinessGovernanceFixtures.Verified());
