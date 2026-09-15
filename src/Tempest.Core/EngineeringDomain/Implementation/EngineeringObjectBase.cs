@@ -38,12 +38,13 @@ namespace Tempest.Core.EngineeringDomain;
 /// </remarks>
 public abstract partial class EngineeringObjectBase :
     IEngineeringObject, IHasBusinessIdentifier, IHasMetadata, IHasLifecycle, IHasRevisions,
-    IHasRelationships, ITraceable, IValidatable, IHasAttachments, ISearchable,
+    IHasRelationships, ITraceable, IValidatable, IHasAttachments, IHasAttachmentAnnotations, ISearchable,
     IRenamable, IHasParent, IDeletable, IHasBomLine
 {
     private readonly EngineeringDomainContext _context;
     private readonly List<ILifecycleTransitionRecord> _history = new();
     private readonly List<IAttachment> _attachments = new();
+    private readonly List<AttachmentAnnotation> _annotations = new();
     private readonly object _lifecycleLock = new();
     private readonly object _structuralLock = new();
 
@@ -644,6 +645,100 @@ public abstract partial class EngineeringObjectBase :
         return await _context.AttachmentContentStore
             .ReadAsync(attachment.Id, attachment.ContentHash, attachment.SizeInBytes, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    // ================================================================
+    // Attachment annotations (`TD-98`)
+    // ================================================================
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Beside the attachment, never in it: this writes into the owner's own
+    /// state — the same record <see cref="AttachAsync"/> appends to — so an
+    /// annotation rehydrates with its owner and is exported with it, and
+    /// <see cref="Tempest.Core.EngineeringDomain.IAttachmentContentStore"/>
+    /// is never touched by this call.
+    /// </remarks>
+    public async Task<AttachmentAnnotation> AddAttachmentAnnotationAsync(
+        Guid attachmentId,
+        int pageIndex,
+        AnnotationTool tool,
+        IReadOnlyList<AnnotationPoint> points,
+        string colorHex,
+        string? text,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(colorHex);
+        ArgumentNullException.ThrowIfNull(points);
+
+        if (pageIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(pageIndex), pageIndex, "A page index cannot be negative.");
+
+        if (points.Count == 0)
+            throw new ArgumentException("An annotation needs at least one point.", nameof(points));
+
+        var annotationId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+        var createdBy = _context.ResolveCurrentPrincipalId();
+        var annotation = new AttachmentAnnotation(annotationId, attachmentId, pageIndex, tool, points, colorHex, text, createdAt, createdBy);
+        var annotationState = new EngineeringObjectAttachmentAnnotationState(
+            annotationId, attachmentId, pageIndex, tool,
+            [.. points.Select(p => new EngineeringObjectAnnotationPointState(p.X, p.Y))],
+            colorHex, text, createdAt, createdBy);
+
+        // No `alsoApply` needed here: `ApplyBaseState` (this type's own
+        // state half) already rebuilds `_annotations` from the committed
+        // state's own `AnnotationsOrEmpty` on every mutation, the same way
+        // it already does for `_history`/`_status` — unlike `_attachments`,
+        // which needs `applyAttachments` to keep the caller's own
+        // `IAttachment` reference rather than an equal-valued rebuild.
+        // `AttachmentAnnotation` is a value-equal record, so a rebuild is
+        // exactly as good; adding an `alsoApply` here as well would apply
+        // the same add twice.
+        await MutateAndPersistAsync(
+            current => current with { Annotations = [.. current.AnnotationsOrEmpty, annotationState] },
+            EngineeringAuditActions.AnnotationAdded,
+            $"{tool} on page {pageIndex + 1} of attachment '{attachmentId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+
+        return annotation;
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<AttachmentAnnotation>> GetAttachmentAnnotationsAsync(Guid attachmentId, CancellationToken cancellationToken = default)
+    {
+        lock (_annotations)
+        {
+            IReadOnlyList<AttachmentAnnotation> snapshot = _annotations.Where(a => a.AttachmentId == attachmentId).ToList();
+            return Task.FromResult(snapshot);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Does nothing, successfully, if the id names no live annotation — already removed is not a failure.</remarks>
+    public async Task DeleteAttachmentAnnotationAsync(Guid annotationId, CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current => current with { Annotations = [.. current.AnnotationsOrEmpty.Where(a => a.Id != annotationId)] },
+            EngineeringAuditActions.AnnotationDeleted,
+            $"Annotation '{annotationId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task ClearAttachmentAnnotationsAsync(Guid attachmentId, int pageIndex, CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current => current with
+            {
+                Annotations = [.. current.AnnotationsOrEmpty.Where(a => a.AttachmentId != attachmentId || a.PageIndex != pageIndex)],
+            },
+            EngineeringAuditActions.AnnotationsCleared,
+            $"Page {pageIndex + 1} of attachment '{attachmentId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

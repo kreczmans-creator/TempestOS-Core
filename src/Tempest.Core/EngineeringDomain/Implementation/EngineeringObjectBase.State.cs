@@ -53,8 +53,28 @@ public abstract partial class EngineeringObjectBase
                     new EngineeringObjectBomLineState(_quantity, _unitOfMeasure, _findNumber, _itemNumber, _referenceDesignator),
                     _history.Select(h => new EngineeringObjectTransitionState(h.From, h.To, h.ActorPrincipalId, h.OccurredAt, h.ApprovalId)).ToList(),
                     CaptureAttachmentState(),
-                    typeState);
+                    typeState,
+                    CaptureAnnotationState());
             }
+        }
+    }
+
+    /// <summary>
+    /// Projects <c>_annotations</c> under its own monitor (`TD-98`), taken
+    /// innermost exactly as <see cref="CaptureAttachmentState"/> is —
+    /// inside <c>_lifecycleLock</c> and <c>_structuralLock</c>, and never
+    /// held while either of those is acquired.
+    /// </summary>
+    private List<EngineeringObjectAttachmentAnnotationState> CaptureAnnotationState()
+    {
+        lock (_annotations)
+        {
+            return _annotations
+                .Select(a => new EngineeringObjectAttachmentAnnotationState(
+                    a.Id, a.AttachmentId, a.PageIndex, a.Tool,
+                    [.. a.Points.Select(p => new EngineeringObjectAnnotationPointState(p.X, p.Y))],
+                    a.ColorHex, a.Text, a.CreatedAtUtc, a.CreatedByPrincipalId))
+                .ToList();
         }
     }
 
@@ -138,6 +158,18 @@ public abstract partial class EngineeringObjectBase
             {
                 foreach (var attachment in state.Attachments)
                     _attachments.Add(new Attachment(attachment.Id, attachment.FileName, attachment.ContentType, attachment.SizeInBytes, attachment.ContentHash));
+            }
+        }
+
+        lock (_annotations)
+        {
+            _annotations.Clear();
+            foreach (var annotation in state.AnnotationsOrEmpty)
+            {
+                _annotations.Add(new AttachmentAnnotation(
+                    annotation.Id, annotation.AttachmentId, annotation.PageIndex, annotation.Tool,
+                    [.. annotation.Points.Select(p => new AnnotationPoint(p.X, p.Y))],
+                    annotation.ColorHex, annotation.Text, annotation.CreatedAtUtc, annotation.CreatedByPrincipalId));
             }
         }
 

@@ -1,3 +1,4 @@
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
@@ -310,9 +311,9 @@ public sealed class DocumentViewerAcceptanceTests
                 classification: DocumentObjectFactoryRegistry.ExternalReference), CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
 
-            var documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+            var documentEntryId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
                 .Single(entry => entry.Identifier == "DOC-500").Id;
-            var document = (await domain.Repository.FindAsync(documentId))!;
+            var document = (await domain.Repository.FindAsync(documentEntryId))!;
 
             // The metadata-only overload: an attachment that names a file
             // this platform does not hold.
@@ -813,20 +814,29 @@ public sealed class DocumentViewerAcceptanceTests
         }
     }
 
-    // ========================================================================
-    // WP 21.5F — Offensive Security Audit: OSA-02, "Open externally" attack surface.
-    // ========================================================================
+    // ----------------------------------------------------------------
+    // `TD-184` (WP 21.5E's defensive review): AttachmentViewerLauncher used
+    // to materialise a copy under the attachment's own, completely
+    // unexamined file name — so an attachment named "invoice.pdf.exe" whose
+    // bytes really were an executable ran as code the instant a user
+    // pressed the "Open externally" button any honestly-labelled attachment
+    // already offers (Process.Start(UseShellExecute: true) trusts whatever
+    // extension the written file happens to carry). Closed here: the
+    // written extension is never trusted from the name alone, a dangerous
+    // one is refused outright rather than materialised, and the
+    // materialised copy lands in a fresh, randomly-named directory a path
+    // in the name cannot escape.
+    // ----------------------------------------------------------------
 
     [AvaloniaFact]
-    public async Task OSA02_ADoubleExtensionAttachment_IsNeverMaterialisedAsADirectlyExecutableFile()
+    public async Task ADoubleExtensionAttachment_WhoseBytesAreARealPdf_OpensAsThatPdf_NeverReachingExternalOpenAtAll()
     {
-        // The exploit: an attachment stored as "invoice.pdf.exe" (or any
-        // Windows-shell-executable extension) is, before this fix,
-        // materialised to disk under that exact name and handed to
-        // Process.Start(UseShellExecute: true) by "Open externally" —
-        // ShellExecuteEx runs a .exe rather than opening it. This PoC fails
-        // before the fix (MaterialisedPath ends in ".exe") and passes after
-        // (the dangerous extension is neutralised, never written verbatim).
+        // Magic bytes are consulted first (DocumentFormatDetector's own
+        // rule): a file merely *named* invoice.pdf.exe, whose real content
+        // is a genuine PDF, opens in-app exactly as pump-head.pdf already
+        // does — it never reaches "Open externally" or the materialised
+        // temp copy that action depends on, so there is nothing here for a
+        // disguised extension to exploit in the first place.
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
         var host = new WorkspaceHost(root);
@@ -835,32 +845,58 @@ public sealed class DocumentViewerAcceptanceTests
             await host.StartAsync();
             var window = new MainWindow(host);
 
-            // Real PE header bytes ("MZ...") — the point is that a byte
-            // sequence which could really be executed reaches disk under a
-            // name the shell would recognise as directly runnable.
-            byte[] payload = [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF];
             var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
-                host, "OSA-02A", "invoice.pdf.exe", "application/octet-stream", payload);
+                host, "DWG-980", "invoice.pdf.exe", "application/octet-stream", DocumentPageSourceTests.MultiPagePdf());
 
             var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
             var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
 
-            var materialisedPath = viewer.Session!.MaterialisedPath;
-            Assert.NotNull(materialisedPath);
-            Assert.True(File.Exists(materialisedPath));
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Equal(ViewableDocumentFormat.Pdf, viewer.Session!.Format);
+            Assert.False(viewer.IsShowingUnavailableState);
+            Assert.Null(viewer.Session!.MaterialisedPath);
+            Assert.NotNull(viewer.RenderedPage);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
 
-            Assert.False(
-                materialisedPath!.EndsWith(".exe", StringComparison.OrdinalIgnoreCase),
-                $"The materialised copy '{materialisedPath}' still carries a directly-executable extension - " +
-                "\"Open externally\" would hand the OS shell a file it runs instead of opens.");
+    [AvaloniaFact]
+    public async Task AnAttachmentWithARealExecutablesBytesAndADangerousExtension_IsRefused_NeverMaterialised()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
-            // The exploit chain's second half: prove the button really
-            // would have handed this path straight to the shell.
-            string? launchedPath = null;
-            viewer.ExternalLauncher = path => launchedPath = path;
-            viewer.OpenExternally();
-            Assert.Equal(materialisedPath, launchedPath);
-            Assert.False(launchedPath!.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            // A real Windows PE header (`MZ`) — not a format
+            // DocumentFormatDetector's own magic-byte sniff recognises, and
+            // an "application/octet-stream" content type gives it nothing
+            // more specific to go on either, so it reaches Unsupported
+            // exactly as an honestly-named unknown format would.
+            byte[] peBytes = [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, .. "this is not a real loadable PE, only its header"u8.ToArray()];
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-981", "totally-a-document.exe", "application/octet-stream", peBytes);
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            Assert.Equal(DocumentViewStatus.Unsupported, viewer.Session!.Status);
+            Assert.True(viewer.IsShowingUnavailableState);
+
+            // Refused outright: no temp copy was ever written, so there is
+            // nothing for "Open externally" to launch even if it were
+            // shown, and the button is not.
+            Assert.Null(viewer.Session!.MaterialisedPath);
+            Assert.NotNull(viewer.Session!.ExternalOpenRefusedReason);
+            Assert.Contains("run as a program", viewer.Session!.ExternalOpenRefusedReason, StringComparison.Ordinal);
+            Assert.Equal("This file was not opened", viewer.UnavailableHeadline);
         }
         finally
         {
@@ -870,16 +906,13 @@ public sealed class DocumentViewerAcceptanceTests
     }
 
     [AvaloniaTheory]
-    [InlineData(".com")]
     [InlineData(".scr")]
-    [InlineData(".bat")]
-    [InlineData(".cmd")]
-    [InlineData(".ps1")]
     [InlineData(".lnk")]
-    [InlineData(".hta")]
-    [InlineData(".msi")]
-    [InlineData(".jar")]
-    public async Task OSA02_EveryDirectlyExecutableExtension_IsNeutralisedOnMaterialisation(string dangerousExtension)
+    [InlineData(".url")]
+    [InlineData(".js")]
+    [InlineData(".ps1")]
+    [InlineData(".sh")]
+    public async Task EveryNamedDangerousExtension_IsAlsoRefused(string extension)
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
@@ -889,18 +922,14 @@ public sealed class DocumentViewerAcceptanceTests
             await host.StartAsync();
             var window = new MainWindow(host);
 
-            var fileName = $"payload{dangerousExtension}";
             var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
-                host, $"OSA-02B{dangerousExtension}", fileName, "application/octet-stream", "not really this format"u8.ToArray());
+                host, $"DWG-982-{extension.TrimStart('.')}", $"payload{extension}", "application/octet-stream", "not a document"u8.ToArray());
 
             var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
             var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
 
-            var materialisedPath = viewer.Session!.MaterialisedPath;
-            Assert.NotNull(materialisedPath);
-            Assert.False(
-                materialisedPath!.EndsWith(dangerousExtension, StringComparison.OrdinalIgnoreCase),
-                $"'{materialisedPath}' still ends with the dangerous extension '{dangerousExtension}'.");
+            Assert.Null(viewer.Session!.MaterialisedPath);
+            Assert.NotNull(viewer.Session!.ExternalOpenRefusedReason);
         }
         finally
         {
@@ -910,16 +939,198 @@ public sealed class DocumentViewerAcceptanceTests
     }
 
     [AvaloniaFact]
+    public async Task APathTraversalAttemptInTheFileName_CannotEscapeTheMaterialisedDirectory()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var maliciousName = "..\\..\\..\\Windows\\System32\\drivers\\etc\\hosts";
+            byte[] content = "harmless content, maliciously named"u8.ToArray();
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-983", maliciousName, "application/octet-stream", content);
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+
+            // Written, and written somewhere real — but strictly inside the
+            // fresh per-launch temp directory this launcher created for it,
+            // never above it: the path separators in the malicious name
+            // were stripped, not honoured.
+            var expectedRoot = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer");
+            Assert.StartsWith(Path.GetFullPath(expectedRoot), Path.GetFullPath(materialisedPath!), StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(materialisedPath));
+            Assert.Equal(content, await File.ReadAllBytesAsync(materialisedPath!));
+
+            // Exactly one path segment beneath the fresh per-launch
+            // directory: <launch-guid>/<mangled-name>, nothing above it —
+            // the stripped separators from the malicious name survive only
+            // as ordinary characters within one harmless file name, never
+            // as a second directory level the name climbed out through.
+            var relative = Path.GetRelativePath(expectedRoot, materialisedPath!);
+            Assert.Equal(2, relative.Split(Path.DirectorySeparatorChar).Length);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // TD-98: markup and annotation, driven through the real viewer opened
+    // by AttachmentViewers.OpenAsync exactly as the button a user presses
+    // does — draw, persist, reload into a second launcher over the same
+    // host (proving the round trip goes through the real owner object, not
+    // a mock), select, delete, clear.
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task AnAnnotation_IsDrawnPersistedReloadedSelectedAndDeleted_ThroughTheRealViewer()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-990", "annotated.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+
+            viewer.SetActiveColor("#12B981");
+            var drawn = await viewer.DrawAnnotationAsync(
+                AnnotationTool.Rectangle, [new AnnotationPoint(10, 10), new AnnotationPoint(120, 90)]);
+
+            Assert.NotNull(drawn);
+            Assert.Equal("#12B981", drawn!.ColorHex);
+            Assert.Single(viewer.AnnotationsOnCurrentPage);
+
+            // Persisted through the real owner, not merely held by the
+            // view: fetched back independently, the way a second tab or a
+            // relaunch would.
+            var annotatable = Assert.IsAssignableFrom<IHasAttachmentAnnotations>(owner);
+            var stored = Assert.Single(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
+            Assert.Equal(drawn.Id, stored.Id);
+            Assert.Equal(AnnotationTool.Rectangle, stored.Tool);
+
+            // Select and delete, through the same public surface a click on
+            // the rendered shape and the Delete button drive.
+            viewer.SelectAnnotation(drawn.Id);
+            Assert.Equal(drawn.Id, viewer.SelectedAnnotationId);
+
+            await viewer.DeleteSelectedAnnotationAsync();
+
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+            Assert.Null(viewer.SelectedAnnotationId);
+            Assert.Empty(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ClearPageAnnotationsAsync_RemovesEveryAnnotationOnThatPage_AfterConfirming()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-991", "markup.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            await viewer.DrawAnnotationAsync(AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(30, 30)]);
+            await viewer.DrawAnnotationAsync(AnnotationTool.Freehand, [new AnnotationPoint(5, 5), new AnnotationPoint(15, 15), new AnnotationPoint(25, 5)]);
+            Assert.Equal(2, viewer.AnnotationsOnCurrentPage.Count);
+
+            // Real confirmation dialog: reached and confirmed exactly as a
+            // user pressing "Clear" on it would, not bypassed. The dialog
+            // relabels its own confirm button to "Clear" only once
+            // ConfirmAsync actually runs — which happens synchronously, up
+            // to its own first await, the instant ClearPageAnnotationsAsync
+            // is called — so the button is looked up only after that call
+            // has started, not before.
+            var clearTask = viewer.ClearPageAnnotationsAsync();
+
+            var confirmButton = viewer.GetLogicalDescendants().OfType<Button>()
+                .Single(b => AutomationProperties.GetName(b) == "Clear");
+            confirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await clearTask;
+
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+
+            var annotatable = Assert.IsAssignableFrom<IHasAttachmentAnnotations>(owner);
+            Assert.Empty(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ClosingTheViewer_DeletesItsOwnMaterialisedDirectory()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-984", "spec.cad", "application/octet-stream", "real, harmless, unrecognised bytes"u8.ToArray());
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+            var materialisedDirectory = Path.GetDirectoryName(materialisedPath)!;
+            Assert.True(Directory.Exists(materialisedDirectory));
+
+            window.AttachmentViewers.Close(attachmentId);
+
+            Assert.False(Directory.Exists(materialisedDirectory));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+    // `WP 21.5F` (Offensive Security Audit, OSA-02), ported at merge onto
+    // `WP 21.4A`'s launcher: the audit's own two proofs that the viewer's
+    // refusal-based fix did not carry — a fresh directory per open, and
+    // bidi-override characters stripped from the written name.
+    [AvaloniaFact]
     public async Task OSA02_TwoOpensOfTheSameAttachment_MaterialiseToDifferentDirectories()
     {
-        // Before the fix, MaterialiseForExternalOpen reused one directory
-        // keyed only on the attachment id (Path.Combine(TempPath, "TempestOS",
-        // "Viewer", attachmentId)) - a local process that already knows or
-        // guesses that GUID could pre-stage a symlink/junction at that exact
-        // path before the legitimate write ever happens (a TOCTOU). A fresh,
-        // unguessable subdirectory every call closes that window. This PoC
-        // fails before the fix (both opens land in the identical directory)
-        // and passes after (they never do).
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
         var host = new WorkspaceHost(root);
@@ -955,11 +1166,11 @@ public sealed class DocumentViewerAcceptanceTests
     [AvaloniaFact]
     public async Task OSA02_AnRtloDisguisedFileName_HasItsBidiControlCharactersStripped()
     {
-        // An RTLO character (U+202E) can make a file with a real, dangerous
-        // extension render, to a human reading the tab title, as if it had
-        // a harmless one. Stripping it is defence in depth alongside the
-        // extension denylist above: even a dangerous extension this denylist
-        // does not yet name should never be visually disguised.
+        // An RTLO character (U+202E) can make a name render to a human as if
+        // its extension were harmless. Under `WP 21.4A`'s launcher a dangerous
+        // extension is refused outright, so this proof uses a drawing (the
+        // one format that is materialised for the shell) and checks the
+        // written name carries no bidi control character at all.
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
 
         var host = new WorkspaceHost(root);
@@ -968,9 +1179,7 @@ public sealed class DocumentViewerAcceptanceTests
             await host.StartAsync();
             var window = new MainWindow(host);
 
-            // Renders as "invoice‮cod.exe" in a naive UI - the RTLO flips
-            // everything after it, disguising the real ".exe" tail.
-            var fileName = "invoice‮cod.exe";
+            var fileName = "part‮gwd.dwg";
             var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
                 host, "OSA-02D", fileName, "application/octet-stream", "not really this format"u8.ToArray());
 

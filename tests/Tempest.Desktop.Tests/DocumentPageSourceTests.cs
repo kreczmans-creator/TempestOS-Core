@@ -311,6 +311,228 @@ public class DocumentPageSourceTests
         Assert.Equal(1, source.PageCount);
     }
 
+    // ----------------------------------------------------------------
+    // SVG (`TD-99`) — Svg.Skia (MIT), the same SKBitmap-backed page path
+    // a PDF or an image produces.
+    // ----------------------------------------------------------------
+
+    /// <summary>A real, valid SVG: a filled red rectangle, so a genuine rasteriser proves itself exactly as <see cref="MultiPagePdf"/>'s own fixture does.</summary>
+    internal static byte[] RedRectangleSvg() => Encoding.UTF8.GetBytes(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"120\" height=\"80\">" +
+        "<rect x=\"0\" y=\"0\" width=\"120\" height=\"80\" fill=\"#FF0000\"/></svg>");
+
+    [AvaloniaFact]
+    public void AValidSvg_ReportsItsOwnSize_AndRastersises()
+    {
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, RedRectangleSvg())!;
+
+        Assert.Equal(1, source.PageCount);
+        Assert.Equal(120, source.PageSize(0).Width, 0.5);
+        Assert.Equal(80, source.PageSize(0).Height, 0.5);
+
+        using var page = source.RenderPage(0, 1.0);
+        Assert.True(CountNonWhitePixels(page) > 100, "A page filled edge-to-edge with red must rasterise visible content.");
+    }
+
+    [AvaloniaFact]
+    public void AnSvgPage_RasterisesAtTheRequestedScale()
+    {
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, RedRectangleSvg())!;
+
+        using var atOne = source.RenderPage(0, 1.0);
+        using var atThree = source.RenderPage(0, 3.0);
+
+        Assert.Equal(120, atOne.PixelSize.Width);
+        Assert.Equal(360, atThree.PixelSize.Width);
+    }
+
+    [AvaloniaFact]
+    public void MalformedSvg_ReportsWhyRatherThanCrashing()
+    {
+        var ex = Assert.Throws<DocumentRenderException>(() =>
+            DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, "<svg><rect this is not xml"u8.ToArray()));
+
+        Assert.StartsWith("This SVG could not be read:", ex.Message);
+    }
+
+    [AvaloniaFact]
+    public void EmptySvg_IsReportedAsMalformed_RatherThanARenderableBlank()
+    {
+        var ex = Assert.Throws<DocumentRenderException>(() =>
+            DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, "not markup at all"u8.ToArray()));
+
+        Assert.StartsWith("This SVG could not be read:", ex.Message);
+    }
+
+    [AvaloniaFact]
+    public void AHugeSvg_RastersisesCapped_RatherThanExhaustingMemory()
+    {
+        // A viewBox can claim any size at all — the same unbounded-claim
+        // hazard a PDF page poses, capped by the identical mechanism.
+        var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20000\" height=\"20000\">" +
+            "<rect width=\"20000\" height=\"20000\" fill=\"#0000FF\"/></svg>";
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(svg))!;
+
+        Assert.Equal(20000, source.PageSize(0).Width, 0.5);
+
+        using var page = source.RenderPage(0, 1.0);
+
+        Assert.True(page.PixelSize.Width <= SvgDocumentPageSource.MaxRasterEdge);
+        Assert.True(page.PixelSize.Height <= SvgDocumentPageSource.MaxRasterEdge);
+    }
+
+    [AvaloniaFact]
+    public void AnSvgFromAStream_ReportsItsOwnSizeAndRasterises()
+    {
+        using var stream = new MemoryStream(RedRectangleSvg(), writable: false);
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Svg, stream)!;
+
+        Assert.Equal(120, source.PageSize(0).Width, 0.5);
+        using var page = source.RenderPage(0, 1.0);
+        Assert.True(CountNonWhitePixels(page) > 100);
+    }
+
+    // ---- `TD-184`: rendering an SVG must never touch the network or the
+    // local disk, and must never run script — proven against Svg.Skia's own
+    // GetImageFromWeb, which calls WebRequest.Create(uri).GetResponse() for
+    // any <image> href that is not a data: URI, http(s):// and file://
+    // alike. ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void AnSvgReferencingAnHttpImage_RendersWithNoNetworkFetch()
+    {
+        // A URI nothing on this machine can resolve quickly, pointing at a
+        // reserved, non-routable test address (RFC 5737): if sanitisation
+        // failed and Svg.Skia actually attempted this fetch, the render
+        // would hang or throw a WebException, not complete cleanly and
+        // promptly.
+        var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"40\" height=\"40\">" +
+            "<image xlink:href=\"http://192.0.2.1/tracker.png\" width=\"40\" height=\"40\"/>" +
+            "<rect width=\"40\" height=\"40\" fill=\"#00FF00\"/></svg>";
+
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(svg))!;
+        using var page = source.RenderPage(0, 1.0);
+
+        // Rendered promptly (proven by the test itself completing at all —
+        // xUnit's own default timeout would otherwise catch a real hang)
+        // and shows the rectangle that was there regardless of the image.
+        Assert.True(CountNonWhitePixels(page) > 100);
+    }
+
+    [AvaloniaFact]
+    public void AnSvgReferencingAFileUri_ReadsNoLocalFile()
+    {
+        // The most dangerous of the three references this proves nothing
+        // external happens for: a `file://` href would let a malicious
+        // attachment read an arbitrary local file this process can see and
+        // fold its bytes into what renders — proven here against a real
+        // file this test itself creates and knows the content of.
+        var probePath = Path.Combine(Path.GetTempPath(), $"td184-probe-{Guid.NewGuid():N}.png");
+        File.WriteAllBytes(probePath, DocumentPageSourceTests.Png());
+        try
+        {
+            var fileUri = new Uri(probePath).AbsoluteUri;
+            var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"40\" height=\"40\">" +
+                $"<image xlink:href=\"{fileUri}\" width=\"40\" height=\"40\"/>" +
+                "<rect width=\"40\" height=\"40\" fill=\"#00FF00\"/></svg>";
+
+            using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(svg))!;
+            using var page = source.RenderPage(0, 1.0);
+
+            // The real probe file is a solid red 4x3 image; had it been
+            // read and drawn, the page would carry red pixels alongside
+            // the rectangle's green. It must not.
+            Assert.True(CountNonWhitePixels(page) > 100);
+            Assert.False(HasRedPixel(page), "The local probe file's own red pixels must never reach the rendered page.");
+        }
+        finally
+        {
+            File.Delete(probePath);
+        }
+    }
+
+    [AvaloniaFact]
+    public void AnSvgWithADoctype_IsStrippedBeforeParsing_ClosingTheXxeVector()
+    {
+        const string malicious =
+            "<?xml version=\"1.0\"?><!DOCTYPE svg [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]>" +
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\">" +
+            "<rect width=\"10\" height=\"10\" fill=\"#FF00FF\"/></svg>";
+
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(malicious))!;
+        using var page = source.RenderPage(0, 1.0);
+
+        Assert.True(CountNonWhitePixels(page) > 10);
+    }
+
+    [AvaloniaFact]
+    public void SanitiseSvgMarkup_BlanksEveryExternalReference_ButKeepsDataUrisAndFragments()
+    {
+        const string markup =
+            "<svg><image href=\"http://evil.example/x.png\"/><image href=\"https://evil.example/y.png\"/>" +
+            "<image href=\"file:///etc/passwd\"/><image xlink:href=\"data:image/png;base64,AAAA\"/>" +
+            "<use href=\"#local\"/><script>alert(1)</script></svg>";
+
+        var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+
+        Assert.DoesNotContain("http://evil.example", sanitised, StringComparison.Ordinal);
+        Assert.DoesNotContain("https://evil.example", sanitised, StringComparison.Ordinal);
+        Assert.DoesNotContain("file:///etc/passwd", sanitised, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script", sanitised, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("data:image/png;base64,AAAA", sanitised, StringComparison.Ordinal);
+        Assert.Contains("href=\"#local\"", sanitised, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public void SanitiseSvgMarkup_StripsADoctypeDeclaration()
+    {
+        const string markup = "<!DOCTYPE svg [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><svg></svg>";
+
+        var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+
+        Assert.DoesNotContain("DOCTYPE", sanitised, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("ENTITY", sanitised, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Whether any pixel of <paramref name="bitmap"/> reads as red (the probe file's own colour) rather than green (the SVG's own drawn rectangle) or white.</summary>
+    private static bool HasRedPixel(Bitmap bitmap)
+    {
+        var size = bitmap.PixelSize;
+        var stride = size.Width * 4;
+        var pixels = new byte[stride * size.Height];
+
+        if (bitmap is WriteableBitmap writeable)
+        {
+            using var locked = writeable.Lock();
+            for (var row = 0; row < size.Height; row++)
+            {
+                System.Runtime.InteropServices.Marshal.Copy(
+                    locked.Address + (row * locked.RowBytes), pixels, row * stride, stride);
+            }
+        }
+        else
+        {
+            var handle = System.Runtime.InteropServices.GCHandle.Alloc(pixels, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try
+            {
+                bitmap.CopyPixels(new PixelRect(0, 0, size.Width, size.Height), handle.AddrOfPinnedObject(), pixels.Length, stride);
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
+
+        // BGRA byte order (this codebase's own convention throughout).
+        for (var i = 0; i + 3 < pixels.Length; i += 4)
+        {
+            if (pixels[i] < 60 && pixels[i + 1] < 60 && pixels[i + 2] > 180)
+                return true;
+        }
+
+        return false;
+    }
+
     [AvaloniaFact]
     public void AnUnsupportedFormat_YieldsNoSource_RatherThanAnEmptyOne()
     {

@@ -43,11 +43,58 @@ public sealed class AttachmentViewerLauncher
     /// </summary>
     private const int FormatSniffLength = 32;
 
+    /// <summary>
+    /// Extensions this launcher refuses to hand to the OS shell via
+    /// <b>Open externally</b>, under any name (`TD-184`) — executables,
+    /// shell shortcuts and scripts for every OS this platform ships to,
+    /// checked against the file's own <em>rightmost</em> extension
+    /// (<see cref="Path.GetExtension(string)"/>'s own convention — the one
+    /// Windows itself treats as the type that runs, so
+    /// <c>invoice.pdf.exe</c> is refused for its trailing <c>.exe</c> and
+    /// nothing about the <c>.pdf</c> ahead of it matters, exactly as it
+    /// would not to Windows either).
+    /// </summary>
+    private static readonly HashSet<string> DangerousExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // `WP 21.5F` (OSA-02) named these six beside the set below; the union is kept at merge.
+        ".inf", ".isp", ".sct", ".shb", ".shs", ".vxd",
+        // Windows native/shell-executed.
+        ".exe", ".scr", ".com", ".bat", ".cmd", ".pif", ".msi", ".msp", ".mst",
+        ".hta", ".cpl", ".msc", ".reg", ".scf", ".chm", ".dll", ".sys", ".drv",
+        // Shortcuts / shell links.
+        ".lnk", ".url", ".website", ".webloc",
+        // Script hosts.
+        ".js", ".jse", ".vbs", ".vbe", ".vb", ".vbscript", ".ws", ".wsf", ".wsh",
+        ".ps1", ".ps1xml", ".psc1", ".psd1", ".psm1",
+        // Packaged/installer or JVM-executed.
+        ".jar", ".application", ".gadget", ".appref-ms", ".msix", ".appx",
+        // macOS/Linux executed.
+        ".command", ".sh", ".bash", ".zsh", ".workflow", ".action", ".desktop",
+        ".appimage", ".run",
+    };
+
+    /// <summary>Windows reserved device names — never a legal file base name regardless of extension (`TD-184`).</summary>
+    private static readonly HashSet<string> ReservedDeviceNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    };
+
     private readonly WorkspacePanelRegistry _registry;
     private readonly WorkspaceLayoutController _layout;
     private readonly Guid _documentAreaPanelId;
     private readonly IAttachmentContentStore? _contentStore;
     private readonly Dictionary<Guid, Guid> _panelsByAttachment = [];
+
+    /// <summary>
+    /// The materialised-copy directory this launcher created for each open
+    /// attachment's <b>Open externally</b> path, so <see cref="Close"/> can
+    /// delete it — one fresh, randomly-named directory per launch
+    /// (`TD-184`), never reused across opens even of the identical
+    /// attachment.
+    /// </summary>
+    private readonly Dictionary<Guid, string> _materialisedDirectoriesByAttachment = [];
 
     /// <summary>Initialises a new instance of the <see cref="AttachmentViewerLauncher"/> class.</summary>
     /// <param name="registry">Where this launcher registers the panel it opens.</param>
@@ -140,6 +187,7 @@ public sealed class AttachmentViewerLauncher
         if (_contentStore is not null &&
             await TryOpenStreamedAsync(view, attachment, viewportWidth, viewportHeight, cancellationToken).ConfigureAwait(true))
         {
+            await view.LoadAnnotationsAsync(owner as IHasAttachmentAnnotations, attachment.Id, cancellationToken).ConfigureAwait(true);
             Dock(view, attachment);
             return view;
         }
@@ -156,6 +204,13 @@ public sealed class AttachmentViewerLauncher
         {
             OpenLoadedContent(view, attachment, content.Bytes, viewportWidth, viewportHeight);
         }
+
+        // `TD-98`: loaded here, once, for both the Ready and the
+        // unavailable case alike — harmless in the unavailable case, since
+        // no page is showing for a stroke to land on, and it means a
+        // document that opens Ready straight into an existing attachment
+        // shows its own markup immediately, not after a first render.
+        await view.LoadAnnotationsAsync(owner as IHasAttachmentAnnotations, attachment.Id, cancellationToken).ConfigureAwait(true);
 
         Dock(view, attachment);
         return view;
@@ -248,7 +303,7 @@ public sealed class AttachmentViewerLauncher
         return total;
     }
 
-    private static void OpenLoadedContent(
+    private void OpenLoadedContent(
         DocumentViewerView view,
         IAttachment attachment,
         byte[] bytes,
@@ -280,10 +335,11 @@ public sealed class AttachmentViewerLauncher
             // intact, so a real copy is put where the OS shell can hand it
             // to whatever is registered for it; the viewer's own "Open
             // externally" button is the only thing that reads this path,
-            // and only when it is not null (`TD-99`).
-            var materialisedPath = MaterialiseForExternalOpen(attachment.Id, attachment.FileName, bytes);
+            // and only when it is not null (`TD-99`, hardened `TD-184`).
+            var materialisedPath = MaterialiseForExternalOpen(attachment.Id, attachment.FileName, format, bytes, out var refusedReason);
             view.OpenUnavailable(DocumentViewSession.Unavailable(
-                attachment.Id, attachment.FileName, attachment.ContentType, DocumentViewStatus.Unsupported, format, materialisedPath));
+                attachment.Id, attachment.FileName, attachment.ContentType, DocumentViewStatus.Unsupported,
+                format, materialisedPath, refusedReason));
             return;
         }
 
@@ -314,107 +370,91 @@ public sealed class AttachmentViewerLauncher
     }
 
     /// <summary>
-    /// Extensions Windows Explorer (or any other <c>ShellExecuteEx</c>-driven
-    /// shell) runs directly rather than opening in a viewer application —
-    /// "Open externally" must never hand the OS one of these under its real
-    /// extension, however an attachment happened to be named (`WP 21.5F`,
-    /// Offensive Security Audit finding OSA-02). Not exhaustive of every
-    /// Windows-registered executable file type in existence, but covers the
-    /// standard set <c>AppLocker</c>'s own default rules and Microsoft's own
-    /// "potentially dangerous file types" guidance both name.
+    /// Writes <paramref name="bytes"/> to a real file on local disk, for
+    /// the OS shell to open — never beside the persistence root, which this
+    /// launcher has no path to and should not need one for a copy that
+    /// exists only until the OS is done with it (`TD-99`, hardened
+    /// `TD-184`).
     /// </summary>
-    private static readonly HashSet<string> DangerousExtensions = new(StringComparer.OrdinalIgnoreCase)
+    /// <param name="attachmentId">The attachment being materialised — the key this launcher remembers the written directory under, for <see cref="Close"/>.</param>
+    /// <param name="fileName">The attachment's own recorded file name — untrusted: never used for the written extension without checking it first.</param>
+    /// <param name="format">
+    /// The format this platform already, positively identified the bytes
+    /// as (`DocumentFormatDetector`) — for <see cref="ViewableDocumentFormat.ExternalOnly"/>
+    /// specifically, that identification (not a fresh, unverified read of
+    /// <paramref name="fileName"/>'s own extension) decides what gets
+    /// written.
+    /// </param>
+    /// <param name="bytes">The attachment's own real, verified bytes.</param>
+    /// <param name="refusedReason">
+    /// Set, and no file written, when the name resolves to an extension
+    /// this launcher will not hand to the OS shell under any
+    /// circumstances (`TD-184`) — <see langword="null"/> for every other
+    /// outcome, including a write that was attempted and simply failed.
+    /// </param>
+    /// <returns>The written path, or <see langword="null"/> if the write was refused or itself failed.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>The vulnerability this closes (`TD-184`):</b> before this method,
+    /// the materialised file's own extension was <paramref name="fileName"/>'s,
+    /// completely unexamined, and <c>DocumentViewerView.OpenExternally</c>
+    /// hands the written path to <c>Process.Start(UseShellExecute: true)</c>
+    /// — so an attachment named <c>invoice.pdf.exe</c> whose bytes are
+    /// genuinely executable ran as code the instant a user pressed the
+    /// button any honestly-labelled attachment already offers. Two things
+    /// changed: the written extension is never trusted from the name alone
+    /// (checked against <see cref="DangerousExtensions"/>, refused outright
+    /// if it matches, resolved from the detector's own verified
+    /// <see cref="ViewableDocumentFormat.ExternalOnly"/> match rather than
+    /// the raw name when one exists) — and the directory a copy lands in is
+    /// a fresh, randomly-named one this call creates for itself, never the
+    /// attachment id (predictable, and therefore something an attacker who
+    /// already knows or can guess the id could pre-create or symlink ahead
+    /// of a later open).
+    /// </para>
+    /// </remarks>
+    private string? MaterialiseForExternalOpen(
+        Guid attachmentId, string fileName, ViewableDocumentFormat format, byte[] bytes, out string? refusedReason)
     {
-        ".exe", ".com", ".scr", ".pif", ".bat", ".cmd", ".msi", ".msp", ".mst",
-        ".ps1", ".ps1xml", ".psc1", ".psd1", ".psm1",
-        ".vb", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".ws",
-        ".cpl", ".msc", ".jar", ".reg", ".hta", ".application", ".gadget",
-        ".lnk", ".inf", ".isp", ".sct", ".shb", ".shs", ".url", ".vxd", ".workflow",
-    };
+        refusedReason = null;
 
-    /// <summary>
-    /// Unicode bidirectional-control characters that can visually disguise a
-    /// file's real extension (the "right-to-left override" spoofing
-    /// technique — e.g. making <c>evil&lt;RTLO&gt;fdp.exe</c> render as
-    /// <c>evilexe.pdf</c>). Stripped outright: this launcher's title bar and
-    /// panel tab both echo the file name verbatim, and the materialised
-    /// name is what a user reads before deciding to trust "Open externally".
-    /// </summary>
-    private static readonly char[] BidiControlCharacters =
-    [
-        '\u200E', '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
-        '\u2066', '\u2067', '\u2068', '\u2069',
-    ];
+        var safeName = SanitiseFileName(fileName);
 
-    /// <summary>
-    /// Reduces an attachment's own, untrusted file name to one safe to
-    /// create on disk: directory components removed (so a stored name of
-    /// <c>..\..\evil.exe</c> or <c>C:\Windows\System32\evil.exe</c> cannot
-    /// steer the write outside the directory this method itself chooses),
-    /// control and bidi-override characters stripped, every character
-    /// <see cref="Path.GetInvalidFileNameChars"/> rejects replaced, and a
-    /// trailing space or dot trimmed explicitly rather than relied upon as
-    /// a silent Win32 <c>CreateFile</c> quirk.
-    /// </summary>
-    private static string SanitiseFileName(string fileName)
-    {
-        var name = Path.GetFileName(fileName);
-        if (string.IsNullOrEmpty(name))
-            return string.Empty;
-
-        var builder = new StringBuilder(name.Length);
-        foreach (var ch in name)
+        if (format is ViewableDocumentFormat.ExternalOnly)
         {
-            if (char.IsControl(ch) || Array.IndexOf(BidiControlCharacters, ch) >= 0)
-                continue;
-
-            builder.Append(ch);
+            // The detector already positively matched exactly `.dwg` or
+            // `.dxf` — see `DocumentFormatDetector.FromContentType` — to
+            // reach `ExternalOnly` at all, so that verified match, not a
+            // second, unverified read of the raw name, is what gets
+            // written. Neither extension is remotely close to anything in
+            // `DangerousExtensions`, so no further check is needed here.
+            var knownExtension = Path.GetExtension(fileName).ToLowerInvariant() is ".dwg" or ".dxf" ? Path.GetExtension(fileName).ToLowerInvariant() : ".dwg";
+            var baseName = Path.GetFileNameWithoutExtension(safeName);
+            safeName = (string.IsNullOrEmpty(baseName) ? "attachment" : baseName) + knownExtension;
+        }
+        else if (IsDangerousExtension(safeName))
+        {
+            refusedReason = "looks like it could run as a program, a script or a shortcut rather than open as a document, image or drawing.";
+            return null;
         }
 
-        name = builder.ToString();
-        foreach (var invalid in Path.GetInvalidFileNameChars())
-            name = name.Replace(invalid, '_');
-
-        return name.Trim(' ', '.');
-    }
-
-    /// <summary>
-    /// Writes <paramref name="bytes"/> to a real file on local disk, under a
-    /// sanitised form of the attachment's own file name, for the OS shell to
-    /// open — never beside the persistence root, which this launcher has no
-    /// path to and should not need one for a copy that exists only until the
-    /// OS is done with it (`TD-99`).
-    /// </summary>
-    /// <returns>The written path, or <see langword="null"/> if the write itself failed.</returns>
-    /// <remarks>
-    /// A fresh, unguessable subdirectory every call (`WP 21.5F` OSA-02) —
-    /// not one keyed on the attachment id alone, which a local process that
-    /// already knew or guessed that id could pre-stage as a symlink/junction
-    /// ahead of a real write reusing the identical path. A directly
-    /// executable extension (<see cref="DangerousExtensions"/>) is
-    /// neutralised rather than written verbatim, so "Open externally" can
-    /// never hand <c>ShellExecuteEx</c> a file it will run instead of open —
-    /// the file is still written, under its original name with the
-    /// dangerous extension defused, so the user can still see (and rename,
-    /// and open deliberately) exactly what was attached.
-    /// </remarks>
-    private static string? MaterialiseForExternalOpen(Guid attachmentId, string fileName, byte[] bytes)
-    {
         try
         {
-            var safeName = SanitiseFileName(fileName);
-            if (string.IsNullOrEmpty(safeName))
-                safeName = attachmentId.ToString("N");
+            string directory;
+            do
+            {
+                directory = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer", Guid.NewGuid().ToString("N"));
+            }
+            while (Directory.Exists(directory));
 
-            var extension = Path.GetExtension(safeName);
-            if (DangerousExtensions.Contains(extension))
-                safeName += ".blocked";
-
-            var directory = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
 
             var path = Path.Combine(directory, safeName);
             File.WriteAllBytes(path, bytes);
+
+            lock (_materialisedDirectoriesByAttachment)
+                _materialisedDirectoriesByAttachment[attachmentId] = directory;
+
             return path;
         }
         catch (IOException)
@@ -425,15 +465,62 @@ public sealed class AttachmentViewerLauncher
         {
             return null;
         }
-        catch (ArgumentException)
+    }
+
+    /// <summary>Whether <paramref name="fileName"/>'s own rightmost extension is one this launcher refuses to hand to the OS shell under any name (`TD-184`).</summary>
+    private static bool IsDangerousExtension(string fileName)
+    {
+        var extension = Path.GetExtension(fileName);
+        return !string.IsNullOrEmpty(extension) && DangerousExtensions.Contains(extension);
+    }
+
+    /// <summary>
+    /// A file name safe to write under the OS's own temporary folder and
+    /// hand to the shell (`TD-184`): no path separators (nothing can escape
+    /// the fresh directory <see cref="MaterialiseForExternalOpen"/> creates
+    /// for it), no NUL or control characters, no Unicode bidirectional
+    /// override characters (which can visually disguise a real extension —
+    /// <c>U+202E</c>, the right-to-left override, is the classic
+    /// "exe.pdf"-reads-as-"fdp.exe" trick), no trailing dots or spaces
+    /// (which Windows itself silently strips when resolving a path, so a
+    /// name ending "…exe." or "…exe " is exactly as dangerous as one ending
+    /// "…exe"), and never a bare Windows reserved device name. Falls back
+    /// to a fixed, inert name if nothing of the original survives.
+    /// </summary>
+    private static string SanitiseFileName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return "attachment";
+
+        var builder = new StringBuilder(fileName.Length);
+        foreach (var ch in fileName)
         {
-            // A file name that survived SanitiseFileName's own pass but
-            // still collides with a reserved Windows device name (`CON`,
-            // `NUL`, `COM1`, ...) is refused by the OS rather than crashing
-            // this launcher — reported exactly like an unwritable temp
-            // directory would be.
-            return null;
+            if (ch is '/' or '\\' or '\0')
+                continue;
+
+            if (char.IsControl(ch))
+                continue;
+
+            // Bidirectional formatting controls: LRE/RLE/PDF/LRO/RLO
+            // (U+202A-U+202E) and LRI/RLI/FSI/PDI (U+2066-U+2069).
+            if (ch is (>= '‪' and <= '‮') or (>= '⁦' and <= '⁩'))
+                continue;
+
+            builder.Append(ch);
         }
+
+        var candidate = builder.ToString().Trim().TrimEnd('.', ' ');
+        if (string.IsNullOrWhiteSpace(candidate))
+            return "attachment";
+
+        if (candidate.Length > 200)
+            candidate = candidate[..200];
+
+        var baseName = Path.GetFileNameWithoutExtension(candidate);
+        if (ReservedDeviceNames.Contains(baseName))
+            candidate = "_" + candidate;
+
+        return candidate;
     }
 
     private void Dock(DocumentViewerView view, IAttachment attachment)
@@ -467,5 +554,36 @@ public sealed class AttachmentViewerLauncher
 
         _panelsByAttachment.Remove(attachmentId);
         _layout.Apply(tree => tree.Remove(panelId));
+
+        DeleteMaterialisedDirectory(attachmentId);
+    }
+
+    /// <summary>
+    /// Deletes the fresh, per-launch directory <see cref="MaterialiseForExternalOpen"/>
+    /// created for <paramref name="attachmentId"/>, if there was one
+    /// (`TD-184`) — best-effort: a file the OS still has open (the external
+    /// application the user just launched, most plausibly) is left for the
+    /// OS's own temp-folder housekeeping rather than treated as this call's
+    /// failure.
+    /// </summary>
+    private void DeleteMaterialisedDirectory(Guid attachmentId)
+    {
+        string? directory;
+        lock (_materialisedDirectoriesByAttachment)
+        {
+            if (!_materialisedDirectoriesByAttachment.Remove(attachmentId, out directory))
+                return;
+        }
+
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 }
