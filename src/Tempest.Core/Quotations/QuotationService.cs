@@ -63,6 +63,18 @@ namespace Tempest.Core.Quotations;
 /// repeats them: <c>Tempest.Workspace.CanonicalObjectKinds</c>, the
 /// constants' own canonical owner, lives in the Workspace project too.
 /// </para>
+/// <para>
+/// <b>A change order (`WP 20.10E`, PO finding D18, `ADR-0152` addendum) is
+/// the identical <see cref="Quotation"/> shape</b>, distinguished only by
+/// <see cref="QuotationKind.ChangeOrder"/> and by carrying an existing
+/// deliverable's own id on each line from the moment it is added
+/// (<see cref="AddLineAsync"/>'s own <c>carriedDeliverableId</c>) rather
+/// than waiting for <see cref="AcceptAsync"/> to mint one. This is what
+/// lets <c>Tempest.Core.Projects.ProjectLifecycleService.SignOffAsync</c>
+/// treat a carried deliverable as covered without inventing a second
+/// mechanism: <see cref="AcceptAsync"/> already branches per line on
+/// whether <see cref="QuotationLine.DeliverableId"/> is already set.
+/// </para>
 /// </remarks>
 public sealed class QuotationService : IQuotationService
 {
@@ -91,9 +103,16 @@ public sealed class QuotationService : IQuotationService
         _time = timeProvider ?? TimeProvider.System;
     }
 
+    /// <summary>The reference prefix an ordinary quotation is generated under.</summary>
+    private const string QuotationReferencePrefix = "Q-";
+
+    /// <summary>The reference prefix a change order is generated under (`WP 20.10E`).</summary>
+    private const string ChangeOrderReferencePrefix = "CO-";
+
     /// <inheritdoc />
     public async Task<QuotationResult> CreateAsync(
-        Guid projectId, string? reference = null, string? clientOrganisationId = null, CancellationToken cancellationToken = default)
+        Guid projectId, string? reference = null, string? clientOrganisationId = null, QuotationKind kind = QuotationKind.Quotation,
+        CancellationToken cancellationToken = default)
     {
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project))
             return new QuotationResult(QuotationRefusal.ProjectNotFound, $"No project '{projectId}' is registered.", null);
@@ -105,21 +124,23 @@ public sealed class QuotationService : IQuotationService
         }
 
         var quoteDate = Today();
+        var prefix = kind == QuotationKind.ChangeOrder ? ChangeOrderReferencePrefix : QuotationReferencePrefix;
 
         var resolvedReference = string.IsNullOrWhiteSpace(reference)
-            ? await NextReferenceAsync(quoteDate.Year, cancellationToken).ConfigureAwait(false)
+            ? await NextReferenceAsync(quoteDate.Year, prefix, cancellationToken).ConfigureAwait(false)
             : reference.Trim();
 
         var resolvedClient = clientOrganisationId ?? project.ClientOrganisationId;
         var currency = await ResolveCurrencyAsync(project, cancellationToken).ConfigureAwait(false);
+        var displayName = kind == QuotationKind.ChangeOrder ? $"Change order — {resolvedReference}" : $"Quotation — {resolvedReference}";
 
         var created = await new EngineeringObjectFactory<Quotation>(
             Quotation.CanonicalKind,
             _context,
             (doc, rev) => new Quotation(
-                doc, rev, _context, identifier: null, $"Quotation — {resolvedReference}",
+                doc, rev, _context, identifier: null, displayName,
                 EngineeringObjectMetadata.Empty, resolvedReference, quoteDate, resolvedClient, currency,
-                validityDays: 30, terms: null, lines: []))
+                validityDays: 30, terms: null, lines: [], kind: kind))
             .CreateAsync($"Quotation '{resolvedReference}' opened with project '{projectId}'.", cancellationToken)
             .ConfigureAwait(false);
 
@@ -131,7 +152,8 @@ public sealed class QuotationService : IQuotationService
 
     /// <inheritdoc />
     public async Task<QuotationResult> AddLineAsync(
-        Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, CancellationToken cancellationToken = default)
+        Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, Guid? carriedDeliverableId = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -145,9 +167,18 @@ public sealed class QuotationService : IQuotationService
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
+        if (carriedDeliverableId is { } carriedId)
+        {
+            if (await ValidateCarriedDeliverableAsync(quote, carriedId, cancellationToken).ConfigureAwait(false) is { } carriedRefusal)
+                return carriedRefusal;
+        }
+
         var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, rate, fixedPrice);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
+
+        if (carriedDeliverableId is { } carried)
+            line = line with { DeliverableId = carried };
 
         await quote.AddLineAsync(line, cancellationToken).ConfigureAwait(false);
 
@@ -168,7 +199,8 @@ public sealed class QuotationService : IQuotationService
         if (quote.Status != QuotationStatus.Draft)
             return NotDraft(quote, quotationId, "changed");
 
-        if (quote.Lines.All(l => l.Id != lineId))
+        var existingLine = quote.Lines.FirstOrDefault(l => l.Id == lineId);
+        if (existingLine is null)
             return new QuotationResult(QuotationRefusal.LineNotFound, $"No line '{lineId}' on quotation '{quotationId}'.", quote);
 
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
@@ -177,6 +209,13 @@ public sealed class QuotationService : IQuotationService
         var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, rate, fixedPrice);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
+
+        // A carried deliverable id (`WP 20.10E`) is set once, at
+        // AddLineAsync, and is not itself an editable field — carried
+        // forward here so an ordinary edit (description/hours/rate) on a
+        // change order line never loses what it carries.
+        if (existingLine.DeliverableId is { } carried)
+            line = line with { DeliverableId = carried };
 
         await quote.UpdateLineAsync(line, cancellationToken).ConfigureAwait(false);
 
@@ -254,14 +293,30 @@ public sealed class QuotationService : IQuotationService
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        var milestoneId = await FindOrCreateReferenceMilestoneAsync(quote, projectId, cancellationToken).ConfigureAwait(false);
+        // `WP 20.10E`: a change-order line already carries an existing
+        // deliverable's own id (set at AddLineAsync) — no new Deliverable
+        // for that line, and the reference milestone is found-or-created
+        // lazily, only the first time a line actually needs one, so a
+        // change order whose every line is carried creates no milestone at
+        // all.
+        Guid? milestoneId = null;
 
         var fulfilledLines = new List<QuotationLine>(quote.Lines.Count);
         var sequence = 1;
 
         foreach (var line in quote.Lines)
         {
-            var deliverable = await CreateDeliverableAsync(milestoneId, line.Description, cancellationToken).ConfigureAwait(false);
+            Guid deliverableId;
+            if (line.DeliverableId is { } carriedDeliverableId)
+            {
+                deliverableId = carriedDeliverableId;
+            }
+            else
+            {
+                milestoneId ??= await FindOrCreateReferenceMilestoneAsync(quote, projectId, cancellationToken).ConfigureAwait(false);
+                var deliverable = await CreateDeliverableAsync(milestoneId.Value, line.Description, cancellationToken).ConfigureAwait(false);
+                deliverableId = deliverable.Id;
+            }
 
             var requirement = await _requirements
                 .CreateAsync($"{quote.Reference}-{sequence}", line.Description, category: "Quotation", cancellationToken)
@@ -270,7 +325,7 @@ public sealed class QuotationService : IQuotationService
                 .LinkAsync(requirement.Id, quote.Id, RequirementRelationshipKinds.AllocatedTo, cancellationToken)
                 .ConfigureAwait(false);
 
-            fulfilledLines.Add(line with { DeliverableId = deliverable.Id, RequirementId = requirement.Id });
+            fulfilledLines.Add(line with { DeliverableId = deliverableId, RequirementId = requirement.Id });
             sequence++;
         }
 
@@ -342,6 +397,29 @@ public sealed class QuotationService : IQuotationService
         return (null, QuotationRefusal.InvalidLine, "A line needs either hours and a rate, or a fixed price.");
     }
 
+    /// <summary>
+    /// The guard on <see cref="AddLineAsync"/>'s own <c>carriedDeliverableId</c>
+    /// (`WP 20.10E`): only a change order carries an existing deliverable,
+    /// and only a live one.
+    /// </summary>
+    private async Task<QuotationResult?> ValidateCarriedDeliverableAsync(Quotation quote, Guid carriedDeliverableId, CancellationToken cancellationToken)
+    {
+        if (quote.QuotationKind != QuotationKind.ChangeOrder)
+        {
+            return new QuotationResult(
+                QuotationRefusal.InvalidLine, "Only a change order can carry an existing deliverable on a line.", quote);
+        }
+
+        if (await _context.Repository.FindAsync(carriedDeliverableId, cancellationToken).ConfigureAwait(false) is not Deliverable deliverable
+            || !IsLive(deliverable))
+        {
+            return new QuotationResult(
+                QuotationRefusal.DeliverableNotFound, $"No live deliverable '{carriedDeliverableId}' to carry.", quote);
+        }
+
+        return null;
+    }
+
     /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
     private async Task<QuotationResult?> ArchivedAsync(Quotation quote, CancellationToken cancellationToken)
     {
@@ -405,24 +483,34 @@ public sealed class QuotationService : IQuotationService
         return card.Definition.Currency;
     }
 
-    /// <summary>The next <c>Q-&lt;year&gt;-&lt;nnn&gt;</c> reference — one past the highest existing suffix already used for <paramref name="year"/>, among every quotation this store holds (live or not: a reference, once used, is never reissued).</summary>
-    private async Task<string> NextReferenceAsync(int year, CancellationToken cancellationToken)
+    /// <summary>
+    /// The next <c>&lt;prefix&gt;&lt;year&gt;-&lt;nnn&gt;</c> reference — one
+    /// past the highest existing suffix already used for <paramref name="year"/>
+    /// under that same prefix, among every quotation this store holds (live
+    /// or not: a reference, once used, is never reissued). Shared by both
+    /// prefixes this service generates (<see cref="QuotationReferencePrefix"/>
+    /// for an ordinary quotation, <see cref="ChangeOrderReferencePrefix"/>
+    /// for a change order — `WP 20.10E`): the two vocabularies never
+    /// collide, so one scan of every live-or-not <see cref="Quotation"/>
+    /// serves either.
+    /// </summary>
+    private async Task<string> NextReferenceAsync(int year, string prefix, CancellationToken cancellationToken)
     {
         var existing = await _context.Repository.ListByKindAsync(Quotation.CanonicalKind, cancellationToken).ConfigureAwait(false);
-        var prefix = $"Q-{year.ToString(CultureInfo.InvariantCulture)}-";
+        var fullPrefix = $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
         var max = 0;
         foreach (var candidate in existing.OfType<Quotation>())
         {
-            if (candidate.Reference.StartsWith(prefix, StringComparison.Ordinal)
-                && int.TryParse(candidate.Reference.AsSpan(prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
+            if (candidate.Reference.StartsWith(fullPrefix, StringComparison.Ordinal)
+                && int.TryParse(candidate.Reference.AsSpan(fullPrefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
                 && n > max)
             {
                 max = n;
             }
         }
 
-        return $"{prefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
+        return $"{fullPrefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

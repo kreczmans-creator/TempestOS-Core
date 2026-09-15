@@ -291,7 +291,11 @@ public sealed class ProjectQuoteView : UserControl
         var identity = new StackPanel { Spacing = DesignTokens.SpaceXs };
         identity.Children.Add(new TextBlock
         {
-            Text = $"{quote.Reference} — {quote.Status}",
+            // `WP 20.10E`: a change order's own kind is shown alongside its
+            // status, exactly as `QuotesView`'s own group rows show it.
+            Text = quote.QuotationKind == QuotationKind.ChangeOrder
+                ? $"{quote.Reference} — {quote.Status} · change order"
+                : $"{quote.Reference} — {quote.Status}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
         });

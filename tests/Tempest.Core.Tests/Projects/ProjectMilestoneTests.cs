@@ -441,7 +441,17 @@ public sealed class ProjectMilestoneTests : IDisposable
         var project = await fixture.CreateProjectAsync("P-1", "Apollo");
         var milestone = await fixture.Workflow.CreateMilestoneAsync(project.Id, "MS-001", "CDR", Today.AddDays(30));
         var deliverable = await fixture.Workflow.CreateDeliverableAsync(project.Id, milestone.Id, "DEL-001", "Stress report");
-        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        // Writes directly through the internal `Project.SignOffAsync`
+        // mutator rather than `IProjectLifecycleService.SignOffAsync`
+        // itself: since `WP 20.10E` that service refuses to sign off while
+        // a live, uncompleted deliverable exists (Product Owner finding
+        // D18) — exactly what this fixture deliberately leaves in place so
+        // the archived-project guard can be tested against it below, a
+        // rule this test is not about.
+        var closedOn = DateOnly.FromDateTime(DateTime.UtcNow);
+        var signOff = new ProjectSignOff(fixture.Domain.ResolveCurrentPrincipalId(), closedOn, "Closed for the archive test.");
+        await ((Project)(await fixture.Domain.Repository.FindAsync(project.Id))!).SignOffAsync(signOff, closedOn);
 
         var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
         var workflow = new ProjectMilestoneService(fixture.Domain, later);

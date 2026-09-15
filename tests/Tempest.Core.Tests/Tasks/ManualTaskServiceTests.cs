@@ -1,3 +1,4 @@
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Projects;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tasks;
@@ -22,10 +23,29 @@ namespace Tempest.Core.Tests.Tasks;
 /// </remarks>
 public sealed class ManualTaskServiceTests
 {
-    /// <summary>Signs the project off with a clock 91 days before real "now", so <c>ClosedOn</c> lands 91 days in the past and the real, system-clock <see cref="ITaskService"/> under test reads the project as Archive without needing its own custom clock.</summary>
-    private static Task CloseProjectAsync(ITempestHost host, Guid projectId, int daysAgo) =>
-        new ProjectLifecycleService(QuotationTestHost.Domain(host), new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(-daysAgo)))
-            .SignOffAsync(projectId, "Closed for the archive test.");
+    /// <summary>
+    /// Backdates the project's own close so <c>ClosedOn</c> lands
+    /// <paramref name="daysAgo"/> days in the past and the real,
+    /// system-clock <see cref="ITaskService"/> under test reads the project
+    /// as Archive without needing its own custom clock. Writes directly
+    /// through <see cref="Project.SignOffAsync"/> — the internal mutator
+    /// <see cref="IProjectLifecycleService.SignOffAsync"/> itself commits
+    /// after deciding an act is permitted — rather than through that
+    /// service: this file's own fixtures deliberately leave a live
+    /// <see cref="ManualTask"/> open under the project so the
+    /// archived-project guard can be tested against it afterwards, and
+    /// since `WP 20.10E` that same open task is exactly what the service
+    /// itself would refuse to sign off over (Product Owner finding D18) —
+    /// a rule this file is not about.
+    /// </summary>
+    private static async Task CloseProjectAsync(ITempestHost host, Guid projectId, int daysAgo)
+    {
+        var domain = QuotationTestHost.Domain(host);
+        var project = (Project)(await domain.Repository.FindAsync(projectId))!;
+        var closedOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-daysAgo));
+        var signOff = new ProjectSignOff(domain.ResolveCurrentPrincipalId(), closedOn, "Closed for the archive test.");
+        await project.SignOffAsync(signOff, closedOn);
+    }
 
     [Fact]
     public async Task AnArchivedProject_RefusesANewTask()

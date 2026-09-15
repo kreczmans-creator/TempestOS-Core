@@ -9,6 +9,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
+using Tempest.Core.Quotations;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
@@ -544,7 +545,16 @@ internal sealed partial class MainWindowComposer
         // 19.5C`) is already registered in DI with zero prior UI
         // consumers.
         var projectLifecycleService = (Tempest.Core.Projects.IProjectLifecycleService)services.GetService(typeof(Tempest.Core.Projects.IProjectLifecycleService));
-        var signOffView = new ProjectSignOffView(projectLifecycleService, composition.DomainContext, () => host.ProjectContext!.Current?.Id);
+
+        // `WP 20.10E` (Product Owner finding D18): the Sign off tab's own
+        // open-work list and its "Raise change order…" — the identical
+        // `IQuotationService` `ProjectQuoteView`/`QuotesView` reach through
+        // commands, called directly here exactly as `IProjectLifecycleService`
+        // itself already is, above.
+        var quotationServiceForSignOff = (IQuotationService)services.GetService(typeof(IQuotationService));
+        var signOffView = new ProjectSignOffView(
+            projectLifecycleService, quotationServiceForSignOff, composition.DomainContext, () => host.ProjectContext!.Current?.Id,
+            openObjectRightUp, openQuote);
         signOffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var projectWorkspace = new ProjectWorkspaceView(
