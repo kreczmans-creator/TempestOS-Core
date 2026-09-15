@@ -189,6 +189,27 @@ public sealed class BusinessIdentifierUniquenessTests
         Assert.Equal("Bolt", bolt.DisplayName);
     }
 
+    // The Ribbon and Palette reach the same refusal through the command
+    // handler, which must say it (`CommandResult.Failure`) rather than let
+    // the exception escape — the gap `WP 20.1A2` disclosed, closed here.
+    [Fact]
+    public async Task RenameCommand_ToAnExistingIdentifierInTheSameProject_ReturnsTheRefusal_NotAnException()
+    {
+        var domain = NewLifetime(new InMemoryQueryablePersistenceStore()).Domain;
+        var project = await CreateProjectAsync(domain, "P-001");
+
+        await CreatePartAsync(domain, "Bracket", project.Id);
+        var bolt = await CreatePartAsync(domain, "Bolt", project.Id);
+
+        var handler = new RenameMechanicalObjectCommandHandler(domain);
+        var result = await handler.HandleAsync(
+            new RenameMechanicalObjectCommand(bolt.Id, MechanicalObjectFactoryRegistry.Part, "Bracket"), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("Bracket", result.Message, StringComparison.Ordinal);
+        Assert.Equal("Bolt", ((IRenamable)bolt).DisplayName);
+    }
+
     [Theory]
     [MemberData(nameof(EnforcedFactoryKinds))]
     public async Task Rename_ToAnIdentifierFreeInThisProject_Succeeds(
