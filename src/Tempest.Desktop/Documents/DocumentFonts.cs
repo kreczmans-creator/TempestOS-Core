@@ -52,18 +52,49 @@ public static class DocumentFonts
 {
     private static readonly Lazy<SKTypeface> DisplayRegularTypeface = new(() => Load("ChakraPetch-Regular.ttf"));
     private static readonly Lazy<SKTypeface> DisplayBoldTypeface = new(() => Load("ChakraPetch-Bold.ttf"));
-    private static readonly Lazy<SKTypeface> BodyTypeface = new(() => Load("Inter-Variable.ttf"));
     private static readonly Lazy<SKTypeface> MonoRegularTypeface = new(() => Load("SpaceMono-Regular.ttf"));
     private static readonly Lazy<SKTypeface> MonoBoldTypeface = new(() => Load("SpaceMono-Bold.ttf"));
+
+    /// <summary>
+    /// Deliberately still <see cref="SKTypeface.Default"/> — <c>Inter-Variable.ttf</c>
+    /// (the only Inter file the design system export carries; there is no
+    /// static weight to embed instead) is genuinely embedded and loadable
+    /// (see the licensing note in <c>THIRD-PARTY-NOTICES.md</c>), but this
+    /// Work Package's own testing found SkiaSharp's PDF backend does not
+    /// embed a variable-format <c>SKTypeface</c> as real, extractable PDF
+    /// text at all when it is set on the drawing <c>SKPaint</c> — no
+    /// <c>Tj</c>/<c>TJ</c> operator for that run appears in the content
+    /// stream, and no corresponding font object appears among the PDF's
+    /// own embedded fonts, confirmed empirically before this decision (the
+    /// same "proven empirically" discipline <c>PdfTextExtractor</c>'s own
+    /// remarks already apply to the Default-face case `WP 19.5B`
+    /// established). <see cref="DocumentTemplate"/>'s own original
+    /// rationale for staying on the platform default face — "a formal,
+    /// regenerated document's legibility does not depend on brand type" —
+    /// still holds for prose text specifically, so Body renders with it
+    /// rather than shipping either invisible-to-search-and-screen-reader
+    /// text or an untested static substitute this Work Package's brief
+    /// does not name.
+    /// </summary>
+    private static readonly Lazy<SKTypeface> BodyTypeface = new(() => SKTypeface.Default);
+
+    /// <summary>
+    /// <c>Inter-Variable.ttf</c>'s own resource, loaded (never used to
+    /// draw — see <see cref="BodyTypeface"/>'s own remarks) purely so
+    /// <c>FontResourcesLoadTests</c> can verify the resource itself is
+    /// genuinely embedded and genuinely decodes, independent of whether
+    /// SkiaSharp's PDF backend can draw text with it.
+    /// </summary>
+    private static readonly Lazy<SKTypeface> InterVariableTypeface = new(() => Load("Inter-Variable.ttf"));
 
     /// <summary>Whether Chakra Petch actually loaded from the embedded resource (as opposed to falling back to <see cref="SKTypeface.Default"/>).</summary>
     public static bool DisplayLoaded => !ReferenceEquals(DisplayRegularTypeface.Value, SKTypeface.Default);
 
-    /// <summary>Whether Inter actually loaded from the embedded resource.</summary>
-    public static bool BodyLoaded => !ReferenceEquals(BodyTypeface.Value, SKTypeface.Default);
-
     /// <summary>Whether Space Mono actually loaded from the embedded resource.</summary>
     public static bool MonoLoaded => !ReferenceEquals(MonoRegularTypeface.Value, SKTypeface.Default);
+
+    /// <summary>Whether <c>Inter-Variable.ttf</c>'s own resource loaded — see <see cref="InterVariableTypeface"/>'s own remarks for why it is never actually drawn with.</summary>
+    public static bool InterVariableLoaded => !ReferenceEquals(InterVariableTypeface.Value, SKTypeface.Default);
 
     /// <summary>The typeface a <see cref="DocumentTemplate.TextRun"/> should draw with, by its own <see cref="DocumentFontRole"/> and <see cref="DocumentTemplate.TextRun.Bold"/> flag.</summary>
     public static SKTypeface For(DocumentFontRole role, bool bold) => role switch
