@@ -34,10 +34,11 @@ Product Owner's own Windows session — the physical review
 `06 Engineering Standards/08-the-physical-review-and-the-release-gate.md`
 describes — was that first drive; the design-freeze review
 (`05 Case Studies/07-the-design-freeze-review.md`) followed it the same
-day. What the session found in the first hour was not subtle: Engineering showed only the Cockpit, full width; a newly created Part
-could not be found anywhere; a person's name read `S-1-5-21-…`. No headless
-test had ever been positioned to catch any of this, because nobody had asked
-whether it was true.
+day. What the session found in the first hour was not subtle: Engineering
+showed only the Cockpit, full width; a newly created Part could not be found
+anywhere; a person's name read `S-1-5-21-…`. No headless test had ever been
+positioned to catch any of this, because nobody had asked whether it was
+true.
 
 ## Panels, names and a box that should not have shipped (`WP 17.9.1`)
 
