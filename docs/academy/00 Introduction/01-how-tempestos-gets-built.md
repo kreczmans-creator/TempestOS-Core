@@ -247,6 +247,20 @@ Follow `WP 18.0A`, the Evidence record, through every stage above:
 The chapter that tells this story properly is `59-evidence.md`; the ones
 around it (`60`–`64`) are the same release, stage by stage.
 
+**What came after.** The week after `v0.18.0` was tagged, the same stages
+ran three more times at a much faster pace: `v0.19.0` (the commercial
+model, invoicing and the desktop as sketched — chapters `65`–`69`),
+`v0.19.1` (the Product Owner's first-pass corrections, chapters `70`–`73`)
+and `v0.20.0` (the technical-debt tranche, chapters `74`–`76`). At the
+time of writing all three were **release candidates** on their own
+branches, under the Product Owner's manual test, and `v0.21.0` was a plan
+with no code. Two things in those chapters are worth reading for the
+stages alone: `06 Engineering Standards/10-the-product-owners-test-as-the-source-of-record.md`,
+on what stage 7 looks like when the Product Owner's test finds the
+defects the gate did not, and `73-the-technical-debt-rationalisation-and-the-overnight-tranche.md`,
+on how an eighty-row debt list was cut down to what actually blocked the
+release.
+
 ## How to read a chapter of this Academy
 
 Every chapter from `42` onward opens with a one-line header (release, Work

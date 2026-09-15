@@ -63,17 +63,20 @@ alternatives were weighed and why this one won.
   this page, the stage-by-stage guide for the non-engineer reader
   (`01-how-tempestos-gets-built.md`), and the plain-language glossary
   (`02-plain-language-glossary.md`).
-- **02 Runtime Architecture** — sixty-four chapters, in the order the
+- **02 Runtime Architecture** — seventy-six chapters, in the order the
   platform and then the product were built: how the runtime is put
   together (chapters `01`–`12`), the engineering foundation and workspace
   (`13`–`18`), the desktop application (`19`–`32`), the Product
   Convergence programme that made it a real application (`33`–`42`), the
-  remediation and hygiene releases `v0.14.0`–`v0.16.0` (`43`–`49`), and
-  the `v1.0.0` programme's first two releases, `v0.17.0` Reset and
-  Substrates and `v0.18.0` Evidence and Check (`50`–`64`). The folder's
-  name is historical; from chapter `13` onward the subject is the product
-  as much as the runtime. See `Academy Index.md` for the list with one
-  line per chapter.
+  remediation and hygiene releases `v0.14.0`–`v0.16.0` (`43`–`49`), the
+  `v1.0.0` programme's first two releases, `v0.17.0` Reset and
+  Substrates and `v0.18.0` Evidence and Check (`50`–`64`), and the three
+  release candidates that followed in the week of 2026-09-10 — `v0.19.0`
+  Consultancy Seam and Desktop (`65`–`69`), `v0.19.1` the Product Owner's
+  first pass (`70`–`73`) and `v0.20.0` the debt tranche (`74`–`76`, which
+  also covers the `v0.21.0` plan). The folder's name is historical; from
+  chapter `13` onward the subject is the product as much as the runtime.
+  See `Academy Index.md` for the list with one line per chapter.
 - **04 Design Patterns** — recurring structural patterns TempestOS actually
   uses (not a generic patterns catalogue), explained in terms of the real
   code that uses them.
@@ -171,6 +174,19 @@ left out rather than guessed; where a Work Package's own first attempt was
 wrong, that is in the chapter. `06 Engineering Standards/09-the-governance-reset-and-how-a-release-is-now-run.md`
 explains the reset itself and what it means for how this Academy is
 maintained from here on.
+
+Chapters `65`–`76`, case study `08` and standards chapters `10`–`11` were
+added on 2026-09-15, the same week the work they describe was done. They
+describe **release candidates, not releases**: `release/v0.19.0`,
+`release/v0.19.1` and `release/v0.20.0` were cut between 2026-09-10 and
+2026-09-15 and were still under the Product Owner's manual test when the
+chapters were written, and `release/v0.21.0` held a plan and no code.
+Each chapter's header names the branch and the commit it was read at.
+When a candidate is tagged, or is superseded, the honest correction is a
+line in that chapter's header, not a rewrite; the chapters already record
+that the `v0.19.0` candidate was superseded by `v0.19.1` before it was
+tagged, and that `v0.20.0` was cut from `v0.19.1` to close technical debt
+before release rather than after.
 
 ## A Note on Honesty
 

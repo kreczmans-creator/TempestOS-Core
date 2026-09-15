@@ -197,6 +197,22 @@ runtime:
 - **`56-frozen-layers.md`** and **`05 Case Studies/07-the-design-freeze-review.md`**
   — what is deliberately out of the build, and why.
 
+### 6c. The release candidates (`v0.19.0`, `v0.19.1`, `v0.20.0`)
+
+Chapters `65`–`76` describe work on branches `release/v0.19.0`,
+`release/v0.19.1` and `release/v0.20.0` that had not been merged to
+`main` when this path was last revised (2026-09-15); read them knowing
+they describe candidates, and check the Release Notes under
+`docs/releases/` on the branch for the current status. If your Work
+Package touches the commercial side of the product, read
+**`65-the-project-commercial-core.md`**, **`66-outbound-invoicing-and-the-connector-seam.md`**
+and **`70-quotations-change-orders-and-the-project-lifecycle.md`**; if
+it touches the shell, **`68-the-layout-walk-and-the-composer.md`**,
+**`71-the-shell-as-sketched.md`** and **`76-tear-out-and-dock-everywhere.md`**.
+Whatever it touches, read **`06 Engineering Standards/10-the-product-owners-test-as-the-source-of-record.md`**
+and **`11-ci-in-shards-and-the-gate-at-scale.md`** first: they describe
+the gate your pull request will meet.
+
 ### 7. How to actually contribute
 
 - **Contribution workflow.** Every Work Package is a branch and a pull
@@ -238,7 +254,7 @@ is archived under `archive/docs-2026-09/releases/`, retained for
 history, not where new work is scoped), find the Work Package you are
 about to work on, read the Academy chapters that cover its ground, read
 its Execution Plan if the release has one (`docs/releases/v0.18.0/Execution
-Plan.md` is the model), and proceed under `CONTRIBUTING.md`. **A note on
+Plan.md` is the model; every release since has one), and proceed under `CONTRIBUTING.md`. **A note on
 drift:** this section has pointed at the wrong release plan twice before
 (`WP 5.4` and `WP 16.2B` each corrected it). If the programme document
 moves again, this is the line to fix.
