@@ -396,8 +396,8 @@ public sealed class ProjectAreaAcceptanceTests
             // them initialised last. Disclosed as a finding of this Work
             // Package; the register's own denied path is covered by
             // `ProjectAreaRegisterTests`.
-            ((CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)))
-                .SetCurrent(new PlatformPrincipal(
+            ((PrincipalSession)host.Services!.GetService(typeof(PrincipalSession)))
+                .Establish(new PlatformPrincipal(
                     new PlatformIdentity("engineer", "engineer"),
                     [Core.Verification.VerificationService.ReadPermission]));
 

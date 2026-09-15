@@ -117,7 +117,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.documentsworkspace-user";
 
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly EngineeringDomainContext _context;
     private readonly MechanicalProductStructureSampleModule _mechanicalSampleModule;
     private readonly RequirementsWorkspaceSampleModule _requirementsSampleModule;
@@ -125,20 +125,20 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringDocumentsWorkspaceSampleModule"/> class.</summary>
     public EngineeringDocumentsWorkspaceSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         EngineeringDomainContext context,
         MechanicalProductStructureSampleModule mechanicalSampleModule,
         RequirementsWorkspaceSampleModule requirementsSampleModule,
         EngineeringCalculationsWorkspaceSampleModule calculationsSampleModule)
         : base("tempest.samples.workspacedocuments", "Documents Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
         ArgumentNullException.ThrowIfNull(requirementsSampleModule);
         ArgumentNullException.ThrowIfNull(calculationsSampleModule);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _context = context;
         _mechanicalSampleModule = mechanicalSampleModule;
         _requirementsSampleModule = requirementsSampleModule;
@@ -160,7 +160,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         var documentIds = new List<Guid>();
 

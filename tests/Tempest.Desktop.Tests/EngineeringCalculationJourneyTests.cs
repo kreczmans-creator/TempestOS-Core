@@ -350,8 +350,8 @@ public sealed class EngineeringCalculationJourneyTests
 
             // Nobody signed in — the application refuses to attribute a
             // review to an unknown principal.
-            var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            ((CurrentPrincipalAccessor)principals).SetCurrent(null);
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+            principalSession.Establish(null);
 
             await ClickAsync(window, view, EngineeringCalculationView.ReleaseCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).StatusMessage.Length > 0);
@@ -591,8 +591,8 @@ public sealed class EngineeringCalculationJourneyTests
         // A real launch signs in the OS account through
         // LocalSessionPrincipalSource; this pins a deterministic id so the
         // reviewer attribution can be asserted by name.
-        var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-        ((CurrentPrincipalAccessor)principals).SetCurrent(
+        var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+        principalSession.Establish(
             new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 

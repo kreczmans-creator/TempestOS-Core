@@ -38,8 +38,8 @@ public class BracketCalculationJourneyTests
 
     private static void SignIn(WorkspaceHost host)
     {
-        var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-        ((CurrentPrincipalAccessor)principals).SetCurrent(
+        var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+        principalSession.Establish(
             new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 
@@ -161,8 +161,8 @@ public class BracketCalculationJourneyTests
             var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog));
 
             // Nobody signed in: the application refuses to record a review.
-            var principals = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            principals.SetCurrent(null);
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+            principalSession.Establish(null);
 
             await Assert.ThrowsAsync<ReferenceReviewException>(
                 () => host.ReferenceReview!.VerifyAsync(

@@ -53,7 +53,7 @@ public class CalculationSampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
 
         // One store instance under all three shapes, as `TempestHost`
         // registers it (`ADR-0144`). The query shape is required since

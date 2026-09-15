@@ -50,6 +50,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
+    private PrincipalSession? _principalSession;
 
     /// <summary>Gets the running <see cref="IWorkspace"/>, or <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IWorkspace? Workspace { get; private set; }
@@ -170,7 +171,13 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // `new` over already-resolved Platform Services, exactly as
         // every other Desktop-side collaborator is (`ADR-0103`).
         var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-        var principalAccessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+        // `WP 21.6A` (OSA-12/OSA-14): the write side is PrincipalSession,
+        // resolved separately from the read-only ICurrentPrincipalAccessor
+        // — the accessor's own concrete type is no longer registered at
+        // all, and its SetCurrent is internal to Tempest.Core regardless,
+        // so this is the only capability this class (or anything else
+        // outside Tempest.Core) can reach to establish a principal.
+        _principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
         var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
 
@@ -192,16 +199,13 @@ public sealed class WorkspaceHost : IAsyncDisposable
         var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
         var sessionPrincipals = _sessionPrincipalsOverride ?? new SessionPrincipalSource(configuration);
         SessionPrincipal = sessionPrincipals.Resolve();
-        if (principalAccessor is CurrentPrincipalAccessor accessor)
-        {
-            // Published unconditionally, null included. Publishing only a
-            // non-null answer would leave whatever a module happened to
-            // establish during its own initialisation standing as the
-            // session's principal — which is the `TD-103` defect itself,
-            // not a safe fallback: a session that genuinely has no
-            // principal must report none, not inherit a sample's.
-            accessor.SetCurrent(SessionPrincipal);
-        }
+        // Published unconditionally, null included. Publishing only a
+        // non-null answer would leave whatever a module happened to
+        // establish during its own initialisation standing as the
+        // session's principal — which is the `TD-103` defect itself,
+        // not a safe fallback: a session that genuinely has no
+        // principal must report none, not inherit a sample's.
+        _principalSession?.Establish(SessionPrincipal);
 
         // `TD-85`. Bring back every engineering object a previous run
         // persisted — projects, and everything inside them — before
@@ -366,7 +370,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see cref="ICurrentPrincipalAccessor"/> onward, exactly as the
     /// principal <see cref="StartAsync"/> established at launch already
     /// does — published unconditionally through the identical
-    /// <see cref="CurrentPrincipalAccessor.SetCurrent"/> call, never a
+    /// <see cref="PrincipalSession.Establish"/> call (`WP 21.6A`), never a
     /// second mechanism.
     /// </summary>
     /// <exception cref="InvalidOperationException"><see cref="StartAsync"/> has not completed.</exception>
@@ -374,10 +378,10 @@ public sealed class WorkspaceHost : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(principal);
 
-        if (Services?.GetService(typeof(ICurrentPrincipalAccessor)) is not CurrentPrincipalAccessor accessor)
+        if (_principalSession is null)
             throw new InvalidOperationException($"{nameof(SwitchPrincipal)} needs a running Host — call {nameof(StartAsync)} first.");
 
-        accessor.SetCurrent(principal);
+        _principalSession.Establish(principal);
         SessionPrincipal = principal;
     }
 

@@ -239,8 +239,8 @@ public sealed class CalculationModulesViewTests
         {
             await host.StartAsync();
 
-            var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            ((CurrentPrincipalAccessor)principals).SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+            principalSession.Establish(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
 
             var window = new MainWindow(host) { Width = 1600, Height = 1000 };
             window.Show();

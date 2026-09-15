@@ -42,10 +42,15 @@ await shell.StartAsync();
 // own identical remark: a session that genuinely has no principal must
 // report none, not silently inherit whatever a sample module happened to
 // establish during its own initialisation.
-if (host.Services!.GetService(typeof(ICurrentPrincipalAccessor)) is CurrentPrincipalAccessor principalAccessor)
+//
+// `WP 21.6A` (OSA-12/OSA-14): reached through PrincipalSession, the same
+// single seam WorkspaceHost's own start-up uses — CurrentPrincipalAccessor
+// itself is no longer registered under its own concrete type at all, and
+// its SetCurrent is internal to Tempest.Core regardless.
+if (host.Services!.GetService(typeof(PrincipalSession)) is PrincipalSession principalSession)
 {
     var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
-    principalAccessor.SetCurrent(new SessionPrincipalSource(configuration).Resolve());
+    principalSession.Establish(new SessionPrincipalSource(configuration).Resolve());
 }
 
 // The Mechanical Product Structure discipline (WP 9.0A) was the first

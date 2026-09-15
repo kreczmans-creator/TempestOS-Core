@@ -124,11 +124,11 @@ public class AuditHostRegistrationTests
 
         await RunAgainstRunningHostAsync(temp.Path, async host =>
         {
-            var principalAccessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(CurrentPrincipalAccessor));
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
             var recorder = (IAuditRecorder)host.Services!.GetService(typeof(IAuditRecorder));
             var query = (IAuditQuery)host.Services!.GetService(typeof(IAuditQuery));
 
-            principalAccessor.SetCurrent(new PlatformPrincipal(
+            principalSession.Establish(new PlatformPrincipal(
                 new PlatformIdentity("registration-test-auditor", "registration-test-auditor"),
                 [AuditQuery.QueryPermission]));
             await recorder.RecordAsync("registration-test-action");

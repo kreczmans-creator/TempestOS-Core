@@ -78,7 +78,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.calculationsworkspace-user";
 
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly EngineeringDomainContext _context;
     private readonly ICalculationEngine _calculationEngine;
     private readonly IRequirementsService _requirementsService;
@@ -87,7 +87,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringCalculationsWorkspaceSampleModule"/> class.</summary>
     public EngineeringCalculationsWorkspaceSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         EngineeringDomainContext context,
         ICalculationEngine calculationEngine,
         IRequirementsService requirementsService,
@@ -95,14 +95,14 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
         RequirementsWorkspaceSampleModule requirementsSampleModule)
         : base("tempest.samples.workspacecalculations", "Calculations Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(calculationEngine);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
         ArgumentNullException.ThrowIfNull(requirementsSampleModule);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _context = context;
         _calculationEngine = calculationEngine;
         _requirementsService = requirementsService;
@@ -121,7 +121,7 @@ public sealed class EngineeringCalculationsWorkspaceSampleModule : ModuleLifecyc
     /// <inheritdoc />
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         // `TD-159`: the five product calculations are no longer registered
         // here. `TempestHost` registers them from

@@ -1,3 +1,4 @@
+using Tempest.Core.DependencyInjection;
 using Tempest.Core.Identity;
 using Tempest.Core.Runtime;
 
@@ -5,19 +6,23 @@ namespace Tempest.Core.Tests.Runtime;
 
 // Registration validation: proves Identity & Permissions is wired into the
 // real, unmodified TempestHost exactly as Service Registration Matrix.md
-// specifies - ordinary singleton semantics for IPermissionEvaluator, and the
-// deliberate dual-AddInstance registration for CurrentPrincipalAccessor
-// actually sharing one instance between ICurrentPrincipalAccessor and its
-// own concrete type (see CurrentPrincipalAccessor's own remarks for why this
-// matters).
+// specifies - ordinary singleton semantics for IPermissionEvaluator, and
+// (since `WP 21.6A`, OSA-12/OSA-14) the principal seam's own narrowed
+// registration - ICurrentPrincipalAccessor stays broadly resolvable and
+// read-only; the concrete CurrentPrincipalAccessor type is no longer
+// registered under its own key at all (its own SetCurrent is internal to
+// this assembly regardless); PrincipalSession, resolvable under its own
+// concrete type, is the one seam that can establish a principal - see
+// CurrentPrincipalAccessor's and PrincipalSession's own remarks for the
+// finding and the fix.
 //
 // `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
 // IIdentityService/IdentityService are deleted along with this file's own
 // former tests for them - the Host no longer registers either. Identity
-// collapses to one session principal, established directly on
-// CurrentPrincipalAccessor by the presentation layer (WorkspaceHost) rather
-// than resolved through a Host-registered identity service; see
-// SessionPrincipalSourceTests for that boundary's own coverage.
+// collapses to one session principal, established through PrincipalSession
+// by the presentation layer (WorkspaceHost) rather than resolved through a
+// Host-registered identity service; see SessionPrincipalSourceTests for
+// that boundary's own coverage.
 public class IdentityHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(Func<ITempestHost, Task> body)
@@ -57,36 +62,51 @@ public class IdentityHostRegistrationTests
         });
 
     // ----------------------------------------------------------------
-    // The dual-registration proof: ICurrentPrincipalAccessor and the
-    // concrete CurrentPrincipalAccessor type must resolve to the exact
-    // same object, or a principal established via the concrete type (as
-    // WorkspaceHost's own SessionPrincipalSource boundary does) would be
-    // invisible to every ordinary consumer resolving only the interface -
-    // the entire reason this design uses two AddInstance calls over the
-    // same object rather than two independent Singleton<> registrations.
+    // `WP 21.6A`, OSA-12: the concrete CurrentPrincipalAccessor type is no
+    // longer reachable via ordinary DI resolution at all - a component
+    // holding only the container (every module's own constructor-injection
+    // surface) cannot ask for it by concrete type the way
+    // `Tempest.Samples.SamplePrincipalFactory` used to, demonstrated as a
+    // real reach before this fix (`WP 21.5F`'s own OSA-12 finding).
     // ----------------------------------------------------------------
 
     [Fact]
-    public Task Host_ICurrentPrincipalAccessorAndConcreteType_ResolveToTheSameInstance() =>
+    public Task Host_ConcreteCurrentPrincipalAccessorType_IsNotResolvable() =>
         RunAgainstRunningHostAsync(host =>
         {
-            var viaInterface = host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            var viaConcreteType = host.Services!.GetService(typeof(CurrentPrincipalAccessor));
+            Assert.Throws<ServiceNotRegisteredException>(() => host.Services!.GetService(typeof(CurrentPrincipalAccessor)));
 
-            Assert.Same(viaInterface, viaConcreteType);
+            return Task.CompletedTask;
+        });
+
+    // ----------------------------------------------------------------
+    // The seam: PrincipalSession is the one resolvable type that can
+    // establish a principal, and doing so through it is visible through
+    // ICurrentPrincipalAccessor.Current - the same one-instance sharing
+    // the old dual-AddInstance registration gave the (now unreachable)
+    // concrete type, carried forward onto the narrower seam instead.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public Task Host_RegistersPrincipalSession_Resolvable() =>
+        RunAgainstRunningHostAsync(host =>
+        {
+            var session = host.Services!.GetService(typeof(PrincipalSession));
+
+            Assert.IsType<PrincipalSession>(session);
 
             return Task.CompletedTask;
         });
 
     [Fact]
-    public Task Host_EstablishingCurrentPrincipalDirectlyOnTheConcreteType_IsVisibleThroughTheInterface() =>
+    public Task Host_EstablishingCurrentPrincipalThroughPrincipalSession_IsVisibleThroughTheInterface() =>
         RunAgainstRunningHostAsync(host =>
         {
-            var concrete = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(CurrentPrincipalAccessor));
+            var session = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
             var accessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
 
             var principal = new PlatformPrincipal(new PlatformIdentity("registration-test-user", "registration-test-user"), []);
-            concrete.SetCurrent(principal);
+            session.Establish(principal);
 
             Assert.NotNull(accessor.Current);
             Assert.Equal("registration-test-user", accessor.Current!.Identity.Id);

@@ -18,7 +18,7 @@ namespace Tempest.Samples;
 /// own role for Diagnostics. Carries <see cref="ModuleMetadataAttribute"/>
 /// so Discovery can read its identity without instantiating it
 /// (ADR-0027), freeing its constructor to request
-/// <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>, <see cref="ICurrentPrincipalAccessor"/>,
+/// <see cref="Tempest.Core.Identity.PrincipalSession"/>, <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="ICommandDispatcher"/>,
 /// and <see cref="ICommandRegistry"/> — all DI-public platform services —
 /// via ordinary constructor injection.
@@ -56,7 +56,7 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// </summary>
     public const string CheckSamplePermissionCommandId = "sample.identity-check";
 
-    private readonly CurrentPrincipalAccessor _principalEstablisher;
+    private readonly PrincipalSession _principalSession;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -65,9 +65,10 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="IdentitySampleModule"/> class.
     /// </summary>
-    /// <param name="principalEstablisher">
-    /// The concrete accessor this module establishes its own principal on
-    /// directly (`WP 17.2A`), resolved via ordinary constructor injection.
+    /// <param name="principalSession">
+    /// The seam this module establishes its own principal through
+    /// directly (`WP 17.2A`, narrowed by `WP 21.6A`), resolved via
+    /// ordinary constructor injection.
     /// </param>
     /// <param name="currentPrincipalAccessor">
     /// The service this module's registered command reads the current
@@ -87,20 +88,20 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// injection.
     /// </param>
     public IdentitySampleModule(
-        CurrentPrincipalAccessor principalEstablisher,
+        PrincipalSession principalSession,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
         ICommandDispatcher commandDispatcher,
         ICommandRegistry commandRegistry)
         : base("tempest.samples.identity", "Identity Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(principalEstablisher);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _principalEstablisher = principalEstablisher;
+        _principalSession = principalSession;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _permissionEvaluator = permissionEvaluator;
         _commandDispatcher = commandDispatcher;
@@ -128,7 +129,7 @@ public sealed class IdentitySampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         _commandDispatcher.RegisterHandler<CheckSamplePermissionCommand>(
             new CheckSamplePermissionCommandHandler(_currentPrincipalAccessor, _permissionEvaluator));

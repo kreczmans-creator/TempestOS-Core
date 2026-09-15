@@ -52,7 +52,7 @@ public class IdentitySampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
