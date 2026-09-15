@@ -33,13 +33,38 @@ namespace Tempest.Desktop.Viewing;
 /// </remarks>
 public sealed class AttachmentViewerLauncher
 {
+    /// <summary>
+    /// How many leading bytes <see cref="TryOpenStreamedAsync"/> peeks to
+    /// detect a format (`TD-96`) — comfortably past
+    /// <see cref="DocumentFormatDetector"/>'s longest signature (WEBP's,
+    /// 12 bytes into the stream) without reading anything resembling a
+    /// whole file.
+    /// </summary>
+    private const int FormatSniffLength = 32;
+
     private readonly WorkspacePanelRegistry _registry;
     private readonly WorkspaceLayoutController _layout;
     private readonly Guid _documentAreaPanelId;
+    private readonly IAttachmentContentStore? _contentStore;
     private readonly Dictionary<Guid, Guid> _panelsByAttachment = [];
 
     /// <summary>Initialises a new instance of the <see cref="AttachmentViewerLauncher"/> class.</summary>
-    public AttachmentViewerLauncher(WorkspacePanelRegistry registry, WorkspaceLayoutController layout, Guid documentAreaPanelId)
+    /// <param name="registry">Where this launcher registers the panel it opens.</param>
+    /// <param name="layout">The layout tree the opened panel is docked into.</param>
+    /// <param name="documentAreaPanelId">The panel a document is tabbed alongside.</param>
+    /// <param name="contentStore">
+    /// The store this launcher reads an attachment's bytes through as a
+    /// stream rather than a fully-materialised array (`TD-96`). Optional,
+    /// and defaulting to <see langword="null"/>, so a caller that has not
+    /// wired one keeps this launcher's previous behaviour exactly — it
+    /// reads through <see cref="IHasAttachments.ReadAttachmentContentAsync"/>
+    /// alone, as it always has.
+    /// </param>
+    public AttachmentViewerLauncher(
+        WorkspacePanelRegistry registry,
+        WorkspaceLayoutController layout,
+        Guid documentAreaPanelId,
+        IAttachmentContentStore? contentStore = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(layout);
@@ -47,6 +72,7 @@ public sealed class AttachmentViewerLauncher
         _registry = registry;
         _layout = layout;
         _documentAreaPanelId = documentAreaPanelId;
+        _contentStore = contentStore;
     }
 
     /// <summary>Every attachment currently open in a viewer.</summary>
@@ -104,6 +130,19 @@ public sealed class AttachmentViewerLauncher
         }
 
         var view = new DocumentViewerView();
+
+        // `TD-96`: read through a verified stream when this launcher has
+        // been given a content store to do it with, and the format turns
+        // out to be one the streamed path actually renders. Anything else
+        // — no content store wired, or a format without a stream-based
+        // source yet — falls back to the byte-array path unchanged.
+        if (_contentStore is not null &&
+            await TryOpenStreamedAsync(view, attachment, viewportWidth, viewportHeight, cancellationToken).ConfigureAwait(true))
+        {
+            Dock(view, attachment);
+            return view;
+        }
+
         var content = await owner.ReadAttachmentContentAsync(attachment.Id, cancellationToken).ConfigureAwait(true);
 
         if (content.Status is not AttachmentContentStatus.Available)
@@ -119,6 +158,93 @@ public sealed class AttachmentViewerLauncher
 
         Dock(view, attachment);
         return view;
+    }
+
+    /// <summary>
+    /// Opens <paramref name="attachment"/> through <see cref="_contentStore"/>'s
+    /// streamed read (`TD-96`), never materialising its content as one
+    /// array. Returns <see langword="false"/> only when the format is not
+    /// (yet) one the streamed path renders — the caller then falls back to
+    /// <see cref="OpenLoadedContent"/> over a fully read array, which still
+    /// renders it; every other outcome (missing, corrupt, or genuinely
+    /// unsupported) is handled here and reported identically to the
+    /// byte-array path.
+    /// </summary>
+    private async Task<bool> TryOpenStreamedAsync(
+        DocumentViewerView view,
+        IAttachment attachment,
+        double viewportWidth,
+        double viewportHeight,
+        CancellationToken cancellationToken)
+    {
+        var result = await _contentStore!.OpenReadAsync(
+            attachment.Id, attachment.ContentHash, attachment.SizeInBytes, cancellationToken).ConfigureAwait(true);
+
+        if (result.Status is not AttachmentContentStatus.Available)
+        {
+            result.Dispose();
+            view.OpenUnavailable(DocumentViewSession.Unavailable(
+                attachment.Id, attachment.FileName, attachment.ContentType,
+                DocumentViewSession.StatusFor(result.Status)));
+            return true;
+        }
+
+        var stream = result.Stream!;
+        var handedOff = false;
+        try
+        {
+            var header = new byte[FormatSniffLength];
+            var headerLength = await ReadFullyAsync(stream, header, cancellationToken).ConfigureAwait(true);
+            stream.Position = 0;
+
+            var format = DocumentFormatDetector.Detect(attachment.ContentType, header.AsSpan(0, headerLength));
+
+            IDocumentPageSource? source;
+            try
+            {
+                source = DocumentPageSourceFactory.CreateFromStream(format, stream);
+            }
+            catch (DocumentRenderException)
+            {
+                // Same rule as the byte-array path: bytes that opened for
+                // reading but did not render are a format problem, not a
+                // damaged-content one — reported as such below rather than
+                // accusing the user's file of being what it is not.
+                source = null;
+            }
+
+            if (source is null)
+                return false;
+
+            handedOff = true;
+            OpenSourceIntoView(view, attachment, format, source, viewportWidth, viewportHeight);
+            return true;
+        }
+        finally
+        {
+            // The page source owns the stream from here once handed off —
+            // disposing the view later disposes it (`DocumentViewerView.Open`).
+            // Every other exit (unsupported format, or an exception above)
+            // must close it itself, or the connection it holds leaks.
+            if (!handedOff)
+                stream.Dispose();
+        }
+    }
+
+    /// <summary>Fills <paramref name="buffer"/> from <paramref name="stream"/>, stopping early at end of stream — a short file sniffs shorter than <paramref name="buffer"/>'s length, not incompletely.</summary>
+    private static async Task<int> ReadFullyAsync(Stream stream, byte[] buffer, CancellationToken cancellationToken)
+    {
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var read = await stream.ReadAsync(buffer.AsMemory(total), cancellationToken).ConfigureAwait(true);
+            if (read == 0)
+                break;
+
+            total += read;
+        }
+
+        return total;
     }
 
     private static void OpenLoadedContent(
@@ -160,6 +286,17 @@ public sealed class AttachmentViewerLauncher
             return;
         }
 
+        OpenSourceIntoView(view, attachment, format, source, viewportWidth, viewportHeight);
+    }
+
+    private static void OpenSourceIntoView(
+        DocumentViewerView view,
+        IAttachment attachment,
+        ViewableDocumentFormat format,
+        IDocumentPageSource source,
+        double viewportWidth,
+        double viewportHeight)
+    {
         var firstPage = source.PageSize(0);
         view.Open(
             DocumentViewSession.Ready(

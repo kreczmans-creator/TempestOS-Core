@@ -585,6 +585,46 @@ public sealed class DocumentViewerAcceptanceTests
     }
 
     [AvaloniaFact]
+    public async Task ALargeAttachment_OpensThroughTheRealViewer_ReadThroughTheStreamedPath()
+    {
+        // `TD-96`: the whole point of streaming a large attachment's bytes
+        // is invisible from here — the user still just opens the drawing —
+        // which is exactly why this journey, through the real MainWindow
+        // and the real content store the composer wires into it
+        // (`MainWindowComposer.Coordinators.cs`), is the acceptance test:
+        // a multi-megabyte file opens and renders exactly as a small one
+        // does.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var drawing = DocumentPageSourceTests.LargePdf(4 * 1024 * 1024);
+        Assert.True(drawing.Length > 4 * 1024 * 1024);
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-950", "large-sheet.pdf", "application/pdf", drawing);
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Equal(ViewableDocumentFormat.Pdf, viewer.Session!.Format);
+            Assert.Equal(1, viewer.Session!.PageCount);
+            Assert.False(viewer.IsShowingUnavailableState);
+            Assert.NotNull(viewer.RenderedPage);
+            Assert.True(viewer.RenderedPage!.PixelSize.Width > 0);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task TurningToAPageOfAnotherSize_ReFitsToThatPage_RatherThanStretchingItIntoTheLastOnesShape()
     {
         // The multi-page fixture was built with three deliberately

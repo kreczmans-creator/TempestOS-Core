@@ -432,8 +432,18 @@ public sealed class AttachmentRevisionAtomicityTests
         public IReadOnlyList<string> ContentKeys => Store.CommittedKeys(AttachmentContentStore.ContentCollectionName);
 
         /// <summary>Whether committed attachment content exists for <paramref name="attachmentId"/>.</summary>
-        public bool HasContent(Guid attachmentId) =>
-            Store.CommittedBytes(AttachmentContentStore.ContentCollectionName, attachmentId.ToString("N")) is not null;
+        /// <remarks>
+        /// Resolves through the attachment-to-hash mapping first (`TD-95`):
+        /// once anything has saved through the content-addressed path,
+        /// content lives at its content hash, not at the attachment's own
+        /// Id.
+        /// </remarks>
+        public bool HasContent(Guid attachmentId)
+        {
+            var mapped = Store.CommittedBytes(AttachmentContentStore.HashByAttachmentCollectionName, attachmentId.ToString("N"));
+            var key = mapped is null ? attachmentId.ToString("N") : System.Text.Encoding.ASCII.GetString(mapped);
+            return Store.CommittedBytes(AttachmentContentStore.ContentCollectionName, key) is not null;
+        }
 
         /// <summary>A rig whose transactions can be parked at the end of their bodies.</summary>
         public static Rig WithGate(out GatedPersistenceStore gate)

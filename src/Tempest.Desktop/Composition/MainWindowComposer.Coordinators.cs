@@ -190,8 +190,13 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
         var dockingComposer = new WorkspaceDockingComposer(workspace, views.ExplorerView, views.InspectorView, views.DocumentArea, views.Session.PanelUiState, views.Session.LayoutStore);
 
-        // `TD-80`: the document and drawing viewer.
-        var attachmentViewers = new AttachmentViewerLauncher(dockingComposer.Registry, dockingComposer.Layout, dockingComposer.DocumentPanelId);
+        // `TD-80`: the document and drawing viewer. `TD-96`: the same
+        // already-registered IAttachmentContentStore every domain write
+        // uses, resolved the identical way WorkspaceHost resolves every
+        // other Platform Service — so the viewer reads a large attachment
+        // as a stream instead of materialising it whole.
+        var attachmentContentStore = (Tempest.Core.EngineeringDomain.IAttachmentContentStore)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.IAttachmentContentStore));
+        var attachmentViewers = new AttachmentViewerLauncher(dockingComposer.Registry, dockingComposer.Layout, dockingComposer.DocumentPanelId, attachmentContentStore);
 
         // Opening a document never navigates: the shell stays where it is.
         viewCoordinator.OpenAttachmentAsync = (owner, attachment) =>

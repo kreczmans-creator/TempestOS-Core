@@ -421,9 +421,10 @@ public sealed class RefusedMutationSuccessorLeakageTests
 
         // The bytes the failed delete had already released inside its
         // transaction are still there, because the transaction did not
-        // commit.
+        // commit. Keyed by content hash (`TD-95`), not by the
+        // attachment's own Id.
         Assert.Contains(
-            attachment.Id.ToString("N"),
+            attachment.ContentHash!,
             backing.CommittedKeys(AttachmentContentStore.ContentCollectionName));
     }
 
@@ -576,8 +577,18 @@ public sealed class RefusedMutationSuccessorLeakageTests
             Store.CommittedKeys(AttachmentContentStore.ContentCollectionName);
 
         /// <summary>Whether <paramref name="attachmentId"/>'s bytes are committed.</summary>
-        public bool HoldsContentFor(Guid attachmentId) =>
-            StoredContentKeys().Contains(attachmentId.ToString("N"), StringComparer.Ordinal);
+        /// <remarks>
+        /// Resolves through the attachment-to-hash mapping first (`TD-95`):
+        /// once anything has saved through the content-addressed path,
+        /// content lives at its content hash, not at the attachment's own
+        /// Id.
+        /// </remarks>
+        public bool HoldsContentFor(Guid attachmentId)
+        {
+            var mapped = Store.CommittedBytes(AttachmentContentStore.HashByAttachmentCollectionName, attachmentId.ToString("N"));
+            var key = mapped is null ? attachmentId.ToString("N") : System.Text.Encoding.ASCII.GetString(mapped);
+            return StoredContentKeys().Contains(key, StringComparer.Ordinal);
+        }
 
         public async Task<GatedFixture> CreateAsync(string identifier = "PRT-1", string displayName = "Bracket") =>
             (GatedFixture)await new EngineeringObjectFactory<GatedFixture>(

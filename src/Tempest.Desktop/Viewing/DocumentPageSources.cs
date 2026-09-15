@@ -54,7 +54,8 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
     /// </remarks>
     public const int MaxRasterEdge = 8000;
 
-    private readonly byte[] _content;
+    private readonly byte[]? _content;
+    private readonly Stream? _stream;
     private readonly Size[] _pageSizes;
 
     /// <summary>Loads <paramref name="content"/> as a PDF.</summary>
@@ -90,6 +91,55 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
         }
     }
 
+    /// <summary>
+    /// Loads a PDF from <paramref name="content"/> without ever holding
+    /// the whole file in one array (`TD-96`): PDFtoImage's own
+    /// Stream-accepting overloads read (and seek within) the stream
+    /// directly, exactly as they read a byte array, so a 200 MB scanned
+    /// drawing opened through <see cref="Tempest.Core.EngineeringDomain.IAttachmentContentStore.OpenReadAsync"/>
+    /// never becomes a 200 MB array in this layer either.
+    /// </summary>
+    /// <remarks>
+    /// Takes ownership of <paramref name="content"/>: it is kept open for
+    /// this page source's whole lifetime (every <see cref="RenderPage"/>
+    /// call reads from it again) and is disposed by <see cref="Dispose"/>.
+    /// A PDF's own cross-reference table sits at the end of the file, so
+    /// the stream must support seeking — the same requirement PDFium
+    /// itself imposes.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="content"/> cannot seek.</exception>
+    /// <exception cref="DocumentRenderException">The bytes are not a PDF this platform can open.</exception>
+    public PdfDocumentPageSource(Stream content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        if (!content.CanSeek)
+            throw new ArgumentException(
+                "A PDF stream must support seeking: PDFium reads its cross-reference table from the end of the file.",
+                nameof(content));
+
+        _stream = content;
+
+        try
+        {
+            var pageCount = Conversion.GetPageCount(_stream, leaveOpen: true);
+            if (pageCount <= 0)
+                throw new DocumentRenderException("This PDF reports no pages.");
+
+            var sizes = Conversion.GetPageSizes(_stream, leaveOpen: true);
+            _pageSizes = sizes.Count == pageCount
+                ? [.. sizes.Select(s => new Size(s.Width, s.Height))]
+                : [.. Enumerable.Repeat(new Size(595, 842), pageCount)];
+        }
+        catch (DocumentRenderException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException("This PDF could not be opened.", ex);
+        }
+    }
+
     /// <inheritdoc />
     public int PageCount => _pageSizes.Length;
 
@@ -105,10 +155,14 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
 
         try
         {
-            using var skia = Conversion.ToImage(
-                _content,
-                new Index(index),
-                options: new PDFtoImage.RenderOptions(Dpi: (int)Math.Round(BaseDpi * effective)));
+            var options = new PDFtoImage.RenderOptions(Dpi: (int)Math.Round(BaseDpi * effective));
+
+            // `TD-96`: the one branch this stream-backed constructor adds
+            // to rendering — everything else about producing the bitmap is
+            // unchanged and shared with the byte-array-backed instance.
+            using var skia = _content is { } bytes
+                ? Conversion.ToImage(bytes, new Index(index), options: options)
+                : Conversion.ToImage(_stream!, new Index(index), leaveOpen: true, options: options);
 
             return ToAvaloniaBitmap(skia);
         }
@@ -121,10 +175,13 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
     /// <inheritdoc />
     public void Dispose()
     {
-        // Nothing native is held between calls: each render opens and
-        // closes its own PDFium document. Deliberate — a viewer that keeps
-        // a native handle open per open tab leaks one per tab the user
-        // forgets to close.
+        // The byte-array constructor holds nothing native between calls:
+        // each render opens and closes its own PDFium document. The
+        // stream-backed constructor (`TD-96`) does hold something — the
+        // stream itself, kept open across renders so paging through a
+        // drawing does not re-open its content store's connection every
+        // time — and disposing it here is what releases that connection.
+        _stream?.Dispose();
     }
 
     private static double EffectiveScale(Size page, double scale)
@@ -205,6 +262,44 @@ public sealed class ImageDocumentPageSource : IDocumentPageSource
         }
     }
 
+    /// <summary>
+    /// Loads <paramref name="content"/> as an image without ever holding
+    /// the whole file in one array (`TD-96`): Avalonia's own
+    /// <see cref="Bitmap(Stream)"/> decodes straight from the stream.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the PDF page source, nothing here needs the stream again
+    /// once decoding finishes — there is exactly one page, already fully
+    /// decoded into <see cref="_bitmap"/> — so <paramref name="content"/>
+    /// is disposed before this constructor returns rather than kept for
+    /// the page source's lifetime.
+    /// </remarks>
+    /// <exception cref="DocumentRenderException">The bytes are not an image this platform can decode.</exception>
+    public ImageDocumentPageSource(Stream content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        try
+        {
+            _bitmap = new Bitmap(content);
+
+            if (_bitmap.PixelSize.Width <= 0 || _bitmap.PixelSize.Height <= 0)
+                throw new DocumentRenderException("This image decoded to nothing.");
+        }
+        catch (DocumentRenderException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException("This image could not be decoded.", ex);
+        }
+        finally
+        {
+            content.Dispose();
+        }
+    }
+
     /// <inheritdoc />
     public int PageCount => 1;
 
@@ -264,6 +359,35 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
 
         if (_pages.Length == 0)
             _pages = [[string.Empty]];
+    }
+
+    /// <summary>
+    /// Loads <paramref name="content"/> as text, read through a
+    /// <see cref="StreamReader"/> rather than requiring a <c>byte[]</c>
+    /// up front (`TD-96`) — the same permissive UTF-8 decoding as the
+    /// byte-array constructor, applied to whatever the stream yields.
+    /// </summary>
+    public TextDocumentPageSource(Stream content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        string text;
+        using (content)
+        using (var reader = new StreamReader(
+            content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), detectEncodingFromByteOrderMarks: true))
+        {
+            text = reader.ReadToEnd().TrimStart('﻿');
+        }
+
+        _pages = BuildPages(text);
+    }
+
+    /// <summary>Lays out <paramref name="text"/> into <see cref="LinesPerPage"/>-line pages, at least one even for empty text.</summary>
+    private static string[][] BuildPages(string text)
+    {
+        var lines = text.ReplaceLineEndings("\n").Split('\n');
+        var pages = lines.Length == 0 ? [] : lines.Chunk(LinesPerPage).ToArray();
+        return pages.Length == 0 ? [[string.Empty]] : pages;
     }
 
     /// <inheritdoc />
@@ -365,6 +489,33 @@ public static class DocumentPageSourceFactory
         // this one is not a gap: a DWG or DXF is never meant to gain an
         // in-app source, only the "open externally" path (`TD-99`).
         ViewableDocumentFormat.ExternalOnly => null,
+        _ => null,
+    };
+
+    /// <summary>
+    /// A page source for <paramref name="content"/>, read without ever
+    /// holding the whole file in one array (`TD-96`) — the attachment
+    /// viewer's own read path
+    /// (<see cref="Tempest.Desktop.Viewing.AttachmentViewerLauncher"/>)
+    /// uses this instead of <see cref="Create"/> whenever it has a
+    /// verified stream in hand rather than a materialised array.
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> for exactly the same reason <see cref="Create"/>
+    /// returns <see langword="null"/> — a format with no source here — and
+    /// additionally for a format <see cref="Create"/> supports but this
+    /// method does not (yet) have a stream-based source for: either way,
+    /// the caller's own fallback to <see cref="Create"/> over a fully read
+    /// array is what actually renders it, so no format regresses to
+    /// unsupported by calling this method first.
+    /// </remarks>
+    /// <exception cref="DocumentRenderException">The format is supported but these particular bytes could not be opened.</exception>
+    public static IDocumentPageSource? CreateFromStream(ViewableDocumentFormat format, Stream content) => format switch
+    {
+        ViewableDocumentFormat.Pdf when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
+            => new PdfDocumentPageSource(content),
+        ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
+        ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
         _ => null,
     };
 }

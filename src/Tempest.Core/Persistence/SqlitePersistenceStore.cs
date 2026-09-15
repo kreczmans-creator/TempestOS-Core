@@ -343,6 +343,84 @@ public sealed class SqlitePersistenceStore
             cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>Zero-length is handed back as an already-exhausted stream, never
+    /// opened as a blob.</b> <c>sqlite3_blob_open</c> exists to read a
+    /// value incrementally; a zero-length value has nothing to read
+    /// incrementally, and <see cref="Stream.Null"/> says exactly that
+    /// without exercising the native handle for a case it was never meant
+    /// to serve.
+    /// </remarks>
+    public async Task<Stream?> OpenReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ThrowIfDisposed();
+
+        SqliteConnection connection;
+        try
+        {
+            connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open '{_databasePath}' to stream bytes for collection '{collection}', key '{key}'.", ex);
+        }
+
+        var handedOff = false;
+        try
+        {
+            long rowId;
+            long length;
+            await using (var command = connection.CreateCommand())
+            {
+                // `blob_value IS NOT NULL` rather than a plain equality
+                // read: a key written as text has a NULL blob_value, and
+                // that must report as "no bytes here" — the same rule
+                // ReadBytesAsync applies via IsDBNullAsync.
+                command.CommandText =
+                    "SELECT rowid, length(blob_value) FROM records " +
+                    "WHERE collection = $collection AND key = $key AND blob_value IS NOT NULL;";
+                command.Parameters.AddWithValue("$collection", collection);
+                command.Parameters.AddWithValue("$key", key);
+
+                await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken).ConfigureAwait(false);
+                if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return null;
+
+                rowId = reader.GetInt64(0);
+                length = reader.GetInt64(1);
+            }
+
+            if (length == 0)
+                return Stream.Null;
+
+            // Read-only incremental blob I/O over this exact row: reading
+            // from the returned stream issues sqlite3_blob_read calls for
+            // only the bytes requested, never the whole column.
+            var blob = new SqliteBlob(connection, "records", "blob_value", rowId, readOnly: true);
+            handedOff = true;
+            return new SqliteBlobStream(connection, blob);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            _logger?.Warning($"Persistence could not open a stream for collection '{collection}', key '{key}'.", ex);
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open a stream for collection '{collection}', key '{key}'.", ex);
+        }
+        finally
+        {
+            // The connection outlives this method only once a
+            // SqliteBlobStream has taken it over; every other exit path —
+            // missing row, zero length, or a thrown exception — closes it
+            // here rather than leaking it back to the pool still open.
+            if (!handedOff)
+                await connection.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
     // ----------------------------------------------------------------
     // IQueryablePersistenceStore
     // ----------------------------------------------------------------
@@ -1296,6 +1374,72 @@ public sealed class SqlitePersistenceStore
                 throw new InvalidOperationException(
                     "This IPersistenceReadTransaction has already ended. A read transaction handle is valid only " +
                     "for the duration of the ExecuteInReadTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The <see cref="Stream"/> <see cref="OpenReadAsync"/> hands back
+    /// (`TD-96`): a read-only, seekable view over one BLOB, backed by
+    /// <see cref="SqliteBlob"/>'s incremental I/O rather than a query that
+    /// materialises the value.
+    /// </summary>
+    /// <remarks>
+    /// Owns both <paramref name="connection"/> and <paramref name="blob"/>:
+    /// nothing else holds a reference to either, so disposing this stream
+    /// is what closes the blob handle and returns the connection to the
+    /// pool. A caller that never disposes the stream leaks exactly one
+    /// pooled connection, the same failure mode as never disposing any
+    /// other reader this store hands out.
+    /// </remarks>
+    private sealed class SqliteBlobStream(SqliteConnection connection, SqliteBlob blob) : Stream
+    {
+        private bool _disposed;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => false;
+
+        public override long Length => blob.Length;
+
+        public override long Position
+        {
+            get => blob.Position;
+            set => blob.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => blob.Read(buffer, offset, count);
+
+        public override int Read(Span<byte> buffer) => blob.Read(buffer);
+
+        public override long Seek(long offset, SeekOrigin origin) => blob.Seek(offset, origin);
+
+        public override void Flush()
+        {
+            // Read-only: nothing is ever buffered for writing.
+        }
+
+        public override void SetLength(long value) =>
+            throw new NotSupportedException("This stream is a read-only view over stored persistence content.");
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException("This stream is a read-only view over stored persistence content.");
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
+            if (disposing)
+            {
+                blob.Dispose();
+                connection.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }
