@@ -67,8 +67,15 @@ public sealed record QuotationSheetModel(
 /// layout, both now the template's own shared machinery rather than a
 /// second, private copy of it.
 /// </summary>
-public sealed class QuotationSheetRenderer
+public sealed class QuotationSheetRenderer : IDocumentRenderer<QuotationSheetModel>
 {
+    /// <inheritdoc />
+    public string DocumentType => "QUOTATION";
+
+    /// <inheritdoc />
+    /// <remarks>`WP 20.10G`'s own mapping (`docs/design/templates/README.md`), unchanged by `WP 21.2A`'s retrofit onto <see cref="IDocumentRenderer{TModel}"/>.</remarks>
+    public string TemplateName => "cost-estimate";
+
     /// <summary>Supplies the organisation identity for a render whose caller passes none — set by the composer to Settings → Organisation (`WP 20.10G`, threaded at merge), so the exported sheet carries what the user configured rather than the defaults.</summary>
     public Func<OrganisationIdentity>? IdentityProvider { get; set; }
 
@@ -81,54 +88,24 @@ public sealed class QuotationSheetRenderer
         var pages = Layout(model);
         DocumentTemplate.AppendFooters(pages, orgIdentity, FormatFooterDetail(model));
 
-        using var stream = new MemoryStream();
-        using (var wstream = new SKManagedWStream(stream))
+        var metadata = new SKDocumentPdfMetadata
         {
-            var metadata = new SKDocumentPdfMetadata
-            {
-                Title = $"{model.Reference} — Quotation",
-                Author = model.IssuerName,
-                Subject = "Quotation",
-                Creator = model.ApplicationVersionText,
-                Producer = model.ApplicationVersionText,
-                Creation = model.GeneratedAtUtc.UtcDateTime,
-                Modified = model.GeneratedAtUtc.UtcDateTime,
-            };
+            Title = $"{model.Reference} — Quotation",
+            Author = model.IssuerName,
+            Subject = "Quotation",
+            Creator = model.ApplicationVersionText,
+            Producer = model.ApplicationVersionText,
+            Creation = model.GeneratedAtUtc.UtcDateTime,
+            Modified = model.GeneratedAtUtc.UtcDateTime,
+        };
 
-            using var document = SKDocument.CreatePdf(wstream, metadata)
-                ?? throw new InvalidOperationException("SkiaSharp could not open a PDF document for the quotation sheet.");
-
-            using var textPaint = new SKPaint { IsAntialias = true, Typeface = SKTypeface.Default };
-            using var linePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
-
-            foreach (var page in pages)
-            {
-                var canvas = document.BeginPage(DocumentTemplate.PageWidth, DocumentTemplate.PageHeight);
-                canvas.Clear(DocumentTemplate.PaperPage);
-
-                foreach (var rule in page.Rules)
-                {
-                    linePaint.StrokeWidth = rule.StrokeWidth;
-                    linePaint.Color = rule.Color;
-                    canvas.DrawLine(rule.X1, rule.Y, rule.X2, rule.Y, linePaint);
-                }
-
-                foreach (var text in page.Texts)
-                {
-                    textPaint.TextSize = text.Size;
-                    textPaint.FakeBoldText = text.Bold;
-                    textPaint.TextAlign = text.Align;
-                    textPaint.Color = text.Color;
-                    canvas.DrawText(text.Text, text.X, text.Y, textPaint);
-                }
-
-                document.EndPage();
-            }
-
-            document.Close();
-        }
-
-        return stream.ToArray();
+        // `WP 21.2A`: the draw loop itself — `SKDocument`/canvas, one text
+        // run and rule at a time — is now `DocumentTemplate`'s own shared
+        // `RenderPdf`, which also resolves each run's own embedded
+        // typeface (`DocumentFonts`) and draws the header band's own logo
+        // lockup, closing `WP 20.10G`'s own disclosed "still `SKTypeface.Default`,
+        // still no embedded logo" gap for this renderer too.
+        return DocumentTemplate.RenderPdf(pages, metadata);
     }
 
     private static List<DocumentTemplate.PagePlan> Layout(QuotationSheetModel model)

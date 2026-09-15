@@ -129,6 +129,13 @@ public sealed class SettingsView : UserControl
     private readonly TextBox _orgEmail = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
     private readonly TextBox _orgPhone = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 180 };
 
+    // `WP 21.2A`: the invoice document's own "Payment details" section —
+    // read at render time exactly as the six fields above already are.
+    private readonly TextBox _orgBankSortCode = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 120 };
+    private readonly TextBox _orgBankAccountNumber = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
+    private readonly TextBox _orgBankAccountName = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+    private readonly TextBox _orgBankIban = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+
     private bool _invoicingSettingsRegistered;
 
     /// <summary>Opens <paramref name="folderPath"/> in the operating system's own file manager — real by default (<see cref="Process.Start(ProcessStartInfo)"/>), overridable by a test.</summary>
@@ -213,6 +220,10 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_checkForUpdatesOnLaunch, "Check for updates automatically on launch");
         AutomationProperties.SetName(_checkForUpdatesNowButton, "Check for updates now");
         AutomationProperties.SetName(_applyUpdateButton, "Apply update");
+        AutomationProperties.SetName(_orgBankSortCode, "Organisation bank sort code");
+        AutomationProperties.SetName(_orgBankAccountNumber, "Organisation bank account number");
+        AutomationProperties.SetName(_orgBankAccountName, "Organisation bank account name");
+        AutomationProperties.SetName(_orgBankIban, "Organisation bank IBAN");
 
         var persistenceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         persistenceRow.Children.Add(_persistenceRootBox);
@@ -300,6 +311,20 @@ public sealed class SettingsView : UserControl
         orgStack.Children.Add(LabeledRow("Phone", _orgPhone));
         var organisation = BuildSection("Organisation identity", orgStack);
 
+        // `WP 21.2A`, scope item 2: the invoice renderer's own "Payment
+        // details" section — a separate BuildSection, not folded into
+        // "Organisation identity" above, since a bank detail is never part
+        // of a document's footer (`DocumentTemplate.AppendFooters` reads
+        // only the seven identity fields) and deserves its own visible
+        // grouping instead of six fields silently gaining four unrelated
+        // neighbours.
+        var bankStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        bankStack.Children.Add(LabeledRow("Sort code", _orgBankSortCode));
+        bankStack.Children.Add(LabeledRow("Account number", _orgBankAccountNumber));
+        bankStack.Children.Add(LabeledRow("Account name", _orgBankAccountName));
+        bankStack.Children.Add(LabeledRow("IBAN", _orgBankIban));
+        var bankDetails = BuildSection("Bank details (invoice payment details)", bankStack);
+
         var saveRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
         saveRow.Children.Add(_saveButton);
         saveRow.Children.Add(_savedStatus);
@@ -326,7 +351,11 @@ public sealed class SettingsView : UserControl
             body.Children.Add(invoicing);
 
         if (_organisationIdentity is not null)
+        {
             body.Children.Add(organisation);
+            body.Children.Add(bankDetails);
+        }
+
         if (_updateService is not null)
             body.Children.Add(updates);
 
@@ -400,6 +429,10 @@ public sealed class SettingsView : UserControl
             _orgAddressLine2.Text = _organisationIdentity.AddressLine2;
             _orgEmail.Text = _organisationIdentity.Email;
             _orgPhone.Text = _organisationIdentity.Phone;
+            _orgBankSortCode.Text = _organisationIdentity.BankSortCode;
+            _orgBankAccountNumber.Text = _organisationIdentity.BankAccountNumber;
+            _orgBankAccountName.Text = _organisationIdentity.BankAccountName;
+            _orgBankIban.Text = _organisationIdentity.BankIban;
         }
         if (_persistenceDatabasePath is not null)
             _backupStatus.Text = string.Empty;
@@ -681,6 +714,10 @@ public sealed class SettingsView : UserControl
             _organisationIdentity.AddressLine2 = _orgAddressLine2.Text ?? string.Empty;
             _organisationIdentity.Email = _orgEmail.Text ?? string.Empty;
             _organisationIdentity.Phone = _orgPhone.Text ?? string.Empty;
+            _organisationIdentity.BankSortCode = _orgBankSortCode.Text ?? string.Empty;
+            _organisationIdentity.BankAccountNumber = _orgBankAccountNumber.Text ?? string.Empty;
+            _organisationIdentity.BankAccountName = _orgBankAccountName.Text ?? string.Empty;
+            _organisationIdentity.BankIban = _orgBankIban.Text ?? string.Empty;
             await _organisationIdentity.SaveAsync().ConfigureAwait(true);
         }
 

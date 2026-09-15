@@ -12,6 +12,8 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Requirements;
 using Tempest.Workspace.Editors;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.TechnicalReports;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -118,6 +120,11 @@ internal sealed class WorkspaceViewCoordinator
     private readonly ProjectCommercialEditorSupport? _commercialSupport;
     private readonly RequirementOwnerEditorSupport? _ownerSupport;
 
+    // `WP 21.2A`, scope item 3: "a Document's editor Export as report".
+    private readonly DocumentExporter? _documentExporter;
+    private readonly TechnicalReportDocumentRenderer? _technicalReportRenderer;
+    private readonly Func<string>? _applicationVersionText;
+
     private CockpitView? _cockpitView;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceViewCoordinator"/> class, wiring every Explorer/Inspector/Document-Area cross-view interaction.</summary>
@@ -142,7 +149,9 @@ internal sealed class WorkspaceViewCoordinator
         IDocumentOpener documentOpener, ActionOutcomeReporter reporter,
         IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
         EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null, ProjectCommercialEditorSupport? commercialSupport = null,
-        RequirementOwnerEditorSupport? ownerSupport = null)
+        RequirementOwnerEditorSupport? ownerSupport = null,
+        DocumentExporter? documentExporter = null, TechnicalReportDocumentRenderer? technicalReportRenderer = null,
+        Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(workspace);
         ArgumentNullException.ThrowIfNull(manager);
@@ -186,6 +195,9 @@ internal sealed class WorkspaceViewCoordinator
         _auditQuery = auditQuery;
         _commercialSupport = commercialSupport;
         _ownerSupport = ownerSupport;
+        _documentExporter = documentExporter;
+        _technicalReportRenderer = technicalReportRenderer;
+        _applicationVersionText = applicationVersionText;
 
         // Select-to-inspect / Open-to-edit (WP8.0A UI Architecture.md §4, unchanged).
         _explorerView.ObjectSelected += async (id, kind) =>
@@ -286,6 +298,64 @@ internal sealed class WorkspaceViewCoordinator
         _cockpitView = cockpitView;
     }
 
+    /// <summary>Renders a Document's own technical report and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3) — cover block, revision history (<see cref="EngineeringDomainContext.Store"/>'s own <c>GetRevisionHistoryAsync</c>), and sections split from the current revision's own content.</summary>
+    private async Task OnExportReportAsync(Guid objectId)
+    {
+        if (_documentExporter is null || _technicalReportRenderer is null || _applicationVersionText is null)
+            return;
+
+        if (await _domainContext.Repository.FindAsync(objectId).ConfigureAwait(true) is not { } target)
+        {
+            await _reporter.ReportAsync("That document could not be found.", ActionOutcome.Failed).ConfigureAwait(true);
+            return;
+        }
+
+        var title = (target as IHasBusinessIdentifier)?.DisplayName ?? "Document";
+        var reference = (target as IHasBusinessIdentifier)?.Identifier;
+
+        var (projectCode, projectName) = await ResolveOwningProjectAsync(target).ConfigureAwait(true);
+
+        var revisionHistory = await _domainContext.Store.GetRevisionHistoryAsync(objectId).ConfigureAwait(true);
+        var revisions = revisionHistory
+            .Select(r => new TechnicalReportRevisionRow(r.RevisionNumber, DateOnly.FromDateTime(r.CreatedAt.UtcDateTime), r.AuthorPrincipalId, r.ChangeSummary))
+            .ToList();
+
+        var latest = await _domainContext.Store.GetLatestRevisionAsync(objectId).ConfigureAwait(true);
+        var sections = TechnicalReportDocumentRenderer.SplitIntoSections(latest.Content);
+
+        var model = new TechnicalReportDocumentModel(
+            Title: title,
+            Reference: reference,
+            ProjectCode: projectCode,
+            ProjectName: projectName,
+            Author: latest.AuthorPrincipalId,
+            Revisions: revisions,
+            Sections: sections,
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var result = await _documentExporter.ExportAsync(_technicalReportRenderer, model, reference ?? title, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        await _reporter.ReportAsync(result.Message, ActionOutcome.From(result.Succeeded)).ConfigureAwait(true);
+    }
+
+    /// <summary>Walks <paramref name="target"/>'s own <c>IHasParent.ParentId</c> chain up to the nearest <c>"Project"</c> Kind — a Document's own project ancestor, capped at a generous depth so a malformed parent cycle can never loop forever.</summary>
+    private async Task<(string Code, string Name)> ResolveOwningProjectAsync(IEngineeringObject target)
+    {
+        IEngineeringObject? current = target;
+        for (var depth = 0; current is not null && depth < 20; depth++)
+        {
+            if (current.Kind == "Project")
+                return ((current as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (current as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
+
+            if (current is not IHasParent { ParentId: { } parentId })
+                break;
+
+            current = await _domainContext.Repository.FindAsync(parentId).ConfigureAwait(true);
+        }
+
+        return (string.Empty, string.Empty);
+    }
+
     /// <summary>
     /// Refreshes the now-<see cref="Attach"/>ed <see cref="CockpitView"/> —
     /// every non-Cockpit action that still wants it re-rendered (opening or
@@ -335,6 +405,12 @@ internal sealed class WorkspaceViewCoordinator
         // surfaces its own Missing/Corrupt/Unsupported state, so there is
         // no result here worth awaiting.
         editor.OpenAttachmentRequested += (owner, attachment) => _ = OpenAttachmentAsync?.Invoke(owner, attachment);
+        // `WP 21.2A`, scope item 3 — only actually wired once a renderer/
+        // exporter exist (`ExportReportRequested`'s own remarks: the
+        // button itself stays hidden otherwise, so this subscription is
+        // harmless either way).
+        if (_documentExporter is not null && _technicalReportRenderer is not null && _applicationVersionText is not null)
+            editor.ExportReportRequested += id => _ = OnExportReportAsync(id);
         // No `refresh` delegate (`WP 18.1A`): a save commits through the
         // same mutators as any other write (including the gated-on-
         // WorkspaceChanged-not-success case `WP-D1` names below, since a

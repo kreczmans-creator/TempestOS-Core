@@ -17,6 +17,10 @@ namespace Tempest.Desktop.Documents;
 /// <param name="AddressLine2">The second address line, or <see langword="null"/>.</param>
 /// <param name="Email">A contact email, or <see langword="null"/>.</param>
 /// <param name="Phone">A contact phone number, or <see langword="null"/>.</param>
+/// <param name="BankSortCode">The bank account's own sort code, for the invoice's own payment-details section (`WP 21.2A`). <see langword="null"/> when none is recorded.</param>
+/// <param name="BankAccountNumber">The bank account number. <see langword="null"/> when none is recorded.</param>
+/// <param name="BankAccountName">The account holder's own name, where it differs from <see cref="LegalName"/> enough to state separately. <see langword="null"/> when none is recorded.</param>
+/// <param name="BankIban">The IBAN, for an international client. <see langword="null"/> when none is recorded.</param>
 public sealed record OrganisationIdentity(
     string LegalName,
     string? CompanyNumber,
@@ -24,7 +28,11 @@ public sealed record OrganisationIdentity(
     string? AddressLine1,
     string? AddressLine2,
     string? Email,
-    string? Phone)
+    string? Phone,
+    string? BankSortCode = null,
+    string? BankAccountNumber = null,
+    string? BankAccountName = null,
+    string? BankIban = null)
 {
     /// <summary>
     /// The Tempest Design Engineering Ltd defaults — transcribed verbatim
@@ -33,7 +41,11 @@ public sealed record OrganisationIdentity(
     /// `templates/invoice/Invoice.dc.html`, `templates/cost-estimate/CostEstimate.dc.html`'s
     /// own footer slot: "Tempest Design Engineering Ltd · Company No.
     /// 17349874" / "www.tempest-engineering.co.uk"). Every Settings →
-    /// Organisation field pre-fills from this until a user changes it.
+    /// Organisation field pre-fills from this until a user changes it. No
+    /// bank details — the design system's own templates name no real
+    /// account to default to, and inventing one would be worse than
+    /// leaving the invoice's own payment-details section honestly blank
+    /// until a user enters real ones (`WP 21.2A`).
     /// </summary>
     public static OrganisationIdentity TempestDefaults { get; } = new(
         LegalName: "Tempest Design Engineering Ltd",
@@ -43,6 +55,11 @@ public sealed record OrganisationIdentity(
         AddressLine2: null,
         Email: null,
         Phone: null);
+
+    /// <summary>Whether any bank detail at all is recorded — what an invoice renderer checks before drawing a "Payment details" section rather than drawing an empty one.</summary>
+    public bool HasBankDetails =>
+        !string.IsNullOrWhiteSpace(BankSortCode) || !string.IsNullOrWhiteSpace(BankAccountNumber)
+        || !string.IsNullOrWhiteSpace(BankAccountName) || !string.IsNullOrWhiteSpace(BankIban);
 
     /// <summary>
     /// The footer's own left-hand text — legal name, then "Company No.
@@ -152,6 +169,25 @@ public static class DocumentTemplate
     public const float ContentBottom = PageHeight - Margin - FooterReserve;
 
     // ------------------------------------------------------------
+    // Landscape geometry (`WP 21.2A`) — the drawing register and the
+    // progress report render A4 landscape (their own template folders'
+    // grammar); every other document stays the portrait geometry above,
+    // untouched. A simple axis swap of the same A4/20mm-margin page: every
+    // helper below reads geometry off `LayoutState.Landscape` rather than
+    // these constants directly, so a portrait `LayoutState` (every caller
+    // that does not pass `landscape: true` to `BeginLayout`) computes the
+    // identical values the constants above always have — this is additive,
+    // never a breaking change to `QuotationSheetRenderer`/`IssueSheetRenderer`
+    // or their own tests.
+    // ------------------------------------------------------------
+
+    public const float LandscapePageWidth = PageHeight;
+    public const float LandscapePageHeight = PageWidth;
+    public const float LandscapeContentRight = LandscapePageWidth - Margin;
+    public const float LandscapeContentWidth = LandscapeContentRight - ContentLeft;
+    public const float LandscapeContentBottom = LandscapePageHeight - Margin - FooterReserve;
+
+    // ------------------------------------------------------------
     // Type roles — sizes only; see the class remarks for why the glyphs
     // themselves stay the platform default face.
     // ------------------------------------------------------------
@@ -222,32 +258,54 @@ public static class DocumentTemplate
     // (`WP 18.2B`), unchanged in technique (`TD-182`).
     // ------------------------------------------------------------
 
-    /// <summary>One text run, at its own absolute page coordinates (the baseline), in its own colour.</summary>
-    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color);
+    /// <summary>One text run, at its own absolute page coordinates (the baseline), in its own colour and <see cref="DocumentFontRole"/> (`WP 21.2A`; <see cref="DocumentFontRole.Body"/> — the platform default before this Work Package — when a caller does not say otherwise, so every pre-existing positional construction of this record keeps compiling and rendering exactly as before).</summary>
+    public readonly record struct TextRun(float X, float Y, string Text, float Size, bool Bold, SKTextAlign Align, SKColor Color, DocumentFontRole FontRole = DocumentFontRole.Body);
 
     /// <summary>One horizontal rule, spanning <paramref name="X1"/> to <paramref name="X2"/> at <paramref name="Y"/>, in its own colour.</summary>
     public readonly record struct RuleRun(float X1, float X2, float Y, float StrokeWidth, SKColor Color);
 
-    /// <summary>One page's own plan: every text run and rule it carries, in draw order.</summary>
+    /// <summary>One image, drawn into the rectangle <paramref name="X"/>/<paramref name="Y"/>/<paramref name="Width"/>/<paramref name="Height"/> (`WP 21.2A` — today, only the header band's own logo lockup, drawn by <see cref="AddHeaderBand"/>; every renderer's own draw loop reads this list through <see cref="RenderPdf"/>, the one place a bitmap is actually decoded and drawn).</summary>
+    public readonly record struct ImageRun(float X, float Y, float Width, float Height);
+
+    /// <summary>One page's own plan: every text run, rule and image it carries, in draw order (rules and images beneath text — <see cref="RenderPdf"/>'s own fixed draw order).</summary>
     public sealed class PagePlan
     {
         public List<TextRun> Texts { get; } = [];
         public List<RuleRun> Rules { get; } = [];
+        public List<ImageRun> Images { get; } = [];
     }
 
-    /// <summary>The layout cursor threaded through every <c>Add*</c> helper below — which page is current, and how far down it the next line goes.</summary>
+    /// <summary>The layout cursor threaded through every <c>Add*</c> helper below — which page is current, how far down it the next line goes, and (`WP 21.2A`) which of the two page geometries (<see cref="Landscape"/>) this document lays out against.</summary>
     public sealed class LayoutState
     {
         public required List<PagePlan> Pages { get; init; }
         public required PagePlan Page { get; set; }
         public float Y { get; set; }
+
+        /// <summary>Whether this layout is A4 landscape (the drawing register, the progress report) rather than the platform's original A4 portrait. Set once, by <see cref="BeginLayout"/>, and read by every geometry-aware helper below.</summary>
+        public bool Landscape { get; init; }
+
+        /// <summary>This layout's own page width — <see cref="LandscapePageWidth"/> or <see cref="PageWidth"/>, by <see cref="Landscape"/>.</summary>
+        public float PageWidth => Landscape ? DocumentTemplate.LandscapePageWidth : DocumentTemplate.PageWidth;
+
+        /// <summary>This layout's own page height — <see cref="LandscapePageHeight"/> or <see cref="PageHeight"/>, by <see cref="Landscape"/>.</summary>
+        public float PageHeight => Landscape ? DocumentTemplate.LandscapePageHeight : DocumentTemplate.PageHeight;
+
+        /// <summary>This layout's own right content edge — <see cref="ContentLeft"/> (the left edge) is identical in both orientations, so no <c>ContentLeft</c> instance property is needed.</summary>
+        public float ContentRight => Landscape ? DocumentTemplate.LandscapeContentRight : DocumentTemplate.ContentRight;
+
+        /// <summary>This layout's own content width — what a caller building an <see cref="AddTable"/> <c>widths</c> array should take proportions of.</summary>
+        public float ContentWidth => Landscape ? DocumentTemplate.LandscapeContentWidth : DocumentTemplate.ContentWidth;
+
+        /// <summary>This layout's own content bottom — where <see cref="EnsureSpace"/> starts a new page.</summary>
+        public float ContentBottom => Landscape ? DocumentTemplate.LandscapeContentBottom : DocumentTemplate.ContentBottom;
     }
 
-    /// <summary>Starts a new layout plan: one page, the cursor at <see cref="Margin"/>.</summary>
-    public static LayoutState BeginLayout()
+    /// <summary>Starts a new layout plan: one page, the cursor at <see cref="Margin"/>. <paramref name="landscape"/> (`WP 21.2A`) — <see langword="false"/>, the default, is the original A4 portrait every renderer used before this Work Package; <see langword="true"/> is A4 landscape (the drawing register, the progress report).</summary>
+    public static LayoutState BeginLayout(bool landscape = false)
     {
         var firstPage = new PagePlan();
-        return new LayoutState { Pages = [firstPage], Page = firstPage, Y = Margin };
+        return new LayoutState { Pages = [firstPage], Page = firstPage, Y = Margin, Landscape = landscape };
     }
 
     /// <summary>Starts a new, blank page and moves the cursor onto it — the header band is not repeated; only page 1 carries it, exactly as the pre-`WP 20.10G` renderers' own title line never repeated either.</summary>
@@ -259,10 +317,10 @@ public static class DocumentTemplate
         state.Y = Margin;
     }
 
-    /// <summary>Starts a new page if <paramref name="height"/> would not fit above <see cref="ContentBottom"/>. Returns whether it did.</summary>
+    /// <summary>Starts a new page if <paramref name="height"/> would not fit above <paramref name="state"/>'s own <see cref="LayoutState.ContentBottom"/>. Returns whether it did.</summary>
     public static bool EnsureSpace(LayoutState state, float height)
     {
-        if (state.Y + height <= ContentBottom)
+        if (state.Y + height <= state.ContentBottom)
             return false;
 
         NewPage(state);
@@ -275,35 +333,36 @@ public static class DocumentTemplate
     public static void AddRule(LayoutState state, SKColor? color = null, float strokeWidth = 0.75f)
     {
         EnsureSpace(state, 4f);
-        state.Page.Rules.Add(new RuleRun(ContentLeft, ContentRight, state.Y, strokeWidth, color ?? Hairline));
+        state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, strokeWidth, color ?? Hairline));
         state.Y += 6f;
     }
 
-    /// <summary>A section heading — bold, <see cref="HeadingSize"/>, <see cref="Ink900"/> (headings on paper).</summary>
+    /// <summary>A section heading — bold, <see cref="HeadingSize"/>, <see cref="Ink900"/> (headings on paper), <see cref="DocumentFontRole.Display"/> (`WP 21.2A`; Chakra Petch, the design system's own display face for headings).</summary>
     public static void AddHeading(LayoutState state, SKPaint measure, string text)
     {
-        AddWrappedLine(state, measure, text, HeadingSize, bold: true, color: Ink900);
+        AddWrappedLine(state, measure, text, HeadingSize, bold: true, color: Ink900, fontRole: DocumentFontRole.Display);
         state.Y += 2f;
     }
 
-    /// <summary>A word-wrapped line of running text, <paramref name="color"/> defaulting to <see cref="Slate700"/> (body text on paper).</summary>
+    /// <summary>A word-wrapped line of running text, <paramref name="color"/> defaulting to <see cref="Slate700"/> (body text on paper) and <paramref name="fontRole"/> (`WP 21.2A`) defaulting to <see cref="DocumentFontRole.Body"/> (Inter).</summary>
     public static void AddWrappedLine(
-        LayoutState state, SKPaint measure, string text, float size, bool bold, SKTextAlign align = SKTextAlign.Left, SKColor? color = null)
+        LayoutState state, SKPaint measure, string text, float size, bool bold, SKTextAlign align = SKTextAlign.Left, SKColor? color = null,
+        DocumentFontRole fontRole = DocumentFontRole.Body)
     {
         measure.TextSize = size;
         var lineHeight = size * LineLeading;
         var runColor = color ?? Slate700;
 
-        foreach (var line in WrapText(text, ContentWidth, measure))
+        foreach (var line in WrapText(text, state.ContentWidth, measure))
         {
             EnsureSpace(state, lineHeight);
             var x = align switch
             {
-                SKTextAlign.Right => ContentRight,
-                SKTextAlign.Center => (ContentLeft + ContentRight) / 2f,
+                SKTextAlign.Right => state.ContentRight,
+                SKTextAlign.Center => (ContentLeft + state.ContentRight) / 2f,
                 _ => ContentLeft,
             };
-            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor));
+            state.Page.Texts.Add(new TextRun(x, state.Y + size, line, size, bold, align, runColor, fontRole));
             state.Y += lineHeight;
         }
     }
@@ -350,11 +409,11 @@ public static class DocumentTemplate
             for (var i = 0; i < headers.Length; i++)
             {
                 var x = CellX(colX[i], widths[i], aligns[i]);
-                state.Page.Texts.Add(new TextRun(x, baseline, headers[i].ToUpperInvariant(), CaptionSize, true, aligns[i], Indigo600));
+                state.Page.Texts.Add(new TextRun(x, baseline, headers[i].ToUpperInvariant(), CaptionSize, true, aligns[i], Indigo600, DocumentFontRole.Display));
             }
 
             state.Y += rowHeight;
-            state.Page.Rules.Add(new RuleRun(ContentLeft, ContentRight, state.Y, 0.75f, HairlineStrong));
+            state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, 0.75f, HairlineStrong));
             state.Y += 2f;
         }
 
@@ -381,16 +440,24 @@ public static class DocumentTemplate
             var rowTop = state.Y + CellPaddingY;
             for (var i = 0; i < headers.Length; i++)
             {
+                // `WP 21.2A`: a right- or centre-aligned column is this
+                // table's own numeric/machine-data convention (this
+                // method's own remarks; `AddTable`'s pre-existing
+                // `columnAligns` parameter already exists so a caller can
+                // right-align "a genuinely numeric column") — drawn in
+                // Space Mono; a left-aligned column is running text, in
+                // Inter.
+                var cellFontRole = aligns[i] == SKTextAlign.Left ? DocumentFontRole.Body : DocumentFontRole.Mono;
                 var x = CellX(colX[i], widths[i], aligns[i]);
                 for (var lineIndex = 0; lineIndex < wrapped[i].Count; lineIndex++)
                 {
                     var baseline = rowTop + BodySize + lineIndex * lineHeight;
-                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700));
+                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole));
                 }
             }
 
             state.Y += rowHeight;
-            state.Page.Rules.Add(new RuleRun(ContentLeft, ContentRight, state.Y, 0.4f, Hairline));
+            state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, 0.4f, Hairline));
         }
     }
 
@@ -453,20 +520,48 @@ public static class DocumentTemplate
     /// </summary>
     /// <param name="documentType">The document's own type, upper case (e.g. "QUOTATION", "ISSUE SHEET").</param>
     /// <param name="referenceLine">The reference/date/status row — already formatted by the caller (each document's own fields differ).</param>
+    /// <remarks>
+    /// <b>The lockup, when it loaded (`WP 21.2A`).</b> <see cref="DocumentLogo.HorizontalNavy"/>
+    /// draws in place of the plain "TEMPEST"/"OS" text pair this method drew
+    /// before this Work Package — the identical fallback
+    /// <see cref="DocumentTemplate"/>'s own class remarks already disclosed
+    /// for a worktree that could not reach the design system's own asset
+    /// files, kept honest rather than removed now those files are reachable
+    /// (a future worktree that regresses to missing/corrupt resources still
+    /// renders a header band, just the text one). The eyebrow and reference
+    /// line now draw in <see cref="DocumentFontRole.Display"/>/<see cref="DocumentFontRole.Mono"/>
+    /// respectively, rather than the platform default face every document
+    /// used before this Work Package.
+    /// </remarks>
     public static void AddHeaderBand(LayoutState state, SKPaint measure, string documentType, string referenceLine)
     {
-        measure.TextSize = WordmarkSize;
-        var wordmarkBaseline = state.Y + WordmarkSize;
-        var tempestWidth = measure.MeasureText("TEMPEST ");
-        state.Page.Texts.Add(new TextRun(ContentLeft, wordmarkBaseline, "TEMPEST ", WordmarkSize, true, SKTextAlign.Left, Ink900));
-        state.Page.Texts.Add(new TextRun(ContentLeft + tempestWidth, wordmarkBaseline, "OS", WordmarkSize, true, SKTextAlign.Left, Cyan500));
+        var top = state.Y;
+        float leftBlockBottom;
 
-        state.Page.Texts.Add(new TextRun(ContentRight, wordmarkBaseline, documentType, HeaderEyebrowSize, true, SKTextAlign.Right, Indigo600));
+        if (DocumentLogo.HorizontalNavy is { } logo && logo.Height > 0)
+        {
+            const float logoHeight = 18f;
+            var logoWidth = logoHeight * logo.Width / logo.Height;
+            state.Page.Images.Add(new ImageRun(ContentLeft, top, logoWidth, logoHeight));
+            leftBlockBottom = top + logoHeight;
+        }
+        else
+        {
+            measure.TextSize = WordmarkSize;
+            var wordmarkBaseline = top + WordmarkSize;
+            var tempestWidth = measure.MeasureText("TEMPEST ");
+            state.Page.Texts.Add(new TextRun(ContentLeft, wordmarkBaseline, "TEMPEST ", WordmarkSize, true, SKTextAlign.Left, Ink900, DocumentFontRole.Display));
+            state.Page.Texts.Add(new TextRun(ContentLeft + tempestWidth, wordmarkBaseline, "OS", WordmarkSize, true, SKTextAlign.Left, Cyan500, DocumentFontRole.Display));
+            leftBlockBottom = wordmarkBaseline;
+        }
 
-        var referenceBaseline = wordmarkBaseline + HeaderEyebrowSize * 0.4f + HeaderReferenceSize;
-        state.Page.Texts.Add(new TextRun(ContentRight, referenceBaseline, referenceLine, HeaderReferenceSize, false, SKTextAlign.Right, Slate700));
+        var eyebrowBaseline = top + HeaderEyebrowSize;
+        state.Page.Texts.Add(new TextRun(state.ContentRight, eyebrowBaseline, documentType, HeaderEyebrowSize, true, SKTextAlign.Right, Indigo600, DocumentFontRole.Display));
 
-        state.Y = Math.Max(wordmarkBaseline, referenceBaseline) + 6f;
+        var referenceBaseline = eyebrowBaseline + HeaderEyebrowSize * 0.4f + HeaderReferenceSize;
+        state.Page.Texts.Add(new TextRun(state.ContentRight, referenceBaseline, referenceLine, HeaderReferenceSize, false, SKTextAlign.Right, Slate700, DocumentFontRole.Mono));
+
+        state.Y = Math.Max(leftBlockBottom, referenceBaseline) + 6f;
         AddRule(state, Indigo600, strokeWidth: 1.6f);
     }
 
@@ -479,31 +574,114 @@ public static class DocumentTemplate
     /// generation time) with "Page n of m" at the right — the field set
     /// `PHYSICAL_REVIEW.md` §7c D4 and §7a E9 already name.
     /// </summary>
-    public static void AppendFooters(List<PagePlan> pages, OrganisationIdentity identity, string exportDetailLine)
+    /// <param name="landscape">`WP 21.2A` — <see langword="false"/>, the default, positions the footer against the original A4 portrait geometry every caller used before this Work Package; <see langword="true"/> positions it against A4 landscape (the drawing register, the progress report). Must match the <see cref="LayoutState.Landscape"/> <paramref name="pages"/> was laid out with.</param>
+    public static void AppendFooters(List<PagePlan> pages, OrganisationIdentity identity, string exportDetailLine, bool landscape = false)
     {
         ArgumentNullException.ThrowIfNull(identity);
 
         var footerLeft = identity.FooterLeft();
         var footerRight = identity.FooterRight();
         var total = pages.Count;
+        var contentRight = landscape ? LandscapeContentRight : ContentRight;
+        var contentBottom = landscape ? LandscapeContentBottom : ContentBottom;
 
-        var ruleY = ContentBottom + 6f;
+        var ruleY = contentBottom + 6f;
         var line1Baseline = ruleY + CaptionSize + 3f;
         var line2Baseline = line1Baseline + CaptionSize * LineLeading;
 
         for (var i = 0; i < pages.Count; i++)
         {
             var page = pages[i];
-            page.Rules.Add(new RuleRun(ContentLeft, ContentRight, ruleY, 0.75f, Hairline));
+            page.Rules.Add(new RuleRun(ContentLeft, contentRight, ruleY, 0.75f, Hairline));
 
             page.Texts.Add(new TextRun(ContentLeft, line1Baseline, footerLeft, CaptionSize, false, SKTextAlign.Left, Slate600));
             if (footerRight.Length > 0)
-                page.Texts.Add(new TextRun(ContentRight, line1Baseline, footerRight, CaptionSize, false, SKTextAlign.Right, Slate600));
+                page.Texts.Add(new TextRun(contentRight, line1Baseline, footerRight, CaptionSize, false, SKTextAlign.Right, Slate600));
 
             page.Texts.Add(new TextRun(ContentLeft, line2Baseline, exportDetailLine, CaptionSize, false, SKTextAlign.Left, Slate600));
             page.Texts.Add(new TextRun(
-                ContentRight, line2Baseline, string.Format(System.Globalization.CultureInfo.InvariantCulture, "Page {0} of {1}", i + 1, total),
+                contentRight, line2Baseline, string.Format(System.Globalization.CultureInfo.InvariantCulture, "Page {0} of {1}", i + 1, total),
                 CaptionSize, false, SKTextAlign.Right, Slate600));
         }
+    }
+
+    // ------------------------------------------------------------
+    // The shared PDF draw loop (`WP 21.2A`) — lifted out of
+    // `QuotationSheetRenderer`/`IssueSheetRenderer`, which each duplicated
+    // this identical ~40-line `SKDocument`/canvas block, so every one of
+    // this Work Package's six new renderers (and the two existing ones,
+    // retrofitted) shares it instead of duplicating it a further six times
+    // — the same "lift the duplicate once" discipline `TD-182` applied to
+    // the layout plan itself.
+    // ------------------------------------------------------------
+
+    /// <summary>
+    /// Draws <paramref name="pages"/> as a PDF — a rule, then every image,
+    /// then every text run, per page, in that order; each <see cref="TextRun.FontRole"/>
+    /// resolved to its own embedded typeface via <see cref="DocumentFonts.For"/>
+    /// (`WP 21.2A`), each <see cref="ImageRun"/> drawn from
+    /// <see cref="DocumentLogo.HorizontalNavy"/> (today's only image source —
+    /// see that property's own remarks for what an unloadable resource
+    /// degrades to instead). <paramref name="landscape"/> must match the
+    /// <see cref="LayoutState.Landscape"/> <paramref name="pages"/> was laid
+    /// out with.
+    /// </summary>
+    public static ReadOnlyMemory<byte> RenderPdf(List<PagePlan> pages, SKDocumentPdfMetadata metadata, bool landscape = false)
+    {
+        var pageWidth = landscape ? LandscapePageWidth : PageWidth;
+        var pageHeight = landscape ? LandscapePageHeight : PageHeight;
+
+        using var stream = new MemoryStream();
+        using (var wstream = new SKManagedWStream(stream))
+        {
+            using var document = SKDocument.CreatePdf(wstream, metadata)
+                ?? throw new InvalidOperationException("SkiaSharp could not open a PDF document.");
+
+            using var textPaint = new SKPaint { IsAntialias = true };
+            using var linePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+            using var imagePaint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
+            var logo = DocumentLogo.HorizontalNavy;
+
+            foreach (var page in pages)
+            {
+                var canvas = document.BeginPage(pageWidth, pageHeight);
+                canvas.Clear(PaperPage);
+
+                foreach (var rule in page.Rules)
+                {
+                    linePaint.StrokeWidth = rule.StrokeWidth;
+                    linePaint.Color = rule.Color;
+                    canvas.DrawLine(rule.X1, rule.Y, rule.X2, rule.Y, linePaint);
+                }
+
+                if (logo is not null)
+                {
+                    foreach (var image in page.Images)
+                        canvas.DrawBitmap(logo, new SKRect(image.X, image.Y, image.X + image.Width, image.Y + image.Height), imagePaint);
+                }
+
+                foreach (var text in page.Texts)
+                {
+                    textPaint.TextSize = text.Size;
+                    // A real bold file backs Display/Mono (`DocumentFonts.For`
+                    // already selected it) — `FakeBoldText` on top would
+                    // double-bold. Body (Inter) has only the one variable-font
+                    // weight embedded, so a bold Body run still synthesises
+                    // bold exactly as every renderer did before this Work
+                    // Package.
+                    textPaint.FakeBoldText = text.Bold && text.FontRole == DocumentFontRole.Body;
+                    textPaint.TextAlign = text.Align;
+                    textPaint.Color = text.Color;
+                    textPaint.Typeface = DocumentFonts.For(text.FontRole, text.Bold);
+                    canvas.DrawText(text.Text, text.X, text.Y, textPaint);
+                }
+
+                document.EndPage();
+            }
+
+            document.Close();
+        }
+
+        return stream.ToArray();
     }
 }

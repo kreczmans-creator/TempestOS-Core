@@ -412,6 +412,7 @@ public sealed class ObjectEditorView : UserControl
     private bool _suppressDirtyTracking;
 
     private Action<IHasAttachments, IAttachment>? _openAttachmentRequested;
+    private Action<Guid>? _exportReportRequested;
 
     // The object the sections were last built from, so the attachment rows
     // can be rebuilt when OpenAttachmentRequested gains its first
@@ -518,6 +519,36 @@ public sealed class ObjectEditorView : UserControl
         }
 
         remove => _openAttachmentRequested -= value;
+    }
+
+    /// <summary>
+    /// Raised when the user asks to export the Document's own technical
+    /// report (`WP 21.2A`, scope item 3) — carries this object's own id.
+    /// An event, not a direct render call, for the identical reason
+    /// <see cref="OpenAttachmentRequested"/> is one: this editor knows the
+    /// object, deliberately not how to render or save a PDF from it — that
+    /// stays <see cref="Tempest.Desktop.Composition.WorkspaceViewCoordinator"/>'s
+    /// own concern, the same split <c>OpenAttachmentAsync</c> already
+    /// draws for the viewer. The Export as report button (offered only for
+    /// <see cref="DocumentObjectFactoryRegistry.Document"/>, in the
+    /// attachments section) is shown only once a subscriber exists,
+    /// mirroring <see cref="OpenAttachmentRequested"/>'s own custom
+    /// accessor exactly — including its re-population-on-first-subscriber
+    /// fallback, for the identical ordering hazard that property's own
+    /// remarks describe.
+    /// </summary>
+    public event Action<Guid>? ExportReportRequested
+    {
+        add
+        {
+            var hadNone = _exportReportRequested is null;
+            _exportReportRequested += value;
+
+            if (hadNone && _exportReportRequested is not null && _populatedTarget is not null)
+                _ = PopulateAttachmentsSafelyAsync(_populatedTarget);
+        }
+
+        remove => _exportReportRequested -= value;
     }
 
     private ObjectEditorView(
@@ -2820,6 +2851,21 @@ public sealed class ObjectEditorView : UserControl
 
                 _attachmentsListPanel.Children.Add(row);
             }
+        }
+
+        // `WP 21.2A`, scope item 3: "a Document's editor Export as
+        // report" — a document-level action (not per-attachment), offered
+        // only for the Document Kind and only once a subscriber can
+        // actually render and save one (`ExportReportRequested`'s own
+        // remarks).
+        if (_exportReportRequested is not null && _objectKind == DocumentObjectFactoryRegistry.Document)
+        {
+            var exportReport = new Button { Content = "Export as report", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
+            exportReport.Classes.Add(ChromeStyles.Flat);
+            Avalonia.Automation.AutomationProperties.SetName(exportReport, "Export as report");
+            var targetId = target.Id;
+            exportReport.Click += (_, _) => _exportReportRequested?.Invoke(targetId);
+            _attachmentsListPanel.Children.Add(exportReport);
         }
 
         _attachmentFileNameBox.Text = string.Empty;

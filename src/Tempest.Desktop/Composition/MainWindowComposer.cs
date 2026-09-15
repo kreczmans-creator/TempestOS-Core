@@ -528,9 +528,43 @@ internal sealed partial class MainWindowComposer
         // `ProjectWorkspaceView`'s identical Documents-tab callback.
         Action<Guid, Guid> openAttachmentRightUp = (ownerId, attachmentId) => _ = callbacks.OpenProjectAttachmentAsync(ownerId, attachmentId, default);
 
+        // `WP 21.2A`, scope item 1/2: one `DocumentExporter` (the same
+        // `evidenceFilePicker` every export button in this shell already
+        // saves through) and one renderer per new document, each with the
+        // identical `IdentityProvider` wiring `quotationSheetRenderer`/
+        // `issueSheetRendererForIdentity` establish further down this same
+        // method — constructed here, ahead of `timesheetWeekView`/
+        // `invoicingView` below, since C# requires a local variable
+        // declared before its first use (unlike the `IssuerName`/
+        // `ApplicationVersionText` local functions further down, visible
+        // throughout this whole method's own block regardless of where
+        // they are textually declared).
+        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(evidenceFilePicker);
+        var invoiceRenderer = new Tempest.Desktop.Documents.Invoicing.InvoiceDocumentRenderer
+        {
+            IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+        };
+        var timesheetRenderer = new Tempest.Desktop.Documents.Timesheets.TimesheetDocumentRenderer
+        {
+            IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+        };
+        var technicalReportRenderer = new Tempest.Desktop.Documents.TechnicalReports.TechnicalReportDocumentRenderer
+        {
+            IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+        };
+        var drawingRegisterRenderer = new Tempest.Desktop.Documents.DrawingRegisters.DrawingRegisterDocumentRenderer
+        {
+            IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+        };
+        var progressReportRenderer = new Tempest.Desktop.Documents.ProgressReports.ProgressReportDocumentRenderer
+        {
+            IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+        };
+
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
-            () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp)
+            () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp,
+            documentExporter, timesheetRenderer, ApplicationVersionText)
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
@@ -554,7 +588,8 @@ internal sealed partial class MainWindowComposer
         // reviews right up through the same callback `EvidenceWorkspaceView`
         // uses (`WP 17.9.4`).
         var invoicingView = new InvoicingView(
-            composition.DomainContext, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id, openObjectRightUp)
+            composition.DomainContext, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id, openObjectRightUp,
+            organisationCatalog, documentExporter, invoiceRenderer, IssuerName, ApplicationVersionText)
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
@@ -685,7 +720,9 @@ internal sealed partial class MainWindowComposer
         var projectWorkspace = new ProjectWorkspaceView(
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
-            evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext);
+            evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext,
+            documentExporter, drawingRegisterRenderer, ApplicationVersionText);
+        projectWorkspace.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 19.7A` (`po-comments.md` item 6 delta (a)): the Tasks
         // read model — a "sibling reader" over the identical persistence
@@ -708,7 +745,8 @@ internal sealed partial class MainWindowComposer
         };
         tasksAreaView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        var projectsDashboardView = new ProjectsDashboardView(projectStatusReadModel);
+        var projectsDashboardView = new ProjectsDashboardView(
+            projectStatusReadModel, host.ProjectGovernance!, documentExporter, progressReportRenderer, ApplicationVersionText);
         var projectsAreaView = new ProjectsAreaView(composition.DomainContext, projectBrowser, projectsDashboardView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,

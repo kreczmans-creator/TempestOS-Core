@@ -35,6 +35,10 @@ public sealed class OrganisationIdentitySettings
         AddressLine2 = defaults.AddressLine2 ?? string.Empty;
         Email = defaults.Email ?? string.Empty;
         Phone = defaults.Phone ?? string.Empty;
+        BankSortCode = defaults.BankSortCode ?? string.Empty;
+        BankAccountNumber = defaults.BankAccountNumber ?? string.Empty;
+        BankAccountName = defaults.BankAccountName ?? string.Empty;
+        BankIban = defaults.BankIban ?? string.Empty;
     }
 
     /// <summary>Gets or sets the organisation's own registered name.</summary>
@@ -58,6 +62,18 @@ public sealed class OrganisationIdentitySettings
     /// <summary>Gets or sets a contact phone number.</summary>
     public string Phone { get; set; }
 
+    /// <summary>Gets or sets the bank account's own sort code — the invoice's own "Payment details" section (`WP 21.2A`).</summary>
+    public string BankSortCode { get; set; }
+
+    /// <summary>Gets or sets the bank account number.</summary>
+    public string BankAccountNumber { get; set; }
+
+    /// <summary>Gets or sets the account holder's own name, where it differs from <see cref="LegalName"/> enough to state separately.</summary>
+    public string BankAccountName { get; set; }
+
+    /// <summary>Gets or sets the IBAN, for an international client.</summary>
+    public string BankIban { get; set; }
+
     /// <summary>The flat, immutable snapshot a document renderer reads at render time — the "renderer reads a flat model, draws it" discipline every document model in this codebase already follows.</summary>
     public OrganisationIdentity ToIdentity() => new(
         LegalName: string.IsNullOrWhiteSpace(LegalName) ? OrganisationIdentity.TempestDefaults.LegalName : LegalName,
@@ -66,12 +82,18 @@ public sealed class OrganisationIdentitySettings
         AddressLine1: NullIfBlank(AddressLine1),
         AddressLine2: NullIfBlank(AddressLine2),
         Email: NullIfBlank(Email),
-        Phone: NullIfBlank(Phone));
+        Phone: NullIfBlank(Phone),
+        BankSortCode: NullIfBlank(BankSortCode),
+        BankAccountNumber: NullIfBlank(BankAccountNumber),
+        BankAccountName: NullIfBlank(BankAccountName),
+        BankIban: NullIfBlank(BankIban));
 
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new OrganisationIdentityDto(LegalName, CompanyNumber, Website, AddressLine1, AddressLine2, Email, Phone);
+        var dto = new OrganisationIdentityDto(
+            LegalName, CompanyNumber, Website, AddressLine1, AddressLine2, Email, Phone,
+            BankSortCode, BankAccountNumber, BankAccountName, BankIban);
         await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
@@ -90,11 +112,21 @@ public sealed class OrganisationIdentitySettings
         AddressLine2 = dto.AddressLine2;
         Email = dto.Email;
         Phone = dto.Phone;
+        // `WP 21.2A`: a document saved before this Work Package carries no
+        // bank fields at all — the DTO's own JSON deserialisation leaves a
+        // missing property at its type's default (`null` for `string?` on
+        // the wire, coerced to `string.Empty` here so this class's own
+        // fields, like every other one, are never null).
+        BankSortCode = dto.BankSortCode ?? string.Empty;
+        BankAccountNumber = dto.BankAccountNumber ?? string.Empty;
+        BankAccountName = dto.BankAccountName ?? string.Empty;
+        BankIban = dto.BankIban ?? string.Empty;
     }
 
     private static string? NullIfBlank(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
     private sealed record OrganisationIdentityDto(
-        string LegalName, string CompanyNumber, string Website, string AddressLine1, string AddressLine2, string Email, string Phone);
+        string LegalName, string CompanyNumber, string Website, string AddressLine1, string AddressLine2, string Email, string Phone,
+        string? BankSortCode = null, string? BankAccountNumber = null, string? BankAccountName = null, string? BankIban = null);
 }
