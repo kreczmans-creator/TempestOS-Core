@@ -96,19 +96,10 @@ counts from the gate).
   engineering command registry, which carries no archived-project check at
   all, so an engineering object can still be created under an archived
   project from there. Both disclosed as `TD-179`.
-- **"Finance" tasks use a thirty-day heuristic** (`WP 19.5C`): no payment
-  terms field exists on an invoice request, so a Sent request unpaid for
-  thirty days, and a Sent quotation older than seven days, are what the
-  Finance bucket lists. When terms are recorded the bucket should read
-  them.
 - **The quote PDF is about 600 KB even for one page** (`WP 19.5B`):
   the font subset is embedded, as the issue sheet's is. The renderer
   paginates (the table header and the footer repeat on every page;
   `QuotationSheetRendererTests` proves it with forty lines).
-- **Engineering → Tasks lists Reviews and Approvals only** (`WP 19.7A`):
-  the tasks read model has no Calculations bucket (a calculation is not a
-  task until someone asks for one), so the sketched Calculations node is
-  not shown rather than shown empty.
 - **The CI Build & Test ceiling is now 90 minutes** (`WP 19.9.1`): at 594
   Desktop tests under coverage collection the Debug leg took 43 minutes on
   a hosted runner and the next run was cancelled at 45 on both legs while

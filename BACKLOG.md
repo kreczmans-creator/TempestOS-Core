@@ -27,7 +27,35 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
+`TD-180` — the "Finance" task bucket used a thirty-day-since-Sent
+heuristic (and a seven-day-since-Sent one for quotations) because no
+payment-terms field existed on an invoice request — is **closed by
+`WP 20.1B`** (`TD-180`, Product Owner decision 2026-09-15 §1):
+`Organisation` gains a closed-vocabulary `PaymentTerms` (Up front / 30
+days / 60 days, default Up front); `InvoiceRequest` copies the client's
+own terms at raise time, frozen from then on, and computes its own
+`DueOn` once actually sent; the Finance bucket, the Invoicing area's
+Outstanding/Overdue grouping and the Business dashboard's receivable
+split all read that date instead of the thirty-day guess; the quotation
+chase constant (`QuoteChaseAfterDays = 7`) is unchanged — no decision was
+asked of, or given by, the Product Owner on it. It no longer appears
+below.
+
+`TD-181` — `ITasksReadModel` had no Calculations bucket, so Engineering →
+Tasks and the Engineering dashboard's Open tasks panel both disclosed and
+omitted the sketched Calculations sub-heading rather than showing it
+empty — is **closed by `WP 20.1B`** (`TD-181`, Product Owner decision
+2026-09-15 §2): a Calculation gains a minimal `Completed` flag and a
+`calculations.complete` command; `TaskBucket.Calculations` lists every
+live Calculation under a project (one with no project ancestor at all is
+not a task — the lead's own default, put to the Product Owner and
+confirmed "no"), from creation, leaving the bucket on completion or when
+live, Issued evidence cites it, whichever first; Engineering → Tasks and
+the Engineering dashboard both show the Calculations heading with rows,
+each opening the calculation right up and offering Complete. It no
+longer appears below.
+
+## Live Backlog (15 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -75,8 +103,6 @@ actually landed — see `ADR-0145`'s own addendum.
 | `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` (no project id parameter — guarding it needs a design step, not a copy of the pattern) or the Structure tab's ribbon (its commands act through the engineering command registry, which carries no archived-project check, so an engineering object can still be created under an archived project from there) | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task now guarded) |
-| `TD-180` | The "Finance" task bucket uses a thirty-day-since-Sent heuristic (and a seven-day-since-Sent one for quotations) because no payment-terms field exists on an invoice request | unowned (raised by v0.19.1 — `WP 19.5C`) |
-| `TD-181` | `ITasksReadModel` has no Calculations bucket, so Engineering → Tasks and the Engineering dashboard's Open tasks panel both disclose and omit the sketched Calculations sub-heading rather than showing it empty | unowned (raised by v0.19.1 — `WP 19.7A`/`WP 19.7B`) |
 | `TD-182` | `QuotationSheetRenderer` duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | unowned (raised by v0.19.1 — `WP 19.5B`) |
 
 **Six rows added by `WP 19.9.1` (2026-09-14):** `TD-176` (closed by
