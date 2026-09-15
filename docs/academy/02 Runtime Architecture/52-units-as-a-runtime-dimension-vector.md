@@ -213,7 +213,7 @@ kept both. **State the property, not the example** — thirty-seven tests
 asking "does the answer change if I change the units" caught what no
 hand-picked set of conversions ever could.
 
-Declared engineering figures (`59-evidence.md`, forthcoming) are
+Declared engineering figures (`59-evidence.md`) are
 recorded as this same `Quantity` type; `13-calculation-framework.md`
 named cross-dimension multiplication as a future capability back in
 `WP 7.1B` — this is the Work Package where it arrived.
