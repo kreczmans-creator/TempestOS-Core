@@ -174,6 +174,21 @@ public sealed class InMemoryQueryablePersistenceStore
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A <see cref="MemoryStream"/> over a snapshot copy of the committed
+    /// bytes: this double models the real store's "missing" and "found"
+    /// answers faithfully, but not its `TD-96` incremental-I/O mechanism —
+    /// nothing in this suite asserts allocation behaviour against the
+    /// double, only against the real <c>SqlitePersistenceStore</c>.
+    /// </remarks>
+    public Task<Stream?> OpenReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+    {
+        Validate(collection, key);
+        var bytes = CommittedBytes(collection, key);
+        return Task.FromResult<Stream?>(bytes is null ? null : new MemoryStream(bytes, writable: false));
+    }
+
     // ================================================================
     // IQueryablePersistenceStore
     // ================================================================

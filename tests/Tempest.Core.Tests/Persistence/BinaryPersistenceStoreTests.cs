@@ -197,4 +197,130 @@ public sealed class BinaryPersistenceStoreTests : SqlitePersistenceStoreFixture
         await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync(blank!, "key"));
         await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.ReadBytesAsync("content", blank!));
     }
+
+    // ----------------------------------------------------------------
+    // OpenReadAsync (`TD-96`) — the streamed counterpart of ReadBytesAsync.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task OpenReadAsync_ForAKeyThatWasNeverWritten_ReturnsNull()
+    {
+        Assert.Null(await BinaryStore.OpenReadAsync("content", "absent"));
+    }
+
+    [Fact]
+    public async Task OpenReadAsync_RoundTripsByteForByte()
+    {
+        var expected = AttachmentContentSamples.Png();
+        await BinaryStore.WriteBytesAsync("content", "key", expected);
+
+        await using var stream = await BinaryStore.OpenReadAsync("content", "key");
+        Assert.NotNull(stream);
+
+        using var buffer = new MemoryStream();
+        await stream!.CopyToAsync(buffer);
+
+        Assert.Equal(expected, buffer.ToArray());
+    }
+
+    [Fact]
+    public async Task OpenReadAsync_AnEmptyRecord_IsAnAlreadyExhaustedStream_NotNull()
+    {
+        await BinaryStore.WriteBytesAsync("content", "empty", ReadOnlyMemory<byte>.Empty);
+
+        await using var stream = await BinaryStore.OpenReadAsync("content", "empty");
+        Assert.NotNull(stream);
+        Assert.Equal(-1, stream!.ReadByte());
+    }
+
+    [Fact]
+    public async Task OpenReadAsync_SupportsSeekingWithinTheRecord()
+    {
+        var expected = AttachmentContentSamples.LargeDeterministicBlob(64 * 1024);
+        await BinaryStore.WriteBytesAsync("content", "key", expected);
+
+        await using var stream = await BinaryStore.OpenReadAsync("content", "key");
+        Assert.NotNull(stream);
+        Assert.True(stream!.CanSeek);
+        Assert.Equal(expected.LongLength, stream.Length);
+
+        stream.Seek(40_000, SeekOrigin.Begin);
+        var actual = new byte[100];
+        var read = stream.Read(actual, 0, actual.Length);
+
+        Assert.Equal(actual.Length, read);
+        Assert.Equal(expected.AsSpan(40_000, 100).ToArray(), actual);
+    }
+
+    /// <summary>
+    /// The `TD-96` claim itself: a large record is readable through
+    /// <see cref="IBinaryPersistenceStore.OpenReadAsync"/> in bounded-size
+    /// chunks a caller chooses, never as one array the size of the whole
+    /// record.
+    /// </summary>
+    /// <remarks>
+    /// The counting half is direct rather than a wrapping wrapper stream —
+    /// this test is the consumer, and it is the one deciding how large a
+    /// buffer to hand <see cref="Stream.Read(byte[], int, int)"/>, so the
+    /// number of calls it takes to drain a 20 MB record is itself the
+    /// proof nothing coalesced them into one big read. The allocation
+    /// measurement stays synchronous end to end (no <c>await</c> inside
+    /// the timed region) specifically so <see cref="GC.GetAllocatedBytesForCurrentThread"/>
+    /// is measuring the one thread that did the work, not whichever
+    /// thread pool thread happened to resume after a hop.
+    /// </remarks>
+    [Fact]
+    public async Task OpenReadAsync_A20MegabyteRecord_IsReadInBoundedChunks_AllocatingNothingNearItsSize()
+    {
+        const int TotalSize = 20 * 1024 * 1024;
+        const int ChunkSize = 64 * 1024;
+
+        var expected = AttachmentContentSamples.LargeDeterministicBlob(TotalSize);
+        await BinaryStore.WriteBytesAsync("content", "large", expected);
+
+        await using var stream = await BinaryStore.OpenReadAsync("content", "large");
+        Assert.NotNull(stream);
+
+        var buffer = new byte[ChunkSize];
+        var actual = new byte[TotalSize];
+        var totalRead = 0;
+        var readCalls = 0;
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+
+        int read;
+        while ((read = stream!.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            Buffer.BlockCopy(buffer, 0, actual, totalRead, read);
+            totalRead += read;
+            readCalls++;
+        }
+
+        var allocatedDuringRead = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+
+        Assert.Equal(TotalSize, totalRead);
+        Assert.Equal(expected, actual);
+
+        // A 20 MB record drained through a 64 KB buffer takes on the order
+        // of 320 reads; a handful would mean something coalesced the reads
+        // back into a small number of large ones.
+        Assert.True(readCalls > 100, $"Expected well over 100 chunked reads for a 20 MB record; got {readCalls}.");
+
+        // Generously below the 20 MB the old ReadBytesAsync-only path would
+        // have allocated for this same record — proof of the claim, not a
+        // tight tripwire that would fail on ordinary ADO.NET bookkeeping.
+        Assert.True(
+            allocatedDuringRead < 5 * 1024 * 1024,
+            $"Expected reading a 20 MB record through OpenReadAsync to allocate well under its own size; allocated {allocatedDuringRead:N0} bytes.");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task OpenReadAsync_AMissingCollectionOrKey_IsRejected(string? blank)
+    {
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.OpenReadAsync(blank!, "key"));
+        await Assert.ThrowsAnyAsync<ArgumentException>(() => BinaryStore.OpenReadAsync("content", blank!));
+    }
 }

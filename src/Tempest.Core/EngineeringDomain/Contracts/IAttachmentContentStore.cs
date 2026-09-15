@@ -62,8 +62,93 @@ public interface IAttachmentContentStore
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Opens a verified, seekable stream over one attachment's bytes, for
+    /// a caller that will consume them without ever holding the whole
+    /// file in memory (`TD-96`) — a large drawing opened in the Document
+    /// Viewer, chiefly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Verification runs first, over a dedicated pass through the stored
+    /// bytes in bounded-size chunks — the same "checked on the way out"
+    /// discipline <see cref="ReadAsync"/> applies to a whole array in one
+    /// go, applied one chunk at a time so confirming a 200 MB drawing does
+    /// not cost 200 MB of memory. Once that pass has passed, a second,
+    /// independent stream over the same content is opened and handed
+    /// back: the caller is free to seek within it — a PDF's own
+    /// cross-reference lookup does exactly that — without disturbing the
+    /// check that already ran.
+    /// </para>
+    /// <para>
+    /// Never throws for missing or damaged content, exactly as
+    /// <see cref="ReadAsync"/> does not: both are ordinary answers about a
+    /// passive read, reported through <see cref="AttachmentContentStreamResult.Status"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="attachmentId">The attachment whose content to open.</param>
+    /// <param name="expectedHash">The hash recorded when the content was stored, or <see langword="null"/> for an attachment that carries none (`TD-31`).</param>
+    /// <param name="expectedSizeInBytes">The size recorded in the attachment's metadata.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>
+    /// A result the caller must dispose: disposing it disposes the stream,
+    /// if one was returned.
+    /// </returns>
+    Task<AttachmentContentStreamResult> OpenReadAsync(
+        Guid attachmentId,
+        string? expectedHash,
+        long expectedSizeInBytes,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Removes the content of <paramref name="attachmentId"/>, if any.
     /// Idempotent: removing content that was never stored is not an error.
     /// </summary>
     Task DeleteAsync(Guid attachmentId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// The outcome of opening one attachment's stored bytes as a stream
+/// (`TD-96`) — the streaming counterpart of <see cref="AttachmentContentResult"/>.
+/// </summary>
+/// <remarks>
+/// A three-valued result rather than a nullable <see cref="Stream"/>, for
+/// the identical reason <see cref="AttachmentContentResult"/> is not a
+/// nullable <c>byte[]</c>: "we never held this file" and "we held it and
+/// what came back is not it" are different facts a caller must be able to
+/// tell apart. <see cref="Stream"/> is non-null only for
+/// <see cref="AttachmentContentStatus.Available"/>.
+/// </remarks>
+public sealed class AttachmentContentStreamResult : IDisposable
+{
+    private AttachmentContentStreamResult(AttachmentContentStatus status, Stream? stream)
+    {
+        Status = status;
+        Stream = stream;
+    }
+
+    /// <summary>Gets what happened.</summary>
+    public AttachmentContentStatus Status { get; }
+
+    /// <summary>Gets the opened stream — <see langword="null"/> unless <see cref="Status"/> is <see cref="AttachmentContentStatus.Available"/>.</summary>
+    public Stream? Stream { get; }
+
+    /// <summary>Gets whether the content was found intact and a stream was opened.</summary>
+    public bool IsAvailable => Status is AttachmentContentStatus.Available;
+
+    /// <summary>The content was found and verified; <paramref name="stream"/> is open and positioned at the start.</summary>
+    public static AttachmentContentStreamResult Available(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        return new AttachmentContentStreamResult(AttachmentContentStatus.Available, stream);
+    }
+
+    /// <summary>No content is stored for this attachment.</summary>
+    public static AttachmentContentStreamResult Missing() => new(AttachmentContentStatus.Missing, null);
+
+    /// <summary>Content is stored but does not match the metadata describing it.</summary>
+    public static AttachmentContentStreamResult Corrupt() => new(AttachmentContentStatus.Corrupt, null);
+
+    /// <summary>Disposes <see cref="Stream"/>, if one was returned. Idempotent.</summary>
+    public void Dispose() => Stream?.Dispose();
 }
