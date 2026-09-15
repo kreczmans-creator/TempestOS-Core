@@ -143,12 +143,22 @@ public sealed class OAuthAuthoriserTests
     [Fact]
     public async Task AuthoriseAsync_NoPortConfigured_UsesTheDefaultLoopbackPort()
     {
-        var (authoriser, handler, _, launcher) = Build(withTenantResolution: false);
+        var (authoriser, handler, _, launcher) = Build(withTenantResolution: false, useDefaultPort: true);
 
         handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
             JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600}"""));
 
         var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        // The claim under test is that the default port is the one attempted when none is configured. Either
+        // outcome proves it: a bound listener whose redirect URI carries that port, or — when another process's
+        // outbound socket holds 49301 for longer than the listener's retry budget, as on a hosted runner — the
+        // honest refusal that names exactly that port (see `Build`'s own note on the dynamic port range).
+        if (result.Outcome == OAuthOutcome.Failed)
+        {
+            Assert.Contains($"Port {OAuthAuthoriser.DefaultLoopbackPort} is already in use", result.Reason, StringComparison.Ordinal);
+            return;
+        }
 
         Assert.Equal(OAuthOutcome.Ok, result.Outcome);
         await AwaitLauncherAsync(launcher);
@@ -407,12 +417,16 @@ public sealed class OAuthAuthoriserTests
     // Fixtures
     // ====================================================================
 
-    private static (OAuthAuthoriser Authoriser, StubHttpMessageHandler Handler, InMemorySecretStore SecretStore, FakeBrowserLauncher Launcher) Build(bool withTenantResolution)
+    private static (OAuthAuthoriser Authoriser, StubHttpMessageHandler Handler, InMemorySecretStore SecretStore, FakeBrowserLauncher Launcher) Build(bool withTenantResolution, bool useDefaultPort = false)
     {
         var handler = new StubHttpMessageHandler();
         var secretStore = new InMemorySecretStore();
         var launcher = new FakeBrowserLauncher();
-        var configuration = BuildConfiguration("client-abc");
+        // A free port per round trip, never the default: 49301 sits inside Windows' dynamic port range
+        // (49152–65535), so another process's outbound socket can hold it for longer than the listener's
+        // same-port retry budget — six of these round trips failed together on a hosted runner on 2026-09-15
+        // (`TD-183`'s family). Only the test that exists to prove the default port asks for it.
+        var configuration = BuildConfiguration("client-abc", loopbackPort: useDefaultPort ? null : FindAFreeTcpPort());
 
         var profile = new OAuthProviderProfile(
             Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a", "scope-b"],
