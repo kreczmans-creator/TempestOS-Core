@@ -42,6 +42,14 @@ name: CI
 # that matrix's own remark for the split itself, and build-and-test's
 # `timeout-minutes` remark for why 90 could come back down to 45 rather
 # than needing raising a third time.
+#
+# `WP 21.5E` adds a fourth required job, dependency-scan — `dotnet list
+# package --vulnerable --include-transitive` over the whole solution,
+# parsed by scripts/check-vulnerable-packages.ps1 (which fails the step on
+# any finding, or on a scan it cannot parse at all) — bringing forward the
+# programme's own `WP RC.0C` ("Dependency vulnerability scan is a required
+# CI check"). See that job's own remark, and docs/security/Security
+# Posture.md.
 
 on:
   push:
@@ -689,6 +697,61 @@ jobs:
           }
           exit $exitCode
 
+  # WP 21.5E / WP RC.0C ("Dependency vulnerability scan is a required CI
+  # check"). `dotnet list package --vulnerable` exits 0 whether or not it
+  # finds anything — it is a report, not a gate — so this job pairs it with
+  # scripts/check-vulnerable-packages.ps1, which reads that report and fails
+  # the step on any finding. That script also carries its own -SelfTest mode
+  # (two synthetic fixtures — a clean run and a run with one synthetic
+  # vulnerable package — asserted to classify correctly), exercised
+  # independently by ChecksVulnerablePackagesScriptTests in
+  # tests/Tempest.Core.Tests, so the parser's own correctness is proven
+  # without waiting on a real advisory to appear.
+  #
+  # Runs against the whole solution in one `dotnet list` invocation (all
+  # eight projects — WP 21.5E's own baseline, 2026-09-15) rather than
+  # per-project, mirroring how Restore already treats the solution as the
+  # unit of work everywhere else in this pipeline. Independent of
+  # build-and-test (needs nothing it produces — only a restore of its own),
+  # so it runs in parallel exactly as governance-health-check does.
+  dependency-scan:
+    name: Dependency Scan
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+
+      - name: Scan for vulnerable packages
+        shell: pwsh
+        run: |
+          $log = "dependency-scan.log"
+          dotnet list "${{ env.SOLUTION_PATH }}" package --vulnerable --include-transitive 2>&1 | Tee-Object -FilePath $log
+          & "${{ github.workspace }}\scripts\check-vulnerable-packages.ps1" -InputPath $log
+          $exitCode = $LASTEXITCODE
+          if ($exitCode -ne 0) {
+            Write-Error "Dependency scan found a vulnerable package, or could not confirm a clean scan — see the log above."
+          }
+          exit $exitCode
+
+      - name: Upload dependency scan log
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: dependency-scan-log
+          path: dependency-scan.log
+          if-no-files-found: warn
+          retention-days: 14
+
   # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
   # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
   # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3
@@ -894,11 +957,16 @@ jobs:
   # governance-health-check job itself still runs with if: always(), so the
   # report is produced even when the build is red.
   #
+  # WP 21.5E / WP RC.0C: the gate now also requires dependency-scan to
+  # succeed — the same "red here is red at the gate" treatment, for the
+  # identical reason: a required check nobody's merge can outrun is the only
+  # kind that actually gates anything.
+  #
   # linux-launch-smoke (WP 16.5B) is deliberately NOT in the needs list:
   # advisory for this release — see the comment above that job for why.
   gate:
     name: CI Gate
-    needs: [build-and-test, governance-health-check]
+    needs: [build-and-test, governance-health-check, dependency-scan]
     if: always()
     runs-on: windows-2022
     steps:
@@ -914,5 +982,9 @@ jobs:
             Write-Error "Governance Health Check did not succeed - see that job's step summary for the failing check(s)."
             $failed = $true
           }
+          if ("${{ needs.dependency-scan.result }}" -ne "success") {
+            Write-Error "Dependency Scan did not succeed - see that job's log for the finding."
+            $failed = $true
+          }
           if ($failed) { exit 1 }
-          Write-Host "All Build & Test configurations and the Governance Health Check succeeded."
+          Write-Host "All Build & Test configurations, the Governance Health Check and the Dependency Scan succeeded."
