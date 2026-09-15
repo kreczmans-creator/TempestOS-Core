@@ -802,9 +802,24 @@ public abstract partial class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Read through <see cref="BomUnitsOfMeasure.TryCanonicalise"/>
+    /// (`ADR-0083` addendum, `WP 20.3A`), so a value stored before this
+    /// vocabulary existed — <c>"each"</c>, <c>"Each"</c> — displays as the
+    /// same canonical unit a fresh <see cref="SetBomLineAsync"/> of any of
+    /// them now produces. A raw stored value this vocabulary does not
+    /// recognise is returned unchanged: reading never refuses, only
+    /// <see cref="SetBomLineAsync"/> does.
+    /// </remarks>
     public string? UnitOfMeasure
     {
-        get { lock (_structuralLock) { return _unitOfMeasure; } }
+        get
+        {
+            lock (_structuralLock)
+            {
+                return BomUnitsOfMeasure.TryCanonicalise(_unitOfMeasure, out var canonical) ? canonical : _unitOfMeasure;
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -826,6 +841,16 @@ public abstract partial class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <paramref name="unitOfMeasure"/> is canonicalised against
+    /// <see cref="BomUnitsOfMeasure"/> before anything is written
+    /// (`ADR-0083` addendum, `WP 20.3A`) — <c>"ea"</c>, <c>"EA"</c> and
+    /// <c>"Each"</c> all commit as the one unit they name. Refused, as an
+    /// <see cref="ArgumentException"/>, for a unit this platform does not
+    /// know — before the write transaction ever opens, exactly like the
+    /// non-positive-<paramref name="quantity"/> guard above it.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="unitOfMeasure"/> is not blank and does not name a known unit.</exception>
     public async Task SetBomLineAsync(
         decimal quantity, string? unitOfMeasure = null, string? findNumber = null,
         string? itemNumber = null, string? referenceDesignator = null, CancellationToken cancellationToken = default)
@@ -833,13 +858,17 @@ public abstract partial class EngineeringObjectBase :
         if (quantity <= 0)
             throw new ArgumentOutOfRangeException(nameof(quantity), quantity, $"Quantity must be positive ({StructuralValidationRules.QuantityMustBePositive}).");
 
+        var canonicalUnitOfMeasure = string.IsNullOrWhiteSpace(unitOfMeasure)
+            ? null
+            : BomUnitsOfMeasure.Canonicalise(unitOfMeasure);
+
         await MutateAndPersistAsync(
             current => current with
             {
-                BomLine = new EngineeringObjectBomLineState(quantity, unitOfMeasure, findNumber, itemNumber, referenceDesignator),
+                BomLine = new EngineeringObjectBomLineState(quantity, canonicalUnitOfMeasure, findNumber, itemNumber, referenceDesignator),
             },
             EngineeringAuditActions.BomLineSet,
-            $"Quantity {quantity}{(unitOfMeasure is null ? string.Empty : " " + unitOfMeasure)}.",
+            $"Quantity {quantity}{(canonicalUnitOfMeasure is null ? string.Empty : " " + canonicalUnitOfMeasure)}.",
             WorkspaceChangeType.Updated,
             cancellationToken).ConfigureAwait(false);
 

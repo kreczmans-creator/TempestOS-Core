@@ -175,7 +175,8 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.Equal(assemblyId, typedPart.ParentId);
 
             Assert.Equal(4m, typedPart.Quantity);
-            Assert.Equal("ea", typedPart.UnitOfMeasure);
+            // "ea" canonicalises to "EA" on write and on read alike (ADR-0083 addendum, WP 20.3A).
+            Assert.Equal("EA", typedPart.UnitOfMeasure);
             Assert.Equal("FN-07", typedPart.FindNumber);
             Assert.Equal("IT-3", typedPart.ItemNumber);
             Assert.Equal("RD-9", typedPart.ReferenceDesignator);

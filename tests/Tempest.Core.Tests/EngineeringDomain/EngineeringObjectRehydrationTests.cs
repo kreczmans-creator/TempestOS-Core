@@ -163,7 +163,8 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal("Impeller (Rev B)", recovered.DisplayName);
         Assert.Equal(parent.Id, recovered.ParentId);
         Assert.Equal(4m, recovered.Quantity);
-        Assert.Equal("ea", recovered.UnitOfMeasure);
+        // "ea" canonicalises to "EA" on write and on read alike (ADR-0083 addendum, WP 20.3A).
+        Assert.Equal("EA", recovered.UnitOfMeasure);
         Assert.Equal("FN-07", recovered.FindNumber);
         Assert.Equal("IT-3", recovered.ItemNumber);
         Assert.Equal("RD-9", recovered.ReferenceDesignator);
@@ -328,7 +329,8 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal("Impeller (Rev B)", revised.DisplayName);
         Assert.Equal(parent.Id, revised.ParentId);
         Assert.Equal(4m, revised.Quantity);
-        Assert.Equal("ea", revised.UnitOfMeasure);
+        // "ea" canonicalises to "EA" on write and on read alike (ADR-0083 addendum, WP 20.3A).
+        Assert.Equal("EA", revised.UnitOfMeasure);
         Assert.Equal("FN-07", revised.FindNumber);
         Assert.Equal("IT-3", revised.ItemNumber);
         Assert.Equal("RD-9", revised.ReferenceDesignator);
@@ -694,6 +696,55 @@ public class EngineeringObjectRehydrationTests
         // id, since the durable state carries no reliable creation-order
         // field of its own for `ListAsync` to preserve.
         Assert.Equal(created.Select(p => p.Id).Order().ToList(), firstOrder);
+    }
+
+    // ----------------------------------------------------------------
+    // BOM unit of measure vocabulary (ADR-0083 addendum, WP 20.3A):
+    // a value stored before this vocabulary existed reads through the
+    // canonicaliser after a restart, without the durable record itself
+    // ever being rewritten.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AfterRestart_ARawUnitOfMeasureStoredBeforeTheVocabularyExisted_ReadsAsItsCanonicalUnit()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        // Bypasses SetBomLineAsync's own canonicalisation entirely - the
+        // exact shape of data ADR-0083 disclosed as already possible
+        // before this addendum: "each" and "EA" are two different stored
+        // strings for the one same unit.
+        var dirty = await first.StateStore.FindAsync(part.Id);
+        await first.StateStore.SaveAsync(dirty! with { BomLine = dirty.BomLine with { UnitOfMeasure = "each" } });
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal("EA", recovered.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task AfterRestart_ARawUnitOfMeasureThisVocabularyDoesNotRecognise_ReadsUnchanged()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        // A pre-existing free-text value with no equivalent in the closed
+        // vocabulary (ADR-0083's own disclosed "a caller could write 'XYZ'
+        // and nothing would object") must never be silently altered or
+        // refused on a passive read - only a fresh SetBomLineAsync refuses.
+        var dirty = await first.StateStore.FindAsync(part.Id);
+        await first.StateStore.SaveAsync(dirty! with { BomLine = dirty.BomLine with { UnitOfMeasure = "XYZ" } });
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal("XYZ", recovered.UnitOfMeasure);
     }
 
     // ----------------------------------------------------------------

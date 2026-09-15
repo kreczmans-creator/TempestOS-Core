@@ -359,6 +359,37 @@ public class MechanicalCommandsTests
         Assert.False(result.Succeeded);
     }
 
+    [Theory]
+    [InlineData("ea")]
+    [InlineData("Each")]
+    public async Task SetBomLine_AliasOfAKnownUnit_CanonicalisesToOne(string alias)
+    {
+        // ADR-0083 addendum (WP 20.3A): "ea", "EA" and "Each" are one unit.
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+        var handler = new SetBomLineCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetBomLineCommand(part.Id, "Part", 1m, alias), default);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("EA", part.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task SetBomLine_UnknownUnitOfMeasure_FailsNamingTheKnownList()
+    {
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+        var handler = new SetBomLineCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetBomLineCommand(part.Id, "Part", 1m, "furlongs"), default);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("furlongs", result.Message, StringComparison.Ordinal);
+        Assert.Contains("EA", result.Message, StringComparison.Ordinal);
+        Assert.Equal(1m, part.Quantity); // unchanged: refused before any write
+    }
+
     // ---- CompareBaselinesCommand (WP 9.0B) ----
 
     [Fact]
