@@ -1,4 +1,7 @@
+using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Quotations;
+using Tempest.Core.Tasks;
 
 namespace Tempest.Core.Projects;
 
@@ -32,6 +35,15 @@ public enum ProjectLifecycleRefusal
 
     /// <summary>The project closed 90 days or more ago — it is Archive, read-only, and cannot be reopened.</summary>
     ReopenWindowElapsed,
+
+    /// <summary>
+    /// The project carries a live deliverable with no completion, a live
+    /// <see cref="Tasks.ManualTask"/> not done, or a live calculation not
+    /// complete, and it is not carried by a live change order — sign-off is
+    /// refused until every such item is complete or closed, or a change
+    /// order carries it (`WP 20.10E`, Product Owner finding D18).
+    /// </summary>
+    WorkStillOpen,
 }
 
 /// <summary>The outcome of an <see cref="IProjectLifecycleService"/> act: either it happened, or a refusal that says why it did not.</summary>
@@ -42,6 +54,32 @@ public sealed record ProjectLifecycleResult(ProjectLifecycleRefusal Refusal, str
 {
     /// <summary>Whether the act actually happened.</summary>
     public bool Succeeded => Refusal == ProjectLifecycleRefusal.None;
+}
+
+/// <summary>
+/// One live item <see cref="IProjectLifecycleService.SignOffAsync"/> counts
+/// as still open against a project — a deliverable with no completion, a
+/// <see cref="Tasks.ManualTask"/> not done, or a calculation not complete
+/// (`WP 20.10E`, Product Owner finding D18).
+/// </summary>
+/// <param name="ObjectId">The open item's own id — with <see cref="Kind"/>, what opens it right up.</param>
+/// <param name="Kind">The item's own canonical Kind — <c>"Deliverable"</c>, <see cref="Tasks.ManualTask.CanonicalKind"/>, or <c>"Calculation"</c>.</param>
+/// <param name="Name">The item's own display name.</param>
+/// <param name="CarriedByReference">
+/// The <see cref="Quotation.Reference"/> of the live (not <see cref="QuotationStatus.Declined"/>)
+/// change order that carries this item, or <see langword="null"/> when
+/// nothing carries it — the only shape that still blocks sign-off. Only a
+/// deliverable can ever be carried: a change order's own lines name a
+/// deliverable by id (<see cref="QuotationLine.DeliverableId"/>), and a
+/// <see cref="Tasks.ManualTask"/> or a calculation is never on a quotation
+/// line, so this is always <see langword="null"/> for either — the two
+/// ways out for those are the same "complete or close them" a deliverable
+/// also has, minus the change-order escape.
+/// </param>
+public sealed record ProjectOpenWorkItem(Guid ObjectId, string Kind, string Name, string? CarriedByReference)
+{
+    /// <summary>Whether this item still blocks sign-off — carried items do not.</summary>
+    public bool IsBlocking => CarriedByReference is null;
 }
 
 /// <summary>
@@ -69,12 +107,29 @@ public interface IProjectLifecycleService
     /// principal), when (today) and <paramref name="statement"/> as a
     /// <see cref="ProjectSignOff"/>, and closes the project.
     /// </summary>
-    /// <remarks>Refused, as a result, when the project is already closed.</remarks>
+    /// <remarks>
+    /// Refused, as a result, when the project is already closed, or when it
+    /// carries work still open against the quote — a live deliverable with
+    /// no completion, a live <see cref="Tasks.ManualTask"/> not done, or a
+    /// live calculation not complete — that no live change order carries
+    /// (<see cref="ProjectLifecycleRefusal.WorkStillOpen"/>, `WP 20.10E`,
+    /// Product Owner finding D18). <see cref="GetOpenWorkAsync"/> reads the
+    /// identical list a UI can show before ever attempting to sign off.
+    /// </remarks>
     Task<ProjectLifecycleResult> SignOffAsync(Guid projectId, string statement, CancellationToken cancellationToken = default);
 
     /// <summary>Reopens <paramref name="projectId"/> — Closed only, and only within <see cref="ProjectArchival.ArchiveAfterDays"/> days of closing.</summary>
     /// <remarks>Refused, as a result, when the project is not closed, or has already become Archive.</remarks>
     Task<ProjectLifecycleResult> ReopenAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Every live item still open against <paramref name="projectId"/> —
+    /// the same set <see cref="SignOffAsync"/> itself reads, in one
+    /// coherent snapshot, no writes (`WP 20.10E`, Product Owner finding
+    /// D18). Empty when <paramref name="projectId"/> does not identify a
+    /// live project, or when nothing is open.
+    /// </summary>
+    Task<IReadOnlyList<ProjectOpenWorkItem>> GetOpenWorkAsync(Guid projectId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>The concrete <see cref="IProjectLifecycleService"/> implementation (`WP 19.5C`).</summary>
@@ -141,12 +196,34 @@ public sealed class ProjectLifecycleService : IProjectLifecycleService
         if (ProjectArchival.IsClosed(project))
             return new ProjectLifecycleResult(ProjectLifecycleRefusal.AlreadyClosed, $"Project '{projectId}' is already closed (signed off {project.SignOff?.SignedOn:O}).", project);
 
+        var openWork = await ComputeOpenWorkAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var blocking = openWork.Where(i => i.IsBlocking).ToList();
+
+        if (blocking.Count > 0)
+        {
+            var itemList = string.Join("; ", blocking.Select(i => $"{i.Kind} '{i.Name}'"));
+            return new ProjectLifecycleResult(
+                ProjectLifecycleRefusal.WorkStillOpen,
+                $"Project '{projectId}' has {blocking.Count} item(s) still open against the quote: {itemList}. "
+                + "Complete or close them, or raise a change order that carries them, before signing off.",
+                project);
+        }
+
         var today = Today();
         var signOff = new ProjectSignOff(_context.ResolveCurrentPrincipalId(), today, statement.Trim());
 
         await project.SignOffAsync(signOff, today, cancellationToken).ConfigureAwait(false);
 
         return new ProjectLifecycleResult(ProjectLifecycleRefusal.None, null, project);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ProjectOpenWorkItem>> GetOpenWorkAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        if (await FindProjectAsync(projectId, cancellationToken).ConfigureAwait(false) is null)
+            return [];
+
+        return await ComputeOpenWorkAsync(projectId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -170,6 +247,133 @@ public sealed class ProjectLifecycleService : IProjectLifecycleService
         await project.ReopenAsync(cancellationToken).ConfigureAwait(false);
 
         return new ProjectLifecycleResult(ProjectLifecycleRefusal.None, null, project);
+    }
+
+    /// <summary>
+    /// The Kind string for a Deliverable — <c>Tempest.Workspace.CanonicalObjectKinds.Deliverable</c>'s
+    /// own value, repeated here because <c>Tempest.Core</c> cannot
+    /// reference <c>Tempest.Workspace</c>, mirroring
+    /// <c>Tempest.Core.Deliverables.DeliverableService</c>'s own identical
+    /// disclosure.
+    /// </summary>
+    private const string DeliverableKind = "Deliverable";
+
+    /// <summary>
+    /// The Kind string for a Calculation — <c>Tempest.Workspace.Calculations.CalculationObjectFactoryRegistry.CalculationKind</c>'s
+    /// own value, repeated for the identical reason as <see cref="DeliverableKind"/>.
+    /// </summary>
+    private const string CalculationKind = "Calculation";
+
+    /// <summary>
+    /// The one snapshot <see cref="SignOffAsync"/> and
+    /// <see cref="GetOpenWorkAsync"/> both read (`WP 20.10E`): every live
+    /// deliverable with no completion, live <see cref="Tasks.ManualTask"/>
+    /// not done, and live calculation not complete, under
+    /// <paramref name="projectId"/> — each carrying the reference of the
+    /// live (not <see cref="QuotationStatus.Declined"/>) change order that
+    /// names it, when one does. Ordered by Kind then name, so the list is
+    /// deterministic for a caller (a UI, a test) to read.
+    /// </summary>
+    private async Task<IReadOnlyList<ProjectOpenWorkItem>> ComputeOpenWorkAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        var descendants = await ListLiveDescendantsAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+        var completedDeliverableIds = descendants
+            .OfType<DeliverableCompletion>()
+            .Select(c => c.DeliverableId)
+            .ToHashSet();
+
+        // A change order still carries what it names as long as it has not
+        // been Declined — Draft or Sent or Accepted all count (`WP 20.10E`
+        // scope item 1: "whose status is not Declined").
+        var carryingChangeOrders = descendants
+            .OfType<Quotation>()
+            .Where(q => q.QuotationKind == QuotationKind.ChangeOrder && q.Status != QuotationStatus.Declined)
+            .ToList();
+
+        string? CarriedReferenceFor(Guid deliverableId) =>
+            carryingChangeOrders.FirstOrDefault(co => co.Lines.Any(l => l.DeliverableId == deliverableId))?.Reference;
+
+        var items = new List<ProjectOpenWorkItem>();
+
+        foreach (var deliverable in descendants.OfType<Deliverable>())
+        {
+            if (completedDeliverableIds.Contains(deliverable.Id))
+                continue;
+
+            items.Add(new ProjectOpenWorkItem(deliverable.Id, DeliverableKind, deliverable.DisplayName, CarriedReferenceFor(deliverable.Id)));
+        }
+
+        foreach (var task in descendants.OfType<Tasks.ManualTask>())
+        {
+            if (task.Done)
+                continue;
+
+            // Never carriable — a ManualTask is not created from, or named
+            // on, any quotation line (`WP 20.10E` scope item 1's own
+            // distinction).
+            items.Add(new ProjectOpenWorkItem(task.Id, Tasks.ManualTask.CanonicalKind, task.DisplayName, null));
+        }
+
+        foreach (var calculation in descendants.OfType<Calculation>())
+        {
+            if (calculation.Completed)
+                continue;
+
+            // Never carriable — see the ManualTask loop above.
+            items.Add(new ProjectOpenWorkItem(calculation.Id, CalculationKind, calculation.DisplayName, null));
+        }
+
+        return items
+            .OrderBy(i => i.Kind, StringComparer.Ordinal)
+            .ThenBy(i => i.Name, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Every live object structurally under <paramref name="projectId"/>,
+    /// transitively — a downward walk over <see cref="IEngineeringObjectRepository.ListChildrenAsync"/>
+    /// rather than <c>Tempest.Workspace.Projects.ProjectMembership</c>'s own
+    /// upward, whole-store walk (which <c>Tempest.Core</c> cannot reference
+    /// anyway): a deliverable sits two hops down (project → milestone →
+    /// deliverable), a calculation anywhere from one hop down to arbitrarily
+    /// many (project → an Assembly/Part/Component/Calculation Set chain of
+    /// any length → calculation), so the walk recurses through every
+    /// discovered child rather than assuming a fixed depth. Bounded by a
+    /// visited set the same way <c>ProjectMembership.ResolveOwningProjectAsync</c>
+    /// bounds its own walk. A deleted node is still walked through — its own
+    /// live children are still real project contents — but is left out of
+    /// the returned list itself.
+    /// </summary>
+    private async Task<IReadOnlyList<IEngineeringObject>> ListLiveDescendantsAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        var result = new List<IEngineeringObject>();
+        var visited = new HashSet<Guid> { projectId };
+        var frontier = new Queue<Guid>();
+        frontier.Enqueue(projectId);
+
+        while (frontier.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var parentId = frontier.Dequeue();
+            var children = await _context.Repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
+
+            foreach (var child in children)
+            {
+                if (!visited.Add(child.Id))
+                    continue;
+
+                frontier.Enqueue(child.Id);
+
+                if (child is IDeletable { IsDeleted: true })
+                    continue;
+
+                result.Add(child);
+            }
+        }
+
+        return result;
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

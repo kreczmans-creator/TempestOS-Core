@@ -37,6 +37,9 @@ public enum QuotationRefusal
 
     /// <summary>The project this quotation belongs to is Archive — closed 90 days or more ago — and read-only (`WP 19.5C`, Product Owner comment item 6).</summary>
     ProjectArchived,
+
+    /// <summary>A line's own carried deliverable id does not identify a live <c>Deliverable</c> (`WP 20.10E`).</summary>
+    DeliverableNotFound,
 }
 
 /// <summary>The outcome of an <see cref="IQuotationService"/> act: either it happened, or a refusal that says why it did not.</summary>
