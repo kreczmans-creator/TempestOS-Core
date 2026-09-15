@@ -124,8 +124,27 @@ public sealed record RequirementOwnerEditorSupport(
 /// </summary>
 /// <remarks>
 /// <para>
+/// <b>The shell, and twenty-three sections behind one contract (`WP
+/// 21.1B`, `TD-109`'s own closure precedent, `WP 19.2A`).</b> This class
+/// is now the shell alone: the header, Identity and Content (the one pair
+/// with a hidden coupling through this class's own Save/Cancel/read-only
+/// state — see <see cref="OnSaveAsync"/>/<see cref="ApplyReadOnlyState"/>
+/// — which is why that pair, alone, never became its own
+/// <see cref="IEditorSection"/>), the change subscription, and
+/// <see cref="EditorSections"/>'s own ordered list, built once in
+/// <see cref="BuildLayout"/> and driven uniformly by
+/// <see cref="PopulateFromAsync"/>/<see cref="PopulateFromRequirementAsync"/>.
+/// Every other section — Lifecycle, Relationships, Validation, Bill of
+/// Materials, Owner/Priority, Execute/the Calculation pointer/Due, Record
+/// Result, Attachments, Description, Where used, Evidence's own five
+/// (Subject/Citations/Declared figures/Lifecycle/Audit), Commercial,
+/// Invoice Lines/Connector, Quotation Lines — lives in its own file under
+/// <c>Editors/Sections/</c>, moved verbatim from what used to be one
+/// constructor and one class here.
+/// </para>
+/// <para>
 /// <b>Reads directly, mutates only through Commands (`ADR-0063`,
-/// unchanged).</b> Every read below (<see cref="IHasRevisions.Content"/>,
+/// unchanged).</b> Every read (<see cref="IHasRevisions.Content"/>,
 /// <see cref="IHasLifecycle.Status"/>/<see cref="IHasLifecycle.History"/>,
 /// <see cref="IHasRelationships.GetRelationshipsAsync"/>,
 /// <see cref="IValidatable.ValidateAsync"/>) is a direct call against the
@@ -134,30 +153,30 @@ public sealed record RequirementOwnerEditorSupport(
 /// through <see cref="IWorkspaceManager.RenameObjectAsync"/>/
 /// <see cref="IWorkspaceManager.ReviseObjectAsync"/> (`ADR-0096`/`ADR-0097`)
 /// — a real, registered <see cref="IWorkspaceCommand"/>, dispatched
-/// exactly as every other Workspace mutation already is. This class never
-/// calls a mutating Domain method directly.
+/// exactly as every other Workspace mutation already is. Neither this
+/// class nor any section calls a mutating Domain method directly.
 /// </para>
 /// <para>
-/// <b>"Editable properties" — two generic fields, plus five real,
-/// discipline-specific sections (`WP 10.7A`, Feature Completion, closing
-/// `FCR-0068`).</b> Name (<see cref="IWorkspaceManager.CanRename"/>) and
-/// Content (<see cref="IWorkspaceManager.CanRevise"/>) remain the two
+/// <b>"Editable properties" — two generic fields on the shell, plus five
+/// real, discipline-specific sections (`WP 10.7A`, Feature Completion,
+/// closing `FCR-0068`).</b> Name (<see cref="IWorkspaceManager.CanRename"/>)
+/// and Content (<see cref="IWorkspaceManager.CanRevise"/>) remain the two
 /// uniformly-real fields every Kind shares, gated per-Kind exactly like
 /// <see cref="Tempest.Desktop.Views.PropertyInspectorView"/>'s own
 /// established "editable only where a real command exists" discipline.
-/// Five further sections are Kind-gated on the real object itself (a C#
-/// <see langword="is"/> type-check, the identical idiom
-/// <see cref="PopulateLifecycle"/>/<see cref="PopulateRelationships"/>/
-/// <see cref="PopulateValidation"/> already use, never a Kind-string
-/// switch) or on <see cref="_objectKind"/> directly where the data lives
-/// in a service the object graph itself does not expose (Requirements
-/// Owner/Priority, Calculations Execute): Mechanical BOM
-/// (<see cref="IHasBomLine"/>), Requirements Owner/Priority
-/// (<see cref="IRequirementsService"/>), Calculations Execute/Recalculate
-/// (<see cref="CalculationTemplateRegistry"/>), Verification Record
-/// Result (<see cref="IVerificationActivity"/>), Documents Attachments
-/// (<see cref="IHasAttachments"/>) — each dispatches its own
-/// already-registered command directly via
+/// Five further sections are each Kind-gated on the real object itself (a
+/// C# <see langword="is"/> type-check, the identical idiom every
+/// section's own <c>AppliesTo</c> uses, never a Kind-string switch) or on
+/// the Kind directly where the data lives in a service the object graph
+/// itself does not expose (Requirements Owner/Priority, Calculations
+/// Execute): Mechanical BOM (<see cref="IHasBomLine"/>, <see cref="Sections.BillOfMaterialsSection"/>),
+/// Requirements Owner/Priority (<see cref="IRequirementsService"/>,
+/// <see cref="Sections.RequirementOwnerPrioritySection"/>), Calculations
+/// Execute/Recalculate (<see cref="CalculationTemplateRegistry"/>,
+/// <see cref="Sections.CalculationExecuteSection"/>), Verification Record
+/// Result (<see cref="IVerificationActivity"/>, <see cref="Sections.VerificationResultSection"/>),
+/// Documents Attachments (<see cref="IHasAttachments"/>, <see cref="Sections.AttachmentsSection"/>)
+/// — each dispatches its own already-registered command directly via
 /// <see cref="Tempest.Core.Commands.ICommandDispatcher"/>, invisible/
 /// collapsed (<c>Expander.IsVisible = false</c>) for every object the
 /// gate does not match, never a "not applicable" placeholder row.
@@ -224,70 +243,28 @@ public sealed class ObjectEditorView : UserControl
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
-    // `WP 21.1B`: Lifecycle (generic), Validation and Relationships now
-    // live in their own files under Editors/Sections/ — each owns its own
-    // panel/Expander and is driven through IEditorSection uniformly (this
-    // class's own EditorSectionContext, built once in the constructor).
-    private readonly LifecycleSection _lifecycleSection = new();
-    private readonly ValidationSection _validationSection = new();
-    private readonly RelationshipsSection _relationshipsSection = new();
-    private EditorSectionContext _sectionContext = null!;
-
-    // WP 10.7A — Feature Completion: five real, discipline-specific
-    // sections (see class remarks). Each section's own Expander is
-    // collapsed-and-hidden (IsVisible = false) by default and made
-    // visible only when PopulateFrom's own gate matches the real target.
-
-    private Expander _contentSection = null!;
-    private readonly BillOfMaterialsSection _bomSection = new();
-    private readonly RequirementOwnerPrioritySection _requirementSection = new();
-
     /// <summary>What the editor says on a Calculation instead of offering a JSON box (`WP 17.9.1`).</summary>
     public const string CalculationPointerGuidance =
         "Calculations are run, named and traced in the Engineering Calculations workspace — open it from the rail on the left. "
         + "This editor holds the calculation's identity, lifecycle and attachments.";
 
-    // `WP 21.1B`: Execute, the Calculation pointer and Due now live in
-    // their own files under Editors/Sections/.
-    private readonly CalculationExecuteSection _calculationSection = new();
-    private readonly CalculationPointerSection _calculationPointerSection = new();
-    private readonly CalculationDueSection _calculationDueSection = new();
+    // `WP 21.1B`, brief scope item 3 ("Registration, not a switch"): every
+    // section but Identity and Content (this pair's own hidden coupling
+    // through the header's Save/Cancel/read-only state is the one thing
+    // this split's Kill Switch keeps on the shell) comes from
+    // EditorSections.All — built once, here, in BuildLayout, and driven
+    // uniformly by PopulateFromAsync/PopulateFromRequirementAsync.
+    private IReadOnlyList<IEditorSection> _sections = [];
+    private EditorSectionContext _sectionContext = null!;
+    private Expander _contentSection = null!;
 
-    private readonly VerificationResultSection _verificationResultSection = new();
-
-    // `WP 21.1B`: the Attachments section now lives in its own file under
-    // Editors/Sections/.
-    private readonly AttachmentsSection _attachmentsSection = new();
-
-    // `WP 18.2A` — declaration-per-Kind: the Description (read-only
-    // mechanical metadata) and Where-used sections Part/Assembly/Component
-    // declare (`TD-174`, `TD-175`).
-    private readonly DescriptionSection _descriptionSection = new();
-    private readonly WhereUsedSection _whereUsedSection = new();
-
-    // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
-    // `WP 21.1B`: all five now live in their own file under
-    // Editors/Sections/.
-    private readonly EvidenceSubjectSection _evidenceSubjectSection = new();
-    private readonly EvidenceCitationsSection _evidenceCitationsSection = new();
-    private readonly EvidenceDeclaredFiguresSection _evidenceFiguresSection = new();
-    private readonly EvidenceLifecycleSection _evidenceLifecycleSection = new();
-    private readonly EvidenceAuditSection _evidenceAuditSection = new();
-
-    // `WP 21.1B`: the project Commercial section now lives in its own file
-    // under Editors/Sections/.
-    private readonly CommercialSection _commercialSection = new();
-    private readonly InvoiceLinesSection _invoiceLinesSection = new();
-    private readonly InvoiceConnectorSection _invoiceExternalSection = new();
-
-    // `WP 19.5B` (`ADR-0152`): a quotation's own Lines section, read-only
-    // here exactly as `InvoiceRequest`'s own Lines section is — editing a
-    // quotation's lines is the Quote tab's own job
-    // (`Tempest.Desktop.Views.ProjectQuoteView`), reached when the project
-    // is open; a quotation opened from the Explorer or the Command
-    // Palette (no project workspace on screen) still shows its lines and
-    // total here.
-    private readonly QuotationLinesSection _quotationLinesSection = new();
+    // The one section the shell still needs a concrete reference to
+    // (found in `_sections` once, in the constructor, below) —
+    // `AttachFilesAsync`/`PopulateAttachmentsAsync` are compatibility
+    // seams an existing test reaches by name (see AttachmentsSection's own
+    // remarks), and `OpenAttachmentRequested`'s own accessor asks this
+    // section to reload on its first subscriber.
+    private AttachmentsSection _attachmentsSection = null!;
 
     private string _originalName = string.Empty;
     private string _originalContent = string.Empty;
@@ -683,89 +660,26 @@ public sealed class ObjectEditorView : UserControl
 
         var identitySection = BuildSection("Identity", new StackPanel { Spacing = DesignTokens.SpaceXs, Children = { LabeledRow("Name", _nameBox) } });
         _contentSection = BuildSection("Content", _contentBox);
-        var lifecycleExpander = _lifecycleSection.Build(_sectionContext);
-        var relationshipsExpander = _relationshipsSection.Build(_sectionContext);
-        var validationExpander = _validationSection.Build(_sectionContext);
 
-        // WP 10.7A — Feature Completion: five real, discipline-specific
-        // sections (see class remarks) — each collapsed-and-hidden by
-        // default, made visible only for the Kind/object it genuinely
-        // applies to. `WP 21.1B`: Bill of Materials now lives in its own
-        // file under Editors/Sections/.
-        var bomExpander = _bomSection.Build(_sectionContext);
-        var requirementExpander = _requirementSection.Build(_sectionContext);
-
-        // `WP 21.1B`: Execute, the Calculation pointer and Due now live in
-        // their own files under Editors/Sections/.
-        var calculationExpander = _calculationSection.Build(_sectionContext);
-        var calculationPointerExpander = _calculationPointerSection.Build(_sectionContext);
-        var calculationDueExpander = _calculationDueSection.Build(_sectionContext);
-
-        var verificationResultExpander = _verificationResultSection.Build(_sectionContext);
-
-        // `WP 21.1B`: Attachments now lives in its own file under
-        // Editors/Sections/.
-        var attachmentsExpander = _attachmentsSection.Build(_sectionContext);
-
-        // `WP 18.2A` — declaration-per-Kind (Part/Assembly/Component): a
-        // read-only mechanical-metadata block and the "Where used" facet,
-        // named and linked (`TD-174`, `TD-175`). `WP 21.1B`: both now live
-        // in their own files under Editors/Sections/.
-        var descriptionExpander = _descriptionSection.Build(_sectionContext);
-        var whereUsedExpander = _whereUsedSection.Build(_sectionContext);
-
-        // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
-        // `WP 21.1B`: all five now live in their own file under
-        // Editors/Sections/.
-        var evidenceSubjectExpander = _evidenceSubjectSection.Build(_sectionContext);
-        var evidenceCitationsExpander = _evidenceCitationsSection.Build(_sectionContext);
-        var evidenceFiguresExpander = _evidenceFiguresSection.Build(_sectionContext);
-        var evidenceLifecycleExpander = _evidenceLifecycleSection.Build(_sectionContext);
-        var evidenceAuditExpander = _evidenceAuditSection.Build(_sectionContext);
-
-        // `WP 21.1B`: the project Commercial section now lives in its own
-        // file under Editors/Sections/.
-        var commercialExpander = _commercialSection.Build(_sectionContext);
-
-        // `WP 19.1A`: an invoice request's lines and its connector fields are
-        // read-only projections of the record; the actions live on the
-        // Invoicing area, not here. `WP 21.1B`: both now live in their own
-        // file under Editors/Sections/.
-        var invoiceLinesExpander = _invoiceLinesSection.Build(_sectionContext);
-        var invoiceExternalExpander = _invoiceExternalSection.Build(_sectionContext);
-
-        // `WP 19.5B`: a quotation's own Lines section — read-only here,
-        // mirroring `_invoiceLinesSection` immediately above. `WP 21.1B`:
-        // now lives in its own file under Editors/Sections/.
-        var quotationLinesExpander = _quotationLinesSection.Build(_sectionContext);
+        // `WP 21.1B`, brief scope item 3: "Registration, not a switch" —
+        // every section but Identity/Content (see class remarks on that
+        // pair's own hidden coupling) comes from one ordered factory now,
+        // built here in one pass; EditorSections.All's own remarks name
+        // the exact splice point Content sits at.
+        _sections = EditorSections.All(_sectionContext);
+        _attachmentsSection = _sections.OfType<AttachmentsSection>().Single();
+        var sectionExpanders = _sections.Select(section => section.Build(_sectionContext)).ToList();
 
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(header);
         body.Children.Add(_statusMessage);
         body.Children.Add(new Separator());
         body.Children.Add(identitySection);
-        body.Children.Add(descriptionExpander);
-        body.Children.Add(commercialExpander);
-        body.Children.Add(invoiceLinesExpander);
-        body.Children.Add(quotationLinesExpander);
+        for (var i = 0; i < EditorSections.SectionsBeforeContent; i++)
+            body.Children.Add(sectionExpanders[i]);
         body.Children.Add(_contentSection);
-        body.Children.Add(evidenceSubjectExpander);
-        body.Children.Add(bomExpander);
-        body.Children.Add(requirementExpander);
-        body.Children.Add(calculationExpander);
-        body.Children.Add(calculationPointerExpander);
-        body.Children.Add(calculationDueExpander);
-        body.Children.Add(verificationResultExpander);
-        body.Children.Add(evidenceCitationsExpander);
-        body.Children.Add(evidenceFiguresExpander);
-        body.Children.Add(attachmentsExpander);
-        body.Children.Add(whereUsedExpander);
-        body.Children.Add(lifecycleExpander);
-        body.Children.Add(invoiceExternalExpander);
-        body.Children.Add(evidenceLifecycleExpander);
-        body.Children.Add(relationshipsExpander);
-        body.Children.Add(validationExpander);
-        body.Children.Add(evidenceAuditExpander);
+        for (var i = EditorSections.SectionsBeforeContent; i < sectionExpanders.Count; i++)
+            body.Children.Add(sectionExpanders[i]);
 
         return new ScrollViewer { Content = body };
     }
@@ -811,38 +725,13 @@ public sealed class ObjectEditorView : UserControl
         // surface audit found this on RequirementGroup and RequirementCollection).
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
-        await _bomSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _requirementSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _calculationSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _calculationPointerSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _calculationDueSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _verificationResultSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _attachmentsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _descriptionSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _whereUsedSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _commercialSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _invoiceLinesSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _invoiceExternalSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _quotationLinesSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-
-        await _lifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _relationshipsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _validationSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-
-        // `WP 18.2A`: Evidence renders from its own declaration — Subject,
-        // Citations, Declared figures, its own Status/Check/Issue
-        // (replacing the generic Lifecycle section, which speaks the
-        // wrong vocabulary for this Kind), and Audit. `WP 21.1B`: every
-        // Evidence section's own AppliesTo already returns false for
-        // anything but a real Evidence object, so calling each
-        // unconditionally — the same discipline every other section here
-        // already follows — needs no target type-check or explicit "hide
-        // the other four" branch any more.
-        await _evidenceSubjectSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _evidenceCitationsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _evidenceFiguresSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _evidenceLifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await _evidenceAuditSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        // `WP 21.1B`, brief scope item 3: every section but Identity/Content
+        // is called unconditionally, in registration order — each one's own
+        // AppliesTo (Kind, a real object's own type, or a declaration) is
+        // what actually decides its own visibility, inside its own
+        // LoadAsync; the shell never re-decides that here.
+        foreach (var section in _sections)
+            await section.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -865,12 +754,13 @@ public sealed class ObjectEditorView : UserControl
         _suppressDirtyTracking = true;
 
         // No real IEngineeringObject backs a Requirement (see class
-        // remarks) — the Attachments section's own _lastSubject stays
-        // null here (never populated in this path, matching Build()'s own
-        // default IsVisible = false, left untouched below), so
-        // AttachmentsSection.ReloadIfPopulatedAsync has nothing to
-        // re-populate from, honestly, if OpenAttachmentRequested's first
-        // subscriber fires while this editor is showing a Requirement.
+        // remarks) — the uniform loop below calls AttachmentsSection.LoadAsync(null, ...)
+        // like every other section, which sets its own _lastSubject to
+        // null (AppliesTo(null) is false, so nothing else about it
+        // changes), so AttachmentsSection.ReloadIfPopulatedAsync still has
+        // nothing to re-populate from, honestly, if
+        // OpenAttachmentRequested's first subscriber fires while this
+        // editor is showing a Requirement.
 
         // Identity: the requirement's own Identifier/Id/Revision, plus
         // Category (the brief's own fourth named field) — there is no
@@ -898,36 +788,26 @@ public sealed class ObjectEditorView : UserControl
         _contentBox.IsEnabled = _manager.CanRevise(_objectKind);
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
-        // Owner / Priority: already real (`WP 10.7A`), and already reads
-        // through _requirementsService with no target of its own — this
-        // is the section TryCreate's own gate made unreachable before
-        // this fix.
-        await _requirementSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
-
-        // Relationships: both "allocated to" (LinkRequirementCommand) and
-        // "verified by" (VerificationService.RecordAsync) are recorded as
-        // outgoing references from the requirement itself, so the
-        // requirement register's own GetRelationshipsAsync alone covers
-        // both — see RelationshipsSection's own remarks.
-        await _relationshipsSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
-
-        // Lifecycle / Validation: a Requirement implements neither
-        // IHasLifecycle nor IValidatable (genuinely true, not merely
-        // untested — IRequirementsService exposes no validation-equivalent
-        // read), so both sections show the identical honest fallback text
-        // their own LoadAsync already shows for any Kind that fails the
-        // same type-check — calling each with a null subject (`WP 21.1B`)
-        // reproduces that fallback with no hand-duplication needed here.
-        await _lifecycleSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
-        await _validationSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
-
-        // Every other section (BOM, Calculation, Verification Result,
-        // Attachments, Description, Where used, Commercial, Invoice,
-        // Quotation Lines, Evidence) has no honest reading for a
-        // Requirement and is never populated here — each stays at its own
-        // already-collapsed BuildLayout default (IsVisible = false), which
-        // nothing in this method, or in PopulateRequirementAsync/
-        // PopulateRequirementRelationshipsAsync above, ever sets true.
+        // Every section but Identity/Content is still called unconditionally
+        // here too, with a null subject (`WP 21.1B`) — the same uniform
+        // discipline PopulateFromAsync follows. Only Owner/Priority
+        // (already real, `WP 10.7A`, reading through _requirementsService
+        // with no target of its own — the section TryCreate's own gate made
+        // unreachable before that fix) and Relationships (both "allocated
+        // to"/LinkRequirementCommand and "verified by"/VerificationService.RecordAsync
+        // are recorded as outgoing references from the requirement itself,
+        // so the requirement register's own GetRelationshipsAsync alone
+        // covers both) and Lifecycle/Validation (a Requirement implements
+        // neither IHasLifecycle nor IValidatable — genuinely true, not
+        // merely untested — so both show the identical honest fallback
+        // text their own LoadAsync already shows for any Kind that fails
+        // the same type-check) do real work for a null subject; every
+        // other section's own AppliesTo(null) is false, so calling it is a
+        // pure no-op that only reconfirms its own already-collapsed
+        // Build()-time default (IsVisible = false) — identical, section by
+        // section, to this method's own pre-split hand-picked four calls.
+        foreach (var section in _sections)
+            await section.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -957,57 +837,20 @@ public sealed class ObjectEditorView : UserControl
     }
 
     /// <summary>
-    /// The Mechanical BOM section (`WP 10.7A`) — gated on
-    /// <see cref="IHasBomLine"/>, the identical <see langword="is"/>
-    /// type-check idiom every other section already uses. Reads the real
-    /// object directly (already-permitted, `ADR-0063`); writes through
-    /// <see cref="SetBomLineCommand"/>, dispatched via
-    /// <see cref="ICommandDispatcher"/> — the same command
-    /// <see cref="Tempest.Desktop.Views.PropertyInspectorView"/>'s own
-    /// read-only BOM display (`MechanicalPropertyFacetProvider`) already
-    /// reads the identical fields from, now given a real write path here
-    /// for the first time.
-    /// </summary>
-    /// <summary>
     /// The Kinds a Bill-of-Materials line means something for. Every canonical
     /// object implements <see cref="IHasBomLine"/> (ADR-0075's facet plumbing),
     /// which is why the first Windows review of `v0.17.0` saw Quantity, Find
     /// Number and Reference Designator on a Project and on a Calculation.
     /// The editor shows the section only where a person would expect it
-    /// (`WP 17.9.1`); the facet itself is untouched.
+    /// (`WP 17.9.1`); the facet itself is untouched. Stays on the shell
+    /// (rather than moving to <see cref="Sections.BillOfMaterialsSection"/>
+    /// itself) because <c>ObjectEditorViewTests</c> reads it by this exact
+    /// name, `ObjectEditorView.BomKinds`.
     /// </summary>
     internal static readonly HashSet<string> BomKinds = new(StringComparer.Ordinal)
     {
         MechanicalObjectFactoryRegistry.Assembly, MechanicalObjectFactoryRegistry.SubAssembly, MechanicalObjectFactoryRegistry.Part, MechanicalObjectFactoryRegistry.Component, MechanicalObjectFactoryRegistry.Configuration,
     };
-
-    /// <summary>Builds one read-only, named, linked row for an object referenced by id — shared by Evidence's own <em>Subject</em> (<em>Where used</em>'s identical copy now lives in <c>Editors/Sections/WhereUsedSection.cs</c>, `WP 21.1B`).</summary>
-    private async Task<Control> BuildObjectReferenceRowAsync(Guid referencedId)
-    {
-        var referenced = await _domainContext.Repository.FindAsync(referencedId).ConfigureAwait(true);
-        var name = (referenced as IHasBusinessIdentifier)?.DisplayName ?? referencedId.ToString();
-        var kind = referenced?.Kind ?? _objectKind;
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
-        var icon = new TextBlock { Text = IconRegistry.Resolve(kind), Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0) };
-        var text = new TextBlock { Text = $"{name} ({kind})", TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(icon, 0);
-        Grid.SetColumn(text, 1);
-        row.Children.Add(icon);
-        row.Children.Add(text);
-
-        if (referenced is not null)
-        {
-            var openButton = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
-            openButton.Classes.Add(ChromeStyles.Flat);
-            Avalonia.Automation.AutomationProperties.SetName(openButton, $"Open {name}");
-            openButton.Click += (_, _) => _navigateToObject(referencedId, kind);
-            Grid.SetColumn(openButton, 2);
-            row.Children.Add(openButton);
-        }
-
-        return row;
-    }
 
     /// <summary>
     /// Delegates to <see cref="AttachmentsSection.AttachFilesAsync"/> —
