@@ -195,4 +195,145 @@ public sealed class CommandPaletteOverlayTests
     private static bool HasObjectRow(ListBox results) =>
         results.ItemsSource is IReadOnlyList<ListBoxItem> items
             && items.Any(i => i.Content is string s && s.Contains("Bracket Mounting Plate", StringComparison.Ordinal));
+
+    // ==================================================================
+    // TD-77 (`WP 20.2A`): an empty query lists what applies, grouped
+    // ==================================================================
+
+    /// <summary>
+    /// With a Requirement selected, many Requirements commands apply at
+    /// once — a real case where the old "every registered command"
+    /// listing buried them among a hundred-plus disabled rows. The empty
+    /// query now lists exactly the set <see cref="ICommandRegistry.Evaluate"/>
+    /// reports available, grouped by <see cref="CommandDescriptor.Category"/>,
+    /// alphabetical within a group before anything has been invoked this
+    /// session — reconstructed independently here from the real registry,
+    /// rather than asserting a handful of rows in isolation.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Open_WithEmptyQuery_ListsOnlyAvailableCommands_GroupedByCategory()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var context = CommandContext.For(Guid.NewGuid(), "Requirement");
+
+            var palette = new CommandPaletteOverlay(registry) { ContextSource = () => context };
+            palette.Open();
+
+            var results = (ListBox)((StackPanel)palette.Child!).Children[1];
+            var rows = ((System.Collections.IEnumerable)results.ItemsSource!).Cast<ListBoxItem>()
+                .Select(i => (string)i.Content!).ToList();
+
+            Assert.Equal(ExpectedGroupedRows(registry, context), rows);
+
+            // The specific case this Work Package closed: several
+            // Requirements commands (Move among them, since `WP 20.2A`
+            // gives it a real binding) are listed together, not scattered
+            // among disabled rows.
+            var headerIndex = rows.IndexOf("REQUIREMENTS");
+            Assert.True(headerIndex >= 0);
+            Assert.Contains("Move Requirement", rows.Skip(headerIndex + 1));
+            Assert.Contains("Set Requirement Owner", rows.Skip(headerIndex + 1));
+
+            // Nothing unavailable is listed at all.
+            Assert.DoesNotContain(rows, row => row.Contains(" — ", StringComparison.Ordinal));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Invoking a command through the palette moves it to the front of its
+    /// own category group the next time the palette opens with an empty
+    /// query — a session-only ranking (this class's own remarks), so no
+    /// second palette instance is expected to know about it.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task InvokingACommand_MovesItToTheFrontOfItsOwnGroup_OnTheNextEmptyQueryOpen()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var context = CommandContext.For(Guid.NewGuid(), "Requirement");
+
+            var palette = new CommandPaletteOverlay(registry)
+            {
+                ContextSource = () => context,
+                // Answers every declared parameter generically — this test
+                // cares about recency ordering, not what value was set.
+                ParameterPrompt = (_, parameters, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(
+                    parameters.ToDictionary(p => p.Name, p => p.DefaultValue ?? "Recency Test", StringComparer.Ordinal)),
+            };
+
+            var results = (ListBox)((StackPanel)palette.Child!).Children[1];
+
+            palette.Open();
+            var before = ((System.Collections.IEnumerable)results.ItemsSource!).Cast<ListBoxItem>()
+                .Select(i => (string)i.Content!).ToList();
+
+            var headerIndex = before.IndexOf("REQUIREMENTS");
+            Assert.NotEqual("Set Requirement Owner", before[headerIndex + 1]);
+
+            CommandDescriptor? invoked = null;
+            palette.CommandInvoked += (d, _) => invoked = d;
+
+            results.SelectedIndex = before.IndexOf("Set Requirement Owner");
+            var queryBox = (TextBox)((StackPanel)palette.Child!).Children[0];
+            queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter });
+
+            Assert.NotNull(invoked);
+            Assert.Equal("requirements.set-owner", invoked!.Id);
+            Assert.False(palette.IsOpen);
+
+            palette.Open();
+            var after = ((System.Collections.IEnumerable)results.ItemsSource!).Cast<ListBoxItem>()
+                .Select(i => (string)i.Content!).ToList();
+
+            // The one row that moved, and where it moved to: first in its
+            // own group, everything else in the identical relative order.
+            Assert.Equal("Set Requirement Owner", after[headerIndex + 1]);
+            Assert.Equal(before.Where(r => r != "Set Requirement Owner"), after.Where(r => r != "Set Requirement Owner"));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>Reconstructs TD-77's own empty-query contract independently: available commands, grouped by Category, alphabetical within a group (no invocation has happened yet in these tests' own fresh palette).</summary>
+    private static List<string> ExpectedGroupedRows(ICommandRegistry registry, CommandContext context)
+    {
+        var available = registry.Items
+            .Where(d => registry.Evaluate(d.Id, context).IsAvailable)
+            .OrderBy(d => d.Category ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(d => d.DisplayName, StringComparer.Ordinal)
+            .ToList();
+
+        var rows = new List<string>();
+        string? currentCategory = null;
+        var isFirst = true;
+
+        foreach (var descriptor in available)
+        {
+            if (isFirst || descriptor.Category != currentCategory)
+            {
+                rows.Add((descriptor.Category ?? "General").ToUpperInvariant());
+                currentCategory = descriptor.Category;
+                isFirst = false;
+            }
+
+            rows.Add(descriptor.DisplayName);
+        }
+
+        return rows;
+    }
 }

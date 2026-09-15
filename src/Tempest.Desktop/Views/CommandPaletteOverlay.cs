@@ -334,8 +334,9 @@ public sealed class CommandPaletteOverlay : Border
             // Every row here is already known available - PaletteRow.ForCommand
             // still takes the real CommandAvailability rather than a
             // fabricated one, so its own text/enablement logic stays the
-            // single implementation both listings share.
-            rows.Add(PaletteRow.ForCommand(descriptor, availability));
+            // single implementation both listings share; showCategoryPrefix:
+            // false because the header immediately above already named it.
+            rows.Add(PaletteRow.ForCommand(descriptor, availability, showCategoryPrefix: false));
         }
 
         Publish(rows);
@@ -503,9 +504,19 @@ public sealed class CommandPaletteOverlay : Border
 
         public PaletteObjectHit? ObjectHit { get; }
 
-        public static PaletteRow ForCommand(CommandDescriptor descriptor, CommandAvailability availability)
+        /// <param name="descriptor">The command this row shows.</param>
+        /// <param name="availability">Its own evaluated availability.</param>
+        /// <param name="showCategoryPrefix">
+        /// <see langword="true"/> (the default, every typed-query row) shows
+        /// <c>"Category: Name"</c> — the category is the only grouping a
+        /// flat, substring-filtered list has. <see langword="false"/> (the
+        /// empty-query grouped listing, `WP 20.2A`/TD-77) shows the name
+        /// alone: its own <see cref="PaletteRow.Header"/> already named the
+        /// group.
+        /// </param>
+        public static PaletteRow ForCommand(CommandDescriptor descriptor, CommandAvailability availability, bool showCategoryPrefix = true)
         {
-            var name = descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
+            var name = !showCategoryPrefix || descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
             var text = availability.IsAvailable ? name : $"{name} — {availability.Reason}";
 
             return new PaletteRow(text, availability.IsAvailable, isHeader: false, descriptor, availability, objectHit: null);
