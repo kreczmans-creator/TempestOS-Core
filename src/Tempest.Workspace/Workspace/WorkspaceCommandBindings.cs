@@ -289,6 +289,32 @@ internal static class WorkspaceCommandBindings
     }
 
     /// <summary>
+    /// Refuses a Move compensation whose own destination parent is gone —
+    /// <paramref name="parentId"/> is <see langword="null"/> (top level,
+    /// always a legal destination) or still resolves to a live, non-deleted
+    /// object. <see cref="IHasParent.MoveAsync"/> itself never checks this
+    /// (it only guards against a cycle): a live top-level move never needed
+    /// to, since nothing before `WP 21.1A` ever moved an object back to a
+    /// parent it no longer had a live reference to. A compensation can, if
+    /// the parent it would restore under was itself deleted in between —
+    /// the identical "refusing if that parent is gone, with the reason"
+    /// requirement <see cref="IDeletable.UndeleteAsync"/> already applies to
+    /// Delete's own compensation.
+    /// </summary>
+    private static async Task<string?> MoveDestinationGoneReasonAsync(
+        EngineeringDomainContext context, Guid? parentId, CancellationToken cancellationToken)
+    {
+        if (parentId is not { } id)
+            return null;
+
+        var parent = await context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return parent is null || parent is IDeletable { IsDeleted: true }
+            ? $"'{id}' no longer exists."
+            : null;
+    }
+
+    /// <summary>
     /// The compensation a real Move produces: undo moves back to
     /// <paramref name="previousParentId"/>; redo moves forward to
     /// <paramref name="newParentId"/> again — both through
@@ -296,7 +322,9 @@ internal static class WorkspaceCommandBindings
     /// invocation itself used, with the recorded parent value each
     /// direction needs (the redo half of `WP 20.2C`'s own "record values,
     /// replay them" pattern, applied here directly rather than through a
-    /// second Id-based round trip).
+    /// second Id-based round trip). Either direction refuses first — see
+    /// <see cref="MoveDestinationGoneReasonAsync"/> — when its own
+    /// destination parent has since been deleted.
     /// </summary>
     internal static CommandCompensation? MoveCompensation(
         EngineeringDomainContext context, ICommandDispatcher? dispatcher, Guid targetObjectId, string targetKind, string sourceName,
@@ -307,8 +335,20 @@ internal static class WorkspaceCommandBindings
 
         return new CommandCompensation(
             $"Move '{sourceName}'",
-            undo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(previousParentId), ct),
-            redo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(newParentId), ct));
+            undo: async ct =>
+            {
+                if (await MoveDestinationGoneReasonAsync(context, previousParentId, ct).ConfigureAwait(false) is { } reason)
+                    return CommandResult.Failure(reason);
+
+                return await RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(previousParentId), ct).ConfigureAwait(false);
+            },
+            redo: async ct =>
+            {
+                if (await MoveDestinationGoneReasonAsync(context, newParentId, ct).ConfigureAwait(false) is { } reason)
+                    return CommandResult.Failure(reason);
+
+                return await RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(newParentId), ct).ConfigureAwait(false);
+            });
     }
 
     /// <summary>
