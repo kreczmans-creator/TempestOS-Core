@@ -181,7 +181,8 @@ public sealed class InvoicesGroupingTests
 
             var texts = view.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
             Assert.Contains("No draft requests.", texts);
-            Assert.Contains("Nothing completed is waiting for an invoice.", texts);
+            // `WP 21.3B`: an expense joined "Available to invoice" too.
+            Assert.Contains("Nothing completed or expensed is waiting for an invoice.", texts);
             Assert.Contains("Nothing has been sent yet.", texts);
             Assert.Contains("Nothing is outstanding or overdue.", texts);
             Assert.Contains("Nothing has been rejected or voided.", texts);
