@@ -264,9 +264,13 @@ public sealed class EvidenceService : IEvidenceService
 
             if (string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal))
             {
+                // `WP 21.3B`: the second principal "Switch person…" now
+                // actually builds is what this refusal was always asking
+                // for — the message names that act directly rather than
+                // only restating the rule.
                 return new EvidenceActionResult(
                     EvidenceRefusal.CheckerMustDifferFromAuthor,
-                    $"The independent-check rule is on: principal '{principal.Identity.Id}' authored this evidence and may not also check it.",
+                    "An independent check needs a second person; switch person first.",
                     evidence);
             }
 

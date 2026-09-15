@@ -1,6 +1,7 @@
 using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Expenses;
 using Tempest.Core.Invoicing;
 
 namespace Tempest.Workspace.Invoicing;
@@ -53,7 +54,9 @@ public static class InvoicingWorkspaceRegistration
     public const string ExplorerAreaId = "invoicing";
 
     private static readonly IReadOnlyList<string> InvoiceRequestKind = [InvoiceRequest.CanonicalKind];
-    private static readonly IReadOnlyList<string> DeliverableCompletionKind = [DeliverableCompletion.CanonicalKind];
+
+    /// <summary>What <c>invoicing.raise</c> (<see cref="RaiseInvoiceCommand"/>) applies to — a completed deliverable, or, `WP 21.3B`, a billable expense with no completion available at all.</summary>
+    private static readonly IReadOnlyList<string> RaiseSourceKinds = [DeliverableCompletion.CanonicalKind, ProjectExpense.CanonicalKind];
 
     /// <summary>Registers every Invoicing Workspace extension point this Work Package owns.</summary>
     public static void Register(
@@ -77,13 +80,13 @@ public static class InvoicingWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: InvoicingCommandIds.Raise, displayName: "Raise Invoice Request", category: "Invoicing",
-            description: "Raises a new invoice request from the selected, completed deliverable — its own fixed price, plus every unbilled timesheet entry of its project, at their frozen rates.")
+            description: "Raises a new invoice request from the selected, completed deliverable or billable expense — every unbilled timesheet entry, expense and fixed price of its project, at their frozen rates (`WP 21.3B`).")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new RaiseInvoiceCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
-                appliesToKinds: DeliverableCompletionKind,
-                confirmationMessage: "Raise an invoice request from the selected, completed deliverable?"),
+                appliesToKinds: RaiseSourceKinds,
+                confirmationMessage: "Raise an invoice request from the selected item?"),
         });
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(

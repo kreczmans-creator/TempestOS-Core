@@ -2,6 +2,7 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -85,5 +86,6 @@ internal static class SurfaceCommandPolicy
         RequirementsCommandIds.DeleteGroup,
         RequirementsCommandIds.DeleteCollection,
         TimesheetCommandIds.Delete,
+        ExpenseCommandIds.Delete,
     };
 }

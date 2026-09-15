@@ -23,6 +23,9 @@ public enum InvoiceRequestRefusal
     /// <summary>No deliverable completion is registered under the requested id.</summary>
     CompletionNotFound,
 
+    /// <summary>No project expense is registered under the requested id, or no expense service is composed to look one up in (`WP 21.3B`).</summary>
+    ExpenseNotFound,
+
     /// <summary>The project has no client recorded — an invoice cannot be raised against nobody.</summary>
     NoClient,
 

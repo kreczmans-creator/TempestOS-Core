@@ -4,9 +4,11 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.PurchaseOrders;
 using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Tasks;
@@ -52,8 +54,8 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     private static readonly IReadOnlyList<string> Disciplines =
         [
-            "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
-            "Projects", "Quotations", "Requirements", "Tasks", "Timesheets", "Verification",
+            "Calculations", "Deliverables", "Documents", "Evidence", "Expenses", "Invoicing", "Manufacturing", "Mechanical",
+            "Projects", "Purchase Orders", "Quotations", "Requirements", "Tasks", "Timesheets", "Verification",
         ];
 
     /// <summary>
@@ -261,12 +263,19 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         //
         // `WP 20.10B` (T2) adds one more, not unavailable
         // (calculations.set-due-date); `WP 21.3A` (`TD-29`) adds two more,
-        // neither unavailable (calculations.rerun replays a record's own
-        // retained input, calculations.compare-with-previous needs no input).
+        // neither unavailable (calculations.rerun, calculations.compare-with-previous).
         // So 108 becomes 111 and 105 becomes 108; 3 is unchanged.
-        Assert.Equal(111, ProductionDescriptors.Count);
+        // `WP 21.3B` adds twelve production descriptors across two new
+        // discipline categories: Expenses (record, amend, delete) and
+        // Purchase Orders (create, add-line, update-line, remove-line,
+        // issue, receive, close, cancel, record-as-expenses) — none of
+        // them unavailable (every parameter is a plain text/choice value
+        // this platform's prompt already collects). So 108 becomes 120 and
+        // 105 becomes 117; 3 is unchanged.
+                // Over that: 111 becomes 123 and 108 becomes 120; 3 is unchanged.
+        Assert.Equal(123, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(108, bindable.Count);
+        Assert.Equal(120, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -555,10 +564,12 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                      ("Deliverables", "DeliverableCompletionWorkspaceRegistration.cs"),
                      ("Documents", "DocumentsWorkspaceRegistration.cs"),
                      ("Evidence", "EvidenceWorkspaceRegistration.cs"),
+                     ("Expenses", "ExpenseWorkspaceRegistration.cs"),
                      ("Invoicing", "InvoicingWorkspaceRegistration.cs"),
                      ("Manufacturing", "ManufacturingWorkspaceRegistration.cs"),
                      ("Mechanical", "MechanicalWorkspaceRegistration.cs"),
                      ("Projects", "ProjectCommercialWorkspaceRegistration.cs"),
+                     ("PurchaseOrders", "PurchaseOrderWorkspaceRegistration.cs"),
                      ("Quotations", "QuotationWorkspaceRegistration.cs"),
                      ("Requirements", "RequirementsWorkspaceRegistration.cs"),
                      ("Tasks", "TaskWorkspaceRegistration.cs"),
@@ -620,9 +631,11 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         [nameof(CalculationsCommandIds)] = typeof(CalculationsCommandIds),
         [nameof(DocumentsCommandIds)] = typeof(DocumentsCommandIds),
         [nameof(EvidenceCommandIds)] = typeof(EvidenceCommandIds),
+        [nameof(ExpenseCommandIds)] = typeof(ExpenseCommandIds),
         [nameof(InvoicingCommandIds)] = typeof(InvoicingCommandIds),
         [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
         [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
+        [nameof(PurchaseOrderCommandIds)] = typeof(PurchaseOrderCommandIds),
         [nameof(QuotationCommandIds)] = typeof(QuotationCommandIds),
         [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
         [nameof(TaskCommandIds)] = typeof(TaskCommandIds),

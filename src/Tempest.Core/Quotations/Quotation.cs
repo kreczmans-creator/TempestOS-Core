@@ -61,6 +61,15 @@ public enum QuotationKind
 /// <param name="Basis">Which of the two ways this line is priced.</param>
 /// <param name="DeliverableId">The Deliverable created from this line on Accept. <see langword="null"/> until then — except on a <see cref="QuotationKind.ChangeOrder"/> line, which already carries an existing deliverable's own id from the moment it is added (`WP 20.10E`).</param>
 /// <param name="RequirementId">The Requirement created from this line on Accept. <see langword="null"/> until then.</param>
+/// <param name="VatRate">
+/// This line's own VAT treatment (`WP 21.3B`) — a closed vocabulary, the
+/// consultant's own default picked in Settings → Organisation identity.
+/// Defaults to <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/>,
+/// the enum's own first-declared value, so a line persisted before this
+/// Work Package — which carries no VAT rate in its stored state at all —
+/// reads back at the identical <see cref="Amount"/> it always has, VAT
+/// added at nothing.
+/// </param>
 public sealed record QuotationLine(
     Guid Id,
     string Description,
@@ -70,7 +79,15 @@ public sealed record QuotationLine(
     Money Amount,
     QuotationLineBasis Basis,
     Guid? DeliverableId = null,
-    Guid? RequirementId = null);
+    Guid? RequirementId = null,
+    VatRate VatRate = VatRate.OutOfScope)
+{
+    /// <summary>This line's own VAT amount — <see cref="Amount"/> (the net figure) times <see cref="VatRate"/>'s own percentage, rounded to two decimal places (`WP 21.3B`).</summary>
+    public Money VatAmount => (Amount * VatRate.Percentage()).RoundTo(2);
+
+    /// <summary>This line's own amount inclusive of VAT — <see cref="Amount"/> plus <see cref="VatAmount"/>.</summary>
+    public Money GrossAmount => Amount + VatAmount;
+}
 
 /// <summary>
 /// A quotation raised against a project's client: a reference, a date, a
@@ -165,8 +182,14 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     /// <summary>This quotation's own lines, in the order they were added.</summary>
     public IReadOnlyList<QuotationLine> Lines => _lines;
 
-    /// <summary>The sum of every line's own <c>Amount</c> — computed, never stored, so it can never drift from what the lines actually carry.</summary>
+    /// <summary>The sum of every line's own <c>Amount</c> (net of VAT) — computed, never stored, so it can never drift from what the lines actually carry.</summary>
     public Money Total => Money.Sum(_lines.Select(l => l.Amount), _currency);
+
+    /// <summary>The sum of every line's own <see cref="QuotationLine.VatAmount"/> (`WP 21.3B`) — computed, exactly as <see cref="Total"/> is.</summary>
+    public Money VatTotal => Money.Sum(_lines.Select(l => l.VatAmount), _currency);
+
+    /// <summary>The sum of every line's own <see cref="QuotationLine.GrossAmount"/> — <see cref="Total"/> plus <see cref="VatTotal"/> (`WP 21.3B`).</summary>
+    public Money GrossTotal => Total + VatTotal;
 
     /// <inheritdoc cref="IHasLifecycle.Status" />
     /// <remarks>Hides <c>IHasLifecycle.Status</c> (the eight-value canonical <see cref="LifecycleState"/>) with this Kind's own status vocabulary (`ADR-0152`), exactly as <c>Tempest.Core.Invoicing.InvoiceRequest.Status</c> does.</remarks>

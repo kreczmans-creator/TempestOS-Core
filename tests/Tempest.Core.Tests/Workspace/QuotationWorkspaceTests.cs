@@ -161,7 +161,8 @@ public sealed class QuotationWorkspaceTests : IAsyncLifetime
         var referenceFacet = Assert.Single(facets, f => f.Name == "Reference");
         Assert.Equal("Q-WS-2", referenceFacet.Value);
 
-        var totalFacet = Assert.Single(facets, f => f.Name == "Total");
+        // `WP 21.3B`: "Total" is now "Total (net)" — VAT and gross joined it as siblings.
+        var totalFacet = Assert.Single(facets, f => f.Name == "Total (net)");
         Assert.Contains("1000", totalFacet.Value, StringComparison.Ordinal);
 
         var statusFacet = Assert.Single(facets, f => f.Name == "Status");

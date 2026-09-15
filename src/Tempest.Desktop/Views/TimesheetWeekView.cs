@@ -6,10 +6,12 @@ using Avalonia.Threading;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Expenses;
 using Tempest.Core.Timesheets;
 using Tempest.Desktop.Documents;
 using Tempest.Desktop.Documents.Timesheets;
 using Tempest.Desktop.Theming;
+using Tempest.Workspace.Expenses;
 
 namespace Tempest.Desktop.Views;
 
@@ -46,6 +48,7 @@ public sealed class TimesheetWeekView : UserControl
     private readonly ICommandRegistry _commandRegistry;
     private readonly Func<string?> _currentPrincipalId;
     private readonly TimesheetEntryPrompt _recordPrompt;
+    private readonly ExpenseEntryPrompt? _recordExpensePrompt;
     private readonly Action<Guid, string> _openObject;
     private readonly DocumentExporter? _documentExporter;
     private readonly TimesheetDocumentRenderer? _timesheetRenderer;
@@ -58,6 +61,7 @@ public sealed class TimesheetWeekView : UserControl
     private readonly Button _nextWeek = new() { Content = "Next ▶", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _exportButton = new() { Content = "Export week", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _recordExpenseButton = new() { Content = "Record expense…", MinHeight = DesignTokens.MinControlSize };
     private readonly StackPanel _days = new() { Spacing = DesignTokens.SpaceMd };
 
     private DateOnly _weekStart;
@@ -89,11 +93,20 @@ public sealed class TimesheetWeekView : UserControl
     /// <param name="documentExporter">Saves the rendered timesheet document through the file picker (`WP 21.2A`, scope item 3). <see langword="null"/> leaves Export week unavailable.</param>
     /// <param name="timesheetRenderer">Renders the timesheet document (`WP 21.2A`, scope item 2). <see langword="null"/> leaves Export week unavailable.</param>
     /// <param name="applicationVersionText">The running application's own version text, for the document's own footer. <see langword="null"/> leaves Export week unavailable.</param>
+    /// <param name="recordExpensePrompt">
+    /// Collects "Record expense…"'s own values (`WP 21.3B`). <see langword="null"/>
+    /// (any test that constructs this view directly) leaves the button
+    /// honestly unavailable rather than run without asking — the identical
+    /// "not threaded through stays honestly unavailable" discipline every
+    /// other optional collaborator across this platform's Desktop views
+    /// already follows.
+    /// </param>
     public TimesheetWeekView(
         EngineeringDomainContext domainContext, ITimesheetService timesheetService, IWorkingPatternProvider workingPatterns,
         ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Func<string?> currentPrincipalId,
         TimesheetEntryPrompt recordPrompt, Action<Guid, string> openObject,
-        DocumentExporter? documentExporter = null, TimesheetDocumentRenderer? timesheetRenderer = null, Func<string>? applicationVersionText = null)
+        DocumentExporter? documentExporter = null, TimesheetDocumentRenderer? timesheetRenderer = null, Func<string>? applicationVersionText = null,
+        ExpenseEntryPrompt? recordExpensePrompt = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(timesheetService);
@@ -115,12 +128,14 @@ public sealed class TimesheetWeekView : UserControl
         _documentExporter = documentExporter;
         _timesheetRenderer = timesheetRenderer;
         _applicationVersionText = applicationVersionText;
+        _recordExpensePrompt = recordExpensePrompt;
 
         _weekStart = TimesheetWeek.WeekOf(DateOnly.FromDateTime(DateTime.Now));
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _recordButton.Classes.Add(ChromeStyles.Primary);
+        _recordExpenseButton.Classes.Add(ChromeStyles.Subtle);
         _previousWeek.Classes.Add(ChromeStyles.Subtle);
         _nextWeek.Classes.Add(ChromeStyles.Subtle);
         _exportButton.Classes.Add(ChromeStyles.Flat);
@@ -136,12 +151,14 @@ public sealed class TimesheetWeekView : UserControl
         if (!_exportButton.IsEnabled)
             ToolTip.SetTip(_exportButton, "Export is unavailable here.");
         _exportButton.Click += async (_, _) => await OnExportWeekAsync().ConfigureAwait(true);
+        _recordExpenseButton.Click += async (_, _) => await OnRecordExpenseAsync().ConfigureAwait(true);
 
         var nav = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         nav.Children.Add(_previousWeek);
         nav.Children.Add(_nextWeek);
         nav.Children.Add(_recordButton);
         nav.Children.Add(_exportButton);
+        nav.Children.Add(_recordExpenseButton);
 
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         Grid.SetColumn(_weekLabel, 0);
@@ -160,9 +177,11 @@ public sealed class TimesheetWeekView : UserControl
         AutomationProperties.SetName(_nextWeek, "Next ▶");
         AutomationProperties.SetName(_recordButton, "Record");
         AutomationProperties.SetName(_exportButton, "Export week");
+        AutomationProperties.SetName(_recordExpenseButton, "Record expense…");
         ToolTip.SetTip(_previousWeek, "Previous week");
         ToolTip.SetTip(_nextWeek, "Next week");
         ToolTip.SetTip(_recordButton, "Record time");
+        ToolTip.SetTip(_recordExpenseButton, "Record an expense (WP 21.3B)");
         Content = new ScrollViewer { Content = body };
     }
 
@@ -358,6 +377,45 @@ public sealed class TimesheetWeekView : UserControl
         // `WP 17.9.4`: what you make opens right up.
         if (result.SubjectId is { } createdId)
             _openObject(createdId, TimesheetEntry.CanonicalKind);
+    }
+
+    /// <summary>
+    /// "Record expense…" (`WP 21.3B`) — beside Record, the identical
+    /// "collect through a prompt, dispatch the plain <c>ICommand</c>
+    /// directly, open right up" shape <see cref="OnRecordAsync"/> already
+    /// follows. Honestly unavailable when <see cref="_recordExpensePrompt"/>
+    /// was never threaded through.
+    /// </summary>
+    private async Task OnRecordExpenseAsync()
+    {
+        if (_recordExpensePrompt is null)
+        {
+            Report("Nothing can collect the expense here — Record expense is unavailable.", succeeded: false);
+            return;
+        }
+
+        var input = await _recordExpensePrompt.PromptAsync().ConfigureAwait(true);
+        if (input is null)
+        {
+            Report("Record expense was cancelled.", succeeded: false);
+            return;
+        }
+
+        var command = new RecordExpenseCommand(input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable);
+        var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
+
+        if (!result.Succeeded)
+        {
+            Report(result.Message ?? "Record expense failed.", succeeded: false);
+            return;
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        Report(result.Message ?? "Expense recorded.", succeeded: true);
+
+        // `WP 17.9.4`: what you make opens right up.
+        if (result.SubjectId is { } createdId)
+            _openObject(createdId, ProjectExpense.CanonicalKind);
     }
 
     private async Task OnAmendAsync(Guid entryId)

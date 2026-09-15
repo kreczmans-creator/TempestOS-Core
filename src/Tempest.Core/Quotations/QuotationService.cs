@@ -4,6 +4,7 @@ using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Projects;
 using Tempest.Core.Requirements;
+using Tempest.Core.Settings;
 
 namespace Tempest.Core.Quotations;
 
@@ -84,14 +85,33 @@ public sealed class QuotationService : IQuotationService
     /// <summary>The Kind string for a Deliverable — <c>Tempest.Workspace.CanonicalObjectKinds.Deliverable</c>'s own value, repeated for the identical reason as <see cref="MilestoneKind"/>.</summary>
     private const string DeliverableKind = "Deliverable";
 
+    /// <summary>
+    /// The Settings key the consultant's own default VAT rate for a new
+    /// quotation line is stored under (`WP 21.3B`, Settings → Organisation
+    /// identity) — read, and defaulted to
+    /// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/>, whenever
+    /// <see cref="AddLineAsync"/>/<see cref="UpdateLineAsync"/> are called
+    /// with no explicit <c>vatRate</c>.
+    /// </summary>
+    public const string DefaultVatRateSettingKey = "Invoicing.DefaultVatRate";
+
     private readonly EngineeringDomainContext _context;
     private readonly IRateCardCatalog _rateCards;
     private readonly IRequirementsService _requirements;
+    private readonly ISettingsProvider? _settings;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="QuotationService"/> class.</summary>
+    /// <param name="settings">
+    /// Where <see cref="DefaultVatRateSettingKey"/> is registered and read
+    /// (`WP 21.3B`). <see langword="null"/> — honoured, not required —
+    /// leaves every line defaulting to
+    /// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/> outright,
+    /// for a caller (an older test host) with no settings provider composed.
+    /// </param>
     public QuotationService(
-        EngineeringDomainContext context, IRateCardCatalog rateCards, IRequirementsService requirements, TimeProvider? timeProvider = null)
+        EngineeringDomainContext context, IRateCardCatalog rateCards, IRequirementsService requirements, TimeProvider? timeProvider = null,
+        ISettingsProvider? settings = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -101,6 +121,23 @@ public sealed class QuotationService : IQuotationService
         _rateCards = rateCards;
         _requirements = requirements;
         _time = timeProvider ?? TimeProvider.System;
+        _settings = settings;
+
+        if (_settings is not null)
+        {
+            try
+            {
+                _settings.RegisterDefinition(new SettingDefinition(
+                    DefaultVatRateSettingKey, "Invoicing — default VAT rate for a new line", VatRate.OutOfScope.ToString()));
+            }
+            catch (DuplicateSettingDefinitionException)
+            {
+                // Registered already — by an earlier QuotationService this
+                // process constructed (a test host restarting the same
+                // in-memory settings provider, `SettingsView`'s own lazy
+                // re-registration precedent).
+            }
+        }
     }
 
     /// <summary>The reference prefix an ordinary quotation is generated under.</summary>
@@ -153,7 +190,7 @@ public sealed class QuotationService : IQuotationService
     /// <inheritdoc />
     public async Task<QuotationResult> AddLineAsync(
         Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, Guid? carriedDeliverableId = null,
-        CancellationToken cancellationToken = default)
+        VatRate? vatRate = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -173,7 +210,8 @@ public sealed class QuotationService : IQuotationService
                 return carriedRefusal;
         }
 
-        var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, rate, fixedPrice);
+        var resolvedVatRate = await ResolveVatRateAsync(vatRate, cancellationToken).ConfigureAwait(false);
+        var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, rate, fixedPrice, resolvedVatRate);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
 
@@ -188,7 +226,7 @@ public sealed class QuotationService : IQuotationService
     /// <inheritdoc />
     public async Task<QuotationResult> UpdateLineAsync(
         Guid quotationId, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
-        CancellationToken cancellationToken = default)
+        VatRate? vatRate = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -206,7 +244,11 @@ public sealed class QuotationService : IQuotationService
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, rate, fixedPrice);
+        // An update with no explicit VAT rate keeps the line's own current
+        // rate rather than resetting it to the consultant's own default —
+        // only a genuinely new line (AddLineAsync) resolves the default.
+        var resolvedVatRate = vatRate ?? existingLine.VatRate;
+        var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, rate, fixedPrice, resolvedVatRate);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
 
@@ -220,6 +262,19 @@ public sealed class QuotationService : IQuotationService
         await quote.UpdateLineAsync(line, cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <summary>Resolves <paramref name="vatRate"/> — given, verbatim, or the consultant's own configured default (Settings → Organisation identity), or <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/> when no settings provider is composed at all (`WP 21.3B`).</summary>
+    private async Task<VatRate> ResolveVatRateAsync(VatRate? vatRate, CancellationToken cancellationToken)
+    {
+        if (vatRate is { } explicitRate)
+            return explicitRate;
+
+        if (_settings is null)
+            return VatRate.OutOfScope;
+
+        var stored = await _settings.GetValueAsync(DefaultVatRateSettingKey, cancellationToken).ConfigureAwait(false);
+        return Enum.TryParse<VatRate>(stored, out var configured) ? configured : VatRate.OutOfScope;
     }
 
     /// <inheritdoc />
@@ -359,7 +414,7 @@ public sealed class QuotationService : IQuotationService
 
     /// <summary>Builds a validated line, or a refusal naming what is wrong with it — shared by <see cref="AddLineAsync"/> and <see cref="UpdateLineAsync"/>.</summary>
     private static (QuotationLine? Line, QuotationRefusal Refusal, string? Reason) BuildLine(
-        Quotation quote, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice)
+        Quotation quote, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice, VatRate vatRate)
     {
         var trimmedDescription = description.Trim();
 
@@ -377,7 +432,7 @@ public sealed class QuotationService : IQuotationService
                     $"The fixed price is in {price.Currency}; this quotation is in {quote.Currency}.");
             }
 
-            return (new QuotationLine(lineId, trimmedDescription, null, null, price, price, QuotationLineBasis.FixedPrice), QuotationRefusal.None, null);
+            return (new QuotationLine(lineId, trimmedDescription, null, null, price, price, QuotationLineBasis.FixedPrice, VatRate: vatRate), QuotationRefusal.None, null);
         }
 
         if (hours is { } h && rate is { } r)
@@ -391,7 +446,7 @@ public sealed class QuotationService : IQuotationService
                     $"The rate is in {r.Currency}; this quotation is in {quote.Currency}.");
             }
 
-            return (new QuotationLine(lineId, trimmedDescription, h, r, null, r * h, QuotationLineBasis.Hourly), QuotationRefusal.None, null);
+            return (new QuotationLine(lineId, trimmedDescription, h, r, null, r * h, QuotationLineBasis.Hourly, VatRate: vatRate), QuotationRefusal.None, null);
         }
 
         return (null, QuotationRefusal.InvalidLine, "A line needs either hours and a rate, or a fixed price.");

@@ -3,6 +3,7 @@ using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Expenses;
 using Tempest.Core.Projects;
 using Tempest.Core.Timesheets;
 
@@ -53,12 +54,22 @@ public sealed class InvoicingService : IInvoicingService
     private readonly IDeliverableService _deliverables;
     private readonly IInvoicingConnector _connector;
     private readonly IOrganisationCatalog _organisations;
+    private readonly IExpenseService? _expenses;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="InvoicingService"/> class.</summary>
+    /// <param name="expenses">
+    /// Where a billable, unbilled <c>ProjectExpense</c> is read from so it
+    /// can join the timesheet lines a raised request already carries (`WP
+    /// 21.3B`). <see langword="null"/> — honoured, not required — leaves
+    /// expenses out of every raised request, for a caller (an older test
+    /// host) that has not composed the Expenses discipline; every
+    /// production composition root supplies it.
+    /// </param>
     public InvoicingService(
         EngineeringDomainContext context, IRateCardCatalog rateCards, ITimesheetService timesheets, IDeliverableService deliverables,
-        IInvoicingConnector connector, IOrganisationCatalog organisations, TimeProvider? timeProvider = null)
+        IInvoicingConnector connector, IOrganisationCatalog organisations, TimeProvider? timeProvider = null,
+        IExpenseService? expenses = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -74,6 +85,7 @@ public sealed class InvoicingService : IInvoicingService
         _connector = connector;
         _organisations = organisations;
         _time = timeProvider ?? TimeProvider.System;
+        _expenses = expenses;
     }
 
     /// <inheritdoc />
@@ -113,11 +125,69 @@ public sealed class InvoicingService : IInvoicingService
                 carrier);
         }
 
-        if (completion.ParentId is not { } projectId
-            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        if (completion.ParentId is not { } projectId)
         {
             throw new InvalidOperationException(
                 $"Deliverable completion '{deliverableCompletionId}' has no live project — every completion is parented to the project it was completed under, so this should be unreachable.");
+        }
+
+        return await RaiseAsync(
+            projectId, completion, carriedBy, $"deliverable completion '{deliverableCompletionId}'",
+            $"Project '{projectId}' has no unbilled time and completion '{deliverableCompletionId}' carries no fixed price; there is nothing to bill.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> RaiseFromExpenseAsync(Guid expenseId, CancellationToken cancellationToken = default)
+    {
+        if (_expenses is null || await _context.Repository.FindAsync(expenseId, cancellationToken).ConfigureAwait(false) is not ProjectExpense expense || !IsLive(expense))
+            return new InvoiceRequestResult(InvoiceRequestRefusal.ExpenseNotFound, $"No expense '{expenseId}' is registered.", null);
+
+        if (expense.InvoicedBy is { } existingRequestId)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Expense '{expenseId}' is already invoiced (request '{existingRequestId:N}').",
+                await FindRequestAsync(existingRequestId, cancellationToken).ConfigureAwait(false));
+        }
+
+        // `WP 21.3B`: the identical "a source is billed on at most one live
+        // request" carried-by check `RaiseFromCompletionAsync` applies —
+        // this is the entry point for a project whose only unbilled work,
+        // right now, is an expense (no completion to raise from at all).
+        var carriedBy = await ListCarriedSourcesAsync(cancellationToken).ConfigureAwait(false);
+        if (carriedBy.TryGetValue(expense.Id, out var carrier))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Expense '{expenseId}' is already invoiced by request '{carrier.Id:N}' ({carrier.Status}); send or void that request rather than raising a second.",
+                carrier);
+        }
+
+        return await RaiseAsync(
+            expense.ProjectId, completion: null, carriedBy, $"expense '{expenseId}'",
+            $"Project '{expense.ProjectId}' has no unbilled time or expenses; there is nothing to bill.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The shared body of <see cref="RaiseFromCompletionAsync"/> and
+    /// <see cref="RaiseFromExpenseAsync"/> (`WP 21.3B`): resolve the
+    /// project's own client, rate card and payment terms; gather every
+    /// unbilled, uncarried timesheet entry and billable expense for the
+    /// project; add <paramref name="completion"/>'s own fixed-price line
+    /// when one is given; and raise the request, or refuse
+    /// <see cref="InvoiceRequestRefusal.NothingToBill"/> with
+    /// <paramref name="nothingToBillReason"/> when no line resulted.
+    /// </summary>
+    private async Task<InvoiceRequestResult> RaiseAsync(
+        Guid projectId, DeliverableCompletion? completion, Dictionary<Guid, InvoiceRequest> carriedBy, string raisedFromDescription,
+        string nothingToBillReason, CancellationToken cancellationToken)
+    {
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is not a live project — every completion and expense is parented to the project it belongs to, so this should be unreachable.");
         }
 
         if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
@@ -156,12 +226,12 @@ public sealed class InvoicingService : IInvoicingService
 
         var lines = new List<InvoiceRequestLine>(unbilled.Count + 1);
 
-        InvoiceRequest? carrierOfTime = null;
+        InvoiceRequest? carrierOfOther = null;
         foreach (var entry in unbilled)
         {
             if (carriedBy.TryGetValue(entry.Id, out var carrierOfEntry))
             {
-                carrierOfTime ??= carrierOfEntry;
+                carrierOfOther ??= carrierOfEntry;
                 continue;
             }
 
@@ -169,27 +239,47 @@ public sealed class InvoicingService : IInvoicingService
             lines.Add(new InvoiceRequestLine(TimesheetEntry.CanonicalKind, entry.Id, entry.TaskDescription, entry.Hours, entry.BillingRate, amount));
         }
 
-        if (completion.FixedPriceValue is { } fixedPrice)
+        if (completion?.FixedPriceValue is { } fixedPrice)
         {
             lines.Add(new InvoiceRequestLine(
                 DeliverableCompletion.CanonicalKind, completion.Id, $"Deliverable completed {completion.CompletedOn:yyyy-MM-dd}",
                 1m, fixedPrice, fixedPrice));
         }
 
+        // `WP 21.3B`: a billable, unbilled expense joins the request
+        // exactly as an unbilled timesheet entry does above — the same
+        // "a source is billed on at most one live request" carried-by
+        // check, and the same `InvoicedBy` link once the request reaches
+        // Sent (`LinkLinesAsync`, below).
+        if (_expenses is not null)
+        {
+            var unbilledExpenses = await _expenses.ListUnbilledForProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+            foreach (var expense in unbilledExpenses)
+            {
+                if (carriedBy.TryGetValue(expense.Id, out var carrierOfExpense))
+                {
+                    carrierOfOther ??= carrierOfExpense;
+                    continue;
+                }
+
+                lines.Add(new InvoiceRequestLine(
+                    ProjectExpense.CanonicalKind, expense.Id, expense.Description, 1m, expense.NetAmount, expense.NetAmount,
+                    InferVatRate(expense.NetAmount, expense.VatAmount)));
+            }
+        }
+
         if (lines.Count == 0)
         {
-            if (carrierOfTime is not null)
+            if (carrierOfOther is not null)
             {
                 return new InvoiceRequestResult(
                     InvoiceRequestRefusal.NothingToBill,
-                    $"Everything billable for completion '{deliverableCompletionId}' is already on request '{carrierOfTime.Id:N}' ({carrierOfTime.Status}); send or void that request rather than raising a second.",
-                    carrierOfTime);
+                    $"Everything billable for {raisedFromDescription} is already on request '{carrierOfOther.Id:N}' ({carrierOfOther.Status}); send or void that request rather than raising a second.",
+                    carrierOfOther);
             }
 
-            return new InvoiceRequestResult(
-                InvoiceRequestRefusal.NothingToBill,
-                $"Project '{projectId}' has no unbilled time and completion '{deliverableCompletionId}' carries no fixed price; there is nothing to bill.",
-                null);
+            return new InvoiceRequestResult(InvoiceRequestRefusal.NothingToBill, nothingToBillReason, null);
         }
 
         var total = Money.Sum(lines.Select(l => l.Amount), currency);
@@ -201,7 +291,7 @@ public sealed class InvoicingService : IInvoicingService
                 doc, rev, _context, identifier: null, $"Invoice request — {project.DisplayName} — {_time.GetUtcNow():yyyy-MM-dd}",
                 EngineeringObjectMetadata.Empty, project.ClientOrganisationId!, project.PurchaseOrderReference, currency, lines, total,
                 paymentTerms: paymentTerms))
-            .CreateAsync($"Invoice request raised from deliverable completion '{deliverableCompletionId}'.", cancellationToken)
+            .CreateAsync($"Invoice request raised from {raisedFromDescription}.", cancellationToken)
             .ConfigureAwait(false);
 
         if (created is IHasParent hasParent)
@@ -374,7 +464,40 @@ public sealed class InvoicingService : IInvoicingService
                 await _timesheets.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
             else if (string.Equals(line.SourceKind, DeliverableCompletion.CanonicalKind, StringComparison.Ordinal))
                 await _deliverables.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
+            else if (string.Equals(line.SourceKind, ProjectExpense.CanonicalKind, StringComparison.Ordinal) && _expenses is not null)
+                await _expenses.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Infers the closest declared <see cref="VatRate"/> from an expense's
+    /// own directly-entered <paramref name="net"/>/<paramref name="vat"/>
+    /// amounts (`WP 21.3B`) — <see cref="ProjectExpense"/> carries the
+    /// figures a receipt actually states, never a rate; <see cref="InvoiceRequestLine.VatAmount"/>
+    /// is always <see cref="VatRate"/>-derived, so this line's own rate is
+    /// the closest of the standard (20%), reduced (5%) or zero/exempt/out-
+    /// of-scope (0%) percentages to what the receipt actually recorded.
+    /// <b>Disclosed, not hidden:</b> an expense whose own VAT is not a
+    /// clean 20%, 5% or 0% split of its net (an unusual supplier VAT
+    /// treatment) rounds to the nearest of the three on the raised
+    /// request — the exact entered figures remain readable on the expense
+    /// itself, unchanged, for what the consultant later matches in Xero.
+    /// </summary>
+    private static VatRate InferVatRate(Money net, Money vat)
+    {
+        if (net.Amount <= 0m || vat.Amount <= 0m)
+            return VatRate.OutOfScope;
+
+        var effective = vat.Amount / net.Amount;
+
+        (VatRate Rate, decimal Percentage)[] candidates =
+        [
+            (VatRate.Standard, VatRate.Standard.Percentage()),
+            (VatRate.Reduced, VatRate.Reduced.Percentage()),
+            (VatRate.OutOfScope, VatRate.OutOfScope.Percentage()),
+        ];
+
+        return candidates.OrderBy(c => Math.Abs(c.Percentage - effective)).First().Rate;
     }
 
     private async Task<DeliverableCompletion?> FindCompletionAsync(Guid completionId, CancellationToken cancellationToken)

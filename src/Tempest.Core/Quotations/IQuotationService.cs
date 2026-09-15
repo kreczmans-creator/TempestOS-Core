@@ -41,16 +41,23 @@ public interface IQuotationService
     /// an ordinary new-work line, the only shape an ordinary
     /// <see cref="QuotationKind.Quotation"/> line ever takes.
     /// </param>
+    /// <param name="vatRate">
+    /// This line's own VAT treatment (`WP 21.3B`). <see langword="null"/>
+    /// (the default) resolves to the consultant's own default, set in
+    /// Settings → Organisation identity (<see cref="QuotationService.DefaultVatRateSettingKey"/>) —
+    /// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/> until they
+    /// change it.
+    /// </param>
     /// <remarks>Refused, as a result, when the quotation is not Draft, when neither pricing shape (nor both) is given, when a supplied rate/fixed price is not in the quotation's own currency, when <paramref name="carriedDeliverableId"/> is given on a quotation that is not a change order, or when it does not identify a live deliverable.</remarks>
     Task<QuotationResult> AddLineAsync(
         Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, Guid? carriedDeliverableId = null,
-        CancellationToken cancellationToken = default);
+        VatRate? vatRate = null, CancellationToken cancellationToken = default);
 
-    /// <summary>Replaces the line identified by <paramref name="lineId"/> — the same rules as <see cref="AddLineAsync"/>.</summary>
+    /// <summary>Replaces the line identified by <paramref name="lineId"/> — the same rules as <see cref="AddLineAsync"/>, including <paramref name="vatRate"/>'s own default.</summary>
     /// <remarks>Refused, as a result, when the quotation is not Draft, when <paramref name="lineId"/> does not identify a line on it, or for the same pricing-shape/currency reasons as <see cref="AddLineAsync"/>.</remarks>
     Task<QuotationResult> UpdateLineAsync(
         Guid quotationId, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
-        CancellationToken cancellationToken = default);
+        VatRate? vatRate = null, CancellationToken cancellationToken = default);
 
     /// <summary>Removes the line identified by <paramref name="lineId"/>.</summary>
     /// <remarks>Refused, as a result, when the quotation is not Draft, or when <paramref name="lineId"/> does not identify a line on it.</remarks>

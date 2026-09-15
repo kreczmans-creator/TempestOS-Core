@@ -9,9 +9,11 @@ using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Expenses;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Theming;
+using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
 
@@ -66,6 +68,9 @@ public sealed class ProjectDetailsView : UserControl
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly Func<Guid?> _currentProjectId;
     private readonly ProjectCommercialEditorSupport _commercialSupport;
+    private readonly IExpenseService? _expenseService;
+    private readonly ExpenseEntryPrompt? _recordExpensePrompt;
+    private readonly Action<Guid, string>? _openObject;
 
     private readonly TextBlock _name = new() { FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeTitle, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _identity = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7 };
@@ -96,6 +101,12 @@ public sealed class ProjectDetailsView : UserControl
     private readonly Button _projectManagerSaveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _projectManagerStatus = new() { FontSize = DesignTokens.FontSizeCaption };
 
+    // `WP 21.3B`: recorded here as well as from Business → Timesheets — the
+    // brief's own two call sites for "Record expense…".
+    private readonly TextBlock _expensesText = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+    private readonly Button _recordExpenseButton = new() { Content = "Record expense…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _expensesStatus = new() { FontSize = DesignTokens.FontSizeCaption };
+
     private readonly TextBlock _noProject = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.7, IsVisible = false };
     private readonly StackPanel _body = new() { Spacing = DesignTokens.SpaceLg };
 
@@ -117,9 +128,13 @@ public sealed class ProjectDetailsView : UserControl
     internal int RefreshCount { get; private set; }
 
     /// <summary>Initialises a new instance of the <see cref="ProjectDetailsView"/> class.</summary>
+    /// <param name="expenseService">Reads the open project's own expense total for the summary line (`WP 21.3B`).</param>
+    /// <param name="recordExpensePrompt">Collects "Record expense…"'s own values. <see langword="null"/> leaves the button honestly unavailable, mirroring every optional collaborator's identical convention across this platform's Desktop views.</param>
+    /// <param name="openObject">Opens the recorded expense right up (`WP 17.9.4`). <see langword="null"/> leaves it merely recorded, not opened.</param>
     public ProjectDetailsView(
         EngineeringDomainContext domainContext, ICommandDispatcher commandDispatcher, Func<Guid?> currentProjectId,
-        ProjectCommercialEditorSupport commercialSupport)
+        ProjectCommercialEditorSupport commercialSupport, IExpenseService? expenseService = null,
+        ExpenseEntryPrompt? recordExpensePrompt = null, Action<Guid, string>? openObject = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
@@ -130,6 +145,9 @@ public sealed class ProjectDetailsView : UserControl
         _commandDispatcher = commandDispatcher;
         _currentProjectId = currentProjectId;
         _commercialSupport = commercialSupport;
+        _expenseService = expenseService;
+        _recordExpensePrompt = recordExpensePrompt;
+        _openObject = openObject;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -145,6 +163,7 @@ public sealed class ProjectDetailsView : UserControl
         AutomationProperties.SetName(_projectManagerBox, "Project manager");
         AutomationProperties.SetName(_useMeButton, "Use Me");
         AutomationProperties.SetName(_projectManagerSaveButton, "Save project manager");
+        AutomationProperties.SetName(_recordExpenseButton, "Record expense…");
 
         _changeClientButton.Classes.Add(ChromeStyles.Subtle);
         _purchaseOrderSaveButton.Classes.Add(ChromeStyles.Subtle);
@@ -153,6 +172,7 @@ public sealed class ProjectDetailsView : UserControl
         _datesSaveButton.Classes.Add(ChromeStyles.Subtle);
         _useMeButton.Classes.Add(ChromeStyles.Subtle);
         _projectManagerSaveButton.Classes.Add(ChromeStyles.Subtle);
+        _recordExpenseButton.Classes.Add(ChromeStyles.Subtle);
 
         _changeClientButton.Click += async (_, _) => await OnChangeClientAsync().ConfigureAwait(true);
         _purchaseOrderSaveButton.Click += async (_, _) => await OnSavePurchaseOrderAsync().ConfigureAwait(true);
@@ -161,14 +181,16 @@ public sealed class ProjectDetailsView : UserControl
         _datesSaveButton.Click += async (_, _) => await OnSaveDatesAsync().ConfigureAwait(true);
         _useMeButton.Click += (_, _) => _projectManagerBox.Text = _commercialSupport.CurrentPrincipalIdentityId() ?? _projectManagerBox.Text;
         _projectManagerSaveButton.Click += async (_, _) => await OnSaveProjectManagerAsync().ConfigureAwait(true);
+        _recordExpenseButton.Click += async (_, _) => await OnRecordExpenseAsync().ConfigureAwait(true);
 
-        foreach (var status in new[] { _clientStatus, _purchaseOrderStatus, _budgetStatus, _rateCardStatus, _datesStatus, _projectManagerStatus })
+        foreach (var status in new[] { _clientStatus, _purchaseOrderStatus, _budgetStatus, _rateCardStatus, _datesStatus, _projectManagerStatus, _expensesStatus })
             ThemeReactiveBrush.Bind(status, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
 
         _body.Children.Add(Section("Client", Row(_clientText, _changeClientButton), _clientStatus));
         _body.Children.Add(Section("Purchase order reference", Row(_purchaseOrderBox, _purchaseOrderSaveButton), _purchaseOrderStatus));
         _body.Children.Add(Section("Budget", Row(_budgetBox, _budgetSaveButton), _budgetStatus));
         _body.Children.Add(Section("Rate card", Row(_rateCardText, _changeRateCardButton), _rateCardStatus));
+        _body.Children.Add(Section("Expenses", Row(_expensesText, _recordExpenseButton), _expensesStatus));
 
         var datesRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd };
         datesRow.Children.Add(_startDate);
@@ -256,6 +278,28 @@ public sealed class ProjectDetailsView : UserControl
 
         _projectManagerBox.Text = project.ProjectManagerIdentityId ?? string.Empty;
         _projectManagerStatus.Text = string.Empty;
+
+        await RefreshExpensesSummaryAsync(projectId).ConfigureAwait(true);
+    }
+
+    /// <summary>`WP 21.3B`: a plain count and unbilled total — the project's own expenses are browsed in full through the Project Explorer's own Expenses area, not re-listed here.</summary>
+    private async Task RefreshExpensesSummaryAsync(Guid projectId)
+    {
+        if (_expenseService is null)
+        {
+            _expensesText.Text = "(expense recording is unavailable here)";
+            _expensesText.Opacity = 0.5;
+            return;
+        }
+
+        var all = await _expenseService.ListForProjectAsync(projectId).ConfigureAwait(true);
+        var unbilled = all.Where(e => e.Billable && e.InvoicedBy is null).ToList();
+
+        _expensesText.Text = all.Count == 0
+            ? "No expenses recorded."
+            : $"{all.Count} expense(s) recorded — {unbilled.Count} billable and not yet invoiced.";
+        _expensesText.Opacity = all.Count == 0 ? 0.5 : 1.0;
+        _expensesStatus.Text = string.Empty;
     }
 
     private async Task<string?> ResolveClientNameAsync(string clientOrganisationId)
@@ -378,6 +422,40 @@ public sealed class ProjectDetailsView : UserControl
             .ConfigureAwait(true);
 
         await ReportAsync(_projectManagerStatus, result).ConfigureAwait(true);
+    }
+
+    /// <summary>"Record expense…" (`WP 21.3B`) — the project's own second call site, beside Business → Timesheets' identical one (<see cref="Views.TimesheetWeekView"/>). Pre-selects this project in the prompt's own Project drop-down.</summary>
+    private async Task OnRecordExpenseAsync()
+    {
+        if (_projectId is not { } projectId)
+            return;
+
+        if (_recordExpensePrompt is null)
+        {
+            _expensesStatus.Text = "Nothing can collect the expense here — Record expense is unavailable.";
+            return;
+        }
+
+        var input = await _recordExpensePrompt.PromptAsync(projectId).ConfigureAwait(true);
+        if (input is null)
+        {
+            _expensesStatus.Text = "Record expense was cancelled.";
+            return;
+        }
+
+        var command = new Tempest.Workspace.Expenses.RecordExpenseCommand(
+            input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable);
+        var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
+
+        var message = result.Succeeded ? result.Message ?? "Expense recorded." : result.Message ?? "Record expense failed.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _expensesStatus.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+
+        // `WP 17.9.4`: what you make opens right up.
+        if (result.Succeeded && result.SubjectId is { } createdId)
+            _openObject?.Invoke(createdId, ProjectExpense.CanonicalKind);
     }
 
     private async Task ReportAsync(TextBlock statusMessage, CommandResult result)

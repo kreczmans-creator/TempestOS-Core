@@ -106,8 +106,14 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// <summary>This request's own lines — read-only once raised; a line never mutates independently of the request it belongs to.</summary>
     public IReadOnlyList<InvoiceRequestLine> Lines => _lines;
 
-    /// <summary>The sum of every line's own <c>Amount</c>.</summary>
+    /// <summary>The sum of every line's own <c>Amount</c> (net of VAT).</summary>
     public Money Total => _total;
+
+    /// <summary>The sum of every line's own <see cref="InvoiceRequestLine.VatAmount"/> (`WP 21.3B`) — computed from <see cref="Lines"/>, which never change after this request is raised, exactly as <see cref="Total"/> itself is fixed once at creation.</summary>
+    public Money VatTotal => Money.Sum(_lines.Select(l => l.VatAmount), _currency);
+
+    /// <summary>The sum of every line's own <see cref="InvoiceRequestLine.GrossAmount"/> — <see cref="Total"/> plus <see cref="VatTotal"/> (`WP 21.3B`).</summary>
+    public Money GrossTotal => Total + VatTotal;
 
     /// <inheritdoc cref="IHasLifecycle.Status" />
     /// <remarks>Hides <c>IHasLifecycle.Status</c> (the eight-value canonical <see cref="LifecycleState"/>) with this Kind's own status vocabulary (`ADR-0151`), exactly as <c>Tempest.Core.Evidence.Evidence.Status</c> does.</remarks>

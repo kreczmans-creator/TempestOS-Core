@@ -271,7 +271,7 @@ public sealed class UpdateQuotationLineCommandHandler : ICommandHandler<UpdateQu
     public async Task<CommandResult> HandleAsync(UpdateQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken)
+            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded

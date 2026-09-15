@@ -59,10 +59,14 @@ public sealed class InvoiceRequestPropertyFacetProvider : IPropertyFacetProvider
             "Lines",
             request.Lines.Count == 0
                 ? "(none)"
-                : string.Join("; ", request.Lines.Select(l => $"{l.Description} — {l.Quantity} x {l.UnitRate} = {l.Amount}")),
+                : string.Join(
+                    "; ",
+                    request.Lines.Select(l => $"{l.Description} — {l.Quantity} x {l.UnitRate} = {l.Amount} (+ VAT {l.VatAmount}, {l.VatRate.DisplayName()})")),
             PropertyFacetKind.Relationship));
 
-        facets.Add(new("Total", request.Total.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("Total (net)", request.Total.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("VAT", request.VatTotal.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("Total (gross)", request.GrossTotal.ToString(), PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Status", request.Status.ToString(), PropertyFacetKind.DisciplineSpecific));
 
         // `WP 20.1B` (`TD-180`): frozen at raise, from the client's own

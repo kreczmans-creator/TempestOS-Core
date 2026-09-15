@@ -2,6 +2,7 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
@@ -75,7 +76,7 @@ public sealed class KindEligibilityInvariantTests
     [
         CalculationsCommandIds.Delete, DocumentsCommandIds.Delete, EvidenceCommandIds.Delete, ManufacturingCommandIds.Delete, MechanicalCommandIds.Delete,
         VerificationCommandIds.Delete, RequirementsCommandIds.Delete, RequirementsCommandIds.DeleteGroup,
-        RequirementsCommandIds.DeleteCollection, TimesheetCommandIds.Delete,
+        RequirementsCommandIds.DeleteCollection, TimesheetCommandIds.Delete, ExpenseCommandIds.Delete,
     ];
 
     /// <summary>Every Kind this platform declares, from the disciplines' own public constants.</summary>

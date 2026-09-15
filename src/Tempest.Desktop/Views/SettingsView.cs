@@ -7,11 +7,14 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Tempest.Core.Audit;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Configuration;
 using Tempest.Core.Evidence;
 using Tempest.Core.Identity;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Persistence;
+using Tempest.Core.People;
+using Tempest.Core.Quotations;
 using Tempest.Core.Secrets;
 using Tempest.Core.Settings;
 using Tempest.Core.Timesheets;
@@ -42,13 +45,25 @@ namespace Tempest.Desktop.Views;
 /// of navigating away from an unsaved form.
 /// </para>
 /// <para>
-/// <b>Persistence root and principal override are read-only.</b> Neither
-/// this Work Package nor any Work Package before it builds a
-/// <c>--persistence-root</c> switch or an identity override control (`WP
-/// RC.0A`'s own future scope) — showing the resolved path and the
-/// configured <c>Identity:DisplayName</c>/<c>Identity:Role</c> keys is
-/// this brief's own explicit boundary: "do not invent an identity
-/// switch".
+/// <b>Persistence root stays read-only; Principal is now a real sign-in
+/// (`WP 21.3B`).</b> No Work Package builds a <c>--persistence-root</c>
+/// switch (`WP RC.0A`'s own future scope) — the resolved path is shown,
+/// never edited. Principal is different: it once showed only the
+/// configured <c>Identity:DisplayName</c>/<c>Identity:Role</c> keys
+/// ("do not invent an identity switch" was `WP 19.2B`'s own boundary);
+/// this Work Package invents exactly that switch, deliberately — a second
+/// principal has to be able to sign in and check work the first recorded,
+/// which the Evidence Check refusal (`EvidenceService.RecordCheckAsync`)
+/// now names directly: "switch person first". <b>Switch person…</b> lists
+/// every released person the People directory (`WP 20.10F`, or the
+/// <see cref="IPeopleDirectory"/> seam standing in for it — see that
+/// interface's own remarks) carries a known sign-in identity for, asks
+/// the chosen one to confirm by name (no password — this platform's own
+/// posture is single-user local trust, stated on the dialog itself), and
+/// publishes them through <see cref="Tempest.Desktop.WorkspaceHost.SwitchPrincipal"/>
+/// — the identical <see cref="CurrentPrincipalAccessor.SetCurrent"/> call
+/// <see cref="Tempest.Desktop.WorkspaceHost.StartAsync"/> itself makes at
+/// launch, never a second mechanism.
 /// </para>
 /// </remarks>
 public sealed class SettingsView : UserControl
@@ -86,6 +101,9 @@ public sealed class SettingsView : UserControl
     private readonly UpdateAvailability? _updateAvailability;
     private readonly IFilePicker? _filePicker;
     private readonly BackupService _backupService = new();
+    private readonly IPeopleDirectory? _people;
+    private readonly ConfirmationDialog? _confirmationDialog;
+    private readonly Action<ISessionPrincipal>? _switchPrincipal;
 
     private readonly TextBox _persistenceRootBox = new() { IsReadOnly = true, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _openPersistenceFolder = new() { Content = "Open folder", MinHeight = DesignTokens.ControlSizeMedium };
@@ -101,6 +119,18 @@ public sealed class SettingsView : UserControl
     private readonly Button _checkForUpdatesNowButton = new() { Content = "Check now", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _applyUpdateButton = new() { MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
     private readonly TextBlock _updateStatus = new() { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
+    // `WP 21.3B`: Switch person — lists every released person the People
+    // directory carries a known sign-in identity for.
+    private readonly ComboBox _switchPersonSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+    private readonly Button _switchPersonButton = new() { Content = "Switch person…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _switchPersonStatus = new() { FontSize = DesignTokens.FontSizeCaption };
+
+    // `WP 21.3B`: Organisation identity — the consultant's own default VAT
+    // rate for a new quotation line (`QuotationService.DefaultVatRateSettingKey`).
+    // A minimal stand-in section: `WP 20.10G`'s own fuller "Organisation
+    // identity" section (letterhead, trading details) was not in this Work
+    // Package's own base and is not built here — reconciled at merge time.
+    private readonly ComboBox _defaultVatRateSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
 
     private readonly ComboBox _themeSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140 };
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
@@ -150,6 +180,9 @@ public sealed class SettingsView : UserControl
     /// <summary>Initialises a new instance of the <see cref="SettingsView"/> class.</summary>
     /// <param name="persistenceRootPath">The resolved path of the persistence database, or a plain description when there is none (an in-memory store, in a test) — read-only, shown as-is.</param>
     /// <param name="configuration">Where <c>Identity:DisplayName</c> and <c>Identity:Role</c> are read from, read-only — never a second identity mechanism.</param>
+    /// <param name="people">Where "Switch person…" reads every switchable person from (`WP 21.3B`). <see langword="null"/> leaves the action honestly unavailable.</param>
+    /// <param name="confirmationDialog">The shared Dialog Framework overlay "Switch person…" confirms through (`WP 21.3B`). <see langword="null"/> leaves the action honestly unavailable.</param>
+    /// <param name="switchPrincipal">Publishes the confirmed person as this session's own principal (`WP 21.3B`) — <see cref="Tempest.Desktop.WorkspaceHost.SwitchPrincipal"/>. <see langword="null"/> leaves the action honestly unavailable.</param>
     public SettingsView(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
@@ -159,7 +192,8 @@ public sealed class SettingsView : UserControl
         string? persistenceDatabasePath = null, IAuditRecorder? auditRecorder = null,
         IProjectContext? projectContext = null, Func<Task>? prepareForRestartAsync = null,
         IUpdateService? updateService = null, UpdateAvailability? updateAvailability = null,
-        IFilePicker? filePicker = null)
+        IFilePicker? filePicker = null,
+        IPeopleDirectory? people = null, ConfirmationDialog? confirmationDialog = null, Action<ISessionPrincipal>? switchPrincipal = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -185,6 +219,9 @@ public sealed class SettingsView : UserControl
         _updateService = updateService;
         _updateAvailability = updateAvailability;
         _filePicker = filePicker;
+        _people = people;
+        _confirmationDialog = confirmationDialog;
+        _switchPrincipal = switchPrincipal;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -194,6 +231,15 @@ public sealed class SettingsView : UserControl
         _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "Xero", Tag = "Xero" });
         _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "QuickBooks Online", Tag = "QuickBooksOnline" });
         AutomationProperties.SetName(_invoicingConnectorSelector, "Invoicing connector");
+
+        // `WP 21.3B`: the closed VAT vocabulary, declaration order — the
+        // consultant's own default for a new quotation line.
+        foreach (var rate in Enum.GetValues<VatRate>())
+            _defaultVatRateSelector.Items.Add(new ComboBoxItem { Content = rate.DisplayName(), Tag = rate });
+        AutomationProperties.SetName(_defaultVatRateSelector, "Default VAT rate");
+
+        AutomationProperties.SetName(_switchPersonSelector, "Switch to");
+        AutomationProperties.SetName(_switchPersonButton, "Switch person…");
 
         AutomationProperties.SetName(_persistenceRootBox, "Persistence root");
         AutomationProperties.SetName(_openPersistenceFolder, "Open persistence folder");
@@ -259,7 +305,25 @@ public sealed class SettingsView : UserControl
         var principalStack = new StackPanel { Spacing = DesignTokens.SpaceXs };
         principalStack.Children.Add(_displayNameOverride);
         principalStack.Children.Add(_roleOverride);
-        var principal = BuildSection("Principal override", principalStack);
+
+        // `WP 21.3B`: "Switch person…" — a real sign-in, not read-only any
+        // longer (this class's own remarks). Shown whenever both
+        // collaborators were actually threaded through; otherwise the
+        // section stays exactly the read-only pair it always was.
+        if (_people is not null && _confirmationDialog is not null && _switchPrincipal is not null)
+        {
+            var switchRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+            switchRow.Children.Add(_switchPersonSelector);
+            switchRow.Children.Add(_switchPersonButton);
+            principalStack.Children.Add(switchRow);
+            principalStack.Children.Add(_switchPersonStatus);
+        }
+
+        var principal = BuildSection("Principal", principalStack);
+
+        // `WP 21.3B`: Organisation identity — a minimal stand-in for `WP
+        // 20.10G`'s own fuller section (see this class's own field remarks).
+        var vatDefaults = BuildSection("VAT", LabeledRow("Default VAT rate (new quotation lines)", _defaultVatRateSelector));
 
         var appearance = BuildSection("Appearance", LabeledRow("Theme", _themeSelector));
         var notifications = BuildSection("Notifications", LabeledRow("Toast duration (seconds)", _toastDuration));
@@ -339,6 +403,7 @@ public sealed class SettingsView : UserControl
             body.Children.Add(backup);
 
         body.Children.Add(principal);
+        body.Children.Add(vatDefaults);
         body.Children.Add(appearance);
         body.Children.Add(notifications);
         body.Children.Add(workflow);
@@ -364,6 +429,7 @@ public sealed class SettingsView : UserControl
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _openPersistenceFolder.Classes.Add(ChromeStyles.Subtle);
         _openBackupsFolderButton.Classes.Add(ChromeStyles.Subtle);
+        _switchPersonButton.Classes.Add(ChromeStyles.Subtle);
         _openPersistenceFolder.Click += (_, _) => OnOpenPersistenceFolder();
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
         _invoicingAuthoriseButton.Click += async (_, _) => await OnAuthoriseInvoicingAsync().ConfigureAwait(true);
@@ -373,6 +439,7 @@ public sealed class SettingsView : UserControl
         _openBackupsFolderButton.Click += (_, _) => OnOpenBackupsFolder();
         _checkForUpdatesNowButton.Click += async (_, _) => await OnCheckForUpdatesNowAsync().ConfigureAwait(true);
         _applyUpdateButton.Click += async (_, _) => await OnApplyUpdateAsync().ConfigureAwait(true);
+        _switchPersonButton.Click += async (_, _) => await OnSwitchPersonAsync().ConfigureAwait(true);
 
         AutomationProperties.SetName(this, "Settings");
         Content = new ScrollViewer { Content = body };
@@ -441,8 +508,53 @@ public sealed class SettingsView : UserControl
 
         if (_updateService is not null)
             RefreshUpdateStatus();
+        await LoadDefaultVatRateAsync().ConfigureAwait(true);
+
+        if (_people is not null && _confirmationDialog is not null && _switchPrincipal is not null)
+            await LoadSwitchablePeopleAsync().ConfigureAwait(true);
 
         _savedStatus.Text = string.Empty;
+    }
+
+    /// <summary>`WP 21.3B`: reads the consultant's own configured default VAT rate — registered by <c>QuotationService</c>'s own constructor, defaulting to <see cref="VatRate.OutOfScope"/> until read back for the first time from a store where that registration has not yet run (a test host with no <c>IQuotationService</c> composed).</summary>
+    private async Task LoadDefaultVatRateAsync()
+    {
+        VatRate current;
+
+        try
+        {
+            var stored = await _settingsProvider.GetValueAsync(QuotationService.DefaultVatRateSettingKey).ConfigureAwait(true);
+            current = Enum.TryParse<VatRate>(stored, out var parsed) ? parsed : VatRate.OutOfScope;
+        }
+        catch (SettingNotFoundException)
+        {
+            // No `IQuotationService` has registered the definition yet in
+            // this process — reads as the model's own default rather than
+            // failing the whole Settings refresh over one missing key.
+            current = VatRate.OutOfScope;
+        }
+
+        foreach (var candidate in _defaultVatRateSelector.Items.OfType<ComboBoxItem>())
+        {
+            if (Equals(candidate.Tag, current))
+                _defaultVatRateSelector.SelectedItem = candidate;
+        }
+    }
+
+    /// <summary>`WP 21.3B`: every released person the People directory carries a known sign-in identity for — "Switch person…"'s own candidate list.</summary>
+    private async Task LoadSwitchablePeopleAsync()
+    {
+        if (_people is null)
+            return;
+
+        var switchable = await _people.ListSwitchableAsync().ConfigureAwait(true);
+
+        _switchPersonSelector.ItemsSource = switchable
+            .Select(p => new ComboBoxItem { Content = p.Role is { } role ? $"{p.DisplayName} ({role})" : p.DisplayName, Tag = p })
+            .ToList();
+        _switchPersonSelector.SelectedIndex = switchable.Count > 0 ? 0 : -1;
+        _switchPersonButton.IsEnabled = switchable.Count > 0;
+        _switchPersonStatus.Text = switchable.Count == 0 ? "No released person carries a known sign-in identity yet." : string.Empty;
     }
 
     private void OnOpenPersistenceFolder()
@@ -721,8 +833,61 @@ public sealed class SettingsView : UserControl
             await _organisationIdentity.SaveAsync().ConfigureAwait(true);
         }
 
+        if (_defaultVatRateSelector.SelectedItem is ComboBoxItem { Tag: VatRate selectedVatRate })
+        {
+            try
+            {
+                await _settingsProvider.SetValueAsync(QuotationService.DefaultVatRateSettingKey, selectedVatRate.ToString()).ConfigureAwait(true);
+            }
+            catch (SettingNotFoundException)
+            {
+                // As `LoadDefaultVatRateAsync` — no `IQuotationService` has
+                // registered the definition in this process; nothing to
+                // save it into.
+            }
+        }
+
         _savedStatus.Text = $"Saved at {DateTime.Now:HH:mm:ss}.";
         ActionCompleted?.Invoke("Settings saved.", ActionOutcome.Changed);
+    }
+
+    /// <summary>
+    /// "Switch person…" (`WP 21.3B`): the chosen person confirms by name —
+    /// no password, this platform's own single-user local trust posture,
+    /// stated on the dialog itself — then becomes this session's own
+    /// principal from this moment on.
+    /// </summary>
+    private async Task OnSwitchPersonAsync()
+    {
+        if (_people is null || _confirmationDialog is null || _switchPrincipal is null)
+            return;
+
+        if (_switchPersonSelector.SelectedItem is not ComboBoxItem { Tag: Person person } || person.IdentityId is not { } identityId)
+        {
+            _switchPersonStatus.Text = "Choose a person to switch to first.";
+            return;
+        }
+
+        var confirmed = await _confirmationDialog
+            .ConfirmAsync(
+                "Switch person",
+                $"Switch to {person.DisplayName}? TempestOS does not ask for a password — this platform's own posture is single-user local trust, "
+                + "and every act from this point on records as theirs.",
+                "Switch")
+            .ConfigureAwait(true);
+
+        if (!confirmed)
+        {
+            _switchPersonStatus.Text = "Switch person was cancelled.";
+            return;
+        }
+
+        _switchPrincipal(new SessionPrincipal(identityId, person.DisplayName, SessionRole.Engineer));
+
+        _switchPersonStatus.Text = $"Now signed in as {person.DisplayName}.";
+        ActionCompleted?.Invoke($"Switched to {person.DisplayName}.", ActionOutcome.Changed);
+
+        await RefreshAsync().ConfigureAwait(true);
     }
 
     private async Task LoadInvoicingSectionAsync()

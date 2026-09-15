@@ -180,6 +180,10 @@ public sealed class EvidenceJourneyTests
             Assert.Equal(EvidenceRefusal.CheckerMustDifferFromAuthor, refused.Refusal);
             Assert.Equal(EvidenceStatus.Draft, refused.Evidence!.Status);
 
+            // `WP 21.3B`: the refusal now names the actual next step — the
+            // Switch person act this Work Package builds in Settings.
+            Assert.Equal("An independent check needs a second person; switch person first.", refused.Reason);
+
             // A second, different principal succeeds.
             EvidenceTestHost.SignIn(host, EvidenceTestHost.SecondPrincipalId);
             var accepted = await service.RecordCheckAsync(evidence.Id, "Second Reviewer", "Org", "Independent review.", CheckOutcome.Accepted);
