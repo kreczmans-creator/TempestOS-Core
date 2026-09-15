@@ -1,5 +1,13 @@
 # Engineering Standard: Governance Automation
 
+> **Status note, September 2026.** `scripts/governance-healthcheck.ps1`
+> grew from eight checks to sixteen at `WP 16.1B` and was then cut to five
+> source-derived checks plus the Markdown-must-not-exceed-code check at
+> `WP 17.0B`, once the registers it audited were archived. The script's own
+> header lists the current checks. The reasoning and the mechanics of both
+> changes are in `08-the-physical-review-and-the-release-gate.md` and
+> `09-the-governance-reset-and-how-a-release-is-now-run.md`.
+
 ## Purpose
 
 `FCR-0005` (Governance Register Health-Check Tooling) was first
