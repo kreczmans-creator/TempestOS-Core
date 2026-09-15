@@ -65,9 +65,18 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
+# cancel-in-progress is off for release/* branches. A release branch takes
+# merges every five to fifteen minutes during a tranche, and a full run of
+# this workflow takes thirteen to fifteen; with cancellation on, runs #420
+# to #427 on release/v0.21.0 (2026-09-15) were each cancelled by the next
+# push, so seven consecutive heads - three of them carrying the fix for
+# the previous head's red run - were never gated at all. On every other
+# ref a superseded run is still cancelled: a feature branch's intermediate
+# heads are not release candidates and the runner minutes are better spent
+# on the head that will be merged.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') }}
 
 permissions:
   contents: read
