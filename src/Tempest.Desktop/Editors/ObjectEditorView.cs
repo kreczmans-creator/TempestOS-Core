@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -23,6 +24,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Evidence;
+using Tempest.Core.People;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
@@ -87,6 +89,26 @@ public sealed record ProjectCommercialEditorSupport(
     Func<string?> CurrentPrincipalIdentityId,
     Func<string, CancellationToken, Task<string?>>? ResolveClientNameAsync = null,
     Func<ReferencePin, CancellationToken, Task<(string Code, string Name)?>>? ResolveRateCardAsync = null);
+
+/// <summary>
+/// The requirement Owner section's own collaborators (`WP 20.10F`, Product
+/// Owner finding D8): <see cref="Persons"/> is read fresh every time the
+/// section populates, so a person released anywhere is offered the next
+/// time this editor opens or refreshes — never cached, mirroring
+/// <see cref="Views.LibrariesView"/>'s own identical "read fresh, never
+/// cached" discipline. <see cref="AddPersonAsync"/> is the drop-down's own
+/// <b>Add person…</b> affordance: registers, verifies and releases a new
+/// person in one action (<see cref="Views.PersonAddPrompt"/>) and returns
+/// its record id and display name, or <see langword="null"/> if the user
+/// cancelled. <see langword="null"/> (any test that constructs this editor
+/// directly without it) leaves the Owner control showing only whatever
+/// free text a requirement already carries, exactly as before this Work
+/// Package — the identical discipline <see cref="EvidenceEditorSupport"/>
+/// and <see cref="ProjectCommercialEditorSupport"/> already established.
+/// </summary>
+public sealed record RequirementOwnerEditorSupport(
+    IPersonCatalog Persons,
+    Func<CancellationToken, Task<(string RecordId, string DisplayName)?>> AddPersonAsync);
 
 /// <summary>
 /// The Object Editor Framework's own real, tabbed editor control (`WP
@@ -191,6 +213,7 @@ public sealed class ObjectEditorView : UserControl
     private readonly EvidenceEditorSupport? _evidenceSupport;
     private readonly IAuditQuery? _auditQuery;
     private readonly ProjectCommercialEditorSupport? _commercialSupport;
+    private readonly RequirementOwnerEditorSupport? _ownerSupport;
 
     private readonly TextBlock _identityReadout = new() { Opacity = 0.7, FontSize = DesignTokens.FontSizeCaption };
     private readonly TextBox _nameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
@@ -218,10 +241,23 @@ public sealed class ObjectEditorView : UserControl
     private Expander _contentSection = null!;
     private Expander _bomSection = null!;
 
-    private readonly TextBox _requirementOwnerBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
+    // `WP 20.10F` (Product Owner finding D8): a drop-down of Released
+    // people, not a free `TextBox` — see `PopulateOwnerOptionsAsync`'s own
+    // remarks for how its items are built and what each one's own `Tag`
+    // means.
+    private readonly ComboBox _requirementOwnerBox = new() { MinHeight = DesignTokens.MinControlSize };
     private readonly ComboBox _requirementPriorityBox = new() { MinHeight = DesignTokens.MinControlSize, ItemsSource = new[] { "(none)", "Low", "Medium", "High", "Critical" } };
     private readonly Button _requirementSaveButton = new() { Content = "Save Owner/Priority", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _requirementStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    /// <summary>The literal owner text and person-record-id a fresh <see cref="PopulateOwnerOptionsAsync"/> read last — what <see cref="OnSaveRequirementAsync"/> falls back to when the drop-down's own current selection resolves to neither a real person nor the legacy item (the sentinel <see cref="AddPersonOwnerTag"/> row, or nothing selected at all).</summary>
+    private (string? Owner, string? OwnerPersonId) _currentOwner;
+
+    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own trailing <b>Add person…</b> row carries — never a real record id, which is always the person's own <see cref="IReferenceRecord{TDefinition}.Id"/>.</summary>
+    private const string AddPersonOwnerTag = "__wp2010f_add_person__";
+
+    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in People)" row carries, when a requirement's stored <see cref="IRequirement.Owner"/> matches no Released person.</summary>
+    private const string LegacyOwnerTag = "__wp2010f_legacy_owner__";
     private Expander _requirementSection = null!;
 
     private readonly ComboBox _calculationTemplatePicker = new() { MinHeight = DesignTokens.MinControlSize };
@@ -482,7 +518,7 @@ public sealed class ObjectEditorView : UserControl
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates,
         IKindEditorDeclarationRegistry? declarations, EvidenceEditorSupport? evidenceSupport, IAuditQuery? auditQuery,
-        ProjectCommercialEditorSupport? commercialSupport)
+        ProjectCommercialEditorSupport? commercialSupport, RequirementOwnerEditorSupport? ownerSupport)
     {
         _objectId = objectId;
         _objectKind = objectKind;
@@ -496,6 +532,7 @@ public sealed class ObjectEditorView : UserControl
         _evidenceSupport = evidenceSupport;
         _auditQuery = auditQuery;
         _commercialSupport = commercialSupport;
+        _ownerSupport = ownerSupport;
 
         // `WP 18.1A`: once this tab closes and the control leaves the
         // visual tree, drop the change-feed subscription — see
@@ -549,6 +586,11 @@ public sealed class ObjectEditorView : UserControl
         // buffered-edit lifecycle).
         _bomSaveButton.Click += async (_, _) => await OnSaveBomAsync().ConfigureAwait(true);
         _requirementSaveButton.Click += async (_, _) => await OnSaveRequirementAsync().ConfigureAwait(true);
+        // `WP 20.10F`: picking the drop-down's own trailing "Add person…"
+        // row is an immediate action, not a value to save — handled here,
+        // on selection, rather than deferred to Save.
+        _requirementOwnerBox.SelectionChanged += async (_, _) => await OnRequirementOwnerSelectionChangedAsync().ConfigureAwait(true);
+        AutomationProperties.SetName(_requirementOwnerBox, "Owner");
         _calculationExecuteButton.Click += async (_, _) => await OnExecuteCalculationAsync().ConfigureAwait(true);
         _verificationPassButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Pass).ConfigureAwait(true);
         _verificationFailButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Fail).ConfigureAwait(true);
@@ -647,7 +689,8 @@ public sealed class ObjectEditorView : UserControl
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService = null, CalculationTemplateRegistry? calculationTemplates = null,
         IWorkspaceChanges? workspaceChanges = null, IKindEditorDeclarationRegistry? declarations = null,
-        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null, ProjectCommercialEditorSupport? commercialSupport = null)
+        EvidenceEditorSupport? evidenceSupport = null, IAuditQuery? auditQuery = null, ProjectCommercialEditorSupport? commercialSupport = null,
+        RequirementOwnerEditorSupport? ownerSupport = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(manager);
@@ -660,7 +703,7 @@ public sealed class ObjectEditorView : UserControl
         {
             var realEditor = new ObjectEditorView(
                 objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
-                declarations, evidenceSupport, auditQuery, commercialSupport)
+                declarations, evidenceSupport, auditQuery, commercialSupport, ownerSupport)
             {
                 WorkspaceChanges = workspaceChanges,
             };
@@ -674,7 +717,7 @@ public sealed class ObjectEditorView : UserControl
 
         var requirementEditor = new ObjectEditorView(
             objectId, objectKind, domainContext, manager, navigateToObject, commandDispatcher, requirementsService, calculationTemplates,
-            declarations, evidenceSupport, auditQuery, commercialSupport)
+            declarations, evidenceSupport, auditQuery, commercialSupport, ownerSupport)
         {
             WorkspaceChanges = workspaceChanges,
         };
@@ -2343,15 +2386,107 @@ public sealed class ObjectEditorView : UserControl
         }
 
         _requirementSection.IsVisible = true;
-        _requirementOwnerBox.Text = requirement.Owner ?? string.Empty;
+        await PopulateOwnerOptionsAsync(requirement).ConfigureAwait(true);
         _requirementPriorityBox.SelectedItem = requirement.Priority?.ToString() ?? "(none)";
         _requirementStatusMessage.Text = string.Empty;
     }
 
+    /// <summary>The <see cref="ComboBoxItem.Tag"/> a real, Released-person row of the Owner drop-down carries (`WP 20.10F`) — the record id together with the display name to store on Save, so Save never has to parse it back out of "DisplayName (Role)".</summary>
+    private sealed record OwnerOptionTag(string RecordId, string DisplayName);
+
+    /// <summary>
+    /// (Re)builds the Owner drop-down's own items: every Released, active
+    /// person (`WP 20.10F`, Product Owner finding D8), read fresh every
+    /// time — never cached, so a person released anywhere is offered the
+    /// next time this runs; the requirement's own current free-text
+    /// <see cref="IRequirement.Owner"/> as a leading "(not in People)" row
+    /// where it matches no Released person; and, where
+    /// <see cref="_ownerSupport"/> is wired, a trailing <b>Add person…</b>
+    /// row. <paramref name="preferPersonId"/> is selected if a matching
+    /// Released person is found; otherwise the legacy row is selected when
+    /// there is a stored owner, and nothing is selected otherwise (an unset
+    /// requirement, or no <see cref="_ownerSupport"/> at all).
+    /// </summary>
+    private async Task PopulateOwnerOptionsAsync(IRequirement requirement)
+    {
+        _currentOwner = (requirement.Owner, requirement.OwnerPersonId);
+        await RebuildOwnerItemsAsync(requirement.OwnerPersonId).ConfigureAwait(true);
+    }
+
+    private async Task RebuildOwnerItemsAsync(string? preferPersonId)
+    {
+        var items = new List<ComboBoxItem>();
+        ComboBoxItem? selected = null;
+
+        if (_ownerSupport is not null)
+        {
+            var released = await _ownerSupport.Persons.FindSelectableAsync().ConfigureAwait(true);
+
+            foreach (var record in released)
+            {
+                var label = string.IsNullOrWhiteSpace(record.Definition.Role)
+                    ? record.Definition.DisplayName
+                    : $"{record.Definition.DisplayName} ({record.Definition.Role})";
+                var item = new ComboBoxItem { Content = label, Tag = new OwnerOptionTag(record.Id, record.Definition.DisplayName) };
+                items.Add(item);
+
+                if (preferPersonId is not null && string.Equals(preferPersonId, record.Id, StringComparison.Ordinal))
+                    selected = item;
+            }
+        }
+
+        // An existing requirement whose typed owner matches no person still
+        // shows its own text, suffixed "(not in People)" — the drop-down
+        // still offers to pick a real person instead.
+        if (selected is null && !string.IsNullOrWhiteSpace(_currentOwner.Owner))
+        {
+            var legacy = new ComboBoxItem { Content = $"{_currentOwner.Owner} (not in People)", Tag = LegacyOwnerTag };
+            items.Insert(0, legacy);
+            selected = legacy;
+        }
+
+        if (_ownerSupport is not null)
+            items.Add(new ComboBoxItem { Content = "Add person…", Tag = AddPersonOwnerTag });
+
+        _requirementOwnerBox.ItemsSource = items;
+        _requirementOwnerBox.SelectedItem = selected;
+    }
+
+    /// <summary>
+    /// Picking the trailing "Add person…" row opens
+    /// <see cref="RequirementOwnerEditorSupport.AddPersonAsync"/> right
+    /// away — never a value to save, an action taken the moment it is
+    /// selected. Any other selection (a real person, the legacy row, or
+    /// none) is a plain no-op here: it is <see cref="OnSaveRequirementAsync"/>'s
+    /// own job to read it, not this handler's.
+    /// </summary>
+    private async Task OnRequirementOwnerSelectionChangedAsync()
+    {
+        if (_ownerSupport is null || _requirementOwnerBox.SelectedItem is not ComboBoxItem { Tag: AddPersonOwnerTag })
+            return;
+
+        var added = await _ownerSupport.AddPersonAsync(CancellationToken.None).ConfigureAwait(true);
+
+        // Rebuilds either way: added — the new person now exists, Released,
+        // and is preferred/selected below; cancelled — rebuilding from the
+        // requirement's own last-known owner is what stops the sentinel
+        // row itself from ever being left sitting selected.
+        await RebuildOwnerItemsAsync(added?.RecordId ?? _currentOwner.OwnerPersonId).ConfigureAwait(true);
+
+        if (added is { } newPerson)
+            _requirementStatusMessage.Text = $"Added and released '{newPerson.DisplayName}'.";
+    }
+
     private async Task OnSaveRequirementAsync()
     {
-        var owner = NullIfEmpty(_requirementOwnerBox.Text);
-        var ownerResult = await _commandDispatcher.DispatchAsync(new SetRequirementOwnerCommand(_objectId, owner), CancellationToken.None).ConfigureAwait(true);
+        var (owner, ownerPersonId) = _requirementOwnerBox.SelectedItem switch
+        {
+            ComboBoxItem { Tag: OwnerOptionTag option } => ((string?)option.DisplayName, (string?)option.RecordId),
+            ComboBoxItem { Tag: LegacyOwnerTag } => (_currentOwner.Owner, (string?)null),
+            _ => (_currentOwner.Owner, _currentOwner.OwnerPersonId),
+        };
+
+        var ownerResult = await _commandDispatcher.DispatchAsync(new SetRequirementOwnerCommand(_objectId, owner, ownerPersonId), CancellationToken.None).ConfigureAwait(true);
         if (!ownerResult.Succeeded)
         {
             _requirementStatusMessage.Text = ownerResult.Message ?? "Set owner failed.";

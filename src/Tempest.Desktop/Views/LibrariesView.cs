@@ -9,6 +9,7 @@ using Tempest.Core.Constants;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
+using Tempest.Core.People;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Standards;
@@ -49,6 +50,7 @@ public sealed class LibrariesView : UserControl
     private readonly IProcessCatalog _manufacturing;
     private readonly IComponentCatalog _components;
     private readonly IRateCardCatalog _businessRateCards;
+    private readonly IPersonCatalog _persons;
     private readonly ReferenceLibraryCatalogues _catalogues;
     private readonly ReferenceReviewService _review;
     private readonly BracketCalculationWorkbench _bracketCalculations;
@@ -64,6 +66,15 @@ public sealed class LibrariesView : UserControl
     private readonly TextBox _newMaterialSourceOrganisation = new() { Watermark = "Source organisation", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _newMaterialSourceDocument = new() { Watermark = "Source document", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _addMaterialButton = new() { Content = "Add Material", MinHeight = DesignTokens.MinControlSize };
+
+    // `WP 20.10F` (Product Owner finding D8): a person needs no source
+    // organisation/document of their own typed in — see `OnAddPersonAsync`'s
+    // own remarks for the fixed provenance every added person is stamped
+    // with instead.
+    private readonly TextBox _newPersonDisplayName = new() { Watermark = "Display name", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBox _newPersonRole = new() { Watermark = "Role", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBox _newPersonEmail = new() { Watermark = "Email", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _addPersonButton = new() { Content = "Add Person", MinHeight = DesignTokens.MinControlSize };
 
     // `WP 19.6A`: master/detail — a row's own Open action or double-tap
     // shows the record view beside the list at typical widths, or in
@@ -115,7 +126,7 @@ public sealed class LibrariesView : UserControl
     public LibrariesView(
         IMaterialCatalog materials, IFastenerCatalog fasteners, IBearingCatalog bearings,
         IStandardCatalog standards, IConstantCatalog constants, IProcessCatalog manufacturing,
-        IComponentCatalog components, IRateCardCatalog businessRateCards,
+        IComponentCatalog components, IRateCardCatalog businessRateCards, IPersonCatalog persons,
         ReferenceReviewService review, BracketCalculationWorkbench bracketCalculations,
         IReferenceCitationIndex citationIndex, Action<Guid, string> openObjectRightUp)
     {
@@ -127,6 +138,7 @@ public sealed class LibrariesView : UserControl
         ArgumentNullException.ThrowIfNull(manufacturing);
         ArgumentNullException.ThrowIfNull(components);
         ArgumentNullException.ThrowIfNull(businessRateCards);
+        ArgumentNullException.ThrowIfNull(persons);
         ArgumentNullException.ThrowIfNull(review);
         ArgumentNullException.ThrowIfNull(bracketCalculations);
         ArgumentNullException.ThrowIfNull(citationIndex);
@@ -140,7 +152,8 @@ public sealed class LibrariesView : UserControl
         _manufacturing = manufacturing;
         _components = components;
         _businessRateCards = businessRateCards;
-        _catalogues = new ReferenceLibraryCatalogues(materials, fasteners, bearings, standards, constants, manufacturing, components, businessRateCards);
+        _persons = persons;
+        _catalogues = new ReferenceLibraryCatalogues(materials, fasteners, bearings, standards, constants, manufacturing, components, businessRateCards, persons);
         _review = review;
         _bracketCalculations = bracketCalculations;
 
@@ -180,10 +193,35 @@ public sealed class LibrariesView : UserControl
         addMaterialSection.Children.Add(new TextBlock { Text = "Add a material", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
         addMaterialSection.Children.Add(addMaterialForm);
 
+        // `WP 20.10F` (Product Owner finding D8): the People library's own
+        // "Add a person" form — the identical inline-form pattern "Add a
+        // material" above already establishes, with no source
+        // organisation/document fields (`OnAddPersonAsync`'s own remarks).
+        _addPersonButton.Classes.Add(ChromeStyles.Primary);
+        _addPersonButton.Click += async (_, _) => await OnAddPersonAsync().ConfigureAwait(true);
+
+        AutomationProperties.SetName(_newPersonDisplayName, "Display name");
+        AutomationProperties.SetName(_newPersonRole, "Role");
+        AutomationProperties.SetName(_newPersonEmail, "Email");
+        AutomationProperties.SetName(_addPersonButton, "Add Person");
+        ToolTip.SetTip(_addPersonButton, "Add Person");
+
+        var addPersonForm = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var field in new Control[] { _newPersonDisplayName, _newPersonRole, _newPersonEmail, _addPersonButton })
+        {
+            field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
+            addPersonForm.Children.Add(field);
+        }
+
+        var addPersonSection = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg) };
+        addPersonSection.Children.Add(new TextBlock { Text = "Add a person", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
+        addPersonSection.Children.Add(addPersonForm);
+
         var body = new StackPanel { Margin = DesignTokens.PanelPadding, Spacing = DesignTokens.SpaceMd };
         body.Children.Add(new TextBlock { Text = "Libraries", FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeTitle, FontWeight = DesignTokens.WeightHeading });
         body.Children.Add(_status);
         body.Children.Add(addMaterialSection);
+        body.Children.Add(addPersonSection);
         body.Children.Add(_rows);
 
         _listScroll = new ScrollViewer { Content = body };
@@ -288,11 +326,12 @@ public sealed class LibrariesView : UserControl
         }
     }
 
-    /// <summary>The eight governed libraries' own canonical names, straight from each catalog's own <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/> — never restated as a literal here, so this list can never drift from what each catalog actually reports.</summary>
+    /// <summary>The nine governed libraries' own canonical names (People added `WP 20.10F`), straight from each catalog's own <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/> — never restated as a literal here, so this list can never drift from what each catalog actually reports.</summary>
     private IEnumerable<string> AllLibraryNames =>
     [
         _materials.LibraryName, _fasteners.LibraryName, _bearings.LibraryName, _standards.LibraryName,
         _constants.LibraryName, _manufacturing.LibraryName, _components.LibraryName, _businessRateCards.LibraryName,
+        _persons.LibraryName,
     ];
 
     /// <summary>
@@ -319,7 +358,7 @@ public sealed class LibrariesView : UserControl
         return rows;
     }
 
-    /// <summary>Every record across all eight governed libraries — what the Libraries tab itself lists, wider than <see cref="ReadAllAsync"/>'s citable five (`WP 19.6A`).</summary>
+    /// <summary>Every record across all nine governed libraries — what the Libraries tab itself lists, wider than <see cref="ReadAllAsync"/>'s citable five (`WP 19.6A`; People added `WP 20.10F` — deliberately not part of <see cref="ReadAllAsync"/>'s own citable set: a person is picked as a requirement's owner, never cited by Evidence).</summary>
     private async Task<IReadOnlyList<EvidenceLibraryRow>> ReadAllLibrariesAsync()
     {
         var rows = new List<EvidenceLibraryRow>(await ReadAllAsync(_materials, _fasteners, _bearings, _standards, _constants).ConfigureAwait(false));
@@ -327,6 +366,7 @@ public sealed class LibrariesView : UserControl
         rows.AddRange(await ReadLibraryAsync(_manufacturing, d => d.Name, default).ConfigureAwait(false));
         rows.AddRange(await ReadLibraryAsync(_components, d => d.Designation, default).ConfigureAwait(false));
         rows.AddRange(await ReadLibraryAsync(_businessRateCards, d => d.Name, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_persons, d => d.Role is { Length: > 0 } role ? $"{d.DisplayName} ({role})" : d.DisplayName, default).ConfigureAwait(false));
 
         return rows;
     }
@@ -524,6 +564,58 @@ public sealed class LibrariesView : UserControl
             Report(ex.Message, succeeded: false);
         }
     }
+
+    /// <summary>
+    /// Adds one person record of the user's own as Draft (`WP 20.10F`,
+    /// Product Owner finding D8) — mirrors <see cref="OnAddMaterialAsync"/>'s
+    /// own shape, minus a source organisation/document: a person is not
+    /// transcribed from a datasheet or a standard, so nothing outside
+    /// TempestOS itself could ever be named as the source of their own
+    /// name. The fixed provenance below still names <em>something</em>
+    /// (`IdentifiesASource`), which is what lets the record leave Draft at
+    /// all; Verify/Release afterwards is the same governed act every other
+    /// library's own row already offers, unchanged.
+    /// </summary>
+    private async Task OnAddPersonAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newPersonDisplayName.Text))
+        {
+            Report("Enter a display name before adding a person.", succeeded: false);
+            return;
+        }
+
+        try
+        {
+            var displayName = _newPersonDisplayName.Text.Trim();
+            var recordId = "person-" + new string(displayName.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+
+            var person = new Person
+            {
+                DisplayName = displayName,
+                Role = NullIfEmpty(_newPersonRole.Text),
+                Email = NullIfEmpty(_newPersonEmail.Text),
+            };
+
+            await _persons.RegisterAsync(recordId, person, PersonProvenance.Default).ConfigureAwait(true);
+
+            _newPersonDisplayName.Text = string.Empty;
+            _newPersonRole.Text = string.Empty;
+            _newPersonEmail.Text = string.Empty;
+
+            await RefreshAsync().ConfigureAwait(true);
+            Report($"Added person '{displayName}'.", succeeded: true);
+
+            // The Product Owner guard (`po-comments.md` item 5): Add opens
+            // the new record right up.
+            await OpenRecordAsync(_persons.LibraryName, recordId).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is ArgumentException or DuplicateReferenceRecordException or DuplicateReferenceKeyException)
+        {
+            Report(ex.Message, succeeded: false);
+        }
+    }
+
+    private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private void Report(string message, bool succeeded)
     {

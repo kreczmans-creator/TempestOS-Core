@@ -85,13 +85,18 @@ internal sealed partial class MainWindowComposer
                 ? (card.Definition.Code, card.Definition.Name)
                 : null);
 
+        // `WP 20.10F` (Product Owner finding D8): the requirement Owner
+        // section's own People catalogue and its "Add person…" prompt —
+        // threaded through exactly as `commercialSupport` just above.
+        var ownerSupport = new RequirementOwnerEditorSupport(views.PersonCatalog, ct => views.PersonAddPrompt.PromptAsync(ct));
+
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             views.ExplorerView, views.InspectorView, views.Ribbon, views.StatusBar, views.ToastHost, views.ConfirmationDialog, undoRedo.Stack,
             views.Session.RecentObjects, views.Session.FavouriteObjects, views.OpenGraphViewsByRootId,
             views.DocumentArea, views.ActionReporter,
             workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
-            auditQuery: host.AuditQuery, commercialSupport: commercialSupport);
+            auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport);
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which

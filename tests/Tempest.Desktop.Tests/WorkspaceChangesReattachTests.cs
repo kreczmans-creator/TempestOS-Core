@@ -13,6 +13,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Manufacturing;
+using Tempest.Core.People;
 using Tempest.Core.Persistence;
 using Tempest.Core.Timesheets;
 using Tempest.Desktop.Editors;
@@ -180,7 +181,7 @@ public sealed class WorkspaceChangesReattachTests
             var referenceCitationIndex = new ReferenceCitationIndex(domainContext, host.ProjectDirectory!);
             var librariesView = new LibrariesView(
                 host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
-                Resolve<IProcessCatalog>(host), Resolve<IComponentCatalog>(host), Resolve<IRateCardCatalog>(host),
+                Resolve<IProcessCatalog>(host), Resolve<IComponentCatalog>(host), Resolve<IRateCardCatalog>(host), Resolve<IPersonCatalog>(host),
                 host.ReferenceReview!, host.BracketCalculations!, referenceCitationIndex, (_, _) => { });
             var engineeringDashboard = new EngineeringDashboardView(tasksReadModel, Resolve<ICommandDispatcher>(host), (_, _) => { });
 

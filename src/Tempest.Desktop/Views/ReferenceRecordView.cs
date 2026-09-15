@@ -15,6 +15,7 @@ using Tempest.Core.Evidence;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Manufacturing;
 using Tempest.Core.Materials;
+using Tempest.Core.People;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Standards;
@@ -23,7 +24,7 @@ using Tempest.Workspace.Evidence;
 
 namespace Tempest.Desktop.Views;
 
-/// <summary>Every governed reference-data catalogue a record view or the Libraries list can reach — the seam map's own eight libraries (`WP 19.6A`, §2).</summary>
+/// <summary>Every governed reference-data catalogue a record view or the Libraries list can reach — the seam map's own eight libraries (`WP 19.6A`, §2), plus People (`WP 20.10F`).</summary>
 internal sealed record ReferenceLibraryCatalogues(
     IMaterialCatalog Materials,
     IFastenerCatalog Fasteners,
@@ -32,9 +33,10 @@ internal sealed record ReferenceLibraryCatalogues(
     IConstantCatalog Constants,
     IProcessCatalog Manufacturing,
     IComponentCatalog Components,
-    IRateCardCatalog BusinessRateCards);
+    IRateCardCatalog BusinessRateCards,
+    IPersonCatalog People);
 
-/// <summary>One reference record, read generically across whichever of the eight libraries it belongs to — the shape <see cref="ReferenceRecordView"/> renders and <see cref="LibrariesView"/>'s own detail pane opens.</summary>
+/// <summary>One reference record, read generically across whichever of the nine libraries it belongs to — the shape <see cref="ReferenceRecordView"/> renders and <see cref="LibrariesView"/>'s own detail pane opens.</summary>
 internal sealed record ReferenceRecordSnapshot(
     string Library,
     string RecordId,
@@ -84,8 +86,12 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => ProjectAsync(c.Manufacturing, recordId, d => d.Name, cancellationToken),
             "Components" => ProjectAsync(c.Components, recordId, d => d.Designation, cancellationToken),
             "BusinessRateCards" => ProjectAsync(c.BusinessRateCards, recordId, d => d.Name, cancellationToken),
+            "People" => ProjectAsync(c.People, recordId, DescribePerson, cancellationToken),
             _ => Task.FromResult<ReferenceRecordSnapshot?>(null),
         };
+
+    /// <summary>"{DisplayName} ({Role})", or just the display name where no role is recorded — the identical fallback every other library's own display-name projection above needs none of, because every other library's own name field is always required.</summary>
+    private static string DescribePerson(Person d) => d.Role is { Length: > 0 } role ? $"{d.DisplayName} ({role})" : d.DisplayName;
 
     private static async Task<ReferenceRecordSnapshot?> ProjectAsync<TDefinition>(
         IReferenceDataCatalog<TDefinition> catalog, string recordId, Func<TDefinition, string> displayName, CancellationToken cancellationToken)
@@ -111,6 +117,7 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => HistoryAsync(c.Manufacturing, recordId, cancellationToken),
             "Components" => HistoryAsync(c.Components, recordId, cancellationToken),
             "BusinessRateCards" => HistoryAsync(c.BusinessRateCards, recordId, cancellationToken),
+            "People" => HistoryAsync(c.People, recordId, cancellationToken),
             _ => Task.FromResult<IReadOnlyList<ReferenceRecordRevisionRow>>([]),
         };
 
@@ -147,6 +154,7 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => review.VerifyAsync(c.Manufacturing, recordId, statement),
             "Components" => review.VerifyAsync(c.Components, recordId, statement),
             "BusinessRateCards" => review.VerifyAsync(c.BusinessRateCards, recordId, statement),
+            "People" => review.VerifyAsync(c.People, recordId, statement),
             _ => Task.CompletedTask,
         };
 
@@ -162,6 +170,7 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => review.ReleaseAsync(c.Manufacturing, recordId, rationale),
             "Components" => review.ReleaseAsync(c.Components, recordId, rationale),
             "BusinessRateCards" => review.ReleaseAsync(c.BusinessRateCards, recordId, rationale),
+            "People" => review.ReleaseAsync(c.People, recordId, rationale),
             _ => Task.CompletedTask,
         };
 
@@ -178,6 +187,7 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => ReadJsonAsync(c.Manufacturing, recordId, cancellationToken),
             "Components" => ReadJsonAsync(c.Components, recordId, cancellationToken),
             "BusinessRateCards" => ReadJsonAsync(c.BusinessRateCards, recordId, cancellationToken),
+            "People" => ReadJsonAsync(c.People, recordId, cancellationToken),
             _ => throw new ReferenceRecordNotFoundException(library, recordId),
         };
 
@@ -204,6 +214,7 @@ internal static class ReferenceLibraryAccess
             "Manufacturing" => c.Manufacturing.ReviseAsync(recordId, Deserialise<ProcessDefinition>(library, definitionJson), provenance, changeSummary, source, cancellationToken),
             "Components" => c.Components.ReviseAsync(recordId, Deserialise<ComponentDefinition>(library, definitionJson), provenance, changeSummary, source, cancellationToken),
             "BusinessRateCards" => c.BusinessRateCards.ReviseAsync(recordId, Deserialise<RateCard>(library, definitionJson), provenance, changeSummary, source, cancellationToken),
+            "People" => c.People.ReviseAsync(recordId, Deserialise<Person>(library, definitionJson), provenance, changeSummary, source, cancellationToken),
             _ => throw new ReferenceRecordNotFoundException(library, recordId),
         };
 
@@ -229,7 +240,7 @@ internal static class ReferenceLibraryAccess
 /// document tabs.
 /// </para>
 /// <para>
-/// <b>The definition's fields, reflected.</b> Each of the eight libraries'
+/// <b>The definition's fields, reflected.</b> Each of the nine libraries'
 /// own definition type is rendered by walking its public, non-<see cref="JsonIgnoreAttribute"/>
 /// properties: a quantity-like value (<see cref="ReferenceQuantityValue"/>,
 /// <see cref="ReferenceValue{TDimension}"/>, <see cref="ReferenceRange{TDimension}"/>,
