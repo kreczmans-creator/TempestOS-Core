@@ -53,6 +53,35 @@ public class DocumentPageSourceTests
         return Encoding.ASCII.GetBytes(pdf.ToString());
     }
 
+    /// <summary>
+    /// A real, one-page PDF padded past <paramref name="minimumSizeInBytes"/>
+    /// with a content-stream comment (`TD-96`) — large enough to prove a
+    /// multi-megabyte attachment opens through the streamed read path,
+    /// without needing a genuinely megabyte-scale drawing on disk.
+    /// </summary>
+    /// <remarks>
+    /// The padding lives inside the page's own content stream, after a
+    /// <c>%</c>: a content-stream comment runs to the end of its line and
+    /// is otherwise inert, so it inflates the file's byte count without
+    /// changing what gets drawn — the rectangle still rasterises exactly
+    /// as <see cref="MultiPagePdf"/>'s page 1 does.
+    /// </remarks>
+    internal static byte[] LargePdf(int minimumSizeInBytes)
+    {
+        var padding = new string('X', Math.Max(0, minimumSizeInBytes));
+        var content = $"1 0 0 rg 50 50 400 600 re f\n% {padding}\n";
+
+        var pdf = new StringBuilder();
+        pdf.Append("%PDF-1.4\n");
+        pdf.Append("1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n");
+        pdf.Append("2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n");
+        pdf.Append("3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R>>endobj\n");
+        pdf.Append(System.Globalization.CultureInfo.InvariantCulture, $"4 0 obj<</Length {content.Length}>>stream\n{content}endstream\nendobj\n");
+        pdf.Append("trailer<</Root 1 0 R>>\n");
+
+        return Encoding.ASCII.GetBytes(pdf.ToString());
+    }
+
     /// <summary>A real, byte-for-byte valid 4x3 red PNG.</summary>
     /// <remarks>
     /// Written out literally rather than produced by rendering and saving
@@ -288,5 +317,193 @@ public class DocumentPageSourceTests
         // Null is the signal the launcher turns into "this format cannot
         // be displayed", which is a different message from "damaged".
         Assert.Null(DocumentPageSourceFactory.Create(ViewableDocumentFormat.Unsupported, [1, 2, 3]));
+    }
+
+    // ----------------------------------------------------------------
+    // Stream-backed page sources (`TD-96`) — the identical claims above,
+    // proved again through CreateFromStream rather than Create, so a
+    // stream-backed instance is provably not a second, weaker renderer.
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void APdfFromAStream_ReportsItsRealPageCountAndSizes()
+    {
+        using var stream = new MemoryStream(MultiPagePdf(), writable: false);
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, stream)!;
+
+        Assert.Equal(3, source.PageCount);
+        Assert.Equal(new Size(595, 842), source.PageSize(0));
+        Assert.Equal(new Size(842, 595), source.PageSize(1));
+        Assert.Equal(new Size(200, 200), source.PageSize(2));
+    }
+
+    [AvaloniaFact]
+    public void APdfPageFromAStream_ActuallyContainsTheDrawnContent()
+    {
+        using var stream = new MemoryStream(MultiPagePdf(), writable: false);
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, stream)!;
+
+        // Every page read again, out of order — the stream-backed source
+        // keeps its stream open across renders (`TD-96`) rather than
+        // exhausting it on the first page.
+        using var third = source.RenderPage(2, 1.0);
+        using var first = source.RenderPage(0, 1.0);
+
+        Assert.True(CountNonWhitePixels(first) > 1000, "Page 1's filled rectangle must rasterise from a stream exactly as it does from an array.");
+        Assert.True(CountNonWhitePixels(third) > 100, "Page 3's filled square must rasterise too.");
+    }
+
+    [AvaloniaFact]
+    public void DisposingAStreamBackedPdfSource_DisposesTheStreamItWasGiven()
+    {
+        var tracking = new DisposeTrackingStream(MultiPagePdf());
+        var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, tracking)!;
+
+        Assert.False(tracking.IsDisposed);
+        source.Dispose();
+        Assert.True(tracking.IsDisposed);
+    }
+
+    [AvaloniaFact]
+    public void ANonSeekablePdfStream_IsRejected()
+    {
+        // PDFium reads its cross-reference table from the end of the
+        // file: a forward-only stream cannot serve that, and the failure
+        // must be an argument problem stated up front, not a mysterious
+        // render failure later.
+        using var stream = new NonSeekableStream(MultiPagePdf());
+
+        Assert.Throws<ArgumentException>(() => DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, stream));
+    }
+
+    [AvaloniaFact]
+    public void BytesThatAreNotAPdf_FromAStream_AreReportedAsUnopenable()
+    {
+        using var stream = new MemoryStream("not a pdf at all"u8.ToArray(), writable: false);
+
+        Assert.Throws<DocumentRenderException>(() =>
+            DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, stream));
+    }
+
+    [AvaloniaFact]
+    public void AnImageFromAStream_IsASinglePage_AtItsOwnPixelSize()
+    {
+        using var stream = new MemoryStream(Png(), writable: false);
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Image, stream)!;
+
+        Assert.Equal(1, source.PageCount);
+        Assert.Equal(4, source.PageSize(0).Width);
+        Assert.Equal(3, source.PageSize(0).Height);
+
+        using var page = source.RenderPage(0, 1.0);
+        Assert.Equal(12, CountNonWhitePixels(page));
+    }
+
+    [AvaloniaFact]
+    public void DecodingAnImageFromAStream_DisposesTheStreamImmediately()
+    {
+        // Unlike the PDF source, there is exactly one already-decoded
+        // page: nothing here needs the stream again, so it is released as
+        // soon as decoding finishes rather than held for the source's
+        // whole lifetime.
+        var tracking = new DisposeTrackingStream(Png());
+
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Image, tracking)!;
+
+        Assert.True(tracking.IsDisposed);
+    }
+
+    [AvaloniaFact]
+    public void BytesThatAreNotAnImage_FromAStream_AreReportedAsUndecodable()
+    {
+        using var stream = new MemoryStream([1, 2, 3, 4, 5, 6, 7, 8], writable: false);
+
+        Assert.Throws<DocumentRenderException>(() =>
+            DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Image, stream));
+    }
+
+    [AvaloniaFact]
+    public void TextFromAStream_IsPaginatedSoTheSamePageNavigationServesIt()
+    {
+        var lines = string.Join('\n', Enumerable.Range(0, TextDocumentPageSource.LinesPerPage * 2 + 5).Select(i => $"line {i}"));
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(lines), writable: false);
+
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Text, stream)!;
+
+        Assert.Equal(3, source.PageCount);
+    }
+
+    [AvaloniaFact]
+    public void ALargePdfFromAStream_StillOpensAndRenders()
+    {
+        var bytes = LargePdf(4 * 1024 * 1024);
+        Assert.True(bytes.Length > 4 * 1024 * 1024);
+
+        using var stream = new MemoryStream(bytes, writable: false);
+        using var source = DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Pdf, stream)!;
+
+        Assert.Equal(1, source.PageCount);
+        using var page = source.RenderPage(0, 1.0);
+        Assert.True(CountNonWhitePixels(page) > 1000, "The padded page's filled rectangle must still rasterise.");
+    }
+
+    [AvaloniaFact]
+    public void AnUnsupportedFormat_FromAStream_YieldsNoSource()
+    {
+        using var stream = new MemoryStream([1, 2, 3], writable: false);
+
+        Assert.Null(DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Unsupported, stream));
+    }
+
+    /// <summary>A stream that records whether it was disposed, wrapping a fixed byte array.</summary>
+    private sealed class DisposeTrackingStream(byte[] content) : MemoryStream(content, writable: false)
+    {
+        public bool IsDisposed { get; private set; }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
+    }
+
+    /// <summary>A read-only, forward-only stream — everything a PDF stream must not be.</summary>
+    private sealed class NonSeekableStream(byte[] content) : Stream
+    {
+        private readonly MemoryStream _inner = new(content, writable: false);
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override void Flush()
+        {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _inner.Dispose();
+
+            base.Dispose(disposing);
+        }
     }
 }
