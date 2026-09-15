@@ -32,6 +32,7 @@ public sealed class PersonLibraryJourneyTests
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
         Guid requirementId;
+        Guid projectId;
 
         var first = new WorkspaceHost(root);
         try
@@ -40,6 +41,20 @@ public sealed class PersonLibraryJourneyTests
 
             var window = new MainWindow(first, new StubFilePicker());
             LayOut(window);
+
+            // A Requirement opens in its own project's Structure tab
+            // (`PHYSICAL_REVIEW.md` §7c D8) — a project must be open first,
+            // the same ordering `CreatedObjectOpensRightUpTests`'s own
+            // identical Requirement-opens-right-up journey already
+            // establishes.
+            await first.ShellNavigator!.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            var project = await first.ProjectDirectory!.CreateAsync("P-WP2010F", "WP 20.10F Journey Project");
+            projectId = project.Id;
+            await first.ShellNavigator!.OpenProjectAsync(projectId);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
             await first.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
@@ -85,16 +100,27 @@ public sealed class PersonLibraryJourneyTests
             await RenderUntilAsync(window, () => detail.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Released", StringComparison.Ordinal)));
             LayOut(window);
 
-            // A real Requirement, opened right up.
+            // A real Requirement, opened right up — in its own project's
+            // Structure tab (`PHYSICAL_REVIEW.md` §7c D8), so the project
+            // is switched back onto it before opening (`ProjectArea.Engineering`
+            // is that tab's own routing value; `CreatedObjectOpensRightUpTests`'s
+            // own identical Requirement-opens-right-up journey establishes
+            // the same ordering).
+            await first.ShellNavigator!.OpenProjectAsync(projectId, Tempest.Workspace.Shell.ProjectArea.Engineering);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+
             var requirementsService = (IRequirementsService)first.Services!.GetService(typeof(IRequirementsService));
             var requirement = await requirementsService.CreateAsync("REQ-WP2010F", "The consultancy's people are picked from a real list, not typed.");
             requirementId = requirement.Id;
 
             await window.OpenCreatedObjectAsync(requirementId, RequirementsService.RequirementDocumentKind);
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ObjectEditorView>().Any());
             LayOut(window);
 
-            var editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().Single();
-            var requirementExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            var editor = EditorFor(window, "REQ-WP2010F");
+            Assert.NotNull(editor);
+            var requirementExpander = editor!.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
             var ownerBox = FindByLabel<ComboBox>(requirementExpander, "Owner");
 
             ComboBoxItem? option = null;
@@ -140,15 +166,19 @@ public sealed class PersonLibraryJourneyTests
 
             var window = new MainWindow(second, new StubFilePicker());
             LayOut(window);
-            await second.ShellNavigator!.GoToModuleAsync(ShellArea.Home);
+            await second.ShellNavigator!.GoToProjectsAsync();
+            await window.RenderCurrentModuleAsync();
+            await second.ShellNavigator!.OpenProjectAsync(projectId, Tempest.Workspace.Shell.ProjectArea.Engineering);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
             await window.OpenCreatedObjectAsync(requirementId, RequirementsService.RequirementDocumentKind);
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ObjectEditorView>().Any());
             LayOut(window);
 
-            var editor = window.GetLogicalDescendants().OfType<ObjectEditorView>().Single();
-            var requirementExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            var editor = EditorFor(window, "REQ-WP2010F");
+            Assert.NotNull(editor);
+            var requirementExpander = editor!.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
             var ownerBox = FindByLabel<ComboBox>(requirementExpander, "Owner");
 
             await RenderUntilAsync(window, () => ownerBox.SelectedItem is ComboBoxItem { Content: string content } && content == PersonLabel);
@@ -162,6 +192,17 @@ public sealed class PersonLibraryJourneyTests
             await second.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// The real window can carry more than one <see cref="ObjectEditorView"/>
+    /// at once (a tab this journey opened earlier, still docked) — the same
+    /// disambiguation <c>CreatedObjectOpensRightUpTests</c>'s own identical
+    /// helper already needs, matching on the Requirement's own identifier
+    /// shown in its Identity section.
+    /// </summary>
+    private static ObjectEditorView? EditorFor(MainWindow window, string nameOrIdentifier) =>
+        window.GetLogicalDescendants().OfType<ObjectEditorView>().Distinct()
+            .FirstOrDefault(e => e.GetLogicalDescendants().OfType<TextBox>().Any(t => t.Text == nameOrIdentifier));
 
     private static T FindByLabel<T>(Control root, string label) where T : Control
     {

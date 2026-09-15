@@ -256,7 +256,7 @@ public sealed class ObjectEditorView : UserControl
     /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own trailing <b>Add person…</b> row carries — never a real record id, which is always the person's own <see cref="IReferenceRecord{TDefinition}.Id"/>.</summary>
     private const string AddPersonOwnerTag = "__wp2010f_add_person__";
 
-    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in People)" row carries, when a requirement's stored <see cref="IRequirement.Owner"/> matches no Released person.</summary>
+    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in People)" row carries, when a requirement's stored <see cref="Tempest.Core.Requirements.IRequirement.Owner"/> matches no Released person.</summary>
     private const string LegacyOwnerTag = "__wp2010f_legacy_owner__";
     private Expander _requirementSection = null!;
 
@@ -2399,7 +2399,7 @@ public sealed class ObjectEditorView : UserControl
     /// person (`WP 20.10F`, Product Owner finding D8), read fresh every
     /// time — never cached, so a person released anywhere is offered the
     /// next time this runs; the requirement's own current free-text
-    /// <see cref="IRequirement.Owner"/> as a leading "(not in People)" row
+    /// <see cref="Tempest.Core.Requirements.IRequirement.Owner"/> as a leading "(not in People)" row
     /// where it matches no Released person; and, where
     /// <see cref="_ownerSupport"/> is wired, a trailing <b>Add person…</b>
     /// row. <paramref name="preferPersonId"/> is selected if a matching
@@ -2407,7 +2407,7 @@ public sealed class ObjectEditorView : UserControl
     /// there is a stored owner, and nothing is selected otherwise (an unset
     /// requirement, or no <see cref="_ownerSupport"/> at all).
     /// </summary>
-    private async Task PopulateOwnerOptionsAsync(IRequirement requirement)
+    private async Task PopulateOwnerOptionsAsync(Tempest.Core.Requirements.IRequirement requirement)
     {
         _currentOwner = (requirement.Owner, requirement.OwnerPersonId);
         await RebuildOwnerItemsAsync(requirement.OwnerPersonId).ConfigureAwait(true);
