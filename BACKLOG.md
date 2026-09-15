@@ -94,7 +94,6 @@ the Engineering dashboard both show the Calculations heading with rows,
 each opening the calculation right up and offering Complete. It no
 longer appears below.
 
-## Live Backlog (15 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
