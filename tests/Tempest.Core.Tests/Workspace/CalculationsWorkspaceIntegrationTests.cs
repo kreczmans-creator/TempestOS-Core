@@ -227,6 +227,7 @@ public class CalculationsWorkspaceIntegrationTests
         [
             "calculations.approve",
             "calculations.archive",
+            "calculations.compare-with-previous",
             "calculations.complete",
             "calculations.copy",
             "calculations.create",
@@ -239,6 +240,7 @@ public class CalculationsWorkspaceIntegrationTests
             "calculations.recalculate",
             "calculations.rename",
             "calculations.request-review",
+            "calculations.rerun",
             "calculations.unlock",
         ];
 

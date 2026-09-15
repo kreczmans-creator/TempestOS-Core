@@ -16,6 +16,13 @@ public static class CalculationsCommandIds
     public const string Duplicate = "calculations.duplicate";
     public const string Execute = "calculations.execute";
     public const string Recalculate = "calculations.recalculate";
+
+    /// <summary>`WP 21.3A` (`TD-29`) — re-runs the selected Calculation's own most recent record with its exact original, retained input.</summary>
+    public const string Rerun = "calculations.rerun";
+
+    /// <summary>`WP 21.3A` (`TD-29`) — compares the selected Calculation's own two most recent records.</summary>
+    public const string CompareWithPrevious = "calculations.compare-with-previous";
+
     public const string Lock = "calculations.lock";
     public const string Unlock = "calculations.unlock";
     public const string RequestReview = "calculations.request-review";
@@ -111,6 +118,8 @@ public static class CalculationsWorkspaceRegistration
         commandDispatcher.RegisterHandler<SetCalculationStatusCommand>(new SetCalculationStatusCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ExecuteCalculationCommand>(executeHandler);
         commandDispatcher.RegisterHandler<RecalculateCalculationCommand>(new RecalculateCalculationCommandHandler(executeHandler));
+        commandDispatcher.RegisterHandler<RerunCalculationCommand>(new RerunCalculationCommandHandler(templateRegistry));
+        commandDispatcher.RegisterHandler<CompareCalculationWithPreviousCommand>(new CompareCalculationWithPreviousCommandHandler(templateRegistry));
         commandDispatcher.RegisterHandler<CompleteCalculationCommand>(new CompleteCalculationCommandHandler(domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
@@ -259,6 +268,38 @@ public static class CalculationsWorkspaceRegistration
             Binding = CommandBinding.Unavailable(
                 WorkspaceCommandBindings.StructuredInputRequired(
                     "Recalculating needs the Template's own structured input document again, with fresh values — a different set of typed fields per Template, supplied as JSON")),
+        });
+
+        // `WP 21.3A` (`TD-29`): unlike Execute/Recalculate above, Re-run needs
+        // no structured input from the caller at all — it reads the selected
+        // object's own most recent record's retained input back and replays
+        // it exactly — so, unlike them, it needs no picker or prompt and is
+        // bound the same shape as the five status transitions below: the
+        // selection alone is enough. Mutates: a new CalculationRecord is
+        // durably created (the archived-project guard applies).
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.Rerun, displayName: "Re-run Calculation", category: "Calculations",
+            description: "Re-executes the selected Calculation's own most recent record with its exact original input, recording a new CalculationRecord linked to it as predecessor.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new RerunCalculationCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                mutates: true),
+        });
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.CompareWithPrevious, displayName: "Compare With Previous", category: "Calculations",
+            description: "Compares the selected Calculation's own two most recent records — which input and result fields changed, old and new.")
+        {
+            // A read, never a write: no Mutates, so the archived-project
+            // guard does not apply, mirroring mechanical.validate-configuration's
+            // own "reads only" precedent (CommandBinding.Mutates's own remarks).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new CompareCalculationWithPreviousCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds),
         });
 
         // The five status transitions. Each needs only the selection, so

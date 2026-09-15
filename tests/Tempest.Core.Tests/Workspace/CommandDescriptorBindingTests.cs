@@ -80,15 +80,20 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>,
-    /// <c>task.complete</c> (`WP 19.5C`) and <c>calculations.complete</c>
+    /// <c>task.complete</c> (`WP 19.5C`), <c>calculations.complete</c>
     /// (`WP 20.1B`, `TD-181` — no parameters, no confirmation, a low-stakes
-    /// status move exactly like the others here) — every command that can
-    /// run unattended in a macro, and no other (ADR-0098).
+    /// status move exactly like the others here) and <c>calculations.rerun</c>/
+    /// <c>calculations.compare-with-previous</c> (`WP 21.3A`, `TD-29` — Re-run
+    /// needs no value collected, since it replays the selected object's own
+    /// most recent record's retained input rather than asking for one, and
+    /// Compare needs none either) — every command that can run unattended in
+    /// a macro, and no other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
         "calculations.lock", "calculations.unlock", "calculations.request-review",
         "calculations.approve", "calculations.archive", "calculations.complete",
+        "calculations.rerun", "calculations.compare-with-previous",
         "documents.request-review", "documents.approve", "documents.release",
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
@@ -253,9 +258,16 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // 108 is unchanged (no descriptor is added or removed, only
         // rebound); 18 becomes 3 (`StructuredInputUnavailable` alone); 90
         // becomes 105.
-        Assert.Equal(108, ProductionDescriptors.Count);
+        //
+        // `WP 21.3A` (`TD-29`) adds two more, neither unavailable
+        // (calculations.rerun, calculations.compare-with-previous — unlike
+        // calculations.execute/.recalculate above, Re-run needs no
+        // structured input at all, since it replays a record's own retained
+        // input, and Compare needs none either). So 108 becomes 110 and 105
+        // becomes 107; 3 is unchanged.
+        Assert.Equal(110, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(105, bindable.Count);
+        Assert.Equal(107, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -820,6 +832,8 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     [InlineData("calculations.request-review")]
     [InlineData("calculations.approve")]
     [InlineData("calculations.archive")]
+    [InlineData("calculations.rerun")]
+    [InlineData("calculations.compare-with-previous")]
     public void CalculationBindings_ApplyToTheTwoRealCalculationKinds(string id) =>
         Assert.Equal(CalculationKinds, Binding(id).AppliesToKinds);
 

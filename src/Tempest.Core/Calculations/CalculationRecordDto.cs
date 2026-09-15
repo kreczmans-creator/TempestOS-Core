@@ -11,6 +11,12 @@ namespace Tempest.Core.Calculations;
 // Nullable, because records written before this field existed do not carry
 // it. Those can still be read; they simply cannot be checked.
 
+// Input/InputTypeName/PredecessorRecordId (`TD-29`) follow the identical
+// "new, nullable, optional trailing field" precedent ResultTypeName set
+// above: old records written before these three fields existed simply
+// deserialise them as null, and CalculationEngine/CalculationRecord treat
+// a null Input as "no input retained" rather than throwing.
+
 /// <summary>The plain, JSON-serializable shape a calculation execution is stored as — this is the <see cref="EngineeringData.IDocumentRevision.Content"/> of its own backing <see cref="EngineeringData.IEngineeringDocument"/>.</summary>
 internal sealed record CalculationRecordDto<TResult>(
     string CalculationId,
@@ -21,4 +27,7 @@ internal sealed record CalculationRecordDto<TResult>(
     IReadOnlyList<string> ReferencedMaterialIds,
     DateTimeOffset ExecutedAt,
     string ExecutedByPrincipalId,
-    string? ResultTypeName = null);
+    string? ResultTypeName = null,
+    object? Input = null,
+    string? InputTypeName = null,
+    Guid? PredecessorRecordId = null);

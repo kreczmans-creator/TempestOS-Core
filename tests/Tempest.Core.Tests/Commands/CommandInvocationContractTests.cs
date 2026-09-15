@@ -211,7 +211,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (FCR-0073): the object picker turns fifteen U1 descriptors invocable
         // (`CommandDescriptorBindingTests.ObjectPickerBound`) — the twelve
         // S2-2 Move/Copy commands and TD-115's own three — so 90 becomes 105.
-        Assert.Equal(105, built);
+        // `WP 21.3A` (`TD-29`) adds two more invocable Calculations
+        // descriptors (`calculations.rerun`, `calculations.compare-with-previous`),
+        // so 105 becomes 107.
+        Assert.Equal(107, built);
     }
 
     [Fact]
@@ -283,7 +286,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `EveryInvocableBinding_BuildsACommand_WithoutThrowing`'s own
         // identical comment), all reaching their own already-registered
         // handler, so 90 becomes 105.
-        Assert.Equal(105, executed);
+        // `WP 21.3A`: `calculations.rerun`/`calculations.compare-with-previous`
+        // join, each reaching its own registered handler too, so 105
+        // becomes 107.
+        Assert.Equal(107, executed);
     }
 
     [Fact]
@@ -424,7 +430,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // production descriptors, so 98 becomes 107.
         // `WP 20.1B` (`TD-181`) adds one more production descriptor
         // (`calculations.complete`), so 107 becomes 108.
-        Assert.Equal(108 * 4, compared);
+        // `WP 21.3A` (`TD-29`) adds two more production descriptors
+        // (`calculations.rerun`, `calculations.compare-with-previous`), so
+        // 108 becomes 110.
+        Assert.Equal(110 * 4, compared);
     }
 
     // ==================================================================
@@ -684,7 +693,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // no declared parameter, no confirmation — so 14 becomes 15.
         // `WP 20.1B` (`TD-181`) adds `calculations.complete`, the identical
         // shape, so 15 becomes 16.
-        Assert.Equal(16, ran);
+        // `WP 21.3A` (`TD-29`) adds two more, the identical shape —
+        // `calculations.rerun` and `calculations.compare-with-previous`,
+        // each `CommandContextRequirement.SelectedObject`, no declared
+        // parameter, no confirmation — so 16 becomes 18.
+        Assert.Equal(18, ran);
     }
 
     [Fact]
@@ -783,7 +796,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // so 98 becomes 107.
         // `WP 20.1B` (`TD-181`) adds one more (`calculations.complete`), so
         // 107 becomes 108.
-        Assert.Equal(108, Production.Count);
+        // `WP 21.3A` (`TD-29`) adds two more (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 108 becomes 110.
+        Assert.Equal(110, Production.Count);
     }
 
     [Fact]
@@ -819,9 +834,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // unavailable are real bindings now — 90 becomes 105, 108 is
         // unchanged (no descriptor added or removed), and 18 becomes 3 (the
         // three U2 descriptors alone).
-        Assert.Equal(105, Invocable.Count());
+        // `WP 21.3A` (`TD-29`) adds two more, invocable, production
+        // Calculations descriptors (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 105 becomes 107 and 108
+        // becomes 110; 3 is unchanged.
+        Assert.Equal(107, Invocable.Count());
         Assert.Equal(3, Unavailable.Count());
-        Assert.Equal(108, Production.Count);
+        Assert.Equal(110, Production.Count);
     }
 
     [Fact]
