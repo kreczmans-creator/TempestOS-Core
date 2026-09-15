@@ -67,6 +67,12 @@ public sealed class EngineeringObjectStateStore : IEngineeringObjectStateStore, 
     private static readonly JsonSerializerOptions StateJsonOptions = new()
     {
         Converters = { new JsonStringEnumConverter() },
+        // Explicit rather than implicit (`WP 21.5F` Offensive Security
+        // Audit, OSA-05): 64 is System.Text.Json's own default, unchanged
+        // here — this makes the limit a reviewable, intentional decision
+        // for a record deserialised from durable storage rather than
+        // whatever the framework happens to default to.
+        MaxDepth = 64,
     };
 
     private readonly IQueryablePersistenceStore _persistenceStore;

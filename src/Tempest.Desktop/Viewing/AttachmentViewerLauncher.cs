@@ -1,3 +1,4 @@
+using System.Text;
 using Tempest.Workspace.Layout;
 using Tempest.Workspace.Viewing;
 using Tempest.Core.EngineeringDomain;
@@ -313,29 +314,104 @@ public sealed class AttachmentViewerLauncher
     }
 
     /// <summary>
-    /// Writes <paramref name="bytes"/> to a real file on local disk, under
-    /// the attachment's own file name, for the OS shell to open — never
-    /// beside the persistence root, which this launcher has no path to and
-    /// should not need one for a copy that exists only until the OS is
-    /// done with it (`TD-99`).
+    /// Extensions Windows Explorer (or any other <c>ShellExecuteEx</c>-driven
+    /// shell) runs directly rather than opening in a viewer application —
+    /// "Open externally" must never hand the OS one of these under its real
+    /// extension, however an attachment happened to be named (`WP 21.5F`,
+    /// Offensive Security Audit finding OSA-02). Not exhaustive of every
+    /// Windows-registered executable file type in existence, but covers the
+    /// standard set <c>AppLocker</c>'s own default rules and Microsoft's own
+    /// "potentially dangerous file types" guidance both name.
+    /// </summary>
+    private static readonly HashSet<string> DangerousExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".com", ".scr", ".pif", ".bat", ".cmd", ".msi", ".msp", ".mst",
+        ".ps1", ".ps1xml", ".psc1", ".psd1", ".psm1",
+        ".vb", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".ws",
+        ".cpl", ".msc", ".jar", ".reg", ".hta", ".application", ".gadget",
+        ".lnk", ".inf", ".isp", ".sct", ".shb", ".shs", ".url", ".vxd", ".workflow",
+    };
+
+    /// <summary>
+    /// Unicode bidirectional-control characters that can visually disguise a
+    /// file's real extension (the "right-to-left override" spoofing
+    /// technique — e.g. making <c>evil&lt;RTLO&gt;fdp.exe</c> render as
+    /// <c>evilexe.pdf</c>). Stripped outright: this launcher's title bar and
+    /// panel tab both echo the file name verbatim, and the materialised
+    /// name is what a user reads before deciding to trust "Open externally".
+    /// </summary>
+    private static readonly char[] BidiControlCharacters =
+    [
+        '\u200E', '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
+        '\u2066', '\u2067', '\u2068', '\u2069',
+    ];
+
+    /// <summary>
+    /// Reduces an attachment's own, untrusted file name to one safe to
+    /// create on disk: directory components removed (so a stored name of
+    /// <c>..\..\evil.exe</c> or <c>C:\Windows\System32\evil.exe</c> cannot
+    /// steer the write outside the directory this method itself chooses),
+    /// control and bidi-override characters stripped, every character
+    /// <see cref="Path.GetInvalidFileNameChars"/> rejects replaced, and a
+    /// trailing space or dot trimmed explicitly rather than relied upon as
+    /// a silent Win32 <c>CreateFile</c> quirk.
+    /// </summary>
+    private static string SanitiseFileName(string fileName)
+    {
+        var name = Path.GetFileName(fileName);
+        if (string.IsNullOrEmpty(name))
+            return string.Empty;
+
+        var builder = new StringBuilder(name.Length);
+        foreach (var ch in name)
+        {
+            if (char.IsControl(ch) || Array.IndexOf(BidiControlCharacters, ch) >= 0)
+                continue;
+
+            builder.Append(ch);
+        }
+
+        name = builder.ToString();
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+            name = name.Replace(invalid, '_');
+
+        return name.Trim(' ', '.');
+    }
+
+    /// <summary>
+    /// Writes <paramref name="bytes"/> to a real file on local disk, under a
+    /// sanitised form of the attachment's own file name, for the OS shell to
+    /// open — never beside the persistence root, which this launcher has no
+    /// path to and should not need one for a copy that exists only until the
+    /// OS is done with it (`TD-99`).
     /// </summary>
     /// <returns>The written path, or <see langword="null"/> if the write itself failed.</returns>
     /// <remarks>
-    /// One subdirectory per attachment id, under the OS's own temporary
-    /// folder, so two attachments that happen to share a file name never
-    /// collide and a stale copy from an earlier session is easy to
-    /// recognise as this launcher's own.
+    /// A fresh, unguessable subdirectory every call (`WP 21.5F` OSA-02) —
+    /// not one keyed on the attachment id alone, which a local process that
+    /// already knew or guessed that id could pre-stage as a symlink/junction
+    /// ahead of a real write reusing the identical path. A directly
+    /// executable extension (<see cref="DangerousExtensions"/>) is
+    /// neutralised rather than written verbatim, so "Open externally" can
+    /// never hand <c>ShellExecuteEx</c> a file it will run instead of open —
+    /// the file is still written, under its original name with the
+    /// dangerous extension defused, so the user can still see (and rename,
+    /// and open deliberately) exactly what was attached.
     /// </remarks>
     private static string? MaterialiseForExternalOpen(Guid attachmentId, string fileName, byte[] bytes)
     {
         try
         {
-            var directory = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer", attachmentId.ToString("N"));
-            Directory.CreateDirectory(directory);
-
-            var safeName = Path.GetFileName(fileName);
-            if (string.IsNullOrWhiteSpace(safeName))
+            var safeName = SanitiseFileName(fileName);
+            if (string.IsNullOrEmpty(safeName))
                 safeName = attachmentId.ToString("N");
+
+            var extension = Path.GetExtension(safeName);
+            if (DangerousExtensions.Contains(extension))
+                safeName += ".blocked";
+
+            var directory = Path.Combine(Path.GetTempPath(), "TempestOS", "Viewer", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
 
             var path = Path.Combine(directory, safeName);
             File.WriteAllBytes(path, bytes);
@@ -347,6 +423,15 @@ public sealed class AttachmentViewerLauncher
         }
         catch (UnauthorizedAccessException)
         {
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            // A file name that survived SanitiseFileName's own pass but
+            // still collides with a reserved Windows device name (`CON`,
+            // `NUL`, `COM1`, ...) is refused by the OS rather than crashing
+            // this launcher — reported exactly like an unwritable temp
+            // directory would be.
             return null;
         }
     }

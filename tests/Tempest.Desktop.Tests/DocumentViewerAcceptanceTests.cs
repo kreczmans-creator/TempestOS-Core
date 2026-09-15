@@ -810,4 +810,179 @@ public sealed class DocumentViewerAcceptanceTests
             await host.DisposeAsync();
         }
     }
+
+    // ========================================================================
+    // WP 21.5F — Offensive Security Audit: OSA-02, "Open externally" attack surface.
+    // ========================================================================
+
+    [AvaloniaFact]
+    public async Task OSA02_ADoubleExtensionAttachment_IsNeverMaterialisedAsADirectlyExecutableFile()
+    {
+        // The exploit: an attachment stored as "invoice.pdf.exe" (or any
+        // Windows-shell-executable extension) is, before this fix,
+        // materialised to disk under that exact name and handed to
+        // Process.Start(UseShellExecute: true) by "Open externally" —
+        // ShellExecuteEx runs a .exe rather than opening it. This PoC fails
+        // before the fix (MaterialisedPath ends in ".exe") and passes after
+        // (the dangerous extension is neutralised, never written verbatim).
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            // Real PE header bytes ("MZ...") — the point is that a byte
+            // sequence which could really be executed reaches disk under a
+            // name the shell would recognise as directly runnable.
+            byte[] payload = [0x4D, 0x5A, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF];
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "OSA-02A", "invoice.pdf.exe", "application/octet-stream", payload);
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+            Assert.True(File.Exists(materialisedPath));
+
+            Assert.False(
+                materialisedPath!.EndsWith(".exe", StringComparison.OrdinalIgnoreCase),
+                $"The materialised copy '{materialisedPath}' still carries a directly-executable extension - " +
+                "\"Open externally\" would hand the OS shell a file it runs instead of opens.");
+
+            // The exploit chain's second half: prove the button really
+            // would have handed this path straight to the shell.
+            string? launchedPath = null;
+            viewer.ExternalLauncher = path => launchedPath = path;
+            viewer.OpenExternally();
+            Assert.Equal(materialisedPath, launchedPath);
+            Assert.False(launchedPath!.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(".com")]
+    [InlineData(".scr")]
+    [InlineData(".bat")]
+    [InlineData(".cmd")]
+    [InlineData(".ps1")]
+    [InlineData(".lnk")]
+    [InlineData(".hta")]
+    [InlineData(".msi")]
+    [InlineData(".jar")]
+    public async Task OSA02_EveryDirectlyExecutableExtension_IsNeutralisedOnMaterialisation(string dangerousExtension)
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var fileName = $"payload{dangerousExtension}";
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, $"OSA-02B{dangerousExtension}", fileName, "application/octet-stream", "not really this format"u8.ToArray());
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+            Assert.False(
+                materialisedPath!.EndsWith(dangerousExtension, StringComparison.OrdinalIgnoreCase),
+                $"'{materialisedPath}' still ends with the dangerous extension '{dangerousExtension}'.");
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task OSA02_TwoOpensOfTheSameAttachment_MaterialiseToDifferentDirectories()
+    {
+        // Before the fix, MaterialiseForExternalOpen reused one directory
+        // keyed only on the attachment id (Path.Combine(TempPath, "TempestOS",
+        // "Viewer", attachmentId)) - a local process that already knows or
+        // guesses that GUID could pre-stage a symlink/junction at that exact
+        // path before the legitimate write ever happens (a TOCTOU). A fresh,
+        // unguessable subdirectory every call closes that window. This PoC
+        // fails before the fix (both opens land in the identical directory)
+        // and passes after (they never do).
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "OSA-02C", "part.dwg", "application/octet-stream", "real, intact bytes"u8.ToArray());
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var firstViewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            var firstPath = firstViewer.Session!.MaterialisedPath;
+            Assert.NotNull(firstPath);
+
+            window.AttachmentViewers.Close(attachmentId);
+
+            var secondViewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            var secondPath = secondViewer.Session!.MaterialisedPath;
+            Assert.NotNull(secondPath);
+
+            Assert.NotEqual(Path.GetDirectoryName(firstPath), Path.GetDirectoryName(secondPath));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task OSA02_AnRtloDisguisedFileName_HasItsBidiControlCharactersStripped()
+    {
+        // An RTLO character (U+202E) can make a file with a real, dangerous
+        // extension render, to a human reading the tab title, as if it had
+        // a harmless one. Stripping it is defence in depth alongside the
+        // extension denylist above: even a dangerous extension this denylist
+        // does not yet name should never be visually disguised.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            // Renders as "invoice‮cod.exe" in a naive UI - the RTLO flips
+            // everything after it, disguising the real ".exe" tail.
+            var fileName = "invoice‮cod.exe";
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "OSA-02D", fileName, "application/octet-stream", "not really this format"u8.ToArray());
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+            Assert.DoesNotContain('‮', Path.GetFileName(materialisedPath));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
 }
