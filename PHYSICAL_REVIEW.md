@@ -93,6 +93,22 @@ the five that derive from source and git). On Windows without PowerShell 7,
 
 ---
 
+## 2a. Support matrix
+
+Stated to match the evidence this repository actually carries, no more
+(`WP 21.5A`, `WP RC.0A` scope item 1) — the installer (§3) ships for
+Windows only; every other platform's own standing is unchanged by this
+Work Package.
+
+| Platform | Status | Evidence |
+|---|---|---|
+| **Windows 11 x64** | **Tested.** | `ci.yml` restores, builds and runs the full suite on `windows-2022` (§1), on every push; the development team's own direct desktop-launch experience (§1); this Work Package's own gate. |
+| **Windows 10 x64** | **Expected.** | Not independently CI-verified — no `windows-2019`/equivalent job exists — but nothing in the build, the runtime, or Velopack's own installer targets a Windows 11-specific API; expected to behave identically to Windows 11 x64. |
+| **Linux** | **Advisory.** | `linux-launch-smoke` (§1, §8 item 1) launches the built desktop application under `xvfb-run` and is not a required merge/release gate. No installer is built or published for Linux (`vpk pack` is invoked with no `--runtime`/`-r` targeting Linux, and `release.yml` publishes only a Windows `Setup.exe`); a Linux operator runs from source or the plain zip, exactly as before this Work Package. |
+| **macOS** | **Untested.** | Expected to build and launch by design (Avalonia's own cross-platform reach, `ADR-0094`) but never built, launched, or CI-verified on this platform at any point in this programme. No installer is built or published for macOS. |
+
+---
+
 ## 3. Launching the application
 
 **The shipped application is `Tempest.Desktop`.**
@@ -105,12 +121,20 @@ Or run the built executable directly:
 `src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop` (`.exe` on
 Windows).
 
-> **The working directory decides where your data goes.** See §4. Running
+**Installed:** run TempestOS from the Start menu; the title bar reads the
+same (`WP 21.5A`). The Velopack-packaged installer
+(`TempestOS-<tag>-Setup.exe`, §2a) puts a shortcut there; nothing about
+launching, the rail, or any surface differs from a `dotnet run`/plain-exe
+launch — only where data lives changes (§4).
+
+> **The working directory decides where your data goes — unless you are
+> running an installed build.** See §4. Running
 > via `dotnet run` from the repository root puts data in the repository
-> root; double-clicking the built executable puts it beside the executable.
-> Pick one and stay with it for the whole review, or the second launch will
-> look like it lost your work when it has simply looked in a different
-> place.
+> root; double-clicking the built executable puts it beside the executable;
+> an installed build always uses `%LOCALAPPDATA%\TempestOS\persistence-data`
+> (or wherever the first-run dialog was pointed instead). Pick one and stay
+> with it for the whole review, or the second launch will look like it lost
+> your work when it has simply looked in a different place.
 
 > **Check the title bar before you review anything.** The window title is
 > `TempestOS <version> (<commit>)`, for example `TempestOS 0.17.0 (9e52a53)`.
@@ -177,7 +201,7 @@ dotnet run --project src/Tempest.Harness/Tempest.Harness.csproj
 All persisted state is written under a single folder:
 
 ```
-<working directory>/persistence-data/
+<root>/persistence-data/
 ├── tempest.db      # Everything: settings, session and UI state, window
 │                   # geometry, recents, favourites, macros, projects,
 │                   # engineering objects, document revisions, audit rows
@@ -188,13 +212,37 @@ All persisted state is written under a single folder:
 ├── tempest.lock    # Held open exclusively while the application runs,
 │                   # so a second instance on this folder is refused
 │                   # rather than allowed to interleave writes.
+├── backups/        # tempest-<schemaversion>-<yyyyMMdd-HHmmss>.db —
+│                   # written automatically, once, the moment a launch
+│                   # finds a database at an older schema version than
+│                   # this build, before any migration runs; also where
+│                   # Settings → Data → "Back up now…" suggests saving to,
+│                   # and where "Restore from backup…" moves the database
+│                   # it is replacing (as tempest-replaced-<stamp>.db) —
+│                   # `WP 21.5A` (`WP RC.0A` scope item 3/4).
 └── logs/           # tempest-yyyyMMdd.log, one file per day, oldest
                     # deleted beyond 14 files (`WP 17.2A`, ADR-0146).
 ```
 
-- The root is the value of `Persistence:RootPath`, and when that is not
-  configured it is the **relative** path `persistence-data` — resolved
-  against the **process working directory**, not the install location.
+- **`<root>` depends on how you are running TempestOS** (`WP 21.5A`,
+  closing `TD-36` for the installed case):
+  - **Installed** (via the Velopack-packaged `Setup.exe`, §2a/§3):
+    `%LOCALAPPDATA%\TempestOS\persistence-data` by default — a real
+    Windows per-user data folder, decided once by Velopack's own "is this
+    process running from an install" answer
+    (`Velopack.Locators.VelopackLocator`), never a heuristic on paths.
+    Overridable by `--persistence-root <path>` on the command line or by
+    configuring `Persistence:RootPath` (below); absent both, the first
+    launch of an installed build shows a one-page dialog naming the
+    default location, with **Change…** (a folder picker) and
+    **Continue** — the choice is then recorded
+    (`%LOCALAPPDATA%\TempestOS\first-run.json`) so it is never asked
+    again.
+  - **Everything else** (`dotnet run`, a plain built `bin/` exe, the
+    plain release zip): unchanged from before `WP 21.5A` — the value of
+    `Persistence:RootPath`, and when that is not configured, the
+    **relative** path `persistence-data`, resolved against the
+    **process working directory**.
 - The folder is created on first launch. It is listed in `.gitignore` and
   is never source.
 - **Before `v0.17.0` this folder held a tree of directories and files, one
@@ -203,8 +251,12 @@ All persisted state is written under a single folder:
   scanning a directory, make two writes land together, or keep a second
   instance out. `Persistence:Backend=files` restores the old layout for
   `v0.17.0` only, and is deleted in `v0.18.0`.
-- There is no registry use, no `%APPDATA%`/`~/.config` use, and no file
-  written outside this folder and the build output.
+- There is no registry use, no `~/.config` use, and no file written
+  outside this folder and the build output — with one disclosed
+  exception since `WP 21.5A`: an installed build's default root itself
+  lives under `%LOCALAPPDATA%`, and the tiny first-run marker JSON
+  (above) lives beside it, both because that is precisely the per-user
+  data location an installed Windows application is expected to use.
 - **Logs go to `logs/` under this same root, and to the console when one
   is genuinely attached** (`Tempest.Harness`'s own console harness; never
   `Tempest.Desktop`, which has none) — `WP 17.2A` (ADR-0146). Before this,
@@ -223,6 +275,11 @@ separator — for example `TEMPEST_Runtime__Logging__MinimumLevel=Debug` —
 or on the command line as `--Section:Key=value`. Precedence, lowest to
 highest: `appsettings.json` next to the executable, `appsettings.json` in
 the current directory, environment variables, the command line.
+
+`--persistence-root <path>` (`WP 21.5A`) is a friendlier command-line
+alias for `--Persistence:RootPath=<path>` specifically — the two are
+interchangeable, and either one skips the installed build's own first-run
+dialog (§4).
 
 ---
 

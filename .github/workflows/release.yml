@@ -22,6 +22,14 @@ name: Release Publish
 # project's ordinary 14-day CI artifacts), downloadable build a future
 # operator can always fall back to without needing to rebuild from
 # source.
+#
+# `WP 21.5A` (`WP RC.0A` scope item 1) additionally publishes a
+# Velopack-packaged Windows installer (`TempestOS-<tag>-Setup.exe`) and its
+# update-feed assets, built by `scripts/package-installer.ps1` — the exact
+# script a developer runs locally to reproduce the same installer, so this
+# workflow needs no `act`-style GitHub-Actions-in-a-container tool to be
+# validated. `dotnet run` and the plain zips above are unaffected: the
+# installer is additive, never a replacement.
 
 on:
   push:
@@ -131,6 +139,36 @@ jobs:
           Copy-Item -Path "src/Tempest.Harness/bin/Release/net10.0/*" -Destination $harnessDir -Recurse
           Compress-Archive -Path $harnessDir -DestinationPath "$harnessDir.zip"
 
+      # `WP 21.5A` (`WP RC.0A` scope item 1): the Velopack-packaged
+      # installer and its update-feed assets, built by the exact same
+      # script a developer can run locally
+      # (`scripts/package-installer.ps1`) — no `act`-style
+      # GitHub-Actions-in-a-container tool stands between what this step
+      # runs and what a person can reproduce on their own machine.
+      # `--packVersion` must be strict semver (no leading `v`), unlike this
+      # workflow's own zip assets below, which are named from the raw git
+      # tag — so the tag's own `v` prefix is stripped here for Velopack's
+      # sake only, and the produced `TempestOS-<semver>-Setup.exe` is
+      # renamed to `TempestOS-<tag>-Setup.exe` immediately after, to match
+      # every other asset this workflow publishes.
+      - name: Package installer (Velopack)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $semver = $tag -replace '^v', ''
+
+          ./scripts/package-installer.ps1 -Version $semver -OutputDirectory artifacts/installer
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Installer packaging failed for tag '$tag' - this tag will not be published."
+            exit $LASTEXITCODE
+          }
+
+          $setupSource = "artifacts/installer/TempestOS-$semver-Setup.exe"
+          $setupDestination = "artifacts/installer/TempestOS-$tag-Setup.exe"
+          if ($semver -ne $tag) {
+            Move-Item $setupSource $setupDestination -Force
+          }
+
       # Release notes are looked up by directory convention
       # (docs/releases/vX.Y.Z/Release Notes.md) — the same convention
       # scripts/new-release.ps1 checks before a final release is ever
@@ -166,13 +204,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = "${{ github.ref_name }}"
+          $semver = $tag -replace '^v', ''
           $isPrerelease = $tag -match '-rc\.\d+$'
           $args = @(
             "release", "create", $tag,
             "--title", "TempestOS $tag",
             "--notes-file", "${{ steps.notes.outputs.path }}",
             "TempestOS-$tag.zip",
-            "TempestOS-$tag-engineering-harness.zip"
+            "TempestOS-$tag-engineering-harness.zip",
+            "artifacts/installer/TempestOS-$tag-Setup.exe",
+            "artifacts/installer/TempestOS-$semver-full.nupkg",
+            "artifacts/installer/releases.win.json",
+            "artifacts/installer/assets.win.json",
+            "artifacts/installer/RELEASES"
           )
           if ($isPrerelease) {
             $args += "--prerelease"
