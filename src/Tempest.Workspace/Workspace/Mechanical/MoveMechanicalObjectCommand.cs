@@ -44,17 +44,7 @@ public sealed class MoveMechanicalObjectCommandHandler : ICommandHandler<MoveMec
         if (target is not IHasParent hasParent)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be moved.");
 
-        try
-        {
-            await hasParent.MoveAsync(command.NewParentId, cancellationToken).ConfigureAwait(false);
-        }
-        catch (CircularParentAssignmentException ex)
-        {
-            return CommandResult.Failure(ex.Message);
-        }
-
-        return CommandResult.Success(command.NewParentId is { } parentId
-            ? $"Moved '{command.TargetObjectId}' under '{parentId}'."
-            : $"Moved '{command.TargetObjectId}' to top level.");
+        return await WorkspaceCommandBindings.MoveResultAsync(
+            _context, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId, cancellationToken).ConfigureAwait(false);
     }
 }

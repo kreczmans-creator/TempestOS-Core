@@ -1,5 +1,6 @@
 using System.Globalization;
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Workspace;
 
@@ -192,4 +193,67 @@ internal static class WorkspaceCommandBindings
     /// <summary>Every selected object's own Id, in selection order — what a bulk command acts on.</summary>
     internal static IReadOnlyList<Guid> SelectedIds(CommandContext context) =>
         context.Selection.Select(selected => selected.ObjectId).ToList();
+
+    /// <summary>
+    /// Resolves <paramref name="id"/>'s own real display name for a
+    /// Move/Copy result message (`WP 20.10C`, PO finding T6) — the
+    /// object's own <see cref="IHasBusinessIdentifier.DisplayName"/> when
+    /// it carries one, its own real Id's text otherwise (never invented,
+    /// and never the blank string a not-found lookup would otherwise
+    /// produce). The status bar and Command History both read this
+    /// result's own <see cref="CommandResult.Message"/> directly, so a
+    /// message naming a raw Guid ("Moved 'a3f2…' under 'b7e1…'.") is,
+    /// functionally, still invisible to the reader the finding was about.
+    /// </summary>
+    internal static async Task<string> DisplayNameAsync(EngineeringDomainContext context, Guid id, CancellationToken cancellationToken)
+    {
+        var found = await context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+        return (found as IHasBusinessIdentifier)?.DisplayName ?? id.ToString();
+    }
+
+    /// <summary>"under 'Name'" or "to top level" — the destination half of a Move/Copy result message, resolving <paramref name="newParentId"/> through <see cref="DisplayNameAsync"/>.</summary>
+    internal static async Task<string> DestinationPhraseAsync(EngineeringDomainContext context, Guid? newParentId, CancellationToken cancellationToken) =>
+        newParentId is { } parentId
+            ? $"under '{await DisplayNameAsync(context, parentId, cancellationToken).ConfigureAwait(false)}'"
+            : "to top level";
+
+    /// <summary>
+    /// The shared body every plain <c>Move*ObjectCommandHandler</c> over
+    /// <see cref="IHasParent.MoveAsync"/> used to duplicate five times
+    /// (`WP 20.10C`, PO finding T6): resolves both ends' own real display
+    /// names for the result message instead of a raw Guid, and — the
+    /// finding's own explicit acceptance — reports choosing the object's
+    /// own current parent as "Already under 'Name'." rather than running
+    /// (and then reporting as an ordinary Move) a structural write that
+    /// changes nothing. <paramref name="target"/> is the same object
+    /// <paramref name="targetObjectId"/> already names, as
+    /// <see cref="IHasParent"/> — the caller's own "not found, or cannot
+    /// be moved" check stays at the caller, before this runs, since that
+    /// message differs by discipline in a couple of callers.
+    /// </summary>
+    internal static async Task<CommandResult> MoveResultAsync(
+        EngineeringDomainContext context, IHasParent target, Guid targetObjectId, string targetKind, Guid? newParentId, CancellationToken cancellationToken)
+    {
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? targetObjectId.ToString();
+
+        if (target.ParentId == newParentId)
+        {
+            var already = newParentId is { } currentParentId
+                ? $"Already under '{await DisplayNameAsync(context, currentParentId, cancellationToken).ConfigureAwait(false)}'."
+                : "Already at top level.";
+            return CommandResult.Success(already, targetObjectId, targetKind);
+        }
+
+        try
+        {
+            await target.MoveAsync(newParentId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (CircularParentAssignmentException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
+
+        var destinationPhrase = await DestinationPhraseAsync(context, newParentId, cancellationToken).ConfigureAwait(false);
+        return CommandResult.Success($"Moved '{sourceName}' {destinationPhrase}.", targetObjectId, targetKind);
+    }
 }
