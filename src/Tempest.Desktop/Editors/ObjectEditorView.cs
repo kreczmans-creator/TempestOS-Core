@@ -253,12 +253,7 @@ public sealed class ObjectEditorView : UserControl
     private readonly CalculationPointerSection _calculationPointerSection = new();
     private readonly CalculationDueSection _calculationDueSection = new();
 
-    private readonly Button _verificationPassButton = new() { Content = "Pass", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _verificationFailButton = new() { Content = "Fail", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _verificationConditionalButton = new() { Content = "Conditional", MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _verificationMethodBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBlock _verificationStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _verificationResultSection = null!;
+    private readonly VerificationResultSection _verificationResultSection = new();
 
     private readonly StackPanel _attachmentsListPanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly TextBox _attachmentFileNameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
@@ -539,9 +534,6 @@ public sealed class ObjectEditorView : UserControl
         _readOnlyToggle.Classes.Add(ChromeStyles.Subtle);
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
-        _verificationPassButton.Classes.Add(ChromeStyles.Primary);
-        _verificationFailButton.Classes.Add(ChromeStyles.Danger);
-        _verificationConditionalButton.Classes.Add(ChromeStyles.Subtle);
         _attachmentAddButton.Classes.Add(ChromeStyles.Primary);
         _addFileViaPickerButton.Classes.Add(ChromeStyles.Primary);
         _citeButton.Classes.Add(ChromeStyles.Primary);
@@ -567,11 +559,8 @@ public sealed class ObjectEditorView : UserControl
         // Execute/Record/Attach actions, each independent of the main
         // Name/Content Save above (a different command, a different
         // buffered-edit lifecycle). `WP 21.1B`: Bill of Materials,
-        // Owner/Priority, Execute and Due now wire their own actions
-        // inside their own Build().
-        _verificationPassButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Pass).ConfigureAwait(true);
-        _verificationFailButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Fail).ConfigureAwait(true);
-        _verificationConditionalButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Conditional).ConfigureAwait(true);
+        // Owner/Priority, Execute, Due and Record Result now wire their
+        // own actions inside their own Build().
         _attachmentAddButton.Click += async (_, _) => await OnAttachAsync().ConfigureAwait(true);
         _addFileViaPickerButton.Click += async (_, _) => await OnAddFileViaPickerAsync().ConfigureAwait(true);
 
@@ -831,16 +820,7 @@ public sealed class ObjectEditorView : UserControl
         var calculationPointerExpander = _calculationPointerSection.Build(_sectionContext);
         var calculationDueExpander = _calculationDueSection.Build(_sectionContext);
 
-        var verificationResultPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        verificationResultPanel.Children.Add(LabeledRow("Method", _verificationMethodBox));
-        var verificationButtonRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
-        verificationButtonRow.Children.Add(_verificationPassButton);
-        verificationButtonRow.Children.Add(_verificationFailButton);
-        verificationButtonRow.Children.Add(_verificationConditionalButton);
-        verificationResultPanel.Children.Add(verificationButtonRow);
-        verificationResultPanel.Children.Add(_verificationStatusMessage);
-        _verificationResultSection = BuildSection("Record Result", verificationResultPanel);
-        _verificationResultSection.IsVisible = false;
+        var verificationResultExpander = _verificationResultSection.Build(_sectionContext);
 
         var dropZoneContent = new StackPanel
         {
@@ -1001,7 +981,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(calculationExpander);
         body.Children.Add(calculationPointerExpander);
         body.Children.Add(calculationDueExpander);
-        body.Children.Add(_verificationResultSection);
+        body.Children.Add(verificationResultExpander);
         body.Children.Add(_evidenceCitationsSection);
         body.Children.Add(_evidenceFiguresSection);
         body.Children.Add(_attachmentsSection);
@@ -1063,7 +1043,7 @@ public sealed class ObjectEditorView : UserControl
         await _calculationSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _calculationPointerSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _calculationDueSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        PopulateVerificationResult(target);
+        await _verificationResultSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
         await _descriptionSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _whereUsedSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
@@ -2009,43 +1989,6 @@ public sealed class ObjectEditorView : UserControl
             _attachmentsDropZone.BorderBrush = borderBrush;
         if (Application.Current?.TryGetResource(backgroundKey, variant, out var background) == true && background is IBrush backgroundBrush)
             _attachmentsDropZone.Background = backgroundBrush;
-    }
-
-    /// <summary>
-    /// The Verification Record Result section (`WP 10.7A`) — gated on
-    /// <see cref="IVerificationActivity"/>. Criteria/Evidence/linked-Id
-    /// lists are left at <see cref="RecordVerificationResultCommand"/>'s
-    /// own empty defaults — an honest minimum-viable interaction (Outcome
-    /// + Method), never a partial fake one collecting fields it cannot
-    /// yet honestly present.
-    /// </summary>
-    private void PopulateVerificationResult(IEngineeringObject target)
-    {
-        if (target is not IVerificationActivity verificationActivity)
-        {
-            _verificationResultSection.IsVisible = false;
-            return;
-        }
-
-        _verificationResultSection.IsVisible = true;
-        _verificationMethodBox.Text = verificationActivity.Method;
-        _verificationStatusMessage.Text = string.Empty;
-    }
-
-    private async Task OnRecordVerificationResultAsync(VerificationOutcome outcome)
-    {
-        var method = string.IsNullOrWhiteSpace(_verificationMethodBox.Text) ? "Inspection" : _verificationMethodBox.Text;
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new RecordVerificationResultCommand(_objectId, _objectKind, outcome, method),
-            CancellationToken.None).ConfigureAwait(true);
-
-        // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
-        var message = result.Succeeded ? $"Result recorded: {outcome}." : result.Message ?? "Record result failed.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _verificationStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>
