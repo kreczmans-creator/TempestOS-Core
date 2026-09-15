@@ -69,6 +69,17 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <!-- WP 21.2A: the design system's three type families and the horizontal
+       navy lockup, embedded as ordinary .NET resources (not AvaloniaResource
+       - Documents/DocumentFonts.cs and DocumentLogo.cs load them through
+       SKTypeface.FromStream/SKBitmap.Decode via Assembly.GetManifestResourceStream,
+       independent of a running Avalonia application, so a plain xunit
+       renderer test needs no AvaloniaFact/IAssetLoader). See
+       THIRD-PARTY-NOTICES.md for licensing. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Documents\Assets\**" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- The TempestOS mark as the executable's own icon (Windows shell, taskbar, Alt-Tab). -->
     <ApplicationIcon>Assets\Brand\tempestos.ico</ApplicationIcon>
