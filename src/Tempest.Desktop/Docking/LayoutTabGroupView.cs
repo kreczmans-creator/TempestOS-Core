@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Tempest.Workspace.Layout;
 using Tempest.Desktop.Theming;
@@ -343,6 +344,16 @@ public sealed class LayoutTabGroupView : UserControl
         button.Click += (_, _) => onClick();
         return button;
     }
+
+    /// <summary>
+    /// This group's own tab header for <paramref name="panelId"/>, or
+    /// <see langword="null"/> when it does not hold that panel — how a
+    /// re-render's own focus restore (`ADR-0153` decision 7, `TD-90`) finds
+    /// the control to focus, since <see cref="LayoutTabGroupView"/>
+    /// instances are rebuilt per render and cannot be matched by identity.
+    /// </summary>
+    public Control? FindHeader(Guid panelId) =>
+        this.GetLogicalDescendants().OfType<Button>().FirstOrDefault(b => Equals(b.Tag, panelId));
 
     /// <summary>Detaches <paramref name="content"/> from whatever currently holds it, so it can be reparented.</summary>
     internal static void Detach(Control content)

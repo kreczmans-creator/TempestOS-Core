@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
 using Tempest.Core.Events;
 using Tempest.Core.Settings;
@@ -458,5 +460,191 @@ public sealed class WorkspaceLayoutControllerTests
 
         Assert.Contains(Document, rig.Controller.Tree.AllPanels);
         Assert.Contains(Explorer, rig.Controller.Tree.AllPanels);
+    }
+
+    // ----------------------------------------------------------------
+    // ADR-0153 decision 9: the capture-lost routing fix
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Before this Work Package, <see cref="WorkspaceLayoutController"/>
+    /// registered its <c>PointerCaptureLostEvent</c> handler
+    /// <c>RoutingStrategies.Tunnel</c>, but the event is declared
+    /// <c>Direct</c> by the Avalonia 11.3.20 this solution references — a
+    /// handler registered for a routing strategy the event never uses is
+    /// never invoked. This drives the real routed event, the way it would
+    /// actually arrive from a real OS-forced capture loss, and would have
+    /// left <see cref="WorkspaceLayoutController.IsDragging"/> stuck
+    /// <see langword="true"/> before the fix.
+    /// </summary>
+    [AvaloniaFact]
+    public void PointerCaptureLost_CancelsAnInProgressDrag_ThroughTheRealRoutedEvent()
+    {
+        var rig = BuildRig();
+        rig.Controller.BeginDrag(Explorer);
+        Assert.True(rig.Controller.IsDragging);
+
+        rig.Controller.Host.RaiseEvent(new PointerCaptureLostEventArgs(rig.Controller.Host, new Pointer(0, PointerType.Mouse, true)));
+
+        Assert.False(rig.Controller.IsDragging);
+        Assert.Null(rig.Controller.DraggingPanelId);
+    }
+
+    // ----------------------------------------------------------------
+    // ADR-0153 decision 7: focus restored after a re-render moves a panel
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void ApplyingAnOperation_RestoresFocusToThePanelsNewTabHeader()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+        var explorerHeader = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(explorerHeader);
+        Assert.True(explorerHeader.IsFocused);
+
+        rig.Controller.Apply(t => t.Dock(Explorer, t.FindGroupContaining(Inspector)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var newHeader = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(newHeader);
+        Assert.True(newHeader!.IsFocused);
+    }
+
+    [AvaloniaFact]
+    public void ApplyingAnOperationWithNothingFocused_RestoresNothing_RatherThanStealingFocus()
+    {
+        var rig = BuildRig();
+
+        rig.Controller.Apply(t => t.Dock(Explorer, t.FindGroupContaining(Inspector)!.Id, DockRelation.Into));
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(header);
+        Assert.False(header!.IsFocused);
+    }
+
+    /// <summary>Two real headless windows, focus moved from the panel's own tab header in one to its new home in the other (`ADR-0153` decision 7, closing `TD-90` for the cross-window case).</summary>
+    [AvaloniaFact]
+    public void ApplyingACrossWindowDock_RestoresFocusInThePanelsNewWindow_AndActivatesIt()
+    {
+        var rig = BuildRig();
+        var secondaryWindow = FloatIntoASecondRealWindow(rig, Output);
+
+        var explorerHeader = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        rig.Window.Activate();
+        FocusAndSettle(explorerHeader);
+        Assert.True(explorerHeader.IsFocused);
+
+        rig.Controller.Apply(t => t.Dock(Explorer, secondaryWindow.Host.TabGroups.Single().NodeId, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var newHeader = secondaryWindow.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(newHeader);
+        Assert.True(newHeader!.IsFocused);
+    }
+
+    // ----------------------------------------------------------------
+    // ADR-0153 decision 4: cross-window drag, in screen coordinates
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Two real headless windows in one process (`WorkspaceLayoutControllerTests.BuildRig`'s
+    /// own established pattern, generalised): a drag started in the
+    /// primary window resolves, via <c>Control.PointToScreen</c>, against a
+    /// candidate rendered in a completely different top-level window —
+    /// proving the resolution mechanism decision 4 describes (every
+    /// window's own candidates gathered in one common coordinate space and
+    /// compared against the drag's current position in that same space),
+    /// not that a real per-window screen offset is correctly incorporated.
+    /// Avalonia's headless platform does not position a
+    /// <see cref="Window"/> for the purposes of <c>PointToScreen</c> — the
+    /// call succeeds and returns a real <see cref="PixelPoint"/>, but two
+    /// windows at different <see cref="Window.Position"/> values report the
+    /// same point for the same local coordinate, discovered empirically
+    /// while writing this test — so this proves the mechanism
+    /// self-consistently (the same transform both computes the target
+    /// point and resolves candidates against it) rather than proving a
+    /// real cross-monitor offset survives the round trip; the manual
+    /// verification pass on real Windows hardware this Work Package's own
+    /// report names is what proves that.
+    /// </summary>
+    [AvaloniaFact]
+    public void ADragReleasedOverAnotherWindowsCandidate_DocksThereAcrossWindows()
+    {
+        var rig = BuildRig();
+        var secondaryWindow = FloatIntoASecondRealWindow(rig, Output);
+
+        var secondaryGroup = secondaryWindow.Host.TabGroups.Single();
+        var screenPointInsideSecondary = secondaryGroup.PointToScreen(
+            new Point(secondaryGroup.Bounds.Width / 2, secondaryGroup.Bounds.Height / 2));
+
+        rig.Controller.BeginDrag(Explorer, rig.Controller.Host);
+        // Released far outside the primary window's own bounds, locally —
+        // only the explicit screen position should resolve this drop.
+        rig.Controller.CompleteDrag(new Point(-9999, -9999), screenPointInsideSecondary);
+
+        Assert.DoesNotContain(Explorer, rig.Controller.Tree.DockedPanels);
+        var survivor = Assert.Single(rig.Controller.Tree.Windows, w => !w.IsPrimary);
+        Assert.Contains(Explorer, survivor.Panels);
+        Assert.Contains(Output, survivor.Panels);
+    }
+
+    /// <summary>A drag that both starts in, and empties, a secondary window — the source closes (`ADR-0153` decision 4's own "a source window left with an empty subtree closes").</summary>
+    [AvaloniaFact]
+    public void ADragFromASecondaryWindow_DockedIntoThePrimary_ClosesTheNowEmptySource()
+    {
+        var rig = BuildRig();
+        var secondaryWindow = FloatIntoASecondRealWindow(rig, Output);
+
+        var explorerGroup = rig.Controller.Host.TabGroups.Single(g => g.PanelIds.Contains(Explorer));
+        var screenPointInsidePrimaryExplorer = explorerGroup.PointToScreen(
+            new Point(explorerGroup.Bounds.Width / 2, explorerGroup.Bounds.Height / 2));
+
+        rig.Controller.BeginDrag(Output, secondaryWindow.Host);
+        rig.Controller.CompleteDrag(new Point(-9999, -9999), screenPointInsidePrimaryExplorer);
+
+        Assert.Empty(rig.Controller.FloatingWindows);
+        Assert.DoesNotContain(rig.Controller.Tree.Windows, w => !w.IsPrimary);
+        Assert.Contains(Output, rig.Controller.Tree.DockedPanels);
+        var group = rig.Controller.Tree.FindGroupContaining(Output)!;
+        Assert.Contains(Explorer, group.PanelIds);
+    }
+
+    /// <summary>
+    /// Focuses <paramref name="control"/> and pumps the dispatcher until
+    /// <see cref="Control.IsFocused"/> itself reflects it — headless
+    /// Avalonia's own <c>FocusManager</c> adopts the new focused element
+    /// synchronously, but the <c>:focus</c> pseudo-class (what
+    /// <see cref="Control.IsFocused"/> reads) updates through a second,
+    /// separately-queued job.
+    /// </summary>
+    private static void FocusAndSettle(Control control)
+    {
+        control.Focus();
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>Opens a real second top-level window by floating <paramref name="panelId"/>, and lays it out so its own candidates carry real, screen-translatable bounds.</summary>
+    private static FloatingPanelWindow FloatIntoASecondRealWindow(Rig rig, Guid panelId)
+    {
+        // The default layout (WorkspaceLayoutPreset.Engineering) never
+        // docks Output at all, so it has to be docked before it can be
+        // floated — Float is a no-op against a panel not yet anywhere in
+        // the arrangement.
+        if (!rig.Controller.Tree.Contains(panelId))
+            rig.Controller.Apply(t => t.DockToEdge(panelId, DockRelation.Below));
+
+        rig.Controller.Apply(t => t.Float(panelId, 700, 200, 420, 320));
+        var window = rig.Controller.FloatingWindows.Values.Single();
+
+        Dispatcher.UIThread.RunJobs();
+        window.Host.Measure(new Size(420, 320));
+        window.Host.Arrange(new Rect(0, 0, 420, 320));
+        Dispatcher.UIThread.RunJobs();
+
+        return window;
     }
 }
