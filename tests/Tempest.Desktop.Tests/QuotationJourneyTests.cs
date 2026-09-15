@@ -95,7 +95,7 @@ public sealed class QuotationJourneyTests
             quoteId = Guid.Empty;
             await RenderUntilAsync(window, () =>
             {
-                var found = domain.Repository.ListChildrenAsync(projectId).GetAwaiter().GetResult().OfType<Quotation>().FirstOrDefault();
+                var found = domain.Repository.ListChildrenAsync(projectId).GetAwaiter().GetResult().FirstOrDefault(entry => entry.Kind == Quotation.CanonicalKind);
                 if (found is null)
                     return false;
 
@@ -361,12 +361,11 @@ public sealed class QuotationJourneyTests
             inputDialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => !inputDialog.IsVisible);
 
-            Deliverable? created = null;
+            EngineeringObjectIndexEntry? created = null;
             await RenderUntilAsync(window, () =>
             {
                 created = domain.Repository.ListByKindAsync(Tempest.Workspace.CanonicalObjectKinds.Deliverable).GetAwaiter().GetResult()
-                    .OfType<Deliverable>()
-                    .FirstOrDefault(d => d.DisplayName == "Directly added deliverable");
+                    .FirstOrDefault(entry => entry.DisplayName == "Directly added deliverable");
                 return created is not null;
             });
             Assert.NotNull(created);
@@ -391,8 +390,8 @@ public sealed class QuotationJourneyTests
             DeliverableCompletion? completion = null;
             await RenderUntilAsync(window, () =>
             {
-                completion = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult()
-                    .OfType<DeliverableCompletion>()
+                var entries = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult();
+                completion = domain.Repository.MaterialiseAsync<DeliverableCompletion>(entries).GetAwaiter().GetResult()
                     .FirstOrDefault(c => c.DeliverableId == created!.Id);
                 return completion is not null;
             });
@@ -465,7 +464,8 @@ public sealed class QuotationJourneyTests
             Quotation? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<Quotation>().FirstOrDefault();
+                var entries = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult();
+                created = domain.Repository.MaterialiseAsync<Quotation>(entries).GetAwaiter().GetResult().FirstOrDefault();
                 return created is not null;
             });
 

@@ -62,7 +62,8 @@ public class VerificationActivityCommandsTests
 
         await handler.HandleAsync(new CreateVerificationActivityCommand("New Activity", subjectId, "Analysis"), default);
 
-        var created = (IVerificationActivity)(await context.Repository.ListByKindAsync("VerificationActivity")).Single();
+        var createdEntries = await context.Repository.ListByKindAsync("VerificationActivity");
+        var created = (await context.Repository.MaterialiseAsync<IVerificationActivity>(createdEntries)).Single();
         Assert.Equal(subjectId, created.SubjectId);
         Assert.Equal("Analysis", created.Method);
     }
@@ -77,8 +78,8 @@ public class VerificationActivityCommandsTests
 
         await handler.HandleAsync(new CreateVerificationActivityCommand("Child", Guid.NewGuid(), "Test", parent.Id), default);
 
-        var created = (await context.Repository.ListByKindAsync("VerificationActivity")).Single(c => c.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+        var created = (await context.Repository.ListByKindAsync("VerificationActivity")).Single(entry => entry.Id != parent.Id);
+        Assert.Equal(parent.Id, created.ParentId);
     }
 
     // ---- RenameVerificationActivityCommand ----
@@ -222,9 +223,10 @@ public class VerificationActivityCommandsTests
         Assert.True(result.Succeeded);
         var activities = await context.Repository.ListByKindAsync("VerificationActivity");
         Assert.Equal(3, activities.Count);
-        var copy = (IVerificationActivity)activities.Single(a => a.Id != source.Id && a.Id != targetParent.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Activity (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
+        var copyEntry = activities.Single(entry => entry.Id != source.Id && entry.Id != targetParent.Id);
+        Assert.Equal(targetParent.Id, copyEntry.ParentId);
+        Assert.Equal("Original Activity (Copy)", copyEntry.DisplayName);
+        var copy = (await context.Repository.MaterialiseAsync<IVerificationActivity>([copyEntry])).Single();
         Assert.Equal(subjectId, copy.SubjectId);
         Assert.Equal("Demonstration", copy.Method);
     }
@@ -256,8 +258,8 @@ public class VerificationActivityCommandsTests
         var result = await handler.HandleAsync(new DuplicateVerificationActivityCommand(source.Id, "VerificationActivity"), default);
 
         Assert.True(result.Succeeded);
-        var duplicate = (await context.Repository.ListByKindAsync("VerificationActivity")).Single(a => a.Id != source.Id && a.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = (await context.Repository.ListByKindAsync("VerificationActivity")).Single(entry => entry.Id != source.Id && entry.Id != parent.Id);
+        Assert.Equal(parent.Id, duplicate.ParentId);
     }
 
     // ---- SetVerificationActivityStatusCommand ----

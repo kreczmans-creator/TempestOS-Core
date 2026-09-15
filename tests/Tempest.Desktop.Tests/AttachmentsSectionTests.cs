@@ -348,8 +348,8 @@ public sealed class AttachmentsSectionTests
         };
         Assert.True(result.Succeeded, result.Message);
 
-        var created = (await domain.Repository.ListByKindAsync(kind)).Single(o => ((IHasBusinessIdentifier)o).Identifier == identifier);
-        return created;
+        var createdId = (await domain.Repository.ListByKindAsync(kind)).Single(entry => entry.Identifier == identifier).Id;
+        return (await domain.Repository.FindAsync(createdId))!;
     }
 
     private static string CreateTempFile(string name, string extension, int sizeBytes)

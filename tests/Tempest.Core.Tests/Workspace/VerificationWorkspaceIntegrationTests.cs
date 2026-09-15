@@ -219,8 +219,9 @@ public class VerificationWorkspaceIntegrationTests
         var createResult = await commandDispatcher.DispatchAsync(
             new CreateVerificationActivityCommand("Integration Test Activity", Guid.NewGuid(), "Analysis"), default);
         Assert.True(createResult.Succeeded);
-        var created = (await domainContext.Repository.ListByKindAsync("VerificationActivity"))
-            .Single(a => ((IHasBusinessIdentifier)a).DisplayName == "Integration Test Activity");
+        var createdId = (await domainContext.Repository.ListByKindAsync("VerificationActivity"))
+            .Single(entry => entry.DisplayName == "Integration Test Activity").Id;
+        var created = (await domainContext.Repository.FindAsync(createdId))!;
 
         // Record Result.
         var recordResult = await commandDispatcher.DispatchAsync(

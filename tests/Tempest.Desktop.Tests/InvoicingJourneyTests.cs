@@ -100,8 +100,9 @@ public sealed class InvoicingJourneyTests
             DeliverableCompletion? completion = null;
             await RenderUntilAsync(window, () =>
             {
-                completion = domain.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<DeliverableCompletion>().FirstOrDefault(c => c.DeliverableId == deliverable.Id);
+                var entries = domain.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind).GetAwaiter().GetResult();
+                completion = domain.Repository.MaterialiseAsync<DeliverableCompletion>(entries).GetAwaiter().GetResult()
+                    .FirstOrDefault(c => c.DeliverableId == deliverable.Id);
                 return completion is not null;
             });
             Assert.NotNull(completion);
@@ -110,7 +111,8 @@ public sealed class InvoicingJourneyTests
             InvoiceRequest? request = null;
             await RenderUntilAsync(window, () =>
             {
-                request = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<InvoiceRequest>().SingleOrDefault();
+                var entries = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult();
+                request = domain.Repository.MaterialiseAsync<InvoiceRequest>(entries).GetAwaiter().GetResult().SingleOrDefault();
                 return request is not null;
             });
             Assert.NotNull(request);
@@ -126,7 +128,7 @@ public sealed class InvoicingJourneyTests
             await ClickButtonWithContentAsync(window, deliverablesView, "Raise invoice");
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase) && t.Text.Contains(request.Id.ToString("N"), StringComparison.OrdinalIgnoreCase)));
-            Assert.Single((await domain.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true)).OfType<InvoiceRequest>());
+            Assert.Single(await domain.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true), entry => entry.Kind == InvoiceRequest.CanonicalKind);
 
             // ---- rail → Business → Invoices → Review opens the request right up (`WP 19.7A`) ----
             await navigator.GoToModuleAsync(ShellArea.Business);

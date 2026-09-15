@@ -481,7 +481,7 @@ public sealed class WorkflowInteractionTests
 
             Assert.True(result.Succeeded);
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "WP10.5B Test Part");
+            Assert.Contains(created, entry => entry.DisplayName == "WP10.5B Test Part");
         }
         finally
         {

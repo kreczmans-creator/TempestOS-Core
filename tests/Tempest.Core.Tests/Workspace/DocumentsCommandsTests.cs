@@ -74,8 +74,9 @@ public class DocumentsCommandsTests
 
         await handler.HandleAsync(new CreateDocumentObjectCommand("Document", "A Specification", classification: DocumentObjectFactoryRegistry.Specification), default);
 
-        var created = (await context.Repository.ListByKindAsync("Document")).Single();
-        Assert.Equal(DocumentObjectFactoryRegistry.Specification, ((IHasMetadata)created).Classification);
+        var createdEntries = await context.Repository.ListByKindAsync("Document");
+        var created = (await context.Repository.MaterialiseAsync<IHasMetadata>(createdEntries)).Single();
+        Assert.Equal(DocumentObjectFactoryRegistry.Specification, created.Classification);
     }
 
     [Fact]
@@ -87,7 +88,8 @@ public class DocumentsCommandsTests
 
         await handler.HandleAsync(new CreateDocumentObjectCommand("Drawing", "GA Drawing", drawingNumber: "GA-1000"), default);
 
-        var created = (Drawing)(await context.Repository.ListByKindAsync("Drawing")).Single();
+        var createdEntries = await context.Repository.ListByKindAsync("Drawing");
+        var created = (await context.Repository.MaterialiseAsync<Drawing>(createdEntries)).Single();
         Assert.Equal("GA-1000", created.DrawingNumber);
     }
 
@@ -101,8 +103,8 @@ public class DocumentsCommandsTests
 
         await handler.HandleAsync(new CreateDocumentObjectCommand("Document", "Child", parentId: parent.Id), default);
 
-        var created = (await context.Repository.ListByKindAsync("Document")).Single(c => c.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+        var created = (await context.Repository.ListByKindAsync("Document")).Single(entry => entry.Id != parent.Id);
+        Assert.Equal(parent.Id, created.ParentId);
     }
 
     // ---- RenameDocumentObjectCommand ----
@@ -245,10 +247,11 @@ public class DocumentsCommandsTests
         Assert.True(result.Succeeded);
         var documents = await context.Repository.ListByKindAsync("Document");
         Assert.Equal(3, documents.Count);
-        var copy = documents.Single(d => d.Id != source.Id && d.Id != targetParent.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Document (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
-        Assert.Equal(DocumentObjectFactoryRegistry.Specification, ((IHasMetadata)copy).Classification);
+        var copyEntry = documents.Single(entry => entry.Id != source.Id && entry.Id != targetParent.Id);
+        Assert.Equal(targetParent.Id, copyEntry.ParentId);
+        Assert.Equal("Original Document (Copy)", copyEntry.DisplayName);
+        var copy = await context.Repository.MaterialiseAsync<IHasMetadata>([copyEntry]);
+        Assert.Equal(DocumentObjectFactoryRegistry.Specification, copy.Single().Classification);
     }
 
     [Fact]
@@ -262,7 +265,8 @@ public class DocumentsCommandsTests
         var result = await handler.HandleAsync(new CopyDocumentObjectCommand(source.Id, "Drawing", null), default);
 
         Assert.True(result.Succeeded);
-        var copy = (Drawing)(await context.Repository.ListByKindAsync("Drawing")).Single(d => d.Id != source.Id);
+        var copyEntries = await context.Repository.ListByKindAsync("Drawing");
+        var copy = (await context.Repository.MaterialiseAsync<Drawing>(copyEntries)).Single(d => d.Id != source.Id);
         Assert.Equal("GA-1000", copy.DrawingNumber);
     }
 
@@ -281,8 +285,8 @@ public class DocumentsCommandsTests
         var result = await handler.HandleAsync(new DuplicateDocumentObjectCommand(source.Id, "Document"), default);
 
         Assert.True(result.Succeeded);
-        var duplicate = (await context.Repository.ListByKindAsync("Document")).Single(d => d.Id != source.Id && d.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = (await context.Repository.ListByKindAsync("Document")).Single(entry => entry.Id != source.Id && entry.Id != parent.Id);
+        Assert.Equal(parent.Id, duplicate.ParentId);
     }
 
     // ---- SetDocumentStatusCommand ----

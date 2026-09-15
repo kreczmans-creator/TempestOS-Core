@@ -72,8 +72,9 @@ internal static class QuotationTestHost
     /// <summary>The one live request whose lines carry <paramref name="completionId"/> — the request completing raised through the completion hook, exactly as <c>Invoicing.InvoicingTestHost.RequestRaisedByCompletionAsync</c> reads it.</summary>
     public static async Task<InvoiceRequest> RequestRaisedByCompletionAsync(ITempestHost host, Guid completionId)
     {
-        var requests = await Domain(host).Repository.ListByKindAsync(InvoiceRequest.CanonicalKind);
-        return requests.OfType<InvoiceRequest>().Single(r => r.Lines.Any(l => l.SourceId == completionId));
+        var entries = await Domain(host).Repository.ListByKindAsync(InvoiceRequest.CanonicalKind);
+        var requests = await Domain(host).Repository.MaterialiseAsync<InvoiceRequest>(entries);
+        return requests.Single(r => r.Lines.Any(l => l.SourceId == completionId));
     }
 
     /// <summary>Signs in <paramref name="id"/> with a local session's own broad permission set.</summary>

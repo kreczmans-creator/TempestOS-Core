@@ -60,16 +60,16 @@ public sealed class CreatedObjectOpensRightUpTests
             Click(ribbon, registry, "mechanical.create");
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            IEngineeringObject? created = null;
+            EngineeringObjectIndexEntry? created = null;
             await RenderUntilAsync(window, () =>
             {
                 created = domain.Repository.ListByKindAsync("Part").GetAwaiter().GetResult()
-                    .FirstOrDefault(o => ((IHasBusinessIdentifier)o).DisplayName == "Smoke Test Bracket");
+                    .FirstOrDefault(entry => entry.DisplayName == "Smoke Test Bracket");
                 return created is not null && explorer.IsRevealed(created.Id) && EditorFor(window, "Smoke Test Bracket") is not null;
             });
 
             Assert.NotNull(created);
-            Assert.Equal(project.Id, ((IHasParent)created!).ParentId);
+            Assert.Equal(project.Id, created!.ParentId);
 
             // The build is in the title bar, so a stale executable can never pass as the current one again.
             Assert.StartsWith("TempestOS 0.21.0 (", window.Title, StringComparison.Ordinal);
