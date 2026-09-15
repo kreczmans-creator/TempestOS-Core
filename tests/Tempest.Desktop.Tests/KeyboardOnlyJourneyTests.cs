@@ -88,13 +88,11 @@ public sealed class KeyboardOnlyJourneyTests
         var window = new Window { Content = dockingHost, Width = 1024, Height = 768 };
         window.Show();
 
-        var tree = WorkspaceLayoutTree.Empty with
-        {
-            Root = new LayoutSplitNode(
+        var tree = WorkspaceLayoutTree.Empty.WithPrimaryRoot(
+            new LayoutSplitNode(
                 Guid.NewGuid(),
                 LayoutOrientation.Horizontal,
-                [new LayoutTabGroupNode(Guid.NewGuid(), [explorer]), new LayoutTabGroupNode(Guid.NewGuid(), [document])]),
-        };
+                [new LayoutTabGroupNode(Guid.NewGuid(), [explorer]), new LayoutTabGroupNode(Guid.NewGuid(), [document])]));
         dockingHost.Update(tree);
         window.Measure(new Size(1024, 768));
         window.Arrange(new Rect(0, 0, 1024, 768));

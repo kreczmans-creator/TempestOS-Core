@@ -438,4 +438,188 @@ public class WorkspaceLayoutTreeTests
 
         Assert.Throws<ArgumentException>(() => new LayoutSplitNode(Guid.NewGuid(), LayoutOrientation.Horizontal, children, [1, 1]));
     }
+
+    // ----------------------------------------------------------------
+    // The window forest (`ADR-0153` decision 1) — every operation proven
+    // across more than one window, with no UI at all.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void ANewArrangement_HasExactlyOnePrimaryWindow()
+    {
+        var tree = ThreePane();
+
+        var window = Assert.Single(tree.Windows, w => w.IsPrimary);
+        Assert.Same(window.Root, tree.Root);
+        Assert.DoesNotContain(tree.Windows, w => !w.IsPrimary);
+    }
+
+    [Fact]
+    public void FloatingAPanel_AddsASecondWindow_ToTheForest()
+    {
+        var tree = ThreePane().Float(Inspector, 100, 200, 400, 300);
+
+        Assert.Equal(2, tree.Windows.Count);
+        var secondary = Assert.Single(tree.Windows, w => !w.IsPrimary);
+        Assert.Contains(Inspector, secondary.Panels);
+        Assert.False(secondary.IsPrimary);
+    }
+
+    [Fact]
+    public void DockingIntoATargetInADifferentWindow_MovesThePanelAcrossWindows_InOneEdit()
+    {
+        // ADR-0153 decision 4: a cross-window dock removes the panel from
+        // its source window's subtree and inserts it into the target's, as
+        // one atomic tree edit — provable at the model level with no
+        // screen coordinates or UI at all.
+        var tree = ThreePane().Float(Inspector, 100, 200, 400, 300);
+        var secondaryWindow = tree.Windows.Single(w => !w.IsPrimary);
+        var secondaryGroup = (LayoutTabGroupNode)secondaryWindow.Root!;
+
+        tree = tree.Dock(Explorer, secondaryGroup.Id, DockRelation.Into);
+
+        Assert.DoesNotContain(Explorer, tree.DockedPanels);
+        var afterWindow = tree.Windows.Single(w => !w.IsPrimary);
+        Assert.Equal([Inspector, Explorer], afterWindow.Root!.Panels);
+        Assert.Single(tree.Windows, w => !w.IsPrimary);
+    }
+
+    [Fact]
+    public void DockingTheLastPanelOutOfASecondaryWindow_ClosesIt()
+    {
+        var tree = ThreePane().Float(Inspector, 100, 200, 400, 300);
+        var secondaryGroup = (LayoutTabGroupNode)tree.Windows.Single(w => !w.IsPrimary).Root!;
+
+        // Dock Inspector back into the primary window's Explorer group.
+        var explorerGroup = tree.FindGroupContaining(Explorer)!;
+        tree = tree.Dock(Inspector, explorerGroup.Id, DockRelation.Into);
+
+        Assert.DoesNotContain(tree.Windows, w => !w.IsPrimary);
+        Assert.Null(tree.FindNode(secondaryGroup.Id));
+    }
+
+    [Fact]
+    public void TwoSecondaryWindows_CanExchangeAPanelDirectly_WithNoPrimaryInvolvement()
+    {
+        var tree = ThreePane();
+        tree = tree.Dock(Output, tree.FindGroupContaining(Document)!.Id, DockRelation.Below);
+        tree = tree
+            .Float(Inspector, 100, 200, 400, 300)
+            .Float(Output, 700, 200, 400, 300);
+
+        var targetWindow = tree.Windows.Single(w => !w.IsPrimary && w.Panels.Contains(Output));
+        var targetGroup = (LayoutTabGroupNode)targetWindow.Root!;
+
+        tree = tree.Dock(Inspector, targetGroup.Id, DockRelation.Into);
+
+        Assert.Equal(2, tree.Windows.Count);
+        var survivor = tree.Windows.Single(w => !w.IsPrimary);
+        Assert.Equal([Output, Inspector], survivor.Root!.Panels);
+        Assert.Equal([Explorer, Document], tree.DockedPanels);
+    }
+
+    [Fact]
+    public void FindWindowContaining_LocatesTheWindowOwningANode_AcrossTheWholeForest()
+    {
+        var tree = ThreePane().Float(Inspector, 100, 200, 400, 300);
+        var secondary = tree.Windows.Single(w => !w.IsPrimary);
+
+        var found = tree.FindWindowContaining(secondary.Root!.Id);
+
+        Assert.Equal(secondary.Id, found!.Id);
+    }
+
+    [Fact]
+    public void WithPrimaryRoot_ReplacesOnlyThePrimaryWindowsOwnRoot()
+    {
+        var tree = ThreePane().Float(Inspector, 100, 200, 400, 300);
+        var secondaryBefore = tree.Windows.Single(w => !w.IsPrimary);
+
+        var replaced = tree.WithPrimaryRoot(new LayoutTabGroupNode(Guid.NewGuid(), [Document]));
+
+        Assert.Equal([Document], replaced.Root!.Panels);
+        var secondaryAfter = replaced.Windows.Single(w => !w.IsPrimary);
+        Assert.Equal(secondaryBefore.Id, secondaryAfter.Id);
+    }
+
+    // ----------------------------------------------------------------
+    // Reordering a tab in place (`ADR-0153` decision 8, `TD-133`)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void ReorderTab_MovesAPanelOnePositionLater()
+    {
+        var tree = WorkspaceLayoutTree.Single(Document);
+        tree = tree.Dock(Inspector, tree.Root!.Id, DockRelation.Into);
+        tree = tree.Dock(Output, tree.FindGroupContaining(Document)!.Id, DockRelation.Into);
+        var group = tree.FindGroupContaining(Document)!;
+        Assert.Equal([Document, Inspector, Output], group.PanelIds);
+
+        tree = tree.ReorderTab(group.Id, Document, direction: 1);
+
+        Assert.Equal([Inspector, Document, Output], tree.FindGroupContaining(Document)!.PanelIds);
+    }
+
+    [Fact]
+    public void ReorderTab_MovesAPanelOnePositionEarlier()
+    {
+        var tree = WorkspaceLayoutTree.Single(Document);
+        tree = tree.Dock(Inspector, tree.Root!.Id, DockRelation.Into);
+        tree = tree.Dock(Output, tree.FindGroupContaining(Document)!.Id, DockRelation.Into);
+        var group = tree.FindGroupContaining(Document)!;
+
+        tree = tree.ReorderTab(group.Id, Output, direction: -1);
+
+        Assert.Equal([Document, Output, Inspector], tree.FindGroupContaining(Document)!.PanelIds);
+    }
+
+    [Fact]
+    public void ReorderTab_KeepsTheSamePanelSelected_EvenThoughItsIndexMoved()
+    {
+        var tree = WorkspaceLayoutTree.Single(Document);
+        tree = tree.Dock(Inspector, tree.Root!.Id, DockRelation.Into);
+        var group = tree.FindGroupContaining(Document)!;
+        tree = tree.SelectPanel(Inspector);
+        group = tree.FindGroupContaining(Inspector)!;
+
+        tree = tree.ReorderTab(group.Id, Inspector, direction: -1);
+
+        Assert.Equal(Inspector, tree.FindGroupContaining(Inspector)!.SelectedPanelId);
+        Assert.Equal([Inspector, Document], tree.FindGroupContaining(Inspector)!.PanelIds);
+    }
+
+    [Fact]
+    public void ReorderTab_PastEitherEnd_IsANoOp()
+    {
+        var tree = WorkspaceLayoutTree.Single(Document);
+        tree = tree.Dock(Inspector, tree.Root!.Id, DockRelation.Into);
+        var group = tree.FindGroupContaining(Document)!;
+
+        var pastTheStart = tree.ReorderTab(group.Id, Document, direction: -1);
+        var pastTheEnd = tree.ReorderTab(group.Id, Inspector, direction: 1);
+
+        Assert.Equal(tree, pastTheStart);
+        Assert.Equal(tree, pastTheEnd);
+    }
+
+    [Fact]
+    public void ReorderTab_OnAPanelNotInThatGroup_IsANoOp()
+    {
+        var tree = ThreePane();
+        var explorerGroup = tree.FindGroupContaining(Explorer)!;
+
+        var after = tree.ReorderTab(explorerGroup.Id, Inspector, direction: 1);
+
+        Assert.Equal(tree, after);
+    }
+
+    [Fact]
+    public void ReorderTab_OnAVanishedGroup_IsANoOp()
+    {
+        var tree = ThreePane();
+
+        var after = tree.ReorderTab(Guid.NewGuid(), Explorer, direction: 1);
+
+        Assert.Equal(tree, after);
+    }
 }

@@ -101,4 +101,64 @@ public class WorkspaceLayoutSerializerTests
 
         Assert.Contains($"\"Version\":{WorkspaceLayoutSerializer.CurrentVersion}", json, StringComparison.Ordinal);
     }
+
+    // ----------------------------------------------------------------
+    // ADR-0153: the version-2 window forest, and reading version 1
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void TheCurrentVersion_IsTheWindowForest()
+    {
+        Assert.Equal(2, WorkspaceLayoutSerializer.CurrentVersion);
+    }
+
+    [Fact]
+    public void AVersion1Document_LoadsIntoAForest_WithOnePrimaryWindow()
+    {
+        var json = "{\"Version\":1,\"Root\":{\"Kind\":\"tabs\",\"Id\":\"11111111-1111-1111-1111-111111111111\",\"Orientation\":\"Horizontal\",\"PanelIds\":[\"22222222-2222-2222-2222-222222222222\"],\"SelectedIndex\":0},\"Floating\":[{\"Id\":\"55555555-5555-5555-5555-555555555555\",\"Content\":{\"Kind\":\"tabs\",\"Id\":\"66666666-6666-6666-6666-666666666666\",\"Orientation\":\"Horizontal\",\"PanelIds\":[\"33333333-3333-3333-3333-333333333333\"],\"SelectedIndex\":0},\"X\":-1200,\"Y\":80,\"Width\":400,\"Height\":300}],\"Panels\":[]}";
+
+        var restored = WorkspaceLayoutSerializer.Deserialise(json);
+
+        Assert.NotNull(restored);
+        Assert.Equal(2, restored!.Windows.Count);
+        var primary = Assert.Single(restored.Windows, w => w.IsPrimary);
+        Assert.Equal([Document], primary.Root!.Panels);
+        var secondary = Assert.Single(restored.Windows, w => !w.IsPrimary);
+        Assert.Equal([Inspector], secondary.Root!.Panels);
+        Assert.Equal(-1200, secondary.X);
+        Assert.Null(secondary.MonitorKey);
+    }
+
+    [Fact]
+    public void ALayoutWithASecondWindow_SurvivesAVersion2RoundTrip_Exactly()
+    {
+        var sample = Sample();
+        var original = sample.SetWeights(((LayoutSplitNode)sample.Root!).Id, [1, 3]);
+        original = original with { Windows = original.Windows.Select(w => w.IsPrimary ? w : w with { MonitorKey = "DISPLAY1@0,0,1920x1080" }).ToList() };
+
+        var json = WorkspaceLayoutSerializer.Serialise(original);
+        var restored = WorkspaceLayoutSerializer.Deserialise(json);
+
+        Assert.NotNull(restored);
+        Assert.Equal(original.Windows.Count, restored!.Windows.Count);
+        var secondary = restored.Windows.Single(w => !w.IsPrimary);
+        Assert.Equal("DISPLAY1@0,0,1920x1080", secondary.MonitorKey);
+        Assert.Equal(original.Windows.Single(w => !w.IsPrimary).X, secondary.X);
+    }
+
+    [Fact]
+    public void AVersion2DocumentNamingNoPrimaryWindow_ReadsBackAsNothing()
+    {
+        var json = "{\"Version\":2,\"Windows\":[{\"Id\":\"11111111-1111-1111-1111-111111111111\",\"Root\":null,\"IsPrimary\":false,\"MonitorKey\":null,\"X\":0,\"Y\":0,\"Width\":0,\"Height\":0}],\"Panels\":[]}";
+
+        Assert.Null(WorkspaceLayoutSerializer.Deserialise(json));
+    }
+
+    [Fact]
+    public void AVersion2DocumentWithNoWindowsAtAll_ReadsBackAsNothing()
+    {
+        var json = "{\"Version\":2,\"Windows\":[],\"Panels\":[]}";
+
+        Assert.Null(WorkspaceLayoutSerializer.Deserialise(json));
+    }
 }
