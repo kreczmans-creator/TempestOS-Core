@@ -80,6 +80,7 @@ public sealed class CopyVerificationActivityCommandHandler : ICommandHandler<Cop
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Copied '{command.TargetObjectId}' to new VerificationActivity '{copy.Id}'.");
+        var destinationPhrase = await WorkspaceCommandBindings.DestinationPhraseAsync(_context, command.NewParentId, cancellationToken).ConfigureAwait(false);
+        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind);
     }
 }
