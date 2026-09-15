@@ -67,6 +67,32 @@ internal sealed partial class MainWindowComposer
                     return Task.FromResult(CommandResult.Success("Layout reset to its default arrangement."));
                 });
 
+            // `WP 20.10D`, PO finding T4: "dock the Requirements tree
+            // beside a requirement's editor ... its disappeared somewhere
+            // and broken away — need to review it all." One route to every
+            // registered panel regardless of how it was lost — docked,
+            // floating (behind the main window, off-screen, or simply not
+            // where the user is looking), or hidden entirely — so there is
+            // always an answer to "where did my panel go" that does not
+            // depend on finding the floating window first. Registered once
+            // per panel present when the shell composes; a panel a future
+            // Work Package registers after this point (an attachment
+            // viewer, say) is a known, disclosed gap — see the brief's own
+            // report.
+            foreach (var descriptor in coordinators.DockingComposer.Registry.All)
+            {
+                var panelId = descriptor.Id;
+                var title = descriptor.Title;
+
+                RegisterShellAction(
+                    composition.CommandRegistry, $"shell.showPanel:{panelId}", $"Show Panel: {title}", "Workspace",
+                    () =>
+                    {
+                        coordinators.DockingComposer.ShowPanel(panelId);
+                        return Task.FromResult(CommandResult.Success($"{title} panel shown."));
+                    });
+            }
+
             RegisterShellAction(
                 composition.CommandRegistry, "shell.toggleTheme", "Toggle Theme", "Workspace",
                 async () =>

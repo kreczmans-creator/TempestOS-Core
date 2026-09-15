@@ -212,6 +212,13 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
         var dockingComposer = new WorkspaceDockingComposer(workspace, views.ExplorerView, views.InspectorView, views.DocumentArea, views.Session.PanelUiState, views.Session.LayoutStore);
 
+        // `WP 20.10D`, PO finding T4: a floating window must be owned by
+        // the real shell window (never left behind it with no way back),
+        // and a drag that misses every target should say so in the status
+        // bar the same way every other shell action already does.
+        dockingComposer.Layout.OwnerWindow = window;
+        dockingComposer.Layout.Announced += views.StatusBar.SetHint;
+
         // `TD-80`: the document and drawing viewer. `TD-96`: the same
         // already-registered IAttachmentContentStore every domain write
         // uses, resolved the identical way WorkspaceHost resolves every
