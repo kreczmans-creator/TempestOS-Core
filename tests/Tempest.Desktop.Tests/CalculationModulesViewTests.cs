@@ -34,6 +34,8 @@ public sealed class CalculationModulesViewTests
     {
         await InCalculatorsAsync(async (host, window, view) =>
         {
+            LayOut(window);
+
             Assert.Equal(ProductCalculationCatalogue.CalculationIds.Count, view.Catalogue.Sum(g => g.Modules.Count));
             Assert.Equal(16, view.Catalogue.Sum(g => g.Modules.Count));
 
@@ -292,6 +294,10 @@ public sealed class CalculationModulesViewTests
         }
 
         Assert.True(condition(), "The surface did not reach the expected state in time.");
+
+        // Whatever the condition observed, the surface is laid out before
+        // the caller asserts placement on it.
+        LayOut(window);
     }
 
     private static void AssertUsable(MainWindow window, Control control, string what)
