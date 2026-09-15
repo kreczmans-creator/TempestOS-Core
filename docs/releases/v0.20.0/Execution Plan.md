@@ -62,7 +62,7 @@ disclosed as the lead's default in the brief.
 
 | Work Package | Outcome | Merged |
 |---|---|---|
-| `WP 20.3D` | Delivered. Core plus three alphabet-ranged Desktop shards per configuration; the ceiling back at 45 minutes. First hosted timings on `94cbb5ba`: every shard between 6 and 10 minutes. | `5dcaff34` |
+| `WP 20.3D` | Delivered. Core plus three alphabet-ranged Desktop shards per configuration; the ceiling back at 45 minutes. First hosted timings (`94cbb5ba`, `4d06cf19`): shards between 5 and 14 minutes, the whole run about 16 minutes wall-clock against the old single Debug leg of 45 to 90. | `5dcaff34` |
 | `WP 20.0A` (design) | Delivered as a draft. `ADR-0153` *Proposed* and the design note; the honest estimate is about 20 developer-days in six steps, not the six days first carried — split across two or three Work Packages in the next tranche. | `c3df93c4` |
 | `WP 20.1A1` | Delivered. Fourteen Requirements writes each one transaction, each published afterwards. | `0a389dc7` |
 | `WP 20.3A` | Delivered. Issue in one transaction (B2), export schema versions migrate one step at a time, BOM units a twelve-symbol vocabulary with aliases. | `b5227eb8` |

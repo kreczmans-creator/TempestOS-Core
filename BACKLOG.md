@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (12 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (13 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-05` — module discovery outside `[ModuleMetadata]` requires a public
 parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
@@ -169,6 +169,7 @@ longer appears below.
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` — it takes no project id parameter, so guarding it needs a design step (how a Requirement's own creation would even learn which project it is scoped to), not a copy of the pattern every other guarded write already follows | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task guarded; narrowed to this one residual by `WP 19.10R` — `ArchivedProjectCommandGuard` closes the Structure tab's Ribbon and the Command Palette, and a macro replaying either, by teaching `Tempest.Core.Commands.CommandRegistry.Evaluate` the same archived-project check, consulted for every binding across the five discipline registrations plus Quotations, Deliverables, Tasks and Evidence whose own `CommandBinding.Mutates` is set) |
 | `TD-182` | `QuotationSheetRenderer` duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | unowned (raised by v0.19.1 — `WP 19.5B`) |
+| `TD-183` | `OAuthAuthoriserTests` binds a real loopback port for the authorisation round-trip and collides when several suites run at once — one failure per night under ten concurrent agent runs on 2026-09-14/15 (Core Release leg; green alone, three of three), so a gate that runs beside other work cannot trust a single Core run without a rerun. Fix is in the test alone: retry on `AddressInUse` with a fresh port, or bind the listener before the port is handed to the authoriser. | unowned (raised by `WP 20.9.0`, 2026-09-15; S — a test-hardening item, no product change) |
 
 **Six rows added by `WP 19.9.1` (2026-09-14):** `TD-176` (closed by
 `WP 19.10B` — see the note above the table), `TD-177` (closed by

@@ -62,7 +62,7 @@ reads), `20.2A` (the object picker: Move and Copy for twelve commands,
 `TD-115`'s three bindings, the contextual Palette); then `WP 20.9.0`
 (the two CI defects on `94cbb5ba` — `ADR-0153`'s register row and a
 bounded wait in `ProjectAreaAcceptanceTests` — the release notes,
-`PHYSICAL_REVIEW.md` §7d, this file). The live backlog stands at 12 of
+`PHYSICAL_REVIEW.md` §7d, this file). The live backlog stands at 13 of
 its cap of 30. It is a release candidate under the Product Owner's
 manual test (§7c then §7d); its PR to `main`, tag and GitHub Release
 follow acceptance, the way `v0.18.0` went. `v0.19.1` is the fallback
@@ -70,11 +70,11 @@ if this candidate is refused.
 
 ## Gate (the candidate head, re-derived by `WP 20.9.0` on 2026-09-15)
 
-- Core tests: {{CORE_TESTS}} passed, 0 failed, 0 skipped, Debug and Release (from 4,455: payment terms and due dates, the calculation task, the identifier index, requirements on the change bus, transactional issue, export migrations, BOM units, macros, the attachment content store, the rehydration index, the fifteen picker bindings)
-- Desktop tests: {{DESKTOP_TESTS}} passed, 0 failed, 0 skipped, Debug ({{DESKTOP_DEBUG_TIME}}) and Release ({{DESKTOP_RELEASE_TIME}})
+- Core tests: 4,666 passed, 0 failed, 0 skipped, Debug and Release (from 4,455: payment terms and due dates, the calculation task, the identifier index, requirements on the change bus, transactional issue, export migrations, BOM units, macros, the attachment content store, the rehydration index, the fifteen picker bindings)
+- Desktop tests: 660 passed, 0 failed, 0 skipped, Debug (14 m 2 s) and Release (13 m 5 s)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Governance health check: 5/5 passed
-- CI: the sharded workflow (`WP 20.3D`, Core plus three Desktop shards per configuration, the job ceiling back at 45 minutes) — {{CI_LINE}}
+- CI: the sharded workflow (`WP 20.3D`, Core plus three Desktop shards per configuration, the job ceiling back at 45 minutes) — the CI Gate job green on `4d06cf19` (run 34916910336, about 16 minutes wall-clock, the shards 5 to 14 minutes) once the two defects were fixed; the three runs on the candidate head itself are recorded on the candidate page, as for `v0.19.1`
 
 ## Gate (the candidate head `033ac18`, re-derived after the overnight tranche on 2026-09-15)
 

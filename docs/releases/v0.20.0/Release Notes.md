@@ -38,30 +38,30 @@ require.
 
 ## Figures
 
-Re-derived at `WP 20.9.0` on the candidate head `{{HEAD}}`
+Re-derived at `WP 20.9.0` on the candidate head `4d06cf19`
 (`git grep -c '' HEAD -- 'src/*.cs'` excluding `Frozen/`; the test
 counts from the gate).
 
-| Figure | v0.19.1 (`94998b9e`) | v0.20.0 (`{{HEAD}}`) |
+| Figure | v0.19.1 (`94998b9e`) | v0.20.0 (`4d06cf19`) |
 |---|---|---|
-| Live source lines (`src/`, excluding `Frozen/`) | 141,032 | {{SRC}} |
-| Live test lines (`tests/`) | 142,421 | {{TESTS}} |
-| `Tempest.Core` source lines | 63,623 | {{CORE}} |
-| Core tests | 4,455 | {{CORE_TESTS}} |
-| Desktop tests | 628 | {{DESKTOP_TESTS}} |
+| Live source lines (`src/`, excluding `Frozen/`) | 141,032 | 145,377 |
+| Live test lines (`tests/`) | 142,421 | 147,379 |
+| `Tempest.Core` source lines | 63,623 | 65,926 |
+| Core tests | 4,455 | 4,666 |
+| Desktop tests | 628 | 660 |
 | ADRs | 152 | 153 (`ADR-0153`, *Proposed*) |
-| Live backlog | 12 of 30 | 12 of 30 (`TD-77`, `TD-115` and `S2-2` closed; `TD-88` and the SVG half of `TD-99` stay open, annotated) |
-| Commits on the branch | — | {{COMMITS}} since `94998b9e`, {{MERGES}} of them merges |
+| Live backlog | 12 of 30 | 13 of 30 (`TD-77`, `TD-115` and `S2-2` closed; `TD-88` and the SVG half of `TD-99` stay open, annotated; `TD-183`, the OAuth loopback test's port collision, raised as a row rather than left as a warning) |
+| Commits on the branch | — | 65 since `94998b9e`, 13 of them merges |
 | Effort | — | 22 days planned across thirteen Work Packages, all on 2026-09-15 |
 
 ## Gate on the candidate head
 
 - Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`
-- Core tests: {{CORE_TESTS}} passed, 0 failed, Debug and Release
-- Desktop tests: {{DESKTOP_TESTS}} passed, 0 failed, Debug ({{DESKTOP_DEBUG_TIME}}) and Release ({{DESKTOP_RELEASE_TIME}})
+- Core tests: 4,666 passed, 0 failed, Debug and Release
+- Desktop tests: 660 passed, 0 failed, Debug (14 m 2 s) and Release (13 m 5 s)
 - Governance health check: 5 of 5 (the ADR Register gained `ADR-0153`'s row at `WP 20.9.0`; CI had caught the gap on `94cbb5ba`)
 - CI: the sharded workflow (`WP 20.3D`) — Core plus three Desktop shards per configuration — ran green on `94cbb5ba` except for the two defects `WP 20.9.0` fixed (the register row; a bounded wait in `ProjectAreaAcceptanceTests` where CI's Debug shard reached the opened-row assertion before the open's continuation). The three CI Gate runs on the candidate head are recorded on the candidate page and in `PROJECT_STATUS.md`.
-- The Release legs of the local gate ran on `c91d12a1` (the last code merge); the Debug legs and the governance check on the tip. The only differences between the two are one test's wait and two documents.
+- The Core legs and the first Desktop Release leg ran on `c91d12a1` (the last code merge); that Release leg failed on exactly the opened-row race CI had shown, so the Desktop Release suite was re-run on the fixed tree (13 m 5 s, 660 of 660); the Debug legs and the governance check ran on the fixed tree. Core is untouched by the fix.
 
 ## Warnings
 
