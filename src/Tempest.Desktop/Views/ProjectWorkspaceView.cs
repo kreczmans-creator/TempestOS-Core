@@ -187,6 +187,9 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>The Quote surface, so the shell can drive and inspect it (`WP 19.5B`, `ADR-0152`).</summary>
     public ProjectQuoteView QuoteView => _quoteView;
 
+    /// <summary>The Sign off surface, so the shell can drive and inspect it (`WP 19.7A`, `WP 20.10E`).</summary>
+    public ProjectSignOffView SignOffView => _signOffView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     /// <param name="deliverablesView">
     /// This project's own Deliverables tab (`WP 19.0A`, `ADR-0150`) — built
