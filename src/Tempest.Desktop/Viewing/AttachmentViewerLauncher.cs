@@ -139,6 +139,7 @@ public sealed class AttachmentViewerLauncher
         if (_contentStore is not null &&
             await TryOpenStreamedAsync(view, attachment, viewportWidth, viewportHeight, cancellationToken).ConfigureAwait(true))
         {
+            await view.LoadAnnotationsAsync(owner as IHasAttachmentAnnotations, attachment.Id, cancellationToken).ConfigureAwait(true);
             Dock(view, attachment);
             return view;
         }
@@ -155,6 +156,13 @@ public sealed class AttachmentViewerLauncher
         {
             OpenLoadedContent(view, attachment, content.Bytes, viewportWidth, viewportHeight);
         }
+
+        // `TD-98`: loaded here, once, for both the Ready and the
+        // unavailable case alike — harmless in the unavailable case, since
+        // no page is showing for a stroke to land on, and it means a
+        // document that opens Ready straight into an existing attachment
+        // shows its own markup immediately, not after a first render.
+        await view.LoadAnnotationsAsync(owner as IHasAttachmentAnnotations, attachment.Id, cancellationToken).ConfigureAwait(true);
 
         Dock(view, attachment);
         return view;

@@ -44,6 +44,15 @@ public sealed class DocumentViewerRotationTests
         var (viewer, source) = OpenMultiPagePdf();
         using var disposable = source;
 
+        // Zoomed to a fixed, non-fitted value first (`TD-101`): a fitted
+        // view now re-fits to the rotated bounding box (see
+        // `RotatingAFittedView_StaysFitted_ToTheRotatedBoundingBox` below),
+        // which genuinely changes the rendered zoom, not only the bitmap's
+        // own orientation — exactly the fix this WP's brief asks for. This
+        // test's own claim is narrower and still true at any fixed zoom: a
+        // rotation turns the rendered bitmap, swapping its pixel width and
+        // height, and asks the page source for nothing different.
+        viewer.ActualSize();
         var before = viewer.RenderedPage!.PixelSize;
 
         viewer.RotateRight();
@@ -59,6 +68,9 @@ public sealed class DocumentViewerRotationTests
         var (viewer, source) = OpenMultiPagePdf();
         using var disposable = source;
 
+        // See `RotateRight_...`'s own remark: fixed zoom, so only the
+        // rotation's own effect — the bitmap's own swap — is under test.
+        viewer.ActualSize();
         var before = viewer.RenderedPage!.PixelSize;
 
         viewer.RotateLeft();
@@ -66,6 +78,62 @@ public sealed class DocumentViewerRotationTests
         Assert.Equal(270, viewer.RotationDegrees);
         Assert.Equal(before.Width, viewer.RenderedPage!.PixelSize.Height);
         Assert.Equal(before.Height, viewer.RenderedPage!.PixelSize.Width);
+    }
+
+    [AvaloniaFact]
+    public void RotatingAFittedView_StaysFitted_ToTheRotatedBoundingBox()
+    {
+        // The rotation fit bug `WP 20.2B` disclosed, closed here (`TD-101`):
+        // before this fix, ContentWidth/ContentHeight stayed the page's
+        // native (unrotated) size throughout, so a rotated landscape page
+        // could sit genuinely un-fitted — "Fit" was the last zoom the user
+        // pressed, but the rotated bounding box no longer matched the
+        // viewport at that zoom, and only a manual zoom step fixed it.
+        var (viewer, source) = OpenMultiPagePdf();
+        using var disposable = source;
+
+        Assert.True(viewer.Session!.Viewport.IsFitted);
+        var fittedZoomBeforeRotate = viewer.Session!.Viewport.Zoom;
+
+        viewer.RotateRight();
+
+        // Still fitted — to the *rotated* bounding box, not the stale one.
+        Assert.True(viewer.Session!.Viewport.IsFitted);
+        Assert.Equal(842, viewer.Session!.Viewport.ContentWidth, 0.5);
+        Assert.Equal(595, viewer.Session!.Viewport.ContentHeight, 0.5);
+
+        // A genuinely different zoom for a genuinely different (landscape)
+        // bounding box, not the same zoom simply carried over — exactly
+        // what "fits with no manual zoom step" means.
+        Assert.NotEqual(fittedZoomBeforeRotate, viewer.Session!.Viewport.Zoom, 3);
+
+        // No manual zoom step needed: the rendered box already reaches an
+        // edge of the viewport on at least one axis, which is what
+        // "fitted" means.
+        var viewport = viewer.Session!.Viewport;
+        Assert.True(
+            Math.Abs(viewport.RenderedWidth - viewport.ViewportWidth) < 0.5 ||
+            Math.Abs(viewport.RenderedHeight - viewport.ViewportHeight) < 0.5);
+    }
+
+    [AvaloniaFact]
+    public void RotatingAZoomedInView_KeepsTheSameZoom_NotAForcedRefit()
+    {
+        // `DocumentViewport.WithViewportSize`'s own convention, applied to
+        // rotation too (`WithContentSizeSwapped`): a user who deliberately
+        // zoomed in should not have that undone by turning the page, any
+        // more than by resizing the window.
+        var (viewer, source) = OpenMultiPagePdf();
+        using var disposable = source;
+
+        viewer.ZoomIn();
+        viewer.ZoomIn();
+        var zoomedZoom = viewer.Session!.Viewport.Zoom;
+        Assert.False(viewer.Session!.Viewport.IsFitted);
+
+        viewer.RotateRight();
+
+        Assert.Equal(zoomedZoom, viewer.Session!.Viewport.Zoom, 6);
     }
 
     [AvaloniaFact]
