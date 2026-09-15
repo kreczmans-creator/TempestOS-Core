@@ -76,14 +76,13 @@ internal sealed partial class MainWindowComposer
         // the Commercial section shows the client's organisation name and
         // the rate card's own code, never the bare record id either
         // stores.
-        var commercialSupport = new ProjectCommercialEditorSupport(
-            ct => views.OrganisationPicker.PickAsync(ct),
-            ct => views.RateCardPicker.PickAsync(ct),
-            () => host.SessionPrincipal?.IdentityId,
-            async (organisationId, ct) => (await views.OrganisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
-            async (pin, ct) => await views.RateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
-                ? (card.Definition.Code, card.Definition.Name)
-                : null);
+        //
+        // `WP 20.10A`: built in `BuildViews` now (`views.CommercialSupport`)
+        // — that phase's own new `ProjectDetailsView` needs the identical
+        // instance too, and `ProjectWorkspaceView` (which embeds it) is
+        // built there, not here. See `BuildViews`' own remarks at its
+        // construction.
+        var commercialSupport = views.CommercialSupport;
 
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
@@ -177,12 +176,35 @@ internal sealed partial class MainWindowComposer
 
                 var item = items[index - 1];
                 await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
-            })
+            },
+            onNewProject: () => _ = CreateNewProjectFromHomeAsync())
         { WorkspaceChanges = composition.WorkspaceChanges };
 
         async Task OpenTasksAsync()
         {
             await host.ShellNavigator!.GoToModuleAsync(ShellArea.Tasks).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
+
+        // `WP 20.10A` (D1): Home's own New Project button — the identical
+        // flow `ProjectBrowserView.CreateAsync` runs (the same
+        // `callbacks.PromptForNewProjectAsync`, the same "find it in the
+        // directory rather than trust a stale in-memory list" read
+        // that method's own remarks explain), so a project created from
+        // Home and one created from Projects behave exactly alike, and
+        // both open right up.
+        async Task CreateNewProjectFromHomeAsync()
+        {
+            var identifier = await views.ProjectBrowser.NextIdentifierAsync().ConfigureAwait(true);
+            if (!await callbacks.PromptForNewProjectAsync(identifier, string.Empty).ConfigureAwait(true))
+                return;
+
+            var everyProject = await host.ProjectDirectory!.ListAsync().ConfigureAwait(true);
+            var created = everyProject.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+            if (created is null)
+                return;
+
+            await host.ShellNavigator!.OpenProjectAsync(created.Id).ConfigureAwait(true);
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         }
 

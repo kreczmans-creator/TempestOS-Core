@@ -58,6 +58,11 @@ public sealed class HomeDashboardView : UserControl
     private readonly Func<int, Task> _onOpenRecent;
     private readonly Action<Guid, string>? _onOpenFavourite;
     private readonly Func<int, Task>? _onOpenRecentlyChanged;
+    private readonly Action? _onNewProject;
+
+    // `WP 20.10A` (Product Owner finding D1: "Lets add a 'New Project'
+    // button on the home page").
+    private readonly Button _newProjectButton = new() { Content = "New Project…", MinHeight = DesignTokens.ControlSizeMedium };
 
     private readonly WrapPanel _tiles = new() { Orientation = Orientation.Horizontal };
     private readonly TextBlock _commercialText = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
@@ -79,11 +84,20 @@ public sealed class HomeDashboardView : UserControl
     }
 
     /// <summary>Initialises a new instance of the <see cref="HomeDashboardView"/> class.</summary>
+    /// <param name="onNewProject">
+    /// Runs the identical New Project flow every other entry point uses,
+    /// and opens the created project right up (`WP 20.10A`, D1).
+    /// <see langword="null"/> (any test that constructs this view directly)
+    /// leaves the New Project button honestly inert rather than run
+    /// without asking — the identical "not threaded through stays
+    /// honestly unavailable" discipline every other optional collaborator
+    /// across this platform's Desktop views already follows.
+    /// </param>
     public HomeDashboardView(
         ITasksReadModel tasksReadModel, IProjectStatusReadModel projectStatusReadModel, IAccountsReadModel accountsReadModel,
         EngineeringDomainContext domainContext, EngineeringCockpit cockpit, FavouriteObjectsState? favourites,
         Func<Guid, string, Task> openObjectRightUp, Action openTasks, Func<int, Task> onOpenRecent,
-        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null)
+        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null, Action? onNewProject = null)
     {
         ArgumentNullException.ThrowIfNull(tasksReadModel);
         ArgumentNullException.ThrowIfNull(projectStatusReadModel);
@@ -105,14 +119,32 @@ public sealed class HomeDashboardView : UserControl
         _onOpenRecent = onOpenRecent;
         _onOpenFavourite = onOpenFavourite;
         _onOpenRecentlyChanged = onOpenRecentlyChanged;
+        _onNewProject = onNewProject;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         ThemeReactiveBrush.Bind(_commercialText, TextBlock.ForegroundProperty, BrandPalette.BodyTextBrushKey);
 
+        // `WP 20.10A` (D1): the cockpit's own header row — title on the
+        // left, the New Project action beside it, mirroring every other
+        // page-level action row across this platform's Desktop views
+        // (`ProjectBrowserView`'s own "New Project…" button, the same New
+        // Project flow, reached here without a detour through Projects).
+        _newProjectButton.Classes.Add(ChromeStyles.Primary);
+        AutomationProperties.SetName(_newProjectButton, "New Project…");
+        _newProjectButton.Click += (_, _) => _onNewProject?.Invoke();
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var titleStack = new StackPanel();
+        titleStack.Children.Add(PageHeading.Label("HOME"));
+        titleStack.Children.Add(PageHeading.Title("Home"));
+        Grid.SetColumn(titleStack, 0);
+        header.Children.Add(titleStack);
+        Grid.SetColumn(_newProjectButton, 1);
+        _newProjectButton.VerticalAlignment = VerticalAlignment.Bottom;
+        header.Children.Add(_newProjectButton);
+
         var main = new StackPanel { Spacing = DesignTokens.SpaceXl };
-        main.Children.Add(PageHeading.Label("HOME"));
-        main.Children.Add(PageHeading.Title("Home"));
+        main.Children.Add(header);
         main.Children.Add(Section("Your tasks", _tiles));
         main.Children.Add(Section("Commercial snapshot", _commercialText));
         main.Children.Add(Section("Project status", _statusChartHost));
