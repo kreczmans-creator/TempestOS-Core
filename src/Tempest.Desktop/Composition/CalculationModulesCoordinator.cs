@@ -71,10 +71,13 @@ internal sealed class CalculationModulesCoordinator
         }
 
         // A second Calculate on the same calculation records another run
-        // against it, so Compare has two to set side by side; Start a new
-        // calculation on the surface clears the current run first.
-        var attempt = await _workbench.CalculateAsync(module, _view.ReadForm(), _view.CalculationName, _view.CurrentRun).ConfigureAwait(true);
-        Show(attempt, _view.CurrentRun is null ? "Calculated and recorded" : "Calculated again and recorded");
+        // against it, so Compare has two to set side by side. A different
+        // name typed asks for a new calculation, as Start a new calculation
+        // on the surface does.
+        var name = _view.CalculationName?.Trim();
+        var onto = _view.CurrentRun is { } current && (name is null || string.Equals(name, current.DisplayName, StringComparison.Ordinal)) ? current : null;
+        var attempt = await _workbench.CalculateAsync(module, _view.ReadForm(), name, onto).ConfigureAwait(true);
+        Show(attempt, onto is null ? "Calculated and recorded" : "Calculated again and recorded");
     }
 
     private async Task RerunAsync()

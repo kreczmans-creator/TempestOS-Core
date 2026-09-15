@@ -405,6 +405,20 @@ public sealed class CalculationModulesViewTests
             view = SurfaceOf(window);
             Assert.NotEqual(first.CalculationObjectId, view.CurrentRun!.CalculationObjectId);
             Assert.Equal(1, view.CurrentRun.RunCount);
+
+            // A different name typed asks for a new calculation too; the
+            // same name (or none) keeps recording onto the current one.
+            var third = view.CurrentRun;
+            view.SetCalculationName("Second bracket");
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun?.DisplayName == "Second bracket");
+            view = SurfaceOf(window);
+            Assert.NotEqual(third.CalculationObjectId, view.CurrentRun!.CalculationObjectId);
+            Assert.Equal(1, view.CurrentRun.RunCount);
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun?.RunCount == 2);
+            Assert.Equal("Second bracket", SurfaceOf(window).CurrentRun!.DisplayName);
         });
     }
 
