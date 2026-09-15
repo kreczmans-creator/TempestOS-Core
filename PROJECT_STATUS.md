@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Branch:** `release/v0.21.0` (the recovery tranche, cut from the `v0.20.0` candidate at `88311649` on 2026-09-15 at the Product Owner's instruction to close every technical weakness in the lead's assessment of that afternoon; it contains all of `release/v0.20.0` including the seven `WP 20.10` fixes from the Product Owner's test). Candidate: `904b0f81` plus the release documents committed on top.
+**Branch:** `release/v0.21.0` (the recovery tranche, cut from the `v0.20.0` candidate at `88311649` on 2026-09-15 at the Product Owner's instruction to close every technical weakness in the lead's assessment of that afternoon; it contains all of `release/v0.20.0` including the seven `WP 20.10` fixes from the Product Owner's test). Candidate: `b033651d` (the last code commit, the second `WP 21.7C` follow-up merge) plus the release documents committed on top.
 **VERSION:** `0.21.0` (bumped when the branch opened on 2026-09-15; `v0.18.0` was merged to `main`, tagged and published on 2026-09-14 after the Product Owner's acceptance; `v0.17.0` on 2026-09-09; `v0.19.1` and `v0.20.0` remain candidates under manual test, both contained in this branch)
 
 ## What a user can do today
@@ -60,7 +60,11 @@ Calculators), `21.3B` (the commercial edges), `21.1B` (the editor split),
 `21.0A` (docking steps 1–2 of `ADR-0153`), `21.7C` (the calculators
 completed from the reference libraries), `21.6A` (the four audit
 residuals fixed, Requirements undo), `21.5D` (the mutation threshold met,
-scoped 89.5 %); then `WP 21.9.0` (the release notes with thirteen
+scoped 89.5 %), then the two `21.7C` follow-ups from driving the real
+application for the Product Owner's screenshots (a read-back
+intermediate shown as its value, a renamed Calculate starting a new
+calculation, constraint lines in the input's own unit, a humanised
+comparison table); then `WP 21.9.0` (the release notes with thirteen
 warnings, `PHYSICAL_REVIEW.md` §7j, the OAuth tests off the dynamic port
 range, this file). The live backlog stands at 10 of its cap of 30. It is
 a release candidate for the Product Owner's manual test (§7e–§7j on top
@@ -70,12 +74,12 @@ Owner: `WP 21.0B`/`21.0C` (docking steps 3–4, after the `ADR-0153`
 review), `WP 21.5C` (the real-shell CI run), `WP 21.6` (the first live
 Xero authorisation) — 16.5 of the 94.5 planned days.
 
-## Gate (the `v0.21.0` candidate: `904b0f81` plus the release documents, re-derived by `WP 21.9.0` on 2026-09-15)
+## Gate (the `v0.21.0` candidate: `b033651d` plus the release documents, re-derived by `WP 21.9.0` on 2026-09-15)
 
 - Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`
-- Core tests: 5,308 passed, 0 failed, Debug (`904b0f81`) and Release (`904b0f81`)
-- Desktop tests: 884 passed, 0 failed, Debug (6 m 14 s at `b664fea6`, the last commit touching the Desktop suite; `904b0f81` changed a Core test only) and Release (6 m 30 s, `904b0f81`)
-- Governance health check: 5 of 5 (`b664fea6`)
+- Core tests: 5,317 passed, 0 failed, Debug and Release (`b033651d`)
+- Desktop tests: 884 passed, 0 failed, Debug (9 m 16 s) and Release (8 m 9 s), both on `b033651d`
+- Governance health check: 5 of 5 (`b033651d`)
 - CI: the sharded workflow ran on every merge head tonight; on `76b90c77` (the 21.7C merge) fully green, on `4c393842` the one Debug core failure was the dynamic-port collision `904b0f81` fixed (Release core green on re-run); the three runs on this candidate head — the push run plus two dispatched — are recorded on the candidate page and in `PROJECT_STATUS.md` at acceptance, with the CI Gate job as the criterion
 
 ## Gate (the candidate head, re-derived by `WP 20.9.0` on 2026-09-15)
