@@ -75,11 +75,36 @@ public sealed class DesignSystemTemplateFidelityTests
     }
 
     /// <summary>The mapping this Work Package implemented — a renderer's own document type to the design system's own template folder name (`_ds_manifest.json`'s own <c>folder</c> field). See the report for why each pairing was chosen.</summary>
+    /// <remarks>`WP 21.2A` added the six rows below — each renderer's own <c>IDocumentRenderer{TModel}.TemplateName</c>, asserted directly against this same table by <see cref="EveryRenderer_TemplateNameProperty_MatchesTheMappingTable"/>, so the two can never drift apart silently.</remarks>
     public static TheoryData<string, string> RendererTemplateMapping => new()
     {
         { "QuotationSheetRenderer (the quotation sheet)", "cost-estimate" },
         { "IssueSheetRenderer (the issue sheet)", "letterhead" },
+        { "InvoiceDocumentRenderer (the invoice)", "invoice" },
+        { "PurchaseOrderDocumentRenderer (the purchase order)", "purchase-order" },
+        { "TimesheetDocumentRenderer (the weekly timesheet)", "timesheet" },
+        { "TechnicalReportDocumentRenderer (the technical report)", "technical-report" },
+        { "DrawingRegisterDocumentRenderer (the drawing register)", "drawing-register" },
+        { "ProgressReportDocumentRenderer (the progress report)", "progress-report" },
     };
+
+    /// <summary>
+    /// Pins each of `WP 21.2A`'s own six new renderers' <c>TemplateName</c>
+    /// property to the identical folder name <see cref="RendererTemplateMapping"/>
+    /// states for it — a compile-time guarantee (unlike the theory above,
+    /// which can only check the folder exists on disk) that the mapping
+    /// table and the renderer itself never drift apart.
+    /// </summary>
+    [Fact]
+    public void EveryRenderer_TemplateNameProperty_MatchesTheMappingTable()
+    {
+        Assert.Equal("invoice", new Tempest.Desktop.Documents.Invoicing.InvoiceDocumentRenderer().TemplateName);
+        Assert.Equal("purchase-order", new Tempest.Desktop.Documents.PurchaseOrders.PurchaseOrderDocumentRenderer().TemplateName);
+        Assert.Equal("timesheet", new Tempest.Desktop.Documents.Timesheets.TimesheetDocumentRenderer().TemplateName);
+        Assert.Equal("technical-report", new Tempest.Desktop.Documents.TechnicalReports.TechnicalReportDocumentRenderer().TemplateName);
+        Assert.Equal("drawing-register", new Tempest.Desktop.Documents.DrawingRegisters.DrawingRegisterDocumentRenderer().TemplateName);
+        Assert.Equal("progress-report", new Tempest.Desktop.Documents.ProgressReports.ProgressReportDocumentRenderer().TemplateName);
+    }
 
     [Theory]
     [MemberData(nameof(RendererTemplateMapping))]

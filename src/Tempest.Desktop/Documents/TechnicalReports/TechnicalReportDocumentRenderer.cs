@@ -120,7 +120,15 @@ public sealed class TechnicalReportDocumentRenderer : IDocumentRenderer<Technica
 
         Flush();
 
-        if (sections.Count == 0)
+        // No `#` line was ever seen: either one section with its own
+        // heading still null (`Flush`'s own first call), or — genuinely
+        // empty content — no section was flushed at all (`Flush`'s own
+        // "nothing to add" guard). Either way, named "Content" rather than
+        // left null or silently empty, so this document always gets at
+        // least one real heading on the page.
+        if (sections is [{ Heading: null } only])
+            sections[0] = only with { Heading = "Content" };
+        else if (sections.Count == 0)
             sections.Add(new TechnicalReportSection("Content", content.Trim()));
 
         return sections;

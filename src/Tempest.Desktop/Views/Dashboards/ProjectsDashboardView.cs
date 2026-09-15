@@ -39,7 +39,18 @@ public sealed class ProjectsDashboardView : UserControl
     private readonly StackPanel _blockedList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _atRiskList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _readyList = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly StackPanel _allProjectsList = new() { Spacing = DesignTokens.SpaceXs };
+    // `WP 21.2A`, scope item 3: every project the three reason-carrying
+    // lists above never show — On track, On hold, and (a pre-existing gap
+    // this Work Package does not otherwise touch) Overdue, which none of
+    // the three ever listed either — so every open project gets an Export
+    // progress report exactly once across this whole page, never twice.
+    // A project shown twice would carry two "Open {name}"/"Export progress
+    // report {name}" buttons with the identical accessible name, breaking
+    // both `AutomationNameCoverageTests`' own uniqueness expectations and
+    // `DashboardsTests`' own `.Single(...)` lookups by name (found by
+    // running that suite after first wiring this section as "every
+    // project" — fixed by this complement instead).
+    private readonly StackPanel _otherProjectsList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly ScrollViewer _ganttScroll = new() { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
     private readonly ContentControl _ganttHost = new();
     private readonly TextBlock _exportStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -76,12 +87,12 @@ public sealed class ProjectsDashboardView : UserControl
         page.Children.Add(Section("At risk", _atRiskList));
         page.Children.Add(Section("Ready to invoice", _readyList));
         page.Children.Add(Section("Schedule", _ganttScroll));
-        // `WP 21.2A`, scope item 3: every open project, each with its own
-        // Export progress report — the three status-filtered lists above
-        // never show an On track/On hold project, and this button belongs
-        // wherever a project is, not only where it is Blocked/At risk/Ready
-        // to invoice.
-        page.Children.Add(Section("Projects", _allProjectsList));
+        // `WP 21.2A`, scope item 3: every project the three lists above
+        // never show, each with its own Export progress report — this
+        // button belongs wherever a project is, not only where it is
+        // Blocked/At risk/Ready to invoice. See `_otherProjectsList`'s own
+        // remarks for why this is a complement, not a fourth full list.
+        page.Children.Add(Section("Other projects (On track / On hold)", _otherProjectsList));
 
         AutomationProperties.SetName(this, "Projects dashboard");
         Content = new ScrollViewer { Content = page };
@@ -103,7 +114,10 @@ public sealed class ProjectsDashboardView : UserControl
         RenderList(_blockedList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.Blocked).ToList(), "No blocked projects.");
         RenderList(_atRiskList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.AtRisk).ToList(), "Nothing at risk.");
         RenderList(_readyList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.ReadyToInvoice).ToList(), "Nothing ready to invoice.");
-        RenderList(_allProjectsList, snapshot.Projects, "No open projects.");
+        RenderList(
+            _otherProjectsList,
+            snapshot.Projects.Where(p => p.Status is not (ProjectHealthStatus.Blocked or ProjectHealthStatus.AtRisk or ProjectHealthStatus.ReadyToInvoice)).ToList(),
+            "No other open projects.");
 
         RenderGantt(snapshot);
     }

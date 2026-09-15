@@ -435,6 +435,25 @@ claim names the file it comes from.
 
 ---
 
+### 7e. Documents from the templates in `v0.21.0` (about 15 minutes)
+
+Walk §7d first. Then these, `WP 21.2A`'s own six document renderers and
+the buttons that export them — the design system's three type families
+(Chakra Petch, Inter, Space Mono) and the horizontal navy lockup, embedded
+in the application itself rather than drawn with the platform default
+face. Launch per §3; the title bar reads `TempestOS 0.21.0 (<commit>)`.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| D1 | Business → **Invoices** → any request row → **Export invoice** | The file picker opens pre-named `<reference>-invoice.pdf`; the saved PDF opens in any PDF reader with the client, project, lines, net total, payment terms and — once Settings → Organisation's own new **Bank details** section (Sort code/Account number/Account name/IBAN) is filled in — a **Payment details** section carrying them (`src/Tempest.Desktop/Documents/Invoicing/InvoiceDocumentRenderer.cs`, `src/Tempest.Desktop/Views/SettingsView.cs`). With Bank details left blank, the section instead says so plainly. | Export does nothing, or a blank/corrupt PDF; the bank fields never appear even once entered; an invented VAT figure appears (this release renders net only). |
+| D2 | Business → **Timesheets** → **Export week** | The saved PDF carries the current principal's own week — hours by project and day, week/billable totals — and a blank **Prepared by**/**Approved by** signature block, never a fabricated approver (`src/Tempest.Desktop/Documents/Timesheets/TimesheetDocumentRenderer.cs`). | A day or entry is missing; an approver name appears that nobody entered. |
+| D3 | Open a project → **Documents** → **Export register** | The saved PDF is **landscape**, wider than it is tall, listing every document/drawing in the project — number, title, current revision, status (`src/Tempest.Desktop/Documents/DrawingRegisters/DrawingRegisterDocumentRenderer.cs`). | The PDF is portrait; a document present in the Documents tab is missing from the register. |
+| D4 | Open (or create) a Document, open its editor, **Attachments** section → **Export as report** | The saved PDF carries a cover block, a revision history table (every revision, oldest first) and numbered sections — split from the current revision's own content by leading `#` lines; content with no `#` at all renders as one "Content" section rather than empty (`src/Tempest.Desktop/Documents/TechnicalReports/TechnicalReportDocumentRenderer.cs`, `src/Tempest.Desktop/Editors/ObjectEditorView.cs`). The button appears only for a Document, never for another Kind's editor. | The button appears for a non-Document Kind; a revision is missing from the table; a heading-free document renders blank. |
+| D5 | Projects rail → **Dashboard + Reports** → any project row (now every open project lists here, not only Blocked/At risk/Ready to invoice) → **Export progress report** | The saved PDF is **landscape**, one page per section — RAG status, cost position (quoted vs recorded hours), risks (the project's own live governance register), a four-week look-ahead — never a fabricated deliverable-completion percentage: that section states plainly it is not available from this report's own data (`src/Tempest.Desktop/Documents/ProgressReports/ProgressReportDocumentRenderer.cs`, `src/Tempest.Desktop/Views/Dashboards/ProjectsDashboardView.cs`). | The PDF is one page, or portrait; a live risk from the Risks tab is missing; a deliverables percentage appears with nothing backing it. |
+| D6 | Any exported PDF from D1–D5 → open in a reader and select/copy the eyebrow heading text (e.g. "INVOICE") and a numeric table cell | The wordmark in the header band is the horizontal navy lockup image, not "TEMPEST"/"OS" text; the eyebrow/heading text copies out correctly (Chakra Petch); a numeric or right-aligned cell copies out correctly (Space Mono) — both embedded, not the platform default face (`src/Tempest.Desktop/Documents/DocumentFonts.cs`, `DocumentLogo.cs`). | The header still shows plain "TEMPEST"/"OS" text; copied text is garbled or empty for the eyebrow/heading or a numeric cell (prose body text staying the platform default face is expected — see this Work Package's own report). |
+
+---
+
 ## 8. Known limitations that affect a physical review
 
 1. **The desktop application now launches on Linux/X11** (`TD-116`,
