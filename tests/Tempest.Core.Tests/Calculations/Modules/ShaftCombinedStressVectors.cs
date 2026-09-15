@@ -75,7 +75,7 @@ public static class ShaftCombinedStressVectors
         new("zero diameter", mm(0), Nm(500), Nm(800), MPa(350), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "Diameter"),
         new("negative moment", mm(40), Nm(-500), Nm(800), MPa(350), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "moment"),
         new("negative torque", mm(40), Nm(500), Nm(-800), MPa(350), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "Torque"),
-        new("no load at all", mm(40), Nm(0), Nm(0), MPa(350), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "both zero"),
+        new("no load at all", mm(40), Nm(0), Nm(0), MPa(350), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "both be zero"),
         new("zero yield", mm(40), Nm(500), Nm(800), MPa(0), 1, 1, 2, InvalidInput, ExpectedReasonFragment: "Yield"),
         new("bending concentration factor below one", mm(40), Nm(500), Nm(800), MPa(350), 0.9, 1, 2, InvalidInput, ExpectedReasonFragment: "concentration"),
         new("required factor below one", mm(40), Nm(500), Nm(800), MPa(350), 1, 1, 0.5, InvalidInput, ExpectedReasonFragment: "Required"),

@@ -45,7 +45,7 @@ relations below are the standard ones restated.
 ## Outputs and recorded intermediates
 
 Results: joint constant, bolt load, clamp load, separation load, both
-load factors (null when P = 0, never infinity), bolt stress,
+load factors (null when P = 0, never infinity; n_L is also null once the joint has separated, the joint-diagram relation no longer holding), bolt stress,
 `IsSeparated`, outcome. Intermediates: joint constant, proof load S_p·A_t,
 preload as a fraction of proof load.
 

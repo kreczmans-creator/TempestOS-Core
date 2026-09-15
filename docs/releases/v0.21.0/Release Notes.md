@@ -21,6 +21,7 @@ real-shell run in CI, and the mutation threshold met. See
 
 | Work Package | Delivered | Merged |
 |---|---|---|
+| `WP 21.7A` | Eleven engineering calculation modules under `Tempest.Core.Calculations.Modules` — beam bending and deflection, bolted joint preload, bolt group under eccentric shear, fillet weld throat stress (EN 1993-1-8), lifting lug and pin, column buckling (Perry-Robertson), shaft combined stress, bearing rating life (ISO 281), thick-walled cylinder (Lamé), thermal expansion stress, fatigue with Miner's rule — each specified under `docs/engineering/calculations/`, registered in the product catalogue, refusing inputs outside its method (`EngineeringCheckOutcome.OutsideMethodLimits`), material properties read from released records through `MaterialPropertyReader`, form descriptors for `WP 21.7B`; the Engineering Calculations catalogue now derives from the product list | — |
 
 ## Figures
 

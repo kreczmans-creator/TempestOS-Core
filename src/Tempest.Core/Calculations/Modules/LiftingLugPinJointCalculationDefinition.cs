@@ -151,7 +151,9 @@ public sealed class LiftingLugPinJointCalculationDefinition : ICalculationDefini
         ModuleGuards.Require(context, "Hole diameter must be positive.", holeMm > 0, $"{holeMm:0.###} mm");
         ModuleGuards.Require(context, "Lug width must exceed the hole diameter.", widthMm > holeMm, $"width {widthMm:0.###} mm, hole {holeMm:0.###} mm");
         ModuleGuards.Require(context, "Pin diameter must be positive.", pinMm > 0, $"{pinMm:0.###} mm");
-        ModuleGuards.Require(context, "Pin diameter must not exceed the hole diameter.", pinMm <= holeMm, $"pin {pinMm:0.###} mm, hole {holeMm:0.###} mm");
+        // With the framework's slack: a pin stated as exactly the hole size in
+        // another unit must not be refused as "does not fit" by a rounding artefact.
+        ModuleGuards.Require(context, "Pin diameter must not exceed the hole diameter.", pinMm <= holeMm * (1.0 + ModuleGuards.AcceptanceRelativeTolerance), $"pin {pinMm:0.###} mm, hole {holeMm:0.###} mm");
         ModuleGuards.Require(context, "Edge distance must be positive.", edgeMm > 0, $"{edgeMm:0.###} mm");
         ModuleGuards.Require(context, "Cheek plate thickness must be positive.", cheekMm > 0, $"{cheekMm:0.###} mm");
         ModuleGuards.Require(context, "Clearance must not be negative.", clearanceMm >= 0, $"{clearanceMm:0.###} mm");
