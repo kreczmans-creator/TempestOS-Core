@@ -20,6 +20,7 @@ using Tempest.Desktop.Files;
 using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Views;
 using Tempest.Desktop.Views.Dashboards;
+using Tempest.Desktop.Views.EngineeringAssets;
 
 namespace Tempest.Desktop.Tests;
 
@@ -183,10 +184,14 @@ public sealed class WorkspaceChangesReattachTests
                 Resolve<IProcessCatalog>(host), Resolve<IComponentCatalog>(host), Resolve<IRateCardCatalog>(host),
                 host.ReferenceReview!, host.BracketCalculations!, referenceCitationIndex, (_, _) => { });
             var engineeringDashboard = new EngineeringDashboardView(tasksReadModel, Resolve<ICommandDispatcher>(host), (_, _) => { });
+            var engineeringAssets = new EngineeringAssetsView(
+                host.CalculationPacks!, host.CalculationPackValidation!, host.EngineeringTemplates!, host.EngineeringTemplateValidation!,
+                host.VerificationArtefacts!, host.VerificationArtefactValidation!, host.EngineeringTrace!, host.Materials!,
+                host.BracketCheck!, host.BracketEngineeringRecords!, new StubFilePicker(), () => host.SessionPrincipal?.IdentityId);
 
             var view = new EngineeringAreaView(
                 host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, librariesView, engineeringDashboard,
-                () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { });
+                () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets);
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }

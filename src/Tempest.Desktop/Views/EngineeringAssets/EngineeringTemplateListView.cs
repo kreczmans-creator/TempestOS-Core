@@ -107,7 +107,7 @@ public sealed class EngineeringTemplateListView : UserControl
     {
         var rows = _all.Select(r => new AssetListRow(
             r.Id,
-            $"{r.Definition.Reference} — {r.Definition.Name}  ·  {r.Definition.Kind}  ·  rev {r.RevisionNumber}  ·  {r.ValidationState}"));
+            $"{r.Id} — {r.Definition.Reference} — {r.Definition.Name}  ·  {r.Definition.Kind}  ·  rev {r.RevisionNumber}  ·  {r.ValidationState}"));
 
         EngineeringAssetListBuilder.Render(_rows, rows, _filter.Text, id => _ = OpenRecordAsync(id));
     }

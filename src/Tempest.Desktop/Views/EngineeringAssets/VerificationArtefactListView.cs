@@ -112,7 +112,7 @@ public sealed class VerificationArtefactListView : UserControl
     {
         var rows = _all.Select(r => new AssetListRow(
             r.Id,
-            $"{r.Definition.Reference} — {r.Definition.Subject}  ·  {r.Definition.Standing}  ·  rev {r.RevisionNumber}  ·  {r.ValidationState}"));
+            $"{r.Id} — {r.Definition.Reference} — {r.Definition.Subject}  ·  {r.Definition.Standing}  ·  rev {r.RevisionNumber}  ·  {r.ValidationState}"));
 
         EngineeringAssetListBuilder.Render(_rows, rows, _filter.Text, id => _ = OpenRecordAsync(id));
     }
