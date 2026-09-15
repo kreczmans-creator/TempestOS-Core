@@ -123,6 +123,7 @@ public class ModuleEngineRetentionTests
             .Select(i => new BoltPosition(new Quantity<Length>(i % 20 * 50, LengthUnits.Millimetre), new Quantity<Length>(i / 20 * 50, LengthUnits.Millimetre)))
             .ToList();
         var input = new BoltGroupEccentricShearInput(
+            null,
             FastenerGrade, bolts,
             new Quantity<Force>(0, ForceUnits.Newton), new Quantity<Force>(-500, ForceUnits.Kilonewton),
             new Quantity<Length>(2000, LengthUnits.Millimetre), new Quantity<Length>(0, LengthUnits.Millimetre),

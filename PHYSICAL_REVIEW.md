@@ -565,6 +565,37 @@ it comes from.
 
 ---
 
+### 7i. Engineering Calculators in `v0.21.0` (about 15 minutes)
+
+Walk §7e first, which releases a material under Reference data. Then
+these — `WP 21.7A`, `WP 21.7B` and `WP 21.7C`: the sixteen product
+calculations from a form generated out of each calculation's own
+descriptor, records picked from the released libraries, the record's own
+Re-run and Compare commands on the result. Every claim names the file it
+comes from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| C1 | Engineering → Modules → **Calculators** | Two columns: a catalogue by category on the left with sixteen calculations under it, on the right the guidance to pick one; the Libraries panel counts the released records of Materials, Fasteners and Bearings (`src/Tempest.Desktop/Views/CalculationModulesView.cs`, `src/Tempest.Core/Calculations/Modules/CalculationModuleDescriptors.cs`). | Fewer than sixteen; a category with nothing under it; the columns overlap. |
+| C2 | Pick **Beam bending and deflection** | The form is generated: Support and Loading choices, a unit picker beside every quantity (Span offers mm, m, in), the method reference (Roark) and the specification path `docs/engineering/calculations/calc.beam-deflection.md`; Young's modulus and Allowable bending stress are read-only, marked as filled from the record picked for Material record. | A quantity without a unit picker; a sourced field that can be typed into. |
+| C3 | With no material released, look at the Material record picker; press **Calculate** | The picker is disabled, its tooltip saying nothing is released in the library; Calculate names "Material record" as a problem beside the form and records nothing (`CalculationModuleForm.BuildInput`). | An unreleased material is offered; a run is recorded without a material. |
+| C4 | Release S355J2 (§7e), re-enter Calculators, pick it for Material record; type Load 10 kN, Span 2000 mm, second moment 2000000 mm⁴, extreme fibre 50 mm, deflection limit 8 mm → **Calculate** | Young's modulus reads 210 GPa and the allowable 355 MPa in the form's own units, the status naming the record and its revision (`CalculationModuleService.FillFromRecordAsync`). The outcome is "Meets its criteria", deflection 3.96825 mm, stress 125 MPa; Working lists every intermediate; the record note names the calculation ("Beam bending and deflection" and the time, or the name typed in Calculation name) and cites mat-s355j2; Engineering Calculations lists that calculation (`CalculationModuleWorkbench.CalculateAsync`, `EngineeringCalculationRegister.NameAsync`). | A typed allowable overrides the record's; nothing is listed under Engineering Calculations. |
+| C5 | Set Span to 200 mm → Calculate | The outcome says the method refused the input, the reason naming the span-to-depth ratio, the result fields showing "—"; the run is recorded with validation Conditional; no error dialog (`EngineeringCheckOutcome.OutsideMethodLimits`). | An exception dialog; a deflection computed for a beam the method excludes. |
+| C6 | Pick **Lifting lug and pin** | Two pickers, "Lug material record" and "Pin material record", each over the released materials; pick S355J2 in both, type Example 1 of `docs/engineering/calculations/calc.lifting-lug-pin-joint.md` → Calculate: the working shows "Lug material reference" and "Pin material reference", each its own pin. | One picker for both; a pin left empty is accepted. |
+| C7 | Under Reference data → Bearings release the seeded 6205; pick **Rolling bearing rating life L10**, pick 6205 for Bearing record; Radial load 2 kN, X 1, Y 0, 1500 r/min, a1 1, required life 1000 h → Calculate | Designation "6205", type Ball and C = 14 kN filled from the record; the 6305 is not offered while unreleased. The basic rating life is 343 million revolutions, "Meets its criteria", "Bearing reference" cites brg-rhd-6205 (`BearingPropertyReader`). | The rating can be typed over the record's; an unreleased bearing is offered. |
+| C8 | Pick **Bolt shear capacity**: 20 mm, 400 MPa, 2 planes, safety factor 1.5 → Calculate → **Re-run** | 167552 N. Re-run writes a second record on the same calculation ("Re-ran and recorded", run 2, "Re-run of" the first record) through `calculations.rerun`, the same command the Ribbon offers (`CalculationModuleWorkbench.RerunAsync`, `src/Tempest.Workspace/Workspace/Calculations/RerunCalculationCommand.cs`). | A second named calculation appears; the button is offered before a run or does nothing. |
+| C9 | **Compare with previous**; then safety factor 2 → Calculate → Compare with previous | First: "nothing differs between the last two runs". Then a table Section / Field / Before / After with the Safety factor row (1.5 → 2) and the Allowable shear capacity row (167552 N → 125664 N), nothing else, through `calculations.compare-with-previous` (`CalculationTemplateRegistry.CompareWithPreviousAsync`, `CalculationComparer`). | Compare enabled after one run; an unchanged input in the table; before and after without units. |
+| C10 | **Start a new calculation** → Calculate | A new named calculation at run 1, the previous one untouched under Engineering Calculations. | The new run lands on the old calculation. |
+| C11 | Type "abc" into Bolt diameter → Calculate | "Bolt diameter: 'abc' is not a number" beside the form, nothing recorded; correct it and the run proceeds. | A crash; a record written for a malformed input. |
+
+**A form-less caller** runs the same modules through
+`CalculationModuleService.RunAsync` (`src/Tempest.Core/Calculations/Modules/CalculationModuleService.cs`):
+the same pins, the same fills, the identical record. The refusals it
+returns are the ones C3, C5 and C11 show.
+
+
+---
+
 ## 8. Known limitations that affect a physical review
 
 1. **The desktop application now launches on Linux/X11** (`TD-116`,
