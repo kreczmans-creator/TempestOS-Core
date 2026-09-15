@@ -150,4 +150,55 @@ public sealed class ConnectorSelectionTests
         await manager.ShutdownAsync();
         await host.DisposeAsync();
     }
+    // `WP 21.6P` (the overnight acceptance campaign, 2026-09-15): the
+    // Settings area saves the operator's connector choice through
+    // `ISettingsProvider`, but this selection only ever read
+    // `IConfigurationProvider` — so a connector chosen in Settings never
+    // took effect at the next start. The persisted setting is now honoured
+    // when configuration is silent; configuration still wins when it
+    // speaks.
+    [Fact]
+    public async Task ConnectorChosenInSettings_IsBoundAtTheNextStart_WhenConfigurationIsSilent()
+    {
+        using var temp = new TempDirectory();
+
+        var (first, firstManager) = await ConnectorHostFixture.StartAsync(temp.Path);
+        Assert.IsType<FakeInvoicingConnector>(ConnectorHostFixture.Connector(first));
+
+        var settings = (Tempest.Core.Settings.ISettingsProvider)first.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+        settings.RegisterDefinition(new Tempest.Core.Settings.SettingDefinition(InvoicingService.ConnectorConfigurationKey, "Invoicing — connector", "Fake"));
+        await settings.SetValueAsync(InvoicingService.ConnectorConfigurationKey, "Xero");
+
+        await firstManager.ShutdownAsync();
+        await first.DisposeAsync();
+
+        var (second, secondManager) = await ConnectorHostFixture.StartAsync(
+            temp.Path, new KeyValuePair<string, string>("Invoicing:Xero:ClientId", "test-client-id"));
+
+        Assert.IsType<XeroConnector>(ConnectorHostFixture.Connector(second));
+
+        await secondManager.ShutdownAsync();
+        await second.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ConfigurationWins_OverTheConnectorChosenInSettings()
+    {
+        using var temp = new TempDirectory();
+
+        var (first, firstManager) = await ConnectorHostFixture.StartAsync(temp.Path);
+        var settings = (Tempest.Core.Settings.ISettingsProvider)first.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+        settings.RegisterDefinition(new Tempest.Core.Settings.SettingDefinition(InvoicingService.ConnectorConfigurationKey, "Invoicing — connector", "Fake"));
+        await settings.SetValueAsync(InvoicingService.ConnectorConfigurationKey, "Xero");
+        await firstManager.ShutdownAsync();
+        await first.DisposeAsync();
+
+        var (second, secondManager) = await ConnectorHostFixture.StartAsync(
+            temp.Path, new KeyValuePair<string, string>(InvoicingService.ConnectorConfigurationKey, "Fake"));
+
+        Assert.IsType<FakeInvoicingConnector>(ConnectorHostFixture.Connector(second));
+
+        await secondManager.ShutdownAsync();
+        await second.DisposeAsync();
+    }
 }

@@ -909,6 +909,27 @@ public sealed class TempestHost : ITempestHost
             ? connectorNameValue?.Trim()
             : null;
 
+        // `WP 21.6P`: the Settings area saves the operator's connector
+        // choice through `ISettingsProvider` — into the `Settings`
+        // collection of the persistence store, under this same key — but
+        // this selection only ever read `IConfigurationProvider`
+        // (appsettings.json, environment, command line), so a connector
+        // chosen in Settings never took effect at the next start unless
+        // the operator had also edited a configuration file. Configuration
+        // still wins when it says anything (an operator's explicit file or
+        // environment beats a saved setting); the persisted setting is the
+        // answer only when configuration is silent. Read raw here because
+        // `SettingsProvider` itself is registered above as a lazily
+        // constructed singleton and this is the one place that needs the
+        // value before the container is built.
+        if (string.IsNullOrWhiteSpace(configuredConnectorName) && persistenceStore is IPersistenceStore settingsBackingStore)
+        {
+            var persistedConnectorName = await settingsBackingStore
+                .ReadAsync(SettingsProvider.SettingsCollectionName, InvoicingService.ConnectorConfigurationKey, runToken)
+                .ConfigureAwait(false);
+            configuredConnectorName = persistedConnectorName?.Trim();
+        }
+
         IInvoicingConnector invoicingConnector;
 
         if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))

@@ -499,4 +499,27 @@ public sealed class OAuthAuthoriserTests
 
     private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json) =>
         new(statusCode) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+    [Fact]
+    public async Task AuthoriseAsync_WhenTheBrowserCannotBeOpened_ReturnsFailedNamingTheReason_NeverThrows_NoTokensStored()
+    {
+        // `WP 21.6P`: `Process.Start(url)` throws where no browser or URL
+        // handler is registered; the seam still answers with a result.
+        var secretStore = new InMemorySecretStore();
+        var handler = new StubHttpMessageHandler();
+        var authoriser = new OAuthAuthoriser(
+            new OAuthProviderProfile(Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a"]),
+            BuildConfiguration("client-abc", loopbackPort: 0), secretStore, new ThrowingBrowserLauncher(), new HttpClient(handler));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Failed, result.Outcome);
+        Assert.Contains("Could not open your browser", result.Reason, StringComparison.Ordinal);
+        Assert.Contains("no handler registered", result.Reason, StringComparison.Ordinal);
+        Assert.Null(await secretStore.GetAsync($"Invoicing:{Provider}:AccessToken"));
+    }
+
+    private sealed class ThrowingBrowserLauncher : IBrowserLauncher
+    {
+        public void Open(Uri url) => throw new System.ComponentModel.Win32Exception("no handler registered for the URL scheme");
+    }
 }

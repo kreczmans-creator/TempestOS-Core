@@ -37,7 +37,7 @@ namespace Tempest.Core.Invoicing.Xero;
 /// meaningless id.
 /// </para>
 /// </remarks>
-public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector
+public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAuthorisableConnector
 {
     /// <summary>The <see cref="IConfigurationProvider"/> key naming the currency every <see cref="IAccountsConnector.ReadCashPositionAsync"/> balance is reported in — Xero's own Bank Summary report states each balance in the organisation's base currency without naming it in the grid itself (`XeroConnector.ReadCashPositionAsync`'s own remarks).</summary>
     public const string BaseCurrencyConfigurationKey = "Invoicing:Xero:BaseCurrency";
@@ -244,6 +244,10 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public Task<OAuthResult> AuthoriseAsync(CancellationToken cancellationToken = default) =>
+        _authoriser.AuthoriseAsync(cancellationToken);
+
     public async Task<ConnectorAuthorisationState> AuthorisationStateAsync(CancellationToken cancellationToken = default)
     {
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);

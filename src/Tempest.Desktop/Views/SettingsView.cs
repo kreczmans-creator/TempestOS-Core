@@ -68,11 +68,30 @@ namespace Tempest.Desktop.Views;
 /// </remarks>
 public sealed class SettingsView : UserControl
 {
-    /// <summary>Where a connector's own client id is stored, through <see cref="ISecretStore"/> — never the persistence database (`WP 19.1A` part 3, `ADR-0151`; moved here from the retired <c>SettingsDialog</c>, `WP 19.2B`).</summary>
+    /// <summary>
+    /// The legacy, provider-less key this view stored a client id under from
+    /// `WP 19.1A` part 3 until `WP 21.6P` — a key <see cref="Tempest.Core.Invoicing.OAuth.OAuthAuthoriser"/>
+    /// never read (it resolves <c>Invoicing:&lt;Provider&gt;:ClientId</c>,
+    /// `ADR-0151`), so a client id typed here never reached the authoriser.
+    /// Still read as a fallback when the provider's own key is empty, and
+    /// migrated onto the provider's key on Save, so a value the Product
+    /// Owner already typed is not lost.
+    /// </summary>
     public const string InvoicingClientIdSecretKey = "Invoicing:ClientId";
 
-    /// <summary>Where a connector's own client secret is stored, through <see cref="ISecretStore"/> — never the persistence database.</summary>
+    /// <summary>The legacy, provider-less client-secret key — see <see cref="InvoicingClientIdSecretKey"/>.</summary>
     public const string InvoicingClientSecretSecretKey = "Invoicing:ClientSecret";
+
+    /// <summary>The <see cref="ISecretStore"/> key the authoriser reads a provider's client id from — <c>Invoicing:&lt;Provider&gt;:ClientId</c> (`ADR-0151`), never the persistence database.</summary>
+    public static string ClientIdSecretKeyFor(string provider) => $"Invoicing:{provider}:ClientId";
+
+    /// <summary>The <see cref="ISecretStore"/> key the authoriser reads a provider's client secret from — <c>Invoicing:&lt;Provider&gt;:ClientSecret</c>.</summary>
+    public static string ClientSecretSecretKeyFor(string provider) => $"Invoicing:{provider}:ClientSecret";
+
+    /// <summary>How long <em>Authorise</em> waits for the operator to finish signing in at the provider before giving up (`WP 21.6P`).</summary>
+    public static readonly TimeSpan AuthorisationTimeout = TimeSpan.FromMinutes(5);
+
+    private bool _loadingInvoicingSection;
 
     private readonly ThemeService _theme;
     private readonly UserSettings _settings;
@@ -231,6 +250,13 @@ public sealed class SettingsView : UserControl
         _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "Xero", Tag = "Xero" });
         _invoicingConnectorSelector.Items.Add(new ComboBoxItem { Content = "QuickBooks Online", Tag = "QuickBooksOnline" });
         AutomationProperties.SetName(_invoicingConnectorSelector, "Invoicing connector");
+        _invoicingConnectorSelector.SelectionChanged += async (_, _) =>
+        {
+            // `WP 21.6P`: each provider keeps its own client id and secret;
+            // switching the selector shows the chosen provider's own.
+            if (!_loadingInvoicingSection && _invoicingConnector is not null && _secretStore is not null)
+                await LoadCredentialFieldsAsync(SelectedInvoicingProvider()).ConfigureAwait(true);
+        };
 
         // `WP 21.3B`: the closed VAT vocabulary, declaration order — the
         // consultant's own default for a new quotation line.
@@ -898,14 +924,17 @@ public sealed class SettingsView : UserControl
         EnsureInvoicingSettingsRegistered();
 
         var connectorValue = await _settingsProvider.GetValueAsync(InvoicingService.ConnectorConfigurationKey).ConfigureAwait(true);
-        SelectInvoicingConnector(connectorValue);
+        _loadingInvoicingSection = true;
+        try
+        {
+            SelectInvoicingConnector(connectorValue);
+        }
+        finally
+        {
+            _loadingInvoicingSection = false;
+        }
 
-        var storedClientId = await _secretStore.GetAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
-        _invoicingClientId.Text = storedClientId ?? string.Empty;
-
-        var hasStoredSecret = await _secretStore.GetAsync(InvoicingClientSecretSecretKey).ConfigureAwait(true) is not null;
-        _invoicingClientSecret.Text = string.Empty;
-        _invoicingClientSecret.Watermark = hasStoredSecret ? "(unchanged)" : string.Empty;
+        await LoadCredentialFieldsAsync(SelectedInvoicingProvider()).ConfigureAwait(true);
 
         var pollValue = await _settingsProvider.GetValueAsync(InvoiceReconciliationService.PollMinutesConfigurationKey).ConfigureAwait(true);
         _invoicingPollMinutes.Value = int.TryParse(pollValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes) && minutes > 0
@@ -967,10 +996,120 @@ public sealed class SettingsView : UserControl
         _invoicingAuthorisationStatus.Text = DescribeAuthorisationState(state);
     }
 
+    /// <summary>
+    /// <em>Authorise</em> (`WP 21.6P`). Until this Work Package the button
+    /// only re-read the stored state — <see cref="Tempest.Core.Invoicing.OAuth.OAuthAuthoriser.AuthoriseAsync"/>
+    /// had no caller in the product, so a real provider could never be
+    /// signed in to from the running application. Now: the section is
+    /// saved first (so the client id in the box is the one the authoriser
+    /// reads), and if the running connector is a real provider
+    /// (<see cref="IAuthorisableConnector"/>) that is not currently
+    /// authorised, the interactive sign-in runs — the system browser opens
+    /// on the provider's consent page and this view waits, up to
+    /// <see cref="AuthorisationTimeout"/>, for the loopback redirect. The
+    /// Fake connector, and an already-authorised provider, only refresh
+    /// the state as before. Every outcome is shown in words; nothing
+    /// throws past this method.
+    /// </summary>
     private async Task OnAuthoriseInvoicingAsync()
     {
+        if (_invoicingConnector is null)
+            return;
+
+        if (_secretStore is not null)
+            await SaveInvoicingSectionAsync().ConfigureAwait(true);
+
+        var selectedProvider = SelectedInvoicingProvider();
+        if (!ProviderMatchesRunningConnector(selectedProvider))
+        {
+            // The saved choice differs from what this process is running —
+            // whatever this process runs (the Fake connector on a fresh
+            // install, most often). SaveInvoicingSectionAsync has already
+            // written the restart wording into the status; refreshing the
+            // *running* connector's state here would overwrite it with the
+            // Fake's own "Authorised." and mislead the operator into
+            // thinking Xero was authorised — found by driving the real
+            // application (the overnight acceptance campaign, 2026-09-15).
+            ActionCompleted?.Invoke(_invoicingAuthorisationStatus.Text ?? "Restart required.", ActionOutcome.NoChange);
+            return;
+        }
+
+        if (_invoicingConnector is IAuthorisableConnector authorisable)
+        {
+            var before = await _invoicingConnector.AuthorisationStateAsync().ConfigureAwait(true);
+            if (before.Status != ConnectorAuthorisation.Authorised)
+            {
+                var outcome = await RunInteractiveAuthorisationAsync(authorisable).ConfigureAwait(true);
+                if (outcome is not null)
+                {
+                    ActionCompleted?.Invoke(outcome, ActionOutcome.Failed);
+                    return;
+                }
+            }
+        }
+
         await RefreshInvoicingAuthorisationStatusAsync().ConfigureAwait(true);
         ActionCompleted?.Invoke(_invoicingAuthorisationStatus.Text ?? "Authorisation checked.", ActionOutcome.NoChange);
+    }
+
+    /// <summary>Runs the browser round trip; <see langword="null"/> on success, otherwise the failure text already shown in the status.</summary>
+    private async Task<string?> RunInteractiveAuthorisationAsync(IAuthorisableConnector authorisable)
+    {
+        _invoicingAuthoriseButton.IsEnabled = false;
+        _invoicingAuthorisationStatus.Text =
+            $"Waiting for you to sign in to {_invoicingConnector!.Name} in your browser (up to {AuthorisationTimeout.TotalMinutes:0} minutes)…";
+
+        try
+        {
+            using var timeout = new CancellationTokenSource(AuthorisationTimeout);
+            var result = await authorisable.AuthoriseAsync(timeout.Token).ConfigureAwait(true);
+
+            if (result.Outcome == Tempest.Core.Invoicing.OAuth.OAuthOutcome.Ok)
+                return null;
+
+            var failure = result.Outcome == Tempest.Core.Invoicing.OAuth.OAuthOutcome.NotConfigured
+                ? $"Not configured. Enter the {_invoicingConnector.Name} app's client id (and its secret, if it has one), Save, then Authorise."
+                : $"Authorisation failed. {result.Reason}";
+            _invoicingAuthorisationStatus.Text = failure;
+            return failure;
+        }
+        catch (OperationCanceledException)
+        {
+            var failure = $"No sign-in completed within {AuthorisationTimeout.TotalMinutes:0} minutes. Try Authorise again.";
+            _invoicingAuthorisationStatus.Text = failure;
+            return failure;
+        }
+        finally
+        {
+            _invoicingAuthoriseButton.IsEnabled = true;
+        }
+    }
+
+    private string SelectedInvoicingProvider() =>
+        (_invoicingConnectorSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "Fake";
+
+    /// <summary>Whether the selector names the connector this process is running — the selector's tags carry no spaces ("QuickBooksOnline"), the connector's <see cref="IInvoicingConnector.Name"/> may ("QuickBooks Online").</summary>
+    private bool ProviderMatchesRunningConnector(string provider) =>
+        _invoicingConnector is not null
+        && string.Equals(
+            provider.Replace(" ", string.Empty, StringComparison.Ordinal),
+            _invoicingConnector.Name.Replace(" ", string.Empty, StringComparison.Ordinal),
+            StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Shows the chosen provider's own stored client id and whether a secret is held — the provider key first, the legacy provider-less key as the fallback (`WP 21.6P`).</summary>
+    private async Task LoadCredentialFieldsAsync(string provider)
+    {
+        if (_secretStore is null)
+            return;
+
+        var storedClientId = await _secretStore.GetAsync(ClientIdSecretKeyFor(provider)).ConfigureAwait(true)
+            ?? await _secretStore.GetAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
+        _invoicingClientId.Text = storedClientId ?? string.Empty;
+
+        var hasStoredSecret = await _secretStore.GetAsync(ClientSecretSecretKeyFor(provider)).ConfigureAwait(true) is not null
+            || await _secretStore.GetAsync(InvoicingClientSecretSecretKey).ConfigureAwait(true) is not null;
+        _invoicingClientSecret.Text = string.Empty;
+        _invoicingClientSecret.Watermark = hasStoredSecret ? "(unchanged)" : string.Empty;
     }
 
     private async Task RefreshAccountsReadingStatusAsync()
@@ -1017,14 +1156,39 @@ public sealed class SettingsView : UserControl
         var connectorValue = (_invoicingConnectorSelector.SelectedItem as ComboBoxItem)?.Tag as string ?? "Fake";
         await _settingsProvider.SetValueAsync(InvoicingService.ConnectorConfigurationKey, connectorValue).ConfigureAwait(true);
 
+        // `WP 21.6P`: stored under the provider's own key — the one
+        // `OAuthAuthoriser` actually reads (`Invoicing:<Provider>:ClientId`,
+        // `ADR-0151`). The legacy provider-less keys are removed once the
+        // value is safely under the provider's key, so nothing is read from
+        // them again.
         var clientId = _invoicingClientId.Text ?? string.Empty;
         if (string.IsNullOrEmpty(clientId))
-            await _secretStore.RemoveAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
+            await _secretStore.RemoveAsync(ClientIdSecretKeyFor(connectorValue)).ConfigureAwait(true);
         else
-            await _secretStore.SetAsync(InvoicingClientIdSecretKey, clientId).ConfigureAwait(true);
+            await _secretStore.SetAsync(ClientIdSecretKeyFor(connectorValue), clientId).ConfigureAwait(true);
 
         if (!string.IsNullOrEmpty(_invoicingClientSecret.Text))
-            await _secretStore.SetAsync(InvoicingClientSecretSecretKey, _invoicingClientSecret.Text).ConfigureAwait(true);
+        {
+            await _secretStore.SetAsync(ClientSecretSecretKeyFor(connectorValue), _invoicingClientSecret.Text).ConfigureAwait(true);
+        }
+        else if (await _secretStore.GetAsync(ClientSecretSecretKeyFor(connectorValue)).ConfigureAwait(true) is null
+                 && await _secretStore.GetAsync(InvoicingClientSecretSecretKey).ConfigureAwait(true) is { } legacySecret)
+        {
+            await _secretStore.SetAsync(ClientSecretSecretKeyFor(connectorValue), legacySecret).ConfigureAwait(true);
+        }
+
+        await _secretStore.RemoveAsync(InvoicingClientIdSecretKey).ConfigureAwait(true);
+        await _secretStore.RemoveAsync(InvoicingClientSecretSecretKey).ConfigureAwait(true);
+        _invoicingClientSecret.Text = string.Empty;
+        _invoicingClientSecret.Watermark = await _secretStore.GetAsync(ClientSecretSecretKeyFor(connectorValue)).ConfigureAwait(true) is not null
+            ? "(unchanged)"
+            : string.Empty;
+
+        if (!ProviderMatchesRunningConnector(connectorValue))
+        {
+            _invoicingAuthorisationStatus.Text =
+                $"Saved. Restart TempestOS to use {connectorValue} — this session is running the {_invoicingConnector.Name} connector.";
+        }
 
         var pollMinutes = (int)(_invoicingPollMinutes.Value ?? InvoiceReconciliationService.DefaultPollMinutes);
         await _settingsProvider

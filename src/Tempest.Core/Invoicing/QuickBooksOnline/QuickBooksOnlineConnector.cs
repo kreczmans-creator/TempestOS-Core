@@ -65,7 +65,7 @@ namespace Tempest.Core.Invoicing.QuickBooksOnline;
 /// best-effort, from its linked <c>Payment</c>'s own <c>TxnDate</c>.
 /// </para>
 /// </remarks>
-public sealed class QuickBooksOnlineConnector : IInvoicingConnector, IAccountsConnector
+public sealed class QuickBooksOnlineConnector : IInvoicingConnector, IAccountsConnector, IAuthorisableConnector
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
@@ -294,6 +294,10 @@ public sealed class QuickBooksOnlineConnector : IInvoicingConnector, IAccountsCo
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public Task<OAuthResult> AuthoriseAsync(CancellationToken cancellationToken = default) =>
+        _authoriser.AuthoriseAsync(cancellationToken);
+
     public async Task<ConnectorAuthorisationState> AuthorisationStateAsync(CancellationToken cancellationToken = default)
     {
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);

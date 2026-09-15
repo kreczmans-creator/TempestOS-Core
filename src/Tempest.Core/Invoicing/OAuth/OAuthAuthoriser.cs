@@ -133,7 +133,20 @@ public sealed class OAuthAuthoriser
         var (verifier, challenge) = PkceGenerator.Generate();
         var authorisationUrl = BuildAuthorizationUrl(credentials.Value.ClientId, loopback.RedirectUri, state, challenge);
 
-        _browserLauncher.Open(authorisationUrl);
+        try
+        {
+            _browserLauncher.Open(authorisationUrl);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // `WP 21.6P`: the seam is a result, never an exception
+            // (`ADR-0151`). `Process.Start(url)` throws when no browser or
+            // URL handler is registered (a bare server, a locked-down
+            // account, a Linux session with no xdg-open); the operator gets
+            // the reason, and the loopback listener is disposed by the
+            // `using` above rather than left bound.
+            return OAuthResult.Failed($"Could not open your browser to sign in: {ex.Message}");
+        }
 
         var callback = await loopback.WaitForCallbackAsync(cancellationToken).ConfigureAwait(false);
 
