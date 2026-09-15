@@ -1,5 +1,10 @@
 # TempestOS Threat Model
 
+> **Superseded for `v1.0` by [`Security Posture.md`](Security%20Posture.md)**
+> (`WP RC.0C`, delivered by `WP 21.5E`, 2026-09-15). Kept as history — the
+> `v0.5.0` assets/actors/trust-boundary analysis below is still accurate
+> background — but the posture statement is the current reference.
+
 ## Purpose
 
 This document describes what TempestOS is being built to protect, who or

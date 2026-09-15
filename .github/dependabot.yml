@@ -1,0 +1,37 @@
+# WP 21.5E / WP RC.0C ("Dependency vulnerability scan is a required CI
+# check"). Dependabot is the second half of that item: ci.yml's own
+# `dependency-scan` job (scripts/check-vulnerable-packages.ps1) catches a
+# known-vulnerable package already in the tree on every push and pull
+# request; this file is what keeps a package from silently drifting years
+# out of date between two such findings in the first place, by opening a
+# pull request on its own schedule rather than waiting to be asked.
+#
+# Two ecosystems, matching the two things this repository actually
+# declares dependencies in: `nuget` for every `PackageReference` across
+# `src/TempestOS.slnx`'s eight projects (one `directory: "/"` entry covers
+# every project once a solution-wide restore has resolved them — Dependabot
+# does not need one entry per `.csproj`), and `github-actions` for the
+# workflow files under `.github/workflows/` (`actions/checkout`,
+# `actions/setup-dotnet`, `actions/upload-artifact`, each pinned to a major
+# version tag today). Weekly, not daily: this is a low-churn platform with
+# no live production traffic depending on same-day patching, and a weekly
+# cadence keeps the pull request volume something a small team can actually
+# triage rather than drowning in daily noise.
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "ci"

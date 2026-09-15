@@ -459,13 +459,29 @@ claim names the file it comes from.
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
-3. **Port 5080 is not bound by default** (`D-024`, ratified by the Product
-   Owner on 2026-09-05). The REST API's listener starts only when
-   `Runtime:RestApi:Enabled` is configured `true`; absent, empty, or
-   unparseable all resolve to disabled. When enabled, it still binds
-   loopback-only on port 5080 (overridable via `Api:Port`), and a
-   conflict is isolated and logged exactly as before — the application
-   still starts.
+3. **Port 5080 is not bound, and cannot be, in this build.** The REST
+   API (`Tempest.Core.Api`) was frozen out of the build by `ADR-0146`
+   (`WP 17.2A`) — no project file, no `src/TempestOS.slnx` reference,
+   nothing compiled — before the `D-024`/`Runtime:RestApi:Enabled` gate
+   this item used to describe could ever be exercised on this build.
+   Verified by `WP 21.5E` (2026-09-15,
+   `FrozenLayersUnreachableTests.ADefaultlyConfiguredHost_NeverBindsTheFrozenRestApiDefaultPort`):
+   a default-configuration host never answers a connection on
+   `127.0.0.1:5080`. This item's own earlier wording (describing a
+   configuration flag) is corrected here rather than left implying a live
+   toggle exists — see `docs/security/Security Posture.md`, "Frozen
+   layers."
+4. **Operator security responsibilities** (`docs/security/Security
+   Posture.md`, "What the operator must do") — not something this
+   application defends on the operator's behalf:
+   - **Disk encryption** (BitLocker or equivalent) on the drive holding
+     the persistence root, protecting `tempest.db` and `secrets/` when
+     the drive itself is read outside Windows.
+   - **A real Windows account, not shared or guest, with a screen-lock
+     actually used** — every asset this platform holds is exactly as
+     available as that account.
+   - **Backups kept off the same disk** — this platform has no
+     ransomware or hardware-failure protection of its own.
 
 ---
 

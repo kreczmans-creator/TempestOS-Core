@@ -1,5 +1,11 @@
 # TempestOS Security Roadmap
 
+> **Superseded for `v1.0` by [`Security Posture.md`](Security%20Posture.md)**
+> (`WP RC.0C`, delivered by `WP 21.5E`, 2026-09-15). Kept as history — items
+> 1, 2 and 10 below are already Resolved/Implemented (`WP 13.0A`/`13.2A`),
+> and the rest remain accurate as *future* triggers — but the posture
+> statement is the current reference for where things stand today.
+
 ## Purpose
 
 The prioritised, sequenced list of future security work identified by
