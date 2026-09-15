@@ -294,7 +294,7 @@ public static class CalculationModuleDescriptors
             [
                 Reference("BearingPin", "Bearing record", "The released bearing record the rating, designation and type come from; leave empty to state them by hand.", ReferenceLibrary.Bearings, optional: true),
                 Text("BearingDesignation", "Bearing designation", "Must be named", "The bearing the rating belongs to, for example 6208.", "BearingPin", nameof(BearingIdentity.Designation)),
-                Choice("BearingType", "Bearing type", "Ball (exponent 3) or roller (exponent 10/3).", "BearingPin", BearingPropertyReader.RollingElementProperty, nameof(RollingBearingType.Ball), nameof(RollingBearingType.Roller)),
+                SourcedChoice("BearingType", "Bearing type", "Ball (exponent 3) or roller (exponent 10/3).", "BearingPin", BearingPropertyReader.RollingElementProperty, nameof(RollingBearingType.Ball), nameof(RollingBearingType.Roller)),
                 Q("BasicDynamicLoadRating", "Dynamic load rating C", nameof(Force), "kN", "> 0; from the bearing record", "The basic dynamic load rating.", "BearingPin", nameof(BearingLoadRatings.BasicDynamicRadial)),
                 Q("RadialLoad", "Radial load F_r", nameof(Force), "kN", ">= 0", "The radial load."),
                 Q("AxialLoad", "Axial load F_a", nameof(Force), "kN", ">= 0", "The axial load."),
@@ -366,7 +366,7 @@ public static class CalculationModuleDescriptors
     private static CalculationInputDescriptor Choice(string name, string label, string description, params string[] choices) =>
         new(name, label, CalculationInputKind.Choice, null, null, "One of the choices", description, choices);
 
-    private static CalculationInputDescriptor Choice(string name, string label, string description, string source, string property, params string[] choices) =>
+    private static CalculationInputDescriptor SourcedChoice(string name, string label, string description, string source, string property, params string[] choices) =>
         new(name, label, CalculationInputKind.Choice, null, null, "One of the choices", description, choices, SourceInputName: source, SourcePropertyName: property);
 
     private static CalculationInputDescriptor List(string name, string label, string limits, string description, params string[] fields) =>

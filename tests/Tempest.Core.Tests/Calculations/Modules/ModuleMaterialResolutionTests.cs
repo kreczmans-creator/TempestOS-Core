@@ -140,7 +140,7 @@ public class ModuleMaterialResolutionTests
         var reading = await MaterialPropertyReader.ReadAsync<Pressure>(materials, "mat-fx-steel", MaterialPropertyNames.YoungsModulus);
 
         Assert.False(reading.Succeeded);
-        Assert.Equal(MaterialPropertyRefusal.MaterialNotReleased, reading.Refusal);
+        Assert.Equal(ReferencePropertyRefusal.RecordNotReleased, reading.Refusal);
         Assert.Contains("not Released", reading.Reason, StringComparison.Ordinal);
         Assert.Null(reading.Value);
         Assert.NotNull(reading.Pin);
@@ -153,7 +153,7 @@ public class ModuleMaterialResolutionTests
 
         var reading = await MaterialPropertyReader.ReadAsync<Pressure>(materials, "mat-nobody", MaterialPropertyNames.YoungsModulus);
 
-        Assert.Equal(MaterialPropertyRefusal.MaterialNotFound, reading.Refusal);
+        Assert.Equal(ReferencePropertyRefusal.RecordNotFound, reading.Refusal);
         Assert.Contains("mat-nobody", reading.Reason, StringComparison.Ordinal);
         Assert.Null(reading.Pin);
     }
@@ -167,7 +167,7 @@ public class ModuleMaterialResolutionTests
 
         var reading = await MaterialPropertyReader.ReadAsync<ThermalExpansion>(materials, "mat-fx-steel", MaterialPropertyNames.ThermalExpansionCoefficient);
 
-        Assert.Equal(MaterialPropertyRefusal.RequiredPropertyMissing, reading.Refusal);
+        Assert.Equal(ReferencePropertyRefusal.RequiredPropertyMissing, reading.Refusal);
         Assert.Contains(MaterialPropertyNames.ThermalExpansionCoefficient, reading.Reason, StringComparison.Ordinal);
         Assert.Null(reading.Value);
     }
@@ -181,7 +181,7 @@ public class ModuleMaterialResolutionTests
 
         var reading = await MaterialPropertyReader.ReadAsync<MassDensity>(materials, "mat-fx-steel", MaterialPropertyNames.YoungsModulus);
 
-        Assert.Equal(MaterialPropertyRefusal.PropertyDimensionWrong, reading.Refusal);
+        Assert.Equal(ReferencePropertyRefusal.PropertyDimensionWrong, reading.Refusal);
         Assert.Contains(nameof(MassDensity), reading.Reason, StringComparison.Ordinal);
         Assert.Null(reading.Value);
     }

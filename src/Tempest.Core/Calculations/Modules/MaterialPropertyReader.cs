@@ -235,6 +235,9 @@ public static class BearingPropertyReader
     /// <summary>The choice this reader answers for <see cref="RollingBearingType"/>: the family's rolling element.</summary>
     public const string RollingElementProperty = "RollingElement";
 
+    /// <summary>The text properties this reader knows: the designation, and the rolling element as a <see cref="RollingBearingType"/> name.</summary>
+    public static IReadOnlyList<string> TextProperties { get; } = [nameof(BearingIdentity.Designation), RollingElementProperty];
+
     /// <summary>The load ratings this reader knows, each the <see cref="BearingLoadRatings"/> member of that name.</summary>
     public static IReadOnlyList<string> QuantityProperties { get; } =
     [

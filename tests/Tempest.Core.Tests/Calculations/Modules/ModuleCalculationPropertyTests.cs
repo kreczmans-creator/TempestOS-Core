@@ -152,8 +152,8 @@ public class ModuleCalculationPropertyTests
                 new(express((coordinates[4], coordFrom, coordTo)), express((coordinates[5], coordFrom, coordTo))),
             ];
 
-            var baseline = definition.Calculate(new BoltGroupEccentricShearInput(FastenerGrade, Bolts(A), A(loadX), A(loadY), A(pointX), A(pointY), A(allowable)), new CalculationContext());
-            var alternate = definition.Calculate(new BoltGroupEccentricShearInput(FastenerGrade, Bolts(B), B(loadX), B(loadY), B(pointX), B(pointY), B(allowable)), new CalculationContext());
+            var baseline = definition.Calculate(new BoltGroupEccentricShearInput(null, FastenerGrade, Bolts(A), A(loadX), A(loadY), A(pointX), A(pointY), A(allowable)), new CalculationContext());
+            var alternate = definition.Calculate(new BoltGroupEccentricShearInput(null, FastenerGrade, Bolts(B), B(loadX), B(loadY), B(pointX), B(pointY), B(allowable)), new CalculationContext());
 
             Assert.Equal(baseline.Outcome, alternate.Outcome);
             AssertSame(baseline.MomentAboutCentroid.BaseValue, alternate.MomentAboutCentroid.BaseValue, "MomentAboutCentroid");

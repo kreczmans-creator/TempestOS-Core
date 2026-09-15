@@ -1,3 +1,4 @@
+using Tempest.Core.Calculations;
 using Tempest.Core.Calculations.Modules;
 using Tempest.Desktop.Views;
 using Tempest.Workspace.Engineering;
@@ -5,11 +6,12 @@ using Tempest.Workspace.Engineering;
 namespace Tempest.Desktop.Composition;
 
 /// <summary>
-/// The Engineering Calculators' own collaborator (`WP 21.7B`, the same
-/// `ADR-0103` shape as <see cref="EngineeringCalculationCoordinator"/>):
+/// The Engineering Calculators' own collaborator (`WP 21.7B`, `WP 21.7C`;
+/// the same `ADR-0103` shape as <see cref="EngineeringCalculationCoordinator"/>):
 /// it hands <see cref="CalculationModulesView"/> the catalogue and the
-/// released materials, fills a form from a picked record, and turns
-/// Calculate into a run the view renders.
+/// released records of each library, fills a form from a picked record,
+/// turns Calculate into a named run, and offers the record's own Re-run
+/// and Compare commands.
 /// </summary>
 internal sealed class CalculationModulesCoordinator
 {
@@ -25,35 +27,39 @@ internal sealed class CalculationModulesCoordinator
         _workbench = workbench;
         _view = view;
 
-        _view.ModuleSelected += module => _ = GuardedAsync(() => FillFromPickedMaterialAsync(module), "generate that calculation's form");
-        _view.MaterialPicked += material => _ = GuardedAsync(() => ApplyMaterialAsync(material), "read that material record");
+        _view.ModuleSelected += module => _ = GuardedAsync(() => RefillAsync(module), "generate that calculation's form");
+        _view.ReferencePicked += (inputName, record) => _ = GuardedAsync(() => ApplyRecordAsync(inputName, record), "read that record");
         _view.CalculateRequested += () => _ = GuardedAsync(CalculateAsync, "run that calculation");
+        _view.RerunRequested += () => _ = GuardedAsync(RerunAsync, "re-run that calculation");
+        _view.CompareRequested += () => _ = GuardedAsync(CompareAsync, "compare that calculation with its previous run");
     }
 
-    /// <summary>Re-reads the catalogue and the released materials — on entry, and after a release elsewhere in the session.</summary>
+    /// <summary>Re-reads the catalogue and the released records of every library — on entry, and after a release elsewhere in the session.</summary>
     public Task RefreshAsync() => GuardedAsync(RefreshCoreAsync, "load the calculators");
 
     private async Task RefreshCoreAsync()
     {
         _view.ShowCatalogue(CalculationModuleWorkbench.Catalogue());
-        _view.ShowMaterials(await _workbench.ListReleasedMaterialsAsync().ConfigureAwait(true));
+
+        foreach (var library in Enum.GetValues<ReferenceLibrary>())
+            _view.ShowReleased(library, await _workbench.ListReleasedAsync(library).ConfigureAwait(true));
     }
 
-    private Task FillFromPickedMaterialAsync(CalculationModuleDescriptor module) =>
-        _view.SelectedMaterial is { } material ? ApplyMaterialAsync(material) : Task.CompletedTask;
+    private async Task RefillAsync(CalculationModuleDescriptor module)
+    {
+        foreach (var reference in module.References)
+        {
+            if (_view.PickedRecord(reference.Name) is { } record)
+                await ApplyRecordAsync(reference.Name, record).ConfigureAwait(true);
+        }
+    }
 
-    private async Task ApplyMaterialAsync(ReleasedMaterialOption material)
+    private async Task ApplyRecordAsync(string inputName, ReleasedRecordOption record)
     {
         if (_view.SelectedModule is not { } module)
             return;
 
-        if (module.Inputs.All(i => i.MaterialPropertyName is null && i.Kind != CalculationInputKind.Reference))
-        {
-            _view.ShowStatus($"{module.Title} takes nothing from a material record.");
-            return;
-        }
-
-        _view.ApplyFill(await _workbench.FillFromMaterialAsync(module, material.RecordId).ConfigureAwait(true));
+        _view.ApplyFill(await _workbench.FillAsync(module, inputName, record.RecordId).ConfigureAwait(true));
     }
 
     private async Task CalculateAsync()
@@ -64,21 +70,68 @@ internal sealed class CalculationModulesCoordinator
             return;
         }
 
-        var attempt = await _workbench.CalculateAsync(module, _view.ReadForm(), _view.SelectedMaterial).ConfigureAwait(true);
+        // A second Calculate on the same calculation records another run
+        // against it, so Compare has two to set side by side; Start a new
+        // calculation on the surface clears the current run first.
+        var attempt = await _workbench.CalculateAsync(module, _view.ReadForm(), _view.CalculationName, _view.CurrentRun).ConfigureAwait(true);
+        Show(attempt, _view.CurrentRun is null ? "Calculated and recorded" : "Calculated again and recorded");
+    }
 
-        if (attempt.Succeeded)
+    private async Task RerunAsync()
+    {
+        if (_view.CurrentRun is not { } current)
         {
-            _view.ShowRun(attempt.Run!);
-            _view.ShowStatus(attempt.Run!.IsRefused
-                ? "The method refused this input; nothing was computed. The refusal is recorded with the calculation."
-                : $"Calculated and recorded. {attempt.Run.OutcomeSummary}.");
+            _view.ShowStatus("Calculate first; Re-run repeats the recorded calculation with its retained input.");
             return;
         }
 
-        _view.ShowProblems(attempt.Problems, attempt.Rejection);
-        _view.ShowStatus(attempt.Rejection is not null
-            ? "The calculation rejected the input as malformed. Nothing was recorded."
-            : "Some inputs could not be read. Nothing was calculated.");
+        Show(await _workbench.RerunAsync(current).ConfigureAwait(true), "Re-ran and recorded");
+    }
+
+    private async Task CompareAsync()
+    {
+        if (_view.CurrentRun is not { } current)
+        {
+            _view.ShowStatus("Calculate first; Compare needs a calculation with at least two recorded runs.");
+            return;
+        }
+
+        try
+        {
+            var comparison = await _workbench.CompareAsync(current).ConfigureAwait(true);
+            _view.ShowComparison(comparison);
+            _view.ShowStatus(comparison.HasChanges
+                ? $"Compared with the previous run: {comparison.Rows.Count} field(s) differ."
+                : "Compared with the previous run: nothing differs.");
+        }
+        catch (CalculationException refused)
+        {
+            _view.ShowStatus(refused.Message);
+        }
+    }
+
+    private void Show(CalculationSurfaceAttempt attempt, string verb)
+    {
+        if (attempt.Succeeded)
+        {
+            _view.ShowRun(attempt.Run!);
+            _view.ShowStatus(attempt.Run!.Run.IsRefused
+                ? $"The method refused this input; nothing was computed. The refusal is recorded as '{attempt.Run.DisplayName}'."
+                : $"{verb} as '{attempt.Run.DisplayName}'. {attempt.Run.Run.OutcomeSummary}.");
+            return;
+        }
+
+        var outcome = attempt.Outcome;
+        _view.ShowProblems(outcome.Problems, outcome.Refusal is CalculationModuleRefusal.InputInvalid or CalculationModuleRefusal.RecordNotFound or CalculationModuleRefusal.RecordNotReleased or CalculationModuleRefusal.RecordIncomplete ? outcome.Reason : null);
+        _view.ShowStatus(outcome.Refusal switch
+        {
+            CalculationModuleRefusal.InputInvalid => "The calculation rejected the input as malformed. Nothing was recorded.",
+            CalculationModuleRefusal.InputIncomplete => "Some inputs could not be read. Nothing was calculated.",
+            CalculationModuleRefusal.RecordNotReleased => "A picked record is not released. Nothing was calculated.",
+            CalculationModuleRefusal.RecordNotFound => "A picked record no longer exists. Nothing was calculated.",
+            CalculationModuleRefusal.RecordIncomplete => "A picked record cannot supply every input read from it. Nothing was calculated.",
+            _ => outcome.Reason ?? "Nothing was calculated.",
+        });
     }
 
     private async Task GuardedAsync(Func<Task> action, string what)

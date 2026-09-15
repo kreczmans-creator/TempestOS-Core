@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Tempest.Core.Calculations;
 using Tempest.Core.Calculations.Modules;
 using Tempest.Core.Identity;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Desktop.Views;
 using Tempest.Workspace.Shell;
@@ -14,13 +15,16 @@ using Tempest.Workspace.Shell;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// The Engineering Calculators (`WP 21.7B`) as a product: every product
-/// calculation listed by category, a form generated from the chosen
-/// calculation's own descriptor with unit pickers, a released material
-/// filling the material inputs, the result with its working, a refusal
-/// shown as the outcome, and a typing mistake named on the form. Every
-/// control is checked visible and laid out at a real size before it is
-/// used, as the sibling Engineering Calculations tests do.
+/// The Engineering Calculators (`WP 21.7B`, completed by `WP 21.7C`) as a
+/// product: every product calculation listed by category, a form generated
+/// from the chosen calculation's own descriptor with unit pickers, a
+/// released record picked per reference input (the lug's two materials
+/// each from their own picker, a bearing from its own library), the result
+/// with its working, a refusal shown as the outcome, a typing mistake named
+/// on the form, and the record's own Re-run and Compare commands with the
+/// comparison as a table. Every control is checked visible and laid out at
+/// a real size before it is used, as the sibling Engineering Calculations
+/// tests do.
 /// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class CalculationModulesViewTests
@@ -61,7 +65,7 @@ public sealed class CalculationModulesViewTests
 
             AssertRendered(window, view, CalculationModulesView.Heading);
             AssertRendered(window, view, "Catalogue");
-            AssertRendered(window, view, "Material");
+            AssertRendered(window, view, "Libraries");
             AssertRendered(window, view, "Inputs");
             await Task.CompletedTask;
         });
@@ -90,7 +94,11 @@ public sealed class CalculationModulesViewTests
             AssertUsable(window, support, "the support picker");
             Assert.Equal(nameof(BeamSupport.SimplySupported), support.SelectedItem);
 
-            // A material-sourced input is filled, never typed.
+            // The material picker is the reference input's own control,
+            // and a material-sourced input is filled, never typed.
+            var picker = Assert.IsType<ComboBox>(view.FieldControl("MaterialPin"));
+            Assert.Same(picker, view.RecordPicker("MaterialPin"));
+            Assert.Equal("Material record", AutomationProperties.GetName(picker));
             var modulus = Assert.IsType<TextBox>(view.FieldControl("YoungsModulus"));
             Assert.True(modulus.IsReadOnly);
 
@@ -102,17 +110,17 @@ public sealed class CalculationModulesViewTests
     }
 
     [AvaloniaFact]
-    public async Task TheBeamExample_RunsFromTheForm_OnAReleasedMaterial_AndShowsTheResultAndTheWorking()
+    public async Task TheBeamExample_RunsFromTheForm_OnAReleasedMaterial_AndShowsTheResultTheWorkingAndTheRecordsName()
     {
         await InCalculatorsAsync(async (host, window, view) =>
         {
             await ReleaseSeededSteelAsync(host, window);
             view = SurfaceOf(window);
 
-            Assert.Contains(view.Materials, m => m.RecordId == MaterialSeed.S355J2);
+            Assert.Contains(view.Released(ReferenceLibrary.Materials), m => m.RecordId == MaterialSeed.S355J2);
 
             view.SelectModule(BeamDeflectionCalculationDefinition.Id);
-            view.PickMaterial(MaterialSeed.S355J2);
+            view.PickRecord("MaterialPin", MaterialSeed.S355J2);
             await RenderUntilAsync(window, () => (SurfaceOf(window).FieldControl("YoungsModulus") as TextBox)?.Text == "210");
             view = SurfaceOf(window);
 
@@ -126,7 +134,7 @@ public sealed class CalculationModulesViewTests
             view.SetField("ExtremeFibreDistance", "50", "mm");
             view.SetField("DeflectionLimit", "8", "mm");
 
-            await ClickCalculateAsync(window, view);
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
             view = SurfaceOf(window);
 
@@ -135,6 +143,14 @@ public sealed class CalculationModulesViewTests
             Assert.Equal("Meets its criteria", run.OutcomeSummary);
             Assert.Contains(MaterialSeed.S355J2, run.ReferencedMaterialIds);
 
+            // The run is named as a Calculation the register lists.
+            var current = view.CurrentRun!;
+            Assert.StartsWith("Beam", current.DisplayName, StringComparison.Ordinal);
+            Assert.Equal(1, current.RunCount);
+            var named = await host.BracketCalculations!.FindNamedAsync(run.RecordId);
+            Assert.NotNull(named);
+            Assert.Equal(current.CalculationObjectId, named!.ObjectId);
+
             AssertRendered(window, view, "Meets its criteria");
             AssertRendered(window, view, "3.96825 mm");
             AssertRendered(window, view, "125 MPa");
@@ -142,6 +158,115 @@ public sealed class CalculationModulesViewTests
             AssertRendered(window, view, MaterialSeed.S355J2);
             AssertRendered(window, view, "Results");
             AssertRendered(window, view, "Working");
+            AssertRendered(window, view, current.DisplayName);
+        });
+    }
+
+    [AvaloniaFact]
+    public async Task TheLug_HasItsOwnPickerForEachMaterial_AndBothArePinnedAndCited()
+    {
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            await ReleaseSeededSteelAsync(host, window);
+            view = SurfaceOf(window);
+
+            view.SelectModule(LiftingLugPinJointCalculationDefinition.Id);
+            LayOut(window);
+
+            var lugPicker = view.RecordPicker("LugMaterialPin")!;
+            var pinPicker = view.RecordPicker("PinMaterialPin")!;
+            Assert.NotSame(lugPicker, pinPicker);
+            AssertUsable(window, lugPicker, "the lug material picker");
+            AssertUsable(window, pinPicker, "the pin material picker");
+            Assert.Equal("Lug material record", AutomationProperties.GetName(lugPicker));
+            Assert.Equal("Pin material record", AutomationProperties.GetName(pinPicker));
+            var lugTop = ((Control)lugPicker.Parent!.Parent!).Bounds.Y; // the form row that holds the picker
+            var pinTop = ((Control)pinPicker.Parent!.Parent!).Bounds.Y;
+            Assert.True(pinTop > lugTop, $"The pin picker (y={pinTop}) sits below the lug picker (y={lugTop}).");
+
+            // The lug's allowables are the engineer's own derived values,
+            // cited against the records: picking fills nothing, and the
+            // status names the record each picker stood on.
+            view.PickRecord("LugMaterialPin", MaterialSeed.S355J2);
+            await RenderUntilAsync(window, () => StatusOf(window).Contains("Lug material record", StringComparison.Ordinal) && StatusOf(window).Contains(MaterialSeed.S355J2, StringComparison.Ordinal));
+            Assert.Null(SurfaceOf(window).PickedRecord("PinMaterialPin"));
+
+            view = SurfaceOf(window);
+            view.PickRecord("PinMaterialPin", MaterialSeed.S355J2);
+            await RenderUntilAsync(window, () => StatusOf(window).Contains("Pin material record", StringComparison.Ordinal));
+            view = SurfaceOf(window);
+
+            view.SetField("AllowableTensileStress", "150", "MPa");
+            view.SetField("AllowableBearingStress", "200", "MPa");
+            view.SetField("AllowableShearStress", "90", "MPa");
+            view.SetField("PinAllowableBendingStress", "250", "MPa");
+            view.SetField("PinAllowableShearStress", "150", "MPa");
+            view.SetField("Load", "50", "kN");
+            view.SetField("LugThickness", "20", "mm");
+            view.SetField("LugWidth", "100", "mm");
+            view.SetField("HoleDiameter", "32", "mm");
+            view.SetField("PinDiameter", "30", "mm");
+            view.SetField("EdgeDistance", "40", "mm");
+            view.SetField("CheekPlateThickness", "12", "mm");
+            view.SetField("Clearance", "2", "mm");
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
+            view = SurfaceOf(window);
+
+            var form = view.ReadForm();
+            Assert.Equal(MaterialSeed.S355J2, form.Single(f => f.Name == "LugMaterialPin").RecordId);
+            Assert.Equal(MaterialSeed.S355J2, form.Single(f => f.Name == "PinMaterialPin").RecordId);
+            Assert.Contains(MaterialSeed.S355J2, view.LastRun!.ReferencedMaterialIds);
+            Assert.Contains(view.LastRun.Working, w => w.Label == "Lug material reference" || w.Label.Contains("material", StringComparison.OrdinalIgnoreCase));
+            AssertRendered(window, view, MaterialSeed.S355J2);
+        });
+    }
+
+    [AvaloniaFact]
+    public async Task ABearing_IsPickedFromItsOwnReleasedLibrary_AndFillsTheDesignationTypeAndRating()
+    {
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            await ReleaseSeededBearingAsync(host, window);
+            view = SurfaceOf(window);
+
+            Assert.Contains(view.Released(ReferenceLibrary.Bearings), b => b.RecordId == BearingSeed.Rhd6205);
+            Assert.DoesNotContain(view.Released(ReferenceLibrary.Bearings), b => b.RecordId == BearingSeed.Rhd6305);
+
+            view.SelectModule(BearingRatingLifeCalculationDefinition.Id);
+            LayOut(window);
+            var picker = view.RecordPicker("BearingPin")!;
+            AssertUsable(window, picker, "the bearing picker");
+            Assert.Equal("Bearing record", AutomationProperties.GetName(picker));
+
+            view.PickRecord("BearingPin", BearingSeed.Rhd6205);
+            await RenderUntilAsync(window, () => (SurfaceOf(window).FieldControl("BasicDynamicLoadRating") as TextBox)?.Text is { Length: > 0 });
+            view = SurfaceOf(window);
+
+            // The seeded 6205: a deep-groove ball bearing with C = 14 kN.
+            Assert.Equal("14", ((TextBox)view.FieldControl("BasicDynamicLoadRating")!).Text);
+            Assert.Equal("kN", view.UnitPicker("BasicDynamicLoadRating")!.SelectedItem);
+            Assert.Equal(nameof(RollingBearingType.Ball), ((ComboBox)view.FieldControl("BearingType")!).SelectedItem);
+            Assert.False(string.IsNullOrWhiteSpace(((TextBox)view.FieldControl("BearingDesignation")!).Text));
+
+            view.SetField("RadialLoad", "2", "kN");
+            view.SetField("AxialLoad", "0", "kN");
+            view.SetField("RadialFactor", "1");
+            view.SetField("AxialFactor", "0");
+            view.SetField("Speed", "1500", "r/min");
+            view.SetField("ReliabilityFactor", "1");
+            view.SetField("RequiredLife", "1000", "h");
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
+            view = SurfaceOf(window);
+
+            // L10 = (14/2)^3 = 343 million revolutions; at 1500 r/min, 3811.1 h.
+            Assert.Equal("Meets its criteria", view.LastRun!.OutcomeSummary);
+            Assert.Contains(view.LastRun.Results, r => r.Label == "Basic rating life million revolutions" && r.Display == "343");
+            Assert.Contains(view.LastRun.Working, w => w.Label == "Bearing reference" && w.Display.Contains(BearingSeed.Rhd6205, StringComparison.Ordinal));
+            AssertRendered(window, view, BearingSeed.Rhd6205);
         });
     }
 
@@ -154,7 +279,7 @@ public sealed class CalculationModulesViewTests
             view = SurfaceOf(window);
 
             view.SelectModule(BeamDeflectionCalculationDefinition.Id);
-            view.PickMaterial(MaterialSeed.S355J2);
+            view.PickRecord("MaterialPin", MaterialSeed.S355J2);
             await RenderUntilAsync(window, () => (SurfaceOf(window).FieldControl("YoungsModulus") as TextBox)?.Text == "210");
             view = SurfaceOf(window);
 
@@ -164,7 +289,7 @@ public sealed class CalculationModulesViewTests
             view.SetField("ExtremeFibreDistance", "50", "mm");
             view.SetField("DeflectionLimit", "8", "mm");
 
-            await ClickCalculateAsync(window, view);
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
             view = SurfaceOf(window);
 
@@ -180,7 +305,7 @@ public sealed class CalculationModulesViewTests
     {
         await InCalculatorsAsync(async (host, window, view) =>
         {
-            // Bolt shear takes no material: the form runs with none picked.
+            // Bolt shear takes no record: the form runs with none picked.
             view.SelectModule(BoltShearCapacityCalculationDefinition.Id);
             LayOut(window);
             view.SetField("Diameter", "abc", "mm");
@@ -188,7 +313,7 @@ public sealed class CalculationModulesViewTests
             view.SetField("ShearPlanes", "2");
             view.SetField("SafetyFactor", "1.5");
 
-            await ClickCalculateAsync(window, view);
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).GetLogicalDescendants().OfType<TextBlock>()
                 .Any(t => AutomationProperties.GetName(t) == "Input problems" && (t.Text ?? string.Empty).Contains("'abc'", StringComparison.Ordinal)));
             view = SurfaceOf(window);
@@ -198,12 +323,88 @@ public sealed class CalculationModulesViewTests
 
             // Corrected, the original definition runs from the same form.
             view.SetField("Diameter", "20", "mm");
-            await ClickCalculateAsync(window, view);
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
             await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
             view = SurfaceOf(window);
 
             Assert.Equal("Computed", view.LastRun!.OutcomeSummary);
             AssertRendered(window, view, "167552 N");
+        });
+    }
+
+    [AvaloniaFact]
+    public async Task RerunAndCompare_AreOfferedOnTheResult_AndTheComparisonIsATableOfWhatChanged()
+    {
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            view.SelectModule(BoltShearCapacityCalculationDefinition.Id);
+            LayOut(window);
+            view.SetField("Diameter", "20", "mm");
+            view.SetField("UltimateShearStrength", "400", "MPa");
+            view.SetField("ShearPlanes", "2");
+            view.SetField("SafetyFactor", "1.5");
+
+            // Before any run, neither command is offered.
+            Assert.False(ButtonNamed(view, CalculationModulesView.RerunCaption).IsEnabled);
+            Assert.False(ButtonNamed(view, CalculationModulesView.CompareCaption).IsEnabled);
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun is not null);
+            view = SurfaceOf(window);
+            var first = view.CurrentRun!;
+            Assert.Equal(1, first.RunCount);
+            AssertUsable(window, ButtonNamed(view, CalculationModulesView.RerunCaption), "the Re-run button");
+            Assert.False(ButtonNamed(view, CalculationModulesView.CompareCaption).IsEnabled, "Compare needs two runs.");
+
+            // Re-run: the canonical command, a new record on the same calculation.
+            await ClickAsync(window, view, CalculationModulesView.RerunCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun?.RunCount == 2);
+            view = SurfaceOf(window);
+            var second = view.CurrentRun!;
+            Assert.Equal(first.CalculationObjectId, second.CalculationObjectId);
+            Assert.Equal(first.Run.RecordId, second.Run.PredecessorRecordId);
+            AssertRendered(window, view, "Re-ran and recorded");
+            AssertUsable(window, ButtonNamed(view, CalculationModulesView.CompareCaption), "the Compare button");
+
+            // Compare on an identical re-run: nothing differs, said so.
+            await ClickAsync(window, view, CalculationModulesView.CompareCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastComparison is not null);
+            view = SurfaceOf(window);
+            Assert.False(view.LastComparison!.HasChanges);
+            AssertRendered(window, view, "nothing differs");
+
+            // Calculate again with a changed input: another run on the same
+            // calculation, and the comparison is a table of what changed.
+            view.SetField("SafetyFactor", "2");
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun?.RunCount == 3);
+            view = SurfaceOf(window);
+            Assert.Equal(first.CalculationObjectId, view.CurrentRun!.CalculationObjectId);
+            AssertRendered(window, view, "125664 N");
+
+            await ClickAsync(window, view, CalculationModulesView.CompareCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastComparison?.HasChanges == true);
+            view = SurfaceOf(window);
+            var rows = view.LastComparison!.Rows;
+            Assert.Contains(rows, r => r.Section == "Input" && r.Field == "Safety factor" && r.Before.Contains("1.5", StringComparison.Ordinal) && r.After.Contains("2", StringComparison.Ordinal));
+            Assert.Contains(rows, r => r.Section == "Result" && r.Field == "Allowable shear capacity");
+            AssertRendered(window, view, "Before");
+            AssertRendered(window, view, "After");
+            AssertRendered(window, view, "Safety factor");
+            AssertRendered(window, view, "Allowable shear capacity");
+            AssertRendered(window, view, "Comparison with the previous run");
+
+            // Start a new calculation: the next Calculate names a new one.
+            await ClickAsync(window, view, CalculationModulesView.NewCalculationCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun is null);
+            view = SurfaceOf(window);
+            Assert.False(ButtonNamed(view, CalculationModulesView.RerunCaption).IsEnabled);
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).CurrentRun is not null);
+            view = SurfaceOf(window);
+            Assert.NotEqual(first.CalculationObjectId, view.CurrentRun!.CalculationObjectId);
+            Assert.Equal(1, view.CurrentRun.RunCount);
         });
     }
 
@@ -213,21 +414,36 @@ public sealed class CalculationModulesViewTests
     {
         await host.BracketCalculations!.PopulateMaterialLibraryAsync();
         await host.BracketCalculations!.VerifyAndReleaseAsync(MaterialSeed.S355J2, "Siderticino datasheet, mechanical properties table", "Needed for the calculator test.");
+        await ReenterAsync(window, ReferenceLibrary.Materials);
+    }
 
-        // Re-enter the node so the picker re-reads the released materials.
+    private static async Task ReleaseSeededBearingAsync(WorkspaceHost host, MainWindow window)
+    {
+        var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+        var review = new ReferenceReviewService(principals);
+        await review.VerifyAsync(host.Bearings!, BearingSeed.Rhd6205, new ReferenceReviewStatement("Manufacturer catalogue, deep-groove ball bearings table"));
+        await review.ReleaseAsync(host.Bearings!, BearingSeed.Rhd6205, "Needed for the calculator test.");
+        await ReenterAsync(window, ReferenceLibrary.Bearings);
+    }
+
+    /// <summary>Re-enters the node so every picker re-reads the released records of <paramref name="library"/>.</summary>
+    private static async Task ReenterAsync(MainWindow window, ReferenceLibrary library)
+    {
         var area = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Distinct().Single();
         area.SelectNode("Engineering Calculations");
         await RenderUntilAsync(window, () => !window.GetLogicalDescendants().OfType<CalculationModulesView>().Any(v => v.IsVisible && v.Bounds.Width > 0));
         area.SelectNode(NodeName);
-        await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<CalculationModulesView>().Any(v => v.Materials.Count > 0));
+        await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<CalculationModulesView>().Any(v => v.Released(library).Count > 0));
     }
 
-    private static async Task ClickCalculateAsync(MainWindow window, CalculationModulesView view)
+    private static Button ButtonNamed(CalculationModulesView view, string name) =>
+        view.GetLogicalDescendants().OfType<Button>().Distinct().Single(b => AutomationProperties.GetName(b) == name);
+
+    private static async Task ClickAsync(MainWindow window, CalculationModulesView view, string buttonName)
     {
         LayOut(window);
-        var button = view.GetLogicalDescendants().OfType<Button>().Distinct()
-            .Single(b => AutomationProperties.GetName(b) == CalculationModulesView.CalculateCaption);
-        AssertUsable(window, button, "the Calculate button");
+        var button = ButtonNamed(view, buttonName);
+        AssertUsable(window, button, $"the {buttonName} button");
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Task.Yield();
     }
@@ -284,6 +500,9 @@ public sealed class CalculationModulesViewTests
     private static CalculationModulesView SurfaceOf(MainWindow window) =>
         window.GetLogicalDescendants().OfType<CalculationModulesView>().Distinct().Single();
 
+    private static string StatusOf(MainWindow window) =>
+        SurfaceOf(window).GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Calculator status").Text ?? string.Empty;
+
     private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
     {
         var deadline = DesktopTestHelpers.Deadline(10);
@@ -293,7 +512,15 @@ public sealed class CalculationModulesViewTests
             LayOut(window);
         }
 
-        Assert.True(condition(), "The surface did not reach the expected state in time.");
+        if (!condition())
+        {
+            var surface = window.GetLogicalDescendants().OfType<CalculationModulesView>().Distinct().SingleOrDefault();
+            var said = surface?.GetLogicalDescendants().OfType<TextBlock>()
+                .Where(t => AutomationProperties.GetName(t) is "Calculator status" or "Input problems" && !string.IsNullOrWhiteSpace(t.Text))
+                .Select(t => $"{AutomationProperties.GetName(t)}: {t.Text}")
+                .ToList() ?? [];
+            Assert.Fail($"The surface did not reach the expected state in time. {string.Join(" | ", said)}");
+        }
 
         // Whatever the condition observed, the surface is laid out before
         // the caller asserts placement on it.

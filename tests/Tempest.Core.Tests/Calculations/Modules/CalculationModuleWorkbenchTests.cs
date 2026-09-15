@@ -1,45 +1,42 @@
+using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Calculations.Modules;
+using Tempest.Core.Commands;
+using Tempest.Core.Configuration;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
-using Tempest.Core.ReferenceData;
+using Tempest.Core.Persistence;
 using Tempest.Core.ReferenceData.Review;
-using Tempest.Core.Tests.Materials;
-using Tempest.Core.UnitsAndQuantities;
+using Tempest.Core.ReferenceData.Seeding;
+using Tempest.Core.ReferenceData.Seeding.Datasets;
+using Tempest.Core.Runtime;
+using Tempest.Core.Tests.Plugins;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Engineering;
-using static Tempest.Core.Tests.Calculations.Modules.ModuleTestSupport;
 
 namespace Tempest.Core.Tests.Calculations.Modules;
 
 /// <summary>
-/// The calculator workbench (`WP 21.7B`): the catalogue by category, a form
-/// turned into an input record and run, every kind of typing mistake named
-/// by input, a refusal shown as the outcome, and material properties filled
-/// from a released record rather than typed.
+/// The calculator workbench (`WP 21.7B`, completed by `WP 21.7C`) over a
+/// real host: every run is named as a Calculation object, Re-run and
+/// Compare go through the canonical <c>calculations.rerun</c> and
+/// <c>calculations.compare-with-previous</c> commands, a second Calculate
+/// records against the same object through <c>calculations.execute</c>,
+/// and every product calculation is a Template the commands can reach.
 /// </summary>
 public class CalculationModuleWorkbenchTests
 {
-    private static readonly ReleasedMaterialOption Steel = new("mat-s355j2", "S355J2", SteelPin);
+    private const string EngineerId = "engineer-21-7c";
 
     private static CalculationModuleDescriptor Module(string id) => CalculationModuleDescriptors.For(id)!;
 
-    private static CalculationModuleWorkbench Workbench() => new(MaterialFixtures.BuildCatalog(), BareEngine());
-
     private static CalculationFormField F(string name, string text, string? unit = null) => new(name, text, unit);
 
-    /// <summary>Example 1 of the beam specification, as typed into the form.</summary>
-    private static List<CalculationFormField> BeamExample1() =>
-    [
-        new("Support", Choice: nameof(BeamSupport.SimplySupported)),
-        new("Loading", Choice: nameof(BeamLoading.PointLoad)),
-        F("Load", "10", "kN"),
-        F("Span", "2000", "mm"),
-        F("YoungsModulus", "210", "GPa"),
-        F("SecondMomentOfArea", "2000000", "mm^4"),
-        F("ExtremeFibreDistance", "50", "mm"),
-        F("AllowableBendingStress", "165", "MPa"),
-        F("DeflectionLimit", "8", "mm"),
-    ];
+    private static List<CalculationFormField> BoltShear(string safetyFactor) =>
+        [F("Diameter", "20", "mm"), F("UltimateShearStrength", "400", "MPa"), F("ShearPlanes", "2"), F("SafetyFactor", safetyFactor)];
 
     [Fact]
     public void TheCatalogue_ListsAllSixteenProductCalculations_GroupedByCategory()
@@ -54,204 +51,218 @@ public class CalculationModuleWorkbenchTests
     }
 
     [Fact]
-    public async Task AFormForTheBeamExample_BuildsTheInputAndRuns_WithTheWorkingAndTheMaterialOnTheRecord()
+    public async Task EveryProductCalculation_IsATemplate_OnceTheWorkbenchExists()
     {
-        var module = Module(BeamDeflectionCalculationDefinition.Id);
-        var workbench = Workbench();
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
 
-        var attempt = await workbench.CalculateAsync(module, BeamExample1(), Steel);
+        foreach (var module in CalculationModuleDescriptors.All)
+            Assert.NotNull(session.Templates.FindByCalculationId(module.Id));
 
-        Assert.True(attempt.Succeeded, string.Join("; ", attempt.Problems) + attempt.Rejection);
+        // Registering again is harmless: nothing is registered twice.
+        CalculationModuleWorkbench.RegisterMissingTemplates(session.Templates);
+        Assert.Equal(CalculationModuleDescriptors.All.Count, CalculationModuleDescriptors.All.Count(m => session.Templates.FindByCalculationId(m.Id) is not null));
+    }
+
+    [Fact]
+    public async Task Calculate_NamesTheRunAsACalculationObject_AndListsItInTheRegister()
+    {
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
+
+        var attempt = await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("1.5"), "Bracket bolts");
+
+        Assert.True(attempt.Succeeded, attempt.Outcome.Reason);
         var run = attempt.Run!;
-        Assert.Equal("Meets its criteria", run.OutcomeSummary);
-        Assert.False(run.IsRefused);
-        Assert.Null(run.RefusalReason);
-        Assert.NotEqual(Guid.Empty, run.RecordId);
-        Assert.Contains(run.Results, r => r.Label == "Maximum deflection" && r.Display == "3.96825 mm");
-        Assert.Contains(run.Results, r => r.Label == "Maximum bending stress" && r.Display == "125 MPa");
-        Assert.Contains(run.Results, r => r.Label == "Maximum moment" && r.Display == "5000 N.m");
-        Assert.Contains(run.Results, r => r.Label == "Stress criterion met" && r.Display == "Yes");
-        Assert.DoesNotContain(run.Results, r => r.Label == "Outcome");
-        Assert.Contains(run.Working, w => w.Label == "Maximum bending moment");
-        Assert.Contains(run.Working, w => w.Label == "Span-to-depth ratio" && w.Display == "20");
-        Assert.Contains(run.Checks, c => c.IsSatisfied && c.Description.Contains("allowable bending stress", StringComparison.Ordinal));
-        Assert.Equal("Valid", run.ValidationOutcome);
-        Assert.Contains(SteelPin.RecordId, run.ReferencedMaterialIds);
+        Assert.Equal("Bracket bolts", run.DisplayName);
+        Assert.Equal(1, run.RunCount);
+        Assert.NotEqual(Guid.Empty, run.CalculationObjectId);
+        Assert.Contains(run.Run.Results, r => r.Label == "Allowable shear capacity" && r.Display == "167552 N");
+
+        var named = (await session.Register.ListAsync()).Single(n => n.ObjectId == run.CalculationObjectId);
+        Assert.Equal(run.Run.RecordId, named.RecordId);
+        Assert.Equal("Bracket bolts", named.DisplayName);
+
+        // No name given: the title and the time — and two runs in the same
+        // second still get their own names rather than a refusal.
+        var unnamed = await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("1.5"));
+        var again = await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("1.5"));
+        Assert.True(unnamed.Succeeded, unnamed.Outcome.Reason);
+        Assert.True(again.Succeeded, again.Outcome.Reason);
+        Assert.StartsWith(Module(BoltShearCapacityCalculationDefinition.Id).Title, unnamed.Run!.DisplayName, StringComparison.Ordinal);
+        Assert.NotEqual(unnamed.Run.DisplayName, again.Run!.DisplayName);
+        Assert.NotEqual(run.CalculationObjectId, unnamed.Run.CalculationObjectId);
+        Assert.NotEqual(unnamed.Run.CalculationObjectId, again.Run.CalculationObjectId);
+
+        // A name the engineer typed twice is refused in the domain's own words.
+        await Assert.ThrowsAsync<Tempest.Core.EngineeringDomain.DuplicateBusinessIdentifierException>(
+            () => session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("1.5"), "Bracket bolts"));
     }
 
     [Fact]
-    public void ATypingMistake_IsNamedByInput_AndNothingRuns()
+    public async Task AFailedCalculate_NamesNothing()
     {
-        var module = Module(BeamDeflectionCalculationDefinition.Id);
-        var fields = BeamExample1();
-        fields[3] = F("Span", "2x", "mm");
-        fields[4] = F("YoungsModulus", "210", "kg");
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
+        var before = (await session.Register.ListAsync()).Count;
 
-        var build = CalculationModuleWorkbench.BuildInput(module, fields, Steel);
+        var mistyped = await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("abc"));
+        Assert.False(mistyped.Succeeded);
+        Assert.Equal(CalculationModuleRefusal.InputIncomplete, mistyped.Outcome.Refusal);
+        Assert.Contains(mistyped.Outcome.Problems, p => p.InputName == "SafetyFactor");
 
-        Assert.False(build.Succeeded);
-        Assert.Null(build.Input);
-        Assert.Contains(build.Problems, p => p.InputName == "Span" && p.Label == "Span L" && p.Problem.Contains("'2x' is not a number", StringComparison.Ordinal));
-        Assert.Contains(build.Problems, p => p.InputName == "YoungsModulus" && p.Problem.Contains("not a unit of Pressure", StringComparison.Ordinal));
-        Assert.Equal(2, build.Problems.Count);
+        var rejected = await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("0"));
+        Assert.False(rejected.Succeeded);
+        Assert.Equal(CalculationModuleRefusal.InputInvalid, rejected.Outcome.Refusal);
+
+        Assert.Equal(before, (await session.Register.ListAsync()).Count);
     }
 
     [Fact]
-    public void ARequiredMaterialNotPicked_IsAProblem_AnOptionalOneIsNot()
+    public async Task Rerun_GoesThroughTheCanonicalCommand_AndShowsTheNewRecordWithItsPredecessor()
     {
-        var beam = CalculationModuleWorkbench.BuildInput(Module(BeamDeflectionCalculationDefinition.Id), BeamExample1(), material: null);
-        Assert.Contains(beam.Problems, p => p.InputName == "MaterialPin" && p.Problem.Contains("pick a released material", StringComparison.Ordinal));
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
+        var first = (await session.Workbench.CalculateAsync(Module(BoltShearCapacityCalculationDefinition.Id), BoltShear("1.5"), "Bracket bolts")).Run!;
 
-        var fatigue = CalculationModuleWorkbench.BuildInput(
+        var rerun = await session.Workbench.RerunAsync(first);
+
+        Assert.True(rerun.Succeeded, rerun.Outcome.Reason);
+        var second = rerun.Run!;
+        Assert.Equal(first.CalculationObjectId, second.CalculationObjectId);
+        Assert.Equal("Bracket bolts", second.DisplayName);
+        Assert.Equal(2, second.RunCount);
+        Assert.NotEqual(first.Run.RecordId, second.Run.RecordId);
+        Assert.Equal(first.Run.RecordId, second.Run.PredecessorRecordId);
+        Assert.Equal(first.Run.Results, second.Run.Results);
+        Assert.Contains("calc.bolt-shear-capacity", rerun.CommandMessage, StringComparison.Ordinal);
+
+        // The compare command, on the identical input, finds nothing changed.
+        var comparison = await session.Workbench.CompareAsync(second);
+        Assert.False(comparison.HasChanges);
+        Assert.Empty(comparison.Rows);
+        Assert.Equal(first.Run.RecordId, comparison.Comparison.RecordIdA);
+        Assert.Equal(second.Run.RecordId, comparison.Comparison.RecordIdB);
+    }
+
+    [Fact]
+    public async Task CalculateAgainOnTheSameCalculation_RecordsAgainstIt_AndCompareTabulatesWhatChanged()
+    {
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
+        var module = Module(BoltShearCapacityCalculationDefinition.Id);
+        var first = (await session.Workbench.CalculateAsync(module, BoltShear("1.5"), "Bracket bolts")).Run!;
+
+        // Compare needs two records; with one it refuses in the command's words.
+        var refused = await Assert.ThrowsAsync<CalculationException>(() => session.Workbench.CompareAsync(first));
+        Assert.Contains("fewer than two", refused.Message, StringComparison.Ordinal);
+
+        var again = await session.Workbench.CalculateAsync(module, BoltShear("2"), onto: first);
+
+        Assert.True(again.Succeeded, again.Outcome.Reason);
+        var second = again.Run!;
+        Assert.Equal(first.CalculationObjectId, second.CalculationObjectId);
+        Assert.Equal(2, second.RunCount);
+        Assert.Contains(second.Run.Results, r => r.Label == "Allowable shear capacity" && r.Display == "125664 N");
+        Assert.Contains("calc.bolt-shear-capacity", again.CommandMessage, StringComparison.Ordinal);
+
+        var comparison = await session.Workbench.CompareAsync(second);
+
+        Assert.True(comparison.HasChanges);
+        var factor = Assert.Single(comparison.Rows, r => r.Section == "Input" && r.Field == "Safety factor");
+        Assert.Contains("1.5", factor.Before, StringComparison.Ordinal);
+        Assert.Contains("2", factor.After, StringComparison.Ordinal);
+        var capacity = Assert.Single(comparison.Rows, r => r.Section == "Result" && r.Field == "Allowable shear capacity");
+        Assert.NotEqual(capacity.Before, capacity.After);
+        Assert.DoesNotContain(comparison.Rows, r => r.Field == "Diameter");
+        Assert.Equal(first.Run.RecordId, comparison.Comparison.RecordIdA);
+        Assert.Equal(second.Run.RecordId, comparison.Comparison.RecordIdB);
+
+        // A different module never records onto another module's calculation.
+        var other = await session.Workbench.CalculateAsync(
             Module(FatigueMinerCalculationDefinition.Id),
             [F("CurveReference", "EN 1993-1-9 detail category 71"), F("ReferenceStressRange", "71", "MPa"), F("ReferenceCycles", "2000000"), F("Slope", "3"), new("Blocks", Rows: ["100 MPa, 100000"])],
-            material: null);
+            onto: second);
+        Assert.True(other.Succeeded, other.Outcome.Reason);
+        Assert.NotEqual(second.CalculationObjectId, other.Run!.CalculationObjectId);
+        Assert.Equal(1, other.Run.RunCount);
 
-        Assert.True(fatigue.Succeeded, string.Join("; ", fatigue.Problems));
-        var input = Assert.IsType<FatigueMinerInput>(fatigue.Input);
-        Assert.Null(input.MaterialPin);
-        Assert.Null(input.EnduranceLimit);
-        Assert.Single(input.Blocks);
+        // A rejected input on the same calculation records nothing and says why.
+        var rejected = await session.Workbench.CalculateAsync(module, BoltShear("0"), onto: second);
+        Assert.False(rejected.Succeeded);
+        Assert.Equal(CalculationModuleRefusal.InputInvalid, rejected.Outcome.Refusal);
+        Assert.Equal(2, (await CalculationRecordReader.GetResultHistoryAsync(session.Domain, second.CalculationObjectId)).Count);
     }
 
     [Fact]
-    public async Task TheDefinitionsOwnRejection_ComesBackInItsWords()
+    public async Task APinnedMaterial_SurvivesTheCanonicalRerun_AndIsCitedAgain()
     {
-        var fields = BeamExample1();
-        fields[2] = F("Load", "-10", "kN");
+        using var temp = new TempDirectory();
+        var session = await StartAsync(temp.Path);
+        await new ReferenceSeedService().ApplyAsync(session.Materials, MaterialSeed.Instance);
+        var review = new ReferenceReviewService(session.Principals);
+        await review.VerifyAsync(session.Materials, MaterialSeed.S355J2, new ReferenceReviewStatement("Siderticino datasheet, mechanical properties table"));
+        await review.ReleaseAsync(session.Materials, MaterialSeed.S355J2, "Required for a WP 21.7C workbench test.");
 
-        var attempt = await Workbench().CalculateAsync(Module(BeamDeflectionCalculationDefinition.Id), fields, Steel);
+        var first = await session.Workbench.CalculateAsync(
+            Module(BeamDeflectionCalculationDefinition.Id),
+            [
+                new("MaterialPin", RecordId: MaterialSeed.S355J2),
+                new("Support", Choice: nameof(BeamSupport.SimplySupported)), new("Loading", Choice: nameof(BeamLoading.PointLoad)),
+                F("Load", "10", "kN"), F("Span", "2000", "mm"), F("SecondMomentOfArea", "2000000", "mm^4"), F("ExtremeFibreDistance", "50", "mm"), F("DeflectionLimit", "8", "mm"),
+            ],
+            "Beam on S355J2");
 
-        Assert.False(attempt.Succeeded);
-        Assert.Empty(attempt.Problems);
-        Assert.Contains("Load must be positive", attempt.Rejection, StringComparison.Ordinal);
+        Assert.True(first.Succeeded, first.Outcome.Reason);
+        Assert.Contains(MaterialSeed.S355J2, first.Run!.Run.ReferencedMaterialIds);
+
+        var rerun = await session.Workbench.RerunAsync(first.Run);
+        Assert.True(rerun.Succeeded, rerun.Outcome.Reason);
+        Assert.Contains(MaterialSeed.S355J2, rerun.Run!.Run.ReferencedMaterialIds);
+        Assert.Contains(rerun.Run.Run.Results, r => r.Label == "Maximum deflection" && r.Display == "3.96825 mm");
     }
 
-    [Fact]
-    public async Task ARefusal_IsTheOutcome_NotAnError()
+    // ---- The host ----
+
+    private sealed record Session(
+        CalculationModuleWorkbench Workbench,
+        CalculationTemplateRegistry Templates,
+        EngineeringCalculationRegister Register,
+        EngineeringDomainContext Domain,
+        IMaterialCatalog Materials,
+        CurrentPrincipalAccessor Principals);
+
+    private static async Task<Session> StartAsync(string rootPath)
     {
-        var fields = BeamExample1();
-        fields[3] = F("Span", "200", "mm");
+        var host = new TempestHostBuilder([])
+            .AddConfigurationSource(new MemoryConfigurationSource(
+            [
+                new KeyValuePair<string, string>(SqlitePersistenceStore.RootPathConfigurationKey, rootPath),
+            ]))
+            .Build();
+        var manager = new WorkspaceManager(host);
 
-        var attempt = await Workbench().CalculateAsync(Module(BeamDeflectionCalculationDefinition.Id), fields, Steel);
+        await manager.StartAsync();
 
-        Assert.True(attempt.Succeeded);
-        var run = attempt.Run!;
-        Assert.True(run.IsRefused);
-        Assert.Contains("refused", run.OutcomeSummary, StringComparison.Ordinal);
-        Assert.Contains("span-to-depth", run.RefusalReason, StringComparison.Ordinal);
-        Assert.Contains(run.Results, r => r.Label == "Maximum deflection" && r.Display == "—");
-        Assert.Equal("Conditional", run.ValidationOutcome);
-    }
+        var services = host.Services!;
+        var domain = (EngineeringDomainContext)services.GetService(typeof(EngineeringDomainContext));
+        var dispatcher = (ICommandDispatcher)services.GetService(typeof(ICommandDispatcher));
+        var engine = (ICalculationEngine)services.GetService(typeof(ICalculationEngine));
+        var principals = (CurrentPrincipalAccessor)services.GetService(typeof(ICurrentPrincipalAccessor));
+        principals.SetCurrent(new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), []));
 
-    [Fact]
-    public async Task AListInput_IsTypedOneRowPerLine_WithUnits()
-    {
-        var module = Module(BoltGroupEccentricShearCalculationDefinition.Id);
-        var fields = new List<CalculationFormField>
-        {
-            F("FastenerGrade", "ISO 898-1 class 8.8 M16"),
-            new("Bolts", Rows: ["75 mm, 50 mm", "75 mm, -50 mm", "", "-75 mm, 50 mm", "-75 mm, -50 mm"]),
-            F("LoadX", "0", "kN"),
-            F("LoadY", "-20", "kN"),
-            F("LoadPointX", "250", "mm"),
-            F("LoadPointY", "0", "mm"),
-            F("AllowableShearPerBolt", "25", "kN"),
-        };
+        var templates = CalculationsWorkspaceRegistration.Register(
+            manager, domain, engine, dispatcher, (ICommandRegistry)services.GetService(typeof(ICommandRegistry)));
 
-        var attempt = await Workbench().CalculateAsync(module, fields, material: null);
+        var materials = (IMaterialCatalog)services.GetService(typeof(IMaterialCatalog));
+        var service = new CalculationModuleService(
+            materials,
+            (IFastenerCatalog)services.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)services.GetService(typeof(IBearingCatalog)),
+            engine);
+        var register = new EngineeringCalculationRegister(domain, dispatcher);
+        var workbench = new CalculationModuleWorkbench(service, templates, register, dispatcher, domain);
 
-        Assert.True(attempt.Succeeded, string.Join("; ", attempt.Problems) + attempt.Rejection);
-        Assert.Contains(attempt.Run!.Results, r => r.Label == "Governing bolt force" && r.Display == "18239.9 N");
-        Assert.Contains(attempt.Run.Results, r => r.Label == "Bolt forces" && r.Display.StartsWith("18239.9 N; 18239.9 N; 10095.7 N", StringComparison.Ordinal));
-        Assert.Contains(attempt.Run.Results, r => r.Label == "Governing bolt index" && r.Display == "0");
-
-        fields[1] = new("Bolts", Rows: ["75, 50"]);
-        var build = CalculationModuleWorkbench.BuildInput(module, fields, null);
-        Assert.Contains(build.Problems, p => p.InputName == "Bolts" && p.Problem.Contains("needs a unit", StringComparison.Ordinal));
-
-        fields[1] = new("Bolts", Rows: ["75 mm"]);
-        build = CalculationModuleWorkbench.BuildInput(module, fields, null);
-        Assert.Contains(build.Problems, p => p.InputName == "Bolts" && p.Problem.Contains("expected 2", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task AnOriginalDefinition_RunsFromTheSameForm()
-    {
-        // Bolt shear: pi/4 x 20^2 x 2 planes x 400 MPa / 1.5 = 167 552 N.
-        var attempt = await Workbench().CalculateAsync(
-            Module(BoltShearCapacityCalculationDefinition.Id),
-            [F("Diameter", "20", "mm"), F("UltimateShearStrength", "400", "MPa"), F("ShearPlanes", "2"), F("SafetyFactor", "1.5")],
-            material: null);
-
-        Assert.True(attempt.Succeeded, string.Join("; ", attempt.Problems) + attempt.Rejection);
-        Assert.Equal("Computed", attempt.Run!.OutcomeSummary);
-        Assert.Contains(attempt.Run.Results, r => r.Label == "Allowable shear capacity" && r.Display == "167552 N");
-        Assert.Contains(attempt.Run.Working, w => w.Label == "Safety Factor" && w.Display == "1.5");
-
-        var notWhole = CalculationModuleWorkbench.BuildInput(
-            Module(BoltShearCapacityCalculationDefinition.Id),
-            [F("Diameter", "20", "mm"), F("UltimateShearStrength", "400", "MPa"), F("ShearPlanes", "1.5"), F("SafetyFactor", "1.5")], null);
-        Assert.Contains(notWhole.Problems, p => p.InputName == "ShearPlanes" && p.Problem.Contains("whole number", StringComparison.Ordinal));
-    }
-
-    [Fact]
-    public async Task OnlyReleasedMaterialsAreOffered_AndAPickedOneFillsItsPropertiesInTheFormsOwnUnits()
-    {
-        var materials = MaterialFixtures.BuildCatalog();
-        await materials.RegisterAsync("mat-fx-steel", MaterialFixtures.Steel(), MaterialFixtures.Sourced());
-        await materials.RegisterAsync("mat-fx-draft", MaterialFixtures.Steel("FX-DRAFT"), MaterialFixtures.Sourced());
-        await ReleaseAsync(materials, "mat-fx-steel");
-        var workbench = new CalculationModuleWorkbench(materials, BareEngine());
-
-        var offered = await workbench.ListReleasedMaterialsAsync();
-        var option = Assert.Single(offered);
-        Assert.Equal("mat-fx-steel", option.RecordId);
-        Assert.Contains("FX-STEEL-1", option.Label, StringComparison.Ordinal);
-        Assert.Equal("mat-fx-steel", option.Pin.RecordId);
-
-        var fill = await workbench.FillFromMaterialAsync(Module(ColumnBucklingCalculationDefinition.Id), option.RecordId);
-        Assert.Empty(fill.Problems);
-        Assert.Contains(fill.Fields, f => f.Name == "YoungsModulus" && f.Text == "200" && f.UnitSymbol == "GPa");
-        Assert.Contains(fill.Fields, f => f.Name == "YieldStrength" && f.Text == "300" && f.UnitSymbol == "MPa");
-        Assert.Equal(option.Pin, fill.Material.Pin);
-
-        // The fixture steel records no expansion coefficient: the thermal
-        // module's own field is named as unfillable, never guessed.
-        var thermal = await workbench.FillFromMaterialAsync(Module(ThermalExpansionStressCalculationDefinition.Id), option.RecordId);
-        Assert.Contains(thermal.Fields, f => f.Name == "YoungsModulus");
-        Assert.Contains(thermal.Problems, p => p.InputName == "ExpansionCoefficient" && p.Problem.Contains("records no", StringComparison.Ordinal));
-
-        // And the run built on the fill cites the record it stood on.
-        var fields = BeamExample1().Where(f => f.Name is not ("YoungsModulus" or "AllowableBendingStress")).ToList();
-        fields.AddRange((await workbench.FillFromMaterialAsync(Module(BeamDeflectionCalculationDefinition.Id), option.RecordId)).Fields);
-        var attempt = await workbench.CalculateAsync(Module(BeamDeflectionCalculationDefinition.Id), fields, option);
-        Assert.True(attempt.Succeeded, string.Join("; ", attempt.Problems) + attempt.Rejection);
-        Assert.Contains("mat-fx-steel", attempt.Run!.ReferencedMaterialIds);
-        Assert.Contains(attempt.Run.Results, r => r.Label == "Maximum deflection" && r.Display == "4.16667 mm");
-    }
-
-    [Fact]
-    public void LabelsAndValues_ReadAsAnEngineerWouldWriteThem()
-    {
-        Assert.Equal("Maximum bending stress", CalculationModuleWorkbench.Humanise("MaximumBendingStress"));
-        Assert.Equal("Bore von mises stress", CalculationModuleWorkbench.Humanise("BoreVonMisesStress"));
-        Assert.Equal("Load ratio", CalculationModuleWorkbench.Humanise("LoadRatio"));
-        Assert.Equal("125 MPa", CalculationModuleWorkbench.Format(new Quantity<Pressure>(125, PressureUnits.Megapascal)));
-        Assert.Equal("3.96825 mm", CalculationModuleWorkbench.Format(new Quantity<Length>(3.968253968, LengthUnits.Millimetre)));
-        Assert.Equal("—", CalculationModuleWorkbench.Format(null));
-        Assert.Equal("Yes", CalculationModuleWorkbench.Format(true));
-        Assert.Equal("Outside method limits", CalculationModuleWorkbench.Format(EngineeringCheckOutcome.OutsideMethodLimits));
-        Assert.Equal("1 N; 2 N", CalculationModuleWorkbench.Format(new[] { new Quantity<Force>(1, ForceUnits.Newton), new Quantity<Force>(2, ForceUnits.Newton) }));
-        Assert.Equal("Materials/mat-s355j2@1", CalculationModuleWorkbench.Format(SteelPin));
-    }
-
-    private static async Task ReleaseAsync(IMaterialCatalog materials, string recordId)
-    {
-        var principals = new CurrentPrincipalAccessor();
-        principals.SetCurrent(new PlatformPrincipal(new PlatformIdentity("reviewer-21-7b", "reviewer-21-7b"), []));
-        var review = new ReferenceReviewService(principals);
-        await review.VerifyAsync(materials, recordId, new ReferenceReviewStatement("Fixture materials handbook, Table 3"));
-        await review.ReleaseAsync(materials, recordId, "Required for a WP 21.7B workbench test.");
+        return new Session(workbench, templates, register, domain, materials, principals);
     }
 }

@@ -7,6 +7,7 @@ using Tempest.Workspace;
 using Tempest.Core.Bearings;
 using Tempest.Core.Commands;
 using Tempest.Core.Calculations;
+using Tempest.Core.Calculations.Modules;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
@@ -318,13 +319,27 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
-        // `WP 21.7B`: the Engineering Calculators' own read-and-run model —
-        // every product calculation from a generated form, materials from
-        // released records only, the same two services the bracket
-        // workbench above already stands on.
-        CalculationModules = new CalculationModuleWorkbench(
+        // `WP 21.7B`/`WP 21.7C`: the Engineering Calculators. The governed
+        // service runs any product calculation on pinned records from the
+        // three libraries; the workbench names each run as a Calculation
+        // object (the same register the bracket workbench uses) and offers
+        // the record's own Re-run and Compare commands through the
+        // dispatcher and the Template registry — every module registered
+        // there so the commands reach all sixteen.
+        CalculationModuleService = new CalculationModuleService(
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
             (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+        CalculationModules = new CalculationModuleWorkbench(
+            CalculationModuleService,
+            CalculationTemplates!,
+            new EngineeringCalculationRegister(
+                domainContext,
+                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+                projectContext),
+            (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+            domainContext);
 
         // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
         // own three governed libraries and their validation services, so the
@@ -494,6 +509,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public CalculationModuleWorkbench? CalculationModules { get; private set; }
+
+    /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public CalculationModuleService? CalculationModuleService { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

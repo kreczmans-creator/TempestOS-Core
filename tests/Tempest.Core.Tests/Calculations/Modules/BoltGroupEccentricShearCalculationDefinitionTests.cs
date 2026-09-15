@@ -8,6 +8,7 @@ namespace Tempest.Core.Tests.Calculations.Modules;
 public class BoltGroupEccentricShearCalculationDefinitionTests
 {
     private static BoltGroupEccentricShearInput ToInput(BoltGroupEccentricShearVectors.Vector v) => new(
+        null,
         FastenerGrade,
         v.Bolts.Select(b => new BoltPosition(b.X, b.Y)).ToList(),
         v.LoadX, v.LoadY, v.LoadPointX, v.LoadPointY, v.AllowableShearPerBolt);

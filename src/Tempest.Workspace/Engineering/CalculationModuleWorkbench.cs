@@ -1,136 +1,96 @@
-using System.Collections;
-using System.Globalization;
 using System.Reflection;
-using System.Text;
+using System.Text.Json;
 using Tempest.Core.Calculations;
 using Tempest.Core.Calculations.Modules;
-using Tempest.Core.Materials;
-using Tempest.Core.ReferenceData;
-using Tempest.Core.UnitsAndQuantities;
+using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Workspace.Calculations;
 
 namespace Tempest.Workspace.Engineering;
 
 /// <summary>One category of the calculator catalogue and the modules under it.</summary>
 public sealed record CalculationModuleGroup(string Category, IReadOnlyList<CalculationModuleDescriptor> Modules);
 
-/// <summary>A released material record, as the calculator's material picker offers it.</summary>
-/// <param name="RecordId">The record's registered id.</param>
-/// <param name="Label">What the picker shows: designation and name.</param>
-/// <param name="Pin">The exact record and revision a calculation built on it will cite.</param>
-public sealed record ReleasedMaterialOption(string RecordId, string Label, ReferencePin Pin)
+/// <summary>A run as the surface holds it: the presented record and the named Calculation object it is recorded against.</summary>
+/// <param name="Run">The record, presented.</param>
+/// <param name="CalculationObjectId">The Calculation object the record is linked to, which the Re-run and Compare commands target.</param>
+/// <param name="DisplayName">What the calculation is called in the Project Explorer.</param>
+/// <param name="RunCount">How many records the object now carries; Compare needs two.</param>
+public sealed record CalculationSurfaceRun(CalculationModuleRun Run, Guid CalculationObjectId, string DisplayName, int RunCount);
+
+/// <summary>What pressing Calculate, Re-run or Compare produced: a run, or the refusal in the service's terms, plus the command's own message where one ran.</summary>
+public sealed record CalculationSurfaceAttempt(CalculationSurfaceRun? Run, CalculationModuleOutcome Outcome, string? CommandMessage)
 {
-    /// <inheritdoc />
-    public override string ToString() => Label;
-}
-
-/// <summary>What the engineer typed or chose for one input, by the input's own name.</summary>
-/// <param name="Name">The input record's property name, as the descriptor states it.</param>
-/// <param name="Text">The number or text typed, for a quantity, number or text input.</param>
-/// <param name="UnitSymbol">The unit chosen, for a quantity.</param>
-/// <param name="Choice">The member chosen, for a choice.</param>
-/// <param name="Flag">The state, for a yes-or-no input.</param>
-/// <param name="Rows">The rows typed, one per line, for a list.</param>
-public sealed record CalculationFormField(
-    string Name,
-    string? Text = null,
-    string? UnitSymbol = null,
-    string? Choice = null,
-    bool Flag = false,
-    IReadOnlyList<string>? Rows = null);
-
-/// <summary>One thing wrong with what was entered, named by input so a form can point at it.</summary>
-public sealed record CalculationFormProblem(string InputName, string Label, string Problem)
-{
-    /// <inheritdoc />
-    public override string ToString() => $"{Label}: {Problem}";
-}
-
-/// <summary>The fields a picked material fills, and any property it could not supply.</summary>
-public sealed record MaterialFill(ReleasedMaterialOption Material, IReadOnlyList<CalculationFormField> Fields, IReadOnlyList<CalculationFormProblem> Problems);
-
-/// <summary>The input record built from a form, or the problems that stopped it.</summary>
-public sealed record CalculationInputBuild(object? Input, IReadOnlyList<CalculationFormProblem> Problems)
-{
-    /// <summary>Whether an input was built.</summary>
-    public bool Succeeded => Input is not null && Problems.Count == 0;
-}
-
-/// <summary>One line of a result or of the working: a label and its display text.</summary>
-public sealed record CalculationRunRow(string Label, string Display);
-
-/// <summary>One constraint the definition checked, and whether it held.</summary>
-public sealed record CalculationCheckRow(string Description, bool IsSatisfied, string? Detail);
-
-/// <summary>One execution of a module, presented for a surface to render.</summary>
-/// <param name="Module">The module that ran.</param>
-/// <param name="RecordId">The durable record the engine wrote.</param>
-/// <param name="ExecutedAt">When.</param>
-/// <param name="OutcomeSummary">The engineering finding in words: meets its criteria, does not, outside the method, or simply computed.</param>
-/// <param name="IsRefused">Whether the method refused the input (see <see cref="EngineeringCheckOutcome.OutsideMethodLimits"/>).</param>
-/// <param name="RefusalReason">Why, when refused.</param>
-/// <param name="Results">Every result figure, in the result record's own order.</param>
-/// <param name="Working">Every intermediate the definition recorded, in order.</param>
-/// <param name="Checks">Every constraint check the definition recorded, in order.</param>
-/// <param name="ValidationOutcome">The engine's own validation outcome for the record.</param>
-/// <param name="ReferencedMaterialIds">The material records the calculation cited.</param>
-public sealed record CalculationModuleRun(
-    CalculationModuleDescriptor Module,
-    Guid RecordId,
-    DateTimeOffset ExecutedAt,
-    string OutcomeSummary,
-    bool IsRefused,
-    string? RefusalReason,
-    IReadOnlyList<CalculationRunRow> Results,
-    IReadOnlyList<CalculationRunRow> Working,
-    IReadOnlyList<CalculationCheckRow> Checks,
-    string ValidationOutcome,
-    IReadOnlyList<string> ReferencedMaterialIds);
-
-/// <summary>What pressing Calculate produced: a run, form problems, or the definition's own rejection of the input.</summary>
-public sealed record CalculationAttempt(CalculationModuleRun? Run, IReadOnlyList<CalculationFormProblem> Problems, string? Rejection)
-{
-    /// <summary>Whether a run was recorded.</summary>
+    /// <summary>Whether a record was written and shown.</summary>
     public bool Succeeded => Run is not null;
 }
 
+/// <summary>One row of a comparison table: which section, which field, before and after, units included.</summary>
+public sealed record CalculationComparisonRow(string Section, string Field, string Before, string After);
+
+/// <summary>A comparison of a run with its predecessor, as rows, with the command's own message.</summary>
+public sealed record CalculationSurfaceComparison(CalculationComparison Comparison, IReadOnlyList<CalculationComparisonRow> Rows, string CommandMessage)
+{
+    /// <summary>Whether anything differed.</summary>
+    public bool HasChanges => Rows.Count > 0;
+}
+
 /// <summary>
-/// The Engineering Calculators' own read-and-run model (`WP 21.7B`): the
-/// catalogue by category, the released materials a calculation may stand
-/// on, the input record built from what a generated form collected, the
-/// execution through the engine, and the result presented as rows.
+/// The Engineering Calculators' own read-and-run model (`WP 21.7B`,
+/// `WP 21.7C`): the catalogue by category, the released records each
+/// reference input may stand on, a run through the governed
+/// <see cref="CalculationModuleService"/>, and the canonical Re-run and
+/// Compare commands offered on the record that run produced.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Generic on purpose.</b> Nothing here knows any one module. The
-/// catalogue, the form and the result presentation all come from
-/// <see cref="CalculationModuleDescriptors"/> and from the input and
-/// result records themselves, read by reflection, so a module registered
-/// tomorrow is calculable from this surface with no code. That is the
-/// Product Owner's ask: pick a calculation, fill a form, read the result
-/// and its working, never touch code.
+/// <b>One code path with the service.</b> Building and running are the
+/// service's; this class adds only what a surface needs on top: the
+/// grouping, the naming of each run as a Calculation object (so the
+/// record is in the Project Explorer and the Ribbon's own
+/// <c>calculations.rerun</c> and <c>calculations.compare-with-previous</c>
+/// commands reach it), and the rows a comparison table shows.
 /// </para>
 /// <para>
-/// <b>It decides nothing of engineering.</b> Limits, refusals and
-/// criteria are the definition's; materials come from released records
-/// through <see cref="MaterialPropertyReader"/> and are never typed; the
-/// record the engine writes is the record a reviewer sees. This class
-/// parses what was typed, names what is wrong with it, and renders what
-/// came back.
+/// <b>Every module is a Calculation Template.</b> The Re-run and Compare
+/// commands execute through <see cref="CalculationTemplateRegistry"/>,
+/// which knows a calculation only once it is registered as a template;
+/// this class registers every product calculation the registry does not
+/// already hold, so the commands work for all sixteen.
 /// </para>
 /// </remarks>
 public sealed class CalculationModuleWorkbench
 {
-    private readonly IMaterialCatalog _materials;
-    private readonly ICalculationEngine _engine;
+    /// <summary>The Kind the Re-run and Compare commands target.</summary>
+    public const string CalculationKind = CalculationObjectFactoryRegistry.CalculationKind;
 
-    /// <summary>Initialises a new instance of the <see cref="CalculationModuleWorkbench"/> class.</summary>
-    public CalculationModuleWorkbench(IMaterialCatalog materials, ICalculationEngine engine)
+    private readonly CalculationModuleService _service;
+    private readonly CalculationTemplateRegistry _templates;
+    private readonly EngineeringCalculationRegister _register;
+    private readonly ICommandDispatcher _dispatcher;
+    private readonly EngineeringDomainContext _domain;
+
+    /// <summary>Initialises a new instance of the <see cref="CalculationModuleWorkbench"/> class, registering every product calculation the template registry does not already hold.</summary>
+    public CalculationModuleWorkbench(
+        CalculationModuleService service,
+        CalculationTemplateRegistry templates,
+        EngineeringCalculationRegister register,
+        ICommandDispatcher dispatcher,
+        EngineeringDomainContext domain)
     {
-        ArgumentNullException.ThrowIfNull(materials);
-        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(templates);
+        ArgumentNullException.ThrowIfNull(register);
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(domain);
 
-        _materials = materials;
-        _engine = engine;
+        _service = service;
+        _templates = templates;
+        _register = register;
+        _dispatcher = dispatcher;
+        _domain = domain;
+
+        RegisterMissingTemplates(templates);
     }
 
     /// <summary>Every product calculation, grouped by category in first-seen order, each group in registration order.</summary>
@@ -140,447 +100,169 @@ public sealed class CalculationModuleWorkbench
             .Select(g => new CalculationModuleGroup(g.Key, g.ToList()))
             .ToList();
 
-    /// <summary>The released material records, by designation, as the picker offers them. Draft and superseded records are not offered.</summary>
-    public async Task<IReadOnlyList<ReleasedMaterialOption>> ListReleasedMaterialsAsync(CancellationToken cancellationToken = default)
+    /// <summary>Registers every product calculation <paramref name="templates"/> does not already hold, so the Re-run and Compare commands reach all of them.</summary>
+    public static void RegisterMissingTemplates(CalculationTemplateRegistry templates)
     {
-        var records = await _materials.ListAsync(cancellationToken).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(templates);
 
-        return records
-            .Where(r => r.ValidationState == ReferenceValidationState.Released)
-            .OrderBy(r => r.Definition.Designation ?? r.Definition.Name, StringComparer.Ordinal)
-            .Select(r => new ReleasedMaterialOption(
-                r.Id,
-                r.Definition.Designation is { } designation && !string.Equals(designation, r.Definition.Name, StringComparison.Ordinal)
-                    ? $"{designation} — {r.Definition.Name}"
-                    : r.Definition.Name,
-                ReferencePin.For(_materials.LibraryName, r)))
-            .ToList();
-    }
-
-    /// <summary>
-    /// Reads every material-sourced input of <paramref name="module"/> from
-    /// the released record <paramref name="recordId"/>, each expressed in
-    /// the input's own default unit, and names any property the record
-    /// cannot supply.
-    /// </summary>
-    public async Task<MaterialFill> FillFromMaterialAsync(CalculationModuleDescriptor module, string recordId, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(module);
-        ArgumentException.ThrowIfNullOrWhiteSpace(recordId);
-
-        var fields = new List<CalculationFormField>();
-        var problems = new List<CalculationFormProblem>();
-        ReleasedMaterialOption? option = null;
-
-        foreach (var input in module.Inputs.Where(i => i.MaterialPropertyName is not null))
+        foreach (var module in CalculationModuleDescriptors.All)
         {
-            var reading = await ReadPropertyAsync(input.DimensionName!, recordId, input.MaterialPropertyName!, cancellationToken).ConfigureAwait(false);
-
-            if (reading.Pin is { } pin && option is null)
-                option = new ReleasedMaterialOption(recordId, recordId, pin);
-
-            if (reading.Value is null)
-            {
-                problems.Add(new CalculationFormProblem(input.Name, input.Label, reading.Reason ?? "could not be read from the record"));
+            if (templates.FindByCalculationId(module.Id) is not null)
                 continue;
-            }
 
-            var value = CalculationInputUnits.ValueIn(input.DimensionName!, reading.Value, input.DefaultUnitSymbol!);
-            fields.Add(new CalculationFormField(input.Name, value.ToString("R", CultureInfo.InvariantCulture), input.DefaultUnitSymbol));
+            typeof(CalculationTemplateRegistry)
+                .GetMethod(nameof(CalculationTemplateRegistry.Register), BindingFlags.Public | BindingFlags.Instance)!
+                .MakeGenericMethod(module.InputType, module.ResultType)
+                .Invoke(templates, [module.Id, module.Metadata]);
         }
-
-        if (option is null)
-        {
-            var record = await _materials.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
-            option = record is null
-                ? throw new ArgumentException($"No material '{recordId}' is registered.", nameof(recordId))
-                : new ReleasedMaterialOption(recordId, record.Definition.Designation ?? record.Definition.Name, ReferencePin.For(_materials.LibraryName, record));
-        }
-
-        return new MaterialFill(option, fields, problems);
     }
 
+    /// <summary>The released records of <paramref name="library"/>, as a picker offers them.</summary>
+    public Task<IReadOnlyList<ReleasedRecordOption>> ListReleasedAsync(ReferenceLibrary library, CancellationToken cancellationToken = default) =>
+        _service.ListReleasedAsync(library, cancellationToken);
+
+    /// <summary>The fields the record picked for <paramref name="referenceInputName"/> fills, and what it cannot supply.</summary>
+    public Task<ReferenceFill> FillAsync(CalculationModuleDescriptor module, string referenceInputName, string recordId, CancellationToken cancellationToken = default) =>
+        _service.FillFromRecordAsync(module, referenceInputName, recordId, cancellationToken);
+
     /// <summary>
-    /// Builds <paramref name="module"/>'s input record from what the form
-    /// collected, or names every input that stopped it. Reference inputs
-    /// take <paramref name="material"/>'s pin; a required one with no
-    /// material picked is a problem, an optional one is left empty.
+    /// Runs <paramref name="module"/> on the form. With no <paramref name="onto"/>,
+    /// the record is named as a new Calculation object so it is in the
+    /// Project Explorer and the Re-run and Compare commands can reach it.
+    /// With <paramref name="onto"/> a run of the same module, the input is
+    /// executed against that same Calculation through the canonical
+    /// <c>calculations.execute</c> command instead, so the object gathers
+    /// the runs Compare sets side by side.
     /// </summary>
-    public static CalculationInputBuild BuildInput(CalculationModuleDescriptor module, IReadOnlyList<CalculationFormField> fields, ReleasedMaterialOption? material)
+    public async Task<CalculationSurfaceAttempt> CalculateAsync(
+        CalculationModuleDescriptor module, IReadOnlyList<CalculationFormField> fields, string? displayName = null, CalculationSurfaceRun? onto = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(module);
         ArgumentNullException.ThrowIfNull(fields);
 
-        var byName = fields.ToDictionary(f => f.Name, StringComparer.Ordinal);
-        var constructor = module.InputType.GetConstructors().Single();
-        var parameters = constructor.GetParameters();
-        var arguments = new object?[parameters.Length];
-        var problems = new List<CalculationFormProblem>();
+        if (onto is not null && string.Equals(onto.Run.Module.Id, module.Id, StringComparison.Ordinal))
+            return await CalculateOntoAsync(module, fields, onto, cancellationToken).ConfigureAwait(false);
 
-        for (var i = 0; i < parameters.Length; i++)
+        var outcome = await _service.RunAsync(new CalculationModuleRequest(module.Id, fields), cancellationToken).ConfigureAwait(false);
+        if (!outcome.WasPerformed)
+            return new CalculationSurfaceAttempt(null, outcome, null);
+
+        var run = outcome.Run!;
+        var named = string.IsNullOrWhiteSpace(displayName)
+            ? await NameByDefaultAsync(module, run, cancellationToken).ConfigureAwait(false)
+            : await _register.NameAsync(run.RecordId, displayName.Trim(), cancellationToken).ConfigureAwait(false);
+
+        return new CalculationSurfaceAttempt(new CalculationSurfaceRun(run, named.ObjectId, named.DisplayName, 1), outcome, null);
+    }
+
+    /// <summary>
+    /// Names a run nobody named: the title and the time, and where two runs
+    /// share a second, a counter — a Calculation's name is unique in its
+    /// project (`TD-38`), and a default must never refuse a run for that.
+    /// A name the engineer typed is theirs: a duplicate of one is refused
+    /// in the domain's own words, not silently renamed.
+    /// </summary>
+    private async Task<NamedCalculation> NameByDefaultAsync(CalculationModuleDescriptor module, CalculationModuleRun run, CancellationToken cancellationToken)
+    {
+        var stem = $"{module.Title} {run.ExecutedAt:yyyy-MM-dd HH:mm:ss}";
+
+        for (var attempt = 1; ; attempt++)
         {
-            var parameter = parameters[i];
-            var descriptor = module.Inputs.FirstOrDefault(d => string.Equals(d.Name, parameter.Name, StringComparison.Ordinal));
+            var candidate = attempt == 1 ? stem : $"{stem} ({attempt})";
 
-            if (descriptor is null)
+            try
             {
-                problems.Add(new CalculationFormProblem(parameter.Name!, parameter.Name!, "the descriptor does not describe this input"));
-                continue;
+                return await _register.NameAsync(run.RecordId, candidate, cancellationToken).ConfigureAwait(false);
             }
-
-            byName.TryGetValue(descriptor.Name, out var field);
-            arguments[i] = Convert(descriptor, parameter, field, material, problems);
-        }
-
-        if (problems.Count > 0)
-            return new CalculationInputBuild(null, problems);
-
-        return new CalculationInputBuild(constructor.Invoke(arguments), []);
-    }
-
-    /// <summary>Builds the input from the form and runs it: one call for a Calculate button.</summary>
-    public async Task<CalculationAttempt> CalculateAsync(
-        CalculationModuleDescriptor module, IReadOnlyList<CalculationFormField> fields, ReleasedMaterialOption? material, CancellationToken cancellationToken = default)
-    {
-        var build = BuildInput(module, fields, material);
-
-        if (!build.Succeeded)
-            return new CalculationAttempt(null, build.Problems, null);
-
-        try
-        {
-            return new CalculationAttempt(await RunAsync(module, build.Input!, cancellationToken).ConfigureAwait(false), [], null);
-        }
-        catch (CalculationInputInvalidException rejected)
-        {
-            // The definition's own refusal of a malformed input, in its words.
-            return new CalculationAttempt(null, [], rejected.Message);
-        }
-    }
-
-    /// <summary>Executes <paramref name="input"/> through the engine as <paramref name="module"/> and presents the record.</summary>
-    /// <exception cref="CalculationInputInvalidException">The definition rejected the input.</exception>
-    public async Task<CalculationModuleRun> RunAsync(CalculationModuleDescriptor module, object input, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(module);
-        ArgumentNullException.ThrowIfNull(input);
-
-        if (!module.InputType.IsInstanceOfType(input))
-            throw new ArgumentException($"The input is a {input.GetType().Name}; {module.Id} takes a {module.InputType.Name}.", nameof(input));
-
-        var run = typeof(CalculationModuleWorkbench)
-            .GetMethod(nameof(RunTypedAsync), BindingFlags.NonPublic | BindingFlags.Instance)!
-            .MakeGenericMethod(module.InputType, module.ResultType);
-
-        try
-        {
-            return await ((Task<CalculationModuleRun>)run.Invoke(this, [module, input, cancellationToken])!).ConfigureAwait(false);
-        }
-        catch (TargetInvocationException wrapped) when (wrapped.InnerException is not null)
-        {
-            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(wrapped.InnerException).Throw();
-            throw;
-        }
-    }
-
-    private async Task<CalculationModuleRun> RunTypedAsync<TInput, TResult>(CalculationModuleDescriptor module, TInput input, CancellationToken cancellationToken)
-    {
-        var record = await _engine.ExecuteAsync<TInput, TResult>(module.Id, input, cancellationToken).ConfigureAwait(false);
-
-        var results = new List<CalculationRunRow>();
-        string? refusal = null;
-        EngineeringCheckOutcome? outcome = null;
-
-        foreach (var property in typeof(TResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.GetIndexParameters().Length == 0))
-        {
-            var value = property.GetValue(record.Result);
-
-            if (value is EngineeringCheckOutcome checkOutcome && property.Name == "Outcome")
+            catch (DuplicateBusinessIdentifierException) when (attempt < 1000)
             {
-                outcome = checkOutcome;
-                continue;
-            }
-
-            if (property.Name == "RefusalReason" && value is string reason)
-            {
-                refusal = reason;
-                continue;
-            }
-
-            if (property.Name == "RefusalReason")
-                continue;
-
-            results.Add(new CalculationRunRow(Humanise(property.Name), Format(value)));
-        }
-
-        var summary = outcome switch
-        {
-            EngineeringCheckOutcome.MeetsCriteria => "Meets its criteria",
-            EngineeringCheckOutcome.DoesNotMeetCriteria => "Does not meet its criteria",
-            EngineeringCheckOutcome.OutsideMethodLimits => "Outside the method's limits — refused, nothing computed",
-            _ => record.Validation.Outcome == CalculationValidationOutcome.Valid ? "Computed" : "Computed, with a constraint not satisfied",
-        };
-
-        return new CalculationModuleRun(
-            module,
-            record.Id,
-            record.ExecutedAt,
-            summary,
-            outcome == EngineeringCheckOutcome.OutsideMethodLimits,
-            refusal,
-            results,
-            record.IntermediateResults.Select(i => new CalculationRunRow(i.Name, Format(i.Value))).ToList(),
-            record.Validation.ConstraintChecks.Select(c => new CalculationCheckRow(c.Description, c.IsSatisfied, c.Detail)).ToList(),
-            record.Validation.Outcome.ToString(),
-            record.ReferencedMaterialIds);
-    }
-
-    // ---- Form values to constructor arguments ----
-
-    private static object? Convert(CalculationInputDescriptor descriptor, ParameterInfo parameter, CalculationFormField? field, ReleasedMaterialOption? material, List<CalculationFormProblem> problems)
-    {
-        var underlying = Nullable.GetUnderlyingType(parameter.ParameterType) ?? parameter.ParameterType;
-
-        void Problem(string text) => problems.Add(new CalculationFormProblem(descriptor.Name, descriptor.Label, text));
-
-        switch (descriptor.Kind)
-        {
-            case CalculationInputKind.Quantity:
-                if (string.IsNullOrWhiteSpace(field?.Text))
-                {
-                    if (descriptor.IsOptional)
-                        return null;
-
-                    Problem("no value was entered");
-                    return null;
-                }
-
-                var quantity = CalculationInputUnits.TryParse(descriptor.DimensionName!, field.Text, field.UnitSymbol ?? descriptor.DefaultUnitSymbol, out var problem);
-                if (quantity is null)
-                    Problem(problem!);
-                return quantity;
-
-            case CalculationInputKind.Number:
-                if (string.IsNullOrWhiteSpace(field?.Text))
-                {
-                    Problem("no value was entered");
-                    return null;
-                }
-
-                if (underlying == typeof(int))
-                {
-                    if (!int.TryParse(field.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
-                    {
-                        Problem($"'{field.Text.Trim()}' is not a whole number");
-                        return null;
-                    }
-
-                    return count;
-                }
-
-                if (!double.TryParse(field.Text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
-                {
-                    Problem($"'{field.Text.Trim()}' is not a number");
-                    return null;
-                }
-
-                return number;
-
-            case CalculationInputKind.Text:
-                if (string.IsNullOrWhiteSpace(field?.Text))
-                {
-                    if (descriptor.IsOptional)
-                        return null;
-
-                    Problem("nothing was entered");
-                    return null;
-                }
-
-                return field.Text.Trim();
-
-            case CalculationInputKind.Choice:
-                var choice = field?.Choice ?? descriptor.Choices?.FirstOrDefault();
-                if (choice is null || !Enum.TryParse(underlying, choice, ignoreCase: false, out var member))
-                {
-                    Problem($"'{choice}' is not one of {string.Join(", ", descriptor.Choices ?? [])}");
-                    return null;
-                }
-
-                return member;
-
-            case CalculationInputKind.Boolean:
-                return field?.Flag ?? false;
-
-            case CalculationInputKind.List:
-                return ConvertRows(descriptor, underlying, field?.Rows ?? [], Problem);
-
-            case CalculationInputKind.Reference:
-                if (material is null)
-                {
-                    if (descriptor.IsOptional)
-                        return null;
-
-                    Problem("pick a released material record");
-                    return null;
-                }
-
-                return material.Pin;
-
-            default:
-                Problem($"unknown input kind {descriptor.Kind}");
-                return null;
-        }
-    }
-
-    private static object? ConvertRows(CalculationInputDescriptor descriptor, Type listType, IReadOnlyList<string> rows, Action<string> problem)
-    {
-        var elementType = listType.IsGenericType ? listType.GetGenericArguments()[0] : null;
-        if (elementType is null)
-        {
-            problem("the input is not a list of rows");
-            return null;
-        }
-
-        var constructor = elementType.GetConstructors().Single();
-        var cells = constructor.GetParameters();
-        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
-        var meaningful = rows.Select(r => r.Trim()).Where(r => r.Length > 0).ToList();
-
-        if (meaningful.Count == 0)
-        {
-            problem("no rows were entered");
-            return null;
-        }
-
-        for (var r = 0; r < meaningful.Count; r++)
-        {
-            var parts = meaningful[r].Split(',', StringSplitOptions.TrimEntries);
-            if (parts.Length != cells.Length)
-            {
-                problem($"row {r + 1} has {parts.Length} value(s); expected {cells.Length} ({string.Join(", ", descriptor.Choices ?? cells.Select(c => c.Name!))})");
-                return null;
-            }
-
-            var arguments = new object?[cells.Length];
-            for (var c = 0; c < cells.Length; c++)
-            {
-                var cellType = cells[c].ParameterType;
-
-                if (cellType.IsGenericType && cellType.GetGenericTypeDefinition() == typeof(Quantity<>))
-                {
-                    var value = CalculationInputUnits.TryParseWithUnit(cellType.GetGenericArguments()[0].Name, parts[c], out var cellProblem);
-                    if (value is null)
-                    {
-                        problem($"row {r + 1}, {cells[c].Name}: {cellProblem}");
-                        return null;
-                    }
-
-                    arguments[c] = value;
-                }
-                else if (cellType == typeof(double))
-                {
-                    if (!double.TryParse(parts[c], NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
-                    {
-                        problem($"row {r + 1}, {cells[c].Name}: '{parts[c]}' is not a number");
-                        return null;
-                    }
-
-                    arguments[c] = number;
-                }
-                else
-                {
-                    problem($"row {r + 1}, {cells[c].Name}: a {cellType.Name} cannot be typed as a row value");
-                    return null;
-                }
-            }
-
-            list.Add(constructor.Invoke(arguments));
-        }
-
-        return list;
-    }
-
-    // ---- Materials ----
-
-    private sealed record PropertyReading(object? Value, ReferencePin? Pin, string? Reason);
-
-    private async Task<PropertyReading> ReadPropertyAsync(string dimensionName, string recordId, string propertyName, CancellationToken cancellationToken)
-    {
-        var read = typeof(CalculationModuleWorkbench)
-            .GetMethod(nameof(ReadTypedAsync), BindingFlags.NonPublic | BindingFlags.Instance)!
-            .MakeGenericMethod(CalculationInputUnits.DimensionTypeOf(dimensionName));
-
-        return await ((Task<PropertyReading>)read.Invoke(this, [recordId, propertyName, cancellationToken])!).ConfigureAwait(false);
-    }
-
-    private async Task<PropertyReading> ReadTypedAsync<TDimension>(string recordId, string propertyName, CancellationToken cancellationToken)
-        where TDimension : IDimension
-    {
-        var reading = await MaterialPropertyReader.ReadAsync<TDimension>(_materials, recordId, propertyName, cancellationToken).ConfigureAwait(false);
-        return new PropertyReading(reading.Succeeded ? reading.Value : null, reading.Pin, reading.Reason);
-    }
-
-    // ---- Presentation ----
-
-    /// <summary>A property name as a label: "MaximumBendingStress" reads "Maximum bending stress".</summary>
-    public static string Humanise(string propertyName)
-    {
-        var text = new StringBuilder();
-
-        for (var i = 0; i < propertyName.Length; i++)
-        {
-            var c = propertyName[i];
-            if (i > 0 && char.IsUpper(c) && (char.IsLower(propertyName[i - 1]) || (i + 1 < propertyName.Length && char.IsLower(propertyName[i + 1]))))
-            {
-                text.Append(' ');
-                text.Append(char.ToLowerInvariant(c));
-            }
-            else
-            {
-                text.Append(c);
+                // Another run of the same calculation in the same second holds this name; try the next.
             }
         }
-
-        return text.ToString();
     }
 
-    /// <summary>A value as the surface shows it: a quantity with its unit, a number to six figures, yes or no, a list joined, nothing as a dash.</summary>
-    public static string Format(object? value)
+    private async Task<CalculationSurfaceAttempt> CalculateOntoAsync(
+        CalculationModuleDescriptor module, IReadOnlyList<CalculationFormField> fields, CalculationSurfaceRun onto, CancellationToken cancellationToken)
     {
-        switch (value)
-        {
-            case null:
-                return "—";
-            case bool flag:
-                return flag ? "Yes" : "No";
-            case double number:
-                return number.ToString("G6", CultureInfo.InvariantCulture);
-            case int count:
-                return count.ToString(CultureInfo.InvariantCulture);
-            case string text:
-                return text;
-            case Enum member:
-                return Humanise(member.ToString());
-            case ReferencePin pin:
-                return pin.ToString();
-        }
+        var prepared = await _service.PrepareAsync(new CalculationModuleRequest(module.Id, fields), cancellationToken).ConfigureAwait(false);
+        if (!prepared.Succeeded)
+            return new CalculationSurfaceAttempt(null, new CalculationModuleOutcome(prepared.Refusal, prepared.Reason, prepared.Problems, prepared.Fills, null), null);
 
-        var type = value.GetType();
+        var inputJson = JsonSerializer.Serialize(prepared.Input, module.InputType);
+        var result = await _dispatcher
+            .DispatchAsync(new ExecuteCalculationCommand(onto.CalculationObjectId, CalculationKind, module.Id, inputJson), cancellationToken)
+            .ConfigureAwait(false);
 
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Quantity<>))
-        {
-            var magnitude = (double)type.GetProperty("Value")!.GetValue(value)!;
-            var unit = type.GetProperty("Unit")!.GetValue(value)!;
-            var symbol = (string)unit.GetType().GetProperty("Symbol")!.GetValue(unit)!;
-            return $"{magnitude.ToString("G6", CultureInfo.InvariantCulture)} {symbol}";
-        }
+        if (!result.Succeeded)
+            return new CalculationSurfaceAttempt(null, Refused(CalculationModuleRefusal.InputInvalid, result.Message ?? "The calculation rejected the input."), result.Message);
 
-        if (value is IEnumerable items)
-        {
-            var parts = items.Cast<object?>().Select(Format).ToList();
-            return parts.Count <= 24 ? string.Join("; ", parts) : string.Join("; ", parts.Take(24)) + $"; … ({parts.Count} in all)";
-        }
-
-        return value.ToString() ?? "—";
+        return await LatestAsync(onto, result.Message ?? string.Empty, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Re-runs <paramref name="current"/> through the canonical
+    /// <c>calculations.rerun</c> command and shows the record it produced.
+    /// </summary>
+    public async Task<CalculationSurfaceAttempt> RerunAsync(CalculationSurfaceRun current, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+
+        var result = await _dispatcher
+            .DispatchAsync(new RerunCalculationCommand(current.CalculationObjectId, CalculationKind), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!result.Succeeded)
+            return new CalculationSurfaceAttempt(null, Refused(CalculationModuleRefusal.InputInvalid, result.Message ?? "The re-run command failed."), result.Message);
+
+        return await LatestAsync(current, result.Message ?? string.Empty, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Compares <paramref name="current"/> with its predecessor through the
+    /// canonical <c>calculations.compare-with-previous</c> command, and
+    /// hands back the comparison as rows with units.
+    /// </summary>
+    /// <exception cref="CalculationException">The object has fewer than two records.</exception>
+    public async Task<CalculationSurfaceComparison> CompareAsync(CalculationSurfaceRun current, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+
+        var result = await _dispatcher
+            .DispatchAsync(new CompareCalculationWithPreviousCommand(current.CalculationObjectId, CalculationKind), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!result.Succeeded)
+            throw new CalculationException(result.Message ?? "The compare command failed.");
+
+        var comparison = await _templates.CompareWithPreviousAsync(current.CalculationObjectId, cancellationToken).ConfigureAwait(false);
+        var rows = new List<CalculationComparisonRow>();
+
+        if (comparison.InputComparisonNote is { } note)
+            rows.Add(new CalculationComparisonRow("Input", "(note)", note, string.Empty));
+
+        rows.AddRange(comparison.InputChanges.Select(d => new CalculationComparisonRow("Input", CalculationModuleForm.Humanise(d.FieldName), d.OldDisplay ?? "—", d.NewDisplay ?? "—")));
+        rows.AddRange(comparison.ResultChanges.Select(d => new CalculationComparisonRow("Result", CalculationModuleForm.Humanise(d.FieldName), d.OldDisplay ?? "—", d.NewDisplay ?? "—")));
+
+        return new CalculationSurfaceComparison(comparison, rows, result.Message ?? string.Empty);
+    }
+
+    private async Task<CalculationSurfaceAttempt> LatestAsync(CalculationSurfaceRun current, string commandMessage, CancellationToken cancellationToken)
+    {
+        var history = await CalculationRecordReader.GetResultHistoryAsync(_domain, current.CalculationObjectId, cancellationToken).ConfigureAwait(false);
+        var latest = history.Count > 0 ? history[^1] : null;
+
+        if (latest is null)
+            return new CalculationSurfaceAttempt(null, Refused(CalculationModuleRefusal.InputInvalid, "The re-run left no record to show."), commandMessage);
+
+        var presented = await _service.PresentAsync(current.Run.Module, latest.RecordId, cancellationToken).ConfigureAwait(false);
+        if (presented is null)
+            return new CalculationSurfaceAttempt(null, Refused(CalculationModuleRefusal.InputInvalid, $"Record {latest.RecordId} could not be read back."), commandMessage);
+
+        return new CalculationSurfaceAttempt(
+            new CalculationSurfaceRun(presented, current.CalculationObjectId, current.DisplayName, history.Count),
+            new CalculationModuleOutcome(CalculationModuleRefusal.None, null, [], [], presented),
+            commandMessage);
+    }
+
+    private static CalculationModuleOutcome Refused(CalculationModuleRefusal refusal, string reason) => new(refusal, reason, [], [], null);
 }

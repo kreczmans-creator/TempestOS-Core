@@ -101,18 +101,77 @@ public class CalculationModuleDescriptorsTests
                 || (!parameter.ParameterType.IsValueType && new System.Reflection.NullabilityInfoContext().Create(parameter).WriteState == System.Reflection.NullabilityState.Nullable);
             Assert.Equal(nullable, input.IsOptional);
 
-            // A material-sourced input names a well-known property of its own dimension.
-            if (input.MaterialPropertyName is { } property)
+            // A reference input names its library; nothing else does.
+            Assert.Equal(input.Kind == CalculationInputKind.Reference, input.Library is not null);
+
+            // A sourced input names a reference input of this same module and
+            // a property that input's library can read, of the right kind —
+            // for a material, a well-known property of the input's own dimension.
+            if (input.IsSourced)
             {
-                Assert.Equal(CalculationInputKind.Quantity, input.Kind);
-                Assert.True(MaterialPropertyNames.IsWellKnown(property), $"{id}.{input.Name}: {property} is not a well-known material property.");
-                Assert.Equal(MaterialPropertyNames.ExpectedDimensionOf(property), input.DimensionName);
+                var source = descriptor.Inputs.SingleOrDefault(i => i.Name == input.SourceInputName);
+                Assert.True(source is { Kind: CalculationInputKind.Reference }, $"{id}.{input.Name} is read from '{input.SourceInputName}', which is not a reference input of the module.");
+                Assert.NotEqual(CalculationInputKind.Reference, input.Kind);
+                var property = input.SourcePropertyName;
+                Assert.False(string.IsNullOrWhiteSpace(property), $"{id}.{input.Name} names no property to read.");
+
+                switch (source!.Library)
+                {
+                    case ReferenceLibrary.Materials:
+                        Assert.Equal(CalculationInputKind.Quantity, input.Kind);
+                        Assert.True(MaterialPropertyNames.IsWellKnown(property!), $"{id}.{input.Name}: {property} is not a well-known material property.");
+                        Assert.Equal(MaterialPropertyNames.ExpectedDimensionOf(property!), input.DimensionName);
+                        break;
+                    case ReferenceLibrary.Fasteners:
+                        Assert.Contains(property, input.Kind == CalculationInputKind.Quantity ? FastenerPropertyReader.QuantityProperties : FastenerPropertyReader.TextProperties);
+                        break;
+                    case ReferenceLibrary.Bearings:
+                        Assert.Contains(property, input.Kind == CalculationInputKind.Quantity ? BearingPropertyReader.QuantityProperties : BearingPropertyReader.TextProperties);
+                        break;
+                }
+            }
+            else
+            {
+                Assert.Null(input.SourcePropertyName);
             }
 
             Assert.False(string.IsNullOrWhiteSpace(input.Label));
             Assert.False(string.IsNullOrWhiteSpace(input.Limits));
             Assert.False(string.IsNullOrWhiteSpace(input.Description));
         }
+    }
+
+    [Fact]
+    public void EachReferenceInputHasItsOwnLibrary_TheLugTwoMaterials_TheFastenerAndBearingModulesTheirOwn()
+    {
+        var lug = CalculationModuleDescriptors.For(LiftingLugPinJointCalculationDefinition.Id)!;
+        Assert.Equal(["LugMaterialPin", "PinMaterialPin"], lug.References.Select(r => r.Name).ToList());
+        Assert.All(lug.References, r => Assert.Equal(ReferenceLibrary.Materials, r.Library));
+        Assert.All(lug.References, r => Assert.False(r.IsOptional));
+
+        foreach (var id in new[] { BoltedJointPreloadCalculationDefinition.Id, BoltGroupEccentricShearCalculationDefinition.Id })
+        {
+            var fastener = Assert.Single(CalculationModuleDescriptors.For(id)!.References);
+            Assert.Equal("FastenerPin", fastener.Name);
+            Assert.Equal(ReferenceLibrary.Fasteners, fastener.Library);
+            Assert.True(fastener.IsOptional);
+        }
+
+        var bearing = Assert.Single(CalculationModuleDescriptors.For(BearingRatingLifeCalculationDefinition.Id)!.References);
+        Assert.Equal(ReferenceLibrary.Bearings, bearing.Library);
+        Assert.True(bearing.IsOptional);
+
+        // The bolted joint reads three inputs from its fastener; the bearing
+        // life reads three from its bearing, one of them a choice.
+        var joint = CalculationModuleDescriptors.For(BoltedJointPreloadCalculationDefinition.Id)!;
+        Assert.Equal(["FastenerGrade", "TensileStressArea", "ProofStrength"], joint.Inputs.Where(i => i.IsSourced).Select(i => i.Name).ToList());
+        var life = CalculationModuleDescriptors.For(BearingRatingLifeCalculationDefinition.Id)!;
+        Assert.Equal(["BearingDesignation", "BearingType", "BasicDynamicLoadRating"], life.Inputs.Where(i => i.IsSourced).Select(i => i.Name).ToList());
+        Assert.Equal(CalculationInputKind.Choice, life.Inputs.Single(i => i.Name == "BearingType").Kind);
+
+        // The five original definitions read nothing from a record.
+        foreach (var original in CalculationModuleDescriptors.All.Where(d => d.SpecificationPath is null))
+            Assert.DoesNotContain(original.Inputs, i => i.IsSourced || i.Kind == CalculationInputKind.Reference);
     }
 
     [Fact]

@@ -48,6 +48,19 @@ public sealed record CalculationModuleOutcome(
     public bool WasPerformed => Refusal == CalculationModuleRefusal.None && Run is not null;
 }
 
+/// <summary>What preparing a request produced: the module and its built input, or the refusal and its reason.</summary>
+public sealed record CalculationModulePreparation(
+    CalculationModuleRefusal Refusal,
+    string? Reason,
+    IReadOnlyList<CalculationFormProblem> Problems,
+    IReadOnlyList<ReferenceFill> Fills,
+    CalculationModuleDescriptor? Module,
+    object? Input)
+{
+    /// <summary>Whether an input was built, ready to execute.</summary>
+    public bool Succeeded => Refusal == CalculationModuleRefusal.None && Input is not null;
+}
+
 /// <summary>
 /// The governed entry point of every calculation module (`WP 21.7C`):
 /// give it a module id and the inputs, references by released-record id,
@@ -226,11 +239,34 @@ public sealed class CalculationModuleService
     /// </summary>
     public async Task<CalculationModuleOutcome> RunAsync(CalculationModuleRequest request, CancellationToken cancellationToken = default)
     {
+        var prepared = await PrepareAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!prepared.Succeeded)
+            return new CalculationModuleOutcome(prepared.Refusal, prepared.Reason, prepared.Problems, prepared.Fills, null);
+
+        try
+        {
+            var run = await ExecuteAsync(prepared.Module!, prepared.Input!, cancellationToken).ConfigureAwait(false);
+            return new CalculationModuleOutcome(CalculationModuleRefusal.None, null, [], prepared.Fills, run);
+        }
+        catch (CalculationInputInvalidException rejected)
+        {
+            return new CalculationModuleOutcome(CalculationModuleRefusal.InputInvalid, rejected.Message, [], prepared.Fills, null);
+        }
+    }
+
+    /// <summary>
+    /// Prepares <paramref name="request"/> without executing it: every
+    /// reference resolved to a released record, every sourced input filled
+    /// from it, the input built. What <see cref="RunAsync"/> does before the
+    /// engine, for a caller that executes through a command of its own.
+    /// </summary>
+    public async Task<CalculationModulePreparation> PrepareAsync(CalculationModuleRequest request, CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(request);
 
         var module = CalculationModuleDescriptors.For(request.CalculationId);
         if (module is null)
-            return new CalculationModuleOutcome(CalculationModuleRefusal.ModuleNotFound, $"No product calculation has the id '{request.CalculationId}'.", [], [], null);
+            return new CalculationModulePreparation(CalculationModuleRefusal.ModuleNotFound, $"No product calculation has the id '{request.CalculationId}'.", [], [], null, null);
 
         var fields = request.Fields.ToDictionary(f => f.Name, StringComparer.Ordinal);
         var pins = new Dictionary<string, ReferencePin>(StringComparer.Ordinal);
@@ -247,7 +283,7 @@ public sealed class CalculationModuleService
             if (found.Refusal != ReferencePropertyRefusal.None)
             {
                 var refusal = found.Refusal == ReferencePropertyRefusal.RecordNotFound ? CalculationModuleRefusal.RecordNotFound : CalculationModuleRefusal.RecordNotReleased;
-                return new CalculationModuleOutcome(refusal, found.Reason, [], fills, null);
+                return new CalculationModulePreparation(refusal, found.Reason, [], fills, module, null);
             }
 
             pins[reference.Name] = found.Pin!;
@@ -257,10 +293,10 @@ public sealed class CalculationModuleService
 
             if (fill.Problems.Count > 0)
             {
-                return new CalculationModuleOutcome(
+                return new CalculationModulePreparation(
                     CalculationModuleRefusal.RecordIncomplete,
                     $"The record picked for {reference.Label} cannot supply every input read from it: {string.Join(" ", fill.Problems.Select(p => $"{p.Label}: {p.Problem}."))}",
-                    fill.Problems, fills, null);
+                    fill.Problems, fills, module, null);
             }
 
             // The record is the source: its values replace anything typed for a sourced input.
@@ -270,17 +306,9 @@ public sealed class CalculationModuleService
 
         var build = CalculationModuleForm.BuildInput(module, fields.Values.ToList(), pins);
         if (!build.Succeeded)
-            return new CalculationModuleOutcome(CalculationModuleRefusal.InputIncomplete, $"Some inputs could not be read: {string.Join(" ", build.Problems.Select(p => $"{p.Label}: {p.Problem}."))}", build.Problems, fills, null);
+            return new CalculationModulePreparation(CalculationModuleRefusal.InputIncomplete, $"Some inputs could not be read: {string.Join(" ", build.Problems.Select(p => $"{p.Label}: {p.Problem}."))}", build.Problems, fills, module, null);
 
-        try
-        {
-            var run = await ExecuteAsync(module, build.Input!, cancellationToken).ConfigureAwait(false);
-            return new CalculationModuleOutcome(CalculationModuleRefusal.None, null, [], fills, run);
-        }
-        catch (CalculationInputInvalidException rejected)
-        {
-            return new CalculationModuleOutcome(CalculationModuleRefusal.InputInvalid, rejected.Message, [], fills, null);
-        }
+        return new CalculationModulePreparation(CalculationModuleRefusal.None, null, [], fills, module, build.Input);
     }
 
     /// <summary>Executes an already-built input of <paramref name="module"/> through the engine and presents the record.</summary>
