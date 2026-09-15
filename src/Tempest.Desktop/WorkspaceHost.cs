@@ -337,6 +337,29 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// </remarks>
     public ISessionPrincipal? SessionPrincipal { get; private set; }
 
+    /// <summary>
+    /// Establishes <paramref name="principal"/> as this session's own
+    /// principal from this moment on — the "Switch person…" act (`WP
+    /// 21.3B`, Settings → Principal). Every subsequent mutation's audit
+    /// row and every "checked by"/"signed off by" field reads this from
+    /// <see cref="ICurrentPrincipalAccessor"/> onward, exactly as the
+    /// principal <see cref="StartAsync"/> established at launch already
+    /// does — published unconditionally through the identical
+    /// <see cref="CurrentPrincipalAccessor.SetCurrent"/> call, never a
+    /// second mechanism.
+    /// </summary>
+    /// <exception cref="InvalidOperationException"><see cref="StartAsync"/> has not completed.</exception>
+    public void SwitchPrincipal(ISessionPrincipal principal)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+
+        if (Services?.GetService(typeof(ICurrentPrincipalAccessor)) is not CurrentPrincipalAccessor accessor)
+            throw new InvalidOperationException($"{nameof(SwitchPrincipal)} needs a running Host — call {nameof(StartAsync)} first.");
+
+        accessor.SetCurrent(principal);
+        SessionPrincipal = principal;
+    }
+
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
 

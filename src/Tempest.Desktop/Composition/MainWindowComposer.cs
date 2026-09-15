@@ -244,6 +244,10 @@ internal sealed partial class MainWindowComposer
         var workingPatterns = (Tempest.Core.Timesheets.IWorkingPatternProvider)services.GetService(typeof(Tempest.Core.Timesheets.IWorkingPatternProvider));
         var currentPrincipalAccessor = (Tempest.Core.Identity.ICurrentPrincipalAccessor)services.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
 
+        // `WP 21.3B`: "Switch person…" — resolved here, ahead of
+        // `settingsView` below, which needs it.
+        var peopleDirectory = (Tempest.Core.People.IPeopleDirectory)services.GetService(typeof(Tempest.Core.People.IPeopleDirectory));
+
         // `WP 19.1A` part 3 (`ADR-0151`): the Invoicing area's own connector
         // and secret store, resolved here exactly as `workingPatterns`/
         // `currentPrincipalAccessor` are above — `SettingsDialog`'s own
@@ -275,12 +279,21 @@ internal sealed partial class MainWindowComposer
             : "(in-memory persistence — no file on disk)";
         var configurationProvider = (Tempest.Core.Configuration.IConfigurationProvider)services.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
 
+        // `WP 21.3B`: built here now, ahead of `settingsView` (moved up
+        // from just below it, under the identical local name) — Switch
+        // person's own confirmation needs it.
+        var confirmationDialog = new ConfirmationDialog();
+
+        // `WP 21.3B`: publishes the confirmed person through the identical
+        // `CurrentPrincipalAccessor.SetCurrent` call `StartAsync` itself
+        // makes at launch — never a second mechanism.
+        void SwitchPrincipal(Tempest.Core.Identity.ISessionPrincipal principal) => host.SwitchPrincipal(principal);
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
-            accountsReadModel, accountsRefreshService);
+            accountsReadModel, accountsRefreshService, peopleDirectory, confirmationDialog, SwitchPrincipal);
 
-        var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
 
@@ -365,6 +378,12 @@ internal sealed partial class MainWindowComposer
 
         var header = new ShellHeaderView();
         header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName, host.SessionPrincipal?.Role.ToString());
+
+        // `WP 21.3B`: "Switch person…" changes who `host.SessionPrincipal`
+        // reads as — re-set on every Settings action (harmless, since the
+        // header already just re-displays whatever it is) rather than
+        // invent a second, principal-only event.
+        settingsView.ActionCompleted += (_, _) => header.SetPrincipal(host.SessionPrincipal?.Identity.DisplayName, host.SessionPrincipal?.Role.ToString());
         header.SetNotifications(headerNotifications.Messages);
         headerNotifications.Changed = () => header.SetNotifications(headerNotifications.Messages);
 
@@ -379,10 +398,10 @@ internal sealed partial class MainWindowComposer
         var rateCardCatalog = (Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog)services.GetService(typeof(Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog));
         var timesheetService = (Tempest.Core.Timesheets.ITimesheetService)services.GetService(typeof(Tempest.Core.Timesheets.ITimesheetService));
 
-        // `WP 21.3B`: expenses, purchase orders and the "Switch person" seam.
+        // `WP 21.3B`: expenses and purchase orders (`peopleDirectory` is
+        // already resolved above, ahead of `settingsView`).
         var expenseService = (Tempest.Core.Expenses.IExpenseService)services.GetService(typeof(Tempest.Core.Expenses.IExpenseService));
         var purchaseOrderService = (Tempest.Core.PurchaseOrders.IPurchaseOrderService)services.GetService(typeof(Tempest.Core.PurchaseOrders.IPurchaseOrderService));
-        var peopleDirectory = (Tempest.Core.People.IPeopleDirectory)services.GetService(typeof(Tempest.Core.People.IPeopleDirectory));
 
         // `WP 19.6A`: the two remaining governed reference libraries the
         // Libraries tab itself lists but Evidence's own citation picker
