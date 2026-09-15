@@ -96,16 +96,16 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.True(assemblyResult.Succeeded, assemblyResult.Message);
 
             var assembly = (await domain.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Assembly))
-                .Single(o => o.Id != projectId && ((IHasBusinessIdentifier)o).Identifier == "ASM-100");
+                .Single(entry => entry.Id != projectId && entry.Identifier == "ASM-100");
             assemblyId = assembly.Id;
 
             var partResult = await dispatcher.DispatchAsync(new CreateMechanicalObjectCommand(
                 MechanicalObjectFactoryRegistry.Part, "Impeller", "PN-1001", parentId: assemblyId), CancellationToken.None);
             Assert.True(partResult.Succeeded, partResult.Message);
 
-            var part = (await domain.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Part))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "PN-1001");
-            partId = part.Id;
+            partId = (await domain.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Part))
+                .Single(entry => entry.Identifier == "PN-1001").Id;
+            var part = (await domain.Repository.FindAsync(partId))!;
 
             // --- 8. Modify them: lifecycle, rename, BOM line, an
             //        explicit relationship, and a new revision --------
@@ -268,7 +268,7 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.Equal(2, part.History.Count);
 
             var parts = await domain.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Part);
-            Assert.Contains(parts, p => ((IHasBusinessIdentifier)p).Identifier == "PN-1002");
+            Assert.Contains(parts, entry => entry.Identifier == "PN-1002");
         }
         finally
         {
@@ -337,7 +337,7 @@ public sealed class ObjectRehydrationAcceptanceTests
             Assert.NotEmpty(activities);
 
             Guid recordId = default;
-            Tempest.Core.EngineeringDomain.IEngineeringObject? verified = null;
+            Tempest.Core.EngineeringDomain.EngineeringObjectIndexEntry? verified = null;
             foreach (var activity in activities)
             {
                 var records = await Tempest.Workspace.Verification.VerificationRecordReader

@@ -96,7 +96,8 @@ public class CalculationsCommandsTests
 
         await handler.HandleAsync(new CreateCalculationObjectCommand("CalculationSet", "Set", memberCalculationIds: [member.Id]), default);
 
-        var set = (CalculationSet)(await context.Repository.ListByKindAsync("CalculationSet")).Single();
+        var setEntries = await context.Repository.ListByKindAsync("CalculationSet");
+        var set = (await context.Repository.MaterialiseAsync<CalculationSet>(setEntries)).Single();
         Assert.Equal([member.Id], set.MemberCalculationIds);
     }
 
@@ -110,8 +111,8 @@ public class CalculationsCommandsTests
 
         await handler.HandleAsync(new CreateCalculationObjectCommand("Calculation", "Child", parentId: parent.Id), default);
 
-        var created = (await context.Repository.ListByKindAsync("Calculation")).Single(c => c.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+        var created = (await context.Repository.ListByKindAsync("Calculation")).Single(entry => entry.Id != parent.Id);
+        Assert.Equal(parent.Id, created.ParentId);
     }
 
     // ---- DueOn (`WP 20.10B`, T2) ----
@@ -129,7 +130,7 @@ public class CalculationsCommandsTests
             new CreateCalculationObjectCommand("Calculation", "Bracket check", parentId: project.Id, dueOn: dueOn), default);
 
         Assert.True(result.Succeeded, result.Message);
-        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        var created = (await context.Repository.MaterialiseAsync<Calculation>(await context.Repository.ListByKindAsync("Calculation"))).Single();
         Assert.Equal(dueOn, created.DueOn);
     }
 
@@ -154,7 +155,7 @@ public class CalculationsCommandsTests
         await handler.HandleAsync(
             new CreateCalculationObjectCommand("Calculation", "Under set", parentId: set.Id, dueOn: dueOn), default);
 
-        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        var created = (await context.Repository.MaterialiseAsync<Calculation>(await context.Repository.ListByKindAsync("Calculation"))).Single();
         Assert.Equal(dueOn, created.DueOn);
     }
 
@@ -168,7 +169,7 @@ public class CalculationsCommandsTests
         await handler.HandleAsync(
             new CreateCalculationObjectCommand("Calculation", "Standalone", dueOn: new DateOnly(2026, 10, 1)), default);
 
-        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        var created = (await context.Repository.MaterialiseAsync<Calculation>(await context.Repository.ListByKindAsync("Calculation"))).Single();
         Assert.Null(created.DueOn);
     }
 
@@ -183,7 +184,7 @@ public class CalculationsCommandsTests
         await handler.HandleAsync(
             new CreateCalculationObjectCommand("Calculation", "Child", parentId: parent.Id, dueOn: new DateOnly(2026, 10, 1)), default);
 
-        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single(c => c.Id != parent.Id);
+        var created = (await context.Repository.MaterialiseAsync<Calculation>(await context.Repository.ListByKindAsync("Calculation"))).Single(c => c.Id != parent.Id);
         Assert.Null(created.DueOn);
     }
 
@@ -429,9 +430,9 @@ public class CalculationsCommandsTests
         Assert.True(result.Succeeded);
         var calculations = await context.Repository.ListByKindAsync("Calculation");
         Assert.Equal(3, calculations.Count);
-        var copy = calculations.Single(c => c.Id != source.Id && c.Id != targetParent.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Calculation (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
+        var copy = calculations.Single(entry => entry.Id != source.Id && entry.Id != targetParent.Id);
+        Assert.Equal(targetParent.Id, copy.ParentId);
+        Assert.Equal("Original Calculation (Copy)", copy.DisplayName);
     }
 
     [Fact]
@@ -446,7 +447,8 @@ public class CalculationsCommandsTests
         var result = await handler.HandleAsync(new CopyCalculationObjectCommand(source.Id, "CalculationSet", null), default);
 
         Assert.True(result.Succeeded);
-        var copy = (CalculationSet)(await context.Repository.ListByKindAsync("CalculationSet")).Single(s => s.Id != source.Id);
+        var copyEntries = await context.Repository.ListByKindAsync("CalculationSet");
+        var copy = (await context.Repository.MaterialiseAsync<CalculationSet>(copyEntries)).Single(s => s.Id != source.Id);
         Assert.Equal([member.Id], copy.MemberCalculationIds);
     }
 
@@ -465,8 +467,8 @@ public class CalculationsCommandsTests
         var result = await handler.HandleAsync(new DuplicateCalculationObjectCommand(source.Id, "Calculation"), default);
 
         Assert.True(result.Succeeded);
-        var duplicate = (await context.Repository.ListByKindAsync("Calculation")).Single(c => c.Id != source.Id && c.Id != parent.Id);
-        Assert.Equal(parent.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = (await context.Repository.ListByKindAsync("Calculation")).Single(entry => entry.Id != source.Id && entry.Id != parent.Id);
+        Assert.Equal(parent.Id, duplicate.ParentId);
     }
 
     // ---- SetCalculationStatusCommand ----

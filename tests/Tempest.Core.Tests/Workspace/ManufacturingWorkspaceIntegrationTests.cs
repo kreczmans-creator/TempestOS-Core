@@ -245,8 +245,9 @@ public class ManufacturingWorkspaceIntegrationTests
         var createResult = await commandDispatcher.DispatchAsync(
             new CreateManufacturingObjectCommand("ManufacturingOperation", "Integration Test Operation", partId: Guid.NewGuid(), classification: "Operation"), default);
         Assert.True(createResult.Succeeded);
-        var created = (await domainContext.Repository.ListByKindAsync("ManufacturingOperation"))
-            .Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Integration Test Operation");
+        var createdId = (await domainContext.Repository.ListByKindAsync("ManufacturingOperation"))
+            .Single(entry => entry.DisplayName == "Integration Test Operation").Id;
+        var created = (await domainContext.Repository.FindAsync(createdId))!;
 
         // Revise.
         var reviseResult = await commandDispatcher.DispatchAsync(
@@ -282,8 +283,9 @@ public class ManufacturingWorkspaceIntegrationTests
         var createResult = await commandDispatcher.DispatchAsync(
             new CreateManufacturingObjectCommand("ManufacturingOperation", "BOM Test Operation", partId: Guid.NewGuid(), classification: "Operation"), default);
         Assert.True(createResult.Succeeded);
-        var created = (await domainContext.Repository.ListByKindAsync("ManufacturingOperation"))
-            .Single(o => ((IHasBusinessIdentifier)o).DisplayName == "BOM Test Operation");
+        var createdId = (await domainContext.Repository.ListByKindAsync("ManufacturingOperation"))
+            .Single(entry => entry.DisplayName == "BOM Test Operation").Id;
+        var created = (await domainContext.Repository.FindAsync(createdId))!;
 
         // Mechanical.SetBomLineCommand — never a Manufacturing-owned
         // command — dispatched directly against a real "ManufacturingOperation".

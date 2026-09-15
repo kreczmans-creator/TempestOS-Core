@@ -119,10 +119,14 @@ public sealed class DeliverableCompletionPrompt : Border
         _fixedPrice.Text = string.Empty;
         _validation.IsVisible = false;
 
-        var everyEvidence = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind, cancellationToken).ConfigureAwait(true);
+        // `TD-88`/`WP 21.5B`: `Status` is an `Evidence`-own field, not on
+        // the index row; the project (parent) filter narrows first, from
+        // the index alone.
+        var everyEvidenceEntries = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind, cancellationToken).ConfigureAwait(true);
+        var underProjectEntries = everyEvidenceEntries.Where(entry => !entry.IsDeleted && entry.ParentId == projectId).ToList();
+        var everyEvidence = await _domainContext.Repository.MaterialiseAsync<Evidence>(underProjectEntries, cancellationToken).ConfigureAwait(true);
         var issued = everyEvidence
-            .OfType<Evidence>()
-            .Where(e => e is not IDeletable { IsDeleted: true } && e.ParentId == projectId && e.Status == EvidenceStatus.Issued)
+            .Where(e => e.Status == EvidenceStatus.Issued)
             .OrderBy(e => e.DisplayName, StringComparer.Ordinal)
             .ToList();
         _evidence.ItemsSource = issued.Select(e => new ListBoxItem { Content = e.DisplayName, Tag = e.Id }).ToList();

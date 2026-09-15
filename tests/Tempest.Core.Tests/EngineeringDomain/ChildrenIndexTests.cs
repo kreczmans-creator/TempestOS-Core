@@ -29,7 +29,7 @@ public class ChildrenIndexTests
     private static async Task<IReadOnlyList<Guid>> ScanChildrenAsync(EngineeringDomainContext context, Guid parentId)
     {
         var all = await context.Repository.ListAllAsync();
-        return all.Where(o => o is IHasParent { ParentId: { } pid } && pid == parentId).Select(o => o.Id).OrderBy(id => id).ToList();
+        return all.Where(entry => entry.ParentId == parentId).Select(entry => entry.Id).OrderBy(id => id).ToList();
     }
 
     private static async Task<IReadOnlyList<Guid>> IndexedChildrenAsync(EngineeringDomainContext context, Guid parentId) =>
@@ -93,7 +93,7 @@ public class ChildrenIndexTests
         await part.DeleteAsync();
 
         var listed = Assert.Single(await context.Repository.ListChildrenAsync(project.Id));
-        Assert.True(((IDeletable)listed).IsDeleted);
+        Assert.True(listed.IsDeleted);
     }
 
     [Fact]

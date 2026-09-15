@@ -103,9 +103,11 @@ public sealed class QuotationServiceJourneyTests
             Assert.All(accepted.Quotation.Lines, l => Assert.NotNull(l.RequirementId));
 
             // ---- Three deliverables exist under a milestone named after the reference ----
-            var milestones = (await domain.Repository.ListChildrenAsync(projectId)).OfType<Milestone>().ToList();
+            var milestoneEntries = await domain.Repository.ListChildrenAsync(projectId);
+            var milestones = await domain.Repository.MaterialiseAsync<Milestone>(milestoneEntries);
             var milestone = Assert.Single(milestones, m => m.DisplayName == reference);
-            var deliverables = (await domain.Repository.ListChildrenAsync(milestone.Id)).OfType<Deliverable>().ToList();
+            var deliverableEntries = await domain.Repository.ListChildrenAsync(milestone.Id);
+            var deliverables = await domain.Repository.MaterialiseAsync<Deliverable>(deliverableEntries);
             Assert.Equal(3, deliverables.Count);
             Assert.Equal(accepted.Quotation.QuoteDate.AddDays(30), DateOnly.FromDateTime(milestone.TargetDate.UtcDateTime));
 
@@ -137,7 +139,8 @@ public sealed class QuotationServiceJourneyTests
             Assert.Equal(3, secondAccept.Quotation!.Lines.Count(l => l.DeliverableId is not null));
 
             // No second set of deliverables was created by the refused retry.
-            var deliverablesAfterSecondAccept = (await domain.Repository.ListChildrenAsync(milestone.Id)).OfType<Deliverable>().ToList();
+            var deliverableEntriesAfterSecondAccept = await domain.Repository.ListChildrenAsync(milestone.Id);
+            var deliverablesAfterSecondAccept = await domain.Repository.MaterialiseAsync<Deliverable>(deliverableEntriesAfterSecondAccept);
             Assert.Equal(3, deliverablesAfterSecondAccept.Count);
 
             // ---- Accepting a Declined quotation is refused ----

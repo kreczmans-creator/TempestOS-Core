@@ -239,8 +239,9 @@ public class DocumentsWorkspaceIntegrationTests
         var createResult = await commandDispatcher.DispatchAsync(
             new CreateDocumentObjectCommand("Document", "Integration Test Document", "DOC-IT-001", classification: DocumentObjectFactoryRegistry.Report), default);
         Assert.True(createResult.Succeeded);
-        var created = (await domainContext.Repository.ListByKindAsync("Document"))
-            .Single(d => ((IHasBusinessIdentifier)d).Identifier == "DOC-IT-001");
+        var createdId = (await domainContext.Repository.ListByKindAsync("Document"))
+            .Single(entry => entry.Identifier == "DOC-IT-001").Id;
+        var created = (await domainContext.Repository.FindAsync(createdId))!;
 
         // Attach.
         var attachResult = await commandDispatcher.DispatchAsync(

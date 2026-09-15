@@ -65,8 +65,9 @@ public sealed class ProjectAreaAcceptanceTests
             classification: DocumentObjectFactoryRegistry.Specification), CancellationToken.None);
         Assert.True(created.Succeeded, created.Message);
 
-        var document = (await DomainOf(host).Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-            .Single(o => ((IHasBusinessIdentifier)o).Identifier == identifier);
+        var documentId = (await DomainOf(host).Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+            .Single(entry => entry.Identifier == identifier).Id;
+        var document = (await DomainOf(host).Repository.FindAsync(documentId))!;
 
         await ((IHasParent)document).MoveAsync(parentId);
 

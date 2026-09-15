@@ -95,9 +95,9 @@ public sealed class AttachmentContentAcceptanceTests
                 classification: DocumentObjectFactoryRegistry.Specification), CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
 
-            var document = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "DOC-9100");
-            documentId = document.Id;
+            documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+                .Single(entry => entry.Identifier == "DOC-9100").Id;
+            var document = (await domain.Repository.FindAsync(documentId))!;
 
             // --- Attach through the real workspace command --------------
             var attachedPdf = await dispatcher.DispatchAsync(new AttachDocumentCommand(
@@ -198,7 +198,7 @@ public sealed class AttachmentContentAcceptanceTests
             Assert.True(created.Succeeded, created.Message);
 
             documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "DOC-9200").Id;
+                .Single(entry => entry.Identifier == "DOC-9200").Id;
         }
         finally
         {
@@ -249,7 +249,7 @@ public sealed class AttachmentContentAcceptanceTests
             Assert.True(created.Succeeded, created.Message);
 
             documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "DOC-9300").Id;
+                .Single(entry => entry.Identifier == "DOC-9300").Id;
 
             // The metadata-only overload, unchanged since `WP 9.4A`.
             var attached = await dispatcher.DispatchAsync(new AttachDocumentCommand(
@@ -314,7 +314,7 @@ public sealed class AttachmentContentAcceptanceTests
             Assert.True(created.Succeeded, created.Message);
 
             documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "DOC-9400").Id;
+                .Single(entry => entry.Identifier == "DOC-9400").Id;
 
             await dispatcher.DispatchAsync(new AttachDocumentCommand(
                 documentId, DocumentObjectFactoryRegistry.Document, "procedure.pdf", "application/pdf", firstFile), CancellationToken.None);

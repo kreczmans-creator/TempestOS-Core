@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Logging;
 using Tempest.Core.Settings;
@@ -12,11 +13,25 @@ namespace Tempest.Workspace.Projects;
 /// <see cref="ISettingsProvider"/>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Introduces no new pub/sub or persistence mechanism: the event bus and
 /// the settings substrate are the ones `WorkspaceState`/`SelectionService`
 /// already established (`ADR-0064`). Only the project's own <b>Id</b> is
 /// persisted — never a copy of its name or status, which would be a
 /// second, drifting source of truth for data the domain already owns.
+/// </para>
+/// <para>
+/// <b>Project-scoped eager materialisation (`TD-88`, `WP 21.5B` Scope #2).</b>
+/// Whichever project becomes <see cref="Current"/> — through
+/// <see cref="OpenAsync"/> or through <see cref="LoadAsync"/> restoring the
+/// last-open one — has its own subtree materialised eagerly, through
+/// <paramref name="repository"/>'s own <c>MaterialiseSubtreeAsync</c>,
+/// before this method returns: "the objects a user is about to touch"
+/// (the brief's own phrase) is exactly what opening a project reveals.
+/// <see cref="CloseAsync"/> releases nothing — this Work Package ships no
+/// eviction — so a project visited once stays materialised for the rest of
+/// the session even after it is no longer current.
+/// </para>
 /// </remarks>
 public sealed class ProjectContext : IProjectContext
 {
@@ -27,11 +42,26 @@ public sealed class ProjectContext : IProjectContext
     private readonly IEventBus _eventBus;
     private readonly ISettingsProvider _settingsProvider;
     private readonly SettingsDocument<CurrentProjectDto> _document;
+    private readonly IEngineeringObjectRepository? _repository;
     private readonly ILogger? _logger;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectContext"/> class with no project open.</summary>
+    /// <param name="directory">Where a project's own summary is read from.</param>
+    /// <param name="eventBus">Where <see cref="ProjectContextChangedEvent"/> is published.</param>
+    /// <param name="settingsProvider">Where the last-open project id is persisted.</param>
+    /// <param name="logger">An optional logger for diagnostic output.</param>
+    /// <param name="repository">
+    /// The engineering object repository whose <c>MaterialiseSubtreeAsync</c>
+    /// this context calls when a project becomes current (`TD-88`,
+    /// `WP 21.5B` Scope #2). <see langword="null"/> — the default — is a
+    /// legitimate no-op: a caller with no Engineering Domain composed (most
+    /// tests of this class alone) simply gets no eager materialisation,
+    /// exactly as if this Work Package had not shipped.
+    /// </param>
     /// <exception cref="ArgumentNullException">Any required parameter is <see langword="null"/>.</exception>
-    public ProjectContext(IProjectDirectory directory, IEventBus eventBus, ISettingsProvider settingsProvider, ILogger? logger = null)
+    public ProjectContext(
+        IProjectDirectory directory, IEventBus eventBus, ISettingsProvider settingsProvider, ILogger? logger = null,
+        IEngineeringObjectRepository? repository = null)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(eventBus);
@@ -41,6 +71,7 @@ public sealed class ProjectContext : IProjectContext
         _eventBus = eventBus;
         _settingsProvider = settingsProvider;
         _logger = logger;
+        _repository = repository;
 
         _document = new SettingsDocument<CurrentProjectDto>(settingsProvider, SettingKey, "Current Project", logger);
     }
@@ -175,6 +206,15 @@ public sealed class ProjectContext : IProjectContext
     {
         var previous = Current;
         Current = project;
+
+        // `TD-88`/`WP 21.5B` Scope #2: materialised before the change is
+        // announced, so a subscriber that renders on
+        // `ProjectContextChangedEvent` (every project-scoped view) finds
+        // the subtree already live rather than paying per-node lazy loads
+        // during its own first render. A `null` project (closing) or no
+        // repository composed (most tests of this class alone) is a no-op.
+        if (project is not null && _repository is not null)
+            await _repository.MaterialiseSubtreeAsync(project.Id, cancellationToken).ConfigureAwait(false);
 
         await _eventBus.PublishAsync(new ProjectContextChangedEvent(previous, project), cancellationToken).ConfigureAwait(false);
     }

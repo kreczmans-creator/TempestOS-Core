@@ -45,8 +45,9 @@ public sealed class DocumentViewerAcceptanceTests
             classification: DocumentObjectFactoryRegistry.Specification), CancellationToken.None);
         Assert.True(created.Succeeded, created.Message);
 
-        var document = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-            .Single(o => ((IHasBusinessIdentifier)o).Identifier == identifier);
+        var documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+            .Single(entry => entry.Identifier == identifier).Id;
+        var document = (await domain.Repository.FindAsync(documentId))!;
 
         var attached = await dispatcher.DispatchAsync(new AttachDocumentCommand(
             document.Id, DocumentObjectFactoryRegistry.Document, fileName, contentType, content), CancellationToken.None);
@@ -309,8 +310,9 @@ public sealed class DocumentViewerAcceptanceTests
                 classification: DocumentObjectFactoryRegistry.ExternalReference), CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
 
-            var document = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "DOC-500");
+            var documentId = (await domain.Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+                .Single(entry => entry.Identifier == "DOC-500").Id;
+            var document = (await domain.Repository.FindAsync(documentId))!;
 
             // The metadata-only overload: an attachment that names a file
             // this platform does not hold.

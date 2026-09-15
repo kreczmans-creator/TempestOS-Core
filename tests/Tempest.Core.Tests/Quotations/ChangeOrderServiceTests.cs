@@ -111,10 +111,9 @@ public sealed class ChangeOrderServiceTests
 
         var deliverable = await deliverables.AddDeliverableAsync(projectId, "Carried deliverable");
 
-        var deliverablesBefore = (await domain.Repository.ListAllAsync())
-            .OfType<Deliverable>()
-            .Where(d => d is not IDeletable { IsDeleted: true })
-            .Count();
+        // `WP 21.5B`: list results are index rows — Kind and IsDeleted are on the row.
+        var deliverablesBefore = (await domain.Repository.ListByKindAsync("Deliverable"))
+            .Count(d => !d.IsDeleted);
 
         var changeOrder = await quotations.CreateAsync(projectId, kind: QuotationKind.ChangeOrder);
         Assert.True(changeOrder.Succeeded, changeOrder.Reason);
@@ -134,16 +133,13 @@ public sealed class ChangeOrderServiceTests
         Assert.NotNull(line.RequirementId);
 
         // No new Deliverable was created — the carried line's own id is the pre-existing one.
-        var deliverablesAfter = (await domain.Repository.ListAllAsync())
-            .OfType<Deliverable>()
-            .Where(d => d is not IDeletable { IsDeleted: true })
-            .Count();
+        var deliverablesAfter = (await domain.Repository.ListByKindAsync("Deliverable"))
+            .Count(d => !d.IsDeleted);
         Assert.Equal(deliverablesBefore, deliverablesAfter);
 
         // No milestone was created for the change order either — every one of its lines was carried.
         var milestoneNamedAfterTheChangeOrder = (await domain.Repository.ListChildrenAsync(projectId))
-            .OfType<Milestone>()
-            .Any(m => m.DisplayName == changeOrder.Quotation.Reference);
+            .Any(m => m.Kind == "Milestone" && m.DisplayName == changeOrder.Quotation.Reference);
         Assert.False(milestoneNamedAfterTheChangeOrder);
 
         await manager.ShutdownAsync();

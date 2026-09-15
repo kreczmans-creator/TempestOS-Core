@@ -397,7 +397,7 @@ public sealed class DialogFrameworkKeyboardTests
             Assert.True(result!.Succeeded);
 
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
+            Assert.Contains(created, entry => entry.DisplayName == "Palette Test Part");
         }
         finally
         {

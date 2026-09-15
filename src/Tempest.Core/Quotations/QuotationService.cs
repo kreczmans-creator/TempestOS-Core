@@ -436,10 +436,14 @@ public sealed class QuotationService : IQuotationService
 
     private async Task<Guid> FindOrCreateReferenceMilestoneAsync(Quotation quote, Guid projectId, CancellationToken cancellationToken)
     {
+        // `TD-88`/`WP 21.5B`: Kind, liveness and display name are all on the
+        // index row, so finding the existing milestone (if any) never needs
+        // to materialise a single candidate.
         var children = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
-        var existing = children
-            .OfType<Milestone>()
-            .FirstOrDefault(m => IsLive(m) && string.Equals(m.DisplayName, quote.Reference, StringComparison.Ordinal));
+        var existing = children.FirstOrDefault(entry =>
+            string.Equals(entry.Kind, MilestoneKind, StringComparison.Ordinal) &&
+            !entry.IsDeleted &&
+            string.Equals(entry.DisplayName, quote.Reference, StringComparison.Ordinal));
 
         if (existing is not null)
             return existing.Id;
@@ -496,11 +500,14 @@ public sealed class QuotationService : IQuotationService
     /// </summary>
     private async Task<string> NextReferenceAsync(int year, string prefix, CancellationToken cancellationToken)
     {
-        var existing = await _context.Repository.ListByKindAsync(Quotation.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `Reference` is a `Quotation`-own field, not on
+        // the index row.
+        var existingEntries = await _context.Repository.ListByKindAsync(Quotation.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var existing = await _context.Repository.MaterialiseAsync<Quotation>(existingEntries, cancellationToken).ConfigureAwait(false);
         var fullPrefix = $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
         var max = 0;
-        foreach (var candidate in existing.OfType<Quotation>())
+        foreach (var candidate in existing)
         {
             if (candidate.Reference.StartsWith(fullPrefix, StringComparison.Ordinal)
                 && int.TryParse(candidate.Reference.AsSpan(fullPrefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)

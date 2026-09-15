@@ -59,11 +59,11 @@ public sealed class WorkspaceChangeFeedJourneyTests
             Click(ribbon, registry, "mechanical.create");
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            IEngineeringObject? created = null;
+            EngineeringObjectIndexEntry? created = null;
             await RenderUntilAsync(window, () =>
             {
                 created = domain.Repository.ListByKindAsync("Part").GetAwaiter().GetResult()
-                    .FirstOrDefault(o => ((IHasBusinessIdentifier)o).DisplayName == originalName);
+                    .FirstOrDefault(entry => entry.DisplayName == originalName);
                 return created is not null && explorer.IsRevealed(created.Id) && EditorFor(window, originalName) is not null;
             });
 

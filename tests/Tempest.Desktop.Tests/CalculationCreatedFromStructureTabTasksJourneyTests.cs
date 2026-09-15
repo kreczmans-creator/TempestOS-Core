@@ -58,8 +58,9 @@ public sealed class CalculationCreatedFromStructureTabTasksJourneyTests
             IEngineeringObject? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListByKindAsync("Calculation").GetAwaiter().GetResult()
-                    .FirstOrDefault(o => ((IHasBusinessIdentifier)o).DisplayName == "T2 Repro Calculation");
+                var entry = domain.Repository.ListByKindAsync("Calculation").GetAwaiter().GetResult()
+                    .FirstOrDefault(o => o.DisplayName == "T2 Repro Calculation");
+                created = entry is null ? null : domain.Repository.FindAsync(entry.Id).GetAwaiter().GetResult();
                 return created is not null;
             });
 

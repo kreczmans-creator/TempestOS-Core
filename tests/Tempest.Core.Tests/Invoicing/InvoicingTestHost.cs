@@ -73,15 +73,17 @@ internal static class InvoicingTestHost
     /// <summary>The one live request whose lines carry <paramref name="completionId"/> — the request completing raised through the completion hook (`ADR-0151` §7).</summary>
     public static async Task<InvoiceRequest> RequestRaisedByCompletionAsync(ITempestHost host, Guid completionId)
     {
-        var requests = await Domain(host).Repository.ListByKindAsync(InvoiceRequest.CanonicalKind);
-        return requests.OfType<InvoiceRequest>().Single(r => r.Lines.Any(l => l.SourceId == completionId));
+        var entries = await Domain(host).Repository.ListByKindAsync(InvoiceRequest.CanonicalKind);
+        var requests = await Domain(host).Repository.MaterialiseAsync<InvoiceRequest>(entries);
+        return requests.Single(r => r.Lines.Any(l => l.SourceId == completionId));
     }
 
     /// <summary>The one request parented to <paramref name="projectId"/> — for a completion with no fixed price, whose request carries timesheet lines alone and so never names the completion itself.</summary>
     public static async Task<InvoiceRequest> SingleRequestUnderProjectAsync(ITempestHost host, Guid projectId)
     {
-        var children = await Domain(host).Repository.ListChildrenAsync(projectId);
-        return children.OfType<InvoiceRequest>().Single();
+        var childEntries = await Domain(host).Repository.ListChildrenAsync(projectId);
+        var children = await Domain(host).Repository.MaterialiseAsync<InvoiceRequest>(childEntries);
+        return children.Single();
     }
 
     /// <summary>Signs in <paramref name="id"/> with a local session's own broad permission set.</summary>

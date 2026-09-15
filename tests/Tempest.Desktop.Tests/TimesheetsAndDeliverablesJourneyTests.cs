@@ -321,8 +321,9 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             DeliverableCompletion? completion = null;
             await RenderUntilAsync(window, () =>
             {
-                completion = domain.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<DeliverableCompletion>().FirstOrDefault(c => c.DeliverableId == deliverable.Id);
+                var entries = domain.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind).GetAwaiter().GetResult();
+                completion = domain.Repository.MaterialiseAsync<DeliverableCompletion>(entries).GetAwaiter().GetResult()
+                    .FirstOrDefault(c => c.DeliverableId == deliverable.Id);
                 return completion is not null;
             });
             Assert.NotNull(completion);

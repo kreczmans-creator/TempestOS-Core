@@ -163,7 +163,12 @@ public sealed class TimesheetEntryPrompt : Border
 
     private async Task ReloadProjectsAsync(CancellationToken cancellationToken)
     {
-        var everyProject = await _domainContext.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(true);
+        // `TD-88`/`WP 21.5B`: `RateCardPin`/`ClosedOn` are `Project`-own
+        // fields, not on the index row; liveness is filtered from the
+        // index first.
+        var everyProjectEntries = await _domainContext.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(true);
+        var everyProject = await _domainContext.Repository.MaterialiseAsync<Project>(
+            [.. everyProjectEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(true);
 
         // `WP 19.7A` (Product Owner comment item 7): "the project drop-down
         // lists open projects only" — `ClosedOn is null` is

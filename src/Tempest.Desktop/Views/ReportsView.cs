@@ -237,11 +237,16 @@ public sealed class ReportsView : UserControl
     {
         var selectedProjectId = _selectedProjectId;
 
-        var everyEvidence = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
+        // `TD-88`/`WP 21.5B`: liveness and the project scope are both on
+        // the index row; `Issue`/`IssueSheetAttachmentId` are `Evidence`-own
+        // fields, so only the narrowed-down candidates are materialised.
+        var everyEvidenceEntries = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
+        var scopedEntries = everyEvidenceEntries
+            .Where(entry => !entry.IsDeleted && (selectedProjectId is null || entry.ParentId == selectedProjectId))
+            .ToList();
+        var everyEvidence = await _domainContext.Repository.MaterialiseAsync<Evidence>(scopedEntries).ConfigureAwait(true);
         var sheets = everyEvidence
-            .OfType<Evidence>()
-            .Where(e => e is not IDeletable { IsDeleted: true } && e.Issue?.IssueSheetAttachmentId is not null)
-            .Where(e => selectedProjectId is null || e.ParentId == selectedProjectId)
+            .Where(e => e.Issue?.IssueSheetAttachmentId is not null)
             .Select(e => (Evidence: e, Project: _projects.FirstOrDefault(p => p.Id == e.ParentId)))
             .OrderByDescending(row => row.Evidence.Issue!.DateUtc)
             .ThenBy(row => row.Evidence.Issue!.IssueReference, StringComparer.Ordinal)

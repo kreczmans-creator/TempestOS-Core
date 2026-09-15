@@ -79,11 +79,13 @@ public sealed class ReferenceCitationIndex : IReferenceCitationIndex
         // that could straddle a commit — the same discipline
         // `EvidenceWorkspaceView.RefreshAsync` already follows for its own
         // Evidence list.
-        var everyEvidence = await _context.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `Citations` is an `Evidence`-own field, not
+        // on the index row; liveness is filtered from the index first.
+        var everyEvidenceEntries = await _context.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var liveEvidenceEntries = everyEvidenceEntries.Where(entry => !entry.IsDeleted).ToList();
+        var everyEvidence = await _context.Repository.MaterialiseAsync<Core.Evidence.Evidence>(liveEvidenceEntries, cancellationToken).ConfigureAwait(false);
 
         var citing = everyEvidence
-            .OfType<Core.Evidence.Evidence>()
-            .Where(e => e is not IDeletable { IsDeleted: true })
             .SelectMany(e => e.Citations
                 .Where(c => string.Equals(c.Pin.Library, library, StringComparison.Ordinal)
                     && string.Equals(c.Pin.RecordId, recordId, StringComparison.Ordinal))

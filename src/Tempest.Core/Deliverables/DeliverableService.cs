@@ -184,10 +184,14 @@ public sealed class DeliverableService : IDeliverableService
 
     private async Task<Guid> FindOrCreateUnquotedMilestoneAsync(Guid projectId, DateOnly? targetDate, CancellationToken cancellationToken)
     {
+        // `TD-88`/`WP 21.5B`: Kind, liveness and display name are all on the
+        // index row, so finding the existing milestone (if any) never needs
+        // to materialise a single candidate.
         var children = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
-        var existing = children
-            .OfType<Milestone>()
-            .FirstOrDefault(m => IsLive(m) && string.Equals(m.DisplayName, UnquotedMilestoneTitle, StringComparison.Ordinal));
+        var existing = children.FirstOrDefault(entry =>
+            string.Equals(entry.Kind, MilestoneKind, StringComparison.Ordinal) &&
+            !entry.IsDeleted &&
+            string.Equals(entry.DisplayName, UnquotedMilestoneTitle, StringComparison.Ordinal));
 
         if (existing is not null)
             return existing.Id;
@@ -210,11 +214,14 @@ public sealed class DeliverableService : IDeliverableService
 
     private async Task<DeliverableCompletion?> FindExistingCompletionAsync(Guid deliverableId, CancellationToken cancellationToken)
     {
-        var all = await _context.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `DeliverableId` is a `DeliverableCompletion`-own
+        // field, not on the index row, so every live completion of this
+        // Kind still has to be materialised to check it.
+        var entries = await _context.Repository.ListByKindAsync(DeliverableCompletion.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var liveEntries = entries.Where(entry => !entry.IsDeleted).ToList();
+        var all = await _context.Repository.MaterialiseAsync<DeliverableCompletion>(liveEntries, cancellationToken).ConfigureAwait(false);
 
-        return all
-            .OfType<DeliverableCompletion>()
-            .FirstOrDefault(c => IsLive(c) && c.DeliverableId == deliverableId);
+        return all.FirstOrDefault(c => c.DeliverableId == deliverableId);
     }
 
     /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>

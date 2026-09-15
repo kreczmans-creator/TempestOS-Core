@@ -244,7 +244,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
         SupplierOperationId = supplierOperation.Id;
 
         var existingSuppliers = await _context.Repository.ListByKindAsync("Supplier", cancellationToken).ConfigureAwait(false);
-        if (existingSuppliers.FirstOrDefault(s => s is not IDeletable { IsDeleted: true }) is { } existingSupplier)
+        if (existingSuppliers.FirstOrDefault(entry => !entry.IsDeleted) is { } existingSupplier)
             await supplierOperation.LinkAsync(existingSupplier.Id, "manufacturedBy", cancellationToken).ConfigureAwait(false);
 
         // ---- Tooling / Fixture: plain "Document" objects, WP 9.5A's own Classification extension ----

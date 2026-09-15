@@ -276,8 +276,9 @@ public class CalculationsWorkspaceIntegrationTests
         var createResult = await commandDispatcher.DispatchAsync(
             new CreateCalculationObjectCommand("Calculation", "Integration Test Calculation", "CALC-IT-001"), default);
         Assert.True(createResult.Succeeded);
-        var created = (await domainContext.Repository.ListByKindAsync("Calculation"))
-            .Single(c => ((IHasBusinessIdentifier)c).Identifier == "CALC-IT-001");
+        var createdId = (await domainContext.Repository.ListByKindAsync("Calculation"))
+            .Single(entry => entry.Identifier == "CALC-IT-001").Id;
+        var created = (await domainContext.Repository.FindAsync(createdId))!;
 
         // Execute — the Material Selection Margin Template, one of the five
         // real Templates EngineeringCalculationsWorkspaceSampleModule

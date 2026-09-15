@@ -461,7 +461,7 @@ public sealed class FeatureCompletionTests
             // `TD-119`: the ribbon dispatch is fire-and-forget over real disk I/O; bounded poll
             // re-reading the real state each iteration, assertion unchanged.
             var createPartDeadline = DesktopTestHelpers.Deadline(2);
-            while (!((await domainContext.Repository.ListByKindAsync("Part")).Any(o => o is IHasBusinessIdentifier named && named.DisplayName == "WP12.4B Test Part")) && DateTime.UtcNow < createPartDeadline)
+            while (!((await domainContext.Repository.ListByKindAsync("Part")).Any(entry => entry.DisplayName == "WP12.4B Test Part")) && DateTime.UtcNow < createPartDeadline)
                 await Task.Delay(10);
 
 
@@ -473,7 +473,7 @@ public sealed class FeatureCompletionTests
             // domain repository instead, the authoritative source, rather
             // than assuming tree visibility.
             var allParts = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(allParts, o => o is IHasBusinessIdentifier named && named.DisplayName == "WP12.4B Test Part");
+            Assert.Contains(allParts, entry => entry.DisplayName == "WP12.4B Test Part");
         }
         finally
         {

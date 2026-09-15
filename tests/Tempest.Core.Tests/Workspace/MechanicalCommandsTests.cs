@@ -123,7 +123,7 @@ public class MechanicalCommandsTests
         await handler.HandleAsync(new CreateMechanicalObjectCommand("Part", "New Part", parentId: parent.Id), default);
 
         var created = (await context.Repository.ListByKindAsync("Part")).Single();
-        Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+        Assert.Equal(parent.Id, created.ParentId);
     }
 
     // ---- RenameMechanicalObjectCommand ----
@@ -249,9 +249,9 @@ public class MechanicalCommandsTests
         Assert.True(result.Succeeded);
         var parts = await context.Repository.ListByKindAsync("Part");
         Assert.Equal(2, parts.Count);
-        var copy = parts.Single(p => p.Id != source.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Part (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
+        var copy = parts.Single(entry => entry.Id != source.Id);
+        Assert.Equal(targetParent.Id, copy.ParentId);
+        Assert.Equal("Original Part (Copy)", copy.DisplayName);
     }
 
     [Fact]
@@ -278,9 +278,9 @@ public class MechanicalCommandsTests
             new CopyMechanicalObjectCommand(source.Id, "Part", null, "PART-2", "Renamed Copy"), default);
 
         Assert.True(result.Succeeded);
-        var copy = (await context.Repository.ListByKindAsync("Part")).Single(p => p.Id != source.Id);
-        Assert.Equal("Renamed Copy", ((IHasBusinessIdentifier)copy).DisplayName);
-        Assert.Equal("PART-2", ((IHasBusinessIdentifier)copy).Identifier);
+        var copy = (await context.Repository.ListByKindAsync("Part")).Single(entry => entry.Id != source.Id);
+        Assert.Equal("Renamed Copy", copy.DisplayName);
+        Assert.Equal("PART-2", copy.Identifier);
     }
 
     // ---- DuplicateMechanicalObjectCommand ----
@@ -302,8 +302,8 @@ public class MechanicalCommandsTests
         Assert.True(result.Succeeded);
         var parts = await context.Repository.ListByKindAsync("Part");
         Assert.Equal(2, parts.Count);
-        var duplicate = parts.Single(p => p.Id != source.Id);
-        Assert.Equal(parent.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = parts.Single(entry => entry.Id != source.Id);
+        Assert.Equal(parent.Id, duplicate.ParentId);
     }
 
     [Fact]

@@ -70,16 +70,16 @@ public sealed class TaskNodeProvider : IProjectExplorerNodeProvider
             : [new ProjectExplorerNode(OpenGroupNodeId, "Open", null, true, ProjectExplorerNodeType.Category)];
     }
 
-    private async Task<List<ManualTask>> LiveTasksAsync(CancellationToken cancellationToken) =>
-        (await _context.Repository.ListByKindAsync(ManualTask.CanonicalKind, cancellationToken).ConfigureAwait(false))
-        .OfType<ManualTask>()
-        .Where(IsLive)
-        .ToList();
+    private async Task<List<ManualTask>> LiveTasksAsync(CancellationToken cancellationToken)
+    {
+        var entries = await _context.Repository.ListByKindAsync(ManualTask.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var live = await _context.Repository.MaterialiseAsync<ManualTask>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+        return [.. live];
+    }
 
     private static ProjectExplorerNode ToTaskNode(ManualTask task) =>
         new(
             task.Id, task.DueDate is { } due ? $"{task.DisplayName} (due {due:yyyy-MM-dd})" : task.DisplayName, task.Kind, false,
             ProjectExplorerNodeType.Object, Identifier: task.Identifier);
-
-    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }

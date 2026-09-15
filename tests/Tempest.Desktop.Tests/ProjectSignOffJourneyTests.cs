@@ -101,8 +101,8 @@ public sealed class ProjectSignOffJourneyTests
             Quotation? changeOrder = null;
             await RenderUntilAsync(window, () =>
             {
-                changeOrder = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult()
-                    .OfType<Quotation>()
+                var childEntries = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult();
+                changeOrder = domain.Repository.MaterialiseAsync<Quotation>(childEntries).GetAwaiter().GetResult()
                     .FirstOrDefault(q => q.QuotationKind == QuotationKind.ChangeOrder);
                 return changeOrder is not null;
             });

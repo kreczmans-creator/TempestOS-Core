@@ -401,8 +401,11 @@ public sealed class HomeDashboardView : UserControl
 
     private async Task<IReadOnlyList<Quotation>> ReadOpenQuotationsAsync()
     {
-        var all = await _domainContext.Repository.ListByKindAsync(Quotation.CanonicalKind).ConfigureAwait(true);
-        return all.OfType<Quotation>()
+        // `TD-88`/`WP 21.5B`: `Status` is a `Quotation`-own field, not on
+        // the index row.
+        var entries = await _domainContext.Repository.ListByKindAsync(Quotation.CanonicalKind).ConfigureAwait(true);
+        var all = await _domainContext.Repository.MaterialiseAsync<Quotation>(entries).ConfigureAwait(true);
+        return all
             .Where(q => q is not IDeletable { IsDeleted: true } && q.Status == QuotationStatus.Sent)
             .ToList();
     }

@@ -68,7 +68,8 @@ public class ManufacturingCommandsTests
             new CreateManufacturingObjectCommand("WorkInstruction", "New Work Instruction", manufacturingOperationId: operation.Id), default);
 
         Assert.True(result.Succeeded);
-        var created = (IWorkInstruction)(await context.Repository.ListByKindAsync("WorkInstruction")).Single();
+        var createdEntries = await context.Repository.ListByKindAsync("WorkInstruction");
+        var created = (await context.Repository.MaterialiseAsync<IWorkInstruction>(createdEntries)).Single();
         Assert.Equal(operation.Id, created.ManufacturingOperationId);
     }
 
@@ -96,7 +97,8 @@ public class ManufacturingCommandsTests
             new CreateManufacturingObjectCommand("Inspection", "New Inspection", subjectId: subjectId, method: "Inspection"), default);
 
         Assert.True(result.Succeeded);
-        var created = (IVerificationActivity)(await context.Repository.ListByKindAsync("Inspection")).Single();
+        var createdEntries = await context.Repository.ListByKindAsync("Inspection");
+        var created = (await context.Repository.MaterialiseAsync<IVerificationActivity>(createdEntries)).Single();
         Assert.Equal(subjectId, created.SubjectId);
         Assert.Equal("Inspection", created.Method);
     }
@@ -136,8 +138,8 @@ public class ManufacturingCommandsTests
         await handler.HandleAsync(
             new CreateManufacturingObjectCommand("ManufacturingOperation", "Step 1", partId: Guid.NewGuid(), classification: "Operation", parentId: routing.Id), default);
 
-        var created = (await context.Repository.ListByKindAsync("ManufacturingOperation")).Single(o => o.Id != routing.Id);
-        Assert.Equal(routing.Id, ((IHasParent)created).ParentId);
+        var created = (await context.Repository.ListByKindAsync("ManufacturingOperation")).Single(entry => entry.Id != routing.Id);
+        Assert.Equal(routing.Id, created.ParentId);
     }
 
     // ---- RenameManufacturingObjectCommand ----
@@ -281,9 +283,10 @@ public class ManufacturingCommandsTests
         Assert.True(result.Succeeded);
         var operations = await context.Repository.ListByKindAsync("ManufacturingOperation");
         Assert.Equal(3, operations.Count);
-        var copy = (IManufacturingOperation)operations.Single(o => o.Id != source.Id && o.Id != targetParent.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Operation (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
+        var copyEntry = operations.Single(entry => entry.Id != source.Id && entry.Id != targetParent.Id);
+        Assert.Equal(targetParent.Id, copyEntry.ParentId);
+        Assert.Equal("Original Operation (Copy)", copyEntry.DisplayName);
+        var copy = (await context.Repository.MaterialiseAsync<IManufacturingOperation>([copyEntry])).Single();
         Assert.Equal(partId, copy.PartId);
         Assert.Equal(ManufacturingObjectFactoryRegistry.SupplierOperation, ((IHasMetadata)copy).Classification);
     }
@@ -301,7 +304,9 @@ public class ManufacturingCommandsTests
         var result = await handler.HandleAsync(new CopyManufacturingObjectCommand(((IEngineeringObject)source).Id, "WorkInstruction", null), default);
 
         Assert.True(result.Succeeded);
-        var copy = (IWorkInstruction)(await context.Repository.ListByKindAsync("WorkInstruction")).Single(w => ((IEngineeringObject)w).Id != ((IEngineeringObject)source).Id);
+        var copyEntries = await context.Repository.ListByKindAsync("WorkInstruction");
+        var copy = (await context.Repository.MaterialiseAsync<IWorkInstruction>(copyEntries))
+            .Single(w => ((IEngineeringObject)w).Id != ((IEngineeringObject)source).Id);
         Assert.Equal(operation.Id, copy.ManufacturingOperationId);
     }
 
@@ -332,8 +337,8 @@ public class ManufacturingCommandsTests
         var result = await handler.HandleAsync(new DuplicateManufacturingObjectCommand(source.Id, "ManufacturingOperation"), default);
 
         Assert.True(result.Succeeded);
-        var duplicate = (await context.Repository.ListByKindAsync("ManufacturingOperation")).Single(o => o.Id != source.Id && o.Id != routing.Id);
-        Assert.Equal(routing.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = (await context.Repository.ListByKindAsync("ManufacturingOperation")).Single(entry => entry.Id != source.Id && entry.Id != routing.Id);
+        Assert.Equal(routing.Id, duplicate.ParentId);
     }
 
     // ---- SetManufacturingObjectStatusCommand ----

@@ -755,7 +755,8 @@ public sealed class RailSurfaceContractTests
             InvoiceRequest? request = null;
             await RenderUntilAsync(window, () =>
             {
-                request = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult().OfType<InvoiceRequest>().FirstOrDefault();
+                var entries = domain.Repository.ListChildrenAsync(project.Id).GetAwaiter().GetResult();
+                request = domain.Repository.MaterialiseAsync<InvoiceRequest>(entries).GetAwaiter().GetResult().FirstOrDefault();
                 return request is not null;
             });
             requestId = request!.Id;

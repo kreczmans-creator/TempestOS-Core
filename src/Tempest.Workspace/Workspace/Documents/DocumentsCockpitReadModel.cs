@@ -51,8 +51,13 @@ internal sealed class DocumentsCockpitReadModel
 
         foreach (var kind in DocumentObjectFactoryRegistry.SupportedKinds)
         {
+            // `TD-88`/`WP 21.5B`: liveness is filtered from the index
+            // alone; every survivor is then materialised — `LiveDocuments`
+            // is a public, fully-materialised surface other Cockpit
+            // members (and `EngineeringCockpit`) already depend on.
             var byKind = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
-            documents.AddRange(byKind.Where(o => o is not IDeletable { IsDeleted: true }));
+            var liveEntries = byKind.Where(entry => !entry.IsDeleted).ToList();
+            documents.AddRange(await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false));
         }
 
         _liveDocuments = documents;

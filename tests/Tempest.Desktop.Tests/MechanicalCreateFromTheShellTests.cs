@@ -143,11 +143,11 @@ public sealed class MechanicalCreateFromTheShellTests
             Click(ribbon, registry, "mechanical.create");
 
             var firstDeadline = DesktopTestHelpers.Deadline(2);
-            IEngineeringObject? bracket = null;
+            EngineeringObjectIndexEntry? bracket = null;
             while (bracket is null && DateTime.UtcNow < firstDeadline)
             {
                 bracket = (await domain.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Part))
-                    .FirstOrDefault(o => o.BusinessIdentifier == "Bracket");
+                    .FirstOrDefault(entry => entry.DisplayName == "Bracket");
                 await Task.Delay(10);
             }
 
