@@ -16,6 +16,24 @@ what must never change**: see
 this repository?** Start with
 [`docs/academy/Contributor Learning Path.md`](docs/academy/Contributor%20Learning%20Path.md).
 
+## What the Product Does Today
+
+The paragraph above describes the runtime platform underneath; on top of
+it, TempestOS is a single-user, locally-trusted desktop system of record
+for a small engineering consultancy — not an ERP, not a PLM
+([`D-028`](docs/releases/v1.0.0/D-028%20Evidence%20is%20the%20product%2C%20calculation%20is%20where%20the%20engineer%20does%20it.md)).
+As of the `v0.21.0` release candidate it ships a
+project/quotation/deliverable/timesheet/invoicing consultancy seam,
+evidence recorded, independently checked and issued against governed
+reference data, eleven engineering calculation modules with an
+Engineering Calculators surface (Re-run/Compare), the Engineering Assets
+surfaces, documents rendered from templates, a Velopack Windows
+installer with backup and restore, and undo across commands. See
+[`PHYSICAL_REVIEW.md`](PHYSICAL_REVIEW.md) §7 for the smoke-test walk
+through each of these, and the current release's own
+[`Release Notes`](docs/releases/v0.21.0/Release%20Notes.md) for exactly
+what shipped and what is still owed.
+
 ## Current Implementation
 
 TempestOS is implemented in C# on .NET 10. This is the sole canonical,
@@ -37,14 +55,22 @@ src/
 │                            # this line used to name (Bootstrap, Hosting,
 │                            # Projects, Repositories) was deleted in full
 │                            # by WP-C (TD-110) — it is gone, not retired
-│                            # in place
+│                            # in place. Also now holds the consultancy
+│                            # domain built on `v0.17.0`'s substrates —
+│                            # Evidence, ReferenceData, Invoicing,
+│                            # Quotations, Timesheets, PurchaseOrders,
+│                            # Expenses, Deliverables and eleven
+│                            # engineering Calculations.Modules — see
+│                            # `docs/releases/v1.0.0/WorkPackages.md`.
 ├── Tempest.Workspace/       # The shared Engineering Workspace domain layer
 │                            # (WorkspaceManager, IWorkspace, all six
 │                            # Engineering Disciplines' commands/node
 │                            # providers) as its own class library
 │                            # (WP 17.2B). Both presentation layers below
 │                            # depend on it; it depends on Tempest.Core
-│                            # alone.
+│                            # alone. Also now holds the consultancy
+│                            # read models and screens (Evidence,
+│                            # Projects, Tasks, Kpi).
 ├── Tempest.Harness/         # TempestOS's Internal Engineering Harness
 │                            # (ADR-0101, amended WP 17.2B) — a console exe
 │                            # (WorkspaceShell/Program.cs) over
@@ -52,7 +78,7 @@ src/
 │                            # its own — a fast, scriptable verification
 │                            # tool, not TempestOS's application.
 ├── Tempest.Desktop/         # TempestOS's shipped desktop application
-│                            # (ADR-0092, ADR-0094) — Avalonia 11.2.3,
+│                            # (ADR-0092, ADR-0094) — Avalonia 11.3.20,
 │                            # the graphical Engineering Workspace: Ribbon,
 │                            # Object Editors, Docking, Digital Thread graph,
 │                            # Command Palette, Undo/Redo, Macros. This is
@@ -91,11 +117,14 @@ archive/docs-2026-09/. What remains live is deliberately smaller:
 - **`docs/architecture/`** — the seventeen standing architecture documents
   the running code still depends on (Runtime Host, Host Lifecycle,
   Startup/Shutdown Sequence, Command Framework, Event Bus, and more).
-- **`docs/security/`** — the threat model and security principles the
-  platform is designed against.
+- **`docs/security/`** — `Security Posture.md` is the current statement
+  for `v1.0` (`WP 21.5E`, brought forward); the threat model and security
+  principles it replaces for that purpose stay in the tree, each with a
+  pointer to it, as the correct history of how TempestOS got here.
 - **`docs/releases/`** — `FOUNDATION.md` (the permanent constitution),
   `docs/releases/v1.0.0/WorkPackages.md` (the current programme), and one
-  `Release Notes.md` per shipped release.
+  `Release Notes.md` per shipped release (a release candidate carries its
+  own before it ships, marked as a candidate in its own Status line).
 - **`BACKLOG.md`** (repository root) — the live technical-debt list a user
   could still notice, each row mapped to the Work Package that owns it.
 - **`CONTRIBUTING.md`** (repository root) — how a Work Package becomes a

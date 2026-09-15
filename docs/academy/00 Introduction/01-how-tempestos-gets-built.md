@@ -254,7 +254,11 @@ model, invoicing and the desktop as sketched — chapters `65`–`69`),
 and `v0.20.0` (the technical-debt tranche, chapters `74`–`76`). At the
 time of writing all three were **release candidates** on their own
 branches, under the Product Owner's manual test, and `v0.21.0` was a plan
-with no code. Two things in those chapters are worth reading for the
+with no code. **By the end of that same day, 2026-09-15, `v0.21.0` was
+itself a release candidate with real, merged code** — seventeen of the
+plan's twenty-two Work Packages, per `docs/releases/v0.21.0/Release
+Notes.md` — added here as the honest correction, not a rewrite of what
+was written at the time. Two things in those chapters are worth reading for the
 stages alone: `06 Engineering Standards/10-the-product-owners-test-as-the-source-of-record.md`,
 on what stage 7 looks like when the Product Owner's test finds the
 defects the gate did not, and `73-the-technical-debt-rationalisation-and-the-overnight-tranche.md`,
