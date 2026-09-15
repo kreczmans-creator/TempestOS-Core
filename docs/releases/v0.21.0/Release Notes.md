@@ -1,7 +1,6 @@
 # TempestOS v0.21.0 — Release Notes
 
-**Status: candidate — `release/v0.21.0` at `b033651d` (the last code
-commit — the second `WP 21.7C` follow-up merge; this document is committed on top of it), cut from the `v0.20.0`
+**Status: candidate — the overnight acceptance campaign's head on `claude/tempestos-v1-final-acceptance-19hka8` (2026-09-15/16; the exact SHA, gate figures and CI runs are in `PRODUCT_OWNER_ACCEPTANCE.md` and `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md` at the repository root), built on `release/v0.21.0` at `a4ab1915` (`b033651d` the last code commit of the tranche, plus its release documents), cut from the `v0.20.0`
 candidate (`88311649`) on 2026-09-15 at the Product Owner's instruction
 to close every technical weakness named in the lead's assessment of that
 afternoon.** Nothing in this document is certification. `v0.20.0` stays
@@ -20,10 +19,32 @@ real-shell run in CI and the first live Xero authorisation are owed, not
 shipped — each waits on the Product Owner (Warnings, last item). See
 `Execution Plan.md` for the packages and their waves.
 
+**The overnight acceptance campaign (2026-09-15/16) on top of the tranche**
+took the candidate through the remaining technically actionable work
+without reopening anything deliberately deferred: the Xero authorisation
+path a user can actually take (`WP 21.6P` — three defects that made the
+first live authorisation impossible from the product, fixed with
+thirteen tests and driven in the real application), docking's keyboard
+closure and the real-application checks of steps 1–2 (`WP 21.0K`), a
+real-process, real-input acceptance journey on Linux/Xvfb (`WP 21.5C`,
+Linux variant), permanent documentation brought into factual alignment
+with the product (`WP 21.9.1`), the release-quality evidence gathered in
+one place (`WP 21.9.1`), a Linux secrets-directory mode fix, the CI
+cancel-in-progress fix for release branches, the Academy chapters merged,
+and the backlog audited row by row (7 of 30). Docking steps 3–4 stay
+gated on the Product Owner's `ADR-0153` review; the live Xero sign-in
+itself and the Windows installer run stay with the Product Owner.
+
 ## What shipped, by Work Package
 
 | Work Package | Delivered | Merged |
 |---|---|---|
+| `WP 21.6P` The Xero authorisation path a user can actually take (overnight campaign) | Three defects found by reading the morning's `WP 21.6` path against the code, each **Verified** before the fix: **Authorise** only re-read the stored state (`OAuthAuthoriser.AuthoriseAsync` had no caller in the product); Settings stored the client id under `Invoicing:ClientId` while the authoriser reads `Invoicing:<Provider>:ClientId` (`ADR-0151`); the connector chosen in Settings was saved to the settings store but the host chose from configuration only, so it never took effect. Fixed: `IAuthorisableConnector` (Xero and QuickBooks implement it; the Fake deliberately not); Settings stores credentials under the provider's own key, shows and migrates the legacy value; the host honours the persisted choice when configuration is silent; **Authorise** saves, then runs the interactive sign-in for an unauthorised real provider with a five-minute wait and every outcome in words, and says *restart* when the chosen connector is not the running one (the Fake's own "Authorised." had been shown for a never-signed-in Xero — caught only in the real application); a browser that cannot open is a result, not an exception. 13 tests. Driven in the real application under Xvfb up to the token exchange (`WP21.6P Xero Authorisation Path Report.md`, `evidence/xero/`). | `709d01a4` |
+| `FileSecretStore` on Linux/macOS: the `0700`/`0600` promise holds for an existing directory or file | `Directory.CreateDirectory(path, mode)` and `UnixCreateMode` apply only on creation; a pre-existing secrets directory stayed `0755`. `SetUnixFileMode` after both. Found by the store's own test (`SetAsync_OnNonWindows_RestrictsTheSecretsDirectoryAndFile_ToTheCurrentUserOnly`) running on Linux for the first time; the shipped Windows build uses DPAPI and is unaffected. | `69668268` |
+| `WP 21.9.1` Documentation alignment | `VISION.md` provenance-dated with a "Where the product stands at the v1.0 release candidate" section (the "zero Engineering Modules" present tense corrected, history kept); `README.md` what-the-product-does-today; `Product Roadmap.md` and `Future Capability Register.md` dated review notes (`FCR-0032`/`0051`/`0052`/`0053` delivered-by notes); Academy landing corrections; 166 links checked, 0 broken. 21 drift rows in `WP21.9.1 Documentation Alignment Report.md`. | `aa91273c` |
+| `WP 21.9.1` Release-quality evidence | Governance 5/5; every workflow `uses:` SHA-pinned (19 of 19); Dependabot covers NuGet and Actions; the six third-party notices present; backup created **through the real OS picker under Xvfb** and verified with `sqlite3` (`integrity_check` ok); restore refused while a project is open; a project survives close and relaunch; zero exceptions in the logs of two launches; the installer's `Setup.exe` **has never been produced by the pipeline** (`release.yml` fires on tags and the newest tag is `v0.18.0`) — Windows-only, for the Product Owner. `WP21.9.1 Release Quality Evidence.md`, `evidence/quality/`. | `2a2d1a33` |
+| CI: `cancel-in-progress` off for `release/*` | Runs #420–#427 on this branch were each cancelled by the next push, so seven consecutive heads were never gated; a superseded run on any other ref is still cancelled. | `3d256792` |
+| Academy: chapters 42–64, the glossary, the index and the candidate postscripts | Docs only, from `claude/academy-docs-review-completion-iqzgwv`; no file overlap with the tranche. | `fb0c8f8a` |
 | `WP 21.3B` Commercial edges: expenses, purchase orders, VAT on lines, a second principal signs in to check | `ProjectExpense` — date, description, a closed category (Travel/Subsistence/Materials/Subcontract/Other), net and VAT amounts, a receipt attachment, billable, `InvoicedBy` set once — recorded from Business → Timesheets ("Record expense…" beside Record) and the project's own Details tab; a billable expense becomes an invoice request line exactly as a timesheet entry does, and shows in Business → Invoices' own "Available to invoice". `PurchaseOrder` — `PO-<yyyy>-<nnn>` (the identical scan-the-store discipline as `Q-`/`CO-`), a supplier, lines with net and VAT, Draft → Issued → Received → Closed \| Cancelled, one act ("Record as expenses") turning a received order's own lines into project expenses with no ledger of its own; Business gains a **Purchase orders** entry, grouped New/Issued/Received/Closed, with New Purchase Order…/Add line…/Issue/Receive/Close/Cancel/Record as expenses. `VatRate` (Standard 20%, Reduced 5%, Zero, Exempt, Out of scope — the enum's own default, so every line recorded before this Work Package reads unchanged) on `QuotationLine`/`InvoiceRequestLine`, each with a computed VAT amount; `Quotation`/`InvoiceRequest` gain net/VAT/gross totals; Settings → Organisation identity carries the consultant's own default rate for a new line. The Xero/Fake connector seam maps the five rates to Xero's own tax types (`OUTPUT2`/`RROUTPUT`/`ZERORATEDOUTPUT`/`EXEMPTOUTPUT`/`NONE`) and refuses a send whose rate cannot be expressed, naming the line. Settings → Principal becomes a real sign-in: **Switch person…** lists every released person the People directory (the `IPeopleDirectory` seam, standing in for `WP 20.10F` where it has not yet merged) carries a known identity for, confirms by name with no password, and publishes them as the session's own principal from that moment on; the Evidence Check refusal for a checker who is also the recorder now names the fix directly ("An independent check needs a second person; switch person first."). `ADR-0150` addendum. | `wp/21.3B` → `release/v0.21.0` |
 | `WP 21.2A` Documents from the templates: invoice, purchase order, timesheet, technical report, drawing register, progress report | `IDocumentRenderer<TModel>` — one contract every document renderer (the six new ones, and `QuotationSheetRenderer`/`IssueSheetRenderer`, retrofitted) satisfies — and `DocumentExporter`, naming a file `<reference>-<template>.pdf` through the same file-picker path the Quote tab's own Export already uses. Six new renderers against the design system's own template folders (`docs/design/templates/README.md`'s own mapping, extended): the invoice (net only — `WP 21.3B`'s VAT fields are not in this Work Package's own base), the weekly timesheet, the technical report (a Document's own revisions and content, split into sections by leading `#` markers), the drawing register and the progress report (both A4 landscape — `DocumentTemplate` gained landscape page geometry, additive and backward compatible with every existing portrait caller), and the purchase order (model-less, against a fixture only — the real `PurchaseOrder` Kind, `WP 21.3B`, lives only under `src/Frozen/` in this Work Package's own base, so no live "Export PO" button exists). The design system's three type families (Chakra Petch, Inter, Space Mono) and the horizontal navy lockup are embedded as `Tempest.Desktop` resources and loaded through `SKTypeface.FromStream`/`SKBitmap.Decode` — no running Avalonia application needed — closing `WP 20.10G`'s own disclosed "still the platform default face, still no logo" gap; Chakra Petch and Space Mono draw real, correctly-extractable PDF text (verified — and a genuine bug found and fixed in the test-only `PdfTextExtractor` along the way: it merged every embedded font's own CID space into one dictionary, corrupting text extraction once more than one custom font could appear in the same document), Inter stays the platform default (SkiaSharp's PDF backend does not embed a variable-format `SKTypeface` as extractable text at all — verified empirically, not assumed). Settings → Organisation gained a **Bank details** section (sort code, account number, account name, IBAN) for the invoice's own "Payment details" section. Six buttons wired where a user expects them: Business → Invoices **Export invoice**, Business → Timesheets **Export week**, project → Documents **Export register**, a Document's editor **Export as report**, Projects Dashboard **Export progress report** (every open project now lists there, not only Blocked/At risk/Ready to invoice). `PHYSICAL_REVIEW.md` §7e. | *(pending — `wp/21.2A`, not yet merged)* |
 | `WP 21.2B` The Engineering Assets surfaces: the bracket verification artefact filled in from the Desktop, calculation traces rendered, the merged capability's own area (`TD-165`, `TD-160`) | Ships on the Product Owner's "close all of those" instruction against the gap list that named this surface's absence; their own decision to park it until the release candidate, and the RC-time call, stand if either is later withdrawn. Engineering → Modules → **Engineering Assets** (`EngineeringAssetsView.cs`): five tabs — Calculation packs, Templates, Verification artefacts (each a filtered list with Open, its own detail showing `AssetApplicability` and its own governance/validation, every finding named by its own rule code), Engineering evidence (every item any of the three cite, flattened, naming which record cites it), and Bracket verification. The last is `TD-165`: a form over `GovernedBracketCheckRequest` (a material picker; applied load, section area, member length, mass limit, each with its own unit picker) — **Check** runs the identical `GovernedBracketCheckService` the unchanged Engineering Calculations surface already uses, and **Record verification artefact** is the first Desktop caller of `BracketEngineeringRecordService.RecordCalculationAsync`/`.RecordVerificationAsync`, writing into an existing calculation pack and verification artefact picked from the two libraries' own live records, so the artefact then lists under Verification artefacts at its own new standing. `TD-160`'s other named gap closes alongside it: a calculation pack's own **Trace** tab renders `EngineeringTraceRegister.CalculationTrace` (inputs traced to the governed references they pin, the template used, the outputs), read-only, exported as text through the file picker. Proven end to end through the real `MainWindow` by `tests/Tempest.Desktop.Tests/EngineeringAssetsJourneyTests.cs`; the shared `AutomationNameCoverageTests` and `LayoutWalkTests` structural walks extended to the new tree entry. | *(pending — `wp/21.2B`, not yet merged to this branch)* |
@@ -219,6 +240,35 @@ counts from the gate; the effort from `Execution Plan.md` §5).
   (the real-shell CI run, after `21.0C`), `WP 21.6` (the first live Xero
   authorisation, with the Product Owner at the keyboard). The Summary
   above names them as owed, not shipped.
+
+- **One Desktop test diverges on Linux only (the overnight campaign's
+  full runs on Linux):** `StatusBarCollapseTests.ALongerAreaTitle_AfterTheFirstLayout_StillCollapsesTheHint_AndTheMessageAreaKeepsItsWidth`
+  fails deterministically under the Linux headless host ("With a short
+  AREA title everything fits, so nothing should be hidden" — at 1,180 px the
+  hint segment is already hidden), while the same test is green on the
+  Windows runners (CI runs 430 and 433 on `a4ab1915`). Cause **Inferred**,
+  not proven: the container carries only the DejaVu system families, so a
+  text run that falls back to a system font measures wider than on
+  Windows. Not a product defect on the supported platform; the real Linux
+  application at 1,600 px shows the hint. Recorded, not filed — Linux is
+  advisory (§2a of `PHYSICAL_REVIEW.md`).
+- **Ten Core tests are Windows-only and fail on Linux by construction:**
+  six spawn `powershell` (Windows PowerShell, not `pwsh`) for the release
+  and dependency-scan scripts, four exercise DPAPI
+  (`WindowsDpapiSecretStore`, and `AStoredToken_IsNeverWrittenToTempestDb`
+  which constructs it). Green on the Windows runners. A conditional skip
+  would make a Linux run read 0 failed; not changed tonight (the gate is
+  Windows).
+- **The installer has never been built by the pipeline** (`WP 21.9.1`
+  quality evidence, item 3): `package-installer.ps1` and its eight unit
+  tests are real, but `release.yml` only runs on a `v*.*.*` tag and the
+  newest tag is `v0.18.0`, before `WP 21.5A`. Producing, installing and
+  updating a `Setup.exe` is Windows work for the Product Owner (or a
+  `-rc` tag) — `PRODUCT_OWNER_ACCEPTANCE.md` §3 and §5.
+- **The first live Xero authorisation is still owed** (`WP 21.6`): `WP 21.6P`
+  made the path exist and proved it up to the token exchange with a
+  simulated redirect; the sign-in against the Product Owner's organisation
+  needs their Xero app credentials and consent — `PHYSICAL_REVIEW.md` §7k.
 
 ## Related
 
