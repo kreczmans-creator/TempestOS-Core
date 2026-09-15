@@ -245,9 +245,14 @@ public sealed class QuotesView : UserControl
         var quote = row.Quotation;
         var rows = new StackPanel { Spacing = DesignTokens.SpaceXs };
 
+        // `WP 20.10E` (Product Owner finding D18): a change order's own
+        // kind is shown alongside its reference — "CO-2026-001 · change
+        // order" — so the group it sits in never has to be guessed at.
+        var referenceLabel = quote.QuotationKind == QuotationKind.ChangeOrder ? $"{quote.Reference} · change order" : quote.Reference;
+
         rows.Children.Add(new TextBlock
         {
-            Text = $"{quote.Reference} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
+            Text = $"{referenceLabel} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
