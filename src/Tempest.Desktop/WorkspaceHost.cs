@@ -214,7 +214,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         ProjectDirectory = new ProjectDirectory(domainContext);
         var hostLogger = (Tempest.Core.Logging.ILogger)host.Services!.GetService(typeof(Tempest.Core.Logging.ILogger));
-        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider, hostLogger);
+        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider, hostLogger, domainContext.Repository);
         ProjectContext = projectContext;
         var shellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider, hostLogger);
         ShellNavigator = shellNavigator;
