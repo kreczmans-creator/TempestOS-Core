@@ -9,6 +9,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
+using Tempest.Core.Quotations;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
@@ -66,6 +67,18 @@ internal sealed record ComposedViews(
     RateCardPicker RateCardPicker,
     Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog OrganisationCatalog,
     Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog RateCardCatalog,
+    // `WP 20.10A`: moved up from `BuildCoordinators` (see `BuildViews`'
+    // own remarks at its construction) so `ProjectDetailsView`, built in
+    // this same phase, can be threaded the identical instance
+    // `WorkspaceViewCoordinator` (built next, in `BuildCoordinators`) uses.
+    ProjectCommercialEditorSupport CommercialSupport,
+    // `WP 20.10F` (Product Owner finding D8): the People library's own
+    // catalogue and its "Add person…" prompt, threaded into
+    // `BuildCoordinators` exactly as `OrganisationCatalog`/`RateCardCatalog`
+    // and `OrganisationPicker`/`RateCardPicker` already are, for the
+    // requirement Owner section's own `RequirementOwnerEditorSupport`.
+    Tempest.Core.People.IPersonCatalog PersonCatalog,
+    PersonAddPrompt PersonAddPrompt,
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
@@ -269,10 +282,59 @@ internal sealed partial class MainWindowComposer
             : "(in-memory persistence — no file on disk)";
         var configurationProvider = (Tempest.Core.Configuration.IConfigurationProvider)services.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
 
+        // Moved up from this method's own Evidence section, below, so
+        // Settings → Data's own "Back up now…"/"Restore from backup…" can
+        // reuse the identical picker (real `AvaloniaFilePicker`, or a
+        // test's `evidenceFilePickerOverride`) rather than a second
+        // instance a test's own stub would never reach — depends on
+        // nothing but this method's own parameters, so moving it earlier
+        // changes no behaviour.
+        var evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(window);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 4): Settings → Data's own
+        // backup and restore. `persistenceDatabasePath` is `null` for the
+        // identical reason `persistenceRootPath` above falls back to a
+        // description rather than a path — an in-memory test store has no
+        // database file to back up — and `SettingsView` hides the whole
+        // section on `null`. `auditRecorder` mirrors every other
+        // Platform-Service resolution in this method.
+        var persistenceDatabasePath = queryableStore is Tempest.Core.Persistence.SqlitePersistenceStore sqliteStoreForBackup
+            ? sqliteStoreForBackup.DatabasePath
+            : null;
+        var auditRecorder = (Tempest.Core.Audit.IAuditRecorder)services.GetService(typeof(Tempest.Core.Audit.IAuditRecorder));
+
+        // A restore needs the live store closed before it moves any file
+        // (`BackupService`'s own restore precondition) — the one piece of
+        // this Work Package's brief `SettingsView` itself cannot do, since
+        // it never holds a reference to `host`. Captured as a closure here,
+        // where `host` is in scope, rather than threading `WorkspaceHost`
+        // itself into a view that otherwise has no reason to know it
+        // exists.
+        Task PrepareForRestartAsync() => PrepareHostForRestartAsync(host);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 1): Settings → Updates. Built
+        // unconditionally — even a `dotnet run`/harness-style session shows
+        // the section, honestly reporting "not installed... unavailable"
+        // (`IUpdateService.IsInstalled`), the same disclosed-rather-than-
+        // hidden convention `DescribeAccountsReading` already uses for an
+        // unauthorised connector. Constructing `VelopackUpdateService`
+        // itself makes no network call — only `CheckForUpdateAsync` does,
+        // and that runs only when `CheckForUpdatesOnLaunch` is
+        // <see langword="true"/> (off by default) or the operator presses
+        // "Check now".
+        var updateService = new Tempest.Desktop.Startup.VelopackUpdateService();
+        var updateAvailability = new Tempest.Desktop.Startup.UpdateAvailability();
+
+        if (session.UserSettings.CheckForUpdatesOnLaunch)
+            _ = CheckForUpdatesInBackgroundAsync(updateService, updateAvailability);
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
-            accountsReadModel, accountsRefreshService);
+            accountsReadModel, accountsRefreshService,
+            organisationIdentity: session.OrganisationIdentity,
+            persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
+            prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -338,7 +400,6 @@ internal sealed partial class MainWindowComposer
         var kindEditorDeclarations = new KindEditorDeclarationRegistry();
         KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
 
-        var evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(window);
         var citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
         var subjectPicker = new SubjectPicker(composition.DomainContext);
@@ -380,10 +441,68 @@ internal sealed partial class MainWindowComposer
         var componentCatalog = (Tempest.Core.Components.IComponentCatalog)services.GetService(typeof(Tempest.Core.Components.IComponentCatalog));
         var processCatalog = (Tempest.Core.Manufacturing.IProcessCatalog)services.GetService(typeof(Tempest.Core.Manufacturing.IProcessCatalog));
 
+        // `WP 20.10F` (Product Owner finding D8): the People library's own
+        // catalogue, resolved the identical way every other reference
+        // library not exposed directly on `host` already is.
+        var personCatalog = (Tempest.Core.People.IPersonCatalog)services.GetService(typeof(Tempest.Core.People.IPersonCatalog));
+
         var organisationPicker = new OrganisationPicker(organisationCatalog);
         var rateCardPicker = new RateCardPicker(rateCardCatalog);
-        var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog);
+
+        // `WP 19.0A` (`ADR-0150`): the project Commercial section's own
+        // pickers — the real `OrganisationPicker`/`RateCardPicker`
+        // overlays just above, threaded into the Object Editor's own
+        // declaration-driven Commercial section exactly as `evidenceSupport`
+        // threads Evidence's own pickers into its declared sections.
+        // `WP 19.2B`: the same section's own name resolvers, over the
+        // identical real `IOrganisationCatalog`/`IRateCardCatalog` the
+        // pickers themselves already read from — the Commercial section
+        // shows the client's organisation name and the rate card's own
+        // code, never the bare record id either stores.
+        //
+        // `WP 20.10A`: built here now, ahead of `WorkspaceViewCoordinator`
+        // (moved up from `BuildCoordinators`, where it used to live, under
+        // the identical local name) — the project workspace's own new
+        // Details tab (`projectDetailsView`, below) needs it too, and that
+        // view is built in this phase, not the next.
+        var commercialSupport = new ProjectCommercialEditorSupport(
+            ct => organisationPicker.PickAsync(ct),
+            ct => rateCardPicker.PickAsync(ct),
+            () => host.SessionPrincipal?.IdentityId,
+            async (organisationId, ct) => (await organisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
+            async (pin, ct) => await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
+                ? (card.Definition.Code, card.Definition.Name)
+                : null);
+
+        // `WP 20.10A` (D12): Open Details, from the Record dialog's own
+        // inline "no rate card pinned" note — closes that dialog (already
+        // done by the caller) and lands on the named project's own Details
+        // tab, the identical path `OpenQuoteAsync` below already
+        // establishes for a quotation's own "opens right up" destination.
+        async Task OpenProjectDetailsAsync(Guid projectId)
+        {
+            await host.ShellNavigator!.OpenProjectAsync(projectId, ProjectArea.Details).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
+
+        var personAddPrompt = new PersonAddPrompt(personCatalog, host.ReferenceReview!);
+        var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog, OpenProjectDetailsAsync);
         var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
+
+        // `WP 20.10A` (Product Owner findings D2/D12/T1): the project
+        // workspace's own Details tab — the project's own identity and
+        // Commercial section, reachable directly rather than only through
+        // the generic Object Editor (`T1`: "This doesnt exist at all. Not
+        // seen anywhere and cannot navigate to it anywhere"). Built here,
+        // externally, for the identical reason `deliverablesView`/
+        // `projectQuoteView`/`evidenceWorkspace` are (needs collaborators
+        // `ProjectWorkspaceView` does not otherwise depend on).
+        var projectDetailsView = new ProjectDetailsView(
+            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, commercialSupport)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // Fire-and-forget at the view boundary, but never silently: an open
         // that throws is reported like any other failed action, so "it
@@ -449,9 +568,15 @@ internal sealed partial class MainWindowComposer
         // defines its initial deliverables and requirements once accepted,
         // and exports as a PDF through the same SkiaSharp path the issue
         // sheet already established (comment item 9).
-        var newProjectPrompt = new NewProjectPrompt();
+        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker);
         var projectPicker = new ProjectPicker(projectDirectory);
         var quotationSheetRenderer = new QuotationSheetRenderer();
+        // `WP 20.10G` (threaded at merge): both sheet renderers read Settings → Organisation
+        // at render time when a caller supplies no identity, so the footer carries
+        // what the user configured rather than the Tempest defaults.
+        quotationSheetRenderer.IdentityProvider = () => session.OrganisationIdentity.ToIdentity();
+        if (host.IssueSheetRenderer is Tempest.Desktop.IssueSheets.IssueSheetRenderer issueSheetRendererForIdentity)
+            issueSheetRendererForIdentity.IdentityProvider = () => session.OrganisationIdentity.ToIdentity();
         string IssuerName() => host.SessionPrincipal?.Identity.DisplayName ?? "TempestOS";
         string ApplicationVersionText() => MainWindow.DescribeBuild(services);
 
@@ -504,7 +629,7 @@ internal sealed partial class MainWindowComposer
 
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
             referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -532,7 +657,7 @@ internal sealed partial class MainWindowComposer
         // control can only ever be parented once.
         var referenceDataLibrariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
             referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -544,13 +669,22 @@ internal sealed partial class MainWindowComposer
         // 19.5C`) is already registered in DI with zero prior UI
         // consumers.
         var projectLifecycleService = (Tempest.Core.Projects.IProjectLifecycleService)services.GetService(typeof(Tempest.Core.Projects.IProjectLifecycleService));
-        var signOffView = new ProjectSignOffView(projectLifecycleService, composition.DomainContext, () => host.ProjectContext!.Current?.Id);
+
+        // `WP 20.10E` (Product Owner finding D18): the Sign off tab's own
+        // open-work list and its "Raise change order…" — the identical
+        // `IQuotationService` `ProjectQuoteView`/`QuotesView` reach through
+        // commands, called directly here exactly as `IProjectLifecycleService`
+        // itself already is, above.
+        var quotationServiceForSignOff = (IQuotationService)services.GetService(typeof(IQuotationService));
+        var signOffView = new ProjectSignOffView(
+            projectLifecycleService, quotationServiceForSignOff, composition.DomainContext, () => host.ProjectContext!.Current?.Id,
+            openObjectRightUp, openQuote);
         signOffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var projectWorkspace = new ProjectWorkspaceView(
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
-            evidenceWorkspace, signOffView, composition.DomainContext);
+            evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext);
 
         // `WP 19.7A` (`po-comments.md` item 6 delta (a)): the Tasks
         // read model — a "sibling reader" over the identical persistence
@@ -603,12 +737,71 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
             tasksReadModel, projectStatusReadModel, accountsReadModel);
+    }
+
+    /// <summary>
+    /// Closes <paramref name="host"/>'s own Workspace and disposes its
+    /// Runtime Host — the same two calls <see cref="App.OnFrameworkInitializationCompleted"/>'s
+    /// own <c>ShutdownRequested</c> handler makes on an ordinary exit
+    /// (`ADR-0064`), run early and on demand instead, so
+    /// <see cref="BackupService.RestoreFromBackup"/> never moves or
+    /// overwrites a database file <see cref="Tempest.Core.Persistence.SqlitePersistenceStore"/>
+    /// still holds open (`WP 21.5A`, `WP RC.0A` scope item 4). Threaded
+    /// into <see cref="SettingsView"/> as a plain <c>Func&lt;Task&gt;</c>
+    /// closure (see <see cref="BuildViews"/>) rather than a reference to
+    /// <see cref="WorkspaceHost"/> itself, which that view otherwise has no
+    /// reason to know exists.
+    /// </summary>
+    private static async Task PrepareHostForRestartAsync(WorkspaceHost host)
+    {
+        await host.ShutdownAsync().ConfigureAwait(false);
+        await host.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Settings → Updates' own on-launch check (`WP 21.5A`, `WP RC.0A`
+    /// scope item 1) — run only when <c>UserSettings.CheckForUpdatesOnLaunch</c>
+    /// is <see langword="true"/> (off by default), and entirely fire-and-
+    /// forget: a launch never waits on a network call to a release feed,
+    /// and a feed failure is not something a launch should ever surface as
+    /// an error (<see cref="Tempest.Desktop.Startup.IUpdateService.CheckForUpdateAsync"/>
+    /// already reports one as "nothing found"; this is defence in depth
+    /// only). The result lands in <paramref name="availability"/>, which
+    /// <see cref="SettingsView"/> reads — without itself re-checking the
+    /// feed — the next time the operator opens Settings.
+    /// </summary>
+    /// <remarks>
+    /// <c>internal</c> rather than <c>private</c> (`InternalsVisibleTo`,
+    /// <c>Tempest.Desktop.Tests</c>) purely so
+    /// <c>MainWindowComposerUpdateCheckTests</c> can exercise this exact
+    /// method directly against a fake <see cref="Tempest.Desktop.Startup.IUpdateService"/>
+    /// — this method's own caller (<see cref="BuildViews"/>'s
+    /// <c>if (session.UserSettings.CheckForUpdatesOnLaunch)</c> gate) is
+    /// not otherwise testable through the real window: a real
+    /// <see cref="Tempest.Desktop.Startup.VelopackUpdateService"/> always
+    /// reports "not installed" in any test process (no test ever calls
+    /// <c>Velopack.VelopackApp.Build().Run()</c>), which makes "the check
+    /// ran and found nothing" and "the check never ran" look identical from
+    /// Settings' own status text alone.
+    /// </remarks>
+    internal static async Task CheckForUpdatesInBackgroundAsync(
+        Tempest.Desktop.Startup.IUpdateService updateService, Tempest.Desktop.Startup.UpdateAvailability availability)
+    {
+        try
+        {
+            availability.AvailableVersion = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // See this method's own remarks — an on-launch check must never
+            // surface as an unobserved exception either.
+        }
     }
 }
 

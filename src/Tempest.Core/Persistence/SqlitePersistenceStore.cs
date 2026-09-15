@@ -876,6 +876,27 @@ public sealed class SqlitePersistenceStore
     {
         try
         {
+            // `WP 21.5A` (`WP RC.0A`'s own scope item 3): if a database
+            // already exists at this path and its recorded
+            // `schema_info.version` is behind this build's own
+            // `SchemaVersion`, back it up — through the online backup API,
+            // never a plain file copy of a database that may still be in
+            // WAL mode — before the migration DDL below runs. Checked
+            // ahead of opening `connection` (below), whose own
+            // `ReadWriteCreate` mode would otherwise create an empty file
+            // here and make `File.Exists` below always true.
+            if (File.Exists(_databasePath) && TryReadExistingSchemaVersion(_databasePath) is int existingVersion && existingVersion < SchemaVersion)
+            {
+                var backupsFolder = Path.Combine(_rootPath, BackupService.BackupsFolderName);
+                var backupFileName = BackupService.BuildPreMigrationBackupFileName(existingVersion, DateTimeOffset.UtcNow);
+                var backupPath = Path.Combine(backupsFolder, backupFileName);
+
+                var outcome = BackupService.CreateBackup(_databasePath, backupPath, _logger);
+
+                _logger?.Information(
+                    $"Pre-migration backup '{outcome.BackupPath}' created ({outcome.TableCount} table(s)) before upgrading '{_databasePath}' from schema version {existingVersion} to {SchemaVersion}.");
+            }
+
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
             ApplyPragmas(connection);
@@ -940,6 +961,55 @@ public sealed class SqlitePersistenceStore
         {
             throw new PersistenceStoreUnavailableException(
                 $"Failed to open or initialise the persistence database '{_databasePath}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Reads the schema version an existing database file at
+    /// <paramref name="databasePath"/> already recorded, or
+    /// <see langword="null"/> when the file has no readable
+    /// <c>schema_info</c> row — a database this build has never opened
+    /// before `ADR-0144` existed, or one from a build old enough to predate
+    /// <c>schema_info</c> entirely. Opened read-only, and independently of
+    /// <see cref="_connectionString"/>'s own <c>ReadWriteCreate</c> mode, so
+    /// this read can never itself be what creates the file it is checking
+    /// for (`WP 21.5A`).
+    /// </summary>
+    private static int? TryReadExistingSchemaVersion(string databasePath)
+    {
+        try
+        {
+            // `Pooling = false`, deliberately, unlike every other
+            // connection this class opens: `Microsoft.Data.Sqlite` pools
+            // connections per exact connection string, and this one — a
+            // one-off, read-only pre-check, never reused — is a different
+            // string from `_connectionString` (below), the only one
+            // `DisposeAsync` clears the pool for. A pooled connection here
+            // would survive this method's own `using` disposal at the
+            // native-handle level, leaving `databasePath` still locked
+            // after the owning `SqlitePersistenceStore` is disposed — found
+            // by a real test failure ("the process cannot access the file
+            // 'tempest.db'") when a second store reopened the same root a
+            // "restart" test had just closed.
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+            }.ToString());
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT version FROM schema_info LIMIT 1;";
+            var result = command.ExecuteScalar();
+
+            return result is null or DBNull ? null : Convert.ToInt32(result, CultureInfo.InvariantCulture);
+        }
+        catch (SqliteException)
+        {
+            // No `schema_info` table (or no readable database at all) —
+            // nothing to back up ahead of.
+            return null;
         }
     }
 

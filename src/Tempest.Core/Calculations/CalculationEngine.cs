@@ -128,24 +128,36 @@ public sealed class CalculationEngine : ICalculationEngine
     }
 
     /// <inheritdoc />
-    public async Task<CalculationRecord<TResult>> ExecuteAsync<TInput, TResult>(
-        string calculationId, TInput input, CancellationToken cancellationToken = default)
+    public Task<CalculationRecord<TResult>> ExecuteAsync<TInput, TResult>(
+        string calculationId, TInput input, CancellationToken cancellationToken = default) =>
+        ExecuteAsync<TInput, TResult>(calculationId, input, predecessorRecordId: null, cancellationToken);
+
+    /// <summary>
+    /// The shared execution path behind <see cref="ExecuteAsync{TInput, TResult}(string, TInput, CancellationToken)"/>
+    /// and both <see cref="ReRunAsync{TInput, TResult}(Guid, CancellationToken)"/>
+    /// overloads (`TD-29`) — identical in every respect except the
+    /// resulting record's own <see cref="CalculationRecord{TResult}.PredecessorRecordId"/>.
+    /// </summary>
+    private async Task<CalculationRecord<TResult>> ExecuteAsync<TInput, TResult>(
+        string calculationId, TInput input, Guid? predecessorRecordId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(calculationId);
 
         if (!_definitions.TryGetValue(calculationId, out var boxed) || boxed is not ICalculationDefinition<TInput, TResult> definition)
             throw new CalculationDefinitionNotFoundException(calculationId);
 
-        var context = new CalculationContext();
+        var context = new CalculationContext(calculationId);
         var result = definition.Calculate(input, context, cancellationToken);
 
         var executedAt = DateTimeOffset.UtcNow;
         var executedBy = ResolveExecutorPrincipalId();
         var validation = BuildValidationResult(context);
+        var inputTypeName = typeof(TInput).FullName;
 
         var dto = new CalculationRecordDto<TResult>(
             calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,
-            validation, context.ReferencedMaterialIds, executedAt, executedBy, typeof(TResult).FullName);
+            validation, context.ReferencedMaterialIds, executedAt, executedBy, typeof(TResult).FullName,
+            input, inputTypeName, predecessorRecordId);
 
         var document = await _documentStore.CreateAsync(CalculationRecordDocumentKind, JsonSerializer.Serialize(dto), cancellationToken)
             .ConfigureAwait(false);
@@ -178,7 +190,42 @@ public sealed class CalculationEngine : ICalculationEngine
 
         return new CalculationRecord<TResult>(
             document.Id, calculationId, result, definition.Metadata.Assumptions, context.IntermediateResults,
-            validation, context.ReferencedMaterialIds, executedAt, executedBy, document.CurrentRevisionNumber);
+            validation, context.ReferencedMaterialIds, executedAt, executedBy, document.CurrentRevisionNumber,
+            input, inputTypeName, predecessorRecordId);
+    }
+
+    /// <inheritdoc />
+    public async Task<CalculationRecord<TResult>> ReRunAsync<TInput, TResult>(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var record = await FindRecordAsync<TResult>(recordId, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculationException($"No calculation record exists with Id '{recordId}'.");
+
+        if (record.Input is null)
+            throw new CalculationRecordHasNoInputException(recordId);
+
+        var input = CalculationTypedReadback.Read<TInput>(record.Input, record.InputTypeName, $"Input (record {recordId})");
+
+        return await ExecuteAsync<TInput, TResult>(record.CalculationId, input, recordId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<CalculationRecord<TResult>> ReRunAsync<TInput, TResult>(Guid recordId, TInput changedInput, CancellationToken cancellationToken = default)
+    {
+        var record = await FindRecordAsync<TResult>(recordId, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculationException($"No calculation record exists with Id '{recordId}'.");
+
+        return await ExecuteAsync<TInput, TResult>(record.CalculationId, changedInput, recordId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<CalculationComparison> CompareAsync<TInput, TResult>(Guid recordIdA, Guid recordIdB, CancellationToken cancellationToken = default)
+    {
+        var recordA = await FindRecordAsync<TResult>(recordIdA, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculationException($"No calculation record exists with Id '{recordIdA}'.");
+        var recordB = await FindRecordAsync<TResult>(recordIdB, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculationException($"No calculation record exists with Id '{recordIdB}'.");
+
+        return CalculationComparer.Compare<TInput, TResult>(recordA, recordB);
     }
 
     /// <inheritdoc />
@@ -242,7 +289,10 @@ public sealed class CalculationEngine : ICalculationEngine
             dto.ReferencedMaterialIds,
             dto.ExecutedAt,
             dto.ExecutedByPrincipalId,
-            revisions[^1].RevisionNumber);
+            revisions[^1].RevisionNumber,
+            dto.Input,
+            dto.InputTypeName,
+            dto.PredecessorRecordId);
     }
 
     /// <inheritdoc />

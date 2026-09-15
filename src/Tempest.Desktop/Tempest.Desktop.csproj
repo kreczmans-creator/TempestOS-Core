@@ -63,6 +63,15 @@
       - recovered from the Companion brand alignment (WP 14.1A).
     -->
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.20" />
+    <!--
+      `WP 21.5A` (`WP RC.0A`): the installer, in-place update and "is this
+      an installed run" seam (`Tempest.Desktop.Startup.VelopackInstalledAppLocator`).
+      MIT-licensed — see the root `THIRD-PARTY-NOTICES.md`. Only
+      `Tempest.Desktop` references it: neither `Tempest.Harness` (the
+      Internal Engineering Harness, never shipped or installed — ADR-0101)
+      nor any Core/Workspace project needs to know Velopack exists.
+    -->
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>

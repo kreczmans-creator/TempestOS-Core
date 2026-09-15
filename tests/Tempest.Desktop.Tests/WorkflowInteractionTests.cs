@@ -208,7 +208,11 @@ public sealed class WorkflowInteractionTests
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
 
-            var settings = new UserSettings(settingsProvider) { ToastDurationSeconds = 9.5, ConfirmBeforeDelete = false, RecentSearchCapacity = 3 };
+            // `WP 21.5A`: CheckForUpdatesOnLaunch joins the round-trip -
+            // off by default (see the "leaves every default unchanged"
+            // test below), so this asserts it also survives a save/load
+            // cycle once turned on.
+            var settings = new UserSettings(settingsProvider) { ToastDurationSeconds = 9.5, ConfirmBeforeDelete = false, RecentSearchCapacity = 3, CheckForUpdatesOnLaunch = true };
             await settings.SaveAsync();
 
             var reloaded = new UserSettings(settingsProvider);
@@ -217,6 +221,7 @@ public sealed class WorkflowInteractionTests
             Assert.Equal(9.5, reloaded.ToastDurationSeconds);
             Assert.False(reloaded.ConfirmBeforeDelete);
             Assert.Equal(3, reloaded.RecentSearchCapacity);
+            Assert.True(reloaded.CheckForUpdatesOnLaunch);
         }
         finally
         {

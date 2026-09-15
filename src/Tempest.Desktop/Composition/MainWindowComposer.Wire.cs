@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
@@ -339,11 +340,53 @@ internal sealed partial class MainWindowComposer
             switch (invocation.Outcome)
             {
                 case CommandOutcome.Executed:
+                    // `WP 20.10C` (PO finding T6): `RefreshStatusBar` alone
+                    // re-displays `manager.StatusBar.StatusText` — whatever
+                    // the last *selection* set it to — never this
+                    // command's own result. The picker closed, the Domain
+                    // genuinely moved or copied the object, and the user
+                    // saw nothing say so. `WorkspaceStatusBar.SetStatus`
+                    // (already `Tempest.Harness`'s own established way to
+                    // report a command's own result — see
+                    // `WorkspaceShell.HandleRunCommandAsync`) is the one
+                    // piece this path was missing.
+                    //
+                    // Posted at Background priority, not run inline. A
+                    // successful Move/Copy also commits a structural
+                    // change, which the Project Explorer's own reactive
+                    // `IWorkspaceChanges` subscription reloads from and
+                    // then re-selects/reveals the result (`WP-Z4`'s
+                    // "scroll-to-new-item", already-shipped) — and that
+                    // reveal is itself a real selection change, which the
+                    // identical Status Bar segment (`StatusBarView`'s own
+                    // "Selected Object") also reacts to
+                    // (`WorkspaceViewCoordinator`'s `ObjectSelected`
+                    // handler). Both are genuine, wanted updates to the
+                    // one segment; only their order decides which the
+                    // user is left reading. That reload is queued via
+                    // `Dispatcher.UIThread.Post` (default/Normal
+                    // priority) from inside the commit itself, before
+                    // this switch ever runs — so setting this message
+                    // inline here would only be the one to lose the
+                    // race, immediately overwritten once the reveal's own
+                    // reload runs. Posting this at Background priority
+                    // instead guarantees it drains after every Normal
+                    // (or higher) job already queued — the reload and
+                    // whatever reselection it triggers included, however
+                    // many turns that takes — so the command's own result
+                    // is what is left standing once the Explorer settles,
+                    // never a transient "Selected: …" this same gesture
+                    // itself caused.
                     var result = invocation.Result!;
-                    callbacks.RecordHistory(result.Succeeded
-                        ? $"{(isMove ? "Moved" : "Copied")} via Ctrl+Shift+{(isMove ? 'M' : 'C')}."
-                        : $"{(isMove ? "Move" : "Copy")} failed: {result.Message ?? "Command failed."}");
-                    callbacks.RefreshStatusBar(manager);
+                    var message = result.Message ?? (result.Succeeded
+                        ? $"{(isMove ? "Moved" : "Copied")}."
+                        : $"{(isMove ? "Move" : "Copy")} failed.");
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        manager.StatusBar.SetStatus(message);
+                        callbacks.RecordHistory(message);
+                        callbacks.RefreshStatusBar(manager);
+                    }, DispatcherPriority.Background);
                     break;
 
                 case CommandOutcome.Cancelled:

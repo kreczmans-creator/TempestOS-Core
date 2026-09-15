@@ -20,6 +20,34 @@ public enum QuotationLineBasis
 }
 
 /// <summary>
+/// What a <see cref="Quotation"/> is for: an ordinary quotation (the
+/// default — unchanged behaviour), or a change order raised against an
+/// already-accepted quotation's own project so that work still open
+/// against it can be carried forward rather than blocking sign-off
+/// (`WP 20.10E`, PO finding D18, `ADR-0152` addendum). A change order is
+/// itself an ordinary <see cref="Quotation"/> — same Draft → Sent →
+/// Accepted | Declined lifecycle, same reference/currency/lines shape —
+/// distinguished only by this closed vocabulary and by carrying, on each
+/// of its own lines, the id of a deliverable that already exists
+/// (<see cref="QuotationLine.DeliverableId"/> set at
+/// <see cref="QuotationService.AddLineAsync"/> time rather than left for
+/// <see cref="QuotationService.AcceptAsync"/> to fill in).
+/// </summary>
+public enum QuotationKind
+{
+    /// <summary>An ordinary quotation — defines new deliverables and requirements once accepted. The default.</summary>
+    Quotation,
+
+    /// <summary>
+    /// A change order — every line carries an existing, still-open
+    /// deliverable rather than defining a new one; accepting it creates no
+    /// deliverable for a carried line, only records the carried id
+    /// (`ADR-0152` addendum).
+    /// </summary>
+    ChangeOrder,
+}
+
+/// <summary>
 /// One line of a <see cref="Quotation"/> — a described piece of work, its
 /// own price, and, once the quotation is accepted, the Deliverable and
 /// Requirement created from it (`WP 19.5A`, `ADR-0152`).
@@ -31,7 +59,7 @@ public enum QuotationLineBasis
 /// <param name="FixedPrice">The line's own fixed price, for a <see cref="QuotationLineBasis.FixedPrice"/> line. <see langword="null"/> for an hourly line.</param>
 /// <param name="Amount"><see cref="Hours"/> times <see cref="Rate"/>, or <see cref="FixedPrice"/> — carried alongside rather than recomputed, exactly as <c>Tempest.Core.Invoicing.InvoiceRequestLine.Amount</c> is.</param>
 /// <param name="Basis">Which of the two ways this line is priced.</param>
-/// <param name="DeliverableId">The Deliverable created from this line on Accept. <see langword="null"/> until then.</param>
+/// <param name="DeliverableId">The Deliverable created from this line on Accept. <see langword="null"/> until then — except on a <see cref="QuotationKind.ChangeOrder"/> line, which already carries an existing deliverable's own id from the moment it is added (`WP 20.10E`).</param>
 /// <param name="RequirementId">The Requirement created from this line on Accept. <see langword="null"/> until then.</param>
 public sealed record QuotationLine(
     Guid Id,
@@ -81,6 +109,7 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     private readonly CurrencyCode _currency;
     private readonly int _validityDays;
     private readonly string? _terms;
+    private readonly QuotationKind _kind;
     private readonly List<QuotationLine> _lines;
     private QuotationStatus _status;
     private DateOnly? _sentOn;
@@ -92,7 +121,8 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
         string reference, DateOnly quoteDate, string? clientOrganisationId, CurrencyCode currency,
         int validityDays, string? terms, IReadOnlyList<QuotationLine> lines,
-        QuotationStatus status = QuotationStatus.Draft, DateOnly? sentOn = null, DateOnly? decidedOn = null)
+        QuotationStatus status = QuotationStatus.Draft, DateOnly? sentOn = null, DateOnly? decidedOn = null,
+        QuotationKind kind = QuotationKind.Quotation)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
@@ -104,6 +134,7 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
         _currency = currency;
         _validityDays = validityDays;
         _terms = terms;
+        _kind = kind;
         _lines = [.. lines];
         _status = status;
         _sentOn = sentOn;
@@ -127,6 +158,9 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
 
     /// <summary>Free-text terms shown on the quote. <see langword="null"/> when none are recorded.</summary>
     public string? Terms => _terms;
+
+    /// <summary>Whether this is an ordinary quotation or a change order (`WP 20.10E`). Immutable once created.</summary>
+    public QuotationKind QuotationKind => _kind;
 
     /// <summary>This quotation's own lines, in the order they were added.</summary>
     public IReadOnlyList<QuotationLine> Lines => _lines;
@@ -282,6 +316,7 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
         WriteJson(state, nameof(Currency), _currency);
         state[nameof(ValidityDays)] = _validityDays.ToString(CultureInfo.InvariantCulture);
         state[nameof(Terms)] = _terms;
+        state[nameof(QuotationKind)] = _kind.ToString();
         WriteJson(state, nameof(Lines), _lines);
         state[nameof(Status)] = _status.ToString();
         WriteJson(state, nameof(SentOn), _sentOn);
@@ -304,6 +339,10 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     private static QuotationStatus ReadStatus(EngineeringObjectState state) =>
         Enum.TryParse<QuotationStatus>(state.Type(nameof(Status)), out var value) ? value : QuotationStatus.Draft;
 
+    /// <summary>Reads back <see cref="QuotationKind"/> — <see cref="QuotationKind.Quotation"/> (unchanged behaviour) for a pre-`WP 20.10E` record that carries no such state at all.</summary>
+    private static QuotationKind ReadQuotationKind(EngineeringObjectState state) =>
+        Enum.TryParse<QuotationKind>(state.Type(nameof(QuotationKind)), out var value) ? value : QuotationKind.Quotation;
+
     private static int ReadValidityDays(EngineeringObjectState state) =>
         int.TryParse(state.Type(nameof(ValidityDays)), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : 30;
 
@@ -318,5 +357,6 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
             ReadLines(state),
             ReadStatus(state),
             state.TypeJson<DateOnly?>(nameof(SentOn)),
-            state.TypeJson<DateOnly?>(nameof(DecidedOn)));
+            state.TypeJson<DateOnly?>(nameof(DecidedOn)),
+            ReadQuotationKind(state));
 }

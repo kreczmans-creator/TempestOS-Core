@@ -41,6 +41,18 @@ public sealed class CorruptedStateLoadTests
         Assert.Null(await Record.ExceptionAsync(() => state.LoadAsync()));
     }
 
+    /// <summary>`WP 20.10G` (PO finding D4): Settings → Organisation identity follows the same "never an exception" contract.</summary>
+    [Fact]
+    public async Task OrganisationIdentitySettings_LoadAsync_CorruptedStoredValue_FallsBackToDefaults_NeverThrows()
+    {
+        var provider = NewProvider();
+        var settings = new OrganisationIdentitySettings(provider);
+        await provider.SetValueAsync(OrganisationIdentitySettings.SettingKey, CorruptJson);
+
+        Assert.Null(await Record.ExceptionAsync(() => settings.LoadAsync()));
+        Assert.Equal("Tempest Design Engineering Ltd", settings.LegalName);
+    }
+
     [Fact]
     public async Task RecentObjectsState_LoadAsync_CorruptedStoredValue_LeavesListEmpty_NeverThrows()
     {

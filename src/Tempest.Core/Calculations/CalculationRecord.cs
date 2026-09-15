@@ -23,6 +23,20 @@ namespace Tempest.Core.Calculations;
 /// <param name="ExecutedAt">When this calculation was executed.</param>
 /// <param name="ExecutedByPrincipalId">Who executed this calculation.</param>
 /// <param name="RevisionNumber">The underlying document's own current revision number — always <c>1</c> for a record <see cref="ICalculationEngine.ExecuteAsync{TInput, TResult}"/> has just produced, since each execution creates a fresh record rather than revising an existing one.</param>
+/// <param name="Input">
+/// The input this calculation was run with (`TD-29`) — the real CLR
+/// <c>TInput</c> object for a record just returned by
+/// <see cref="ICalculationEngine.ExecuteAsync{TInput, TResult}"/>, a boxed
+/// <see cref="System.Text.Json.JsonElement"/> for one read back by
+/// <see cref="ICalculationEngine.FindRecordAsync{TResult}"/> (read it back
+/// with <see cref="ICalculationEngine.ReRunAsync{TInput, TResult}(Guid, CancellationToken)"/>
+/// or <see cref="CalculationComparer.Compare{TInput, TResult}"/>, never a
+/// direct cast). <see langword="null"/> for a record executed before this
+/// field existed — never thrown for; a caller comparing or re-running such
+/// a record is told so rather than failing on a cast.
+/// </param>
+/// <param name="InputTypeName">The full name of <typeparamref name="TResult"/>'s own sibling <c>TInput</c> type this record was executed with, or <see langword="null"/> alongside a <see langword="null"/> <paramref name="Input"/>.</param>
+/// <param name="PredecessorRecordId">The record this one was re-run from (`TD-29`), via <see cref="ICalculationEngine.ReRunAsync{TInput, TResult}(Guid, CancellationToken)"/> or its changed-input overload — <see langword="null"/> for a record produced by a first <see cref="ICalculationEngine.ExecuteAsync{TInput, TResult}"/> execution.</param>
 public sealed record CalculationRecord<TResult>(
     Guid Id,
     string CalculationId,
@@ -33,4 +47,7 @@ public sealed record CalculationRecord<TResult>(
     IReadOnlyList<string> ReferencedMaterialIds,
     DateTimeOffset ExecutedAt,
     string ExecutedByPrincipalId,
-    int RevisionNumber);
+    int RevisionNumber,
+    object? Input = null,
+    string? InputTypeName = null,
+    Guid? PredecessorRecordId = null);

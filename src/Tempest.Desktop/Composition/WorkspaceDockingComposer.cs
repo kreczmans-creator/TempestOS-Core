@@ -149,8 +149,26 @@ internal sealed class WorkspaceDockingComposer
     /// <summary>Returns to the default arrangement.</summary>
     public void ResetLayout()
     {
-        Layout.Load(DefaultLayout());
+        Layout.ResetTo(DefaultLayout());
         _uiState.LastAppliedPreset = null;
+    }
+
+    /// <summary>
+    /// Brings <paramref name="panelId"/> to the front: docks it back in if
+    /// it is currently floating, restores it to a sensible edge if it was
+    /// hidden altogether, and selects it in whichever tab group it ends up
+    /// in — the Command Palette's own "Show Panel" action, and the one
+    /// route to any panel regardless of how it was lost (`WP 20.10D`, PO
+    /// finding T4).
+    /// </summary>
+    public void ShowPanel(Guid panelId)
+    {
+        if (!Layout.IsPanelVisible(panelId))
+            Layout.TogglePanel(panelId, DockRelation.Left);
+        else if (Layout.Tree.IsFloating(panelId))
+            Layout.RedockFloating(panelId);
+
+        Layout.Apply(t => t.SelectPanel(panelId));
     }
 
     /// <summary>Closes whichever auto-hide flyout is open, if any — a no-op otherwise.</summary>

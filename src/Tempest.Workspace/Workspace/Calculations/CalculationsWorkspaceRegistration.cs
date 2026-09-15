@@ -16,6 +16,13 @@ public static class CalculationsCommandIds
     public const string Duplicate = "calculations.duplicate";
     public const string Execute = "calculations.execute";
     public const string Recalculate = "calculations.recalculate";
+
+    /// <summary>`WP 21.3A` (`TD-29`) — re-runs the selected Calculation's own most recent record with its exact original, retained input.</summary>
+    public const string Rerun = "calculations.rerun";
+
+    /// <summary>`WP 21.3A` (`TD-29`) — compares the selected Calculation's own two most recent records.</summary>
+    public const string CompareWithPrevious = "calculations.compare-with-previous";
+
     public const string Lock = "calculations.lock";
     public const string Unlock = "calculations.unlock";
     public const string RequestReview = "calculations.request-review";
@@ -24,6 +31,9 @@ public static class CalculationsCommandIds
 
     /// <summary>Marks the selected Calculation complete (`TD-181`, Product Owner decision 2026-09-15 §2) — a Calculation only, never a Calculation Set.</summary>
     public const string Complete = "calculations.complete";
+
+    /// <summary>Sets, or clears, the selected Calculation's own due date (`WP 20.10B`, T2) — a Calculation only, never a Calculation Set.</summary>
+    public const string SetDueDate = "calculations.set-due-date";
 }
 
 /// <summary>
@@ -111,7 +121,10 @@ public static class CalculationsWorkspaceRegistration
         commandDispatcher.RegisterHandler<SetCalculationStatusCommand>(new SetCalculationStatusCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ExecuteCalculationCommand>(executeHandler);
         commandDispatcher.RegisterHandler<RecalculateCalculationCommand>(new RecalculateCalculationCommandHandler(executeHandler));
+        commandDispatcher.RegisterHandler<RerunCalculationCommand>(new RerunCalculationCommandHandler(templateRegistry));
+        commandDispatcher.RegisterHandler<CompareCalculationWithPreviousCommand>(new CompareCalculationWithPreviousCommandHandler(templateRegistry));
         commandDispatcher.RegisterHandler<CompleteCalculationCommand>(new CompleteCalculationCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetCalculationDueDateCommand>(new SetCalculationDueDateCommandHandler(domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
         // hand-written lambda closing over the same constructor the handler
@@ -135,14 +148,26 @@ public static class CalculationsWorkspaceRegistration
         {
             // `WP 17.9.3` (`TD-172`): the new calculation goes under the selected
             // set, calculation, part, assembly or project, else under the open project.
+            // `WP 20.10B` (T2): `CreationPlacement.ParentFor`'s own preference
+            // for the current selection is guarded here against a selection
+            // left over from a DIFFERENT project or standalone Engineering —
+            // see `ResolveCreateParent`'s own remarks. `dueOn` is collected
+            // for both Kinds this descriptor can create — the one shared
+            // parameter list every invocation of one command fills in —
+            // and discarded server-side for a "CalculationSet" or a
+            // standalone "Calculation" (`CalculationObjectFactoryRegistry.CreateAsync`'s
+            // own remarks).
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (context, values) => new CreateCalculationObjectCommand(
                     WorkspaceCommandBindings.Canonical(boundKinds, values["kind"]), values["displayName"],
-                    parentId: CreationPlacement.ParentFor(context, CalculationContainerKinds)),
+                    parentId: ResolveCreateParent(context, domainContext),
+                    dueOn: ParseDueOn(values["dueOn"])),
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, CalculationObjectFactoryRegistry.CalculationKind),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
+                    new CommandParameter(
+                        "dueOn", "Due (yyyy-mm-dd)", DefaultValue: DefaultDueOn(), Validate: ValidateDueOn),
                 ]),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
@@ -261,6 +286,38 @@ public static class CalculationsWorkspaceRegistration
                     "Recalculating needs the Template's own structured input document again, with fresh values — a different set of typed fields per Template, supplied as JSON")),
         });
 
+        // `WP 21.3A` (`TD-29`): unlike Execute/Recalculate above, Re-run needs
+        // no structured input from the caller at all — it reads the selected
+        // object's own most recent record's retained input back and replays
+        // it exactly — so, unlike them, it needs no picker or prompt and is
+        // bound the same shape as the five status transitions below: the
+        // selection alone is enough. Mutates: a new CalculationRecord is
+        // durably created (the archived-project guard applies).
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.Rerun, displayName: "Re-run Calculation", category: "Calculations",
+            description: "Re-executes the selected Calculation's own most recent record with its exact original input, recording a new CalculationRecord linked to it as predecessor.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new RerunCalculationCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds,
+                mutates: true),
+        });
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.CompareWithPrevious, displayName: "Compare With Previous", category: "Calculations",
+            description: "Compares the selected Calculation's own two most recent records — which input and result fields changed, old and new.")
+        {
+            // A read, never a write: no Mutates, so the archived-project
+            // guard does not apply, mirroring mechanical.validate-configuration's
+            // own "reads only" precedent (CommandBinding.Mutates's own remarks).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new CompareCalculationWithPreviousCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
+                appliesToKinds: boundKinds),
+        });
+
         // The five status transitions. Each needs only the selection, so
         // each is the one shape that can run unattended in a macro
         // (ADR-0098): no parameters to collect, and nothing to confirm.
@@ -312,8 +369,114 @@ public static class CalculationsWorkspaceRegistration
                 appliesToKinds: CalculationOnlyKind),
         });
 
+        // `WP 20.10B` (T2): the generic editor's own Due row dispatches
+        // this directly (`ObjectEditorView.OnSaveCalculationDueAsync`),
+        // mirroring `SetBomLineCommand`'s own identical Ribbon/Palette-plus-editor
+        // shape; blank is accepted here (clears the due date) — unlike
+        // the create prompt's own `dueOn` parameter, which refuses it.
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: CalculationsCommandIds.SetDueDate, displayName: "Set Calculation Due Date", category: "Calculations",
+            description: "Sets, or clears, the selected Calculation's own due date.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new SetCalculationDueDateCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
+                    ParseDueOnOrNull(values["dueOn"])),
+                [new CommandParameter("dueOn", "Due (yyyy-mm-dd, blank to clear)", DefaultValue: string.Empty, Validate: ValidateOptionalDueOn)],
+                appliesToKinds: CalculationOnlyKind,
+                mutates: true),
+        });
+
         return templateRegistry;
     }
+
+    /// <summary>
+    /// <see cref="CreationPlacement.ParentFor"/>'s own placement, trusted
+    /// only when it genuinely sits under the currently open project
+    /// (`WP 20.10B`, T2).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The bug this closes.</b> <see cref="CreationPlacement"/> prefers
+    /// the current selection over the open project whenever the selection's
+    /// own Kind is one of <see cref="CalculationContainerKinds"/> (`TD-172`)
+    /// — reasonable when that selection is something in the project the
+    /// user is standing in, but <c>ISelectionService</c> is one single,
+    /// global service that no navigation clears (<c>CreatedObjectOpensRightUpTests</c>
+    /// already found this once, `WP 17.9.4`, and worked around it locally
+    /// rather than fixing the service). A selection surviving from a
+    /// <em>different</em> project, or from standalone Engineering, silently
+    /// parented a new Calculation outside the project the Product Owner had
+    /// actually navigated to — from there its own project ancestor either
+    /// resolved to the wrong project or (standalone) to none at all, and
+    /// the Tasks read model's Calculations bucket
+    /// (<c>TasksReadModelService.ResolveProjectId</c>, `TD-181`) never
+    /// listed it, exactly Product Owner finding T2.
+    /// </para>
+    /// <para>
+    /// <b>The fix stays local to Calculations' own create command,
+    /// deliberately.</b> <see cref="CreationPlacement"/> is shared by every
+    /// discipline (Documents, Manufacturing, Mechanical, Evidence,
+    /// Calculations); widening its own contract, or clearing selection on
+    /// every project navigation, is a cross-cutting change this Work
+    /// Package's own "files you own" does not cover. Guarded here instead:
+    /// once an open project is known, <see cref="CreationPlacement.ParentFor"/>'s
+    /// own placement is used only if <see cref="BusinessIdentifierScope.ResolveProjectId"/>
+    /// — the identical, already-synchronous parent-chain walk this same
+    /// method already runs for `TD-38`'s own business-identifier numbering
+    /// scope (<see cref="CalculationObjectFactoryRegistry.CreateAsync"/>) —
+    /// agrees it sits under that project; otherwise the open project itself
+    /// is used, exactly as if nothing at all had been selected.
+    /// </para>
+    /// </remarks>
+    private static Guid? ResolveCreateParent(CommandContext context, EngineeringDomainContext domainContext)
+    {
+        var placed = CreationPlacement.ParentFor(context, CalculationContainerKinds);
+
+        if (context.ProjectId is { } openProjectId && placed is { } candidateParentId
+            && BusinessIdentifierScope.ResolveProjectId(candidateParentId, domainContext.Repository) != openProjectId)
+        {
+            return openProjectId;
+        }
+
+        return placed;
+    }
+
+    /// <summary>Today, offered as the create prompt's own default (`WP 20.10B`, T2) — not injected: a create prompt's default value is a starting point for the person to edit, never a value this platform computes anything from (unlike the Tasks read model's own bucket placement, which reads <see cref="TimeProvider"/>).</summary>
+    private const int DefaultDueOnOffsetDays = 14;
+
+    /// <summary>Today + <see cref="DefaultDueOnOffsetDays"/> days, formatted the one way this platform's date parameters already are (<c>TaskWorkspaceRegistration.ParseDateOrNull</c>'s own identical round-trip format).</summary>
+    private static string DefaultDueOn() => DateOnly.FromDateTime(DateTime.Today).AddDays(DefaultDueOnOffsetDays).ToString("O");
+
+    /// <summary>
+    /// A calculation's own create prompt refuses a blank Due date (`WP
+    /// 20.10B`, T2) — unlike <c>TaskWorkspaceRegistration.ValidateOptionalDate</c>'s
+    /// identical-looking manual-task field, which allows one. The
+    /// descriptor collects this parameter once, for either Kind it can
+    /// create; a "CalculationSet" — never itself a task — simply never
+    /// reads it back (<see cref="CalculationObjectFactoryRegistry.CreateAsync"/>'s
+    /// own remarks).
+    /// </summary>
+    private static string? ValidateDueOn(string value) =>
+        DateOnly.TryParse(value, out _) ? null : "'Due' is required (yyyy-mm-dd).";
+
+    /// <summary>Parses a <see cref="ValidateDueOn"/>-checked value. Never called on one that has not already passed it — the same invariant <c>WorkspaceCommandBindings.ParseDestination</c>'s own remarks state for its parameter.</summary>
+    private static DateOnly? ParseDueOn(string value) => DateOnly.TryParse(value, out var date) ? date : null;
+
+    /// <summary>
+    /// <see cref="CalculationsCommandIds.SetDueDate"/>'s own field —
+    /// unlike the create prompt's <see cref="ValidateDueOn"/>, blank is
+    /// accepted (clears the due date), mirroring
+    /// <c>TaskWorkspaceRegistration.ValidateOptionalDate</c>'s identical
+    /// "optional" shape.
+    /// </summary>
+    private static string? ValidateOptionalDueOn(string value) =>
+        string.IsNullOrWhiteSpace(value) || DateOnly.TryParse(value, out _) ? null : "'Due' must be a date (yyyy-mm-dd), or blank to clear it.";
+
+    /// <summary>Parses a <see cref="ValidateOptionalDueOn"/>-checked value — blank means "clear".</summary>
+    private static DateOnly? ParseDueOnOrNull(string value) =>
+        !string.IsNullOrWhiteSpace(value) && DateOnly.TryParse(value, out var date) ? date : null;
 
     /// <summary>
     /// The one binding shape the five Calculation status transitions share

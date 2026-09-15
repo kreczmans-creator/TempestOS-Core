@@ -76,14 +76,18 @@ internal sealed partial class MainWindowComposer
         // the Commercial section shows the client's organisation name and
         // the rate card's own code, never the bare record id either
         // stores.
-        var commercialSupport = new ProjectCommercialEditorSupport(
-            ct => views.OrganisationPicker.PickAsync(ct),
-            ct => views.RateCardPicker.PickAsync(ct),
-            () => host.SessionPrincipal?.IdentityId,
-            async (organisationId, ct) => (await views.OrganisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
-            async (pin, ct) => await views.RateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
-                ? (card.Definition.Code, card.Definition.Name)
-                : null);
+        //
+        // `WP 20.10A`: built in `BuildViews` now (`views.CommercialSupport`)
+        // — that phase's own new `ProjectDetailsView` needs the identical
+        // instance too, and `ProjectWorkspaceView` (which embeds it) is
+        // built there, not here. See `BuildViews`' own remarks at its
+        // construction.
+        var commercialSupport = views.CommercialSupport;
+
+        // `WP 20.10F` (Product Owner finding D8): the requirement Owner
+        // section's own People catalogue and its "Add person…" prompt —
+        // threaded through exactly as `commercialSupport` just above.
+        var ownerSupport = new RequirementOwnerEditorSupport(views.PersonCatalog, ct => views.PersonAddPrompt.PromptAsync(ct));
 
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
@@ -91,7 +95,7 @@ internal sealed partial class MainWindowComposer
             views.Session.RecentObjects, views.Session.FavouriteObjects, views.OpenGraphViewsByRootId,
             views.DocumentArea, views.ActionReporter,
             workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
-            auditQuery: host.AuditQuery, commercialSupport: commercialSupport);
+            auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport);
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which
@@ -177,7 +181,8 @@ internal sealed partial class MainWindowComposer
 
                 var item = items[index - 1];
                 await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
-            })
+            },
+            onNewProject: () => _ = CreateNewProjectFromHomeAsync())
         { WorkspaceChanges = composition.WorkspaceChanges };
 
         async Task OpenTasksAsync()
@@ -186,9 +191,38 @@ internal sealed partial class MainWindowComposer
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         }
 
+        // `WP 20.10A` (D1): Home's own New Project button — the identical
+        // flow `ProjectBrowserView.CreateAsync` runs (the same
+        // `callbacks.PromptForNewProjectAsync`, the same "find it in the
+        // directory rather than trust a stale in-memory list" read
+        // that method's own remarks explain), so a project created from
+        // Home and one created from Projects behave exactly alike, and
+        // both open right up.
+        async Task CreateNewProjectFromHomeAsync()
+        {
+            var identifier = await views.ProjectBrowser.NextIdentifierAsync().ConfigureAwait(true);
+            if (!await callbacks.PromptForNewProjectAsync(identifier, string.Empty).ConfigureAwait(true))
+                return;
+
+            var everyProject = await host.ProjectDirectory!.ListAsync().ConfigureAwait(true);
+            var created = everyProject.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+            if (created is null)
+                return;
+
+            await host.ShellNavigator!.OpenProjectAsync(created.Id).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
+
         // Panel construction/resize/hide/collapse/pin/flyout wiring
         // (`ADR-0103` collaborator #5, `WP 10.2B`).
         var dockingComposer = new WorkspaceDockingComposer(workspace, views.ExplorerView, views.InspectorView, views.DocumentArea, views.Session.PanelUiState, views.Session.LayoutStore);
+
+        // `WP 20.10D`, PO finding T4: a floating window must be owned by
+        // the real shell window (never left behind it with no way back),
+        // and a drag that misses every target should say so in the status
+        // bar the same way every other shell action already does.
+        dockingComposer.Layout.OwnerWindow = window;
+        dockingComposer.Layout.Announced += views.StatusBar.SetHint;
 
         // `TD-80`: the document and drawing viewer. `TD-96`: the same
         // already-registered IAttachmentContentStore every domain write

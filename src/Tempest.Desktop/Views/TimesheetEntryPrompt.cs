@@ -21,17 +21,20 @@ namespace Tempest.Desktop.Views;
 public sealed record TimesheetEntryInput(Guid ProjectId, DateOnly Date, decimal Hours, bool Billable, string Grade, string Task);
 
 /// <summary>
-/// The weekly timesheet view's own Record dialog (`WP 19.0A`, `ADR-0150`):
-/// a project picker over open projects that carry a Released rate-card
-/// pin, a date (defaulting to today), hours, billable, a grade drawn from
-/// the chosen project's own pinned card, and a task. Initially hidden,
-/// shares the Dialog Framework's own established panel styling and real
-/// modal behaviour (mirrors <see cref="CheckEntry"/>).
+/// The weekly timesheet view's own Record dialog (`WP 19.0A`, `ADR-0150`;
+/// `WP 20.10A`, D12): a project picker over every open project — pinned or
+/// not — a date (defaulting to today), hours, billable, a grade drawn from
+/// the chosen project's own pinned card, and a task. Choosing a project
+/// with no pinned rate card disables Grade/Hours and states why, with an
+/// Open Details action to fix it right there. Initially hidden, shares the
+/// Dialog Framework's own established panel styling and real modal
+/// behaviour (mirrors <see cref="CheckEntry"/>).
 /// </summary>
 public sealed class TimesheetEntryPrompt : Border
 {
     private readonly EngineeringDomainContext _domainContext;
     private readonly IRateCardCatalog _rateCards;
+    private readonly Func<Guid, Task>? _openProjectDetails;
 
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeTitle, FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading };
     private readonly ComboBox _project = new() { MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -41,19 +44,41 @@ public sealed class TimesheetEntryPrompt : Border
     private readonly ComboBox _grade = new() { MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _task = new() { Watermark = "Task", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly TextBlock _validation = new() { FontSize = DesignTokens.FontSizeCaption, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
+
+    // `WP 20.10A` (Product Owner finding D12): "project drop down doesnt
+    // populate. Doesn't allow recording of time at all" — the Project
+    // drop-down now lists every open project (below), not only those with
+    // a pinned rate card, so this inline slot states — and offers to fix —
+    // the one real reason recording still cannot proceed for the project
+    // chosen.
+    private readonly TextBlock _noRateCardMessage = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly Button _openDetailsButton = new() { Content = "Open Details", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly StackPanel _noRateCardSlot = new() { Spacing = DesignTokens.SpaceXs, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
+
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private IReadOnlyList<(Guid Id, string Label, ReferencePin Pin)> _projects = [];
+    private IReadOnlyList<(Guid Id, string Label, ReferencePin? Pin)> _projects = [];
     private TaskCompletionSource<TimesheetEntryInput?>? _pending;
 
     /// <summary>Initialises a new instance of the <see cref="TimesheetEntryPrompt"/> class, initially hidden.</summary>
-    public TimesheetEntryPrompt(EngineeringDomainContext domainContext, IRateCardCatalog rateCards)
+    /// <param name="openProjectDetails">
+    /// Opens a project's own Details tab (`WP 20.10A`) — closes this
+    /// dialog and navigates there, so a project with no rate card pinned
+    /// can be fixed without leaving the flow to hunt for where.
+    /// <see langword="null"/> (any test that constructs this prompt
+    /// directly) leaves the Open Details affordance honestly inert rather
+    /// than run without asking — the identical "not threaded through
+    /// stays honestly unavailable" discipline every other optional
+    /// collaborator across this platform's Desktop views already follows.
+    /// </param>
+    public TimesheetEntryPrompt(EngineeringDomainContext domainContext, IRateCardCatalog rateCards, Func<Guid, Task>? openProjectDetails = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(rateCards);
         _domainContext = domainContext;
         _rateCards = rateCards;
+        _openProjectDetails = openProjectDetails;
 
         IsVisible = false;
         IsHitTestVisible = true;
@@ -83,25 +108,32 @@ public sealed class TimesheetEntryPrompt : Border
         body.Children.Add(_date);
         body.Children.Add(_billable);
         body.Children.Add(_grade);
+        body.Children.Add(_noRateCardSlot);
         body.Children.Add(_task);
         body.Children.Add(_validation);
         body.Children.Add(buttons);
         Child = body;
 
+        _noRateCardSlot.Children.Add(_noRateCardMessage);
+        _noRateCardSlot.Children.Add(_openDetailsButton);
+
         _recordButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        _openDetailsButton.Classes.Add(ChromeStyles.Subtle);
         AutomationProperties.SetName(_project, "Project");
         AutomationProperties.SetName(_billable, "Billable");
         AutomationProperties.SetName(_grade, "Grade");
         AutomationProperties.SetName(_task, "Task");
         AutomationProperties.SetName(_recordButton, "Record");
         AutomationProperties.SetName(_cancelButton, "Cancel");
+        AutomationProperties.SetName(_openDetailsButton, "Open Details");
         ToolTip.SetTip(_recordButton, "Record");
         ToolTip.SetTip(_cancelButton, "Cancel");
 
         _project.SelectionChanged += async (_, _) => await ReloadGradesAsync().ConfigureAwait(true);
         _recordButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);
+        _openDetailsButton.Click += (_, _) => _ = OnOpenDetailsAsync();
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
@@ -137,12 +169,21 @@ public sealed class TimesheetEntryPrompt : Border
         // lists open projects only" — `ClosedOn is null` is
         // `ProjectArchival.ListingGroupOf`'s own Open test; a held project
         // is still Open (only paused), so it stays listed.
+        //
+        // `WP 20.10A` (Product Owner finding D12): "project drop down
+        // doesnt populate. Doesn't allow recording of time at all" — a
+        // project created through New Project has no pinned rate card yet,
+        // so requiring one here emptied the drop-down for the very project
+        // the user just created and came straight here to log time
+        // against. Every open project is listed now, pinned or not;
+        // `ReloadGradesAsync` below is what actually states, and offers to
+        // fix, the one real reason a specific project cannot record time.
         _projects =
         [
             .. everyProject
                 .OfType<Project>()
-                .Where(p => p is not IDeletable { IsDeleted: true } && p.RateCardPin is not null && p.ClosedOn is null)
-                .Select(p => (p.Id, p.DisplayName, p.RateCardPin!))
+                .Where(p => p is not IDeletable { IsDeleted: true } && p.ClosedOn is null)
+                .Select(p => (p.Id, p.DisplayName, p.RateCardPin))
                 .OrderBy(p => p.DisplayName, StringComparer.OrdinalIgnoreCase),
         ];
 
@@ -155,11 +196,27 @@ public sealed class TimesheetEntryPrompt : Border
     private async Task ReloadGradesAsync()
     {
         _grade.ItemsSource = null;
+        _grade.IsEnabled = true;
+        _hours.IsEnabled = true;
+        _noRateCardSlot.IsVisible = false;
 
         if (_project.SelectedItem is not ComboBoxItem { Tag: Guid projectId })
             return;
 
-        var pin = _projects.First(p => p.Id == projectId).Pin;
+        var entry = _projects.First(p => p.Id == projectId);
+
+        if (entry.Pin is not { } pin)
+        {
+            // `WP 20.10A` (D12): the project itself is a real, open
+            // project — recording is refused for one concrete, fixable
+            // reason, stated plainly, with the one action that fixes it
+            // right there rather than left for the user to go hunting for.
+            _grade.IsEnabled = false;
+            _hours.IsEnabled = false;
+            _noRateCardMessage.Text = $"No rate card is pinned on {entry.Label}. Pin one on the project's Details tab first.";
+            _noRateCardSlot.IsVisible = true;
+            return;
+        }
 
         try
         {
@@ -185,11 +242,28 @@ public sealed class TimesheetEntryPrompt : Border
         }
     }
 
+    /// <summary>Open Details (`WP 20.10A`, D12): closes this dialog and hands the selected project's own id to the caller's navigation — never both open at once.</summary>
+    private async Task OnOpenDetailsAsync()
+    {
+        if (_openProjectDetails is null || _project.SelectedItem is not ComboBoxItem { Tag: Guid projectId })
+            return;
+
+        Complete(null);
+        await _openProjectDetails(projectId).ConfigureAwait(true);
+    }
+
     private void TryComplete()
     {
         if (_project.SelectedItem is not ComboBoxItem { Tag: Guid projectId })
         {
-            ShowValidationError("A project with a Released rate-card pin is required.");
+            ShowValidationError("An open project is required.");
+            return;
+        }
+
+        var entry = _projects.First(p => p.Id == projectId);
+        if (entry.Pin is null)
+        {
+            ShowValidationError($"No rate card is pinned on {entry.Label}. Pin one on the project's Details tab first.");
             return;
         }
 

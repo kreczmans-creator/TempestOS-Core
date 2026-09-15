@@ -52,4 +52,49 @@ public interface ICalculationEngine
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The summaries, newest execution first.</returns>
     Task<IReadOnlyList<CalculationRecordSummary>> ListRecordsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Re-executes the calculation that produced <paramref name="recordId"/>,
+    /// using the exact input it was originally run with, and returns the new
+    /// record — its own <see cref="CalculationRecord{TResult}.PredecessorRecordId"/>
+    /// set to <paramref name="recordId"/> (`TD-29`).
+    /// </summary>
+    /// <typeparam name="TInput">The originating definition's own input type.</typeparam>
+    /// <typeparam name="TResult">The originating definition's own result type.</typeparam>
+    /// <param name="recordId">The record to re-run.</param>
+    /// <param name="cancellationToken">A token observed while reading the record and re-executing.</param>
+    /// <exception cref="CalculationException">No record exists with <paramref name="recordId"/>, or it does not match the requested <typeparamref name="TInput"/>/<typeparamref name="TResult"/> signature.</exception>
+    /// <exception cref="CalculationRecordHasNoInputException"><paramref name="recordId"/>'s own record predates input retention (`TD-29`) and carries none — supply a changed input instead.</exception>
+    /// <exception cref="CalculationDefinitionNotFoundException">The originating definition is no longer registered.</exception>
+    /// <exception cref="CalculationInputInvalidException">The originating definition rejects its own retained input on re-run.</exception>
+    Task<CalculationRecord<TResult>> ReRunAsync<TInput, TResult>(Guid recordId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Re-executes the calculation that produced <paramref name="recordId"/>,
+    /// using <paramref name="changedInput"/> instead of whatever input (if
+    /// any) it originally ran with, and returns the new record — its own
+    /// <see cref="CalculationRecord{TResult}.PredecessorRecordId"/> set to
+    /// <paramref name="recordId"/> (`TD-29`).
+    /// </summary>
+    /// <typeparam name="TInput">The originating definition's own input type.</typeparam>
+    /// <typeparam name="TResult">The originating definition's own result type.</typeparam>
+    /// <param name="recordId">The record to re-run.</param>
+    /// <param name="changedInput">The input to run the originating definition with this time.</param>
+    /// <param name="cancellationToken">A token observed while reading the record and re-executing.</param>
+    /// <exception cref="CalculationException">No record exists with <paramref name="recordId"/>.</exception>
+    /// <exception cref="CalculationDefinitionNotFoundException">The originating definition is no longer registered.</exception>
+    /// <exception cref="CalculationInputInvalidException"><paramref name="changedInput"/> fails the originating definition's own validation.</exception>
+    Task<CalculationRecord<TResult>> ReRunAsync<TInput, TResult>(Guid recordId, TInput changedInput, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads back <paramref name="recordIdA"/> and <paramref name="recordIdB"/>
+    /// and returns a typed diff of their own inputs and results (`TD-29`) —
+    /// see <see cref="CalculationComparer.Compare{TInput, TResult}"/>, which
+    /// this delegates to once both records are loaded.
+    /// </summary>
+    /// <typeparam name="TInput">Both records' own originating definition's input type.</typeparam>
+    /// <typeparam name="TResult">Both records' own originating definition's result type.</typeparam>
+    /// <exception cref="CalculationException">Either Id does not identify an existing record of the requested signature.</exception>
+    /// <exception cref="CalculationReadbackException">A record's own retained input does not match <typeparamref name="TInput"/>.</exception>
+    Task<CalculationComparison> CompareAsync<TInput, TResult>(Guid recordIdA, Guid recordIdB, CancellationToken cancellationToken = default);
 }

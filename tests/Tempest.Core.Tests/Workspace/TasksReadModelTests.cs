@@ -280,6 +280,109 @@ public sealed class TasksReadModelTests
         return created;
     }
 
+    // ---- DueOn's own bucket placement (`WP 20.10B`, T2) ----
+
+    /// <summary>
+    /// A calculation carrying a due date is due-bucketed exactly as a
+    /// manual task is (`TaskEquations.CalculationDueItems`) — Overdue, Due
+    /// today, Due this week and Later all produced from the one fixture,
+    /// mirroring <see cref="EveryBucket_IsProduced_WithTheRightCountsAndLists_CompletingTheManualTaskRemovesIt"/>'s
+    /// own shape — while every one of the five, dated or not, still shows
+    /// in the dedicated Calculations bucket too: `TD-181`'s own "no date
+    /// condition" is unchanged, additive rather than replaced.
+    /// </summary>
+    [Fact]
+    public async Task ACalculationWithADueDate_JoinsTheDateBucket_AndStaysInTheCalculationsBucketToo()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var domain = QuotationTestHost.Domain(host);
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "TASK-CALC-DUE");
+        var fixedNow = new DateTimeOffset(2026, 9, 15, 0, 0, 0, TimeSpan.Zero);
+        var today = DateOnly.FromDateTime(fixedNow.UtcDateTime);
+
+        var overdue = await CreateCalculationAsync(domain, projectId, "Overdue calc");
+        await overdue.SetDueOnAsync(today.AddDays(-5));
+
+        var dueToday = await CreateCalculationAsync(domain, projectId, "Due today calc");
+        await dueToday.SetDueOnAsync(today);
+
+        var dueThisWeek = await CreateCalculationAsync(domain, projectId, "Due this week calc");
+        await dueThisWeek.SetDueOnAsync(today.AddDays(3));
+
+        var later = await CreateCalculationAsync(domain, projectId, "Later calc");
+        await later.SetDueOnAsync(today.AddDays(30));
+
+        var noDate = await CreateCalculationAsync(domain, projectId, "No date calc");
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var reader = new TasksReadModelService(store, new FakeTimeProvider(fixedNow));
+
+        var snapshot = await reader.ReadAsync();
+
+        Assert.Contains(snapshot.OpenTasks, i => i.ObjectId == overdue.Id && i.Kind == "Calculation" && i.Bucket == TaskBucket.Overdue);
+        Assert.Contains(snapshot.OpenTasks, i => i.ObjectId == dueToday.Id && i.Bucket == TaskBucket.DueToday);
+        Assert.Contains(snapshot.OpenTasks, i => i.ObjectId == dueThisWeek.Id && i.Bucket == TaskBucket.DueThisWeek);
+        Assert.Contains(snapshot.OpenTasks, i => i.ObjectId == later.Id && i.Bucket == TaskBucket.Later);
+
+        // No due date at all: not forced into Later the way a manual task
+        // would be — it simply never joins this particular list.
+        Assert.DoesNotContain(snapshot.OpenTasks, i => i.ObjectId == noDate.Id);
+
+        Assert.Contains(snapshot.Calculations, i => i.ObjectId == overdue.Id);
+        Assert.Contains(snapshot.Calculations, i => i.ObjectId == dueToday.Id);
+        Assert.Contains(snapshot.Calculations, i => i.ObjectId == dueThisWeek.Id);
+        Assert.Contains(snapshot.Calculations, i => i.ObjectId == later.Id);
+        Assert.Contains(snapshot.Calculations, i => i.ObjectId == noDate.Id);
+
+        // Home's own Overdue tile reads this identical count — `WP 20.10B`
+        // scope item 3's own "Overdue calculations count in Home's
+        // Overdue tile" (`HomeDashboardView` reads the same `ITasksReadModel`).
+        Assert.True(snapshot.Counts[TaskBucket.Overdue] >= 1);
+        Assert.True(snapshot.Counts[TaskBucket.DueToday] >= 1);
+        Assert.True(snapshot.Counts[TaskBucket.DueThisWeek] >= 1);
+        Assert.True(snapshot.Counts[TaskBucket.Later] >= 1);
+        Assert.Equal(5, snapshot.Counts[TaskBucket.Calculations]);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    /// <summary>Completing a dated calculation removes it from both the date bucket and the dedicated Calculations bucket, in one act.</summary>
+    [Fact]
+    public async Task CompletingADatedCalculation_RemovesItFromBothTheDateBucketAndTheCalculationsBucket()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var domain = QuotationTestHost.Domain(host);
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "TASK-CALC-DUE-DONE");
+        var fixedNow = new DateTimeOffset(2026, 9, 15, 0, 0, 0, TimeSpan.Zero);
+        var today = DateOnly.FromDateTime(fixedNow.UtcDateTime);
+
+        var calculation = await CreateCalculationAsync(domain, projectId, "Overdue, then completed");
+        await calculation.SetDueOnAsync(today.AddDays(-1));
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var reader = new TasksReadModelService(store, new FakeTimeProvider(fixedNow));
+
+        var before = await reader.ReadAsync();
+        Assert.Contains(before.OpenTasks, i => i.ObjectId == calculation.Id && i.Bucket == TaskBucket.Overdue);
+        Assert.Contains(before.Calculations, i => i.ObjectId == calculation.Id);
+
+        await calculation.MarkCompletedAsync(today);
+
+        var after = await reader.ReadAsync();
+        Assert.DoesNotContain(after.OpenTasks, i => i.ObjectId == calculation.Id);
+        Assert.DoesNotContain(after.Calculations, i => i.ObjectId == calculation.Id);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
     [Fact]
     public async Task DeletingATask_RemovesItToo()
     {

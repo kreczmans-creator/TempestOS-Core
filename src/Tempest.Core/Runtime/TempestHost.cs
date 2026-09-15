@@ -36,6 +36,7 @@ using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
+using Tempest.Core.People;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
 using Tempest.Core.Quotations;
@@ -746,6 +747,17 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IOrganisationValidationService, OrganisationValidationService>();
 
         services.Singleton<IBudgetCatalog, BudgetCatalog>();
+
+        // `WP 20.10F` (Product Owner finding D8): the consultancy's own
+        // people — the same shared `ReferenceDataCatalog<T>` base every P01/P04/P07
+        // library already sits on (`ADR-0126`), registered alongside Organisations
+        // and Contacts, the two libraries closest in kind (people the platform
+        // knows about, governed the identical Draft-to-Released way). No
+        // validation service of its own: a person's own definition has no
+        // engineering rule beyond the base catalogue's own duplicate-display-name
+        // refusal, so `ReferenceReviewService` (already registered above, generic
+        // over `IReferenceDataCatalog<TDefinition>`) is all Verify/Release need.
+        services.Singleton<IPersonCatalog, PersonCatalog>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),

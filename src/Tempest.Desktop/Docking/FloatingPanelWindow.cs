@@ -75,6 +75,31 @@ public sealed class FloatingPanelWindow : Window
     /// <summary>The panel presentations this window's own host renders with — set by the controller that owns the whole arrangement.</summary>
     public IReadOnlyDictionary<Guid, PanelPresentation> LayoutPanels { get; set; } = new Dictionary<Guid, PanelPresentation>();
 
+    /// <summary>
+    /// Keeps this window's own current position and size reachable — see
+    /// <see cref="FloatingWindowPlacement.Clamp"/> (`WP 20.10D`, PO finding
+    /// T4). Called by <see cref="WorkspaceLayoutController"/> right before
+    /// every <see cref="Show()"/>, whether this window was just created from
+    /// a drag or restored from a saved arrangement, so neither path can ever
+    /// place it somewhere no screen actually is. A no-op when this window
+    /// reports no screens at all — nothing to clamp against.
+    /// </summary>
+    internal void ClampToScreen()
+    {
+        var screens = Screens?.All;
+        if (screens is null || screens.Count == 0)
+            return;
+
+        var primary = (Screens!.Primary ?? screens[0]).WorkingArea;
+        var requested = new PixelRect(Position.X, Position.Y, (int)Math.Max(0, Width), (int)Math.Max(0, Height));
+
+        var clamped = FloatingWindowPlacement.Clamp(requested, screens.Select(s => s.WorkingArea).ToList(), primary);
+
+        Position = clamped.Position;
+        Width = clamped.Width;
+        Height = clamped.Height;
+    }
+
     private void RaiseGeometryChanged() =>
         GeometryChanged?.Invoke(WindowId, Position.X, Position.Y, Width, Height);
 }
