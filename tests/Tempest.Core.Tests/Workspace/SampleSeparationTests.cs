@@ -8,6 +8,7 @@ using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Calculations;
+using Tempest.Core.Calculations.Modules;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Runtime;
 using Tempest.Core.Identity;
@@ -77,6 +78,18 @@ public sealed class SampleSeparationTests
         typeof(BearingLoadCapacityCalculationDefinition),
         typeof(PressureVesselWallThicknessCalculationDefinition),
         typeof(MaterialSelectionMarginCalculationDefinition),
+        // `WP 21.7A`: the eleven engineering calculation modules.
+        typeof(BeamDeflectionCalculationDefinition),
+        typeof(BoltedJointPreloadCalculationDefinition),
+        typeof(BoltGroupEccentricShearCalculationDefinition),
+        typeof(FilletWeldThroatStressCalculationDefinition),
+        typeof(LiftingLugPinJointCalculationDefinition),
+        typeof(ColumnBucklingCalculationDefinition),
+        typeof(ShaftCombinedStressCalculationDefinition),
+        typeof(BearingRatingLifeCalculationDefinition),
+        typeof(ThickWalledCylinderCalculationDefinition),
+        typeof(ThermalExpansionStressCalculationDefinition),
+        typeof(FatigueMinerCalculationDefinition),
     ];
 
     // ================================================================
@@ -113,7 +126,11 @@ public sealed class SampleSeparationTests
     {
         Assert.NotEqual(SampleAssembly, definitionType.Assembly.GetName().Name);
         Assert.Equal("Tempest.Core", definitionType.Assembly.GetName().Name);
-        Assert.Equal("Tempest.Core.Calculations", definitionType.Namespace);
+
+        // The five original definitions sit in the framework's own namespace;
+        // the `WP 21.7A` modules in its Modules sub-namespace. Both are the
+        // domain, and neither is the sample harness.
+        Assert.StartsWith("Tempest.Core.Calculations", definitionType.Namespace, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -128,14 +145,8 @@ public sealed class SampleSeparationTests
         // The same five types EveryProductCalculation names, read for their
         // own Id constants rather than restated as string literals — so a
         // renamed Id cannot drift between the catalogue and this guard.
-        var declared = new[]
-        {
-            typeof(BoltShearCapacityCalculationDefinition),
-            typeof(BeamBendingStressCalculationDefinition),
-            typeof(BearingLoadCapacityCalculationDefinition),
-            typeof(PressureVesselWallThicknessCalculationDefinition),
-            typeof(MaterialSelectionMarginCalculationDefinition),
-        }
+        var declared = ((IEnumerable<object[]>)EveryProductCalculation())
+            .Select(row => (Type)row[0])
             .Select(type => (string)type.GetField("Id")!.GetValue(null)!)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToList();
@@ -224,7 +235,8 @@ public sealed class SampleSeparationTests
             // hand-built input records would test the definitions, which
             // `EachProductCalculation_IsDeclaredInTheDomain_NotInSamples`
             // and the definitions' own tests already do.
-            Assert.Equal(5, ProductCalculationCatalogue.CalculationIds.Count);
+            // Five original definitions and the eleven `WP 21.7A` modules.
+            Assert.Equal(16, ProductCalculationCatalogue.CalculationIds.Count);
         }
         finally
         {
