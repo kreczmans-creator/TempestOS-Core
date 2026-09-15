@@ -14,13 +14,14 @@ namespace Tempest.Desktop.Views;
 /// The User Command Macro foundation's own authoring/browsing surface
 /// (`WP 10.6A`) — lists existing macros (Run/Delete), and a minimal, real
 /// "New Macro" editor: a name, and an ordered list of steps picked from
-/// the commands that can run with nobody present (<see cref="IsMacroEligible"/>
-/// — since TD-77 Stage 5 that includes the real discipline lifecycle
-/// transitions, which `ADR-0098`'s own previously-disclosed limitation
-/// excluded). Deliberately not a drag/drop builder — the brief's own "user
-/// command macros (foundation)" framing, taken literally: real, working,
-/// minimal. Shares the Dialog Framework's own established panel styling
-/// (mirrors <see cref="SettingsDialog"/>'s construction).
+/// the commands eligible to be one (<see cref="IsMacroEligible"/> — since
+/// TD-77 Stage 5 that includes the real discipline lifecycle transitions,
+/// and since `WP 20.2C` a parameterised command too, once Add Step has
+/// collected the values it declares through <see cref="_collectStepValues"/>).
+/// Deliberately not a drag/drop builder — the brief's own "user command
+/// macros (foundation)" framing, taken literally: real, working, minimal.
+/// Shares the Dialog Framework's own established panel styling (mirrors
+/// <see cref="SettingsDialog"/>'s construction).
 /// </summary>
 public sealed class MacroManagerDialog : Border
 {

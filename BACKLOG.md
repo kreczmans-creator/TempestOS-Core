@@ -29,6 +29,30 @@ None of these nine appear below.
 
 ## Live Backlog (17 of 30 cap — see the `WP 19.9.1` note below the table)
 
+**`ADR-0099`'s gap 4** — macros could only sequence `Tempest.Samples`
+demo commands (a step needed a `CreateDefault`-eligible descriptor,
+which no real discipline command has ever set), and a deleted macro's
+own `CommandDescriptor` stayed registered forever, because
+`ICommandRegistry` exposed no way to remove one — was never given a
+`TD` row (audited 2026-09-14 as a still-open ADR-disclosed gap; see
+`ADR-0099`'s own addendum) and **is closed by `WP 20.2C`**.
+`ICommandRegistry.Unregister` removes a descriptor outright — `Items`
+already reads fresh everywhere, so no menu, the Command Palette or the
+Ribbon lists a removed one — and `MacroManager.DeleteAsync` calls it.
+`MacroStep` now records the values a person supplies when a
+parameterised step is added (through the same `CommandParameterPrompt`
+seam a live invocation already uses) and replays them silently on run,
+asking only for whatever a legacy or hand-made step never recorded —
+so `mechanical.create`, `mechanical.rename`, `requirements.create` and
+every other non-confirmation-gated discipline command are real macro
+steps now, not merely the thirteen lifecycle transitions TD-77 Stage 5
+left reachable. A confirmation-gated command (every delete, every
+duplicate) and the object-picker set (`mechanical.move`/`copy`/`compare-baselines`,
+until `WP 20.2A` lands) still cannot be a step — the first because no
+recording answers for a person's "yes", the second refused at record
+time with its own reason. It does not appear in the table below,
+having never had a row there.
+
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
 by `WP 19.10B`**. A generation token now discards a stale refresh's own

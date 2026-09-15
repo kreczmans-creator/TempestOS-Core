@@ -113,12 +113,85 @@ carry non-primitive constructor arguments); a Command Id string, resolved
 through the already-existing `ICommandRegistry.InvokeAsync` machinery,
 needs no new serialisation contract at all.
 
+## Addendum (`WP 20.2C`) — both disclosed gaps closed: `Unregister` exists, and a step can record a real command's own values
+
+The Technical Debt Rationalisation audit of 2026-09-14 restated this
+ADR's own two disclosed limitations, unclosed since `v0.10.0`: `ICommandRegistry`
+exposed no way to remove a descriptor, so a deleted macro's own
+`CommandDescriptor` stayed registered permanently; and a macro step
+needed a `CreateDefault`-eligible descriptor, which no production
+discipline command has ever set, so a macro could only ever sequence
+`Tempest.Samples` demo commands. Both close here.
+
+**`ICommandRegistry.Unregister(string id)`.** Removes a descriptor
+outright. `Items` was already read fresh by every consumer — the
+Ribbon rebuilds its tabs from it, the Command Palette re-filters it on
+every keystroke — so no second change-notification mechanism was
+needed for a removal to be immediately visible everywhere; the frozen
+`ADR-0037` contract this ADR's own Decision cited no longer applies,
+since `WP 19.10R` (`TD-179`'s residual) had already re-opened
+`CommandRegistry.cs` to add the archived-project guard `Evaluate`
+consults, and this Work Package's own brief instructed adding the new
+method cleanly beside it. `IMacroManager.DeleteAsync` calls it: a
+deleted macro's own descriptor is now genuinely gone, not merely left
+to fail gracefully — `RunMacroCommandHandler`'s own graceful "no
+longer exists" outcome stays, guarding the one remaining path that can
+still reach a macro Id nothing (or nothing any more) resolves to: a
+`RunMacroCommand` dispatched directly, bypassing the registry's own Id
+lookup.
+
+**A macro step now records what a person supplied, and replays it.**
+TD-77 Stage 5 (`v0.19.0`) had already widened step eligibility once,
+from "has a `CreateDefault`" to "the binding needs nobody present"
+(`CommandBinding.RequiresPrompt` false) — real, but still excluded
+every Create, every Rename, every Set-something, because each declares
+a value only a person can supply. `MacroStep` (`src/Tempest.Core/Macros/MacroStep.cs`)
+is the missing piece: a step is now a command Id *and* the values
+recorded for it — collected once, at record time
+(`MacroManagerDialog.AddStepAsync`), through the identical
+`CommandParameterPrompt` seam a live invocation already uses
+(`DesktopCommandPrompt`), never a second collection mechanism.
+`IMacroManager.CreateAsync` gains an overload taking
+`IReadOnlyList<MacroStep>` (the single-string-Id overload remains,
+wrapping each Id in a `MacroStep` recording nothing, so every existing
+caller is unaffected); it refuses a step whose own binding is declared
+`Unavailable` — today, the object-picker set `WP 20.2A` has not yet
+closed — naming the binding's own reason, before the macro is ever
+created. `MacroManagerDialog.IsMacroEligible` widens accordingly: a
+parameterised binding is offered now; a binding declaring a
+confirmation still is not, because no recording can stand in for a
+person's "yes" — the one place this Work Package leaves this ADR's own
+"never runs unattended" principle exactly as `RunMacroCommand`'s own
+remarks already stated it.
+
+`RunMacroCommandHandler` replays each step through a prompt built for
+it: every value the step's own `RecordedValues` carries answers
+silently; a value the binding declares that recording did not capture
+is asked of an optional, constructor-supplied fallback prompt — never
+a confirmation, which a recording never answers and this seam never
+asks for either — and with no fallback supplied (every production
+composition today), the framework's own unchanged "needs additional
+input, and no input surface was supplied" is what a step still missing
+something reports, exactly as it did before this Work Package. A macro
+therefore still never interrupts a run with a live dialog in
+production; what changed is that a step recording everything its own
+binding needs no longer has to be told anything at all.
+
+**Consequence for a stored macro.** `MacroManager`'s own persisted
+shape (`MacroDto`) gains an additive, optional `StepValues` field,
+positionally aligned with the existing `StepCommandIds` — a macro
+persisted before this Work Package deserialises with `StepValues`
+absent, which every step reads as "recorded nothing," the exact shape
+it already had.
+
 ## Related Documents
 
 `ADR-0036`; `ADR-0037`; `ADR-0070`; `ADR-0100`;
+`src/Tempest.Core/Commands/ICommandRegistry.cs`;
 `src/Tempest.Core/Macros/ICommandMacro.cs`;
 `src/Tempest.Core/Macros/IMacroManager.cs`;
 `src/Tempest.Core/Macros/MacroManager.cs`;
+`src/Tempest.Core/Macros/MacroStep.cs`;
 `src/Tempest.Core/Macros/RunMacroCommand.cs`;
 `src/Tempest.Desktop/Views/MacroManagerDialog.cs`;
 `docs/releases/v0.10.0/WP10.6A Implementation Report.md`.

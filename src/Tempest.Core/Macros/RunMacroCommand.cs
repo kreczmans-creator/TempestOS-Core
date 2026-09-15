@@ -127,8 +127,7 @@ public sealed class RunMacroCommandHandler : ICommandHandler<RunMacroCommand>
     /// </summary>
     /// <remarks>
     /// The last case is deliberate, not an oversight: passing no prompt at
-    /// all lets <see cref="ICommandRegistry"/>'s own
-    /// <c>InvokeAsync(string, CommandContext, CommandParameterPrompt?, CancellationToken)"/>
+    /// all lets <see cref="ICommandRegistry.InvokeAsync(string, CommandContext, CommandParameterPrompt?, CancellationToken)"/>
     /// report its own honest "needs additional input, and no input surface
     /// was supplied" — the identical message this handler reported for
     /// every parameterised step before this Work Package

@@ -19,6 +19,7 @@ require.
 
 | Work Package | Delivered | Merged |
 |---|---|---|
+| `WP 20.2C` Macros over real commands; `Unregister` (`ADR-0099`) | `ICommandRegistry.Unregister(id)` removes a descriptor outright (`Items` was already read fresh everywhere, so no second change mechanism was needed); `MacroManager.DeleteAsync` calls it, so a deleted macro's own descriptor is genuinely gone rather than left as a permanent, graceful-failing ghost. `MacroStep` carries a command Id plus the parameter values recorded for it at Add Step time (the same `CommandParameterPrompt` seam a live invocation already uses); `MacroManagerDialog.IsMacroEligible` widens to admit a parameterised binding (a confirmation-gated one still excluded — no recording answers a person's "yes"); `IMacroManager.CreateAsync` refuses a step whose own binding is declared `Unavailable` (the object-picker set), naming the reason, before the macro is ever created; `RunMacroCommandHandler` replays each step's recorded values, asking an optional fallback only for a value that was not recorded. `ADR-0099`'s own two disclosed gaps close (addendum). | 2026-09-15 (pending merge) |
 
 ## Figures
 
