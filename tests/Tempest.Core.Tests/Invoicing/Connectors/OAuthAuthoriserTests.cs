@@ -218,6 +218,53 @@ public sealed class OAuthAuthoriserTests
         Assert.Contains(OAuthAuthoriser.LoopbackPortConfigurationKey, result.Reason, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// `TD-183` folded into `WP 21.5F`'s Offensive Security Audit (item 3):
+    /// a just-released listener on the same fixed port can still be
+    /// settling (a transient collision, not a genuinely occupied port) —
+    /// several suites binding the identical default port in quick
+    /// succession hit exactly this. The fix retries the same port rather
+    /// than ever falling back to a different one (falling back would defeat
+    /// the whole reason the port is fixed — the sandbox app's own
+    /// registered redirect URI). This proves the retry itself, not only
+    /// that a genuinely-busy port still fails (the test above).
+    /// </summary>
+    [Fact]
+    public async Task AuthoriseAsync_APortHeldTransiently_SucceedsOnceTheEarlierListenerReleasesIt()
+    {
+        var port = FindAFreeTcpPort();
+        var occupier = new System.Net.HttpListener();
+        occupier.Prefixes.Add($"http://127.0.0.1:{port}/callback/");
+        occupier.Start();
+
+        // Releases the port shortly after the authoriser's own first
+        // attempt would have collided with it, well inside the retry
+        // window - simulating the transient TD-183 collision rather than a
+        // port genuinely held for the run's whole duration.
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(75);
+            occupier.Stop();
+            ((IDisposable)occupier).Dispose();
+        });
+
+        var configuration = BuildConfiguration("client-abc", loopbackPort: port);
+        var handler = new StubHttpMessageHandler();
+        var launcher = new FakeBrowserLauncher();
+        var authoriser = new OAuthAuthoriser(
+            new OAuthProviderProfile(Provider, AuthorizationEndpoint, TokenEndpoint, ["scope-a"]),
+            configuration, new InMemorySecretStore(), launcher, new HttpClient(handler));
+
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        var result = await authoriser.AuthoriseAsync(TestTimeout());
+
+        Assert.Equal(OAuthOutcome.Ok, result.Outcome);
+        await AwaitLauncherAsync(launcher);
+        AssertRedirectUriPort(launcher, port);
+    }
+
     [Fact]
     public async Task EnsureAccessTokenAsync_NotAuthorised_WhenNothingIsStored()
     {

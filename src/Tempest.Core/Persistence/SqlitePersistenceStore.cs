@@ -179,6 +179,8 @@ public sealed class SqlitePersistenceStore
             ? configuredPath
             : DefaultRootPath;
 
+        ValidateRootPath(_rootPath);
+
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
         _logger = logger;
@@ -832,8 +834,95 @@ public sealed class SqlitePersistenceStore
     // Internals
     // ----------------------------------------------------------------
 
+    /// <summary>
+    /// Windows locations <see cref="ValidateRootPath"/> refuses to let
+    /// <see cref="RootPathConfigurationKey"/> resolve inside — populated
+    /// once, statically, since <see cref="Environment.GetFolderPath(Environment.SpecialFolder)"/>
+    /// does not change within a process. An entry is the empty string on a
+    /// system where that special folder does not exist (any non-Windows
+    /// OS) and is skipped rather than matching everything.
+    /// </summary>
+    private static readonly string[] WindowsDisallowedRoots =
+    [
+        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        Environment.GetFolderPath(Environment.SpecialFolder.System),
+        Environment.GetFolderPath(Environment.SpecialFolder.SystemX86),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+    ];
+
+    /// <summary>The non-Windows equivalent of <see cref="WindowsDisallowedRoots"/> — the handful of directories no ordinary application's own data belongs inside.</summary>
+    private static readonly string[] UnixDisallowedRoots =
+        ["/etc", "/usr", "/bin", "/sbin", "/boot", "/sys", "/proc", "/root", "/lib", "/lib64"];
+
+    /// <summary>
+    /// Refuses a persistence root that resolves to a drive root or inside a
+    /// protected system directory (`WP 21.5F` Offensive Security Audit,
+    /// item 6 — "whether `--persistence-root`/`Persistence:RootPath` can
+    /// point at a system path and be written to"). <see cref="RootPathConfigurationKey"/>
+    /// is operator/command-line-controlled input (the brief's own actor
+    /// (e): "can supply command-line arguments and environment") — nothing
+    /// previously stopped it naming <c>C:\Windows</c> or <c>C:\</c> itself,
+    /// which this store would then have created a <c>tempest.db</c> and
+    /// instance lock file directly inside.
+    /// </summary>
+    /// <exception cref="PersistenceStoreUnavailableException">
+    /// <paramref name="rootPath"/> resolves to a drive root, or inside a
+    /// protected system directory.
+    /// </exception>
+    private static void ValidateRootPath(string rootPath)
+    {
+        var fullRoot = Path.GetFullPath(rootPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        var driveRoot = Path.GetPathRoot(fullRoot)?
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (!string.IsNullOrEmpty(driveRoot) && string.Equals(fullRoot, driveRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"The persistence root '{rootPath}' resolves to a drive root ('{fullRoot}'); " +
+                $"configure a real subdirectory under '{RootPathConfigurationKey}'.");
+        }
+
+        var disallowed = OperatingSystem.IsWindows() ? WindowsDisallowedRoots : UnixDisallowedRoots;
+
+        foreach (var candidate in disallowed)
+        {
+            if (string.IsNullOrEmpty(candidate))
+                continue;
+
+            var normalised = candidate.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var isSameOrDescendant =
+                string.Equals(fullRoot, normalised, StringComparison.OrdinalIgnoreCase) ||
+                fullRoot.StartsWith(normalised + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+            if (isSameOrDescendant)
+            {
+                throw new PersistenceStoreUnavailableException(
+                    $"The persistence root '{rootPath}' resolves inside a protected system directory " +
+                    $"('{normalised}') and was refused; configure a real, ordinary data location under " +
+                    $"'{RootPathConfigurationKey}'.");
+            }
+        }
+    }
+
     private FileStream AcquireInstanceLock()
     {
+        // `WP 21.5F` Offensive Security Audit, OSA-06: a symlink/junction
+        // planted at the lock file's own path (by anything that already
+        // has write access to the persistence root — the same prerequisite
+        // every other threat this audit modelled against this actor
+        // assumes) would otherwise have every subsequent open of this path
+        // (this one, and TryDeleteLockFile's own delete) silently follow it
+        // to wherever it points. Refused outright rather than followed.
+        if (File.Exists(_lockFilePath) && File.GetAttributes(_lockFilePath).HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"The persistence root's own instance lock file '{_lockFilePath}' is a symlink or junction, " +
+                "not a plain file, and was refused rather than followed.");
+        }
+
         try
         {
             return new FileStream(
