@@ -10,6 +10,7 @@ using Tempest.Core.Events;
 using Tempest.Desktop;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views.Dashboards;
+using Tempest.Desktop.Views.EngineeringAssets;
 
 namespace Tempest.Desktop.Views;
 
@@ -48,6 +49,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly ReportsView _reportsView;
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly LibrariesView _referenceData;
+    private readonly EngineeringAssetsView _engineeringAssets;
     private readonly Func<Task> _onEngineeringCalculationSelected;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly Action<Guid, string> _openObjectRightUp;
@@ -67,6 +69,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _modulesNode = new() { Header = "Modules", IsExpanded = true };
     private readonly TreeViewItem _mechanicalNode = new() { Header = "Mechanical" };
     private readonly TreeViewItem _calculationsNode = new() { Header = "Engineering Calculations" };
+    private readonly TreeViewItem _assetsNode = new() { Header = "Engineering Assets" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
@@ -87,11 +90,13 @@ public sealed class EngineeringAreaView : UserControl
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
     /// <param name="openObjectRightUp">Opens a Tasks row's own source object right up — the same delegate every other rail area's Tasks/dashboard rows already use.</param>
+    /// <param name="engineeringAssets">The merged engineering capability's own area (`WP 21.2B`; `TD-160`, `TD-165`) — Modules → Engineering Assets.</param>
     public EngineeringAreaView(
         IShellNavigator navigator, ITasksReadModel tasksReadModel, ReportsView reportsView,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
-        ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp)
+        ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
+        EngineeringAssetsView engineeringAssets)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -102,12 +107,14 @@ public sealed class EngineeringAreaView : UserControl
         ArgumentNullException.ThrowIfNull(onEngineeringCalculationSelected);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(openObjectRightUp);
+        ArgumentNullException.ThrowIfNull(engineeringAssets);
 
         _navigator = navigator;
         _tasksReadModel = tasksReadModel;
         _reportsView = reportsView;
         _engineeringCalculation = engineeringCalculation;
         _referenceData = referenceData;
+        _engineeringAssets = engineeringAssets;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
         _commandDispatcher = commandDispatcher;
@@ -122,6 +129,7 @@ public sealed class EngineeringAreaView : UserControl
 
         _modulesNode.Items.Add(_mechanicalNode);
         _modulesNode.Items.Add(_calculationsNode);
+        _modulesNode.Items.Add(_assetsNode);
 
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_tasksNode);
@@ -131,7 +139,8 @@ public sealed class EngineeringAreaView : UserControl
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard + Reports"), (_tasksNode, "Tasks"), (_modulesNode, "Modules"),
-                     (_mechanicalNode, "Mechanical"), (_calculationsNode, "Engineering Calculations"), (_referenceDataNode, "Reference data"),
+                     (_mechanicalNode, "Mechanical"), (_calculationsNode, "Engineering Calculations"),
+                     (_assetsNode, "Engineering Assets"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Engineering tree");
@@ -159,7 +168,10 @@ public sealed class EngineeringAreaView : UserControl
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _tasksNode, _modulesNode, _mechanicalNode, _calculationsNode, _referenceDataNode }
+        var item = new[]
+            {
+                _dashboardNode, _tasksNode, _modulesNode, _mechanicalNode, _calculationsNode, _assetsNode, _referenceDataNode,
+            }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -171,7 +183,11 @@ public sealed class EngineeringAreaView : UserControl
     /// <c>GlobalNavigationRail</c>/<c>RibbonView</c>/<c>LibrariesView</c>
     /// already fold on.
     /// </summary>
-    public void SetCompact(bool compact) => _treeColumn.SetCompact(compact);
+    public void SetCompact(bool compact)
+    {
+        _treeColumn.SetCompact(compact);
+        _engineeringAssets.SetCompact(compact);
+    }
 
     /// <summary>Gets whether the tree column is currently manually collapsed to its own strip (`WP 19.10O`).</summary>
     public bool IsTreeCollapsed => _treeColumn.IsCollapsed;
@@ -253,6 +269,13 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _onEngineeringCalculationSelected().ConfigureAwait(true);
             _detail.Content = _engineeringCalculation;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _assetsNode))
+        {
+            await _engineeringAssets.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _engineeringAssets;
             return;
         }
 
