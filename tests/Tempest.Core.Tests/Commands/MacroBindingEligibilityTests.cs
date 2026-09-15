@@ -34,10 +34,10 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
     private static readonly IReadOnlyList<string> Disciplines =
         ["Calculations", "Documents", "Manufacturing", "Mechanical", "Requirements", "Verification"];
 
-    /// <summary>The Stage 3 audited macro-safe set, written out.</summary>
+    /// <summary>The Stage 3 audited macro-safe set, written out — `WP 20.1B` (`TD-181`) adds `calculations.complete`.</summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
-        "calculations.approve", "calculations.archive", "calculations.lock",
+        "calculations.approve", "calculations.archive", "calculations.complete", "calculations.lock",
         "calculations.request-review", "calculations.unlock",
         "documents.approve", "documents.release", "documents.request-review",
         "manufacturing.archive", "manufacturing.release",
