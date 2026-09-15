@@ -285,6 +285,23 @@ internal sealed partial class MainWindowComposer
             {
                 if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
                     await callbacks.OpenObjectAsync(createdId, createdKind).ConfigureAwait(true);
+
+                // `WP 21.1A`: the identical recording `RibbonView.RecordCompensation`
+                // does for its own two dispatch paths — the Palette's own
+                // `CommandInvoked` already carries the real CommandResult, so
+                // no second collaborator is threaded into that view itself.
+                // Covers a macro's own compound compensation for free: a
+                // macro's CommandResult carries one, built from each step's
+                // own (RunMacroCommand's own remarks), exactly like any
+                // other command's result reaching here.
+                if (result.Compensation is { } compensation)
+                {
+                    coordinators.UndoRedo.Stack.Record(new UndoableAction(compensation.Description, compensation.Undo, compensation.Redo));
+                }
+                else if (result.UndoUnavailableReason is { } reason)
+                {
+                    views.CommandHistory.Record($"Cannot be undone: {reason}", succeeded: true);
+                }
             }
         };
         views.CommandPalette.CommandUnavailable += (descriptor, reason) =>

@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
+using Tempest.Desktop.History;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -157,6 +158,23 @@ public sealed class RibbonView : UserControl
 
     /// <summary>An optional confirmation gate (`WP 10.5B`, Dialog Framework — "Delete Confirmation") — mirrors <see cref="ProjectExplorerView.ConfirmDeleteAsync"/> exactly, including its own identical "unwired means proceed immediately" default.</summary>
     public Func<string, Task<bool>>? ConfirmDeleteAsync { get; set; }
+
+    /// <summary>
+    /// Records a successful command's own <see cref="CommandResult.Compensation"/>
+    /// (`WP 21.1A`) — supplied by <c>MainWindow</c> after construction,
+    /// exactly as <see cref="ConfirmDeleteAsync"/> is (this view is built
+    /// before <c>UndoRedoCoordinator</c>'s own Stack exists). Left unwired
+    /// (any test constructing this view directly), nothing is ever
+    /// recorded — exactly this view's pre-`WP 21.1A` behaviour.
+    /// </summary>
+    public IUndoRedoStack? UndoRedoStack { get; set; }
+
+    /// <summary>
+    /// Records the honest "cannot be undone: {reason}" note (`WP 21.1A`)
+    /// for a result that carries <see cref="CommandResult.UndoUnavailableReason"/>
+    /// instead of a compensation — supplied the same way as <see cref="UndoRedoStack"/>, for the identical reason.
+    /// </summary>
+    public CommandHistoryLog? HistoryLog { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="RibbonView"/> class.</summary>
     public RibbonView(ICommandRegistry commandRegistry, IWorkspaceManager manager, IWorkspace workspace, Action<string?> setHint, Action<IWorkspaceView> openDocument)
@@ -625,6 +643,7 @@ public sealed class RibbonView : UserControl
                         ? $"'{descriptor.DisplayName}' completed."
                         : result.Message ?? $"'{descriptor.DisplayName}' failed.",
                     ActionOutcome.From(result.Succeeded));
+                RecordCompensation(result);
 
                 // `WP 17.9.4`: a created object is opened right up, not
                 // announced. The shell decides where; the ribbon only says
@@ -685,6 +704,35 @@ public sealed class RibbonView : UserControl
         ActionCompleted?.Invoke(
             result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.",
             ActionOutcome.From(result.Succeeded));
+        RecordCompensation(result);
+    }
+
+    /// <summary>
+    /// Records <paramref name="result"/>'s own <see cref="CommandResult.Compensation"/>
+    /// onto <see cref="_undoRedoStack"/> (`WP 21.1A`) — the one place both
+    /// of this view's own dispatch paths (the generic registry Executed
+    /// case, and Delete's own <see cref="IWorkspaceManager.DeleteObjectAsync"/>
+    /// path, `TD-58`) converge after already holding the real
+    /// <see cref="CommandResult"/>, which is why this is not, instead, a
+    /// property of the (message, outcome) pair <see cref="ActionCompleted"/>
+    /// raises: that string has already discarded it. A result carrying
+    /// neither a compensation nor an unavailable-reason (the overwhelming
+    /// majority — every command outside this Work Package's own scope)
+    /// records nothing, exactly as before this Work Package.
+    /// </summary>
+    private void RecordCompensation(CommandResult result)
+    {
+        if (!result.Succeeded)
+            return;
+
+        if (result.Compensation is { } compensation)
+        {
+            UndoRedoStack?.Record(new UndoableAction(compensation.Description, compensation.Undo, compensation.Redo));
+        }
+        else if (result.UndoUnavailableReason is { } reason)
+        {
+            HistoryLog?.Record($"Cannot be undone: {reason}", succeeded: true);
+        }
     }
 
     /// <summary>
