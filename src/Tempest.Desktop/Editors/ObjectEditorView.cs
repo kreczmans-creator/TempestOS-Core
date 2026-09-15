@@ -240,25 +240,7 @@ public sealed class ObjectEditorView : UserControl
 
     private Expander _contentSection = null!;
     private readonly BillOfMaterialsSection _bomSection = new();
-
-    // `WP 20.10F` (Product Owner finding D8): a drop-down of Released
-    // people, not a free `TextBox` — see `PopulateOwnerOptionsAsync`'s own
-    // remarks for how its items are built and what each one's own `Tag`
-    // means.
-    private readonly ComboBox _requirementOwnerBox = new() { MinHeight = DesignTokens.MinControlSize };
-    private readonly ComboBox _requirementPriorityBox = new() { MinHeight = DesignTokens.MinControlSize, ItemsSource = new[] { "(none)", "Low", "Medium", "High", "Critical" } };
-    private readonly Button _requirementSaveButton = new() { Content = "Save Owner/Priority", MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBlock _requirementStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-
-    /// <summary>The literal owner text and person-record-id a fresh <see cref="PopulateOwnerOptionsAsync"/> read last — what <see cref="OnSaveRequirementAsync"/> falls back to when the drop-down's own current selection resolves to neither a real person nor the legacy item (the sentinel <see cref="AddPersonOwnerTag"/> row, or nothing selected at all).</summary>
-    private (string? Owner, string? OwnerPersonId) _currentOwner;
-
-    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own trailing <b>Add person…</b> row carries — never a real record id, which is always the person's own <see cref="IReferenceRecord{TDefinition}.Id"/>.</summary>
-    private const string AddPersonOwnerTag = "__wp2010f_add_person__";
-
-    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in People)" row carries, when a requirement's stored <see cref="Tempest.Core.Requirements.IRequirement.Owner"/> matches no Released person.</summary>
-    private const string LegacyOwnerTag = "__wp2010f_legacy_owner__";
-    private Expander _requirementSection = null!;
+    private readonly RequirementOwnerPrioritySection _requirementSection = new();
 
     private readonly ComboBox _calculationTemplatePicker = new() { MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _calculationInputJsonBox = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 80, FontSize = DesignTokens.FontSizeBody, Watermark = "{ ... }" };
@@ -566,7 +548,6 @@ public sealed class ObjectEditorView : UserControl
         _readOnlyToggle.Classes.Add(ChromeStyles.Subtle);
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
-        _requirementSaveButton.Classes.Add(ChromeStyles.Primary);
         _calculationExecuteButton.Classes.Add(ChromeStyles.Primary);
         _calculationDueSaveButton.Classes.Add(ChromeStyles.Primary);
         _verificationPassButton.Classes.Add(ChromeStyles.Primary);
@@ -596,14 +577,9 @@ public sealed class ObjectEditorView : UserControl
         // WP 10.7A — Feature Completion: the five new sections' own Save/
         // Execute/Record/Attach actions, each independent of the main
         // Name/Content Save above (a different command, a different
-        // buffered-edit lifecycle). `WP 21.1B`: Bill of Materials now wires
-        // its own Save button inside its own Build().
-        _requirementSaveButton.Click += async (_, _) => await OnSaveRequirementAsync().ConfigureAwait(true);
-        // `WP 20.10F`: picking the drop-down's own trailing "Add person…"
-        // row is an immediate action, not a value to save — handled here,
-        // on selection, rather than deferred to Save.
-        _requirementOwnerBox.SelectionChanged += async (_, _) => await OnRequirementOwnerSelectionChangedAsync().ConfigureAwait(true);
-        AutomationProperties.SetName(_requirementOwnerBox, "Owner");
+        // buffered-edit lifecycle). `WP 21.1B`: Bill of Materials and
+        // Owner/Priority now wire their own Save buttons inside their own
+        // Build().
         _calculationExecuteButton.Click += async (_, _) => await OnExecuteCalculationAsync().ConfigureAwait(true);
         _calculationDueSaveButton.Click += async (_, _) => await OnSaveCalculationDueAsync().ConfigureAwait(true);
         _verificationPassButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Pass).ConfigureAwait(true);
@@ -860,14 +836,7 @@ public sealed class ObjectEditorView : UserControl
         // applies to. `WP 21.1B`: Bill of Materials now lives in its own
         // file under Editors/Sections/.
         var bomExpander = _bomSection.Build(_sectionContext);
-
-        var requirementPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        requirementPanel.Children.Add(LabeledRow("Owner", _requirementOwnerBox));
-        requirementPanel.Children.Add(LabeledRow("Priority", _requirementPriorityBox));
-        requirementPanel.Children.Add(_requirementSaveButton);
-        requirementPanel.Children.Add(_requirementStatusMessage);
-        _requirementSection = BuildSection("Owner / Priority", requirementPanel);
-        _requirementSection.IsVisible = false;
+        var requirementExpander = _requirementSection.Build(_sectionContext);
 
         var calculationPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         calculationPanel.Children.Add(LabeledRow("Template", _calculationTemplatePicker));
@@ -1063,7 +1032,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
         body.Children.Add(bomExpander);
-        body.Children.Add(_requirementSection);
+        body.Children.Add(requirementExpander);
         body.Children.Add(_calculationSection);
         body.Children.Add(_calculationPointerSection);
         body.Children.Add(_calculationDueSection);
@@ -1125,7 +1094,7 @@ public sealed class ObjectEditorView : UserControl
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
         await _bomSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await PopulateRequirementAsync().ConfigureAwait(true);
+        await _requirementSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
         PopulateCalculationDue(target);
         PopulateVerificationResult(target);
@@ -1218,7 +1187,7 @@ public sealed class ObjectEditorView : UserControl
         // through _requirementsService with no target of its own — this
         // is the section TryCreate's own gate made unreachable before
         // this fix.
-        await PopulateRequirementAsync().ConfigureAwait(true);
+        await _requirementSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
 
         // Relationships: both "allocated to" (LinkRequirementCommand) and
         // "verified by" (VerificationService.RecordAsync) are recorded as
@@ -2074,164 +2043,6 @@ public sealed class ObjectEditorView : UserControl
             _attachmentsDropZone.BorderBrush = borderBrush;
         if (Application.Current?.TryGetResource(backgroundKey, variant, out var background) == true && background is IBrush backgroundBrush)
             _attachmentsDropZone.Background = backgroundBrush;
-    }
-
-    /// <summary>
-    /// The Requirements Owner/Priority section (`WP 10.7A`) — gated on
-    /// <see cref="_objectKind"/> (never a C# type-check: the data lives
-    /// entirely in <see cref="IRequirementsService"/>'s own
-    /// <c>Tempest.Core.Requirements.IRequirement</c>, a genuinely
-    /// different, unrelated interface from the real engineering object
-    /// <see cref="PopulateFromAsync"/> populates every other section
-    /// from). Takes no parameter — unlike every other Populate* method,
-    /// nothing here ever came from the real <see cref="IEngineeringObject"/>
-    /// target, so <see cref="PopulateFromRequirementAsync"/> (`TD-41`,
-    /// `WP 19.10I`) calls this identical method with no target to pass at
-    /// all. <see langword="null"/> <see cref="_requirementsService"/> (any
-    /// existing test/caller that never threads it through) leaves this
-    /// section honestly hidden, never a crash.
-    /// </summary>
-    private async Task PopulateRequirementAsync()
-    {
-        if (_requirementsService is null || _objectKind != RequirementsService.RequirementDocumentKind)
-        {
-            _requirementSection.IsVisible = false;
-            return;
-        }
-
-        var requirement = await _requirementsService.FindAsync(_objectId).ConfigureAwait(true);
-        if (requirement is null)
-        {
-            _requirementSection.IsVisible = false;
-            return;
-        }
-
-        _requirementSection.IsVisible = true;
-        await PopulateOwnerOptionsAsync(requirement).ConfigureAwait(true);
-        _requirementPriorityBox.SelectedItem = requirement.Priority?.ToString() ?? "(none)";
-        _requirementStatusMessage.Text = string.Empty;
-    }
-
-    /// <summary>The <see cref="ComboBoxItem.Tag"/> a real, Released-person row of the Owner drop-down carries (`WP 20.10F`) — the record id together with the display name to store on Save, so Save never has to parse it back out of "DisplayName (Role)".</summary>
-    private sealed record OwnerOptionTag(string RecordId, string DisplayName);
-
-    /// <summary>
-    /// (Re)builds the Owner drop-down's own items: every Released, active
-    /// person (`WP 20.10F`, Product Owner finding D8), read fresh every
-    /// time — never cached, so a person released anywhere is offered the
-    /// next time this runs; the requirement's own current free-text
-    /// <see cref="Tempest.Core.Requirements.IRequirement.Owner"/> as a leading "(not in People)" row
-    /// where it matches no Released person; and, where
-    /// <see cref="_ownerSupport"/> is wired, a trailing <b>Add person…</b>
-    /// row. <paramref name="preferPersonId"/> is selected if a matching
-    /// Released person is found; otherwise the legacy row is selected when
-    /// there is a stored owner, and nothing is selected otherwise (an unset
-    /// requirement, or no <see cref="_ownerSupport"/> at all).
-    /// </summary>
-    private async Task PopulateOwnerOptionsAsync(Tempest.Core.Requirements.IRequirement requirement)
-    {
-        _currentOwner = (requirement.Owner, requirement.OwnerPersonId);
-        await RebuildOwnerItemsAsync(requirement.OwnerPersonId).ConfigureAwait(true);
-    }
-
-    private async Task RebuildOwnerItemsAsync(string? preferPersonId)
-    {
-        var items = new List<ComboBoxItem>();
-        ComboBoxItem? selected = null;
-
-        if (_ownerSupport is not null)
-        {
-            var released = await _ownerSupport.Persons.FindSelectableAsync().ConfigureAwait(true);
-
-            foreach (var record in released)
-            {
-                var label = string.IsNullOrWhiteSpace(record.Definition.Role)
-                    ? record.Definition.DisplayName
-                    : $"{record.Definition.DisplayName} ({record.Definition.Role})";
-                var item = new ComboBoxItem { Content = label, Tag = new OwnerOptionTag(record.Id, record.Definition.DisplayName) };
-                items.Add(item);
-
-                if (preferPersonId is not null && string.Equals(preferPersonId, record.Id, StringComparison.Ordinal))
-                    selected = item;
-            }
-        }
-
-        // An existing requirement whose typed owner matches no person still
-        // shows its own text, suffixed "(not in People)" — the drop-down
-        // still offers to pick a real person instead.
-        if (selected is null && !string.IsNullOrWhiteSpace(_currentOwner.Owner))
-        {
-            var legacy = new ComboBoxItem { Content = $"{_currentOwner.Owner} (not in People)", Tag = LegacyOwnerTag };
-            items.Insert(0, legacy);
-            selected = legacy;
-        }
-
-        if (_ownerSupport is not null)
-            items.Add(new ComboBoxItem { Content = "Add person…", Tag = AddPersonOwnerTag });
-
-        _requirementOwnerBox.ItemsSource = items;
-        _requirementOwnerBox.SelectedItem = selected;
-    }
-
-    /// <summary>
-    /// Picking the trailing "Add person…" row opens
-    /// <see cref="RequirementOwnerEditorSupport.AddPersonAsync"/> right
-    /// away — never a value to save, an action taken the moment it is
-    /// selected. Any other selection (a real person, the legacy row, or
-    /// none) is a plain no-op here: it is <see cref="OnSaveRequirementAsync"/>'s
-    /// own job to read it, not this handler's.
-    /// </summary>
-    private async Task OnRequirementOwnerSelectionChangedAsync()
-    {
-        if (_ownerSupport is null || _requirementOwnerBox.SelectedItem is not ComboBoxItem { Tag: AddPersonOwnerTag })
-            return;
-
-        var added = await _ownerSupport.AddPersonAsync(CancellationToken.None).ConfigureAwait(true);
-
-        // Rebuilds either way: added — the new person now exists, Released,
-        // and is preferred/selected below; cancelled — rebuilding from the
-        // requirement's own last-known owner is what stops the sentinel
-        // row itself from ever being left sitting selected.
-        await RebuildOwnerItemsAsync(added?.RecordId ?? _currentOwner.OwnerPersonId).ConfigureAwait(true);
-
-        if (added is { } newPerson)
-            _requirementStatusMessage.Text = $"Added and released '{newPerson.DisplayName}'.";
-    }
-
-    private async Task OnSaveRequirementAsync()
-    {
-        var (owner, ownerPersonId) = _requirementOwnerBox.SelectedItem switch
-        {
-            ComboBoxItem { Tag: OwnerOptionTag option } => ((string?)option.DisplayName, (string?)option.RecordId),
-            ComboBoxItem { Tag: LegacyOwnerTag } => (_currentOwner.Owner, (string?)null),
-            _ => (_currentOwner.Owner, _currentOwner.OwnerPersonId),
-        };
-
-        var ownerResult = await _commandDispatcher.DispatchAsync(new SetRequirementOwnerCommand(_objectId, owner, ownerPersonId), CancellationToken.None).ConfigureAwait(true);
-        if (!ownerResult.Succeeded)
-        {
-            _requirementStatusMessage.Text = ownerResult.Message ?? "Set owner failed.";
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Failed);
-            return;
-        }
-
-        var priorityText = _requirementPriorityBox.SelectedItem as string;
-        RequirementPriority? priority = priorityText is null or "(none)" ? null : Enum.Parse<RequirementPriority>(priorityText);
-        var priorityResult = await _commandDispatcher.DispatchAsync(new SetRequirementPriorityCommand(_objectId, priority), CancellationToken.None).ConfigureAwait(true);
-        if (!priorityResult.Succeeded)
-        {
-            _requirementStatusMessage.Text = priorityResult.Message ?? "Set priority failed.";
-
-            // The Owner half already dispatched successfully above, so the
-            // workspace did change even though this action failed overall.
-            ActionCompleted?.Invoke(_requirementStatusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: true));
-            return;
-        }
-
-        // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
-        await RefreshAsync().ConfigureAwait(true);
-        _requirementStatusMessage.Text = "Owner/Priority saved.";
-        ActionCompleted?.Invoke(_requirementStatusMessage.Text, ActionOutcome.Changed);
     }
 
     /// <summary>
