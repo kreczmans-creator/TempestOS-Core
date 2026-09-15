@@ -231,6 +231,12 @@ public sealed class ObjectEditorView : UserControl
     private Expander _calculationSection = null!;
     private Expander _calculationPointerSection = null!;
 
+    /// <summary>`WP 20.10B` (T2): the Due row — a Calculation only, never a Calculation Set or Template.</summary>
+    private readonly TextBox _calculationDueBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize, Watermark = "yyyy-mm-dd" };
+    private readonly Button _calculationDueSaveButton = new() { Content = "Save Due Date", MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBlock _calculationDueStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+    private Expander _calculationDueSection = null!;
+
     /// <summary>What the editor says on a Calculation instead of offering a JSON box (`WP 17.9.1`).</summary>
     public const string CalculationPointerGuidance =
         "Calculations are run, named and traced in the Engineering Calculations workspace — open it from the rail on the left. "
@@ -519,6 +525,7 @@ public sealed class ObjectEditorView : UserControl
         _bomSaveButton.Classes.Add(ChromeStyles.Primary);
         _requirementSaveButton.Classes.Add(ChromeStyles.Primary);
         _calculationExecuteButton.Classes.Add(ChromeStyles.Primary);
+        _calculationDueSaveButton.Classes.Add(ChromeStyles.Primary);
         _verificationPassButton.Classes.Add(ChromeStyles.Primary);
         _verificationFailButton.Classes.Add(ChromeStyles.Danger);
         _verificationConditionalButton.Classes.Add(ChromeStyles.Subtle);
@@ -550,6 +557,7 @@ public sealed class ObjectEditorView : UserControl
         _bomSaveButton.Click += async (_, _) => await OnSaveBomAsync().ConfigureAwait(true);
         _requirementSaveButton.Click += async (_, _) => await OnSaveRequirementAsync().ConfigureAwait(true);
         _calculationExecuteButton.Click += async (_, _) => await OnExecuteCalculationAsync().ConfigureAwait(true);
+        _calculationDueSaveButton.Click += async (_, _) => await OnSaveCalculationDueAsync().ConfigureAwait(true);
         _verificationPassButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Pass).ConfigureAwait(true);
         _verificationFailButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Fail).ConfigureAwait(true);
         _verificationConditionalButton.Click += async (_, _) => await OnRecordVerificationResultAsync(VerificationOutcome.Conditional).ConfigureAwait(true);
@@ -836,6 +844,18 @@ public sealed class ObjectEditorView : UserControl
         });
         _calculationPointerSection.IsVisible = false;
 
+        // `WP 20.10B` (T2): a Calculation's own Due date — the generic
+        // editor's row pattern, mirroring the BOM/Owner-Priority sections'
+        // identical shape (a labelled row, a Save button, a status
+        // message) — never for a Calculation Set or Template, which carry
+        // no due date of their own.
+        var calculationDuePanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        calculationDuePanel.Children.Add(LabeledRow("Due", _calculationDueBox));
+        calculationDuePanel.Children.Add(_calculationDueSaveButton);
+        calculationDuePanel.Children.Add(_calculationDueStatusMessage);
+        _calculationDueSection = BuildSection("Due", calculationDuePanel);
+        _calculationDueSection.IsVisible = false;
+
         var verificationResultPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         verificationResultPanel.Children.Add(LabeledRow("Method", _verificationMethodBox));
         var verificationButtonRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
@@ -1006,6 +1026,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_requirementSection);
         body.Children.Add(_calculationSection);
         body.Children.Add(_calculationPointerSection);
+        body.Children.Add(_calculationDueSection);
         body.Children.Add(_verificationResultSection);
         body.Children.Add(_evidenceCitationsSection);
         body.Children.Add(_evidenceFiguresSection);
@@ -1066,6 +1087,7 @@ public sealed class ObjectEditorView : UserControl
         PopulateBom(target);
         await PopulateRequirementAsync().ConfigureAwait(true);
         await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
+        PopulateCalculationDue(target);
         PopulateVerificationResult(target);
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
         PopulateDescription(target);
@@ -2445,6 +2467,52 @@ public sealed class ObjectEditorView : UserControl
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
         _calculationStatusMessage.Text = message;
+        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
+    }
+
+    /// <summary>
+    /// The Due section (`WP 20.10B`, T2) — a real <c>"Calculation"</c>
+    /// only, never a <c>"CalculationSet"</c> (a container, never itself a
+    /// task) or a synthetic <c>"CalculationTemplate"</c> (no Domain
+    /// identity to set a field on).
+    /// </summary>
+    private void PopulateCalculationDue(IEngineeringObject target)
+    {
+        _calculationDueSection.IsVisible = _objectKind == "Calculation";
+
+        if (target is not Calculation calculation)
+            return;
+
+        _calculationDueBox.Text = calculation.DueOn?.ToString("O") ?? string.Empty;
+        _calculationDueStatusMessage.Text = string.Empty;
+    }
+
+    private async Task OnSaveCalculationDueAsync()
+    {
+        DateOnly? dueOn;
+
+        if (string.IsNullOrWhiteSpace(_calculationDueBox.Text))
+        {
+            dueOn = null;
+        }
+        else if (DateOnly.TryParse(_calculationDueBox.Text, out var parsed))
+        {
+            dueOn = parsed;
+        }
+        else
+        {
+            _calculationDueStatusMessage.Text = "'Due' must be a date (yyyy-mm-dd), or blank to clear it.";
+            return;
+        }
+
+        var result = await _commandDispatcher.DispatchAsync(
+            new SetCalculationDueDateCommand(_objectId, _objectKind, dueOn), CancellationToken.None).ConfigureAwait(true);
+
+        // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
+        var message = result.Succeeded ? "Due date saved." : result.Message ?? "Save failed.";
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
+        _calculationDueStatusMessage.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 

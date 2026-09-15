@@ -139,9 +139,11 @@ public sealed class CreationPlacementAndOpenRightUpTests : IAsyncLifetime
         var projectId = await CreateProjectAsync();
         var context = new CommandContext([], projectId);
 
+        // `dueOn` (`WP 20.10B`, T2): required by the create prompt itself
+        // now — every calculation created within a project carries one.
         var invocation = await _registry.InvokeAsync(
             "calculations.create", context,
-            Answering(new Dictionary<string, string> { ["kind"] = "Calculation", ["displayName"] = "Bracket Check" }));
+            Answering(new Dictionary<string, string> { ["kind"] = "Calculation", ["displayName"] = "Bracket Check", ["dueOn"] = "2026-10-01" }));
 
         await AssertCreatedAndPlacedUnderAsync(invocation, "Calculation", projectId);
     }

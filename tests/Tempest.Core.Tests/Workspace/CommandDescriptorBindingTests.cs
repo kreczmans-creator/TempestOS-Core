@@ -253,9 +253,14 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // 108 is unchanged (no descriptor is added or removed, only
         // rebound); 18 becomes 3 (`StructuredInputUnavailable` alone); 90
         // becomes 105.
-        Assert.Equal(108, ProductionDescriptors.Count);
+        //
+        // `WP 20.10B` (T2) adds one more, not unavailable
+        // (calculations.set-due-date — sets/clears a Calculation's own
+        // Due date, dispatched from the generic editor's own Due row). So
+        // 108 becomes 109 and 105 becomes 106; 3 is unchanged.
+        Assert.Equal(109, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(105, bindable.Count);
+        Assert.Equal(106, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
