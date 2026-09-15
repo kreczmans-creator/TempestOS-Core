@@ -25,12 +25,14 @@ public sealed class DeleteMechanicalObjectCommand : IWorkspaceCommand
 public sealed class DeleteMechanicalObjectCommandHandler : ICommandHandler<DeleteMechanicalObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public DeleteMechanicalObjectCommandHandler(EngineeringDomainContext context)
+    public DeleteMechanicalObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(DeleteMechanicalObjectCommand command, CancellationToken cancellationToken)
@@ -39,6 +41,8 @@ public sealed class DeleteMechanicalObjectCommandHandler : ICommandHandler<Delet
 
         if (target is not IDeletable deletable)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be deleted.");
+
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? command.TargetObjectId.ToString();
 
         try
         {
@@ -49,6 +53,11 @@ public sealed class DeleteMechanicalObjectCommandHandler : ICommandHandler<Delet
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Deleted '{command.TargetObjectId}'.");
+        var compensation = WorkspaceCommandBindings.DeleteCompensation(
+            _context, _dispatcher, command.TargetObjectId, command.TargetKind, sourceName,
+            buildDelete: () => new DeleteMechanicalObjectCommand(command.TargetObjectId, command.TargetKind),
+            buildUndelete: () => new UndeleteMechanicalObjectCommand(command.TargetObjectId, command.TargetKind));
+
+        return CommandResult.Success($"Deleted '{command.TargetObjectId}'.", compensation: compensation);
     }
 }

@@ -66,6 +66,20 @@ internal sealed partial class MainWindowComposer
         // Stack.
         var undoRedo = new UndoRedoCoordinator(views.ActionReporter);
 
+        // `WP 21.1A`: the Undo/Redo stack starts over on every project
+        // switch — subscribed once, here, to the existing event every
+        // open/switch/close already publishes (see
+        // UndoRedoCoordinator.HandleAsync's own remarks).
+        composition.EventBus.Subscribe(undoRedo);
+
+        // `WP 21.1A`: the Ribbon is built earlier (`BuildViews`), before
+        // this Stack exists — supplied now, exactly like its own
+        // `ConfirmDeleteAsync`, so a successful Create/Delete/Move/Copy/
+        // status-change dispatched from a Ribbon button records its own
+        // compensation (see RibbonView.RecordCompensation's own remarks).
+        views.Ribbon.UndoRedoStack = undoRedo.Stack;
+        views.Ribbon.HistoryLog = views.CommandHistory;
+
         // `WP 19.0A` (`ADR-0150`): the project Commercial section's own
         // pickers — the real `OrganisationPicker`/`RateCardPicker`
         // overlays `BuildViews` already built, threaded into the Object
@@ -90,13 +104,28 @@ internal sealed partial class MainWindowComposer
         // threaded through exactly as `commercialSupport` just above.
         var ownerSupport = new RequirementOwnerEditorSupport(views.PersonCatalog, ct => views.PersonAddPrompt.PromptAsync(ct));
 
+        // `WP 21.2A`, scope item 3: "a Document's editor Export as
+        // report" — one more renderer over the identical `EvidenceFilePicker`/
+        // Settings → Organisation identity wiring `BuildViews`' own
+        // `documentExporter`/`invoiceRenderer`/etc. already establish;
+        // constructed fresh here since this coordinator is built in a
+        // separate phase (`BuildCoordinators`) that does not receive those
+        // locals, over the identical `host`/`views` this phase already has.
+        var documentExporter = new Tempest.Desktop.Documents.DocumentExporter(views.EvidenceFilePicker);
+        var technicalReportRenderer = new Tempest.Desktop.Documents.TechnicalReports.TechnicalReportDocumentRenderer
+        {
+            IdentityProvider = () => views.Session.OrganisationIdentity.ToIdentity(),
+        };
+        string ApplicationVersionText() => MainWindow.DescribeBuild(host.Services!);
+
         var viewCoordinator = new WorkspaceViewCoordinator(
             workspace, manager, composition.DomainContext, composition.CommandDispatcher, composition.RequirementsService, host.CalculationTemplates,
             views.ExplorerView, views.InspectorView, views.Ribbon, views.StatusBar, views.ToastHost, views.ConfirmationDialog, undoRedo.Stack,
             views.Session.RecentObjects, views.Session.FavouriteObjects, views.OpenGraphViewsByRootId,
             views.DocumentArea, views.ActionReporter,
             workspaceChanges: composition.WorkspaceChanges, declarations: views.KindEditorDeclarations, evidenceSupport: views.EvidenceSupport,
-            auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport);
+            auditQuery: host.AuditQuery, commercialSupport: commercialSupport, ownerSupport: ownerSupport,
+            documentExporter: documentExporter, technicalReportRenderer: technicalReportRenderer, applicationVersionText: ApplicationVersionText);
 
         // Resolves the one remaining construction-order cycle: the
         // Document Area needs the coordinator's own content builder, which

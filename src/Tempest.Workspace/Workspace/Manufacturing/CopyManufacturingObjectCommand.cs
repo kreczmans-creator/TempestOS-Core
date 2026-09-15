@@ -49,14 +49,16 @@ public sealed class CopyManufacturingObjectCommandHandler : ICommandHandler<Copy
 {
     private readonly EngineeringDomainContext _context;
     private readonly ManufacturingObjectFactoryRegistry _registry;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CopyManufacturingObjectCommandHandler(EngineeringDomainContext context, ManufacturingObjectFactoryRegistry registry)
+    public CopyManufacturingObjectCommandHandler(EngineeringDomainContext context, ManufacturingObjectFactoryRegistry registry, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(registry);
 
         _context = context;
         _registry = registry;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CopyManufacturingObjectCommand command, CancellationToken cancellationToken)
@@ -96,6 +98,11 @@ public sealed class CopyManufacturingObjectCommandHandler : ICommandHandler<Copy
         }
 
         var destinationPhrase = await WorkspaceCommandBindings.DestinationPhraseAsync(_context, command.NewParentId, cancellationToken).ConfigureAwait(false);
-        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind);
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, copy.Id, source.Kind, $"Copy '{sourceDisplayName}'",
+            buildDelete: () => new DeleteManufacturingObjectCommand(copy.Id, source.Kind),
+            buildUndelete: () => new UndeleteManufacturingObjectCommand(copy.Id, source.Kind));
+
+        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind, compensation);
     }
 }

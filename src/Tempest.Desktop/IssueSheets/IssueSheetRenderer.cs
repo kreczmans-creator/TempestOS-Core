@@ -34,8 +34,15 @@ namespace Tempest.Desktop.IssueSheets;
 /// own font/logo assets not (yet) being reachable from this worktree.
 /// </para>
 /// </remarks>
-public sealed class IssueSheetRenderer : IIssueSheetRenderer
+public sealed class IssueSheetRenderer : IIssueSheetRenderer, IDocumentRenderer<IssueSheetModel>
 {
+    /// <inheritdoc cref="IDocumentRenderer{TModel}.DocumentType" />
+    public string DocumentType => "ISSUE SHEET";
+
+    /// <inheritdoc cref="IDocumentRenderer{TModel}.TemplateName" />
+    /// <remarks>`WP 20.10G`'s own mapping (`docs/design/templates/README.md`), unchanged by `WP 21.2A`'s retrofit onto <see cref="IDocumentRenderer{TModel}"/>.</remarks>
+    public string TemplateName => "letterhead";
+
     /// <summary>Supplies the organisation identity for a render whose caller passes none — set by the composer to Settings → Organisation (`WP 20.10G`, threaded at merge).</summary>
     public Func<OrganisationIdentity>? IdentityProvider { get; set; }
 
@@ -51,54 +58,21 @@ public sealed class IssueSheetRenderer : IIssueSheetRenderer
         var pages = Layout(model);
         DocumentTemplate.AppendFooters(pages, orgIdentity, FormatFooterDetail(model));
 
-        using var stream = new MemoryStream();
-        using (var wstream = new SKManagedWStream(stream))
+        var metadata = new SKDocumentPdfMetadata
         {
-            var metadata = new SKDocumentPdfMetadata
-            {
-                Title = $"{model.Title} — Issue Sheet",
-                Author = model.AuthorDisplayName,
-                Subject = "Issue sheet",
-                Creator = model.ApplicationVersionText,
-                Producer = model.ApplicationVersionText,
-                Creation = model.GeneratedAtUtc.UtcDateTime,
-                Modified = model.GeneratedAtUtc.UtcDateTime,
-            };
+            Title = $"{model.Title} — Issue Sheet",
+            Author = model.AuthorDisplayName,
+            Subject = "Issue sheet",
+            Creator = model.ApplicationVersionText,
+            Producer = model.ApplicationVersionText,
+            Creation = model.GeneratedAtUtc.UtcDateTime,
+            Modified = model.GeneratedAtUtc.UtcDateTime,
+        };
 
-            using var document = SKDocument.CreatePdf(wstream, metadata)
-                ?? throw new InvalidOperationException("SkiaSharp could not open a PDF document for the issue sheet.");
-
-            using var textPaint = new SKPaint { IsAntialias = true, Typeface = SKTypeface.Default };
-            using var linePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
-
-            foreach (var page in pages)
-            {
-                var canvas = document.BeginPage(DocumentTemplate.PageWidth, DocumentTemplate.PageHeight);
-                canvas.Clear(DocumentTemplate.PaperPage);
-
-                foreach (var rule in page.Rules)
-                {
-                    linePaint.StrokeWidth = rule.StrokeWidth;
-                    linePaint.Color = rule.Color;
-                    canvas.DrawLine(rule.X1, rule.Y, rule.X2, rule.Y, linePaint);
-                }
-
-                foreach (var text in page.Texts)
-                {
-                    textPaint.TextSize = text.Size;
-                    textPaint.FakeBoldText = text.Bold;
-                    textPaint.TextAlign = text.Align;
-                    textPaint.Color = text.Color;
-                    canvas.DrawText(text.Text, text.X, text.Y, textPaint);
-                }
-
-                document.EndPage();
-            }
-
-            document.Close();
-        }
-
-        return stream.ToArray();
+        // `WP 21.2A`: the draw loop itself is now `DocumentTemplate`'s own
+        // shared `RenderPdf` — see `QuotationSheetRenderer.Render`'s own
+        // identical remark.
+        return DocumentTemplate.RenderPdf(pages, metadata);
     }
 
     private static List<DocumentTemplate.PagePlan> Layout(IssueSheetModel model)

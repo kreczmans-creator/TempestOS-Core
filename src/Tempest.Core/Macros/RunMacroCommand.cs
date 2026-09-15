@@ -92,6 +92,8 @@ public sealed class RunMacroCommandHandler : ICommandHandler<RunMacroCommand>
         // whatever was captured at macro start, replayed for every step.
         var context = command.Context ?? CommandContext.Empty;
         var stepsRun = 0;
+        var stepCompensations = new List<CommandCompensation>();
+        string? undoUnavailableStep = null;
 
         foreach (var step in macro.Steps)
         {
@@ -113,10 +115,78 @@ public sealed class RunMacroCommandHandler : ICommandHandler<RunMacroCommand>
                 return CommandResult.Failure(
                     $"Macro '{macro.Name}' stopped at step {stepsRun}/{macro.Steps.Count} ('{step.CommandId}'): {failure}.");
             }
+
+            // `WP 21.1A`: one compound action for the whole run, not one
+            // per step — a person undoes "the macro", never one of its
+            // steps in isolation. Every step's own compensation is
+            // collected as it runs; the first step that carries none marks
+            // the whole run non-compensable, named by which step and why,
+            // rather than silently offering a partial undo.
+            if (undoUnavailableStep is null)
+            {
+                if (invocation.Result!.Compensation is { } stepCompensation)
+                    stepCompensations.Add(stepCompensation);
+                else
+                    undoUnavailableStep = invocation.Result!.UndoUnavailableReason is { } reason
+                        ? $"step {stepsRun} ('{step.CommandId}'): {reason}"
+                        : $"step {stepsRun} ('{step.CommandId}') carries no compensation";
+            }
         }
 
-        return CommandResult.Success($"Macro '{macro.Name}' completed all {stepsRun} step(s).");
+        var message = $"Macro '{macro.Name}' completed all {stepsRun} step(s).";
+
+        if (undoUnavailableStep is not null || stepCompensations.Count == 0)
+        {
+            return CommandResult.Success(
+                message,
+                undoUnavailableReason: undoUnavailableStep ?? "the macro ran no compensable step");
+        }
+
+        return CommandResult.Success(message, compensation: CompoundCompensation(macro.Name, stepCompensations));
     }
+
+    /// <summary>
+    /// Builds the one compound compensation a fully-compensable macro run
+    /// produces (`WP 21.1A`): undo runs every step's own <see cref="CommandCompensation.Undo"/>
+    /// in reverse order — the last thing the macro did is the first thing
+    /// undone — and redo runs every step's own <see cref="CommandCompensation.Redo"/>
+    /// back in the original, forward order. Stops at the first step whose
+    /// own reversal is refused or fails, reporting which — a partial undo
+    /// is disclosed, not silently completed nor silently discarded, the
+    /// identical honesty <see cref="HandleAsync"/> itself already gives a
+    /// macro run that stops partway through.
+    /// </summary>
+    private static CommandCompensation CompoundCompensation(string macroName, IReadOnlyList<CommandCompensation> stepCompensations) =>
+        new(
+            $"Macro '{macroName}'",
+            undo: async ct =>
+            {
+                for (var i = stepCompensations.Count - 1; i >= 0; i--)
+                {
+                    var result = await stepCompensations[i].Undo(ct).ConfigureAwait(false);
+                    if (!result.Succeeded)
+                    {
+                        return CommandResult.Failure(
+                            $"Macro '{macroName}' undo stopped at step {i + 1}/{stepCompensations.Count}: {result.Message ?? "failed"}.");
+                    }
+                }
+
+                return CommandResult.Success($"Macro '{macroName}' undone.");
+            },
+            redo: async ct =>
+            {
+                for (var i = 0; i < stepCompensations.Count; i++)
+                {
+                    var result = await stepCompensations[i].Redo(ct).ConfigureAwait(false);
+                    if (!result.Succeeded)
+                    {
+                        return CommandResult.Failure(
+                            $"Macro '{macroName}' redo stopped at step {i + 1}/{stepCompensations.Count}: {result.Message ?? "failed"}.");
+                    }
+                }
+
+                return CommandResult.Success($"Macro '{macroName}' redone.");
+            });
 
     /// <summary>
     /// The prompt one step is replayed with (`WP 20.2C`) — or

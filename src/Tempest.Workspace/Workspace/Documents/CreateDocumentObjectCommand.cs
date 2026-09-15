@@ -58,12 +58,23 @@ public sealed class CreateDocumentObjectCommand : ICommand
 public sealed class CreateDocumentObjectCommandHandler : ICommandHandler<CreateDocumentObjectCommand>
 {
     private readonly DocumentObjectFactoryRegistry _registry;
+    private readonly EngineeringDomainContext? _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateDocumentObjectCommandHandler(DocumentObjectFactoryRegistry registry)
+    /// <param name="registry">Creates the new object.</param>
+    /// <param name="context">
+    /// Used to dispatch this create's own compensation (`WP 21.1A`) —
+    /// optional, mirroring <see cref="Mechanical.CreateMechanicalObjectCommandHandler"/>'s
+    /// own already-optional <c>domainContext</c>.
+    /// </param>
+    /// <param name="dispatcher">Dispatches the compensation — optional; <see langword="null"/> (either this or <paramref name="context"/>) means no <see cref="CommandResult.Compensation"/> is attached.</param>
+    public CreateDocumentObjectCommandHandler(DocumentObjectFactoryRegistry registry, EngineeringDomainContext? context = null, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
+        _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateDocumentObjectCommand command, CancellationToken cancellationToken)
@@ -86,6 +97,12 @@ public sealed class CreateDocumentObjectCommandHandler : ICommandHandler<CreateD
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);
+        var displayName = (created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString();
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, created.Id, command.Kind, $"Create '{displayName}'",
+            buildDelete: () => new DeleteDocumentObjectCommand(created.Id, command.Kind),
+            buildUndelete: () => new UndeleteDocumentObjectCommand(created.Id, command.Kind));
+
+        return CommandResult.Success($"Created {command.Kind} '{displayName}'.", created.Id, command.Kind, compensation);
     }
 }

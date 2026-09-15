@@ -29,12 +29,14 @@ public sealed class MoveMechanicalObjectCommand : IWorkspaceCommand
 public sealed class MoveMechanicalObjectCommandHandler : ICommandHandler<MoveMechanicalObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public MoveMechanicalObjectCommandHandler(EngineeringDomainContext context)
+    public MoveMechanicalObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(MoveMechanicalObjectCommand command, CancellationToken cancellationToken)
@@ -45,6 +47,8 @@ public sealed class MoveMechanicalObjectCommandHandler : ICommandHandler<MoveMec
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be moved.");
 
         return await WorkspaceCommandBindings.MoveResultAsync(
-            _context, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId, cancellationToken).ConfigureAwait(false);
+            _context, _dispatcher, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId,
+            parentId => new MoveMechanicalObjectCommand(command.TargetObjectId, command.TargetKind, parentId),
+            cancellationToken).ConfigureAwait(false);
     }
 }

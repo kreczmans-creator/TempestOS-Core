@@ -108,17 +108,18 @@ public static class CalculationsWorkspaceRegistration
         }
 
         var factoryRegistry = new CalculationObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyCalculationObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyCalculationObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
         var executeHandler = new ExecuteCalculationCommandHandler(templateRegistry);
 
-        commandDispatcher.RegisterHandler<CreateCalculationObjectCommand>(new CreateCalculationObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateCalculationObjectCommand>(new CreateCalculationObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameCalculationObjectCommand>(new RenameCalculationObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseCalculationCommand>(new ReviseCalculationCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteCalculationObjectCommand>(new DeleteCalculationObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveCalculationObjectCommand>(new MoveCalculationObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteCalculationObjectCommand>(new DeleteCalculationObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteCalculationObjectCommand>(new UndeleteCalculationObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveCalculationObjectCommand>(new MoveCalculationObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyCalculationObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateCalculationObjectCommand>(new DuplicateCalculationObjectCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetCalculationStatusCommand>(new SetCalculationStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetCalculationStatusCommand>(new SetCalculationStatusCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<ExecuteCalculationCommand>(executeHandler);
         commandDispatcher.RegisterHandler<RecalculateCalculationCommand>(new RecalculateCalculationCommandHandler(executeHandler));
         commandDispatcher.RegisterHandler<RerunCalculationCommand>(new RerunCalculationCommandHandler(templateRegistry));

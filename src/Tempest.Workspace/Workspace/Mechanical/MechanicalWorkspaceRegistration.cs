@@ -85,13 +85,14 @@ public static class MechanicalWorkspaceRegistration
         }
 
         var factoryRegistry = new MechanicalObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyMechanicalObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyMechanicalObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry, domainContext));
+        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameMechanicalObjectCommand>(new RenameMechanicalObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseMechanicalObjectCommand>(new ReviseMechanicalObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteMechanicalObjectCommand>(new DeleteMechanicalObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveMechanicalObjectCommand>(new MoveMechanicalObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteMechanicalObjectCommand>(new DeleteMechanicalObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteMechanicalObjectCommand>(new UndeleteMechanicalObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveMechanicalObjectCommand>(new MoveMechanicalObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyMechanicalObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateMechanicalObjectCommand>(new DuplicateMechanicalObjectCommandHandler(domainContext, copyHandler));
         commandDispatcher.RegisterHandler<SetBomLineCommand>(new SetBomLineCommandHandler(domainContext));

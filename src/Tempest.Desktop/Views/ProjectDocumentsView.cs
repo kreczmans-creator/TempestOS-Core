@@ -70,12 +70,23 @@ public sealed class ProjectDocumentsView : UserControl
         HorizontalAlignment = HorizontalAlignment.Left,
     };
 
+    /// <summary>`WP 21.2A`, scope item 3 — renders and saves the project's own drawing register. This dumb view raises the intent only; <see cref="ProjectWorkspaceView"/> owns the domain read, the renderer and the file picker.</summary>
+    private readonly Button _exportRegister = new()
+    {
+        Content = "Export register",
+        MinHeight = DesignTokens.MinControlSize,
+        HorizontalAlignment = HorizontalAlignment.Left,
+    };
+
     /// <summary>Raised when the user asks to open one of this project's files.</summary>
     /// <remarks>Carries the owning object and the attachment, which is exactly what the `TD-80` launcher needs.</remarks>
     public event Action<Guid, Guid>? OpenAttachmentRequested;
 
     /// <summary>Raised when the user asks to work on documents in the Engineering Workspace.</summary>
     public event Action? EngineeringRequested;
+
+    /// <summary>Raised when the user asks to export this project's own drawing register (`WP 21.2A`, scope item 3).</summary>
+    public event Action? ExportRegisterRequested;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectDocumentsView"/> class.</summary>
     public ProjectDocumentsView()
@@ -92,9 +103,17 @@ public sealed class ProjectDocumentsView : UserControl
         AutomationProperties.SetName(_openWorkspace, "Open documents in the Engineering Workspace");
         _openWorkspace.Click += (_, _) => EngineeringRequested?.Invoke();
 
+        _exportRegister.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(_exportRegister, "Export register");
+        _exportRegister.Click += (_, _) => ExportRegisterRequested?.Invoke();
+
+        var actionsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        actionsRow.Children.Add(_openWorkspace);
+        actionsRow.Children.Add(_exportRegister);
+
         var root = new StackPanel { Spacing = DesignTokens.SpaceMd, Margin = DesignTokens.PanelPadding };
         root.Children.Add(heading);
-        root.Children.Add(_openWorkspace);
+        root.Children.Add(actionsRow);
         root.Children.Add(_summary);
         root.Children.Add(_list);
 
