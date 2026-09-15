@@ -14,7 +14,7 @@ public sealed class CreateCalculationObjectCommand : ICommand
 {
     public CreateCalculationObjectCommand(
         string kind, string displayName, string? identifier = null, Guid? parentId = null, string? initialContent = null,
-        IReadOnlyList<Guid>? memberCalculationIds = null)
+        IReadOnlyList<Guid>? memberCalculationIds = null, DateOnly? dueOn = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
@@ -25,6 +25,7 @@ public sealed class CreateCalculationObjectCommand : ICommand
         ParentId = parentId;
         InitialContent = initialContent ?? $"{displayName} — created via the Calculations module.";
         MemberCalculationIds = memberCalculationIds;
+        DueOn = dueOn;
     }
 
     /// <summary>Gets the Kind to create — one of <see cref="CalculationObjectFactoryRegistry.SupportedKinds"/>.</summary>
@@ -44,6 +45,16 @@ public sealed class CreateCalculationObjectCommand : ICommand
 
     /// <summary>Gets the new Calculation Set's own frozen members — only meaningful for <c>"CalculationSet"</c>; ignored for <c>"Calculation"</c>.</summary>
     public IReadOnlyList<Guid>? MemberCalculationIds { get; }
+
+    /// <summary>
+    /// Gets when the new calculation is due (`WP 20.10B`, T2) — only
+    /// meaningful for <c>"Calculation"</c>, and only once it resolves
+    /// under a project; ignored for <c>"CalculationSet"</c>, and discarded
+    /// for a standalone calculation exactly as
+    /// <see cref="CalculationObjectFactoryRegistry.CreateAsync"/>'s own
+    /// remarks describe.
+    /// </summary>
+    public DateOnly? DueOn { get; }
 }
 
 /// <summary>Handles <see cref="CreateCalculationObjectCommand"/>.</summary>
@@ -66,7 +77,7 @@ public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<Crea
         {
             created = await _registry.CreateAsync(
                 command.Kind, command.Identifier, command.DisplayName, command.InitialContent, command.ParentId,
-                command.MemberCalculationIds, cancellationToken)
+                command.MemberCalculationIds, command.DueOn, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (ArgumentException ex)

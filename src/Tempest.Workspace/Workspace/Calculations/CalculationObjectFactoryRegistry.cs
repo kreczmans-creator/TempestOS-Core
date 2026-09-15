@@ -45,10 +45,18 @@ public sealed class CalculationObjectFactoryRegistry
 
     /// <summary>Creates a new object of <paramref name="kind"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
     /// <param name="memberCalculationIds">Only meaningful for <see cref="CalculationSetKind"/> — a Calculation Set's own members are frozen at construction, mirroring <c>Configuration.MemberRevisions</c>'s own identical `WP 9.0B` shape (no mutator exists there either).</param>
+    /// <param name="dueOn">
+    /// Only meaningful for <see cref="CalculationKind"/>, and only once it
+    /// resolves under a project (`WP 20.10B`, T2): a calculation created
+    /// outside any project gets none, regardless of what the create
+    /// prompt collected — mirroring this same method's own <c>TD-38</c>
+    /// "objects outside any project form their own scope" reasoning for
+    /// <paramref name="parentId"/>'s own <c>projectScopeId</c>, below.
+    /// </param>
     /// <exception cref="ArgumentException"><paramref name="kind"/> is not one of <see cref="SupportedKinds"/>, or <paramref name="displayName"/> is null/empty/whitespace.</exception>
     public async Task<IEngineeringObject> CreateAsync(
         string kind, string? identifier, string displayName, string initialContent, Guid? parentId,
-        IReadOnlyList<Guid>? memberCalculationIds = null, CancellationToken cancellationToken = default)
+        IReadOnlyList<Guid>? memberCalculationIds = null, DateOnly? dueOn = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
@@ -66,7 +74,9 @@ public sealed class CalculationObjectFactoryRegistry
         IEngineeringObject created = kind switch
         {
             CalculationKind => await new EngineeringObjectFactory<Calculation>(
-                CalculationKind, _context, (doc, rev) => new Calculation(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
+                CalculationKind, _context, (doc, rev) => new Calculation(
+                    doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty,
+                    dueOn: projectScopeId is not null ? dueOn : null))
                 .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             CalculationSetKind => await new EngineeringObjectFactory<CalculationSet>(
