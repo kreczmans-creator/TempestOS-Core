@@ -6,6 +6,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using PDFtoImage;
 using SkiaSharp;
+using Svg.Skia;
 using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
@@ -436,6 +437,151 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
     }
 }
 
+/// <summary>
+/// An SVG, rasterised through <c>Svg.Skia</c> (MIT-licensed; version pinned
+/// in <c>Tempest.Desktop.csproj</c>'s own remarks) to the same
+/// <see cref="SKBitmap"/>-backed page a PDF produces (`TD-99`).
+/// </summary>
+/// <remarks>
+/// One page, always — an SVG has no pagination concept. Rendered at the
+/// scale the viewer asks for, exactly like <see cref="PdfDocumentPageSource"/>:
+/// zooming into a detail re-rasterises the vector content at the new scale
+/// rather than magnifying an earlier render's pixels, which is the entire
+/// reason a vector format is worth a real rasteriser rather than a
+/// generic image decoder.
+/// </remarks>
+[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("linux")]
+[SupportedOSPlatform("macos")]
+public sealed class SvgDocumentPageSource : IDocumentPageSource
+{
+    /// <summary>The largest edge, in pixels, any single rasterised page may have — the same ceiling <see cref="PdfDocumentPageSource.MaxRasterEdge"/> applies, and for the same reason: an SVG's own <c>viewBox</c> can claim any size at all, and a deep zoom must not ask Skia for a bitmap of hundreds of megapixels.</summary>
+    public const int MaxRasterEdge = 8000;
+
+    private readonly SKSvg _svg;
+    private readonly Size _pageSize;
+
+    /// <summary>Loads <paramref name="content"/> as an SVG.</summary>
+    /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
+    public SvgDocumentPageSource(byte[] content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        using var stream = new MemoryStream(content, writable: false);
+        _svg = Load(stream);
+        _pageSize = NaturalSize(_svg);
+    }
+
+    /// <summary>
+    /// Loads an SVG from <paramref name="content"/> without requiring a
+    /// <c>byte[]</c> up front (`TD-96`'s own established convention for
+    /// every page source) — <see cref="SKSvg.Load(Stream)"/> reads the
+    /// stream directly.
+    /// </summary>
+    /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
+    public SvgDocumentPageSource(Stream content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        try
+        {
+            _svg = Load(content);
+            _pageSize = NaturalSize(_svg);
+        }
+        finally
+        {
+            content.Dispose();
+        }
+    }
+
+    /// <inheritdoc />
+    public int PageCount => 1;
+
+    /// <inheritdoc />
+    public Size PageSize(int pageIndex) => _pageSize;
+
+    /// <inheritdoc />
+    public Bitmap RenderPage(int pageIndex, double scale)
+    {
+        try
+        {
+            var effective = EffectiveScale(_pageSize, scale);
+            var pixelWidth = Math.Max(1, (int)Math.Round(_pageSize.Width * effective));
+            var pixelHeight = Math.Max(1, (int)Math.Round(_pageSize.Height * effective));
+
+            using var bitmap = new SKBitmap(pixelWidth, pixelHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using (var canvas = new SKCanvas(bitmap))
+            {
+                canvas.Clear(SKColors.Transparent);
+                canvas.Scale((float)effective);
+                canvas.DrawPicture(_svg.Picture);
+            }
+
+            return PdfDocumentPageSource.ToAvaloniaBitmap(bitmap);
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => _svg.Dispose();
+
+    private static SKSvg Load(Stream stream)
+    {
+        SKSvg svg;
+
+        try
+        {
+            svg = new SKSvg();
+            var picture = svg.Load(stream);
+
+            if (picture is null)
+            {
+                svg.Dispose();
+                throw new DocumentRenderException("This SVG could not be read: the file has no readable SVG content.");
+            }
+
+            if (picture.CullRect.Width <= 0 || picture.CullRect.Height <= 0)
+            {
+                svg.Dispose();
+                throw new DocumentRenderException("This SVG could not be read: it has no visible size.");
+            }
+        }
+        catch (DocumentRenderException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Svg.Skia reports a malformed document by throwing (an
+            // XmlException over broken markup, most commonly) — translated
+            // here, at the boundary, into this platform's own type, exactly
+            // as PdfDocumentPageSource does for PDFium.
+            throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
+        }
+
+        return svg;
+    }
+
+    private static Size NaturalSize(SKSvg svg)
+    {
+        var bounds = svg.Picture!.CullRect;
+        return new Size(bounds.Width, bounds.Height);
+    }
+
+    private static double EffectiveScale(Size page, double scale)
+    {
+        var requested = double.IsFinite(scale) && scale > 0 ? scale : 1;
+        var longestEdge = Math.Max(page.Width, page.Height);
+        if (longestEdge <= 0)
+            return requested;
+
+        return Math.Min(requested, MaxRasterEdge / longestEdge);
+    }
+}
+
 /// <summary>A document this platform could not open or render.</summary>
 public sealed class DocumentRenderException : Exception
 {
@@ -482,6 +628,8 @@ public static class DocumentPageSourceFactory
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
+        ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
+            => new SvgDocumentPageSource(content),
 
         // ExternalOnly falls to the same null the default arm returns for
         // any other unmatched format — named here rather than left to fall
@@ -516,6 +664,8 @@ public static class DocumentPageSourceFactory
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
+        ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
+            => new SvgDocumentPageSource(content),
         _ => null,
     };
 }

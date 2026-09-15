@@ -57,6 +57,22 @@
     -->
     <PackageReference Include="PDFtoImage" Version="4.1.1" />
     <!--
+      `TD-99`, `WP 21.4A`: the SVG rasteriser the Product Owner's decision
+      2026-09-15 §5 requires a stated package, version and licence for —
+      `Svg.Skia` by Wiesław Šoltés, MIT-licensed (see the root
+      `THIRD-PARTY-NOTICES.md`). Pinned to 2.0.0.8 rather than the latest
+      release (5.x at the time of writing) deliberately: this is the last
+      version on the 2.x line, and the only line whose own `SkiaSharp`
+      dependency floor (2.88.9, exactly) matches the version this solution
+      already resolves through `PDFtoImage` above — every release from
+      3.0.0 onward moves to a 3.x/4.x SkiaSharp line, which is exactly the
+      class of transitive-dependency change `TD-116`'s own remark above
+      flags as wanting its own timeboxed spike, not a version bump inside
+      an unrelated Work Package's scope (this WP's own kill switch: "try
+      the version matching the solution's SkiaSharp").
+    -->
+    <PackageReference Include="Svg.Skia" Version="2.0.0.8" />
+    <!--
       The Tempest Engineering Design System's prose face (Inter) ships in
       this official Avalonia package; Chakra Petch and Space Mono are
       embedded below under their own OFL licences (Assets/Fonts/OFL-*.txt)

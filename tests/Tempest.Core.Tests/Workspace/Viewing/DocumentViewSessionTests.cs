@@ -229,15 +229,17 @@ public class DocumentFormatDetectorTests
         Assert.Equal(ViewableDocumentFormat.Text, DocumentFormatDetector.Detect(contentType, "Property,Value\n"u8));
     }
 
-    [Theory]
-    [InlineData("image/svg+xml")]
-    [InlineData("image/tiff")]
-    public void AnImageTypeThisPlatformCannotDecode_IsUnsupported_NotOptimisticallyImage(string contentType)
+    [Fact]
+    public void AnImageTypeThisPlatformCannotDecode_IsUnsupported_NotOptimisticallyImage()
     {
         // Claiming Image for a format the decoder will reject promises a
         // render that cannot happen, and turns "we have no viewer for
-        // this" into "this file is broken".
-        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect(contentType, "<svg/>"u8));
+        // this" into "this file is broken". SVG used to be exactly this
+        // case; `WP 21.4A` gave it its own real renderer and its own
+        // format instead (see `AnSvgIsRecognisedByItsContentTypeAndItsBytes`
+        // below), so TIFF — genuinely undecodable, with no plans otherwise
+        // — is what remains of this theory.
+        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect("image/tiff", [0x49, 0x49, 0x2A, 0x00]));
     }
 
     [Theory]
@@ -301,13 +303,56 @@ public class DocumentFormatDetectorTests
     }
 
     [Fact]
-    public void AnSvgIsStillUnsupported_NoRendererIsReferencedInThisBuild()
+    public void AnSvgIsRecognisedByItsContentTypeAndItsBytes()
     {
-        // TD-99's SVG half was stopped, not shipped: no SVG rasteriser
-        // (Svg.Skia, SkiaSharp.Extended or Avalonia.Svg.Skia) is referenced
-        // anywhere in this solution, and the brief's own fallback for that
-        // case was to report and stop rather than add one. SVG stays
-        // exactly the Unsupported format it already was.
-        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect("image/svg+xml", "<svg/>"u8, "icon.svg"));
+        // TD-99's SVG half, closed by WP 21.4A: Svg.Skia (MIT) is now
+        // referenced, so an SVG is a real, renderable format rather than
+        // the Unsupported one it used to report.
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.Detect("image/svg+xml", "<svg/>"u8, "icon.svg"));
+    }
+
+    [Fact]
+    public void AnSvgFileName_IsRecognisedByExtensionAlone_EvenWithAGenericContentType()
+    {
+        // The same "extension is the primary signal, content type is the
+        // fallback" convention DWG/DXF already established.
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.FromContentType("application/octet-stream", "diagram.svg"));
+    }
+
+    [Fact]
+    public void AnSvgContentType_IsRecognisedWithNoFileNameToGoBy()
+    {
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.FromContentType("image/svg+xml"));
+    }
+
+    [Theory]
+    [InlineData("<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>")]
+    [InlineData("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a comment -->\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>")]
+    [InlineData("   \n\t<svg><circle/></svg>")]
+    public void SvgBytes_AreRecognisedByContent_EvenWithNoContentTypeOrFileName(string markup)
+    {
+        // "Magic bytes are consulted first and the declared content type
+        // second" (this type's own remarks) — a mislabelled or
+        // generically-named SVG, exactly as a renamed PNG already is,
+        // reached only through this file's own real read path
+        // (AttachmentViewerLauncher.TryOpenStreamedAsync sniffs the first
+        // 32 bytes; the theory data above is short enough to fit).
+        var bytes = System.Text.Encoding.UTF8.GetBytes(markup);
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.Detect(contentType: null, bytes));
+    }
+
+    [Fact]
+    public void TextThatIsNotSvg_IsNotMisdetected()
+    {
+        Assert.Equal(
+            ViewableDocumentFormat.Text,
+            DocumentFormatDetector.Detect("text/plain", "Not markup at all."u8));
+
+        // An XML document with no `<svg` element anywhere in the sniff
+        // window is not SVG merely for starting with an `<?xml` declaration
+        // — the sniff requires the element itself, not just the prolog.
+        Assert.Equal(
+            ViewableDocumentFormat.Text,
+            DocumentFormatDetector.Detect("application/xml", "<?xml version=\"1.0\"?><root><child/></root>"u8, "data.xml"));
     }
 }

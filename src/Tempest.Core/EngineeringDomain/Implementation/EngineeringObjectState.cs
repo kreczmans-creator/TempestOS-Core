@@ -58,6 +58,17 @@ namespace Tempest.Core.EngineeringDomain;
 /// <param name="History">Every recorded lifecycle transition, in order.</param>
 /// <param name="Attachments">Every recorded attachment's own metadata.</param>
 /// <param name="TypeState">The concrete type's own state, written and read by that type.</param>
+/// <param name="Annotations">
+/// Every recorded attachment annotation (`TD-98`) — <see langword="null"/>
+/// only for a record written before this field existed, in which case it
+/// means exactly what an empty list means, never a distinct state: a
+/// record whose serialised form has no <c>Annotations</c> property reads
+/// back as <see langword="null"/> here rather than failing rehydration
+/// (`TD-60`'s established discipline for an additive field, the same one
+/// <see cref="EngineeringObjectAttachmentState.ContentHash"/> already
+/// relies on), so every reader normalises through
+/// <see cref="AnnotationsOrEmpty"/> rather than this property directly.
+/// </param>
 public sealed record EngineeringObjectState(
     int SchemaVersion,
     Guid Id,
@@ -71,8 +82,13 @@ public sealed record EngineeringObjectState(
     EngineeringObjectBomLineState BomLine,
     IReadOnlyList<EngineeringObjectTransitionState> History,
     IReadOnlyList<EngineeringObjectAttachmentState> Attachments,
-    IReadOnlyDictionary<string, string?> TypeState)
+    IReadOnlyDictionary<string, string?> TypeState,
+    IReadOnlyList<EngineeringObjectAttachmentAnnotationState>? Annotations = null)
 {
+    /// <summary><see cref="Annotations"/>, normalised: never null, even for a record written before `TD-98`.</summary>
+    public IReadOnlyList<EngineeringObjectAttachmentAnnotationState> AnnotationsOrEmpty => Annotations ?? [];
+
+
     /// <summary>Reads one type-specific value, or <see langword="null"/> when that type never wrote it.</summary>
     public string? Type(string key) => TypeState.TryGetValue(key, out var value) ? value : null;
 
@@ -178,3 +194,27 @@ public sealed record EngineeringObjectAttachmentState(
     string ContentType,
     long SizeInBytes,
     string? ContentHash = null);
+
+/// <summary>One point of a recorded annotation's own geometry, durably (`TD-98`) — mirrors <see cref="AttachmentAnnotation"/>'s own point exactly; a plain, inert value shared rather than duplicated a second time.</summary>
+public readonly record struct EngineeringObjectAnnotationPointState(double X, double Y);
+
+/// <summary>One recorded attachment annotation, durably (`TD-98`).</summary>
+/// <param name="Id">This annotation's own identity, stable across restarts.</param>
+/// <param name="AttachmentId">The attachment this annotation marks up.</param>
+/// <param name="PageIndex">The zero-based page this annotation is on.</param>
+/// <param name="Tool">What shape this annotation is.</param>
+/// <param name="Points">This annotation's own geometry, in the page's native content units.</param>
+/// <param name="ColorHex">The stroke colour, as <c>#RRGGBB</c>.</param>
+/// <param name="Text">The note's own text for <see cref="AnnotationTool.TextNote"/>; <see langword="null"/> for every other tool.</param>
+/// <param name="CreatedAtUtc">When this annotation was recorded.</param>
+/// <param name="CreatedByPrincipalId">Who recorded it.</param>
+public sealed record EngineeringObjectAttachmentAnnotationState(
+    Guid Id,
+    Guid AttachmentId,
+    int PageIndex,
+    AnnotationTool Tool,
+    IReadOnlyList<EngineeringObjectAnnotationPointState> Points,
+    string ColorHex,
+    string? Text,
+    DateTimeOffset CreatedAtUtc,
+    string CreatedByPrincipalId);

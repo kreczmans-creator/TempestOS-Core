@@ -195,6 +195,174 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal(attachment.Id, recoveredAttachment.Id);
     }
 
+    // ----------------------------------------------------------------
+    // Attachment annotations (`TD-98`) — beside the owner's own state,
+    // never in the attachment bytes, rehydrated with the owner exactly as
+    // an attachment's own metadata already is.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AnAnnotation_RoundTripsThroughPersistenceAndRehydration()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var points = new[] { new AnnotationPoint(10, 20), new AnnotationPoint(80, 120) };
+        var recorded = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, pageIndex: 2, AnnotationTool.Rectangle, points, "#E5484D", text: null);
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+        var recoveredAnnotation = Assert.Single(await recovered.GetAttachmentAnnotationsAsync(attachment.Id));
+
+        Assert.Equal(recorded.Id, recoveredAnnotation.Id);
+        Assert.Equal(attachment.Id, recoveredAnnotation.AttachmentId);
+        Assert.Equal(2, recoveredAnnotation.PageIndex);
+        Assert.Equal(AnnotationTool.Rectangle, recoveredAnnotation.Tool);
+        Assert.Equal(points, recoveredAnnotation.Points);
+        Assert.Equal("#E5484D", recoveredAnnotation.ColorHex);
+        Assert.Null(recoveredAnnotation.Text);
+        Assert.Equal(recorded.CreatedAtUtc, recoveredAnnotation.CreatedAtUtc);
+        Assert.Equal(recorded.CreatedByPrincipalId, recoveredAnnotation.CreatedByPrincipalId);
+    }
+
+    [Fact]
+    public async Task ATextNoteAnnotation_CarriesItsTextThroughRehydration()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        await part.AddAttachmentAnnotationAsync(
+            attachment.Id, pageIndex: 0, AnnotationTool.TextNote,
+            [new AnnotationPoint(5, 5)], "#F5A524", "Check clearance here.");
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+        var note = Assert.Single(await recovered.GetAttachmentAnnotationsAsync(attachment.Id));
+
+        Assert.Equal("Check clearance here.", note.Text);
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentAnnotationAsync_RemovesIt_AndTheRemovalSurvivesRestart()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var kept = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#12B981", null);
+        var removed = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Arrow, [new AnnotationPoint(2, 2), new AnnotationPoint(3, 3)], "#12B981", null);
+
+        await part.DeleteAttachmentAnnotationAsync(removed.Id);
+
+        var remaining = await part.GetAttachmentAnnotationsAsync(attachment.Id);
+        Assert.Equal([kept.Id], remaining.Select(a => a.Id));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal([kept.Id], (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentAnnotationAsync_OnAnIdThatIsNotThere_DoesNothing()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+
+        // No throw, and no annotation created out of nothing.
+        await part.DeleteAttachmentAnnotationAsync(Guid.NewGuid());
+
+        Assert.Empty(await part.GetAttachmentAnnotationsAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task ClearAttachmentAnnotationsAsync_RemovesOnlyThatPagesAnnotations()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var onPageZero = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Freehand, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#6C29D9", null);
+        await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Freehand, [new AnnotationPoint(2, 2), new AnnotationPoint(3, 3)], "#6C29D9", null);
+        var onPageOne = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 1, AnnotationTool.Freehand, [new AnnotationPoint(4, 4), new AnnotationPoint(5, 5)], "#6C29D9", null);
+
+        await part.ClearAttachmentAnnotationsAsync(attachment.Id, 0);
+
+        var remaining = await part.GetAttachmentAnnotationsAsync(attachment.Id);
+        Assert.Equal([onPageOne.Id], remaining.Select(a => a.Id));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal([onPageOne.Id], (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+        // Page zero's annotations are gone, not merely hidden.
+        Assert.DoesNotContain(onPageZero.Id, (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task ReviseAsync_CarriesAttachmentAnnotationsOntoTheRevisedInstance()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var annotation = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Rectangle, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#40A2CE", null);
+
+        var revised = Assert.IsType<Part>(await part.ReviseAsync("Revised.", "Rev B"));
+
+        var carried = Assert.Single(await revised.GetAttachmentAnnotationsAsync(attachment.Id));
+        Assert.Equal(annotation.Id, carried.Id);
+    }
+
+    [Fact]
+    public async Task AnAnnotationOnAnAttachment_IsUnaffectedByAnnotationsOnAnother()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+        var first = new Attachment("first.pdf", "application/pdf", 100);
+        var second = new Attachment("second.pdf", "application/pdf", 200);
+        await part.AttachAsync(first);
+        await part.AttachAsync(second);
+
+        await part.AddAttachmentAnnotationAsync(first.Id, 0, AnnotationTool.Rectangle, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#E5484D", null);
+        await part.AddAttachmentAnnotationAsync(second.Id, 0, AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#12B981", null);
+
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(first.Id));
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(second.Id));
+
+        await part.ClearAttachmentAnnotationsAsync(first.Id, 0);
+
+        Assert.Empty(await part.GetAttachmentAnnotationsAsync(first.Id));
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(second.Id));
+    }
+
     [Fact]
     public async Task AfterRestart_TheFullLifecycleHistory_ComesBackInOrder_WithItsActorAndTime()
     {

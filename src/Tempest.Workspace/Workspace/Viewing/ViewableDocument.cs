@@ -18,6 +18,14 @@ public enum ViewableDocumentFormat
     Text,
 
     /// <summary>
+    /// A vector image rendered through <c>Svg.Skia</c> to the same
+    /// <c>SKBitmap</c> page a PDF or raster image produces (`TD-99`,
+    /// Product Owner decision 2026-09-15 §5's "small" half, closed by
+    /// `WP 21.4A`).
+    /// </summary>
+    Svg,
+
+    /// <summary>
     /// A drawing format this platform stores but does not render — DWG or
     /// DXF today. Distinct from <see cref="Unsupported"/> so the viewer can
     /// say, honestly, that the file opens in its own application rather
@@ -88,7 +96,51 @@ public static class DocumentFormatDetector
             return ViewableDocumentFormat.Image;
         }
 
+        // SVG has no fixed-offset magic bytes — it is XML text, optionally
+        // preceded by a BOM, an `<?xml` declaration and/or comments — so
+        // "the first few bytes are the file" (this type's own remarks)
+        // takes the form of a bounded textual sniff rather than a byte
+        // comparison (`TD-99`): a renamed-but-real SVG is still recognised,
+        // exactly as a renamed PNG already is above.
+        if (LooksLikeSvg(content))
+            return ViewableDocumentFormat.Svg;
+
         return FromContentType(contentType, fileName);
+    }
+
+    /// <summary>
+    /// How many leading bytes <see cref="LooksLikeSvg"/> scans for an
+    /// <c>&lt;svg</c> element — comfortably past a BOM, an XML declaration,
+    /// a DOCTYPE and a comment or two, without reading anything resembling
+    /// a whole file (`TD-99`).
+    /// </summary>
+    private const int SvgSniffLength = 512;
+
+    /// <summary>
+    /// Whether <paramref name="content"/>'s leading bytes look like SVG
+    /// markup: optional UTF-8/UTF-16 BOM and leading whitespace, then
+    /// either an <c>&lt;svg</c> root element directly or an <c>&lt;?xml</c>
+    /// declaration with an <c>&lt;svg</c> element somewhere in the next
+    /// <see cref="SvgSniffLength"/> bytes (past any DOCTYPE or comment
+    /// preamble a real SVG file commonly carries).
+    /// </summary>
+    private static bool LooksLikeSvg(ReadOnlySpan<byte> content)
+    {
+        var span = content.Length > SvgSniffLength ? content[..SvgSniffLength] : content;
+
+        // UTF-8 BOM, the only encoding this platform's own text reading
+        // (`TextDocumentPageSource`) treats as more than plain bytes.
+        if (span.Length >= 3 && span[0] == 0xEF && span[1] == 0xBB && span[2] == 0xBF)
+            span = span[3..];
+
+        var text = System.Text.Encoding.UTF8.GetString(span);
+        var trimmed = text.TrimStart();
+
+        if (trimmed.StartsWith("<svg", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return trimmed.StartsWith("<?xml", StringComparison.OrdinalIgnoreCase) &&
+            text.Contains("<svg", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -106,6 +158,18 @@ public static class DocumentFormatDetector
         if (extension is ".dwg" or ".dxf")
             return ViewableDocumentFormat.ExternalOnly;
 
+        // `.svg` by extension alone, mirroring the DWG/DXF convention just
+        // above — a belt-and-braces signal alongside `LooksLikeSvg`'s own
+        // content sniff in `Detect` (`TD-99`), reached whenever this method
+        // is called directly (`FromContentType`'s own public surface) or
+        // whenever the sniff above did not recognise the bytes as SVG —
+        // an SVG opened through the streamed path
+        // (`AttachmentViewerLauncher.TryOpenStreamedAsync`) that happens to
+        // start with a long comment or DOCTYPE the sniff's bounded window
+        // does not reach.
+        if (extension == ".svg")
+            return ViewableDocumentFormat.Svg;
+
         if (string.IsNullOrWhiteSpace(contentType))
             return ViewableDocumentFormat.Unsupported;
 
@@ -120,11 +184,17 @@ public static class DocumentFormatDetector
         if (ExternalOnlyContentTypes.Contains(type))
             return ViewableDocumentFormat.ExternalOnly;
 
+        if (type is "image/svg+xml")
+            return ViewableDocumentFormat.Svg;
+
         if (type.StartsWith("image/", StringComparison.Ordinal))
         {
-            // Named rather than assumed: SVG and TIFF are both "image/*"
-            // and neither is a raster this platform can decode, so calling
-            // them Image would promise a render that cannot happen.
+            // Named rather than assumed: TIFF is "image/*" and this
+            // platform has no raster decoder for it, so calling it Image
+            // would promise a render that cannot happen. SVG (checked
+            // above) is the one "image/*" content type that is not a
+            // raster at all — `Svg.Skia` renders its vector content
+            // directly (`TD-99`).
             return type is "image/png" or "image/jpeg" or "image/jpg" or "image/bmp" or "image/gif" or "image/webp"
                 ? ViewableDocumentFormat.Image
                 : ViewableDocumentFormat.Unsupported;

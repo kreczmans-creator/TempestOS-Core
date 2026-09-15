@@ -182,6 +182,42 @@ public sealed record DocumentViewport
         return new DocumentViewport(content.Width, content.Height, ViewportWidth, ViewportHeight, Zoom, OffsetX, OffsetY).FitToView();
     }
 
+    /// <summary>
+    /// The same view onto content whose width and height have swapped — a
+    /// 90°/270° rotation (`TD-99`, `TD-101`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The fix for the rotation fit bug `WP 20.2B` disclosed:</b> before
+    /// this method existed, rotation was applied only to the rendered
+    /// bitmap — <see cref="ContentWidth"/>/<see cref="ContentHeight"/>
+    /// (and therefore <see cref="FitZoom"/>, <see cref="ActualSize"/> and
+    /// every offset-clamping calculation) kept reasoning about the page's
+    /// un-rotated shape, so a rotated landscape page could sit un-fitted —
+    /// needing a manual zoom step — even though "Fit" was already the
+    /// active zoom by every other measure. Calling this method whenever the
+    /// viewer's own rotation changes by 90° keeps <see cref="ContentWidth"/>/<see cref="ContentHeight"/>
+    /// equal to the page's <em>currently displayed</em> bounding box at all
+    /// times, so every method on this type keeps working unmodified —
+    /// there is no second, rotation-aware code path to keep in sync with
+    /// this one.
+    /// </para>
+    /// <para>
+    /// Stays fitted if it was fitted, otherwise keeps the same zoom and
+    /// re-clamps the offset — exactly <see cref="WithViewportSize"/>'s own
+    /// convention for a window resize, applied here to a rotation instead:
+    /// a user who had zoomed in should not have that undone by turning the
+    /// page, any more than they should by resizing the window.
+    /// </para>
+    /// </remarks>
+    public DocumentViewport WithContentSizeSwapped()
+    {
+        var wasFitted = IsFitted;
+        var swapped = new DocumentViewport(ContentHeight, ContentWidth, ViewportWidth, ViewportHeight, Zoom, OffsetX, OffsetY);
+
+        return wasFitted ? swapped.FitToView() : swapped.Clamped();
+    }
+
     private DocumentViewport WithZoom(double zoom) =>
         new DocumentViewport(ContentWidth, ContentHeight, ViewportWidth, ViewportHeight, Clamp(zoom, MinZoom, MaxZoom), OffsetX, OffsetY).Clamped();
 
