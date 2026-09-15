@@ -30,6 +30,18 @@ public static class ProjectAreas
 {
     private static readonly IReadOnlyList<ProjectAreaDescriptor> Descriptors =
     [
+        // `WP 20.10A` (Product Owner findings D2/D12/T1): first in the tab
+        // strip — the project's own commercial identity (client, rate
+        // card, purchase order, budget, dates, project manager) needs to
+        // be set, and reachable again afterwards, before anything else
+        // about the project is worth looking at (a project with no client
+        // and no pinned rate card cannot record time against it at all,
+        // finding D12). `ProjectArea.Details` is appended at the end of
+        // that enum (ordinal persistence), but this list's own order —
+        // not the enum's — decides tab position.
+        new(ProjectArea.Details, "Details", "🛈", NavigationAvailability.Implemented,
+            "The project's own identity and Commercial section — client, purchase order, budget, rate card, dates and project manager."),
+
         new(ProjectArea.Overview, "Overview", "◉", NavigationAvailability.Implemented,
             "The project's own identity, lifecycle and real engineering contents."),
 

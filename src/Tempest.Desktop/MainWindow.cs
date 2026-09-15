@@ -113,6 +113,12 @@ public sealed class MainWindow : Window
     private readonly NewProjectPrompt _newProjectPrompt;
     private readonly IQuotationService _quotationService;
 
+    // `WP 20.10A`: New Project's own client/rate-card/PO fields are
+    // written through the identical already-registered `project.*`
+    // commands the generic editor's own Commercial section dispatches
+    // through — see `PromptForNewProjectAsync`'s own remarks.
+    private readonly ICommandDispatcher _commandDispatcher;
+
     // The rail's own five areas (`WP 19.7A`) — Evidence, Timesheets,
     // Invoicing, Reports, Engineering Calculations and Quotes are no
     // longer standalone rail destinations; each is embedded content
@@ -232,6 +238,7 @@ public sealed class MainWindow : Window
         _settingsView = views.SettingsView;
         _newProjectPrompt = views.NewProjectPrompt;
         _quotationService = (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
+        _commandDispatcher = views.Composition.CommandDispatcher;
         _commandHistory = views.CommandHistory;
         _backgroundTaskRunner = views.BackgroundTaskRunner;
         _engineeringScope = host.EngineeringScope!;
@@ -663,11 +670,28 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// Collects a name for a new project — and, `WP 19.5B` (`ADR-0152`,
-    /// Product Owner comment item 4), whether to open a quotation with it,
-    /// checked by default — creating both on confirmation. Returns whether
-    /// a project was created.
+    /// Collects a name for a new project — its client, rate card and
+    /// purchase-order reference (`WP 20.10A`, Product Owner findings
+    /// D1/D2/D12), and, `WP 19.5B` (`ADR-0152`, Product Owner comment item
+    /// 4), whether to open a quotation with it, checked by default —
+    /// creating the project and writing every collected commercial field
+    /// on confirmation. Returns whether a project was created.
     /// </summary>
+    /// <remarks>
+    /// Each commercial field is written through the identical
+    /// already-registered <c>project.*</c> command
+    /// <see cref="Editors.ObjectEditorView"/>'s own Commercial section
+    /// dispatches through (<c>SetProjectClientCommand</c>,
+    /// <c>PinProjectRateCardCommand</c>, <c>SetProjectPurchaseOrderCommand</c>)
+    /// — one transaction each, with its own audit row, exactly as the
+    /// editor does. A field left unset in the prompt (no client chosen,
+    /// "None" for the rate card, a blank PO reference) is simply not
+    /// dispatched; a refusal from one that was set (a rate card that
+    /// stopped being Released between the prompt reading it and this
+    /// dispatch running, say) is reported as a warning — the project still
+    /// exists and opens, exactly as an equivalent quotation failure just
+    /// below already reports.
+    /// </remarks>
     private async Task<bool> PromptForNewProjectAsync(string suggestedIdentifier, string _)
     {
         var input = await _newProjectPrompt.PromptAsync("New Project", $"Name for {suggestedIdentifier}:").ConfigureAwait(true);
@@ -687,6 +711,35 @@ public sealed class MainWindow : Window
         {
             _toastHost.Show(ex.Message, FeedbackSeverity.Error);
             return false;
+        }
+
+        const string projectKind = Tempest.Workspace.Mechanical.MechanicalObjectFactoryRegistry.Project;
+
+        if (input.ClientOrganisationId is { } clientOrganisationId)
+        {
+            var result = await _commandDispatcher
+                .DispatchAsync(new SetProjectClientCommand(created.Id, projectKind, clientOrganisationId), CancellationToken.None)
+                .ConfigureAwait(true);
+            if (!result.Succeeded)
+                _toastHost.Show($"'{created.Label}' was created, but its client could not be set: {result.Message}", FeedbackSeverity.Warning);
+        }
+
+        if (input.RateCardId is { } rateCardId)
+        {
+            var result = await _commandDispatcher
+                .DispatchAsync(new PinProjectRateCardCommand(created.Id, projectKind, rateCardId), CancellationToken.None)
+                .ConfigureAwait(true);
+            if (!result.Succeeded)
+                _toastHost.Show($"'{created.Label}' was created, but its rate card could not be pinned: {result.Message}", FeedbackSeverity.Warning);
+        }
+
+        if (input.PurchaseOrderReference is { } purchaseOrderReference)
+        {
+            var result = await _commandDispatcher
+                .DispatchAsync(new SetProjectPurchaseOrderCommand(created.Id, projectKind, purchaseOrderReference), CancellationToken.None)
+                .ConfigureAwait(true);
+            if (!result.Succeeded)
+                _toastHost.Show($"'{created.Label}' was created, but its purchase order could not be set: {result.Message}", FeedbackSeverity.Warning);
         }
 
         if (input.OpenQuotation)

@@ -70,4 +70,19 @@ public enum ProjectArea
     /// </summary>
     /// <remarks>Appended, not inserted: <see cref="ShellLocation"/> is persisted by ordinal.</remarks>
     SignOff,
+
+    /// <summary>
+    /// The project's own identity and Commercial section — client, purchase
+    /// order, budget, rate card, dates and project manager (`WP 20.10A`,
+    /// Product Owner findings D2/D12/T1) — reachable directly from the
+    /// project workspace rather than only through the generic Object
+    /// Editor.
+    /// </summary>
+    /// <remarks>
+    /// Appended, not inserted, exactly as every sibling member's own remarks
+    /// say: <see cref="ShellLocation"/> is persisted by ordinal. First in the
+    /// tab strip regardless — <see cref="ProjectAreas.All"/>'s own
+    /// declaration order, not this enum's, decides tab position.
+    /// </remarks>
+    Details,
 }
