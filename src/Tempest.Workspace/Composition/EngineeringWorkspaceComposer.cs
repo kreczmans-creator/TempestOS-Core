@@ -317,6 +317,11 @@ public static class EngineeringWorkspaceComposer
         // this Work Package adds.
         rehydrators.Register<Tempest.Core.Tasks.ManualTask>(Tempest.Core.Tasks.ManualTask.CanonicalKind, domainContext);
 
+        // `WP 21.3B` — the same shape once more, for the two Kinds this
+        // Work Package adds (expenses, purchase orders).
+        rehydrators.Register<Tempest.Core.Expenses.ProjectExpense>(Tempest.Core.Expenses.ProjectExpense.CanonicalKind, domainContext);
+        rehydrators.Register<Tempest.Core.PurchaseOrders.PurchaseOrder>(Tempest.Core.PurchaseOrders.PurchaseOrder.CanonicalKind, domainContext);
+
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by
         // `Tempest.Samples` and nine by nothing at all, so the product's
