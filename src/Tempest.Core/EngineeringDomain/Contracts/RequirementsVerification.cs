@@ -44,8 +44,9 @@ public interface IVerificationActivity : IVerification, IHasLifecycle
 /// own <c>Outcome</c>/<c>Method</c> by name, yet still has no <c>Kind</c>
 /// and no live <c>ReviseAsync</c>/<c>GetRevisionHistoryAsync</c>/
 /// <c>LinkAsync</c>/<c>GetRelationshipsAsync</c> — the same "real Domain
-/// design question, not a mechanical add" `FCR-0058` in
-/// `docs/governance/Future Capability Register.md` already names, still
+/// design question, not a mechanical add" `FCR-0051` in
+/// `docs/governance/Future Capability Register.md` already names for both
+/// <see cref="ICalculationResult"/> and this interface together, still
 /// "Identified," still unscheduled.
 /// </para>
 /// <para>
