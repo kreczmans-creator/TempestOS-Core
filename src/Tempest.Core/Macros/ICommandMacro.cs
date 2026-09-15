@@ -6,15 +6,15 @@ namespace Tempest.Core.Macros;
 /// capability (`WP 10.6A`).
 /// </summary>
 /// <remarks>
-/// Deliberately not a scripting language: a macro carries no branching,
-/// looping, or parameterisation of its own — it is nothing more than a
-/// named, ordered list of Ids, each dispatched exactly as
+/// Deliberately not a scripting language: a macro carries no branching or
+/// looping of its own — it is nothing more than a named, ordered list of
+/// steps, each dispatched exactly as
 /// <see cref="Commands.ICommandRegistry.InvokeAsync"/> already dispatches
-/// any other command by Id (`RunMacroCommand`, same namespace). A step
-/// whose own descriptor has no <see cref="Commands.CommandDescriptor.CreateDefault"/>
-/// factory cannot be invoked by Id at all — the identical, pre-existing
-/// platform-wide limitation <c>CommandPaletteOverlay</c>'s own remarks
-/// already document, not a restriction this type introduces.
+/// any other command by Id (`RunMacroCommand`, same namespace). A step's
+/// own recorded values (`WP 20.2C`, <see cref="MacroStep.RecordedValues"/>)
+/// are the one, narrow exception to "no parameterisation": they are
+/// exactly what the person supplied when the step was recorded, replayed
+/// unchanged every run, never computed or branched on.
 /// </remarks>
 public interface ICommandMacro
 {
@@ -25,8 +25,7 @@ public interface ICommandMacro
     string Name { get; }
 
     /// <summary>
-    /// Gets the ordered <see cref="Commands.CommandDescriptor.Id"/>s this
-    /// macro invokes, in sequence, when run.
+    /// Gets the ordered steps this macro invokes, in sequence, when run.
     /// </summary>
-    IReadOnlyList<string> StepCommandIds { get; }
+    IReadOnlyList<MacroStep> Steps { get; }
 }

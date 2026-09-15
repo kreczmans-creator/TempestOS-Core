@@ -70,7 +70,8 @@ public sealed class AccessibilityAutomationTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
 
             var nameBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
 

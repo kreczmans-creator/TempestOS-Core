@@ -14,18 +14,20 @@ namespace Tempest.Desktop.Views;
 /// The User Command Macro foundation's own authoring/browsing surface
 /// (`WP 10.6A`) — lists existing macros (Run/Delete), and a minimal, real
 /// "New Macro" editor: a name, and an ordered list of steps picked from
-/// the commands that can run with nobody present (<see cref="IsMacroEligible"/>
-/// — since TD-77 Stage 5 that includes the real discipline lifecycle
-/// transitions, which `ADR-0098`'s own previously-disclosed limitation
-/// excluded). Deliberately not a drag/drop builder — the brief's own "user
-/// command macros (foundation)" framing, taken literally: real, working,
-/// minimal. Shares the Dialog Framework's own established panel styling
-/// (mirrors <see cref="SettingsDialog"/>'s construction).
+/// the commands eligible to be one (<see cref="IsMacroEligible"/> — since
+/// TD-77 Stage 5 that includes the real discipline lifecycle transitions,
+/// and since `WP 20.2C` a parameterised command too, once Add Step has
+/// collected the values it declares through <see cref="_collectStepValues"/>).
+/// Deliberately not a drag/drop builder — the brief's own "user command
+/// macros (foundation)" framing, taken literally: real, working, minimal.
+/// Shares the Dialog Framework's own established panel styling (mirrors
+/// <see cref="SettingsDialog"/>'s construction).
 /// </summary>
 public sealed class MacroManagerDialog : Border
 {
     private readonly IMacroManager _macroManager;
     private readonly ICommandRegistry _commandRegistry;
+    private readonly CommandParameterPrompt _collectStepValues;
     private readonly Func<Guid, Task<CommandResult>> _runMacro;
 
     private readonly StackPanel _browsePanel = new();
@@ -52,19 +54,32 @@ public sealed class MacroManagerDialog : Border
 
     private IReadOnlyList<ICommandMacro> _macros = [];
     private List<CommandDescriptor> _availableDescriptors = [];
-    private readonly List<string> _draftSteps = [];
+    private readonly List<MacroStep> _draftSteps = [];
 
     /// <summary>Initialises a new instance of the <see cref="MacroManagerDialog"/> class, initially hidden.</summary>
     /// <param name="macroManager">The Macro foundation's own Platform Service.</param>
     /// <param name="commandRegistry">Used to list step-eligible commands (never to invoke — see <paramref name="runMacro"/>).</param>
+    /// <param name="collectStepValues">
+    /// Collects a step's own declared values at record time (`WP 20.2C`)
+    /// — the identical <see cref="CommandParameterPrompt"/> seam a live
+    /// invocation already uses (<see cref="DesktopCommandPrompt"/>), so a
+    /// person answers each parameterised step's own question once, here,
+    /// rather than every time the macro runs.
+    /// </param>
     /// <param name="runMacro">Runs the macro with the given Id — set by <c>MainWindow</c> to route through <see cref="Tasks.IBackgroundTaskRunner"/>.</param>
-    public MacroManagerDialog(IMacroManager macroManager, ICommandRegistry commandRegistry, Func<Guid, Task<CommandResult>> runMacro)
+    public MacroManagerDialog(
+        IMacroManager macroManager,
+        ICommandRegistry commandRegistry,
+        CommandParameterPrompt collectStepValues,
+        Func<Guid, Task<CommandResult>> runMacro)
     {
         ArgumentNullException.ThrowIfNull(macroManager);
         ArgumentNullException.ThrowIfNull(commandRegistry);
+        ArgumentNullException.ThrowIfNull(collectStepValues);
         ArgumentNullException.ThrowIfNull(runMacro);
         _macroManager = macroManager;
         _commandRegistry = commandRegistry;
+        _collectStepValues = collectStepValues;
         _runMacro = runMacro;
 
         IsVisible = false;
@@ -206,7 +221,7 @@ public sealed class MacroManagerDialog : Border
         editorButtons.Children.Add(_saveMacroButton);
         _editorPanel.Children.Add(editorButtons);
 
-        _addStepButton.Click += (_, _) => AddStep();
+        _addStepButton.Click += async (_, _) => await AddStepAsync().ConfigureAwait(true);
         _removeStepButton.Click += (_, _) => RemoveStep();
         _cancelEditorButton.Click += (_, _) => CloseEditor();
         _saveMacroButton.Click += async (_, _) => await SaveMacroAsync().ConfigureAwait(true);
@@ -227,7 +242,7 @@ public sealed class MacroManagerDialog : Border
     private async Task RefreshMacroListAsync()
     {
         _macros = await _macroManager.ListAsync().ConfigureAwait(true);
-        _macroList.ItemsSource = _macros.Select(m => $"{m.Name} ({m.StepCommandIds.Count} step(s))").ToList();
+        _macroList.ItemsSource = _macros.Select(m => $"{m.Name} ({m.Steps.Count} step(s))").ToList();
     }
 
     private void OpenEditor()
@@ -247,31 +262,29 @@ public sealed class MacroManagerDialog : Border
 
     /// <summary>
     /// Whether <paramref name="descriptor"/> can be a macro step —
-    /// TD-77 Stage 5.
+    /// TD-77 Stage 5, widened by `WP 20.2C` (`ADR-0099`'s own addendum).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A macro is unattended by definition (<c>ADR-0098</c>: an ordered
-    /// list of Ids, no branching, no looping, no scripting, no
-    /// parameters), so a step must be a command that needs nobody present.
-    /// The binding already answers that exactly:
-    /// <see cref="CommandBinding.RequiresPrompt"/> is true for a command
-    /// declaring values to collect or a confirmation to obtain, and those
-    /// are precisely the ones that must never run unattended. Nothing new
-    /// decides eligibility, and no list of Ids is maintained here.
+    /// A macro still never runs unattended past a confirmation
+    /// (<c>ADR-0098</c>): a step declaring one is excluded, because no
+    /// recording can stand in for a person's "yes". A step declaring
+    /// <i>values</i>, though, is no longer excluded on that basis alone —
+    /// recording what the person supplies when the step is added
+    /// (<see cref="AddStepAsync"/>) is exactly what lets it replay
+    /// unattended later (<c>RunMacroCommandHandler</c>). Only a binding
+    /// this platform genuinely cannot invoke at all (declared
+    /// <see cref="CommandBinding.Unavailable"/> — today, the object-picker
+    /// set) stays excluded outright.
     /// </para>
     /// <para>
     /// This used to read <see cref="CommandDescriptor.CreateDefault"/>
     /// alone, which no production discipline command has ever set — so no
-    /// real engineering command could be a macro step at all. The
-    /// <c>CreateDefault</c> clause remains for the commands that still
-    /// work that way.
-    /// </para>
-    /// <para>
-    /// The result is the audited macro-safe set: the thirteen lifecycle
-    /// transitions and <c>mechanical.validate-configuration</c>. Every
-    /// delete and every duplicate declares a confirmation and is excluded
-    /// by that fact, not by being named here.
+    /// real engineering command could be a macro step at all; then
+    /// (TD-77 Stage 5) <see cref="CommandBinding.RequiresPrompt"/>, which
+    /// admitted a bound command only if it declared neither a value nor a
+    /// confirmation. The <c>CreateDefault</c> clause remains for the
+    /// commands that still work the original way.
     /// </para>
     /// </remarks>
     internal static bool IsMacroEligible(CommandDescriptor descriptor)
@@ -279,7 +292,7 @@ public sealed class MacroManagerDialog : Border
         ArgumentNullException.ThrowIfNull(descriptor);
 
         return descriptor.Binding is { } binding
-            ? binding is { IsInvocable: true, RequiresPrompt: false }
+            ? binding.IsInvocable && binding.ConfirmationMessage is null
             : descriptor.CreateDefault is not null;
     }
 
@@ -289,15 +302,50 @@ public sealed class MacroManagerDialog : Border
         _browsePanel.IsVisible = true;
     }
 
-    private void AddStep()
+    /// <summary>
+    /// Adds the selected available command as the macro's own next step —
+    /// collecting its own declared values right now, through
+    /// <see cref="_collectStepValues"/>, if it declares any (`WP 20.2C`).
+    /// Declining that collection adds no step at all, exactly as
+    /// declining any other command's own prompt runs nothing
+    /// (<see cref="DesktopCommandPrompt"/>'s own remarks).
+    /// </summary>
+    private async Task AddStepAsync()
     {
         if (_availableCommands.SelectedIndex < 0 || _availableCommands.SelectedIndex >= _availableDescriptors.Count)
             return;
 
         var descriptor = _availableDescriptors[_availableCommands.SelectedIndex];
-        _draftSteps.Add(descriptor.Id);
-        _steps.ItemsSource = _draftSteps.Select((id, index) => $"{index + 1}. {id}").ToList();
+        var binding = descriptor.Binding;
+
+        var recordedValues = EmptyValues;
+
+        if (binding is { RequiresPrompt: true })
+        {
+            // IsMacroEligible already excludes a declared confirmation, so
+            // only values are ever collected here — passed through
+            // unchanged regardless, since this seam is the identical one
+            // a live invocation already uses.
+            var collected = await _collectStepValues(descriptor, binding.Parameters, binding.ConfirmationMessage, CancellationToken.None)
+                .ConfigureAwait(true);
+
+            if (collected is null)
+                return;
+
+            recordedValues = collected;
+        }
+
+        _draftSteps.Add(new MacroStep(descriptor.Id, recordedValues));
+        _steps.ItemsSource = _draftSteps.Select((step, index) => $"{index + 1}. {DescribeStep(step)}").ToList();
     }
+
+    /// <summary>One line describing a draft step — its Id, and any recorded values, so what will replay is visible before Save.</summary>
+    private static string DescribeStep(MacroStep step) =>
+        step.RecordedValues.Count == 0
+            ? step.CommandId
+            : $"{step.CommandId} ({string.Join(", ", step.RecordedValues.Select(kv => $"{kv.Key}={kv.Value}"))})";
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyValues = new Dictionary<string, string>(StringComparer.Ordinal);
 
     private void RemoveStep()
     {
@@ -305,7 +353,7 @@ public sealed class MacroManagerDialog : Border
             return;
 
         _draftSteps.RemoveAt(_steps.SelectedIndex);
-        _steps.ItemsSource = _draftSteps.Select((id, index) => $"{index + 1}. {id}").ToList();
+        _steps.ItemsSource = _draftSteps.Select((step, index) => $"{index + 1}. {DescribeStep(step)}").ToList();
     }
 
     private async Task SaveMacroAsync()

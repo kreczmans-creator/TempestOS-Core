@@ -386,7 +386,7 @@ public sealed class SurfaceCommandIntegrationTests
     // ==================================================================
 
     [AvaloniaFact]
-    public async Task MacroManager_OffersRealDisciplineCommands_AndOnlyTheOnesThatNeedNobodyPresent()
+    public async Task MacroManager_OffersRealDisciplineCommands_AndOnlyTheOnesAConfirmationCannotGate()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -402,10 +402,17 @@ public sealed class SurfaceCommandIntegrationTests
             Assert.Contains("documents.release", offered);
             Assert.Contains("mechanical.validate-configuration", offered);
 
-            // Parameterised, confirmation-gated and explicitly unavailable
-            // commands stay out - by what their bindings declare, not by a
-            // list maintained in the dialog.
-            Assert.DoesNotContain("requirements.create", offered);
+            // `WP 20.2C`: a parameterised command is offered now that its
+            // own values can be recorded when the step is added (Add Step
+            // collects them through the identical CommandParameterPrompt
+            // seam a live invocation already uses).
+            Assert.Contains("requirements.create", offered);
+            Assert.Contains("mechanical.create", offered);
+            Assert.Contains("mechanical.rename", offered);
+
+            // A declared confirmation, or a binding this platform cannot
+            // invoke at all, still keeps a command out - by what its own
+            // binding declares, not by a list maintained in the dialog.
             Assert.DoesNotContain("mechanical.delete", offered);
             Assert.DoesNotContain("mechanical.duplicate", offered);
             Assert.DoesNotContain("mechanical.move", offered);

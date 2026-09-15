@@ -6,22 +6,22 @@ public sealed class CommandMacro : ICommandMacro
     /// <summary>Initialises a new instance of the <see cref="CommandMacro"/> class.</summary>
     /// <param name="id">The macro's own unique, stable Id.</param>
     /// <param name="name">The macro's own human-readable display name.</param>
-    /// <param name="stepCommandIds">The ordered Command Ids this macro invokes when run.</param>
-    /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/>, empty, or whitespace, or <paramref name="stepCommandIds"/> is empty.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="stepCommandIds"/> is <see langword="null"/>.</exception>
-    public CommandMacro(Guid id, string name, IReadOnlyList<string> stepCommandIds)
+    /// <param name="steps">The ordered steps this macro invokes when run.</param>
+    /// <exception cref="ArgumentException"><paramref name="name"/> is <see langword="null"/>, empty, or whitespace, or <paramref name="steps"/> is empty.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="steps"/> is <see langword="null"/>.</exception>
+    public CommandMacro(Guid id, string name, IReadOnlyList<MacroStep> steps)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name must not be null, empty, or whitespace.", nameof(name));
 
-        ArgumentNullException.ThrowIfNull(stepCommandIds);
+        ArgumentNullException.ThrowIfNull(steps);
 
-        if (stepCommandIds.Count == 0)
-            throw new ArgumentException("A macro must have at least one step.", nameof(stepCommandIds));
+        if (steps.Count == 0)
+            throw new ArgumentException("A macro must have at least one step.", nameof(steps));
 
         Id = id;
         Name = name;
-        StepCommandIds = stepCommandIds;
+        Steps = steps;
     }
 
     /// <inheritdoc />
@@ -31,5 +31,5 @@ public sealed class CommandMacro : ICommandMacro
     public string Name { get; }
 
     /// <inheritdoc />
-    public IReadOnlyList<string> StepCommandIds { get; }
+    public IReadOnlyList<MacroStep> Steps { get; }
 }

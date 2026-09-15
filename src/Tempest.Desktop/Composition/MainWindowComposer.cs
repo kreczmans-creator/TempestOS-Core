@@ -179,38 +179,41 @@ internal sealed partial class MainWindowComposer
         var commandHistory = new CommandHistoryLog();
         var backgroundTaskRunner = new BackgroundTaskRunner();
 
-        var macroManagerDialog = new MacroManagerDialog(
-            composition.MacroManager,
-            composition.CommandRegistry,
-            runMacro: async macroId =>
-            {
-                var descriptor = composition.CommandRegistry.Items.FirstOrDefault(d => d.Id == IMacroManager.CommandIdPrefix + macroId);
-                var title = descriptor?.DisplayName ?? "Macro";
+        // `MacroManagerDialog` itself is constructed further below, once
+        // `commandPrompt` exists (`WP 20.2C`: recording a parameterised
+        // step's own values needs the identical prompt seam a live
+        // invocation already uses) — this callback closes over nothing
+        // from that later point in time, so it can be built here exactly
+        // as before.
+        async Task<CommandResult> RunMacroAsync(Guid macroId)
+        {
+            var descriptor = composition.CommandRegistry.Items.FirstOrDefault(d => d.Id == IMacroManager.CommandIdPrefix + macroId);
+            var title = descriptor?.DisplayName ?? "Macro";
 
-                var context = WorkspaceCommandContext.From(workspace.Selection);
-                var result = await backgroundTaskRunner.RunAsync(
-                    $"Running macro '{title}'…",
-                    async ct =>
-                    {
-                        var invocation = await composition.CommandRegistry
-                            .InvokeAsync(IMacroManager.CommandIdPrefix + macroId, context, prompt: null, ct)
-                            .ConfigureAwait(false);
+            var context = WorkspaceCommandContext.From(workspace.Selection);
+            var result = await backgroundTaskRunner.RunAsync(
+                $"Running macro '{title}'…",
+                async ct =>
+                {
+                    var invocation = await composition.CommandRegistry
+                        .InvokeAsync(IMacroManager.CommandIdPrefix + macroId, context, prompt: null, ct)
+                        .ConfigureAwait(false);
 
-                        return invocation.Result
-                            ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
-                    }).ConfigureAwait(true);
+                    return invocation.Result
+                        ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
+                }).ConfigureAwait(true);
 
-                commandHistory.Record($"Macro '{title}'", result.Succeeded);
-                callbacks.RefreshOutputPanelExtras();
+            commandHistory.Record($"Macro '{title}'", result.Succeeded);
+            callbacks.RefreshOutputPanelExtras();
 
-                // `WP 18.1A`: no explicit Explorer/Cockpit refresh here any
-                // more — a macro is an arbitrary multi-command mutation,
-                // and every one of its commands commits through the same
-                // mutators as any other write, each raising its own
-                // WorkspaceChanged. Explorer and Cockpit are both
-                // subscribed and reload from that.
-                return result;
-            });
+            // `WP 18.1A`: no explicit Explorer/Cockpit refresh here any
+            // more — a macro is an arbitrary multi-command mutation,
+            // and every one of its commands commits through the same
+            // mutators as any other write, each raising its own
+            // WorkspaceChanged. Explorer and Cockpit are both
+            // subscribed and reload from that.
+            return result;
+        }
 
         var toastBridge = new PlatformNotificationToastBridge(toastHost);
         composition.EventBus.Subscribe(toastBridge);
@@ -311,6 +314,13 @@ internal sealed partial class MainWindowComposer
                 ? ConfirmDeleteAsync(message)
                 : confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
         ribbon.ParameterPrompt = commandPrompt.Prompt;
+
+        // `WP 20.2C`: recording a parameterised step's own values (Add
+        // Step, in the editor) uses the identical prompt seam the Ribbon
+        // and the Palette already invoke a bound command through — one
+        // `InputDialog`, one set of validators, no second collection UI.
+        var macroManagerDialog = new MacroManagerDialog(
+            composition.MacroManager, composition.CommandRegistry, commandPrompt.Prompt, RunMacroAsync);
 
         var actionReporter = new ActionOutcomeReporter(statusBar, toastHost, callbacks.RecordHistory);
         settingsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
