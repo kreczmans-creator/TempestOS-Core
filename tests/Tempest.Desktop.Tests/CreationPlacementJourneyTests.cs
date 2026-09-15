@@ -92,7 +92,10 @@ public sealed class CreationPlacementJourneyTests
             await workspace.Navigation.SwitchAreaAsync(CalculationsWorkspaceExplorerModule.NavigationItemId);
             await workspace.Selection.ClearAsync();
 
-            var invocation = await InvokeAsync(registry, "calculations.create", palette.ContextSource!(), ("kind", "Calculation"), ("displayName", "Placement Test Calc"));
+            // `dueOn` (`WP 20.10B`, T2): required by the create prompt itself now.
+            var invocation = await InvokeAsync(
+                registry, "calculations.create", palette.ContextSource!(),
+                ("kind", "Calculation"), ("displayName", "Placement Test Calc"), ("dueOn", "2026-10-01"));
             Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
             Assert.True(invocation.Result!.Succeeded, invocation.Result.Message);
 
