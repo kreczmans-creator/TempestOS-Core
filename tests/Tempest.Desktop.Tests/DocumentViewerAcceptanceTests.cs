@@ -1,3 +1,4 @@
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
@@ -973,6 +974,114 @@ public sealed class DocumentViewerAcceptanceTests
             // as a second directory level the name climbed out through.
             var relative = Path.GetRelativePath(expectedRoot, materialisedPath!);
             Assert.Equal(2, relative.Split(Path.DirectorySeparatorChar).Length);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // TD-98: markup and annotation, driven through the real viewer opened
+    // by AttachmentViewers.OpenAsync exactly as the button a user presses
+    // does — draw, persist, reload into a second launcher over the same
+    // host (proving the round trip goes through the real owner object, not
+    // a mock), select, delete, clear.
+    // ----------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task AnAnnotation_IsDrawnPersistedReloadedSelectedAndDeleted_ThroughTheRealViewer()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-990", "annotated.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+            Assert.Equal(DocumentViewStatus.Ready, viewer.Session!.Status);
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+
+            viewer.SetActiveColor("#12B981");
+            var drawn = await viewer.DrawAnnotationAsync(
+                AnnotationTool.Rectangle, [new AnnotationPoint(10, 10), new AnnotationPoint(120, 90)]);
+
+            Assert.NotNull(drawn);
+            Assert.Equal("#12B981", drawn!.ColorHex);
+            Assert.Single(viewer.AnnotationsOnCurrentPage);
+
+            // Persisted through the real owner, not merely held by the
+            // view: fetched back independently, the way a second tab or a
+            // relaunch would.
+            var annotatable = Assert.IsAssignableFrom<IHasAttachmentAnnotations>(owner);
+            var stored = Assert.Single(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
+            Assert.Equal(drawn.Id, stored.Id);
+            Assert.Equal(AnnotationTool.Rectangle, stored.Tool);
+
+            // Select and delete, through the same public surface a click on
+            // the rendered shape and the Delete button drive.
+            viewer.SelectAnnotation(drawn.Id);
+            Assert.Equal(drawn.Id, viewer.SelectedAnnotationId);
+
+            await viewer.DeleteSelectedAnnotationAsync();
+
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+            Assert.Null(viewer.SelectedAnnotationId);
+            Assert.Empty(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ClearPageAnnotationsAsync_RemovesEveryAnnotationOnThatPage_AfterConfirming()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-991", "markup.pdf", "application/pdf", DocumentPageSourceTests.MultiPagePdf());
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            await viewer.DrawAnnotationAsync(AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(30, 30)]);
+            await viewer.DrawAnnotationAsync(AnnotationTool.Freehand, [new AnnotationPoint(5, 5), new AnnotationPoint(15, 15), new AnnotationPoint(25, 5)]);
+            Assert.Equal(2, viewer.AnnotationsOnCurrentPage.Count);
+
+            // Real confirmation dialog: reached and confirmed exactly as a
+            // user pressing "Clear" on it would, not bypassed. The dialog
+            // relabels its own confirm button to "Clear" only once
+            // ConfirmAsync actually runs — which happens synchronously, up
+            // to its own first await, the instant ClearPageAnnotationsAsync
+            // is called — so the button is looked up only after that call
+            // has started, not before.
+            var clearTask = viewer.ClearPageAnnotationsAsync();
+
+            var confirmButton = viewer.GetLogicalDescendants().OfType<Button>()
+                .Single(b => AutomationProperties.GetName(b) == "Clear");
+            confirmButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await clearTask;
+
+            Assert.Empty(viewer.AnnotationsOnCurrentPage);
+
+            var annotatable = Assert.IsAssignableFrom<IHasAttachmentAnnotations>(owner);
+            Assert.Empty(await annotatable.GetAttachmentAnnotationsAsync(attachmentId));
         }
         finally
         {
