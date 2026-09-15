@@ -29,6 +29,7 @@ using Tempest.Core.ReferenceData;
 using Tempest.Core.Requirements;
 using Tempest.Core.Verification;
 using Tempest.Desktop.DigitalThread;
+using Tempest.Desktop.Editors.Sections;
 using Tempest.Desktop.Icons;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
@@ -222,9 +223,15 @@ public sealed class ObjectEditorView : UserControl
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private readonly StackPanel _lifecyclePanel = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _relationshipsPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly StackPanel _validationPanel = new() { Spacing = DesignTokens.SpaceXs };
+
+    // `WP 21.1B`: Lifecycle (generic) and Validation now live in their own
+    // files under Editors/Sections/ — each owns its own panel/Expander and
+    // is driven through IEditorSection uniformly (this class's own
+    // EditorSectionContext, built once in the constructor).
+    private readonly LifecycleSection _lifecycleSection = new();
+    private readonly ValidationSection _validationSection = new();
+    private EditorSectionContext _sectionContext = null!;
 
     // WP 10.7A — Feature Completion: five real, discipline-specific
     // sections (see class remarks). Each section's own Expander is
@@ -320,7 +327,6 @@ public sealed class ObjectEditorView : UserControl
     private Expander _descriptionSection = null!;
     private readonly StackPanel _whereUsedPanel = new() { Spacing = DesignTokens.SpaceXs };
     private Expander _whereUsedSection = null!;
-    private Expander _lifecycleSection = null!;
 
     // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
     private readonly StackPanel _evidenceSubjectPanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -548,6 +554,16 @@ public sealed class ObjectEditorView : UserControl
         // detached, not closed, so this editor shared the reattach defect
         // (the helper's own remarks; the v0.19.1 warning on hidden editors).
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
+
+        // `WP 21.1B`: what every extracted IEditorSection needs — built
+        // once, here, since every field it reads is already assigned above
+        // and RefreshAsync/ActionCompleted are both reachable on `this`.
+        _sectionContext = new EditorSectionContext(
+            _objectId, _objectKind, _domainContext, _manager, _commandDispatcher, _navigateToObject,
+            _requirementsService, _calculationTemplates, _declarations, _evidenceSupport, _auditQuery,
+            _commercialSupport, _ownerSupport,
+            RefreshAsync: () => RefreshAsync(),
+            ReportAction: (message, outcome) => ActionCompleted?.Invoke(message, outcome));
 
         Content = BuildLayout();
 
@@ -844,9 +860,9 @@ public sealed class ObjectEditorView : UserControl
 
         var identitySection = BuildSection("Identity", new StackPanel { Spacing = DesignTokens.SpaceXs, Children = { LabeledRow("Name", _nameBox) } });
         _contentSection = BuildSection("Content", _contentBox);
-        _lifecycleSection = BuildSection("Lifecycle", _lifecyclePanel);
+        var lifecycleExpander = _lifecycleSection.Build(_sectionContext);
         var relationshipsSection = BuildSection("Relationships", _relationshipsPanel);
-        var validationSection = BuildSection("Validation", _validationPanel);
+        var validationExpander = _validationSection.Build(_sectionContext);
 
         // WP 10.7A — Feature Completion: five real, discipline-specific
         // sections (see class remarks) — each collapsed-and-hidden by
@@ -1075,11 +1091,11 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_evidenceFiguresSection);
         body.Children.Add(_attachmentsSection);
         body.Children.Add(_whereUsedSection);
-        body.Children.Add(_lifecycleSection);
+        body.Children.Add(lifecycleExpander);
         body.Children.Add(_invoiceExternalSection);
         body.Children.Add(_evidenceLifecycleSection);
         body.Children.Add(relationshipsSection);
-        body.Children.Add(validationSection);
+        body.Children.Add(validationExpander);
         body.Children.Add(_evidenceAuditSection);
 
         return new ScrollViewer { Content = body };
@@ -1139,17 +1155,19 @@ public sealed class ObjectEditorView : UserControl
         PopulateInvoiceRequest(target);
         PopulateQuotation(target);
 
-        PopulateLifecycle(target);
+        await _lifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await PopulateRelationshipsAsync(target).ConfigureAwait(true);
-        await PopulateValidationAsync(target).ConfigureAwait(true);
+        await _validationSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
 
         // `WP 18.2A`: Evidence renders from its own declaration — Subject,
         // Citations, Declared figures, its own Status/Check/Issue
         // (replacing the generic Lifecycle section, which speaks the
-        // wrong vocabulary for this Kind), and Audit.
+        // wrong vocabulary for this Kind), and Audit. `WP 21.1B`:
+        // LifecycleSection.AppliesTo already returns false for a real
+        // Evidence object — the explicit override this comment used to
+        // describe is no longer needed here.
         if (target is Core.Evidence.Evidence evidence)
         {
-            _lifecycleSection.IsVisible = false;
             await PopulateEvidenceSectionsAsync(evidence).ConfigureAwait(true);
         }
         else
@@ -1232,13 +1250,11 @@ public sealed class ObjectEditorView : UserControl
         // IHasLifecycle nor IValidatable (genuinely true, not merely
         // untested — IRequirementsService exposes no validation-equivalent
         // read), so both sections show the identical honest fallback text
-        // PopulateLifecycle/PopulateValidationAsync already show for any
-        // Kind that fails the same type-check.
-        _lifecyclePanel.Children.Clear();
-        _lifecyclePanel.Children.Add(new TextBlock { Text = "This object carries no lifecycle.", Opacity = 0.7 });
-
-        _validationPanel.Children.Clear();
-        _validationPanel.Children.Add(new TextBlock { Text = "This object supports no validation.", Opacity = 0.7 });
+        // their own LoadAsync already shows for any Kind that fails the
+        // same type-check — calling each with a null subject (`WP 21.1B`)
+        // reproduces that fallback with no hand-duplication needed here.
+        await _lifecycleSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
+        await _validationSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
 
         // Every other section (BOM, Calculation, Verification Result,
         // Attachments, Description, Where used, Commercial, Invoice,
@@ -1253,43 +1269,6 @@ public sealed class ObjectEditorView : UserControl
         ApplyReadOnlyState();
 
         _suppressDirtyTracking = false;
-    }
-
-    private void PopulateLifecycle(IEngineeringObject target)
-    {
-        _lifecyclePanel.Children.Clear();
-
-        if (target is not IHasLifecycle lifecycle)
-        {
-            _lifecyclePanel.Children.Add(new TextBlock { Text = "This object carries no lifecycle.", Opacity = 0.7 });
-            return;
-        }
-
-        // A real, coloured status badge (`WP 10.5A`, "improved lifecycle
-        // presentation") — reuses `LifecycleColors` exactly as built for
-        // the Digital Thread graph (`WP 10.4A`), so a status reads
-        // identically whichever surface shows it, never two different
-        // colour languages for the same `LifecycleState`.
-        var statusRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
-        statusRow.Children.Add(new Border { Width = 10, Height = 10, Background = LifecycleColors.Resolve(lifecycle.Status), CornerRadius = new CornerRadius(5), VerticalAlignment = VerticalAlignment.Center });
-        statusRow.Children.Add(new TextBlock { Text = $"Status: {lifecycle.Status}", FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-        _lifecyclePanel.Children.Add(statusRow);
-
-        if (lifecycle.History.Count == 0)
-        {
-            _lifecyclePanel.Children.Add(new TextBlock { Text = "No transitions recorded yet.", Opacity = 0.7, FontSize = DesignTokens.FontSizeCaption });
-            return;
-        }
-
-        foreach (var record in lifecycle.History.TakeLast(5).Reverse())
-        {
-            _lifecyclePanel.Children.Add(new TextBlock
-            {
-                Text = $"{record.From} → {record.To}   ({record.OccurredAt:yyyy-MM-dd HH:mm} UTC)",
-                FontSize = DesignTokens.FontSizeCaption,
-                Opacity = 0.8,
-            });
-        }
     }
 
     /// <summary>
@@ -1403,40 +1382,6 @@ public sealed class ObjectEditorView : UserControl
         }
 
         return row;
-    }
-
-    /// <summary>
-    /// The Validation summary (`WP 10.3A`) — a real, live
-    /// <see cref="IValidatable.ValidateAsync"/> read, genuinely closing
-    /// the gap <see cref="Tempest.Desktop.Views.PropertyInspectorView"/>'s own disclosed
-    /// placeholder names ("no per-object validation-result read exists
-    /// anywhere in the Workspace layer") — that gap was true of the
-    /// Workspace/Property-Facet layer specifically; the underlying Domain
-    /// capability (`ADR-0075`) always existed. Informational only.
-    /// </summary>
-    private async Task PopulateValidationAsync(IEngineeringObject target)
-    {
-        _validationPanel.Children.Clear();
-
-        if (target is not IValidatable validatable)
-        {
-            _validationPanel.Children.Add(new TextBlock { Text = "This object supports no validation.", Opacity = 0.7 });
-            return;
-        }
-
-        var result = await validatable.ValidateAsync().ConfigureAwait(true);
-
-        if (result.IsValid && result.Warnings.Count == 0)
-        {
-            _validationPanel.Children.Add(BuildSeverityRow(FeedbackSeverity.Success, "No issues found."));
-            return;
-        }
-
-        foreach (var error in result.Errors)
-            _validationPanel.Children.Add(BuildSeverityRow(FeedbackSeverity.Error, error.Message));
-
-        foreach (var warning in result.Warnings)
-            _validationPanel.Children.Add(BuildSeverityRow(FeedbackSeverity.Warning, warning.Message));
     }
 
     /// <summary>
