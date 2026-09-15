@@ -323,10 +323,8 @@ public sealed class ObjectEditorView : UserControl
     // `WP 18.2A` — declaration-per-Kind: the Description (read-only
     // mechanical metadata) and Where-used sections Part/Assembly/Component
     // declare (`TD-174`, `TD-175`).
-    private readonly StackPanel _descriptionPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private Expander _descriptionSection = null!;
-    private readonly StackPanel _whereUsedPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private Expander _whereUsedSection = null!;
+    private readonly DescriptionSection _descriptionSection = new();
+    private readonly WhereUsedSection _whereUsedSection = new();
 
     // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
     private readonly StackPanel _evidenceSubjectPanel = new() { Spacing = DesignTokens.SpaceXs };
@@ -962,11 +960,10 @@ public sealed class ObjectEditorView : UserControl
 
         // `WP 18.2A` — declaration-per-Kind (Part/Assembly/Component): a
         // read-only mechanical-metadata block and the "Where used" facet,
-        // named and linked (`TD-174`, `TD-175`).
-        _descriptionSection = BuildSection("Description", _descriptionPanel);
-        _descriptionSection.IsVisible = false;
-        _whereUsedSection = BuildSection("Where used", _whereUsedPanel);
-        _whereUsedSection.IsVisible = false;
+        // named and linked (`TD-174`, `TD-175`). `WP 21.1B`: both now live
+        // in their own files under Editors/Sections/.
+        var descriptionExpander = _descriptionSection.Build(_sectionContext);
+        var whereUsedExpander = _whereUsedSection.Build(_sectionContext);
 
         // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
         var subjectBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
@@ -1075,7 +1072,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_statusMessage);
         body.Children.Add(new Separator());
         body.Children.Add(identitySection);
-        body.Children.Add(_descriptionSection);
+        body.Children.Add(descriptionExpander);
         body.Children.Add(_commercialSection);
         body.Children.Add(_invoiceLinesSection);
         body.Children.Add(_quotationLinesSection);
@@ -1090,7 +1087,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_evidenceCitationsSection);
         body.Children.Add(_evidenceFiguresSection);
         body.Children.Add(_attachmentsSection);
-        body.Children.Add(_whereUsedSection);
+        body.Children.Add(whereUsedExpander);
         body.Children.Add(lifecycleExpander);
         body.Children.Add(_invoiceExternalSection);
         body.Children.Add(_evidenceLifecycleSection);
@@ -1149,8 +1146,8 @@ public sealed class ObjectEditorView : UserControl
         PopulateCalculationDue(target);
         PopulateVerificationResult(target);
         await PopulateAttachmentsAsync(target).ConfigureAwait(true);
-        PopulateDescription(target);
-        await PopulateWhereUsedAsync(target).ConfigureAwait(true);
+        await _descriptionSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _whereUsedSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await PopulateCommercialAsync(target).ConfigureAwait(true);
         PopulateInvoiceRequest(target);
         PopulateQuotation(target);
@@ -1371,66 +1368,7 @@ public sealed class ObjectEditorView : UserControl
         ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
-    /// <summary>
-    /// The Description section (`WP 18.2A`, declaration-per-Kind) — the
-    /// mechanical fields the model has today (<see cref="IHasMetadata"/>),
-    /// read-only: this section shows what the Property Inspector already
-    /// reads, consolidated into the editor, never a new writable field or
-    /// a new command (`D-028`: no attribute is added that no calc sheet,
-    /// drawing or the invoice seam needs).
-    /// </summary>
-    private void PopulateDescription(IEngineeringObject target)
-    {
-        var declaration = _declarations?.For(_objectKind);
-
-        if (declaration is null || !declaration.HasSection(EditorSectionKeys.Description) || target is not IHasMetadata metadata)
-        {
-            _descriptionSection.IsVisible = false;
-            return;
-        }
-
-        _descriptionSection.IsVisible = true;
-        _descriptionPanel.Children.Clear();
-        _descriptionPanel.Children.Add(DescriptionRow("Owner", metadata.Owner));
-        _descriptionPanel.Children.Add(DescriptionRow("Discipline", metadata.Discipline));
-        _descriptionPanel.Children.Add(DescriptionRow("Classification", metadata.Classification));
-        _descriptionPanel.Children.Add(DescriptionRow("Tags", metadata.Tags.Count > 0 ? string.Join(", ", metadata.Tags) : null));
-        _descriptionPanel.Children.Add(DescriptionRow("Notes", metadata.Notes));
-    }
-
-    private static Control DescriptionRow(string label, string? value) =>
-        LabeledRow(label, new TextBlock { Text = value ?? "(none)", Opacity = value is null ? 0.5 : 1.0, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody });
-
-    /// <summary>
-    /// The <em>Where used</em> section (`WP 18.2A`, `TD-174`, `TD-175`) —
-    /// read-only, named, linked: the assembly this object sits in, via
-    /// <see cref="IHasParent.ParentId"/>, exactly as
-    /// <see cref="MechanicalPropertyFacetProvider"/>'s own identical
-    /// "Where Used" facet already resolves it for the Property Inspector.
-    /// </summary>
-    private async Task PopulateWhereUsedAsync(IEngineeringObject target)
-    {
-        var declaration = _declarations?.For(_objectKind);
-
-        if (declaration is null || !declaration.HasSection(EditorSectionKeys.WhereUsed) || target is not IHasParent hasParent)
-        {
-            _whereUsedSection.IsVisible = false;
-            return;
-        }
-
-        _whereUsedSection.IsVisible = true;
-        _whereUsedPanel.Children.Clear();
-
-        if (hasParent.ParentId is not { } parentId)
-        {
-            _whereUsedPanel.Children.Add(new TextBlock { Text = "(top level — not used within any assembly)", Opacity = 0.7 });
-            return;
-        }
-
-        _whereUsedPanel.Children.Add(await BuildObjectReferenceRowAsync(parentId).ConfigureAwait(true));
-    }
-
-    /// <summary>Builds one read-only, named, linked row for an object referenced by id — shared by <em>Where used</em> and Evidence's own <em>Subject</em>.</summary>
+    /// <summary>Builds one read-only, named, linked row for an object referenced by id — shared by Evidence's own <em>Subject</em> (<em>Where used</em>'s identical copy now lives in <c>Editors/Sections/WhereUsedSection.cs</c>, `WP 21.1B`).</summary>
     private async Task<Control> BuildObjectReferenceRowAsync(Guid referencedId)
     {
         var referenced = await _domainContext.Repository.FindAsync(referencedId).ConfigureAwait(true);
