@@ -979,10 +979,23 @@ public sealed class SqlitePersistenceStore
     {
         try
         {
+            // `Pooling = false`, deliberately, unlike every other
+            // connection this class opens: `Microsoft.Data.Sqlite` pools
+            // connections per exact connection string, and this one — a
+            // one-off, read-only pre-check, never reused — is a different
+            // string from `_connectionString` (below), the only one
+            // `DisposeAsync` clears the pool for. A pooled connection here
+            // would survive this method's own `using` disposal at the
+            // native-handle level, leaving `databasePath` still locked
+            // after the owning `SqlitePersistenceStore` is disposed — found
+            // by a real test failure ("the process cannot access the file
+            // 'tempest.db'") when a second store reopened the same root a
+            // "restart" test had just closed.
             using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
             {
                 DataSource = databasePath,
                 Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
             }.ToString());
             connection.Open();
 
