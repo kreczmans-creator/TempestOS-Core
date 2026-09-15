@@ -689,7 +689,21 @@ internal sealed partial class MainWindowComposer
     /// <see cref="SettingsView"/> reads — without itself re-checking the
     /// feed — the next time the operator opens Settings.
     /// </summary>
-    private static async Task CheckForUpdatesInBackgroundAsync(
+    /// <remarks>
+    /// <c>internal</c> rather than <c>private</c> (`InternalsVisibleTo`,
+    /// <c>Tempest.Desktop.Tests</c>) purely so
+    /// <c>MainWindowComposerUpdateCheckTests</c> can exercise this exact
+    /// method directly against a fake <see cref="Tempest.Desktop.Startup.IUpdateService"/>
+    /// — this method's own caller (<see cref="BuildViews"/>'s
+    /// <c>if (session.UserSettings.CheckForUpdatesOnLaunch)</c> gate) is
+    /// not otherwise testable through the real window: a real
+    /// <see cref="Tempest.Desktop.Startup.VelopackUpdateService"/> always
+    /// reports "not installed" in any test process (no test ever calls
+    /// <c>Velopack.VelopackApp.Build().Run()</c>), which makes "the check
+    /// ran and found nothing" and "the check never ran" look identical from
+    /// Settings' own status text alone.
+    /// </remarks>
+    internal static async Task CheckForUpdatesInBackgroundAsync(
         Tempest.Desktop.Startup.IUpdateService updateService, Tempest.Desktop.Startup.UpdateAvailability availability)
     {
         try
