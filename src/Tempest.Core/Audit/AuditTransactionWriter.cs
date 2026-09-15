@@ -123,6 +123,9 @@ public static class EngineeringAuditActions
     /// <summary>An object was marked deleted.</summary>
     public const string Deleted = "engineering.object.deleted";
 
+    /// <summary>An object was restored from deletion (`WP 21.1A`).</summary>
+    public const string Undeleted = "engineering.object.undeleted";
+
     /// <summary>An object's bill-of-materials line changed.</summary>
     public const string BomLineSet = "engineering.object.bom-line-set";
 

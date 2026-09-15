@@ -15,12 +15,16 @@ namespace Tempest.Core.Commands;
 /// </remarks>
 public sealed class CommandResult
 {
-    private CommandResult(bool succeeded, string? message, Guid? subjectId = null, string? subjectKind = null)
+    private CommandResult(
+        bool succeeded, string? message, Guid? subjectId = null, string? subjectKind = null,
+        CommandCompensation? compensation = null, string? undoUnavailableReason = null)
     {
         Succeeded = succeeded;
         Message = message;
         SubjectId = subjectId;
         SubjectKind = subjectKind;
+        Compensation = compensation;
+        UndoUnavailableReason = undoUnavailableReason;
     }
 
     /// <summary>
@@ -29,8 +33,21 @@ public sealed class CommandResult
     /// <param name="message">An optional message describing the outcome.</param>
     /// <param name="subjectId">The object the command made or acted on, when there is one (`WP 17.9.4`).</param>
     /// <param name="subjectKind">That object's Kind.</param>
-    public static CommandResult Success(string? message = null, Guid? subjectId = null, string? subjectKind = null) =>
-        new(succeeded: true, message, subjectId, subjectKind);
+    /// <param name="compensation">
+    /// How to reverse this outcome, when the handler that produced it knows
+    /// how (`WP 21.1A`) — <see langword="null"/> for a result nothing can
+    /// undo, exactly the behaviour before this Work Package.
+    /// </param>
+    /// <param name="undoUnavailableReason">
+    /// Why this outcome, though it succeeded, cannot be undone — set only by
+    /// a handler whose own family is sometimes compensable and sometimes not
+    /// (a status transition the lifecycle table will not permit reversing).
+    /// Never set together with <paramref name="compensation"/>.
+    /// </param>
+    public static CommandResult Success(
+        string? message = null, Guid? subjectId = null, string? subjectKind = null,
+        CommandCompensation? compensation = null, string? undoUnavailableReason = null) =>
+        new(succeeded: true, message, subjectId, subjectKind, compensation, undoUnavailableReason);
 
     /// <summary>
     /// Creates a <see cref="CommandResult"/> reporting a foreseeable,
@@ -69,4 +86,21 @@ public sealed class CommandResult
 
     /// <summary>The Kind of <see cref="SubjectId"/>, when set.</summary>
     public string? SubjectKind { get; }
+
+    /// <summary>
+    /// How to reverse this outcome, or <see langword="null"/> when nothing
+    /// reverses it — either because this command's family carries no
+    /// compensation at all, or (see <see cref="UndoUnavailableReason"/>)
+    /// because this particular outcome cannot be (`WP 21.1A`).
+    /// </summary>
+    public CommandCompensation? Compensation { get; }
+
+    /// <summary>
+    /// Why this outcome cannot be undone, when it succeeded but its own
+    /// family sometimes can be and sometimes cannot — non-<see langword="null"/>
+    /// only when <see cref="Compensation"/> is <see langword="null"/> and a
+    /// handler wants that fact surfaced (Command History says "cannot be
+    /// undone: {reason}.") rather than silently offering nothing (`WP 21.1A`).
+    /// </summary>
+    public string? UndoUnavailableReason { get; }
 }

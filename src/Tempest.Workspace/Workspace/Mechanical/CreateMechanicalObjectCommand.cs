@@ -50,18 +50,23 @@ public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<Creat
 {
     private readonly MechanicalObjectFactoryRegistry _registry;
     private readonly EngineeringDomainContext? _domainContext;
+    private readonly ICommandDispatcher? _dispatcher;
 
     /// <param name="registry">The factory that makes the object.</param>
     /// <param name="domainContext">
-    /// Used only to name the parent in the success message (`WP 17.9.2`),
-    /// so the user is told where the new object went; optional.
+    /// Used to name the parent in the success message (`WP 17.9.2`) and to
+    /// dispatch this create's own compensation (`WP 21.1A`); optional —
+    /// <see langword="null"/> (either this or <paramref name="dispatcher"/>)
+    /// means no <see cref="CommandResult.Compensation"/> is attached.
     /// </param>
-    public CreateMechanicalObjectCommandHandler(MechanicalObjectFactoryRegistry registry, EngineeringDomainContext? domainContext = null)
+    /// <param name="dispatcher">Dispatches the compensation — optional.</param>
+    public CreateMechanicalObjectCommandHandler(MechanicalObjectFactoryRegistry registry, EngineeringDomainContext? domainContext = null, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
         _domainContext = domainContext;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateMechanicalObjectCommand command, CancellationToken cancellationToken)
@@ -93,7 +98,12 @@ public sealed class CreateMechanicalObjectCommandHandler : ICommandHandler<Creat
             ? " It is not in any project; the Project Explorer lists it under \"Not in any project\"."
             : $" It is under '{await ParentNameAsync(parentId.Value, cancellationToken).ConfigureAwait(false)}' in the Project Explorer.";
 
-        return CommandResult.Success($"Created {command.Kind} '{name}'.{where}", created.Id, command.Kind);
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _domainContext, _dispatcher, created.Id, command.Kind, $"Create '{name}'",
+            buildDelete: () => new DeleteMechanicalObjectCommand(created.Id, command.Kind),
+            buildUndelete: () => new UndeleteMechanicalObjectCommand(created.Id, command.Kind));
+
+        return CommandResult.Success($"Created {command.Kind} '{name}'.{where}", created.Id, command.Kind, compensation);
     }
 
     private async Task<string> ParentNameAsync(Guid parentId, CancellationToken cancellationToken)

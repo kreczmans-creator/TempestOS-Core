@@ -51,9 +51,21 @@ public sealed class UndoRedoStack : IUndoRedoStack
 
         var result = await action.Undo(cancellationToken).ConfigureAwait(false);
 
-        _redoStack.Add(action);
-        if (_redoStack.Count > Capacity)
-            _redoStack.RemoveAt(0);
+        // `WP 21.1A`: a refused or failed undo changed nothing, so the
+        // action goes back where it came from rather than to Redo — moving
+        // it to Redo would let a person "redo" an action that was never
+        // actually reversed, the stack-consistency requirement this Work
+        // Package's own brief names directly.
+        if (result.Succeeded)
+        {
+            _redoStack.Add(action);
+            if (_redoStack.Count > Capacity)
+                _redoStack.RemoveAt(0);
+        }
+        else
+        {
+            _undoStack.Add(action);
+        }
 
         Changed?.Invoke();
 
@@ -71,12 +83,32 @@ public sealed class UndoRedoStack : IUndoRedoStack
 
         var result = await action.Redo(cancellationToken).ConfigureAwait(false);
 
-        _undoStack.Add(action);
-        if (_undoStack.Count > Capacity)
-            _undoStack.RemoveAt(0);
+        // `WP 21.1A`: the identical consistency rule as `UndoAsync`, mirrored.
+        if (result.Succeeded)
+        {
+            _undoStack.Add(action);
+            if (_undoStack.Count > Capacity)
+                _undoStack.RemoveAt(0);
+        }
+        else
+        {
+            _redoStack.Add(action);
+        }
 
         Changed?.Invoke();
 
         return result;
+    }
+
+    /// <inheritdoc />
+    public void Clear()
+    {
+        if (_undoStack.Count == 0 && _redoStack.Count == 0)
+            return;
+
+        _undoStack.Clear();
+        _redoStack.Clear();
+
+        Changed?.Invoke();
     }
 }

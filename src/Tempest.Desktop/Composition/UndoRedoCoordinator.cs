@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
+using Tempest.Core.Events;
 using Tempest.Workspace;
+using Tempest.Workspace.Projects;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Composition;
@@ -57,7 +59,7 @@ namespace Tempest.Desktop.Composition;
 /// subscribed view — Explorer and Cockpit included — reloads from that.
 /// This collaborator no longer refreshes anything itself.
 /// </remarks>
-internal sealed class UndoRedoCoordinator
+internal sealed class UndoRedoCoordinator : IEventHandler<ProjectContextChangedEvent>
 {
     private readonly ActionOutcomeReporter _reporter;
 
@@ -165,5 +167,27 @@ internal sealed class UndoRedoCoordinator
         // delegate (`WP 18.1A`) — see the identical remark in
         // <see cref="UndoAsync"/>.
         await _reporter.ReportAsync(result, "Redo completed.", "Redo failed.").ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Clears <see cref="Stack"/> on every project switch (`WP 21.1A`) —
+    /// subscribed once, at composition, to the existing
+    /// <see cref="ProjectContextChangedEvent"/> every open/switch/close
+    /// already publishes. An action recorded against the project that was
+    /// open has nowhere safe to replay against once a different project (or
+    /// none) is open, so the session's own Undo/Redo history starts over,
+    /// exactly like most desktop applications' own established convention
+    /// for switching documents. Reports once, and only when there was
+    /// genuinely something to clear — opening the first project of a
+    /// session, with nothing yet recorded, says nothing.
+    /// </summary>
+    public Task HandleAsync(ProjectContextChangedEvent @event, CancellationToken cancellationToken)
+    {
+        if (!Stack.CanUndo && !Stack.CanRedo)
+            return Task.CompletedTask;
+
+        Stack.Clear();
+
+        return _reporter.ReportAsync("Undo history cleared.", ActionOutcome.Changed);
     }
 }

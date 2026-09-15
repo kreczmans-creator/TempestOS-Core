@@ -29,12 +29,14 @@ public sealed class MoveCalculationObjectCommand : IWorkspaceCommand
 public sealed class MoveCalculationObjectCommandHandler : ICommandHandler<MoveCalculationObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public MoveCalculationObjectCommandHandler(EngineeringDomainContext context)
+    public MoveCalculationObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(MoveCalculationObjectCommand command, CancellationToken cancellationToken)
@@ -45,6 +47,8 @@ public sealed class MoveCalculationObjectCommandHandler : ICommandHandler<MoveCa
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be moved.");
 
         return await WorkspaceCommandBindings.MoveResultAsync(
-            _context, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId, cancellationToken).ConfigureAwait(false);
+            _context, _dispatcher, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId,
+            parentId => new MoveCalculationObjectCommand(command.TargetObjectId, command.TargetKind, parentId),
+            cancellationToken).ConfigureAwait(false);
     }
 }

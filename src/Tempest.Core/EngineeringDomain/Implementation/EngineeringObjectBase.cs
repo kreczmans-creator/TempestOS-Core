@@ -842,6 +842,40 @@ public abstract partial class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>The parent-liveness check is inside the transaction</b> — the
+    /// identical reasoning <see cref="DeleteAsync"/>'s own remarks give for
+    /// its live-children check: a concurrent delete of this object's own
+    /// parent must not be able to land between the check and the commit and
+    /// leave this object restored under a parent that is itself gone.
+    /// Restoring the structural fact alone: any attachment bytes
+    /// <see cref="DeleteAsync"/> already removed durably are not restored —
+    /// see this member's own interface remarks.
+    /// </remarks>
+    public async Task UndeleteAsync(CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current =>
+            {
+                if (!current.IsDeleted)
+                    throw new EngineeringObjectNotDeletedException(Id);
+
+                if (current.ParentId is { } parentId)
+                {
+                    var parent = _context.Repository.FindAsync(parentId, CancellationToken.None).GetAwaiter().GetResult();
+                    if (parent is IDeletable { IsDeleted: true })
+                        throw new EngineeringObjectParentDeletedException(Id, parentId);
+                }
+
+                return current with { IsDeleted = false };
+            },
+            EngineeringAuditActions.Undeleted,
+            "Restored from deletion.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public decimal Quantity
     {
         get { lock (_structuralLock) { return _quantity; } }

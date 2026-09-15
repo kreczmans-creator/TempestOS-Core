@@ -25,12 +25,22 @@ public sealed class DeleteDocumentObjectCommand : IWorkspaceCommand
 public sealed class DeleteDocumentObjectCommandHandler : ICommandHandler<DeleteDocumentObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public DeleteDocumentObjectCommandHandler(EngineeringDomainContext context)
+    /// <param name="context">Where the target object is found.</param>
+    /// <param name="dispatcher">
+    /// Dispatches this delete's own compensation (`WP 21.1A`) — optional,
+    /// like <see cref="Mechanical.CreateMechanicalObjectCommandHandler"/>'s
+    /// own already-optional <c>domainContext</c>: a caller that does not
+    /// supply one gets exactly this command's pre-`WP 21.1A` behaviour, with
+    /// no <see cref="CommandResult.Compensation"/> attached.
+    /// </param>
+    public DeleteDocumentObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(DeleteDocumentObjectCommand command, CancellationToken cancellationToken)
@@ -39,6 +49,8 @@ public sealed class DeleteDocumentObjectCommandHandler : ICommandHandler<DeleteD
 
         if (target is not IDeletable deletable)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be deleted.");
+
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? command.TargetObjectId.ToString();
 
         try
         {
@@ -49,6 +61,11 @@ public sealed class DeleteDocumentObjectCommandHandler : ICommandHandler<DeleteD
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Deleted '{command.TargetObjectId}'.");
+        var compensation = WorkspaceCommandBindings.DeleteCompensation(
+            _context, _dispatcher, command.TargetObjectId, command.TargetKind, sourceName,
+            buildDelete: () => new DeleteDocumentObjectCommand(command.TargetObjectId, command.TargetKind),
+            buildUndelete: () => new UndeleteDocumentObjectCommand(command.TargetObjectId, command.TargetKind));
+
+        return CommandResult.Success($"Deleted '{command.TargetObjectId}'.", compensation: compensation);
     }
 }

@@ -77,16 +77,17 @@ public static class DocumentsWorkspaceRegistration
         }
 
         var factoryRegistry = new DocumentObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyDocumentObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyDocumentObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateDocumentObjectCommand>(new CreateDocumentObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateDocumentObjectCommand>(new CreateDocumentObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameDocumentObjectCommand>(new RenameDocumentObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseDocumentCommand>(new ReviseDocumentCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteDocumentObjectCommand>(new DeleteDocumentObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveDocumentObjectCommand>(new MoveDocumentObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteDocumentObjectCommand>(new DeleteDocumentObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteDocumentObjectCommand>(new UndeleteDocumentObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveDocumentObjectCommand>(new MoveDocumentObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyDocumentObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateDocumentObjectCommand>(new DuplicateDocumentObjectCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetDocumentStatusCommand>(new SetDocumentStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetDocumentStatusCommand>(new SetDocumentStatusCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<AttachDocumentCommand>(new AttachDocumentCommandHandler(domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
