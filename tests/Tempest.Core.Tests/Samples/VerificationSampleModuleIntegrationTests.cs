@@ -52,7 +52,7 @@ public class VerificationSampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         // One store instance under all three shapes, as `TempestHost`
@@ -150,8 +150,8 @@ public class VerificationSampleModuleIntegrationTests
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var result = await commandRegistry.InvokeAsync(VerificationSampleModule.GetSampleVerificationHistoryCommandId, CancellationToken.None);
 

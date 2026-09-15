@@ -92,17 +92,26 @@ public static class RequirementsWorkspaceRegistration
         // neither Kind), just the other way around for Requirement itself.
         manager.RegisterReviseFactory(RequirementsService.RequirementDocumentKind, static (id, _, content) => new ReviseRequirementCommand(id, content));
 
-        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService));
+        // `WP 21.6A`: Create/Delete/Move/MoveGroup/SetStatus now build a
+        // CommandCompensation of their own (item 1b), so each is handed the
+        // same ICommandDispatcher its compensation dispatches an Undo/Redo
+        // command back through — the identical shape every
+        // EngineeringDomain Create/Delete/Move/SetStatus handler already
+        // uses. UndeleteRequirementCommand is registered as a handler only
+        // — never a CommandDescriptor — reached solely as a compensation,
+        // exactly as `EngineeringDomain`'s own `Undelete*ObjectCommand`s.
+        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<ReviseRequirementCommand>(new ReviseRequirementCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<SetRequirementOwnerCommand>(new SetRequirementOwnerCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<SetRequirementPriorityCommand>(new SetRequirementPriorityCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<DeleteRequirementCommand>(new DeleteRequirementCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<DeleteRequirementCommand>(new DeleteRequirementCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteRequirementCommand>(new UndeleteRequirementCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<DuplicateRequirementCommand>(new DuplicateRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<LinkRequirementCommand>(new LinkRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<CreateRequirementGroupCommand>(new CreateRequirementGroupCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<DeleteRequirementGroupCommand>(new DeleteRequirementGroupCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<CreateRequirementCollectionCommand>(new CreateRequirementCollectionCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<DeleteRequirementCollectionCommand>(new DeleteRequirementCollectionCommandHandler(requirementsService));

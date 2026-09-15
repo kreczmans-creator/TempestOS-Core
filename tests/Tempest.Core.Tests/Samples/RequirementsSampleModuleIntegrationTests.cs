@@ -61,7 +61,7 @@ public class RequirementsSampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         // One store instance under all three shapes, as `TempestHost`
@@ -180,8 +180,8 @@ public class RequirementsSampleModuleIntegrationTests
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
         var module = Assert.IsType<RequirementsSampleModule>(serviceProvider.GetService(typeof(RequirementsSampleModule)));
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var verificationService = (IVerificationService)serviceProvider.GetService(typeof(IVerificationService));
         var history = await verificationService.GetVerificationHistoryAsync(module.SampleRequirementId!.Value);
@@ -232,8 +232,8 @@ public class RequirementsSampleModuleIntegrationTests
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(
             new PlatformIdentity("reader", "Reader"),
             [new Permission(RequirementsSampleModule.ReadPermissionKey), VerificationService.ReadPermission]));
 

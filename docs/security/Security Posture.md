@@ -260,6 +260,26 @@ also did not exhaustively prove there is none. Recorded here, not in
 `BACKLOG.md`, because it names a verification gap, not a code defect this
 review has evidence of.
 
+**Update, `WP 21.6A` (2026-09-15):** the exact counterexample this note
+disclosed as unproven-absent was real, found by the parallel offensive
+audit the same night (`OSA-15` — `RequirementsService`, `VerificationService`
+and `ReferenceDataCatalog` committed durable writes through their own
+separate transactions with no audit row) and closed by `WP 21.6A`: all
+three now call `AuditTransactionWriter.WriteAsync` inside their own
+existing transactions, with one Core test per mutator proving the row
+exists and is absent on a faulted commit
+(`tests/Tempest.Core.Tests/Audit/RequirementsVerificationReferenceDataAuditTests.cs`).
+`WP 21.6A` also closed `OSA-12`/`OSA-13`/`OSA-14` — the principal accessor's
+`SetCurrent` and the audit collection's own write path were each reachable
+by any in-process component holding the right DI-resolvable type, not only
+this platform's own two legitimate callers; both are now narrowed to a
+dedicated internal capability (`PrincipalSession`; `IAuditCollectionWriter`/
+`IAuditCollectionTransactionWriter`), reachable only from `Tempest.Core`
+itself or the one seam `WorkspaceHost`/`Tempest.Harness` are handed. See
+`docs/security/Offensive Security Audit.md`'s own OSA-12/13/14/15 rows for
+the fix's file:line, and `docs/releases/v0.21.0/Release Notes.md`'s
+`WP 21.6A` row.
+
 ## What the operator must do
 
 TempestOS's own controls stop at the process boundary — three things sit

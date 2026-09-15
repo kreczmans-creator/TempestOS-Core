@@ -58,7 +58,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
     /// <summary>The artifact section kind <see cref="RequirementExportAdapter"/> is registered under.</summary>
     public const string ExportAdapterKind = "tempest.samples.requirements.sample";
 
-    private readonly CurrentPrincipalAccessor _principalEstablisher;
+    private readonly PrincipalSession _principalSession;
     private readonly IRequirementsService _requirementsService;
     private readonly IEngineeringDocumentStore _documentStore;
     private readonly IVerificationService _verificationService;
@@ -72,7 +72,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsSampleModule"/> class.</summary>
     public RequirementsSampleModule(
-        CurrentPrincipalAccessor principalEstablisher,
+        PrincipalSession principalSession,
         IRequirementsService requirementsService,
         IEngineeringDocumentStore documentStore,
         IVerificationService verificationService,
@@ -85,7 +85,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.requirements", "Requirements Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(principalEstablisher);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(documentStore);
         ArgumentNullException.ThrowIfNull(verificationService);
@@ -97,7 +97,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _principalEstablisher = principalEstablisher;
+        _principalSession = principalSession;
         _requirementsService = requirementsService;
         _documentStore = documentStore;
         _verificationService = verificationService;
@@ -156,7 +156,7 @@ public sealed class RequirementsSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         var existing = await _requirementsService.FindByIdentifierAsync("SAMPLE-REQ-001", cancellationToken).ConfigureAwait(false);
         IRequirement requirement;

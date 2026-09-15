@@ -264,8 +264,8 @@ public sealed class EngineeringAssetsJourneyTests
 
     private static void SignIn(WorkspaceHost host)
     {
-        var principals = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-        ((CurrentPrincipalAccessor)principals).SetCurrent(
+        var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+        principalSession.Establish(
             new PlatformPrincipal(new PlatformIdentity(EngineerId, EngineerId), ApplicationPermissions.LocalSession));
     }
 

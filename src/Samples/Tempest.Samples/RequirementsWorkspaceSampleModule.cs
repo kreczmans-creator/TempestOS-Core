@@ -73,7 +73,7 @@ public sealed class RequirementsWorkspaceSampleModule : ModuleLifecycleBase
     /// <summary>The artifact section kind <see cref="RequirementCollectionExportAdapter"/> is registered under.</summary>
     public const string ExportAdapterKind = "tempest.samples.requirementsworkspace.collection";
 
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly IRequirementsService _requirementsService;
     private readonly IVerificationService _verificationService;
     private readonly ImportService _importService;
@@ -81,20 +81,20 @@ public sealed class RequirementsWorkspaceSampleModule : ModuleLifecycleBase
 
     /// <summary>Initialises a new instance of the <see cref="RequirementsWorkspaceSampleModule"/> class.</summary>
     public RequirementsWorkspaceSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         IRequirementsService requirementsService,
         IVerificationService verificationService,
         ImportService importService,
         MechanicalProductStructureSampleModule mechanicalSampleModule)
         : base("tempest.samples.requirementsworkspace", "Requirements Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(verificationService);
         ArgumentNullException.ThrowIfNull(importService);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _requirementsService = requirementsService;
         _verificationService = verificationService;
         _importService = importService;
@@ -129,7 +129,7 @@ public sealed class RequirementsWorkspaceSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         if (await _requirementsService.FindByIdentifierAsync("REQ-STR-001", cancellationToken).ConfigureAwait(false) is not null)
         {

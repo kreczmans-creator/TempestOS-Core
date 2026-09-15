@@ -25,7 +25,7 @@ namespace Tempest.Samples;
 /// role for Reporting and <see cref="SettingsSampleModule"/>'s own role
 /// for Settings. Carries <see cref="ModuleMetadataAttribute"/> so Discovery
 /// can read its identity without instantiating it (ADR-0027), freeing its
-/// constructor to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>,
+/// constructor to request <see cref="Tempest.Core.Identity.PrincipalSession"/>,
 /// <see cref="ISettingsProvider"/>, <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="IAuditRecorder"/>,
 /// <see cref="INotificationDispatcher"/>, <see cref="IExportService"/>,
@@ -115,7 +115,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <summary>The artifact section kind the subtitle adapter is registered under.</summary>
     public const string SubtitleAdapterKind = "tempest.samples.exportimport.subtitle";
 
-    private readonly CurrentPrincipalAccessor _principalEstablisher;
+    private readonly PrincipalSession _principalSession;
     private readonly ISettingsProvider _settingsProvider;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
     private readonly IPermissionEvaluator _permissionEvaluator;
@@ -129,7 +129,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="ExportImportSampleModule"/> class.
     /// </summary>
-    /// <param name="principalEstablisher">The concrete accessor this module establishes its own principal on directly (`WP 17.2A`).</param>
+    /// <param name="principalSession">The seam this module establishes its own principal through directly (`WP 17.2A`, narrowed by `WP 21.6A`).</param>
     /// <param name="settingsProvider">The Settings service this module registers its sample settings through, and its adapters read from/write to.</param>
     /// <param name="currentPrincipalAccessor">The service this module's registered commands read the current principal from.</param>
     /// <param name="permissionEvaluator">The service this module's registered commands check permissions against.</param>
@@ -140,7 +140,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// <param name="commandDispatcher">The Command Framework's dispatch-side surface this module registers its handlers through.</param>
     /// <param name="commandRegistry">The Command Framework's discovery-side surface this module registers its descriptors through.</param>
     public ExportImportSampleModule(
-        CurrentPrincipalAccessor principalEstablisher,
+        PrincipalSession principalSession,
         ISettingsProvider settingsProvider,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
         IPermissionEvaluator permissionEvaluator,
@@ -152,7 +152,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.exportimport", "Export/Import Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(principalEstablisher);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
         ArgumentNullException.ThrowIfNull(permissionEvaluator);
@@ -163,7 +163,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _principalEstablisher = principalEstablisher;
+        _principalSession = principalSession;
         _settingsProvider = settingsProvider;
         _currentPrincipalAccessor = currentPrincipalAccessor;
         _permissionEvaluator = permissionEvaluator;
@@ -206,7 +206,7 @@ public sealed class ExportImportSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         _settingsProvider.RegisterDefinition(new SettingDefinition(GreetingSettingKey, "Sample Export/Import Greeting", GreetingSettingDefaultValue));
         _settingsProvider.RegisterDefinition(new SettingDefinition(SubtitleSettingKey, "Sample Export/Import Subtitle", SubtitleSettingDefaultValue));

@@ -107,7 +107,18 @@ public sealed class AuditRecorder : IAuditRecorder
 
         try
         {
-            await _persistenceStore.WriteAsync(AuditCollectionName, key, json, cancellationToken).ConfigureAwait(false);
+            // `WP 21.6A`, OSA-13: the store's own ordinary WriteAsync now
+            // unconditionally refuses this collection
+            // (AuditCollectionProtectedException) - IAuditCollectionWriter
+            // is the one route in, held only by this class. A store
+            // double that does not implement it (many narrow test fakes
+            // across this suite do not) falls back to the ordinary path,
+            // which is exactly what it always was for those - they never
+            // implemented the guard either.
+            if (_persistenceStore is IAuditCollectionWriter auditWriter)
+                await auditWriter.WriteAuditRowAsync(key, json, cancellationToken).ConfigureAwait(false);
+            else
+                await _persistenceStore.WriteAsync(AuditCollectionName, key, json, cancellationToken).ConfigureAwait(false);
         }
         catch (PersistenceStoreUnavailableException ex)
         {

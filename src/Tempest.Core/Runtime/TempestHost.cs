@@ -391,25 +391,29 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
 
-        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
-        // and registered under both its own concrete type and
-        // ICurrentPrincipalAccessor - the same already-built instance under
-        // two service-type keys - so a caller needing write access (the
-        // presentation layer's own SessionPrincipalSource boundary,
-        // `WP 17.2A`) and every ordinary consumer (which resolves only the
-        // read-only interface) share the exact same object, never two
-        // independently-constructed ones. See CurrentPrincipalAccessor's
-        // own remarks.
+        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once.
+        // `WP 21.6A` (OSA-12/OSA-14) narrows what its own registration
+        // exposes: the interface (read-only Current, broadly resolvable,
+        // unchanged) and a PrincipalSession wrapping the identical
+        // instance (the one write capability, Establish only) — never the
+        // concrete CurrentPrincipalAccessor itself, whose own SetCurrent
+        // is now internal and unreachable outside this assembly regardless
+        // of what a caller resolves. Before this, the concrete type was
+        // registered here too, so "any in-process component" that resolved
+        // it (not only the presentation layer's own SessionPrincipalSource
+        // boundary, `WP 17.2A`) could call SetCurrent directly — see
+        // CurrentPrincipalAccessor's and PrincipalSession's own remarks for
+        // the finding and the fix.
         //
         // `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
         // IIdentityService/IdentityService are deleted, not merely
         // unregistered - Identity collapses to one session principal
-        // (SessionPrincipalSource, established directly on the concrete
-        // CurrentPrincipalAccessor by the presentation layer, never
-        // resolved through a Host-registered identity service).
+        // (SessionPrincipalSource, established through the PrincipalSession
+        // seam by the presentation layer, never resolved through a
+        // Host-registered identity service).
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
 
         // `WP 17.9.1`: identity ids are stored; names are shown. One directory
         // over the same accessor, so every surface describes a principal the

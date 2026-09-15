@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
@@ -202,6 +203,23 @@ public sealed class VerificationService : IVerificationService
                 foreach (var calculationRecordId in context.LinkedCalculationRecordIds)
                     await _documentWriter.LinkAsync(transaction, documentId, calculationRecordId, BasedOnCalculationRelationshipKind, token)
                         .ConfigureAwait(false);
+
+                // `WP 21.6A`, OSA-15: the audit row commits in the same
+                // transaction as the record and its links, the identical
+                // primitive `EngineeringObjectBase` uses — this write path
+                // previously bypassed the audit machinery entirely. Keyed
+                // by the new verification record's own document Id, the
+                // same "Created"-shaped convention `EngineeringObjectBase.
+                // WriteCreationAsync` already uses for a newly created
+                // object — the subject document it verifies is named in
+                // the detail text, so a reader tracing either document's
+                // own history finds this row (the subject's own trail via
+                // `verifiedBy`'s relationship, this row directly via the
+                // record's own Id).
+                await AuditTransactionWriter.WriteAsync(
+                    transaction, documentId, VerificationRecordDocumentKind, VerificationAuditActions.Recorded,
+                    verifiedBy, $"Subject '{subjectDocumentId:N}', outcome {outcome}.", verifiedAt, token)
+                    .ConfigureAwait(false);
             },
             cancellationToken).ConfigureAwait(false);
 

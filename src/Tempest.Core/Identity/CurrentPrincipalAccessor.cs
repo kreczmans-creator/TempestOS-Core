@@ -38,13 +38,26 @@ namespace Tempest.Core.Identity;
 /// Package's own Lessons Learned and Technical Debt Assessment.
 /// </para>
 /// <para>
-/// <see cref="SetCurrent"/> is deliberately not part of
-/// <see cref="ICurrentPrincipalAccessor"/> itself — every ordinary
-/// consumer resolves the read-only interface exactly as designed; only the
-/// presentation layer that owns the principal boundary (`WP 17.2A`'s own
-/// <c>WorkspaceHost</c>) resolves a direct reference to this concrete
-/// type, so it alone can establish a current principal, from whatever
-/// <see cref="ISessionPrincipalSource"/> it is composed with.
+/// <b>`WP 21.6A`, OSA-12/OSA-14.</b> <see cref="SetCurrent"/> was
+/// deliberately not part of <see cref="ICurrentPrincipalAccessor"/> itself
+/// since `WP 17.2A`, but stayed <see langword="public"/> on this concrete
+/// type — and this type was registered in the DI container under its own
+/// concrete key (`ADR-0044`, <c>TempestHost.cs</c>), so <em>any</em>
+/// component that resolved it by concrete type, not only <c>WorkspaceHost</c>,
+/// could call it (demonstrated in practice: <c>Tempest.Samples.SamplePrincipalFactory</c>
+/// did exactly that, with an arbitrary caller-supplied identity string and
+/// no credential check — `WP 21.5F`'s own OSA-12 finding). <see cref="SetCurrent"/>
+/// is now <see langword="internal"/>: nothing outside this assembly can
+/// call it directly, even holding a concrete reference obtained by an
+/// <see langword="is"/> check against the interface — only <see cref="PrincipalSession"/>,
+/// declared beside this type, can (it is the "single internal seam" the
+/// two legitimate callers — <c>WorkspaceHost</c>'s start-up and its own
+/// "Switch person…" confirmation, and <c>Tempest.Harness</c>'s own
+/// start-up — reach through, and the only place <see cref="SetCurrent"/>
+/// is ever called from outside this file). See <see cref="PrincipalSession"/>'s
+/// own remarks for how a first-party module (`Tempest.Samples`, never
+/// shipped) still legitimately demonstrates establishing a principal
+/// without regaining the old, unrestricted reach.
 /// </para>
 /// </remarks>
 public sealed class CurrentPrincipalAccessor : ICurrentPrincipalAccessor
@@ -64,9 +77,68 @@ public sealed class CurrentPrincipalAccessor : ICurrentPrincipalAccessor
     /// <paramref name="principal"/> is <see langword="null"/>.
     /// </summary>
     /// <param name="principal">The principal to establish, or <see langword="null"/> to clear.</param>
-    public void SetCurrent(IPrincipal? principal)
+    internal void SetCurrent(IPrincipal? principal)
     {
         lock (_gate)
             _current = principal;
     }
+}
+
+/// <summary>
+/// The single seam through which <see cref="CurrentPrincipalAccessor.SetCurrent"/>
+/// is reachable from outside <c>Tempest.Core</c> (`WP 21.6A`, OSA-12/OSA-14).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Construction is as restricted as the capability it carries.</b> The
+/// constructor is <see langword="internal"/> — only <c>TempestHost</c>,
+/// which already constructs the one <see cref="CurrentPrincipalAccessor"/>
+/// instance a running host ever has, can build a session wrapping it.
+/// Nothing else can mint a second one around an accessor it obtained some
+/// other way (an <see langword="is"/> check against a resolved
+/// <see cref="ICurrentPrincipalAccessor"/>, for instance) — the
+/// <em>instance</em>, not merely the method, is what a caller must already
+/// legitimately hold.
+/// </para>
+/// <para>
+/// <b>Reached two different ways, deliberately.</b> <c>Tempest.Desktop</c>'s
+/// <c>WorkspaceHost</c> and <c>Tempest.Harness</c>'s own start-up — the
+/// shipped product's two legitimate callers — resolve this type from the
+/// running host's own DI container (registered under its own concrete
+/// type, exactly as <see cref="Establish"/>'s public method is the only
+/// capability that registration now exposes — never the accessor's own
+/// full read/write surface, the shape `TempestHost.cs`'s own remarks
+/// disclosed as reachable by "any in-process component" before this Work
+/// Package). <c>Tempest.Samples</c> (never shipped — `WP 21.5F`'s own
+/// audit confirmed this directly) constructor-injects it the identical
+/// way for its own demonstration modules, each establishing its own named
+/// sample identity during its own initialisation — the same pattern
+/// `SamplePrincipalFactory` always used, now narrowed to <see cref="Establish"/>
+/// alone rather than the accessor's own <c>Current</c> getter and every
+/// other capability a bare <see cref="CurrentPrincipalAccessor"/> reference
+/// carried.
+/// </para>
+/// </remarks>
+public sealed class PrincipalSession
+{
+    private readonly CurrentPrincipalAccessor _accessor;
+
+    internal PrincipalSession(CurrentPrincipalAccessor accessor)
+    {
+        ArgumentNullException.ThrowIfNull(accessor);
+
+        _accessor = accessor;
+    }
+
+    /// <summary>
+    /// Establishes <paramref name="principal"/> as this session's own
+    /// principal from this moment on, or clears it if
+    /// <paramref name="principal"/> is <see langword="null"/> — published
+    /// unconditionally, exactly as <c>WorkspaceHost.StartAsync</c>'s own
+    /// remarks require: a session that genuinely has no principal must
+    /// report none, not inherit whatever a prior caller happened to
+    /// establish.
+    /// </summary>
+    /// <param name="principal">The principal to establish, or <see langword="null"/> to clear.</param>
+    public void Establish(IPrincipal? principal) => _accessor.SetCurrent(principal);
 }

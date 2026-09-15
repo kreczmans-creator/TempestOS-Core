@@ -457,8 +457,8 @@ public sealed class EvidenceWorkspaceJourneyTests
             await pickTask;
 
             // A principal without `reference.release` sees the refusal.
-            var accessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            accessor.SetCurrent(new PlatformPrincipal(
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+            principalSession.Establish(new PlatformPrincipal(
                 new PlatformIdentity("restricted-user", "Restricted User"),
                 [Tempest.Core.Verification.VerificationService.ReadPermission]));
 

@@ -104,6 +104,16 @@ public interface IRequirementsService
     Task<IRequirement> DeleteAsync(Guid requirementId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Restores a soft-deleted requirement (`WP 21.6A`) — the Undo half of
+    /// <see cref="DeleteAsync"/>'s own compensation, and the Redo half of
+    /// <see cref="CreateAsync"/>'s.
+    /// </summary>
+    /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
+    /// <exception cref="RequirementNotDeletedException"><paramref name="requirementId"/> is not currently deleted.</exception>
+    /// <exception cref="RequirementGroupDeletedException">The requirement's own current group has itself been deleted in the meantime.</exception>
+    Task<IRequirement> UndeleteAsync(Guid requirementId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Moves the requirement into <paramref name="groupId"/> (or ungroups it, if <see langword="null"/>) — the requirement's own live, current
     /// <see cref="IRequirement.GroupId"/>. Also records a permanent <see cref="RequirementRelationshipKinds.GroupedUnder"/> relationship link to
     /// the new group, never removing any prior one — a full move history survives even though <see cref="IRequirement.GroupId"/> itself only

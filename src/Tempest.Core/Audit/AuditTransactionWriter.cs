@@ -77,12 +77,19 @@ internal static class AuditTransactionWriter
             payload[DetailKey] = detail;
 
         var dto = new AuditRecordDto(principalId, action, occurredAt, payload);
+        var key = KeyFor(objectId, occurredAt);
+        var json = JsonSerializer.Serialize(dto);
 
-        return transaction.WriteAsync(
-            AuditRecorder.AuditCollectionName,
-            KeyFor(objectId, occurredAt),
-            JsonSerializer.Serialize(dto),
-            cancellationToken);
+        // `WP 21.6A`, OSA-13: the transaction's own ordinary WriteAsync now
+        // unconditionally refuses this collection
+        // (AuditCollectionProtectedException) - IAuditCollectionTransactionWriter
+        // is the one route in, held only by this class. A transaction
+        // double that does not implement it falls back to the ordinary
+        // path, exactly as AuditRecorder.RecordAsync's own identical
+        // fallback does.
+        return transaction is IAuditCollectionTransactionWriter auditWriter
+            ? auditWriter.WriteAuditRowAsync(key, json, cancellationToken)
+            : transaction.WriteAsync(AuditRecorder.AuditCollectionName, key, json, cancellationToken);
     }
 }
 

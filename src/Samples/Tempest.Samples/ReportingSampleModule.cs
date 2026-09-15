@@ -24,7 +24,7 @@ namespace Tempest.Samples;
 /// role for Audit and <see cref="SettingsSampleModule"/>'s own role for
 /// Settings. Carries <see cref="ModuleMetadataAttribute"/> so Discovery
 /// can read its identity without instantiating it (ADR-0027), freeing
-/// its constructor to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>,
+/// its constructor to request <see cref="Tempest.Core.Identity.PrincipalSession"/>,
 /// <see cref="IReportingService"/>, <see cref="ISettingsProvider"/>,
 /// <see cref="ICurrentPrincipalAccessor"/>,
 /// <see cref="IPermissionEvaluator"/>, <see cref="IAuditRecorder"/>,
@@ -92,7 +92,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// </summary>
     public const string ReportGeneratedNotificationCategory = "Reporting";
 
-    private readonly CurrentPrincipalAccessor _principalEstablisher;
+    private readonly PrincipalSession _principalSession;
     private readonly IReportingService _reportingService;
     private readonly ISettingsProvider _settingsProvider;
     private readonly ICurrentPrincipalAccessor _currentPrincipalAccessor;
@@ -105,7 +105,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="ReportingSampleModule"/> class.
     /// </summary>
-    /// <param name="principalEstablisher">The concrete accessor this module establishes its own principal on directly (`WP 17.2A`).</param>
+    /// <param name="principalSession">The seam this module establishes its own principal through directly (`WP 17.2A`, narrowed by `WP 21.6A`).</param>
     /// <param name="reportingService">The Reporting service this module registers its report definition and renderer through.</param>
     /// <param name="settingsProvider">The Settings service this module registers its renderer's own greeting setting through.</param>
     /// <param name="currentPrincipalAccessor">The service this module's registered command reads the current principal from.</param>
@@ -115,7 +115,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// <param name="commandDispatcher">The Command Framework's dispatch-side surface this module registers its handler through.</param>
     /// <param name="commandRegistry">The Command Framework's discovery-side surface this module registers its descriptor through.</param>
     public ReportingSampleModule(
-        CurrentPrincipalAccessor principalEstablisher,
+        PrincipalSession principalSession,
         IReportingService reportingService,
         ISettingsProvider settingsProvider,
         ICurrentPrincipalAccessor currentPrincipalAccessor,
@@ -126,7 +126,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
         ICommandRegistry commandRegistry)
         : base("tempest.samples.reporting", "Reporting Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(principalEstablisher);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(reportingService);
         ArgumentNullException.ThrowIfNull(settingsProvider);
         ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
@@ -136,7 +136,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _principalEstablisher = principalEstablisher;
+        _principalSession = principalSession;
         _reportingService = reportingService;
         _settingsProvider = settingsProvider;
         _currentPrincipalAccessor = currentPrincipalAccessor;
@@ -170,7 +170,7 @@ public sealed class ReportingSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalEstablisher, SampleIdentityId);
+        EstablishedPrincipal = SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         _settingsProvider.RegisterDefinition(new SettingDefinition(
             SampleSummaryReportRenderer.GreetingSettingKey,

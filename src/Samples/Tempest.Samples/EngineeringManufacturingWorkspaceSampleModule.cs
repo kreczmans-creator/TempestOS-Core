@@ -136,7 +136,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.manufacturingworkspace-user";
 
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly EngineeringDomainContext _context;
     private readonly IVerificationService _verificationService;
     private readonly MechanicalProductStructureSampleModule _mechanicalSampleModule;
@@ -146,7 +146,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringManufacturingWorkspaceSampleModule"/> class.</summary>
     public EngineeringManufacturingWorkspaceSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         EngineeringDomainContext context,
         IVerificationService verificationService,
         MechanicalProductStructureSampleModule mechanicalSampleModule,
@@ -155,7 +155,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
         EngineeringDocumentsWorkspaceSampleModule documentsSampleModule)
         : base("tempest.samples.workspacemanufacturing", "Manufacturing Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(verificationService);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
@@ -163,7 +163,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
         ArgumentNullException.ThrowIfNull(calculationsSampleModule);
         ArgumentNullException.ThrowIfNull(documentsSampleModule);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _context = context;
         _verificationService = verificationService;
         _mechanicalSampleModule = mechanicalSampleModule;
@@ -186,7 +186,7 @@ public sealed class EngineeringManufacturingWorkspaceSampleModule : ModuleLifecy
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         var objectIds = new List<Guid>();
 

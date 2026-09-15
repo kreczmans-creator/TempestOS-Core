@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Tempest.Core.Audit;
 using Tempest.Core.Concurrency;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
@@ -197,6 +198,19 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 await transaction.WriteAsync(IndexCollectionName, recordId, documentId.ToString("N"), ct).ConfigureAwait(false);
                 if (secondaryKey is not null)
                     await transaction.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, ct).ConfigureAwait(false);
+
+                // `WP 21.6A`, OSA-15: the audit row commits in the same
+                // transaction as the record — this write path previously
+                // bypassed the audit machinery entirely. The principal is
+                // read back from the revision the document writer itself
+                // just stamped (`EngineeringDocumentStore.ResolveAuthorPrincipalId`),
+                // the same principal every other write on this transaction
+                // is attributed to, so this catalogue needs no
+                // `ICurrentPrincipalAccessor` dependency of its own.
+                await AuditTransactionWriter.WriteAsync(
+                    transaction, documentId, DocumentKind, ReferenceDataAuditActions.RecordAdded,
+                    revision.AuthorPrincipalId, $"'{recordId}' registered in {LibraryName}.", revision.CreatedAt, ct)
+                    .ConfigureAwait(false);
             }, cancellationToken).ConfigureAwait(false);
 
             _logger?.Information($"{LibraryName} record registered: '{recordId}' (document '{documentId}').");
@@ -352,6 +366,12 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                     if (secondaryKey is not null)
                         await transaction.WriteAsync(SecondaryIndexCollectionName, secondaryKey, recordId, ct).ConfigureAwait(false);
                 }
+
+                // `WP 21.6A`, OSA-15 — see RegisterAsync's own identical remark.
+                await AuditTransactionWriter.WriteAsync(
+                    transaction, documentId, DocumentKind, ReferenceDataAuditActions.Revised,
+                    revision.AuthorPrincipalId, $"'{recordId}' revised in {LibraryName}.", revision.CreatedAt, ct)
+                    .ConfigureAwait(false);
             }, cancellationToken).ConfigureAwait(false);
 
             var revisionNumber = revision!.RevisionNumber;
@@ -460,6 +480,12 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
                 // (`ADR-0073`).
                 await _documentWriter.LinkAsync(
                     transaction, replacementDocumentId, documentId, GovernanceRelationshipKinds.Supersedes, ct).ConfigureAwait(false);
+
+                // `WP 21.6A`, OSA-15 — see RegisterAsync's own identical remark.
+                await AuditTransactionWriter.WriteAsync(
+                    transaction, documentId, DocumentKind, ReferenceDataAuditActions.Superseded,
+                    revision.AuthorPrincipalId, $"'{recordId}' superseded by '{replacementRecordId}' in {LibraryName}.", revision.CreatedAt, ct)
+                    .ConfigureAwait(false);
             }, cancellationToken).ConfigureAwait(false);
 
             _logger?.Information($"{LibraryName} record '{recordId}' superseded by '{replacementRecordId}'.");

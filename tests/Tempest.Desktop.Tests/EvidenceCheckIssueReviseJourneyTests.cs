@@ -211,10 +211,10 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
         {
             await host.StartAsync();
 
-            var accessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
             var author = new PlatformPrincipal(new PlatformIdentity("author-principal", "Author Principal"), ApplicationPermissions.LocalSession);
             var checker = new PlatformPrincipal(new PlatformIdentity("checker-principal", "Checker Principal"), ApplicationPermissions.LocalSession);
-            accessor.SetCurrent(author);
+            principalSession.Establish(author);
 
             var settings = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             await settings.SetValueAsync(Tempest.Core.Evidence.EvidenceService.IndependentCheckSettingKey, bool.TrueString);
@@ -246,7 +246,7 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             LayOut(window);
 
             // A second, different principal succeeds.
-            accessor.SetCurrent(checker);
+            principalSession.Establish(checker);
             await CheckViaRealDialogAsync(window, editor, checkEntry, "Second Reviewer", "Org", "Independent review.");
             await RenderUntilAsync(window, () => evidence.Status == EvidenceStatus.Checked);
             Assert.Equal(EvidenceStatus.Checked, evidence.Status);

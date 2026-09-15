@@ -928,10 +928,25 @@ public sealed class EngineeringCockpit
 
         var kind = record.Detail.TryGetValue("Kind", out var k) ? k : "Unknown";
 
+        // `WP 21.6A`, OSA-15: RequirementsService/VerificationService/
+        // ReferenceDataCatalog now write through this identical
+        // AuditTransactionWriter primitive too, for their own Requirement/
+        // VerificationRecord/*Reference-Kind documents — none of which
+        // EngineeringDomainContext.Repository ever holds (that in-memory
+        // graph is EngineeringObjectBase's own, not every
+        // IEngineeringDocumentStore document). This method's own doc
+        // comment already promised "null ... if that object can no longer
+        // be read" for exactly this case; before this Work Package nothing
+        // ever exercised it, since every row this feed ever saw was an
+        // engineering object. Returning the row anyway with its own raw Id
+        // as a "title" — what this did before this fix — is not a
+        // meaningful "Recently changed" entry, so it is excluded rather
+        // than shown unreadable.
         var found = await _domainContext.Repository.FindAsync(objectId, cancellationToken).ConfigureAwait(false);
-        var title = (found as IHasBusinessIdentifier)?.DisplayName ?? objectId.ToString();
+        if (found is not IHasBusinessIdentifier named)
+            return null;
 
-        return new CockpitRecentChange(objectId, title, kind, FriendlyChangeType(record.Action), record.OccurredAt);
+        return new CockpitRecentChange(objectId, named.DisplayName, kind, FriendlyChangeType(record.Action), record.OccurredAt);
     }
 
     /// <summary>A short, human-readable label for one of <see cref="EngineeringAuditActions"/>'s own action constants.</summary>

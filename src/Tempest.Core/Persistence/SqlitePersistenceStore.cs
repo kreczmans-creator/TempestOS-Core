@@ -1,6 +1,7 @@
 using System.Data;
 using System.Globalization;
 using Microsoft.Data.Sqlite;
+using Tempest.Core.Audit;
 using Tempest.Core.Configuration;
 using Tempest.Core.Logging;
 
@@ -90,7 +91,7 @@ namespace Tempest.Core.Persistence;
 /// </para>
 /// </remarks>
 public sealed class SqlitePersistenceStore
-    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAsyncDisposable, IDisposable
+    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAuditCollectionWriter, IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// The configuration key the storage root path is read from.
@@ -250,12 +251,18 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — write through <see cref="IAuditCollectionWriter.WriteAuditRowAsync"/>
+    /// instead (<see cref="Audit.AuditRecorder"/>'s own only route in).
+    /// </exception>
     public async Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
         ThrowIfDisposed();
+        ThrowIfAuditCollection(collection);
 
         await ExecuteAsync(
             $"write collection '{collection}', key '{key}'",
@@ -270,11 +277,19 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — nothing ever legitimately deletes an audit
+    /// row (<see cref="Audit.IAuditRecorder"/>/<see cref="Audit.IAuditQuery"/>
+    /// expose no deletion at all), so this path is refused unconditionally,
+    /// with no bypass.
+    /// </exception>
     public async Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ThrowIfDisposed();
+        ThrowIfAuditCollection(collection);
 
         await ExecuteAsync(
             $"delete collection '{collection}', key '{key}'",
@@ -286,6 +301,44 @@ public sealed class SqlitePersistenceStore
                 return 0;
             },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The one route <see cref="Audit.AuditRecorder.RecordAsync"/> writes
+    /// through — bypasses <see cref="ThrowIfAuditCollection"/>, the guard
+    /// <see cref="WriteAsync"/> applies to every other caller (`WP 21.6A`,
+    /// OSA-13).
+    /// </summary>
+    async Task IAuditCollectionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(value);
+        ThrowIfDisposed();
+
+        await ExecuteAsync(
+            $"write audit row, key '{key}'",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                PrepareTextUpsert(command, AuditRecorder.AuditCollectionName, key, value);
+                await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                return 0;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Refuses <see cref="AuditRecorder.AuditCollectionName"/> for every
+    /// caller reaching this store through the ordinary
+    /// <see cref="IPersistenceStore"/>/<see cref="IPersistenceTransaction"/>
+    /// surface (`WP 21.6A`, OSA-13) — a collection-level write guard,
+    /// consulted before the write it would otherwise perform, not a
+    /// permission check against who is calling.
+    /// </summary>
+    private static void ThrowIfAuditCollection(string collection)
+    {
+        if (string.Equals(collection, AuditRecorder.AuditCollectionName, StringComparison.Ordinal))
+            throw new AuditCollectionProtectedException(collection);
     }
 
     /// <inheritdoc />
@@ -1321,7 +1374,7 @@ public sealed class SqlitePersistenceStore
     /// transaction's own writes and no second connection is ever waiting
     /// on a lock this one holds.
     /// </summary>
-    private sealed class SqliteTransactionScope : IPersistenceTransaction
+    private sealed class SqliteTransactionScope : IPersistenceTransaction, IAuditCollectionTransactionWriter
     {
         private readonly SqliteConnection _connection;
         private bool _finished;
@@ -1345,26 +1398,57 @@ public sealed class SqlitePersistenceStore
             return value is null or DBNull ? null : (string)value;
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — write through
+        /// <see cref="IAuditCollectionTransactionWriter.WriteAuditRowAsync"/>
+        /// instead (<see cref="Audit.AuditTransactionWriter"/>'s own only route in).
+        /// </exception>
         public async Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(collection);
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             ArgumentNullException.ThrowIfNull(value);
             ThrowIfFinished();
+            ThrowIfAuditCollection(collection);
 
             await using var command = _connection.CreateCommand();
             PrepareTextUpsert(command, collection, key, value);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — refused unconditionally, with no bypass;
+        /// see the non-transactional <see cref="SqlitePersistenceStore.DeleteAsync"/>'s
+        /// own identical remark.
+        /// </exception>
         public async Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(collection);
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             ThrowIfFinished();
+            ThrowIfAuditCollection(collection);
 
             await using var command = _connection.CreateCommand();
             PrepareDelete(command, collection, key);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The one route <see cref="Audit.AuditTransactionWriter.WriteAsync"/>
+        /// writes through — bypasses <see cref="ThrowIfAuditCollection"/>,
+        /// the guard <see cref="WriteAsync"/> applies to every other caller
+        /// (`WP 21.6A`, OSA-13).
+        /// </summary>
+        async Task IAuditCollectionTransactionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            ArgumentNullException.ThrowIfNull(value);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            PrepareTextUpsert(command, AuditRecorder.AuditCollectionName, key, value);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
