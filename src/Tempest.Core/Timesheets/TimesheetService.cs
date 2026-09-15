@@ -137,10 +137,12 @@ public sealed class TimesheetService : ITimesheetService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identityId);
 
-        var all = await _context.Repository.ListByKindAsync(TimesheetEntry.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: principal/date are `TimesheetEntry`-own
+        // fields, not on the index row.
+        var entries = await _context.Repository.ListByKindAsync(TimesheetEntry.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var all = await _context.Repository.MaterialiseAsync<TimesheetEntry>(entries, cancellationToken).ConfigureAwait(false);
 
         return all
-            .OfType<TimesheetEntry>()
             .Where(e => IsLive(e) && string.Equals(e.PrincipalIdentityId, identityId, StringComparison.Ordinal) && TimesheetWeek.WeekOf(e.Date) == weekStart)
             .OrderBy(e => e.Date)
             .ToList();
@@ -149,10 +151,12 @@ public sealed class TimesheetService : ITimesheetService
     /// <inheritdoc />
     public async Task<IReadOnlyList<TimesheetEntry>> ListUnbilledForProjectAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var children = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: billable/invoiced-by are `TimesheetEntry`-own
+        // fields, not on the index row.
+        var childEntries = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var children = await _context.Repository.MaterialiseAsync<TimesheetEntry>(childEntries, cancellationToken).ConfigureAwait(false);
 
         return children
-            .OfType<TimesheetEntry>()
             .Where(e => IsLive(e) && e.Billable && e.InvoicedBy is null)
             .OrderBy(e => e.Date)
             .ToList();

@@ -818,10 +818,13 @@ public abstract partial class EngineeringObjectBase :
             current =>
             {
                 // `WP 17.9.3`: an indexed lookup, not a scan of every object
-                // while holding the domain write lock (hazard H5).
+                // while holding the domain write lock (hazard H5). `IsDeleted`
+                // is on the index row itself (`TD-88`/`WP 21.5B`), so this
+                // stays a pure in-memory read — no materialisation, still
+                // synchronous-safe under the write lock.
                 var children = _context.Repository.ListChildrenAsync(Id, CancellationToken.None).GetAwaiter().GetResult();
 
-                var liveChildren = children.Count(o => o is not IDeletable { IsDeleted: true });
+                var liveChildren = children.Count(entry => !entry.IsDeleted);
 
                 if (liveChildren > 0)
                     throw new EngineeringObjectHasChildrenException(Id, liveChildren);

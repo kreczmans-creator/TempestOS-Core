@@ -218,10 +218,10 @@ public sealed class ProjectQuoteView : UserControl
 
         _newQuoteButton.IsEnabled = true;
 
-        var members = await _domainContext.Repository.ListChildrenAsync(id, CancellationToken.None).ConfigureAwait(true);
+        var memberEntries = await _domainContext.Repository.ListChildrenAsync(id, CancellationToken.None).ConfigureAwait(true);
+        var members = await _domainContext.Repository.MaterialiseAsync<Quotation>(
+            [.. memberEntries.Where(entry => !entry.IsDeleted)], CancellationToken.None).ConfigureAwait(true);
         _quotations = members
-            .OfType<Quotation>()
-            .Where(IsLive)
             .OrderByDescending(q => q.QuoteDate)
             .ThenByDescending(q => q.DisplayName, StringComparer.Ordinal)
             .ToList();

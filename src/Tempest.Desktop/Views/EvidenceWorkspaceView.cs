@@ -219,10 +219,12 @@ public sealed class EvidenceWorkspaceView : UserControl
         // the in-memory object graph holds right now (the same read
         // discipline `EvidenceNodeProvider` already established for the
         // Explorer's own Evidence area).
-        var everyEvidence = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
-        var mine = everyEvidence
-            .OfType<Evidence>()
-            .Where(e => e is not IDeletable { IsDeleted: true } && e.ParentId == id)
+        // `TD-88`/`WP 21.5B`: liveness and the project (parent) filter are
+        // both on the index row, so only this project's own evidence is
+        // materialised.
+        var everyEvidenceEntries = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
+        var mineEntries = everyEvidenceEntries.Where(entry => !entry.IsDeleted && entry.ParentId == id).ToList();
+        var mine = (await _domainContext.Repository.MaterialiseAsync<Evidence>(mineEntries).ConfigureAwait(true))
             .OrderBy(e => e.DisplayName, StringComparer.Ordinal)
             .ToList();
 

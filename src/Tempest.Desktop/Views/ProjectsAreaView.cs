@@ -146,20 +146,21 @@ public sealed class ProjectsAreaView : UserControl
     {
         RefreshCount++;
 
-        var everyProject = await _domainContext.Repository
+        // `TD-88`/`WP 21.5B`: `ProjectArchival.ListingGroupOf` needs the
+        // real `Project` object; liveness is filtered from the index first.
+        var everyProjectEntries = await _domainContext.Repository
             .ListByKindAsync(MechanicalObjectFactoryRegistry.Project)
             .ConfigureAwait(true);
+        var everyProject = await _domainContext.Repository.MaterialiseAsync<Tempest.Core.EngineeringDomain.Project>(
+            [.. everyProjectEntries.Where(entry => !entry.IsDeleted)]).ConfigureAwait(true);
 
         var asOf = _time.GetUtcNow();
         var open = new List<Tempest.Core.EngineeringDomain.Project>();
         var closed = new List<Tempest.Core.EngineeringDomain.Project>();
         var archive = new List<Tempest.Core.EngineeringDomain.Project>();
 
-        foreach (var candidate in everyProject)
+        foreach (var project in everyProject)
         {
-            if (candidate is not Tempest.Core.EngineeringDomain.Project project || project is IDeletable { IsDeleted: true })
-                continue;
-
             switch (ProjectArchival.ListingGroupOf(project, asOf))
             {
                 case ProjectListingGroup.Open: open.Add(project); break;

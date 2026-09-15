@@ -99,10 +99,12 @@ public sealed class InvoiceReconciliationService : IHostedService
 
         try
         {
-            var all = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+            // `TD-88`/`WP 21.5B`: `Status` is an `InvoiceRequest`-own field,
+            // not on the index row.
+            var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+            var all = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
 
             pending = all
-                .OfType<InvoiceRequest>()
                 .Where(r => IsLive(r)
                     && r.Status is InvoiceRequestStatus.Unknown or InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted)
                 .ToList();

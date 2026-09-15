@@ -166,12 +166,21 @@ public sealed class InvoicingView : UserControl
         foreach (var project in projects)
         {
             var projectName = DisplayNameOf(project);
-            var children = await _domainContext.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true);
+            // `TD-88`/`WP 21.5B`: liveness is filtered from the index
+            // first; `InvoiceRequest`/`DeliverableCompletion`-own fields
+            // (`Status`, `InvoicedBy`, …) need materialisation either way,
+            // so both typed views are read from the same live entry set —
+            // the identity map means the second read costs nothing extra
+            // for a child already materialised by the first.
+            var childEntries = await _domainContext.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true);
+            var liveChildEntries = childEntries.Where(entry => !entry.IsDeleted).ToList();
 
-            foreach (var request in children.OfType<InvoiceRequest>().Where(IsLive))
+            foreach (var request in await _domainContext.Repository.MaterialiseAsync<InvoiceRequest>(liveChildEntries).ConfigureAwait(true))
                 requestRows.Add(new RequestRow(request, projectName));
 
-            var unbilled = children.OfType<DeliverableCompletion>().Where(c => IsLive(c) && c.InvoicedBy is null).ToList();
+            var unbilled = (await _domainContext.Repository.MaterialiseAsync<DeliverableCompletion>(liveChildEntries).ConfigureAwait(true))
+                .Where(c => c.InvoicedBy is null)
+                .ToList();
             if (unbilled.Count == 0)
                 continue;
 
@@ -274,10 +283,10 @@ public sealed class InvoicingView : UserControl
             return project is not null && IsLive(project) ? [project] : [];
         }
 
-        return (await _domainContext.Repository.ListByKindAsync(ProjectDirectory.ProjectKind).ConfigureAwait(true))
-            .Where(IsLive)
-            .OrderBy(DisplayNameOf, StringComparer.Ordinal)
-            .ToList();
+        var entries = await _domainContext.Repository.ListByKindAsync(ProjectDirectory.ProjectKind).ConfigureAwait(true);
+        var live = await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. entries.Where(entry => !entry.IsDeleted)]).ConfigureAwait(true);
+        return [.. live.OrderBy(DisplayNameOf, StringComparer.Ordinal)];
     }
 
     // ================================================================

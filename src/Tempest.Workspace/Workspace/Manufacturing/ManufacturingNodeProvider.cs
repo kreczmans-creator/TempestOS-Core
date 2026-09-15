@@ -81,7 +81,9 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
 
         if (target is IManufacturingOperation or IWorkInstruction || (target is IEngineeringObject e && string.Equals(e.Kind, "Inspection", StringComparison.Ordinal)))
         {
-            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
+            var childEntries = await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false);
+            var children = await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+                [.. childEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -114,16 +116,23 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<IReadOnlyList<IEngineeringObject>> LiveManufacturingObjectsAsync(CancellationToken cancellationToken)
     {
-        var all = new List<IEngineeringObject>();
+        // `TD-88`/`WP 21.5B`: `ManufacturingCategory.Of` needs each
+        // object's own type/`Classification`, neither on the index row, so
+        // every live object is materialised — liveness is filtered from
+        // the index first.
+        var liveEntries = new List<EngineeringObjectIndexEntry>();
         foreach (var kind in ManufacturingObjectFactoryRegistry.SupportedKinds)
-            all.AddRange(await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false));
+        {
+            var entries = await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            liveEntries.AddRange(entries.Where(entry => !entry.IsDeleted));
+        }
 
-        return all.Where(IsLive).ToList();
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<ProjectExplorerNode> ToManufacturingNodeAsync(IEngineeringObject manufacturingObject, CancellationToken cancellationToken)
     {
-        var hasChildren = (await _context.Repository.ListChildrenAsync(manufacturingObject.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(manufacturingObject.Id, cancellationToken).ConfigureAwait(false)).Any(entry => !entry.IsDeleted);
 
         return new ProjectExplorerNode(
             manufacturingObject.Id, DisplayNameOf(manufacturingObject), manufacturingObject.Kind, hasChildren, ProjectExplorerNodeType.Object,
@@ -132,8 +141,6 @@ public sealed class ManufacturingNodeProvider : IProjectExplorerNodeProvider
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();
-
-    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }
 
 /// <summary>

@@ -163,9 +163,9 @@ public sealed class QuotesView : UserControl
         var rows = new List<QuoteRow>();
         foreach (var project in projects)
         {
-            var quotations = (await _domainContext.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true))
-                .OfType<Quotation>()
-                .Where(IsLive);
+            var quotationEntries = await _domainContext.Repository.ListChildrenAsync(project.Id).ConfigureAwait(true);
+            var quotations = await _domainContext.Repository.MaterialiseAsync<Quotation>(
+                [.. quotationEntries.Where(entry => !entry.IsDeleted)]).ConfigureAwait(true);
 
             var projectName = DisplayNameOf(project);
             foreach (var quotation in quotations)
@@ -202,10 +202,10 @@ public sealed class QuotesView : UserControl
             return project is not null && IsLive(project) ? [project] : [];
         }
 
-        return (await _domainContext.Repository.ListByKindAsync(ProjectDirectory.ProjectKind).ConfigureAwait(true))
-            .Where(IsLive)
-            .OrderBy(DisplayNameOf, StringComparer.Ordinal)
-            .ToList();
+        var entries = await _domainContext.Repository.ListByKindAsync(ProjectDirectory.ProjectKind).ConfigureAwait(true);
+        var live = await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. entries.Where(entry => !entry.IsDeleted)]).ConfigureAwait(true);
+        return [.. live.OrderBy(DisplayNameOf, StringComparer.Ordinal)];
     }
 
     private Control BuildGroup(string title, IReadOnlyList<QuoteRow> rows)
