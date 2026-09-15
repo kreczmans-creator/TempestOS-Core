@@ -269,10 +269,58 @@ internal sealed partial class MainWindowComposer
             : "(in-memory persistence — no file on disk)";
         var configurationProvider = (Tempest.Core.Configuration.IConfigurationProvider)services.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
 
+        // Moved up from this method's own Evidence section, below, so
+        // Settings → Data's own "Back up now…"/"Restore from backup…" can
+        // reuse the identical picker (real `AvaloniaFilePicker`, or a
+        // test's `evidenceFilePickerOverride`) rather than a second
+        // instance a test's own stub would never reach — depends on
+        // nothing but this method's own parameters, so moving it earlier
+        // changes no behaviour.
+        var evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(window);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 4): Settings → Data's own
+        // backup and restore. `persistenceDatabasePath` is `null` for the
+        // identical reason `persistenceRootPath` above falls back to a
+        // description rather than a path — an in-memory test store has no
+        // database file to back up — and `SettingsView` hides the whole
+        // section on `null`. `auditRecorder` mirrors every other
+        // Platform-Service resolution in this method.
+        var persistenceDatabasePath = queryableStore is Tempest.Core.Persistence.SqlitePersistenceStore sqliteStoreForBackup
+            ? sqliteStoreForBackup.DatabasePath
+            : null;
+        var auditRecorder = (Tempest.Core.Audit.IAuditRecorder)services.GetService(typeof(Tempest.Core.Audit.IAuditRecorder));
+
+        // A restore needs the live store closed before it moves any file
+        // (`BackupService`'s own restore precondition) — the one piece of
+        // this Work Package's brief `SettingsView` itself cannot do, since
+        // it never holds a reference to `host`. Captured as a closure here,
+        // where `host` is in scope, rather than threading `WorkspaceHost`
+        // itself into a view that otherwise has no reason to know it
+        // exists.
+        Task PrepareForRestartAsync() => PrepareHostForRestartAsync(host);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 1): Settings → Updates. Built
+        // unconditionally — even a `dotnet run`/harness-style session shows
+        // the section, honestly reporting "not installed... unavailable"
+        // (`IUpdateService.IsInstalled`), the same disclosed-rather-than-
+        // hidden convention `DescribeAccountsReading` already uses for an
+        // unauthorised connector. Constructing `VelopackUpdateService`
+        // itself makes no network call — only `CheckForUpdateAsync` does,
+        // and that runs only when `CheckForUpdatesOnLaunch` is
+        // <see langword="true"/> (off by default) or the operator presses
+        // "Check now".
+        var updateService = new Tempest.Desktop.Startup.VelopackUpdateService();
+        var updateAvailability = new Tempest.Desktop.Startup.UpdateAvailability();
+
+        if (session.UserSettings.CheckForUpdatesOnLaunch)
+            _ = CheckForUpdatesInBackgroundAsync(updateService, updateAvailability);
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
-            accountsReadModel, accountsRefreshService);
+            accountsReadModel, accountsRefreshService,
+            persistenceDatabasePath, auditRecorder, host.ProjectContext,
+            PrepareForRestartAsync, updateService, updateAvailability, evidenceFilePicker);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -338,7 +386,6 @@ internal sealed partial class MainWindowComposer
         var kindEditorDeclarations = new KindEditorDeclarationRegistry();
         KindEditorDeclarations.RegisterAll(kindEditorDeclarations);
 
-        var evidenceFilePicker = evidenceFilePickerOverride ?? new AvaloniaFilePicker(window);
         var citationPicker = new CitationPicker(ct => LibrariesView.ReadAllAsync(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, ct));
         var subjectPicker = new SubjectPicker(composition.DomainContext);
@@ -609,6 +656,51 @@ internal sealed partial class MainWindowComposer
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
             tasksReadModel, projectStatusReadModel, accountsReadModel);
+    }
+
+    /// <summary>
+    /// Closes <paramref name="host"/>'s own Workspace and disposes its
+    /// Runtime Host — the same two calls <see cref="App.OnFrameworkInitializationCompleted"/>'s
+    /// own <c>ShutdownRequested</c> handler makes on an ordinary exit
+    /// (`ADR-0064`), run early and on demand instead, so
+    /// <see cref="BackupService.RestoreFromBackup"/> never moves or
+    /// overwrites a database file <see cref="Tempest.Core.Persistence.SqlitePersistenceStore"/>
+    /// still holds open (`WP 21.5A`, `WP RC.0A` scope item 4). Threaded
+    /// into <see cref="SettingsView"/> as a plain <c>Func&lt;Task&gt;</c>
+    /// closure (see <see cref="BuildViews"/>) rather than a reference to
+    /// <see cref="WorkspaceHost"/> itself, which that view otherwise has no
+    /// reason to know exists.
+    /// </summary>
+    private static async Task PrepareHostForRestartAsync(WorkspaceHost host)
+    {
+        await host.ShutdownAsync().ConfigureAwait(false);
+        await host.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Settings → Updates' own on-launch check (`WP 21.5A`, `WP RC.0A`
+    /// scope item 1) — run only when <c>UserSettings.CheckForUpdatesOnLaunch</c>
+    /// is <see langword="true"/> (off by default), and entirely fire-and-
+    /// forget: a launch never waits on a network call to a release feed,
+    /// and a feed failure is not something a launch should ever surface as
+    /// an error (<see cref="Tempest.Desktop.Startup.IUpdateService.CheckForUpdateAsync"/>
+    /// already reports one as "nothing found"; this is defence in depth
+    /// only). The result lands in <paramref name="availability"/>, which
+    /// <see cref="SettingsView"/> reads — without itself re-checking the
+    /// feed — the next time the operator opens Settings.
+    /// </summary>
+    private static async Task CheckForUpdatesInBackgroundAsync(
+        Tempest.Desktop.Startup.IUpdateService updateService, Tempest.Desktop.Startup.UpdateAvailability availability)
+    {
+        try
+        {
+            availability.AvailableVersion = await updateService.CheckForUpdateAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // See this method's own remarks — an on-launch check must never
+            // surface as an unobserved exception either.
+        }
     }
 }
 

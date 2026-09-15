@@ -157,10 +157,21 @@ public sealed class BackupService
         }
         finally
         {
-            SqliteConnection.ClearPool(new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = destinationBackupPath }.ToString()));
+            // `Microsoft.Data.Sqlite` pools connections per exact
+            // connection string — the source (read-only), the destination
+            // (read-write-create) and, below, the verification re-open
+            // (read-only again) are three distinct strings, so a single
+            // targeted `ClearPool` call could clear the wrong one (and
+            // once did, in an earlier draft of this method — a mismatched
+            // connection string that left the destination file locked for
+            // whichever caller tried to move or delete it next).
+            // `ClearAllPools` is the whole-process equivalent and is what
+            // actually guarantees no pooled handle survives this call.
+            SqliteConnection.ClearAllPools();
         }
 
         var tableCount = CountTables(destinationBackupPath);
+        SqliteConnection.ClearAllPools();
         var outcome = new BackupOutcome(destinationBackupPath, tableCount);
 
         if (!outcome.Verified)

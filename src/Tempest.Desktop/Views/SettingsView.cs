@@ -6,14 +6,19 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
+using Tempest.Core.Audit;
 using Tempest.Core.Configuration;
 using Tempest.Core.Evidence;
 using Tempest.Core.Identity;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Persistence;
 using Tempest.Core.Secrets;
 using Tempest.Core.Settings;
 using Tempest.Core.Timesheets;
+using Tempest.Desktop.Startup;
 using Tempest.Desktop.Theming;
+using Tempest.Workspace.Files;
+using Tempest.Workspace.Projects;
 
 namespace Tempest.Desktop.Views;
 
@@ -66,10 +71,35 @@ public sealed class SettingsView : UserControl
     private readonly IConfigurationProvider _configuration;
     private readonly string _persistenceRootPath;
 
+    // `WP 21.5A` (`WP RC.0A` scope item 4): Settings → Data's own backup
+    // and restore, and Settings → Updates. Both sections are entirely
+    // optional collaborators — `null` hides the section, exactly as
+    // `_workingPatterns`/`_invoicingConnector` already do above — so a test
+    // (or a build with an in-memory store, which has no database file to
+    // back up at all) simply sees neither.
+    private readonly string? _persistenceDatabasePath;
+    private readonly IAuditRecorder? _auditRecorder;
+    private readonly IProjectContext? _projectContext;
+    private readonly Func<Task>? _prepareForRestartAsync;
+    private readonly IUpdateService? _updateService;
+    private readonly UpdateAvailability? _updateAvailability;
+    private readonly IFilePicker? _filePicker;
+    private readonly BackupService _backupService = new();
+
     private readonly TextBox _persistenceRootBox = new() { IsReadOnly = true, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _openPersistenceFolder = new() { Content = "Open folder", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _displayNameOverride = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _roleOverride = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
+
+    private readonly Button _backUpNowButton = new() { Content = "Back up now…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _restoreButton = new() { Content = "Restore from backup…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _openBackupsFolderButton = new() { Content = "Open backups folder", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _backupStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, TextWrapping = TextWrapping.Wrap };
+
+    private readonly CheckBox _checkForUpdatesOnLaunch = new() { Content = "Check for updates automatically on launch" };
+    private readonly Button _checkForUpdatesNowButton = new() { Content = "Check now", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _applyUpdateButton = new() { MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
+    private readonly TextBlock _updateStatus = new() { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
 
     private readonly ComboBox _themeSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 140 };
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
@@ -92,6 +122,9 @@ public sealed class SettingsView : UserControl
     /// <summary>Opens <paramref name="folderPath"/> in the operating system's own file manager — real by default (<see cref="Process.Start(ProcessStartInfo)"/>), overridable by a test.</summary>
     public Action<string> OpenFolder { get; set; } = DefaultOpenFolder;
 
+    /// <summary>Relaunches the application and ends this process — real by default, overridable by a test so a restore's own journey test does not actually exit the test host.</summary>
+    public Action RestartProcess { get; set; } = DefaultRestartProcess;
+
     /// <summary>Raised after Save or Authorise completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
 
@@ -102,7 +135,11 @@ public sealed class SettingsView : UserControl
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
         IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null,
-        IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null)
+        IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null,
+        string? persistenceDatabasePath = null, IAuditRecorder? auditRecorder = null,
+        IProjectContext? projectContext = null, Func<Task>? prepareForRestartAsync = null,
+        IUpdateService? updateService = null, UpdateAvailability? updateAvailability = null,
+        IFilePicker? filePicker = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -120,6 +157,13 @@ public sealed class SettingsView : UserControl
         _secretStore = secretStore;
         _accountsReadModel = accountsReadModel;
         _accountsRefreshService = accountsRefreshService;
+        _persistenceDatabasePath = persistenceDatabasePath;
+        _auditRecorder = auditRecorder;
+        _projectContext = projectContext;
+        _prepareForRestartAsync = prepareForRestartAsync;
+        _updateService = updateService;
+        _updateAvailability = updateAvailability;
+        _filePicker = filePicker;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -142,11 +186,43 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_confirmBeforeDelete, "Confirm before deleting an object");
         AutomationProperties.SetName(_independentCheckRequired, "Independent check required");
         AutomationProperties.SetName(_invoicingAuthoriseButton, "Authorise invoicing connector");
+        AutomationProperties.SetName(_backUpNowButton, "Back up now");
+        AutomationProperties.SetName(_restoreButton, "Restore from backup");
+        AutomationProperties.SetName(_openBackupsFolderButton, "Open backups folder");
+        AutomationProperties.SetName(_checkForUpdatesOnLaunch, "Check for updates automatically on launch");
+        AutomationProperties.SetName(_checkForUpdatesNowButton, "Check for updates now");
+        AutomationProperties.SetName(_applyUpdateButton, "Apply update");
 
         var persistenceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         persistenceRow.Children.Add(_persistenceRootBox);
         persistenceRow.Children.Add(_openPersistenceFolder);
         var persistence = BuildSection("Persistence root", persistenceRow);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 4). Shown only when there is a
+        // real database file to act on — an in-memory test store has none.
+        var backupRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        backupRow.Children.Add(_backUpNowButton);
+        backupRow.Children.Add(_restoreButton);
+        backupRow.Children.Add(_openBackupsFolderButton);
+        var backupStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        backupStack.Children.Add(backupRow);
+        backupStack.Children.Add(_backupStatus);
+        var backup = BuildSection("Backup and restore", backupStack);
+
+        // `WP 21.5A` (`WP RC.0A` scope item 1). Shown only when this run
+        // has an update service at all — never for `dotnet run`/a plain
+        // `bin/` exe/the plain zip, none of which construct one (`WP
+        // 21.5A`'s brief: "off by default... so nothing phones home
+        // unasked" — the section itself is absent, not merely disabled,
+        // for every run shape that could never act on it anyway).
+        var updateRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        updateRow.Children.Add(_checkForUpdatesNowButton);
+        updateRow.Children.Add(_applyUpdateButton);
+        updateRow.Children.Add(_updateStatus);
+        var updateStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        updateStack.Children.Add(_checkForUpdatesOnLaunch);
+        updateStack.Children.Add(updateRow);
+        var updates = BuildSection("Updates", updateStack);
 
         var principalStack = new StackPanel { Spacing = DesignTokens.SpaceXs };
         principalStack.Children.Add(_displayNameOverride);
@@ -198,6 +274,10 @@ public sealed class SettingsView : UserControl
         body.Children.Add(PageHeading.Title("Settings"));
         body.Children.Add(PageHeading.Lead("Persistence, the current principal, connector authorisation, working pattern and the platform's own working preferences."));
         body.Children.Add(persistence);
+
+        if (_persistenceDatabasePath is not null && _filePicker is not null)
+            body.Children.Add(backup);
+
         body.Children.Add(principal);
         body.Children.Add(appearance);
         body.Children.Add(notifications);
@@ -210,14 +290,23 @@ public sealed class SettingsView : UserControl
         if (_invoicingConnector is not null && _secretStore is not null)
             body.Children.Add(invoicing);
 
+        if (_updateService is not null)
+            body.Children.Add(updates);
+
         body.Children.Add(saveRow);
 
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _openPersistenceFolder.Classes.Add(ChromeStyles.Subtle);
+        _openBackupsFolderButton.Classes.Add(ChromeStyles.Subtle);
         _openPersistenceFolder.Click += (_, _) => OnOpenPersistenceFolder();
         _saveButton.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
         _invoicingAuthoriseButton.Click += async (_, _) => await OnAuthoriseInvoicingAsync().ConfigureAwait(true);
         _accountsRefreshButton.Click += async (_, _) => await OnRefreshAccountsAsync().ConfigureAwait(true);
+        _backUpNowButton.Click += async (_, _) => await OnBackUpNowAsync().ConfigureAwait(true);
+        _restoreButton.Click += async (_, _) => await OnRestoreAsync().ConfigureAwait(true);
+        _openBackupsFolderButton.Click += (_, _) => OnOpenBackupsFolder();
+        _checkForUpdatesNowButton.Click += async (_, _) => await OnCheckForUpdatesNowAsync().ConfigureAwait(true);
+        _applyUpdateButton.Click += async (_, _) => await OnApplyUpdateAsync().ConfigureAwait(true);
 
         AutomationProperties.SetName(this, "Settings");
         Content = new ScrollViewer { Content = body };
@@ -265,6 +354,14 @@ public sealed class SettingsView : UserControl
         if (_accountsReadModel is not null)
             await RefreshAccountsReadingStatusAsync().ConfigureAwait(true);
 
+        if (_persistenceDatabasePath is not null)
+            _backupStatus.Text = string.Empty;
+
+        _checkForUpdatesOnLaunch.IsChecked = _settings.CheckForUpdatesOnLaunch;
+
+        if (_updateService is not null)
+            RefreshUpdateStatus();
+
         _savedStatus.Text = string.Empty;
     }
 
@@ -272,6 +369,219 @@ public sealed class SettingsView : UserControl
     {
         var folder = Path.GetDirectoryName(_persistenceRootPath);
         OpenFolder(string.IsNullOrEmpty(folder) ? _persistenceRootPath : folder);
+    }
+
+    private void OnOpenBackupsFolder()
+    {
+        if (_persistenceDatabasePath is null)
+            return;
+
+        var databaseDirectory = Path.GetDirectoryName(_persistenceDatabasePath);
+        if (string.IsNullOrEmpty(databaseDirectory))
+            return;
+
+        var backupsFolder = Path.Combine(databaseDirectory, BackupService.BackupsFolderName);
+        Directory.CreateDirectory(backupsFolder);
+        OpenFolder(backupsFolder);
+    }
+
+    /// <summary>"Back up now…" — a Save picker, the online backup API, and read-back verification (`WP 21.5A`). Audited when an <see cref="IAuditRecorder"/> is available.</summary>
+    private async Task OnBackUpNowAsync()
+    {
+        if (_persistenceDatabasePath is null || _filePicker is null)
+            return;
+
+        var destination = await _filePicker.PickSavePathAsync(new SavePickerRequest(
+            "Back up TempestOS data", BackupService.BuildManualBackupFileName(DateTimeOffset.UtcNow))).ConfigureAwait(true);
+        if (destination is null)
+            return;
+
+        try
+        {
+            var outcome = await _backupService.BackUpNowAsync(_persistenceDatabasePath, destination).ConfigureAwait(true);
+
+            if (_auditRecorder is not null)
+            {
+                await _auditRecorder.RecordAsync(
+                    "Data.BackedUp",
+                    new Dictionary<string, string> { ["BackupFile"] = outcome.BackupPath }).ConfigureAwait(true);
+            }
+
+            _backupStatus.Text = $"Backed up to '{outcome.BackupPath}' ({outcome.TableCount} table(s)), verified.";
+            ActionCompleted?.Invoke(_backupStatus.Text, ActionOutcome.NoChange);
+        }
+        catch (BackupVerificationException ex)
+        {
+            _backupStatus.Text = $"Backup failed: {ex.Message}";
+            ActionCompleted?.Invoke(_backupStatus.Text, ActionOutcome.Failed);
+        }
+    }
+
+    /// <summary>
+    /// "Restore from backup…" — refused while a project is open; otherwise
+    /// an Open picker, an audit row (recorded before the live store closes
+    /// — see this method's own remarks below), the store shut down
+    /// (<see cref="_prepareForRestartAsync"/>), the current database moved
+    /// aside and the backup copied in (<see cref="BackupService.RestoreFromBackup"/>),
+    /// and the application restarted (<see cref="RestartProcess"/>) —
+    /// `WP 21.5A` (`WP RC.0A` scope item 4).
+    /// </summary>
+    /// <remarks>
+    /// The audit row is written into the database being replaced, not the
+    /// one being restored: it is recorded through the current session's own
+    /// <see cref="IAuditRecorder"/>, before that session's store closes,
+    /// which means it survives as the last entry of whatever database ends
+    /// up moved aside to <c>tempest-replaced-…</c> — a permanent record
+    /// that this operator restored a backup, from where, and when. The
+    /// restored database keeps its own separate history, frozen at the
+    /// moment the backup was taken.
+    /// </remarks>
+    private async Task OnRestoreAsync()
+    {
+        if (_persistenceDatabasePath is null || _prepareForRestartAsync is null || _filePicker is null)
+            return;
+
+        if (_projectContext?.HasProject == true)
+        {
+            _backupStatus.Text = "Close the open project before restoring a backup.";
+            ActionCompleted?.Invoke(_backupStatus.Text, ActionOutcome.Failed);
+            return;
+        }
+
+        var backupFilePath = await PickBackupFileAsync().ConfigureAwait(true);
+        if (backupFilePath is null)
+            return;
+
+        if (_auditRecorder is not null)
+        {
+            await _auditRecorder.RecordAsync(
+                "Data.RestoredFromBackup",
+                new Dictionary<string, string> { ["BackupFile"] = backupFilePath }).ConfigureAwait(true);
+        }
+
+        await _prepareForRestartAsync().ConfigureAwait(true);
+
+        var databaseDirectory = Path.GetDirectoryName(_persistenceDatabasePath)!;
+        var replacedPath = Path.Combine(databaseDirectory, BackupService.BuildReplacedDatabaseFileName(DateTimeOffset.UtcNow));
+        BackupService.RestoreFromBackup(_persistenceDatabasePath, backupFilePath, replacedPath);
+
+        RestartProcess();
+    }
+
+    /// <summary>
+    /// Asks <see cref="_filePicker"/> for a backup file's own content and
+    /// writes it to a fresh temporary file, returning that file's path —
+    /// <see cref="IFilePicker"/>'s own contract (`WP 18.2A`) hands back
+    /// bytes, not a path, which is what makes it the one picker abstraction
+    /// in this project a headless test can substitute
+    /// (<c>evidenceFilePickerOverride</c>); <see cref="BackupService.RestoreFromBackup"/>
+    /// needs a path, so this bridges the two rather than inventing a
+    /// second, untestable picker seam. <see langword="null"/> means the
+    /// user cancelled, or no picker was supplied at all.
+    /// </summary>
+    private async Task<string?> PickBackupFileAsync()
+    {
+        if (_filePicker is null)
+            return null;
+
+        var picked = await _filePicker.PickFilesAsync(new FilePickerRequest(
+            "Restore TempestOS data from a backup", AllowMultiple: false, FileTypeDescription: "SQLite database", Extensions: ["db"])).ConfigureAwait(true);
+
+        if (picked is not [{ } file, ..])
+            return null;
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"tempestos-restore-{Guid.NewGuid():N}.db");
+        var bytes = await file.ReadAsync().ConfigureAwait(true);
+        await File.WriteAllBytesAsync(tempPath, bytes.ToArray()).ConfigureAwait(true);
+        return tempPath;
+    }
+
+    /// <summary>
+    /// Shows whatever <see cref="_updateAvailability"/> already knows,
+    /// without itself checking the feed — "Check now" (<see cref="OnCheckForUpdatesNowAsync"/>)
+    /// is the explicit, operator-initiated check; simply opening Settings
+    /// never makes a network call of its own.
+    /// </summary>
+    private void RefreshUpdateStatus()
+    {
+        if (_updateService is null)
+            return;
+
+        if (!_updateService.IsInstalled)
+        {
+            _updateStatus.Text = "Not installed via the installer — updates unavailable.";
+            _applyUpdateButton.IsVisible = false;
+            return;
+        }
+
+        if (_updateAvailability?.AvailableVersion is { } version)
+        {
+            _updateStatus.Text = $"Update to {version} is available.";
+            _applyUpdateButton.Content = $"Update to {version}";
+            _applyUpdateButton.IsVisible = true;
+        }
+        else
+        {
+            _updateStatus.Text = "No update checked yet.";
+            _applyUpdateButton.IsVisible = false;
+        }
+    }
+
+    private async Task OnCheckForUpdatesNowAsync()
+    {
+        if (_updateService is null)
+            return;
+
+        _updateStatus.Text = "Checking…";
+        var version = await _updateService.CheckForUpdateAsync().ConfigureAwait(true);
+
+        if (_updateAvailability is not null)
+            _updateAvailability.AvailableVersion = version;
+
+        RefreshUpdateStatus();
+
+        ActionCompleted?.Invoke(
+            version is { } v ? $"Update to {v} is available." : "No update available.",
+            ActionOutcome.NoChange);
+    }
+
+    private async Task OnApplyUpdateAsync()
+    {
+        if (_updateService is null)
+            return;
+
+        _updateStatus.Text = "Downloading update…";
+        _applyUpdateButton.IsEnabled = false;
+        try
+        {
+            // `ApplyUpdatesAndRestart` ends this process itself once the
+            // download completes — control normally never returns here.
+            await _updateService.DownloadAndApplyUpdateAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            _applyUpdateButton.IsEnabled = true;
+        }
+    }
+
+    private static void DefaultRestartProcess()
+    {
+        try
+        {
+            var executablePath = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(executablePath))
+                Process.Start(new ProcessStartInfo { FileName = executablePath, UseShellExecute = true })?.Dispose();
+        }
+        catch
+        {
+            // Best-effort, as `DefaultOpenFolder` below — a restart that
+            // could not relaunch still leaves the operator with a restored
+            // database on disk; they can start TempestOS again by hand.
+        }
+        finally
+        {
+            Environment.Exit(0);
+        }
     }
 
     private static void DefaultOpenFolder(string folderPath)
@@ -295,6 +605,7 @@ public sealed class SettingsView : UserControl
 
         _settings.ToastDurationSeconds = (double)(_toastDuration.Value ?? 4.5m);
         _settings.ConfirmBeforeDelete = _confirmBeforeDelete.IsChecked ?? true;
+        _settings.CheckForUpdatesOnLaunch = _checkForUpdatesOnLaunch.IsChecked ?? false;
         await _settings.SaveAsync().ConfigureAwait(true);
 
         await _settingsProvider.SetValueAsync(
