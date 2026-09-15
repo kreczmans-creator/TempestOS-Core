@@ -40,6 +40,15 @@ public class CalculationsCommandsTests
         return (CalculationSet)await factory.CreateAsync($"{name} — for test purposes.").ConfigureAwait(false);
     }
 
+    /// <summary>`WP 20.10B` (T2): a real Project, to test <c>dueOn</c>'s own "under a project" gate against.</summary>
+    private static async Task<Project> CreateProjectAsync(EngineeringDomainContext context, string identifier = "PROJ-1")
+    {
+        var factory = new EngineeringObjectFactory<Project>(
+            "Project", context, (doc, rev) => new Project(doc, rev, context, identifier, identifier, EngineeringObjectMetadata.Empty));
+
+        return (Project)await factory.CreateAsync($"{identifier} — for test purposes.").ConfigureAwait(false);
+    }
+
     /// <summary>A test-local <see cref="ICalculationEngine"/> with one trivial definition registered — mirrors <c>DoubleLengthCalculationDefinition</c>'s own shape, kept local so these tests never depend on <c>Tempest.Samples</c>.</summary>
     private static ICalculationEngine BuildCalculationEngine(EngineeringDomainContext context)
     {
@@ -103,6 +112,181 @@ public class CalculationsCommandsTests
 
         var created = (await context.Repository.ListByKindAsync("Calculation")).Single(c => c.Id != parent.Id);
         Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+    }
+
+    // ---- DueOn (`WP 20.10B`, T2) ----
+
+    [Fact]
+    public async Task Create_CalculationUnderAProject_WithDueOn_SetsIt()
+    {
+        var context = BuildContext();
+        var project = await CreateProjectAsync(context);
+        var registry = new CalculationObjectFactoryRegistry(context);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+        var dueOn = new DateOnly(2026, 10, 1);
+
+        var result = await handler.HandleAsync(
+            new CreateCalculationObjectCommand("Calculation", "Bracket check", parentId: project.Id, dueOn: dueOn), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        Assert.Equal(dueOn, created.DueOn);
+    }
+
+    [Fact]
+    public async Task Create_CalculationUnderAProject_ThroughAnIntermediateCalculationSet_WithDueOn_StillSetsIt()
+    {
+        // `TD-172`'s own multi-hop placement (Project -> Calculation Set ->
+        // Calculation): `dueOn` is gated on `projectScopeId`, resolved by
+        // the identical `BusinessIdentifierScope.ResolveProjectId` walk
+        // that already finds the project through however many intermediate
+        // containers sit in between — never a single-hop "is the direct
+        // parent a Project" check.
+        var context = BuildContext();
+        var project = await CreateProjectAsync(context);
+        var set = await CreateCalculationSetAsync(context, "SET-1", "Set");
+        await ((IHasParent)set).MoveAsync(project.Id);
+
+        var registry = new CalculationObjectFactoryRegistry(context);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+        var dueOn = new DateOnly(2026, 10, 1);
+
+        await handler.HandleAsync(
+            new CreateCalculationObjectCommand("Calculation", "Under set", parentId: set.Id, dueOn: dueOn), default);
+
+        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        Assert.Equal(dueOn, created.DueOn);
+    }
+
+    [Fact]
+    public async Task Create_CalculationWithNoParentAtAll_DiscardsDueOn_EvenWhenGiven()
+    {
+        var context = BuildContext();
+        var registry = new CalculationObjectFactoryRegistry(context);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+
+        await handler.HandleAsync(
+            new CreateCalculationObjectCommand("Calculation", "Standalone", dueOn: new DateOnly(2026, 10, 1)), default);
+
+        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single();
+        Assert.Null(created.DueOn);
+    }
+
+    [Fact]
+    public async Task Create_CalculationUnderAnotherCalculation_WithNoProjectAncestor_DiscardsDueOn()
+    {
+        var context = BuildContext();
+        var parent = await CreateCalculationAsync(context); // never moved under a project
+        var registry = new CalculationObjectFactoryRegistry(context);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+
+        await handler.HandleAsync(
+            new CreateCalculationObjectCommand("Calculation", "Child", parentId: parent.Id, dueOn: new DateOnly(2026, 10, 1)), default);
+
+        var created = (Calculation)(await context.Repository.ListByKindAsync("Calculation")).Single(c => c.Id != parent.Id);
+        Assert.Null(created.DueOn);
+    }
+
+    [Fact]
+    public async Task Create_CalculationSetUnderAProject_WithDueOn_HasNoDueOnField_AndDoesNotThrow()
+    {
+        // A Calculation Set is a container, never itself a task (`TD-181`).
+        // `dueOn` is simply never read for it — this asserts the call does
+        // not throw, and the Set itself carries no such field to assert on.
+        var context = BuildContext();
+        var project = await CreateProjectAsync(context);
+        var registry = new CalculationObjectFactoryRegistry(context);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+
+        var result = await handler.HandleAsync(
+            new CreateCalculationObjectCommand("CalculationSet", "Set", parentId: project.Id, dueOn: new DateOnly(2026, 10, 1)), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Single(await context.Repository.ListByKindAsync("CalculationSet"));
+    }
+
+    [Fact]
+    public async Task ACalculationsOwnDueDate_RoundTripsThroughRehydration()
+    {
+        var persistence = new Tempest.Core.Tests.Persistence.InMemoryQueryablePersistenceStore();
+        var firstLifetime = TestEngineeringDomain.NewContextOver(persistence, persistence);
+        var project = await CreateProjectAsync(firstLifetime);
+        var dueOn = new DateOnly(2026, 10, 1);
+
+        var registry = new CalculationObjectFactoryRegistry(firstLifetime);
+        var handler = new CreateCalculationObjectCommandHandler(registry);
+        var result = await handler.HandleAsync(
+            new CreateCalculationObjectCommand("Calculation", "Bracket check", parentId: project.Id, dueOn: dueOn), default);
+        Assert.True(result.Succeeded, result.Message);
+        var calculationId = result.SubjectId!.Value;
+
+        // A genuinely new lifetime: a fresh in-memory object repository,
+        // populated only by rehydrating the durable state the first
+        // lifetime committed to the shared persistence store above —
+        // mirrors `EngineeringObjectRehydrationTests`'s own "second
+        // lifetime" shape.
+        var secondLifetime = TestEngineeringDomain.NewContextOver(persistence, persistence);
+        var rehydrators = new EngineeringObjectRehydratorRegistry();
+        CalculationObjectFactoryRegistry.RegisterRehydrators(rehydrators, secondLifetime);
+        Tempest.Workspace.Mechanical.MechanicalObjectFactoryRegistry.RegisterRehydrators(rehydrators, secondLifetime); // the Project this fixture also created
+        var rehydrationResult = await new EngineeringObjectRehydrationService(secondLifetime, rehydrators).RehydrateAsync();
+        Assert.True(rehydrationResult.IsComplete, $"Unknown kinds: {string.Join(", ", rehydrationResult.UnknownKinds)}; failed: {rehydrationResult.FailedObjectIds.Count}.");
+
+        var rehydrated = (Calculation)(await secondLifetime.Repository.FindAsync(calculationId))!;
+        Assert.Equal(dueOn, rehydrated.DueOn);
+    }
+
+    // ---- SetCalculationDueDateCommand (`WP 20.10B`, T2) ----
+
+    [Fact]
+    public async Task SetDueDate_OnACalculation_Succeeds()
+    {
+        var context = BuildContext();
+        var calculation = await CreateCalculationAsync(context);
+        var handler = new SetCalculationDueDateCommandHandler(context);
+        var dueOn = new DateOnly(2026, 11, 15);
+
+        var result = await handler.HandleAsync(new SetCalculationDueDateCommand(calculation.Id, "Calculation", dueOn), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal(dueOn, calculation.DueOn);
+    }
+
+    [Fact]
+    public async Task SetDueDate_ToNull_ClearsIt()
+    {
+        var context = BuildContext();
+        var calculation = await CreateCalculationAsync(context);
+        var handler = new SetCalculationDueDateCommandHandler(context);
+        await handler.HandleAsync(new SetCalculationDueDateCommand(calculation.Id, "Calculation", new DateOnly(2026, 11, 15)), default);
+
+        var result = await handler.HandleAsync(new SetCalculationDueDateCommand(calculation.Id, "Calculation", null), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Null(calculation.DueOn);
+    }
+
+    [Fact]
+    public async Task SetDueDate_UnknownTarget_Fails()
+    {
+        var context = BuildContext();
+        var handler = new SetCalculationDueDateCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetCalculationDueDateCommand(Guid.NewGuid(), "Calculation", new DateOnly(2026, 11, 15)), default);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task SetDueDate_ACalculationSet_Fails_NeverTheContainer()
+    {
+        var context = BuildContext();
+        var set = await CreateCalculationSetAsync(context, "SET-1", "Set");
+        var handler = new SetCalculationDueDateCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetCalculationDueDateCommand(set.Id, "CalculationSet", new DateOnly(2026, 11, 15)), default);
+
+        Assert.False(result.Succeeded);
     }
 
     // ---- RenameCalculationObjectCommand ----

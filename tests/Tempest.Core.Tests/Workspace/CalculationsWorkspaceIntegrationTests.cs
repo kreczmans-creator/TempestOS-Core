@@ -239,6 +239,7 @@ public class CalculationsWorkspaceIntegrationTests
             "calculations.recalculate",
             "calculations.rename",
             "calculations.request-review",
+            "calculations.set-due-date", // `WP 20.10B`, T2 — sets/clears a Calculation's own Due date.
             "calculations.unlock",
         ];
 
