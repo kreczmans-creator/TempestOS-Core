@@ -326,10 +326,8 @@ public sealed class ObjectEditorView : UserControl
     // `WP 21.1B`: the project Commercial section now lives in its own file
     // under Editors/Sections/.
     private readonly CommercialSection _commercialSection = new();
-    private readonly StackPanel _invoiceLinesPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private Expander _invoiceLinesSection = null!;
-    private readonly StackPanel _invoiceExternalPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private Expander _invoiceExternalSection = null!;
+    private readonly InvoiceLinesSection _invoiceLinesSection = new();
+    private readonly InvoiceConnectorSection _invoiceExternalSection = new();
 
     // `WP 19.5B` (`ADR-0152`): a quotation's own Lines section, read-only
     // here exactly as `InvoiceRequest`'s own Lines section is — editing a
@@ -872,11 +870,10 @@ public sealed class ObjectEditorView : UserControl
 
         // `WP 19.1A`: an invoice request's lines and its connector fields are
         // read-only projections of the record; the actions live on the
-        // Invoicing area, not here.
-        _invoiceLinesSection = BuildSection("Lines", _invoiceLinesPanel);
-        _invoiceLinesSection.IsVisible = false;
-        _invoiceExternalSection = BuildSection("Connector", _invoiceExternalPanel);
-        _invoiceExternalSection.IsVisible = false;
+        // Invoicing area, not here. `WP 21.1B`: both now live in their own
+        // file under Editors/Sections/.
+        var invoiceLinesExpander = _invoiceLinesSection.Build(_sectionContext);
+        var invoiceExternalExpander = _invoiceExternalSection.Build(_sectionContext);
 
         // `WP 19.5B`: a quotation's own Lines section — read-only here,
         // mirroring `_invoiceLinesSection` immediately above.
@@ -890,7 +887,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(identitySection);
         body.Children.Add(descriptionExpander);
         body.Children.Add(commercialExpander);
-        body.Children.Add(_invoiceLinesSection);
+        body.Children.Add(invoiceLinesExpander);
         body.Children.Add(_quotationLinesSection);
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
@@ -905,7 +902,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_attachmentsSection);
         body.Children.Add(whereUsedExpander);
         body.Children.Add(lifecycleExpander);
-        body.Children.Add(_invoiceExternalSection);
+        body.Children.Add(invoiceExternalExpander);
         body.Children.Add(_evidenceLifecycleSection);
         body.Children.Add(relationshipsExpander);
         body.Children.Add(validationExpander);
@@ -966,7 +963,8 @@ public sealed class ObjectEditorView : UserControl
         await _descriptionSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _whereUsedSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _commercialSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        PopulateInvoiceRequest(target);
+        await _invoiceLinesSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _invoiceExternalSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         PopulateQuotation(target);
 
         await _lifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
@@ -1159,74 +1157,8 @@ public sealed class ObjectEditorView : UserControl
     }
 
     /// <summary>
-    /// The project Commercial section (`WP 19.0A`, `ADR-0150`): client and
-    /// rate card, each read-only with a Change/Pin action opening a real
-    /// picker; purchase order reference, budget, dates and project manager,
-    /// each editable and dispatching its own already-registered
-    /// <c>project.*</c> command directly.
-    /// </summary>
-    private void PopulateInvoiceRequest(IEngineeringObject target)
-    {
-        var declaration = _declarations?.For(_objectKind);
-
-        if (declaration is null || target is not Core.Invoicing.InvoiceRequest request)
-        {
-            _invoiceLinesSection.IsVisible = false;
-            _invoiceExternalSection.IsVisible = false;
-            return;
-        }
-
-        _invoiceLinesSection.IsVisible = declaration.HasSection(Tempest.Workspace.Editors.EditorSectionKeys.InvoiceLines);
-        _invoiceLinesPanel.Children.Clear();
-        if (request.Lines.Count == 0)
-        {
-            _invoiceLinesPanel.Children.Add(new TextBlock { Text = "(no lines)", Opacity = 0.5, FontSize = DesignTokens.FontSizeBody });
-        }
-
-        foreach (var line in request.Lines)
-        {
-            _invoiceLinesPanel.Children.Add(new TextBlock
-            {
-                Text = $"{line.Description}  •  {line.Quantity:0.##} × {line.UnitRate}  =  {line.Amount}",
-                TextWrapping = TextWrapping.Wrap,
-                FontSize = DesignTokens.FontSizeBody,
-            });
-        }
-
-        _invoiceLinesPanel.Children.Add(new TextBlock
-        {
-            Text = $"Total {request.Total}",
-            FontWeight = DesignTokens.WeightHeading,
-            FontSize = DesignTokens.FontSizeBody,
-            Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0),
-        });
-
-        _invoiceExternalSection.IsVisible = declaration.HasSection(Tempest.Workspace.Editors.EditorSectionKeys.InvoicingExternal);
-        _invoiceExternalPanel.Children.Clear();
-        foreach (var (label, value) in new[]
-        {
-            ("Connector", request.Connector),
-            ("External Id", request.ExternalId),
-            ("External Invoice Number", request.ExternalInvoiceNumber),
-            ("External Status", request.ExternalStatus),
-            ("Issued Date", request.IssuedDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
-            ("Paid Date", request.PaidDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
-            ("Last Error", request.LastError),
-        })
-        {
-            _invoiceExternalPanel.Children.Add(new TextBlock
-            {
-                Text = $"{label}: {value ?? "—"}",
-                Opacity = value is null ? 0.6 : 1.0,
-                TextWrapping = TextWrapping.Wrap,
-                FontSize = DesignTokens.FontSizeBody,
-            });
-        }
-    }
-
-    /// <summary>
     /// The quotation's own Lines section (`WP 19.5B`, `ADR-0152`) — mirrors
-    /// <see cref="PopulateInvoiceRequest"/> exactly, read-only: editing a
+    /// <see cref="Sections.InvoiceLinesSection"/> exactly, read-only: editing a
     /// quotation's own lines is <c>ProjectQuoteView</c>'s job, reached
     /// through the project's own Quote tab; this is what a quotation
     /// opened from the Explorer or the Command Palette shows instead.
