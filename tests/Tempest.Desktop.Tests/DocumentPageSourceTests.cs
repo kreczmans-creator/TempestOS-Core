@@ -465,6 +465,129 @@ public class DocumentPageSourceTests
         Assert.Null(DocumentPageSourceFactory.CreateFromStream(ViewableDocumentFormat.Unsupported, stream));
     }
 
+    // ========================================================================
+    // WP 21.5F — Offensive Security Audit: OSA-01, file parsers fed untrusted bytes.
+    // ========================================================================
+
+    [Fact]
+    public void OSA01_AnImageDeclaringMorePixelsThanThePlatformWillDecode_IsRefusedBeforeDecoding()
+    {
+        // The exploit: a decompression-bomb-shaped image — a tiny file
+        // whose header alone declares an enormous pixel grid — reached
+        // Avalonia's own decoder with no size check at all before this
+        // fix, so the full declared bitmap was materialised regardless of
+        // how small the file on disk was. This header (54 bytes, BMP,
+        // BITMAPINFOHEADER) declares 12000x12000 = 144,000,000 pixels,
+        // comfortably past MaxDecodedPixels (40,000,000), with no pixel
+        // data behind it at all — this PoC is about the *declared* size
+        // being refused before any decode is attempted, not about a
+        // successful render.
+        var bmp = BuildBmpHeaderOnly(width: 12000, height: 12000);
+
+        var ex = Assert.Throws<DocumentRenderException>(() => new ImageDocumentPageSource(bmp));
+
+        Assert.Contains("144,000,000", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OSA01_AnImageDeclaringMorePixelsThanThePlatformWillDecode_FromAStream_IsRefusedBeforeDecoding()
+    {
+        var bmp = BuildBmpHeaderOnly(width: 12000, height: 12000);
+        using var stream = new MemoryStream(bmp, writable: false);
+
+        var ex = Assert.Throws<DocumentRenderException>(() => new ImageDocumentPageSource(stream));
+
+        Assert.Contains("144,000,000", ex.Message, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public void OSA01_AnImageWithinTheDecodedPixelLimit_StillOpensNormally()
+    {
+        // The guard must not be so aggressive it refuses a real, ordinary
+        // image - only Png()'s own tiny fixture is needed here, reusing
+        // AnImage_IsASinglePage_AtItsOwnPixelSize's own proof that a real
+        // decode still runs end to end.
+        var source = new ImageDocumentPageSource(Png());
+
+        Assert.Equal(1, source.PageCount);
+        Assert.True(source.PageSize(0).Width > 0);
+    }
+
+    [Fact]
+    public void OSA01_AnOversizedTextFile_IsTruncatedRatherThanReadFullyIntoMemory()
+    {
+        // The exploit: TextDocumentPageSource read an attachment's entire
+        // content into one managed string, and then one string[] of
+        // lines, with no size cap at all before this fix - a large enough
+        // upload was a straightforward, unmitigated memory-exhaustion
+        // vector. Proven here by comparison rather than by asserting an
+        // exact byte count: an input sitting at the cap and an input three
+        // times larger must page out to essentially the same PageCount
+        // once both are truncated to the same cap - before the fix, the
+        // 3x input would page out to roughly 3x as many pages, since the
+        // whole thing was decoded regardless of size.
+        const string line = "0123456789ABCDEF\n";
+        var atCapBytes = BuildRepeatedTextBytes(line, TextDocumentPageSource.MaxSourceBytes);
+        var overCapBytes = BuildRepeatedTextBytes(line, TextDocumentPageSource.MaxSourceBytes * 3);
+
+        var atCapSource = new TextDocumentPageSource(atCapBytes);
+        var overCapSource = new TextDocumentPageSource(overCapBytes);
+
+        Assert.InRange(overCapSource.PageCount, atCapSource.PageCount - 2, atCapSource.PageCount + 2);
+    }
+
+    [Fact]
+    public void OSA01_AnOversizedTextFile_FromAStream_IsTruncatedRatherThanReadFullyIntoMemory()
+    {
+        const string line = "0123456789ABCDEF\n";
+        var atCapBytes = BuildRepeatedTextBytes(line, TextDocumentPageSource.MaxSourceBytes);
+        var overCapBytes = BuildRepeatedTextBytes(line, TextDocumentPageSource.MaxSourceBytes * 3);
+
+        using var atCapStream = new MemoryStream(atCapBytes, writable: false);
+        using var overCapStream = new MemoryStream(overCapBytes, writable: false);
+
+        var atCapSource = new TextDocumentPageSource(atCapStream);
+        var overCapSource = new TextDocumentPageSource(overCapStream);
+
+        Assert.InRange(overCapSource.PageCount, atCapSource.PageCount - 2, atCapSource.PageCount + 2);
+    }
+
+    /// <summary>
+    /// A minimal, valid BMP file header (14-byte <c>BITMAPFILEHEADER</c> +
+    /// 40-byte <c>BITMAPINFOHEADER</c>) declaring <paramref name="width"/> x
+    /// <paramref name="height"/> pixels, with no pixel data following it —
+    /// the smallest possible file that still lets a header-only peek (the
+    /// production size guard) read the declared dimensions.
+    /// </summary>
+    private static byte[] BuildBmpHeaderOnly(int width, int height)
+    {
+        var header = new byte[54];
+        header[0] = (byte)'B';
+        header[1] = (byte)'M';
+        BitConverter.GetBytes(54).CopyTo(header, 10); // pixel data offset
+        BitConverter.GetBytes(40).CopyTo(header, 14); // BITMAPINFOHEADER size
+        BitConverter.GetBytes(width).CopyTo(header, 18);
+        BitConverter.GetBytes(height).CopyTo(header, 22);
+        BitConverter.GetBytes((short)1).CopyTo(header, 26); // colour planes
+        BitConverter.GetBytes((short)24).CopyTo(header, 28); // bits per pixel
+        return header;
+    }
+
+    /// <summary>Repeats <paramref name="line"/> until at least <paramref name="minimumBytes"/> bytes have been produced.</summary>
+    private static byte[] BuildRepeatedTextBytes(string line, int minimumBytes)
+    {
+        var lineBytes = Encoding.ASCII.GetBytes(line);
+        var buffer = new byte[minimumBytes + lineBytes.Length];
+        var written = 0;
+        while (written < minimumBytes)
+        {
+            lineBytes.CopyTo(buffer, written);
+            written += lineBytes.Length;
+        }
+
+        return buffer[..written];
+    }
+
     /// <summary>A stream that records whether it was disposed, wrapping a fixed byte array.</summary>
     private sealed class DisposeTrackingStream(byte[] content) : MemoryStream(content, writable: false)
     {
