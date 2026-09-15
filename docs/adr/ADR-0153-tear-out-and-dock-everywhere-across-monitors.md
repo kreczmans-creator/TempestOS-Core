@@ -3,6 +3,7 @@
 ## Status
 
 Proposed — `WP 20.0A` (design), for the Product Owner's review, 2026-09-15.
+Steps 1–2 delivered by `WP 21.0A`.
 
 ## Context
 

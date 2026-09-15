@@ -801,7 +801,12 @@ none of the platform's own architecture decisions call for.
 | `TD-169` | The canonical lifecycle permits no `Draft` → `Archived` transition | `WP 18.0A` |
 | `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |
-| `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
+
+### Closed by `WP 21.0A`
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-90` | A docking re-render does not restore keyboard focus | `WP 21.0A` — `WorkspaceLayoutController.Apply` now captures which panel's own tab header, or whose selected content, holds keyboard focus immediately before an operation runs (`CaptureFocusedPanelId`), and posts (`DispatcherPriority.Loaded` — the re-render's own new header has not yet had a layout pass, and `Control.Focus()` silently fails before one) a restore to that panel's own new tab header once it lands (`RestoreFocus`), activating its window first when the panel's new home is a window that was not already the one with input focus. Proven within one window (`WorkspaceLayoutControllerTests.ApplyingAnOperation_RestoresFocusToThePanelsNewTabHeader`, and `ApplyingAnOperationWithNothingFocused_RestoresNothing_RatherThanStealingFocus` for the no-op case) and across two real headless windows (`ApplyingACrossWindowDock_RestoresFocusInThePanelsNewWindow_AndActivatesIt`, `ADR-0153` decision 7's own generalisation of this row to the forest). |
 
 ### Closed by `WP 21.5A`
 
@@ -849,7 +854,7 @@ this table can now point at, rather than merely name.
 anywhere in the docking subsystem (`WorkspaceLayoutController`,
 `WorkspaceLayoutHost`, `WorkspaceDockingComposer`: no `Focus` reference
 in any of them); a docking re-render still does not restore keyboard
-focus. `TD-108` and `TD-118` were re-verified true at that date —
+focus. **Now closed by `WP 21.0A`**, above. `TD-108` and `TD-118` were re-verified true at that date —
 `EngineeringCockpit`'s dozens of `.GetAwaiter().GetResult()` calls were
 unchanged, and `CockpitView.Refresh()` still ran them via
 `Dispatcher.UIThread.Post`, i.e. on the UI thread — and are **now closed
@@ -870,7 +875,8 @@ Work Packages:** `TD-90` — still no `Focus` reference in
 added `Ctrl+Shift+Arrow`/`Ctrl+Shift+[`/`]` to `LayoutTabGroupView.cs`,
 not a focus-restore path). `ADR-0153` (2026-09-15) proposes closing this
 as part of its own tear-out/dock package, since a cross-window re-render
-makes the missing restore worse, not incidental. `TD-108`/`TD-118` stay closed (`WP 18.1A-R1`
+makes the missing restore worse, not incidental. **Now closed by `WP 21.0A`**,
+above — steps 1 and 2 of that same package. `TD-108`/`TD-118` stay closed (`WP 18.1A-R1`
 predates this branch's own point of divergence, `8df3466`, and nothing
 in `v0.19.0` touches `EngineeringCockpit.PrimeAsync`). `TD-160` —
 still partial: `CalculationTrace` still has no consumer under
