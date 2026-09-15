@@ -745,6 +745,8 @@ public class EngineeringObjectRehydrationTests
         var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
 
         Assert.Equal("XYZ", recovered.UnitOfMeasure);
+    }
+
     // `TD-88`/`WP 20.1C2`: the index stage — raised before any document
     // is read, complete for the whole estate even where full
     // materialisation cannot proceed, and deterministic across restarts.
