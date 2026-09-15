@@ -575,29 +575,38 @@ public abstract class ReferenceDataCatalog<TDefinition> : IReferenceDataCatalog<
         return documentId;
     }
 
-    private async Task<ReferenceDocumentDto<TDefinition>?> ReadDtoAsync(string recordId, Guid documentId, CancellationToken cancellationToken)
+    /// <summary>
+    /// The one shared latest-revision read <see cref="ReadDtoAsync"/> and
+    /// <see cref="ReadRecordAsync"/> both build on (`TD-20`): a single
+    /// <see cref="IEngineeringDocumentStore.GetLatestRevisionAsync"/> call,
+    /// never <see cref="IEngineeringDocumentStore.GetRevisionHistoryAsync"/>'s
+    /// whole history, for a lookup that only ever wants the latest content.
+    /// </summary>
+    private async Task<(ReferenceDocumentDto<TDefinition> Dto, int RevisionNumber)?> ReadDtoWithRevisionAsync(
+        string recordId, Guid documentId, CancellationToken cancellationToken)
     {
         var document = await _documentStore.FindAsync(documentId, cancellationToken).ConfigureAwait(false);
         if (document is null || !string.Equals(document.Kind, DocumentKind, StringComparison.Ordinal))
             return null;
 
-        var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
-        if (history.Count == 0)
-            throw new ReferenceDataException(LibraryName, $"{LibraryName} record '{recordId}' (document '{documentId}') has no revisions.");
+        var revision = await _documentStore.GetLatestRevisionAsync(documentId, cancellationToken).ConfigureAwait(false);
 
-        return Deserialise(recordId, documentId, history[^1].Content);
+        return (Deserialise(recordId, documentId, revision.Content), revision.RevisionNumber);
     }
+
+    private async Task<ReferenceDocumentDto<TDefinition>?> ReadDtoAsync(string recordId, Guid documentId, CancellationToken cancellationToken) =>
+        (await ReadDtoWithRevisionAsync(recordId, documentId, cancellationToken).ConfigureAwait(false))?.Dto;
 
     private async Task<IReferenceRecord<TDefinition>?> ReadRecordAsync(string recordId, Guid documentId, CancellationToken cancellationToken)
     {
-        var dto = await ReadDtoAsync(recordId, documentId, cancellationToken).ConfigureAwait(false);
-        if (dto is null)
+        var result = await ReadDtoWithRevisionAsync(recordId, documentId, cancellationToken).ConfigureAwait(false);
+        if (result is null)
             return null;
 
-        var history = await _documentStore.GetRevisionHistoryAsync(documentId, cancellationToken).ConfigureAwait(false);
+        var (dto, revisionNumber) = result.Value;
 
         return new ReferenceRecord<TDefinition>(
-            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, history[^1].RevisionNumber,
+            dto.RecordId, dto.Definition, dto.Provenance, dto.ValidationState, dto.SupersededByRecordId, documentId, revisionNumber,
             dto.Source);
     }
 

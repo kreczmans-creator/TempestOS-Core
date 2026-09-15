@@ -27,7 +27,20 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (16 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (15 of 30 cap — see the `WP 19.9.1` note below the table)
+
+`TD-05` — module discovery outside `[ModuleMetadata]` requires a public
+parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
+`IModule` types this platform's own `src/` assemblies declare (25 in
+`Tempest.Samples`, 6 in `Tempest.Workspace`, 1 in `Tempest.Validation`)
+already carry the attribute, so nothing takes the parameterless-constructor
+fallback path today; `ModuleMetadataCoverageTests.EveryConcreteModuleType_CarriesTheModuleMetadataAttribute`
+now pins that count structurally, so a future module added without the
+attribute is caught here rather than falling onto the old path silently.
+`ReflectionFrameworkDiscoveryService.CreateDescriptor`'s own exception text
+also now names the attribute the way it is actually written in code
+(`[ModuleMetadata(id, name, version)]`, not the type's own
+`ModuleMetadataAttribute` class name). It no longer appears below.
 
 `TD-176` — `ProjectContext.RefreshAsync` closed the context when an
 overlapping render did not yet find a just-created project — is **closed
@@ -76,13 +89,12 @@ write publishes nothing.
 
 | ID | Title | Owner |
 |---|---|---|
-| `TD-05` | Module discovery still requires a parameterless constructor outside the `[ModuleMetadata]` lift | unowned |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
 | `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
-| `TD-84` | Grouping row: `TD-74`/`76`/`79`/`81` are one Product Spine deficiency, not four | unowned |
+| `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned (`ADR-0153`, 2026-09-15, proposes retiring the projection that tries to answer it, rather than widening the frozen contract) |
 | `TD-98` | Document viewer has no markup, annotation or rotation | `WP 18.2B` (partial) |
 | `TD-99` | DWG and SVG attachments report `Unsupported` in the viewer | unowned |
@@ -551,14 +563,20 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 | `TD-156` | A superseded reference record keeps its secondary index entry | `RequireSecondaryKeyFreeAsync` (`src/Tempest.Core/ReferenceData/ReferenceDataCatalog.cs`) no longer treats a secondary key as permanently held once its own holder is superseded, so a replacement record may legitimately claim the designation its predecessor carried; `SupersedeAsync` itself deliberately leaves the secondary index untouched — a superseded record keeps resolving by its own former key, retained rather than deleted, until another record legitimately claims it (`SupersedeAsync_LeavesTheSupersededValuesReadable`, `ASupersededConstantStopsBeingHandedToCalculations`, both unchanged and still passing). Proven by `SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync` run against the shared Widget layer and `MaterialCatalog`/`StandardCatalog`/`ConstantCatalog`'s own fixtures, and by `RegisterAsync_ReusingASupersededRecordsSecondaryKey_Succeeds`. |
 | `TD-158` | `ReferenceDataCatalog` composes durable writes with no all-or-nothing semantics | `RegisterAsync`, `ReviseAsync` (`ReviseCoreAsync`) and `SupersedeAsync` now run every durable write they compose — the document/revision, the primary index entry, the secondary index entry, the `Supersedes` link — inside one `IQueryablePersistenceStore.ExecuteInTransactionAsync` transaction, through the same internal `ITransactionalDocumentWriter` seam `EngineeringObjectBase` already uses (`ADR-0145`); the constructor now refuses (`ArgumentException`) a persistence or document store that cannot support this, rather than falling back to the old sequential writes silently. Proven by the shared `ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync`/`SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync` facts, run against the shared Widget layer and against `MaterialCatalog`, `FastenerCatalog`, `BearingCatalog`, `StandardCatalog`, `ComponentCatalog`, `ConstantCatalog` and `ProcessCatalog`'s own fixtures — `CommitFailingPersistenceStore` (`WP 17.1B`'s own fault-injection double) fails each transaction's commit after its body has staged every write, and every test then finds nothing durable, or the original record exactly as it was. |
 
+### Closed by `WP 20.3B`
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-20` | `ReferenceDataCatalog` reads a full revision history for a latest-only lookup | `IEngineeringDocumentStore.GetLatestRevisionAsync` (new) reads the document record once for its own `CurrentRevisionNumber` and then exactly the one revision it names, never the whole history `GetRevisionHistoryAsync` builds; `ReferenceDataCatalog<TDefinition>.ReadDtoAsync` and `ReadRecordAsync` (`src/Tempest.Core/ReferenceData/ReferenceDataCatalog.cs`) now share one `ReadDtoWithRevisionAsync` call onto it, so a `FindAsync`/`ListAsync` lookup calls `GetLatestRevisionAsync` exactly once and `GetRevisionHistoryAsync` not at all — `ReadRecordAsync` previously read the whole history twice per lookup (once directly, once inside its own call to `ReadDtoAsync`). Proven by `tests/Tempest.Core.Tests/ReferenceData/ReferenceDataCatalogTests.cs`'s `FindAsync_ReadsTheLatestRevisionOnly_NeverTheWholeHistory`, which counts store calls through a counting `IEngineeringDocumentStore` decorator (`CountingDocumentStore`) against a record carrying several prior revisions. |
+| `TD-18` | `LinkAsync` concurrency under many simultaneous calls is untested | `tests/Tempest.Core.Tests/EngineeringDomain/MutatorRefusalAdversarialTests.cs`'s `LinkAsync_ManySimultaneousLinksToOneObject_NoneLostNoneDuplicatedNoCycle` runs twenty sources linking to one shared hub and the hub linking back to every one of them, all at once: every edge lands (no lost link), exactly once each direction (no duplicate), and each reciprocal pair stays two distinct, correctly-directed relationships rather than one edge two racing writers collapsed together (no cycle confusion). No defect: `EngineeringObjectBase.LinkAsync` already commits its reference record and records the in-memory relationship inside `EngineeringDomainContext.ExecuteWriteAsync`'s own domain write lock hold (`ADR-0145`), the same lock this file's own adversarial suite already proves every other mutator against — this fact is the first to exercise that claim for `LinkAsync` itself under real concurrency, and stands as a guard-rail against a future change to that lock discipline. |
+| `TD-21` | `ICalculationDefinition.Calculate` carries no `CancellationToken` | `ICalculationDefinition<TInput, TResult>.Calculate` (`src/Tempest.Core/Calculations/ICalculationDefinition.cs`) gains a default-able `CancellationToken cancellationToken = default`, threaded from `ICalculationEngine.ExecuteAsync`'s own token (`CalculationEngine.cs`) through to every implementation: the six dormant definitions (`BracketSectionCheckCalculationDefinition` and the five in `EngineeringCalculationDefinitions.cs` — bolt shear, beam bending, bearing load, pressure-vessel wall thickness, material selection margin) and `Tempest.Samples.DoubleLengthCalculationDefinition`; every test-local double across `tests/Tempest.Core.Tests` updated the same way, so a caller may still omit the argument through either the interface or a concrete type. Proven by `tests/Tempest.Core.Tests/Calculations/CalculationEngineTests.cs`'s `ExecuteAsync_CancelledTokenMidExecution_StopsALongRunningDefinition`, against a new `LongRunningLoopCalculation` test double that loops observing `cancellationToken.ThrowIfCancellationRequested()` until cancelled from outside mid-run. |
+| `TD-03` | No disposal tracking for reflection-constructed singletons | `TempestServiceProvider` (`src/Tempest.Core/DependencyInjection/TempestServiceProvider.cs`) now records every singleton it constructs via reflection, in construction order, the moment it caches it — never one seeded from a descriptor's own `ExistingInstance`, which stays the registering Host's own responsibility — and implements `IAsyncDisposable`: `DisposeAsync` disposes them in the reverse of that order (async disposal preferred where a type offers both), idempotently, logging and continuing past a dispose that throws. `TempestHost.DisposeRegisteredServiceInstancesAsync` (`TempestHost.cs:1221-1225`'s own disclosure) now disposes the container's own singletons this way before its existing instance-registration disposal, closing the row's own literal subject completely rather than only the `AddInstance` half `WP 17.2A` closed. Proven by eight new facts in `tests/Tempest.Core.Tests/DependencyInjection/TempestServiceProviderTests.cs`, including reverse-construction-order across two dependent singletons, async-preferred-over-sync, one instance's dispose throwing without stopping the rest, idempotency, and that an `AddInstance` registration is never disposed by the provider itself. |
+| `TD-170` | Naming an executed calculation is create-then-link with no compensation | Was **partly closed**, `WP 17.1B`: `EngineeringCalculationRegister.NameAsync` already compensated a failed link with a soft-delete withdrawal, but a failure of that compensation itself collapsed into the same `WasWithdrawn = false` case as the object simply never being `IDeletable`, discarding the compensation's own exception. `TryWithdrawAsync` now returns a `WithdrawalOutcome` carrying that exception; a new `CalculationCompensationFailedException` (`EngineeringCalculationRegister.cs`) wraps both the original link failure and the withdrawal's own, exposed as `EngineeringCalculationNamingException.CompensationFailed`; the register (now taking an optional `ILogger`) logs the double failure as well as surfacing it in the thrown exception. Proven by `tests/Tempest.Core.Tests/Workspace/EngineeringCalculationRegisterTests.cs`'s `ANamingThatFailsToLinkAndFailsToCompensate_SurfacesBothFailures_AndLogsIt`, run against a hand-built rig (`NthCommitFailingPersistenceStore`) that fails the calculation's own creation not at all, its link naturally (an absent record Id), and its compensating withdrawal by fault-injecting that transaction's own commit — the double-failure edge case Part 2 §D.2 disclosed as still open. |
+
 | ID | Title | Owner |
 |---|---|---|
-| `TD-03` | No disposal tracking for reflection-constructed singletons | `WP 17.2A` |
 | `TD-04` | `IHostedService` name clashes with `Microsoft.Extensions.Hosting.IHostedService` | `WP 17.2A` |
 | `TD-12` | `IPersistenceStore` has no native query or filter capability | `WP 17.1A` |
-| `TD-18` | `LinkAsync` concurrency under many simultaneous calls is untested | `WP 17.1A` |
-| `TD-20` | `MaterialCatalog` reads a full revision history for a latest-only lookup | `WP 17.1A` |
-| `TD-21` | `ICalculationDefinition.Calculate` carries no `CancellationToken` | `WP 18.0A` |
 | `TD-22` | `CalculationContext` has no result bound; intermediate values aren't type-safe on read-back | `WP 18.0A` |
 | `TD-29` | `CalculationRecord` never retains its input, blocking a parameterless re-run | `WP 17.3A` / `WP 18.0A` |
 | `TD-30` | `ICalculationResult`/`IVerificationResult`/`IApprovalGate` have zero implementations | `WP 18.0A` |
@@ -572,7 +590,6 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |
 | `TD-169` | The canonical lifecycle permits no `Draft` → `Archived` transition | `WP 18.0A` |
-| `TD-170` | Naming an executed calculation is create-then-link with no compensation | `WP 17.1B` |
 | `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |
 | `TD-77` | Command Palette is not contextual; most real commands are unavailable there | `WP 19.2B` (residual — see note below the `WP 19.2B` closures; no Command Palette contextuality change landed in this Work Package's own worktree) |
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |

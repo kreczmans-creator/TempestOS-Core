@@ -274,6 +274,26 @@ public class ReferenceDataCatalogTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => catalog.GetRevisionAsync("w-1", 9));
     }
 
+    [Fact]
+    public async Task FindAsync_ReadsTheLatestRevisionOnly_NeverTheWholeHistory()
+    {
+        // `TD-20`: a latest-only lookup must not pull the document's whole
+        // revision history off the store — proven here by counting the
+        // store calls a lookup makes, against a record with several prior
+        // revisions behind it.
+        var catalog = ReferenceDataFixtures.BuildCatalog(out var documentStore);
+        await catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("W-1", "red"), ReferenceDataFixtures.Sourced());
+        await catalog.ReviseAsync("w-1", ReferenceDataFixtures.Widget("W-1", "green"), ReferenceDataFixtures.Sourced(), "Colour corrected.");
+        await catalog.ReviseAsync("w-1", ReferenceDataFixtures.Widget("W-1", "blue"), ReferenceDataFixtures.Sourced(), "Colour corrected again.");
+
+        var before = documentStore.GetLatestRevisionAsyncCallCount;
+        var record = await catalog.FindAsync("w-1");
+
+        Assert.Equal("blue", record!.Definition.Colour);
+        Assert.Equal(1, documentStore.GetLatestRevisionAsyncCallCount - before);
+        Assert.Equal(0, documentStore.GetRevisionHistoryAsyncCallCount);
+    }
+
     // ----------------------------------------------------------------
     // Lifecycle and provenance gates
     // ----------------------------------------------------------------

@@ -18,7 +18,7 @@ public class CalculationHostRegistrationTests
         public const string Id = "registration-test.add-one";
         public string CalculationId => Id;
         public CalculationMetadata Metadata { get; } = new("Add One", null, null, [], []);
-        public double Calculate(double input, CalculationContext context) => input + 1;
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default) => input + 1;
     }
 
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)

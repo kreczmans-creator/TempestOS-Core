@@ -137,7 +137,7 @@ public sealed class CalculationEngine : ICalculationEngine
             throw new CalculationDefinitionNotFoundException(calculationId);
 
         var context = new CalculationContext();
-        var result = definition.Calculate(input, context);
+        var result = definition.Calculate(input, context, cancellationToken);
 
         var executedAt = DateTimeOffset.UtcNow;
         var executedBy = ResolveExecutorPrincipalId();

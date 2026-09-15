@@ -284,4 +284,151 @@ public class TempestServiceProviderTests
         Assert.Equal("Hello", greeter.Greet());
         Assert.NotEmpty(logger.Messages);
     }
+
+    // ----------------------------------------------------------------
+    // Disposal (`TD-03`) — reflection-constructed singletons only; an
+    // AddInstance registration remains the registering Host's own
+    // responsibility to dispose.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task DisposeAsync_ReflectionConstructedSingleton_IsDisposed()
+    {
+        var order = new List<string>();
+        var services = new ServiceCollection();
+        services.AddInstance(order);
+        services.Singleton<DisposableService>();
+
+        var provider = new TempestServiceProvider(services);
+        var instance = (DisposableService)provider.GetService(typeof(DisposableService));
+
+        await provider.DisposeAsync();
+
+        Assert.Equal(1, instance.DisposeCallCount);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_NeverConstructed_DisposesNothing()
+    {
+        var services = new ServiceCollection();
+        services.AddInstance(new List<string>());
+        services.Singleton<DisposableService>();
+
+        var provider = new TempestServiceProvider(services);
+
+        // GetService is never called - the singleton is registered but
+        // never actually built, so there is nothing for DisposeAsync to do.
+        await provider.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task DisposeAsync_TransientService_NeverTracked_DisposeCallCountStaysZero()
+    {
+        var order = new List<string>();
+        var services = new ServiceCollection();
+        services.AddInstance(order);
+        services.Transient<DisposableService>();
+
+        var provider = new TempestServiceProvider(services);
+        var first = (DisposableService)provider.GetService(typeof(DisposableService));
+        var second = (DisposableService)provider.GetService(typeof(DisposableService));
+
+        await provider.DisposeAsync();
+
+        Assert.Equal(0, first.DisposeCallCount);
+        Assert.Equal(0, second.DisposeCallCount);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_InstanceRegistration_IsNeverDisposedByTheProvider()
+    {
+        // `TD-03`'s own text scopes this to reflection-constructed
+        // singletons: an AddInstance registration (the persistence store,
+        // `ADR-0144`) is the registering Host's own responsibility
+        // (TempestHost's own Service Disposal phase), not the container's.
+        var services = new ServiceCollection();
+        var instance = new DisposableService(disposalOrder: []);
+        services.AddInstance(instance);
+
+        var provider = new TempestServiceProvider(services);
+        provider.GetService(typeof(DisposableService));
+
+        await provider.DisposeAsync();
+
+        Assert.Equal(0, instance.DisposeCallCount);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_PrefersAsyncDisposalOverSynchronousWhereATypeOffersBoth()
+    {
+        var order = new List<string>();
+        var services = new ServiceCollection();
+        services.AddInstance(order);
+        services.Singleton<AsyncDisposableService>();
+
+        var provider = new TempestServiceProvider(services);
+        var instance = (AsyncDisposableService)provider.GetService(typeof(AsyncDisposableService));
+
+        await provider.DisposeAsync();
+
+        Assert.True(instance.AsyncDisposeCalled);
+        Assert.False(instance.SyncDisposeCalled);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_TwoSingletons_DisposesInTheReverseOfConstructionOrder()
+    {
+        var order = new List<string>();
+        var services = new ServiceCollection();
+        services.AddInstance(order);
+        services.Singleton<DisposableDependency>();
+        services.Singleton<DisposableDependent>();
+
+        var provider = new TempestServiceProvider(services);
+
+        // Resolving the dependent constructs its own dependency first (and
+        // caches it), then itself - DisposeAsync must reverse that.
+        provider.GetService(typeof(DisposableDependent));
+
+        await provider.DisposeAsync();
+
+        Assert.Equal(["dependent", "dependency"], order);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_OneInstanceThrows_TheRemainingInstancesAreStillDisposed()
+    {
+        var order = new List<string>();
+        var logger = new RecordingLogger();
+        var services = new ServiceCollection(logger);
+        services.AddInstance(order);
+        services.Singleton<DisposableService>();
+        services.Singleton<ThrowingDisposableService>();
+
+        var provider = new TempestServiceProvider(services, logger);
+        var wellBehaved = (DisposableService)provider.GetService(typeof(DisposableService));
+        provider.GetService(typeof(ThrowingDisposableService));
+
+        await provider.DisposeAsync();
+
+        Assert.Equal(1, wellBehaved.DisposeCallCount);
+        Assert.Contains(logger.Messages, m => m.Contains("threw while being disposed", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task DisposeAsync_CalledTwice_DisposesOnlyOnce()
+    {
+        var order = new List<string>();
+        var services = new ServiceCollection();
+        services.AddInstance(order);
+        services.Singleton<DisposableService>();
+
+        var provider = new TempestServiceProvider(services);
+        var instance = (DisposableService)provider.GetService(typeof(DisposableService));
+
+        await provider.DisposeAsync();
+        await provider.DisposeAsync();
+
+        Assert.Equal(1, instance.DisposeCallCount);
+    }
 }

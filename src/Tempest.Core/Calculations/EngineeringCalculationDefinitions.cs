@@ -72,7 +72,7 @@ public sealed class BoltShearCapacityCalculationDefinition : ICalculationDefinit
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own diameter is not positive, or its safety factor is below 1.0.</exception>
-    public BoltShearCapacityResult Calculate(BoltShearCapacityInput input, CalculationContext context)
+    public BoltShearCapacityResult Calculate(BoltShearCapacityInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var diameterMm = input.Diameter.ConvertTo(LengthUnits.Millimetre).Value;
         var isPositiveDiameter = diameterMm > 0;
@@ -144,7 +144,7 @@ public sealed class BeamBendingStressCalculationDefinition : ICalculationDefinit
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own section width or height is not positive.</exception>
-    public BeamBendingStressResult Calculate(BeamBendingStressInput input, CalculationContext context)
+    public BeamBendingStressResult Calculate(BeamBendingStressInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var widthMm = input.SectionWidth.ConvertTo(LengthUnits.Millimetre).Value;
         var heightMm = input.SectionHeight.ConvertTo(LengthUnits.Millimetre).Value;
@@ -216,7 +216,7 @@ public sealed class BearingLoadCapacityCalculationDefinition : ICalculationDefin
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own hole diameter/plate thickness is not positive, or its safety factor is below 1.0.</exception>
-    public BearingLoadCapacityResult Calculate(BearingLoadCapacityInput input, CalculationContext context)
+    public BearingLoadCapacityResult Calculate(BearingLoadCapacityInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var diameterMm = input.HoleDiameter.ConvertTo(LengthUnits.Millimetre).Value;
         var thicknessMm = input.PlateThickness.ConvertTo(LengthUnits.Millimetre).Value;
@@ -285,7 +285,7 @@ public sealed class PressureVesselWallThicknessCalculationDefinition
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException">The thin-wall formula's own denominator is not positive for <paramref name="input"/>.</exception>
-    public PressureVesselWallThicknessResult Calculate(PressureVesselWallThicknessInput input, CalculationContext context)
+    public PressureVesselWallThicknessResult Calculate(PressureVesselWallThicknessInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var pressureMPa = input.InternalPressure.ConvertTo(PressureUnits.Megapascal).Value;
         var radiusMm = input.InnerRadius.ConvertTo(LengthUnits.Millimetre).Value;
@@ -354,7 +354,7 @@ public sealed class MaterialSelectionMarginCalculationDefinition : ICalculationD
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own applied stress is not positive.</exception>
-    public MaterialSelectionMarginResult Calculate(MaterialSelectionMarginInput input, CalculationContext context)
+    public MaterialSelectionMarginResult Calculate(MaterialSelectionMarginInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var appliedMPa = input.AppliedStress.ConvertTo(PressureUnits.Megapascal).Value;
         var isPositive = appliedMPa > 0;

@@ -24,6 +24,9 @@ internal sealed class NonTransactionalDocumentStore : IEngineeringDocumentStore
     public Task<IReadOnlyList<IDocumentRevision>> GetRevisionHistoryAsync(Guid documentId, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException("Not used — this double exists only to fail the constructor's capability check.");
 
+    public Task<IDocumentRevision> GetLatestRevisionAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException("Not used — this double exists only to fail the constructor's capability check.");
+
     public Task LinkAsync(Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException("Not used — this double exists only to fail the constructor's capability check.");
 
