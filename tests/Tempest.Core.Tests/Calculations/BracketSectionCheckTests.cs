@@ -318,6 +318,190 @@ public class BracketSectionCheckTests
     }
 
     [Fact]
+    public void TheMetadataNameDescriptionAndCategoryAreStatedInFull()
+    {
+        var metadata = new BracketSectionCheckCalculationDefinition().Metadata;
+
+        Assert.Equal("Bracket Section Check", metadata.Name);
+        Assert.Equal("Structural", metadata.Category);
+        Assert.Contains("First-order direct stress and mass check on a bracket's minimum section", metadata.Description, StringComparison.Ordinal);
+        Assert.Contains("sigma = F / A", metadata.Description, StringComparison.Ordinal);
+        Assert.Contains("margin = (allowable / sigma) - 1", metadata.Description, StringComparison.Ordinal);
+        Assert.Contains("mass = density x area x length", metadata.Description, StringComparison.Ordinal);
+        Assert.Contains("Meets criteria when margin >= 0 and mass <= limit", metadata.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheSixShortConstraintsAreStatedInFull()
+    {
+        var metadata = new BracketSectionCheckCalculationDefinition().Metadata;
+        var descriptions = metadata.Constraints.Select(c => c.Description).ToList();
+
+        Assert.Contains("Applied load must be positive.", descriptions);
+        Assert.Contains("Section area must be positive.", descriptions);
+        Assert.Contains("Member length must be positive.", descriptions);
+        Assert.Contains("Allowable stress must be positive.", descriptions);
+        Assert.Contains("Density must be positive.", descriptions);
+        Assert.Contains("Mass limit must be positive.", descriptions);
+    }
+
+    [Fact]
+    public void EveryAssumptionsJustificationIsStatedInFull_NotJustNonEmpty()
+    {
+        var metadata = new BracketSectionCheckCalculationDefinition().Metadata;
+        var justifications = metadata.Assumptions.Select(a => a.Justification).ToList();
+
+        Assert.Contains(justifications, j => j?.Contains("bending or fatigue case", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("it divides by the area", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("specification minima", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("not measured properties of a particular bar", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("tapered or featured part", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("not failed by unit-conversion rounding", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("precision any material property", StringComparison.Ordinal) == true);
+    }
+
+    // ---- Null argument guards ----
+
+    [Fact]
+    public void NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new BracketSectionCheckCalculationDefinition().Calculate(null!, new CalculationContext()));
+    }
+
+    [Fact]
+    public void NullContext_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new BracketSectionCheckCalculationDefinition().Calculate(Nominal(), null!));
+    }
+
+    // ---- The exact figure in the refusal message, not only the constraint name ----
+
+    [Theory]
+    [InlineData(0.0, 60.0, 150.0, 260.0, 2700.0, 0.05, "Received 0 N")]
+    [InlineData(12_000.0, 0.0, 150.0, 260.0, 2700.0, 0.05, "Received 0 m2")]
+    [InlineData(12_000.0, 60.0, 0.0, 260.0, 2700.0, 0.05, "Received 0 m")]
+    [InlineData(12_000.0, 60.0, 150.0, 0.0, 2700.0, 0.05, "Received 0 Pa")]
+    [InlineData(12_000.0, 60.0, 150.0, 260.0, 0.0, 0.05, "Received 0 kg/m3")]
+    [InlineData(12_000.0, 60.0, 150.0, 260.0, 2700.0, 0.0, "Received 0 kg")]
+    public void InvalidInput_MessageStatesTheReceivedValue_NotOnlyTheConstraintName(
+        double load, double area, double length, double allowable, double density, double massLimit, string expectedFragment)
+    {
+        var input = Nominal(
+            loadNewtons: load,
+            areaSquareMillimetres: area,
+            lengthMillimetres: length,
+            allowableMegapascals: allowable,
+            densityKilogramsPerCubicMetre: density,
+            massLimitKilograms: massLimit);
+
+        var refused = Assert.Throws<CalculationInputInvalidException>(() => Run(input));
+
+        Assert.Contains(expectedFragment, refused.Message, StringComparison.Ordinal);
+    }
+
+    // ---- Every Require() call records its own constraint check with the
+    //      received value, whether satisfied or not — not only the one
+    //      that ultimately fails and throws. ----
+
+    [Fact]
+    public void EveryRequireCall_RecordsAConstraintCheck_WithTheReceivedValueInItsDetail()
+    {
+        var context = new CalculationContext();
+        new BracketSectionCheckCalculationDefinition().Calculate(Nominal(), context);
+
+        var loadCheck = context.ConstraintChecks.Single(c => c.Description == "Applied load must be positive.");
+        Assert.Contains("Received 12000 N", loadCheck.Detail!, StringComparison.Ordinal);
+
+        var areaCheck = context.ConstraintChecks.Single(c => c.Description == "Section area must be positive.");
+        Assert.Contains("Received 0.00006 m2", areaCheck.Detail!, StringComparison.Ordinal);
+
+        var massLimitCheck = context.ConstraintChecks.Single(c => c.Description == "Mass limit must be positive.");
+        Assert.Contains("Received 0.05 kg", massLimitCheck.Detail!, StringComparison.Ordinal);
+    }
+
+    // ---- Every intermediate the calculation records about itself ----
+
+    [Fact]
+    public void TheCalculationRecordsTheAllowableStressAndTheMaterialReferenceAsIntermediates()
+    {
+        var context = new CalculationContext();
+        new BracketSectionCheckCalculationDefinition().Calculate(Nominal(), context);
+
+        var allowable = Assert.Single(context.IntermediateResults, i => i.Name == "Allowable stress (MPa)");
+        Assert.Equal(260.0, (double)allowable.Value!, 1e-9);
+
+        var reference = Assert.Single(context.IntermediateResults, i => i.Name == "Material reference");
+        Assert.Contains("mat-6082-t6", (string)reference.Value!, StringComparison.Ordinal);
+    }
+
+    // ---- The full detail string on the stress constraint check, not only
+    //      its first half ----
+
+    [Fact]
+    public void TheStressConstraintDetail_StatesBothFiguresAndTheMargin()
+    {
+        var context = new CalculationContext();
+        new BracketSectionCheckCalculationDefinition().Calculate(Nominal(loadNewtons: 18_000.0), context);
+
+        var stressCheck = context.ConstraintChecks
+            .Single(c => c.Description.StartsWith("Applied stress must not", StringComparison.Ordinal));
+
+        Assert.Contains("300", stressCheck.Detail!, StringComparison.Ordinal);
+        Assert.Contains("allowable", stressCheck.Detail!, StringComparison.Ordinal);
+        Assert.Contains("260", stressCheck.Detail!, StringComparison.Ordinal);
+        Assert.Contains("margin", stressCheck.Detail!, StringComparison.Ordinal);
+    }
+
+    // ---- The tolerance-scaled boundary itself, bit-exact, distinguishing
+    //      <= from < in the acceptance comparisons ----
+
+    [Fact]
+    public void StressExactlyAtTheToleranceScaledLimit_MeetsTheCriterion()
+    {
+        // Area = 1 m2 and length = 1 m keep the arithmetic free of any
+        // unit-conversion rounding, so appliedPascals lands bit-exactly on
+        // allowablePascals * (1 + tolerance) — the same expression the
+        // production code computes the limit with.
+        const double allowablePascals = 100_000_000.0;
+        var scaledLimit = allowablePascals * (1.0 + BracketSectionCheckCalculationDefinition.AcceptanceRelativeTolerance);
+
+        var input = new BracketSectionCheckInput(
+            AluminiumPin,
+            new Quantity<Pressure>(allowablePascals, PressureUnits.Pascal),
+            new Quantity<MassDensity>(1.0, MassDensityUnits.KilogramPerCubicMetre),
+            new Quantity<Force>(scaledLimit, ForceUnits.Newton),
+            new Quantity<Area>(1.0, AreaUnits.SquareMetre),
+            new Quantity<Length>(1.0, LengthUnits.Metre),
+            new Quantity<Mass>(1_000_000.0, MassUnits.Kilogram));
+
+        var result = Run(input);
+
+        Assert.True(result.StressCriterionMet);
+    }
+
+    [Fact]
+    public void MassExactlyAtTheToleranceScaledLimit_MeetsTheCriterion()
+    {
+        const double massLimitKilograms = 50.0;
+        var scaledLimit = massLimitKilograms * (1.0 + BracketSectionCheckCalculationDefinition.AcceptanceRelativeTolerance);
+
+        var input = new BracketSectionCheckInput(
+            AluminiumPin,
+            new Quantity<Pressure>(1e12, PressureUnits.Pascal),
+            new Quantity<MassDensity>(scaledLimit, MassDensityUnits.KilogramPerCubicMetre),
+            new Quantity<Force>(1.0, ForceUnits.Newton),
+            new Quantity<Area>(1.0, AreaUnits.SquareMetre),
+            new Quantity<Length>(1.0, LengthUnits.Metre),
+            new Quantity<Mass>(massLimitKilograms, MassUnits.Kilogram));
+
+        var result = Run(input);
+
+        Assert.True(result.MassCriterionMet);
+    }
+
+    [Fact]
     public void TheAcceptanceToleranceReachesRoundingErrorAndNothingElse()
     {
         // The tolerance must be wide enough to absorb unit-conversion

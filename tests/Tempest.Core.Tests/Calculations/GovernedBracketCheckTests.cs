@@ -557,4 +557,172 @@ public class GovernedBracketCheckTests
     {
         public override DateTimeOffset GetUtcNow() => now;
     }
+
+    // ---- GovernedBracketCheck.WasPerformed — both halves of the && matter
+    //      independently, and each is directly constructible since this is
+    //      a plain record. ----
+
+    [Fact]
+    public void WasPerformed_RefusalNoneButNoRecord_IsFalse()
+    {
+        var check = new GovernedBracketCheck(BracketCheckRefusal.None, null, null, null, null, Request("mat-x"));
+
+        Assert.False(check.WasPerformed);
+    }
+
+    [Fact]
+    public void WasPerformed_RefusalSetEvenWithoutARecord_IsFalse()
+    {
+        var check = new GovernedBracketCheck(
+            BracketCheckRefusal.MaterialNotFound, "reason", null, null, null, Request("mat-x"));
+
+        Assert.False(check.WasPerformed);
+    }
+
+    // ---- Constructor null-argument guards ----
+
+    [Fact]
+    public async Task Constructor_NullMaterials_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, host =>
+        {
+            Assert.Throws<ArgumentNullException>(() => new GovernedBracketCheckService(null!, Engine(host)));
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task Constructor_NullEngine_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, host =>
+        {
+            Assert.Throws<ArgumentNullException>(() => new GovernedBracketCheckService(Materials(host), null!));
+            return Task.CompletedTask;
+        });
+    }
+
+    // ---- CheckAsync null / whitespace argument guards ----
+
+    [Fact]
+    public async Task CheckAsync_NullRequest_ThrowsArgumentNullException()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            var service = new GovernedBracketCheckService(Materials(host), Engine(host));
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => service.CheckAsync(null!));
+        });
+    }
+
+    [Fact]
+    public async Task CheckAsync_WhitespaceMaterialRecordId_ThrowsArgumentException()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            var service = new GovernedBracketCheckService(Materials(host), Engine(host));
+
+            // ParamName distinguishes the explicit guard from a coincidental
+            // ArgumentException a downstream lookup on a blank id might also
+            // throw for an entirely different reason.
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.CheckAsync(Request("   ")));
+            Assert.Equal("request.MaterialRecordId", exception.ParamName);
+        });
+    }
+
+    // ---- Refusal message content — the full text, not only the type ----
+
+    [Fact]
+    public async Task AMaterialThatDoesNotExist_RefusalNamesTheLibrary()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            await SeedAsync(host);
+
+            var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
+                .CheckAsync(Request("mat-unicorn"));
+
+            Assert.Contains("mat-unicorn", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("is registered in", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains(Materials(host).LibraryName, check.Reason!, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task ADraftMaterial_RefusalExplainsWhyUnverifiedDataIsRefused()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            await SeedAsync(host);
+
+            var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
+                .CheckAsync(Request(MaterialSeed.Aluminium6082T6));
+
+            Assert.Contains("not Released", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("rely on reference data", check.Reason!, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task AMissingRequiredProperty_RefusalExplainsNothingIsSubstituted()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            await SeedAsync(host);
+            await ReviewAndReleaseAsync(host, MaterialSeed.Aluminium5083OH111);
+
+            var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
+                .CheckAsync(Request(MaterialSeed.Aluminium5083OH111));
+
+            Assert.Contains("records no Density", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("value is absent from the record", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("substituting a typical figure", check.Reason!, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task APropertyOfTheWrongDimension_RefusalNamesBothDimensions()
+    {
+        using var temp = new TempDirectory();
+
+        await RunAgainstRunningHostAsync(temp.Path, async host =>
+        {
+            await SeedAsync(host);
+
+            var record = await Materials(host).FindAsync(MaterialSeed.Aluminium6082T6);
+            var broken = record!.Definition.Properties.ToDictionary(p => p.Key, p => p.Value);
+            broken[MaterialPropertyNames.YieldStrength] = new ReferenceQuantityValue(
+                new Quantity<Length>(260.0, LengthUnits.Millimetre),
+                ReferenceValueOrigin.EngineeringReference,
+                "FICTIONAL TEST FIXTURE: a deliberately wrong dimension.");
+
+            await Materials(host).ReviseAsync(
+                MaterialSeed.Aluminium6082T6,
+                record.Definition with { Properties = broken },
+                record.Provenance,
+                "Test fixture: wrong dimension on yield strength.");
+
+            await ReviewAndReleaseAsync(host, MaterialSeed.Aluminium6082T6);
+
+            var check = await new GovernedBracketCheckService(Materials(host), Engine(host))
+                .CheckAsync(Request(MaterialSeed.Aluminium6082T6));
+
+            Assert.Contains("records YieldStrength as a Length", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("check needs a Pressure", check.Reason!, StringComparison.Ordinal);
+            Assert.Contains("cannot be used", check.Reason!, StringComparison.Ordinal);
+        });
+    }
 }

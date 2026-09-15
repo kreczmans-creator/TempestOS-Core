@@ -321,8 +321,26 @@ public sealed class CalculationInputRetentionAndReadbackTests
     public async Task ReRunAsync_UnknownRecordId_ThrowsCalculationException()
     {
         var engine = BuildEngine(out _);
+        var unknownId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<CalculationException>(() => engine.ReRunAsync<SquareInput, SquareResult>(Guid.NewGuid()));
+        var exception = await Assert.ThrowsAsync<CalculationException>(() => engine.ReRunAsync<SquareInput, SquareResult>(unknownId));
+
+        Assert.Contains(unknownId.ToString(), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReRunAsync_ChangedInput_UnknownRecordId_ThrowsCalculationException()
+    {
+        // The changed-input overload has its own, separate "not found"
+        // guard — untested until now, since every other ReRunAsync test
+        // uses a record that exists.
+        var engine = BuildEngine(out _);
+        var unknownId = Guid.NewGuid();
+
+        var exception = await Assert.ThrowsAsync<CalculationException>(
+            () => engine.ReRunAsync<SquareInput, SquareResult>(unknownId, new SquareInput(9.0)));
+
+        Assert.Contains(unknownId.ToString(), exception.Message, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------
@@ -402,12 +420,30 @@ public sealed class CalculationInputRetentionAndReadbackTests
     }
 
     [Fact]
-    public async Task CompareAsync_UnknownRecordId_ThrowsCalculationException()
+    public async Task CompareAsync_UnknownRecordIdB_ThrowsCalculationException()
     {
         var engine = BuildEngine(out _);
         var existing = await engine.ExecuteAsync<SquareInput, SquareResult>(SquareCalculation.Id, new SquareInput(1.0));
+        var unknownId = Guid.NewGuid();
 
-        await Assert.ThrowsAsync<CalculationException>(
-            () => engine.CompareAsync<SquareInput, SquareResult>(existing.Id, Guid.NewGuid()));
+        var exception = await Assert.ThrowsAsync<CalculationException>(
+            () => engine.CompareAsync<SquareInput, SquareResult>(existing.Id, unknownId));
+
+        Assert.Contains(unknownId.ToString(), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CompareAsync_UnknownRecordIdA_ThrowsCalculationException()
+    {
+        // recordIdA's own "not found" guard is a separate branch from
+        // recordIdB's — the test above only ever exercised recordIdB.
+        var engine = BuildEngine(out _);
+        var existing = await engine.ExecuteAsync<SquareInput, SquareResult>(SquareCalculation.Id, new SquareInput(1.0));
+        var unknownId = Guid.NewGuid();
+
+        var exception = await Assert.ThrowsAsync<CalculationException>(
+            () => engine.CompareAsync<SquareInput, SquareResult>(unknownId, existing.Id));
+
+        Assert.Contains(unknownId.ToString(), exception.Message, StringComparison.Ordinal);
     }
 }
