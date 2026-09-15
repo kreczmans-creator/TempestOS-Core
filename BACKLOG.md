@@ -714,7 +714,6 @@ touched.
 | `TD-22` | `CalculationContext` has no result bound; intermediate values aren't type-safe on read-back | `WP 18.0A` |
 | `TD-29` | `CalculationRecord` never retains its input, blocking a parameterless re-run | `WP 17.3A` / `WP 18.0A` |
 | `TD-30` | `ICalculationResult`/`IVerificationResult`/`IApprovalGate` have zero implementations | `WP 18.0A` |
-| `TD-36` | `PersistenceStore.DefaultRootPath` resolves relative to the process CWD | `WP 17.1A` |
 | `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (requirements half and verification half closed by `WP 19.10L` — `RequirementsService.CreateAsync`'s document-then-identifier-index write and `VerificationService.RecordAsync`'s document-then-link writes are each now the one-transaction primitive this row's own `TD-23` entry (see "Closed" below) closes with; the requirements half is proven the same way, by `tests/Tempest.Core.Tests/Requirements/RequirementsServiceTests.cs`'s `CreateAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument`; reference-data half `WP 19.10K`) |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
 | `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` (attempted by `WP 20.1C2`, kill switch invoked — `EngineeringObjectRehydrationService.RehydrateAsync` now builds an index-stage row per object and raises `IndexBuilt` before any document read, the seam `WP 20.1A2`'s business-identifier index rebuild runs from, but full materialisation stays eager: dozens of existing callers — `EngineeringCockpit.PrimeAsync`, `InvoicingService.ListCarriedSourcesAsync`, `MechanicalPropertyFacetProvider.GetBaselineDisplayAsync` among ~60 more — read full, type-specific object state straight off `ListAllAsync`/`ListByKindAsync`/`ListChildrenAsync` results with no `FindAsync` step, and sit outside that Work Package's files-you-own list, so deferring materialisation behind those methods could not be proven behaviourally equivalent in scope; a measured 1,000-object/10-project estate showed no material change, ~185ms before and after, since the unchanged eager loop still dominates) |
@@ -727,6 +726,12 @@ touched.
 | `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
 | `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` (partial — see note) |
 | `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` (claimed, not closed — see note) |
+
+### Closed by `WP 21.5A`
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-36` | `PersistenceStore.DefaultRootPath` resolves relative to the process CWD | Closed **for the installed case**, which is what this row's own title names as the defect (`WP RC.0A`'s own scope: "a defect for an installed application"). An installed run (Velopack's `Setup.exe`, detected via `Velopack.Locators.VelopackLocator.CurrentlyInstalledVersion`, never a heuristic on paths — `Tempest.Desktop.Startup.VelopackInstalledAppLocator`) now resolves its persistence root to `%LOCALAPPDATA%\TempestOS\persistence-data` by default, overridable by `--persistence-root <path>` or `Persistence:RootPath`; a first-run dialog (`FirstRunPersistenceLocationWindow`) confirms or redirects it once, recorded so it never asks again. **What remains:** `dotnet run`, a plain built `bin/` exe and the plain release zip all keep resolving `persistence-data` against the process working directory, exactly as before — by design, not a residual defect: none of those three run shapes has an "install location" for a default to be relative to, and `PHYSICAL_REVIEW.md` §3/§4 document the distinction so a reviewer is never surprised by it. Proven by `tests/Tempest.Desktop.Tests/Startup/PersistenceRootResolverTests.cs` (every precedence tier, and the ask-once-then-never-again behaviour) and, for the underlying pre-migration backup this Work Package builds on the same seam, `tests/Tempest.Core.Tests/Persistence/BackupServiceTests.cs`. |
 
 ### Closed
 

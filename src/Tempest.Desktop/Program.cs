@@ -1,4 +1,5 @@
 using Avalonia;
+using Velopack;
 
 namespace Tempest.Desktop;
 
@@ -17,9 +18,28 @@ public static class Program
 {
     /// <summary>Process entry point. <c>[STAThread]</c> is unnecessary on non-Windows platforms and harmless on Windows — Avalonia's own template convention.</summary>
     [STAThread]
-    public static void Main(string[] args) =>
+    public static void Main(string[] args)
+    {
+        // `WP 21.5A` (`WP RC.0A`): must run first, before any Avalonia or
+        // Runtime Host start-up — it is what makes an installed run
+        // reportable at all (handles Velopack's own install/update/
+        // uninstall/first-run hooks, and publishes
+        // `Velopack.Locators.VelopackLocator.Current`, which
+        // `Tempest.Desktop.Startup.VelopackInstalledAppLocator` reads).
+        // Safe to call unconditionally: verified directly (not merely
+        // assumed from documentation) that calling this from a process
+        // Velopack never packaged or installed — `dotnet run`, a plain
+        // `bin/` exe, the plain release zip — does not throw; it simply
+        // reports "not installed", which is exactly what those three run
+        // shapes are. `Tempest.Harness` (the Internal Engineering Harness,
+        // never shipped — ADR-0101) does not call this: it is not a
+        // Velopack-packaged application and has no `Velopack` package
+        // reference at all.
+        VelopackApp.Build().Run();
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
+    }
 
     /// <summary>Builds the <see cref="AppBuilder"/> — platform auto-detection (Win32/X11/AvaloniaNative), matching the cross-platform reach `ADR-0094` selected Avalonia specifically to preserve.</summary>
     public static AppBuilder BuildAvaloniaApp() =>

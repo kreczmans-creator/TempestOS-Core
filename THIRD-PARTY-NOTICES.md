@@ -33,11 +33,13 @@ rendering dependency is directly relevant to what this platform ships.
 | [PDFtoImage](https://www.nuget.org/packages/PDFtoImage) | 4.1.1 | MIT |
 | [System.Security.Cryptography.ProtectedData](https://www.nuget.org/packages/System.Security.Cryptography.ProtectedData) | 10.0.11 | MIT |
 | [Tmds.DBus.Protocol](https://www.nuget.org/packages/Tmds.DBus.Protocol) | 0.21.3 | MIT |
+| [Velopack](https://www.nuget.org/packages/Velopack) | 1.2.0 | MIT |
 | [xunit](https://www.nuget.org/packages/xunit) | 2.9.3 | Apache-2.0 |
 | [xunit.runner.visualstudio](https://www.nuget.org/packages/xunit.runner.visualstudio) | 3.1.4 | Apache-2.0 |
 
 ## Notes
 
+- **Velopack** (`WP 21.5A`, `WP RC.0A`) is referenced by `Tempest.Desktop` only: the Windows installer, the in-place update check (off by default, HTTPS feed) and installed-versus-development-run detection. `Tempest.Harness` carries no installer.
 - **PDFtoImage** (used by `Tempest.Desktop`'s PDF page source) pulls in
   `SkiaSharp` (MIT) and, for its native rendering engine,
   `bblanchon.PDFium.*` — a packaging of Google's **PDFium** (BSD-3-Clause)

@@ -1,6 +1,9 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
+using Tempest.Core.Configuration;
+using Tempest.Desktop.Startup;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop;
@@ -49,12 +52,20 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // `WP 21.5A` (`WP RC.0A` scope item 2): resolved before the
+            // Host exists, since it decides where the Host's own
+            // persistence store opens. `desktop.Args` is read once here,
+            // both for this resolution and — unchanged below — as the
+            // Host's own default configuration source.
+            var args = desktop.Args ?? [];
+            var persistenceRootOverride = ResolvePersistenceRootOverride(args);
+
             // `WP 17.2A` (ADR-0146): Avalonia's own classic desktop
             // lifetime carries Program.Main(string[] args) through
             // unchanged as Args — the one wire this composition root needs
             // to connect for the command line to reach the Host's default
             // configuration source.
-            var host = new WorkspaceHost(commandLineArgs: desktop.Args);
+            var host = new WorkspaceHost(persistenceRootPathOverride: persistenceRootOverride, commandLineArgs: args);
 
             // Avalonia's own startup path is synchronous; the Engineering
             // Workspace's own StartAsync (Runtime Host discovery/DI
@@ -102,5 +113,71 @@ public sealed class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Resolves the persistence-root override to pass into
+    /// <see cref="WorkspaceHost"/> (`WP 21.5A`) — <see langword="null"/> to
+    /// pass none and let the platform's own ordinary configuration
+    /// precedence decide, exactly as before this Work Package. Shows the
+    /// first-run "where should your data live?" dialog
+    /// (<see cref="FirstRunPersistenceLocationWindow"/>) when
+    /// <see cref="PersistenceRootResolver.Resolve"/> says to — an installed
+    /// run with no explicit override anywhere and no recorded choice yet —
+    /// and records whatever the operator confirms so this never asks again.
+    /// </summary>
+    private static string? ResolvePersistenceRootOverride(IReadOnlyList<string> args)
+    {
+        var resolver = new PersistenceRootResolver(new VelopackInstalledAppLocator());
+
+        var generalConfiguration = new MicrosoftExtensionsConfigurationSource(args)
+            .Load()
+            .ToDictionary(entry => entry.Key, entry => entry.Value, StringComparer.OrdinalIgnoreCase);
+
+        var resolution = resolver.Resolve(args, generalConfiguration);
+
+        if (!resolution.ShowFirstRunDialog)
+            return resolution.RootPathOverride;
+
+        var chosen = ShowFirstRunDialogBlocking(resolution.SuggestedDefaultRoot);
+        resolver.RecordFirstRunChoice(chosen);
+        return chosen;
+    }
+
+    /// <summary>
+    /// Shows <see cref="FirstRunPersistenceLocationWindow"/> and blocks
+    /// until the operator presses Continue, returning the path they
+    /// confirmed. Called before <see cref="WorkspaceHost"/> — and therefore
+    /// before any window this application's own shell owns — exists, so a
+    /// small, otherwise-invisible owner window is created purely so
+    /// <see cref="Window.ShowDialog{TResult}(Window)"/> has one to be modal
+    /// against; Avalonia's own <c>ShowDialog</c> pumps its own nested
+    /// dispatcher frame while awaited, so blocking on it here — the same
+    /// <c>GetAwaiter().GetResult()</c> convention already used for
+    /// <see cref="WorkspaceHost.StartAsync"/>, immediately below this
+    /// method's own caller — does not deadlock the UI thread.
+    /// </summary>
+    private static string ShowFirstRunDialogBlocking(string suggestedDefault)
+    {
+        var bootstrapOwner = new Window
+        {
+            ShowInTaskbar = false,
+            SystemDecorations = SystemDecorations.None,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Position = new PixelPoint(-32000, -32000),
+            Width = 1,
+            Height = 1,
+        };
+        bootstrapOwner.Show();
+
+        try
+        {
+            var dialog = new FirstRunPersistenceLocationWindow(suggestedDefault);
+            return dialog.ShowDialog<string>(bootstrapOwner).GetAwaiter().GetResult() ?? suggestedDefault;
+        }
+        finally
+        {
+            bootstrapOwner.Close();
+        }
     }
 }
