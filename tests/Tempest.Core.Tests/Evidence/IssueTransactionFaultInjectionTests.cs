@@ -142,7 +142,12 @@ public sealed class IssueTransactionFaultInjectionTests
         Assert.Contains(state.Attachments, a => a.Id == attachedId);
 
         // The bytes really did land - the attach transaction was real and unaffected.
-        Assert.Contains(attachedId!.Value.ToString("N"), backing.CommittedKeys(AttachmentContentStore.ContentCollectionName));
+        // `TD-95` (`WP 20.1C1`): bytes live at their content hash, and the
+        // attachment's own id maps to that hash — resolve through the mapping
+        // rather than expecting the id as the content key.
+        var hashKey = System.Text.Encoding.ASCII.GetString(
+            backing.CommittedBytes(AttachmentContentStore.HashByAttachmentCollectionName, attachedId!.Value.ToString("N"))!);
+        Assert.Contains(hashKey, backing.CommittedKeys(AttachmentContentStore.ContentCollectionName));
     }
 
     /// <summary>
