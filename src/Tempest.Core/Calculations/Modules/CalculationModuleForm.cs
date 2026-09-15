@@ -184,12 +184,56 @@ public static class CalculationModuleForm
             outcome == EngineeringCheckOutcome.OutsideMethodLimits,
             refusal,
             results,
-            record.IntermediateResults.Select(i => new CalculationRunRow(i.Name, Format(i.Value))).ToList(),
+            record.IntermediateResults.Select(i => new CalculationRunRow(i.Name, Format(Materialise(i)))).ToList(),
             record.Validation.ConstraintChecks.Select(c => new CalculationCheckRow(c.Description, c.IsSatisfied, c.Detail)).ToList(),
             record.Validation.Outcome.ToString(),
             record.ReferencedMaterialIds,
             record.PredecessorRecordId);
     }
+
+    /// <summary>
+    /// An intermediate as its own type again. A record read back from the
+    /// store (a re-run, a compare, a record opened later) carries each
+    /// intermediate as JSON beside the type it was recorded as (`WP 21.3A`);
+    /// the surface shows the value in that type's own terms, never the JSON.
+    /// A type that cannot be resolved is read structurally instead.
+    /// </summary>
+    private static object? Materialise(CalculationIntermediateResult intermediate)
+    {
+        if (intermediate.Value is not System.Text.Json.JsonElement element)
+            return intermediate.Value;
+
+        if (intermediate.ValueTypeName is { } typeName && Type.GetType(typeName, throwOnError: false) is { } type)
+        {
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize(element.GetRawText(), type);
+            }
+            catch (Exception failure) when (failure is System.Text.Json.JsonException or NotSupportedException or InvalidOperationException)
+            {
+                // Not readable as the declared type: read what the JSON itself says.
+            }
+        }
+
+        return FromJson(element);
+    }
+
+    /// <summary>What a JSON element says, structurally: a serialised quantity as "value symbol", numbers, text, yes or no, arrays as lists.</summary>
+    private static object? FromJson(System.Text.Json.JsonElement element) => element.ValueKind switch
+    {
+        System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined => null,
+        System.Text.Json.JsonValueKind.True => true,
+        System.Text.Json.JsonValueKind.False => false,
+        System.Text.Json.JsonValueKind.Number => element.GetDouble(),
+        System.Text.Json.JsonValueKind.String => element.GetString(),
+        System.Text.Json.JsonValueKind.Array => element.EnumerateArray().Select(FromJson).ToList(),
+        System.Text.Json.JsonValueKind.Object
+            when element.TryGetProperty("Value", out var magnitude) && magnitude.ValueKind == System.Text.Json.JsonValueKind.Number
+              && element.TryGetProperty("Unit", out var unit) && unit.ValueKind == System.Text.Json.JsonValueKind.Object
+              && unit.TryGetProperty("Symbol", out var symbol) && symbol.ValueKind == System.Text.Json.JsonValueKind.String
+            => $"{magnitude.GetDouble().ToString("G6", CultureInfo.InvariantCulture)} {symbol.GetString()}",
+        _ => element.ToString(),
+    };
 
     /// <summary>A property name as a label: "MaximumBendingStress" reads "Maximum bending stress".</summary>
     public static string Humanise(string propertyName)
@@ -233,7 +277,7 @@ public static class CalculationModuleForm
             case ReferencePin pin:
                 return pin.ToString();
             case System.Text.Json.JsonElement element:
-                return element.ToString();
+                return Format(FromJson(element));
         }
 
         var type = value.GetType();
