@@ -379,6 +379,11 @@ internal sealed partial class MainWindowComposer
         var rateCardCatalog = (Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog)services.GetService(typeof(Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog));
         var timesheetService = (Tempest.Core.Timesheets.ITimesheetService)services.GetService(typeof(Tempest.Core.Timesheets.ITimesheetService));
 
+        // `WP 21.3B`: expenses, purchase orders and the "Switch person" seam.
+        var expenseService = (Tempest.Core.Expenses.IExpenseService)services.GetService(typeof(Tempest.Core.Expenses.IExpenseService));
+        var purchaseOrderService = (Tempest.Core.PurchaseOrders.IPurchaseOrderService)services.GetService(typeof(Tempest.Core.PurchaseOrders.IPurchaseOrderService));
+        var peopleDirectory = (Tempest.Core.People.IPeopleDirectory)services.GetService(typeof(Tempest.Core.People.IPeopleDirectory));
+
         // `WP 19.6A`: the two remaining governed reference libraries the
         // Libraries tab itself lists but Evidence's own citation picker
         // deliberately still does not (Manufacturing resolves the same
@@ -428,24 +433,17 @@ internal sealed partial class MainWindowComposer
         var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog, OpenProjectDetailsAsync);
         var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
 
-        // `WP 20.10A` (Product Owner findings D2/D12/T1): the project
-        // workspace's own Details tab — the project's own identity and
-        // Commercial section, reachable directly rather than only through
-        // the generic Object Editor (`T1`: "This doesnt exist at all. Not
-        // seen anywhere and cannot navigate to it anywhere"). Built here,
-        // externally, for the identical reason `deliverablesView`/
-        // `projectQuoteView`/`evidenceWorkspace` are (needs collaborators
-        // `ProjectWorkspaceView` does not otherwise depend on).
-        var projectDetailsView = new ProjectDetailsView(
-            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, commercialSupport)
-        {
-            WorkspaceChanges = composition.WorkspaceChanges,
-        };
-        projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+        // `WP 21.3B`: "Record expense…" — reachable from Business →
+        // Timesheets beside Record, and from the project's own Details
+        // tab (`timesheetWeekView`/`projectDetailsView`, both below).
+        var expenseEntryPrompt = new ExpenseEntryPrompt(composition.DomainContext);
 
         // Fire-and-forget at the view boundary, but never silently: an open
         // that throws is reported like any other failed action, so "it
-        // created but nothing opened" has a reason on screen.
+        // created but nothing opened" has a reason on screen. Declared here
+        // (moved up from below `projectDetailsView`, `WP 21.3B`) so that
+        // view's own "Record expense…" open-right-up callback can use it
+        // too, exactly as `timesheetWeekView`'s already does.
         Action<Guid, string> openObjectRightUp = (id, kind) => _ = OpenReportingAsync(id, kind);
 
         async Task OpenReportingAsync(Guid id, string kind)
@@ -460,6 +458,22 @@ internal sealed partial class MainWindowComposer
             }
         }
 
+        // `WP 20.10A` (Product Owner findings D2/D12/T1): the project
+        // workspace's own Details tab — the project's own identity and
+        // Commercial section, reachable directly rather than only through
+        // the generic Object Editor (`T1`: "This doesnt exist at all. Not
+        // seen anywhere and cannot navigate to it anywhere"). Built here,
+        // externally, for the identical reason `deliverablesView`/
+        // `projectQuoteView`/`evidenceWorkspace` are (needs collaborators
+        // `ProjectWorkspaceView` does not otherwise depend on).
+        var projectDetailsView = new ProjectDetailsView(
+            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, commercialSupport,
+            expenseService, expenseEntryPrompt, openObjectRightUp)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         // `WP 19.2B`: the Reports area's own "Export"/document-row "Open"
         // — opening a file never navigates, exactly as
         // `OpenProjectAttachmentAsync`'s own remarks already establish for
@@ -468,7 +482,7 @@ internal sealed partial class MainWindowComposer
 
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
-            () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp)
+            () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp, expenseEntryPrompt)
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
@@ -543,6 +557,21 @@ internal sealed partial class MainWindowComposer
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // `WP 21.3B`: the Purchase orders area — every PurchaseOrder across
+        // open projects (or the open project when one is open), grouped by
+        // status, mirroring `invoicingView`'s own identical shape. Reuses
+        // the already-built `projectPicker`/`inputDialog` rather than
+        // rebuilding either.
+        var purchaseOrderLinePrompt = new PurchaseOrderLinePrompt();
+        var purchaseOrdersView = new PurchaseOrdersView(
+            composition.DomainContext, composition.CommandDispatcher, composition.CommandRegistry, () => host.ProjectContext!.Current?.Id,
+            projectPicker, inputDialog, purchaseOrderLinePrompt, openObjectRightUp)
+        {
+            ParameterPrompt = commandPrompt.Prompt,
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        purchaseOrdersView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 19.2B`: the Reports area — issued evidence sheets and
         // project documents, across every live project, filterable to one.
@@ -660,7 +689,7 @@ internal sealed partial class MainWindowComposer
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
-        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, timesheetWeekView, subscriptionsView, businessDashboardView)
+        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };

@@ -9,13 +9,14 @@ namespace Tempest.Desktop.Views;
 
 /// <summary>
 /// The Business module (`WP 19.7A`, Product Owner comment items 6 and 7,
-/// sheet 9): a tree — Dashboard &amp; Reports, Quotes, Invoices,
-/// Timesheets, Subscriptions — with a right pane over whichever node is
-/// selected. Every node embeds an already-built, already-tested view:
-/// Dashboard &amp; Reports is <see cref="BusinessDashboardView"/>
+/// sheet 9): a tree — Dashboard &amp; Reports, Quotes, Invoices, Purchase
+/// orders, Timesheets, Subscriptions — with a right pane over whichever
+/// node is selected. Every node embeds an already-built, already-tested
+/// view: Dashboard &amp; Reports is <see cref="BusinessDashboardView"/>
 /// (`WP 19.7B`), Quotes is <see cref="QuotesView"/> (`WP 19.5B`), Invoices
-/// is the existing <see cref="InvoicingView"/>, Timesheets is the existing
-/// <see cref="TimesheetWeekView"/>, Subscriptions is
+/// is the existing <see cref="InvoicingView"/>, Purchase orders is
+/// <see cref="PurchaseOrdersView"/> (`WP 21.3B`), Timesheets is the
+/// existing <see cref="TimesheetWeekView"/>, Subscriptions is
 /// <see cref="SubscriptionsView"/> over <c>IAccountsReadModel</c>
 /// (`WP 19.8B`).
 /// </summary>
@@ -23,6 +24,7 @@ public sealed class BusinessAreaView : UserControl
 {
     private readonly QuotesView _quotes;
     private readonly InvoicingView _invoices;
+    private readonly PurchaseOrdersView _purchaseOrders;
     private readonly TimesheetWeekView _timesheets;
     private readonly SubscriptionsView _subscriptions;
     private readonly BusinessDashboardView _dashboard;
@@ -34,6 +36,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard & Reports" };
     private readonly TreeViewItem _quotesNode = new() { Header = "Quotes" };
     private readonly TreeViewItem _invoicesNode = new() { Header = "Invoices" };
+    private readonly TreeViewItem _purchaseOrdersNode = new() { Header = "Purchase orders" };
     private readonly TreeViewItem _timesheetsNode = new() { Header = "Timesheets" };
     private readonly TreeViewItem _subscriptionsNode = new() { Header = "Subscriptions" };
 
@@ -47,16 +50,20 @@ public sealed class BusinessAreaView : UserControl
     }
 
     /// <summary>Initialises a new instance of the <see cref="BusinessAreaView"/> class.</summary>
-    public BusinessAreaView(QuotesView quotes, InvoicingView invoices, TimesheetWeekView timesheets, SubscriptionsView subscriptions, BusinessDashboardView dashboard)
+    public BusinessAreaView(
+        QuotesView quotes, InvoicingView invoices, PurchaseOrdersView purchaseOrders, TimesheetWeekView timesheets,
+        SubscriptionsView subscriptions, BusinessDashboardView dashboard)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         ArgumentNullException.ThrowIfNull(invoices);
+        ArgumentNullException.ThrowIfNull(purchaseOrders);
         ArgumentNullException.ThrowIfNull(timesheets);
         ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dashboard);
 
         _quotes = quotes;
         _invoices = invoices;
+        _purchaseOrders = purchaseOrders;
         _timesheets = timesheets;
         _subscriptions = subscriptions;
         _dashboard = dashboard;
@@ -66,13 +73,14 @@ public sealed class BusinessAreaView : UserControl
         _tree.Items.Add(_dashboardNode);
         _tree.Items.Add(_quotesNode);
         _tree.Items.Add(_invoicesNode);
+        _tree.Items.Add(_purchaseOrdersNode);
         _tree.Items.Add(_timesheetsNode);
         _tree.Items.Add(_subscriptionsNode);
 
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard & Reports"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
-                     (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
+                     (_purchaseOrdersNode, "Purchase orders"), (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Business tree");
@@ -93,13 +101,13 @@ public sealed class BusinessAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard &amp; Reports", "Quotes", "Invoices", "Timesheets" or
-    /// "Subscriptions") — the same name a screen reader announces, and
-    /// what a journey test drives the tree by.
+    /// ("Dashboard &amp; Reports", "Quotes", "Invoices", "Purchase
+    /// orders", "Timesheets" or "Subscriptions") — the same name a screen
+    /// reader announces, and what a journey test drives the tree by.
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _quotesNode, _invoicesNode, _timesheetsNode, _subscriptionsNode }
+        var item = new[] { _dashboardNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -166,6 +174,13 @@ public sealed class BusinessAreaView : UserControl
         {
             await _invoices.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _invoices;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _purchaseOrdersNode))
+        {
+            await _purchaseOrders.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _purchaseOrders;
             return;
         }
 

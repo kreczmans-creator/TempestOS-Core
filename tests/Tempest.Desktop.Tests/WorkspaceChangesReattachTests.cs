@@ -152,8 +152,11 @@ public sealed class WorkspaceChangesReattachTests
                 () => host.SessionPrincipal?.IdentityId, new TimesheetEntryPrompt(domainContext, rateCardCatalog), (_, _) => { });
             var subscriptionsView = new SubscriptionsView(accountsReadModel, Resolve<AccountsRefreshService>(host));
             var businessDashboardView = new BusinessDashboardView(accountsReadModel, domainContext, (_, _) => { });
+            var purchaseOrdersView = new PurchaseOrdersView(
+                domainContext, commandDispatcher, commandRegistry, () => null, new ProjectPicker(host.ProjectDirectory!),
+                new InputDialog(), new PurchaseOrderLinePrompt(), (_, _) => { });
 
-            var view = new BusinessAreaView(quotesView, invoicingView, timesheetWeekView, subscriptionsView, businessDashboardView);
+            var view = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView);
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }
