@@ -76,10 +76,10 @@ if this candidate is refused.
 - Governance health check: 5/5 passed
 - CI: the sharded workflow (`WP 20.3D`, Core plus three Desktop shards per configuration, the job ceiling back at 45 minutes) — {{CI_LINE}}
 
-## Gate (the candidate head `df2ebe8`, re-derived by `WP 19.9.1` on 2026-09-14)
+## Gate (the candidate head `033ac18`, re-derived after the overnight tranche on 2026-09-15)
 
-- Core tests: 4,370 passed, 0 failed, 0 skipped, Debug and Release (quotation, lifecycle, status and tasks read models, accounts categorisation and readings, the invocation contract over Quotations and Tasks added since 4,255)
-- Desktop tests: 594 passed, 0 failed, 0 skipped, Debug (9 m 57 s) and Release (9 m 18 s)
+- Core tests: 4,455 passed, 0 failed, 0 skipped, Debug and Release (quotation, lifecycle, status and tasks read models, accounts categorisation and readings, the invocation contract over Quotations and Tasks added since 4,255)
+- Desktop tests: 628 passed, 0 failed, 0 skipped, Debug (10 m 30 s) and Release (14 m 29 s)
 - Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
 - Governance health check: 5/5 passed
 - CI: the CI Gate job green on every pushed head of the branch on 2026-09-14 (runs 34842170404 on `289b11c`, 34849599412 on `6c37f34`, 34866145341 on `fc67feb`, 34877649676 on `dfbd637`); the three runs on the candidate head itself are recorded on the candidate page

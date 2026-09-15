@@ -46,20 +46,20 @@ attachments, and three defects in the `v0.19.0` Structure tab.
 
 ## Figures
 
-Re-derived at `WP 19.9.1` on the candidate head `df2ebe8`
+Re-derived on the candidate head `033ac18` (`WP 19.9.1` and the overnight tranche)
 (`git grep -c '' HEAD -- 'src/*.cs'` excluding `Frozen/`; the test
 counts from the gate).
 
 | Figure | v0.19.0 (`947c50d`) | v0.19.1 (`df2ebe8`) |
 |---|---|---|
-| Live source lines (`src/`, excluding `Frozen/`) | 126,156 | 138,616 |
-| Live test lines (`tests/`) | 107,824 | 137,303 |
-| `Tempest.Core` source lines | 59,472 | 62,720 (quotations, lifecycle, tasks, accounts reads) |
-| Core tests | 4,255 | 4,370 |
-| Desktop tests | 550 | 594 |
+| Live source lines (`src/`, excluding `Frozen/`) | 126,156 | 141,032 |
+| Live test lines (`tests/`) | 107,824 | 142,421 |
+| `Tempest.Core` source lines | 59,472 | 63,623 (quotations, lifecycle, tasks, accounts reads, the overnight integrity fixes) |
+| Core tests | 4,255 | 4,455 |
+| Desktop tests | 550 | 628 |
 | ADRs | 151 | 152 (ADR-0152) |
-| Commits on the branch | — | 81 since `947c50d`, fourteen of them merges |
-| Effort | — | 28 days across twelve Work Packages, all on 2026-09-14 |
+| Commits on the branch | — | 161 since `947c50d`, thirty-one of them merges |
+| Effort | — | 30 days across twelve Work Packages on 2026-09-14 plus the overnight tranche `WP 19.10A`–`19.10R` (about 14 days) into 2026-09-15 |
 
 ## Gate on the candidate head
 
