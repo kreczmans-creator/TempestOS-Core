@@ -74,6 +74,18 @@ public sealed class LayoutTabGroupView : UserControl
     /// </summary>
     public event Action<Guid, double>? ResizeRequested;
 
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+,</c> or
+    /// <c>Ctrl+Shift+.</c> with a panel header focused (`ADR-0153`
+    /// decision 8, closing `TD-133`'s own named reordering residual) —
+    /// moves that tab one position earlier (<c>-1</c>) or later
+    /// (<c>+1</c>) within this same group. Deliberately reordering
+    /// <em>within</em> one group only: moving a tab to a different group,
+    /// or to another window, stays a mouse gesture for this package, as
+    /// decision 8 itself discloses.
+    /// </summary>
+    public event Action<Guid, int>? ReorderRequested;
+
     /// <summary>Initialises a new instance of the <see cref="LayoutTabGroupView"/> class.</summary>
     public LayoutTabGroupView(LayoutTabGroupNode node, WorkspacePanelRegistry registry, WorkspaceLayoutTree tree)
     {
@@ -229,7 +241,7 @@ public sealed class LayoutTabGroupView : UserControl
             // one place a keyboard/screen-reader user would look for it.
             AutomationProperties.SetHelpText(
                 tab,
-                "Ctrl+Shift+Arrow moves this panel to the workspace edge in that direction. Ctrl+Shift+[ shrinks it, Ctrl+Shift+] grows it.");
+                "Ctrl+Shift+Arrow moves this panel to the workspace edge in that direction. Ctrl+Shift+[ shrinks it, Ctrl+Shift+] grows it. Ctrl+Shift+, moves this tab one position earlier in its group, Ctrl+Shift+. one position later.");
 
             var captured = panelId;
             tab.Click += (_, _) => PanelSelected?.Invoke(captured);
@@ -263,6 +275,18 @@ public sealed class LayoutTabGroupView : UserControl
                         break;
                     case Key.OemCloseBrackets:
                         ResizeRequested?.Invoke(captured, ResizeStep);
+                        e.Handled = true;
+                        break;
+
+                    // `ADR-0153` decision 8: the same focused-header
+                    // gesture vocabulary, one step along the tab strip
+                    // rather than one step across the workspace.
+                    case Key.OemComma:
+                        ReorderRequested?.Invoke(captured, -1);
+                        e.Handled = true;
+                        break;
+                    case Key.OemPeriod:
+                        ReorderRequested?.Invoke(captured, 1);
                         e.Handled = true;
                         break;
                 }

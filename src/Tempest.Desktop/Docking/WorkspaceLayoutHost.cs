@@ -77,6 +77,42 @@ public sealed class WorkspaceLayoutHost : UserControl
     /// <summary>Raised when the user starts dragging a panel's own tab.</summary>
     public event Action<Guid, PointerPressedEventArgs>? PanelDragStarted;
 
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+Arrow</c> on a focused
+    /// tab header (`WP 19.2B`, `TD-133`) — move this panel to the
+    /// workspace edge in that direction.
+    /// </summary>
+    /// <remarks>
+    /// Raised rather than applied here, unlike every mouse gesture above:
+    /// a keyboard gesture is the one case where the control that was
+    /// operated is itself destroyed by the re-render it causes, so it must
+    /// go through <see cref="Docking.WorkspaceLayoutController"/>'s own
+    /// <c>Apply</c> — the one place that records which panel held focus
+    /// beforehand and restores it to that panel's own new tab header
+    /// afterwards (`ADR-0153` decision 7, `TD-90`). Applying it here
+    /// instead re-rendered the strip with nothing focused at all, which is
+    /// exactly what `PHYSICAL_REVIEW` §7j K3 asks a reviewer to look for.
+    /// </remarks>
+    public event Action<Guid, DockRelation>? PanelMoveRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+[</c> or
+    /// <c>Ctrl+Shift+]</c> on a focused tab header (`WP 19.2B`, `TD-133`)
+    /// — shrink or grow this panel's own proportional share. Raised, not
+    /// applied, for the same reason as <see cref="PanelMoveRequested"/>.
+    /// </summary>
+    public event Action<Guid, double>? PanelResizeRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+,</c> or
+    /// <c>Ctrl+Shift+.</c> on a focused tab header (`ADR-0153` decision 8,
+    /// `TD-133`) — carrying the tab group the header belongs to, the
+    /// panel, and the direction (<c>-1</c> one position earlier,
+    /// <c>+1</c> one position later). Raised, not applied, for the same
+    /// reason as <see cref="PanelMoveRequested"/>.
+    /// </summary>
+    public event Action<Guid, Guid, int>? PanelReorderRequested;
+
     /// <summary>Initialises a new instance of the <see cref="WorkspaceLayoutHost"/> class.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="registry"/> is <see langword="null"/>.</exception>
     public WorkspaceLayoutHost(WorkspacePanelRegistry registry)
@@ -194,11 +230,13 @@ public sealed class WorkspaceLayoutHost : UserControl
         view.FlyoutRequested += ShowFlyout;
         view.TabDragStarted += (panelId, e) => PanelDragStarted?.Invoke(panelId, e);
 
-        // `WP 19.2B` (`TD-133`): keyboard docking moves, from a focused
-        // panel header — the same "raise intent, `Apply` a pure operation"
-        // shape every mouse gesture above already uses.
-        view.MoveRequested += (panelId, edge) => Apply(t => t.DockToEdge(panelId, edge));
-        view.ResizeRequested += (panelId, delta) => Apply(t => t.ResizeSplit(panelId, delta));
+        // `WP 19.2B` (`TD-133`) and `ADR-0153` decision 8: keyboard
+        // docking moves, resizes and tab reordering, from a focused panel
+        // header. These three alone are forwarded to the controller rather
+        // than applied here — see `PanelMoveRequested` for why.
+        view.MoveRequested += (panelId, edge) => PanelMoveRequested?.Invoke(panelId, edge);
+        view.ResizeRequested += (panelId, delta) => PanelResizeRequested?.Invoke(panelId, delta);
+        view.ReorderRequested += (panelId, direction) => PanelReorderRequested?.Invoke(node.Id, panelId, direction);
 
         return view;
     }

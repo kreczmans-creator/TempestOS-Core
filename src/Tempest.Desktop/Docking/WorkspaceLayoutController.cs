@@ -114,6 +114,15 @@ public sealed class WorkspaceLayoutController
     {
         host.PanelDragStarted += (panelId, e) => BeginDrag(panelId, host, e);
 
+        // `WP 19.2B` (`TD-133`) and `ADR-0153` decision 8: the three
+        // keyboard gestures a focused tab header raises, applied here —
+        // the one canonical `Apply`, so each one also gets decision 7's
+        // focus restore, which the header that was operated needs more
+        // than any mouse gesture does (the re-render destroys it).
+        host.PanelMoveRequested += (panelId, edge) => Apply(t => t.DockToEdge(panelId, edge));
+        host.PanelResizeRequested += (panelId, delta) => Apply(t => t.ResizeSplit(panelId, delta));
+        host.PanelReorderRequested += (groupId, panelId, direction) => Apply(t => t.ReorderTab(groupId, panelId, direction));
+
         // The drag is tracked on the host rather than on each tab, so
         // moving off the tab it started on — which is the whole point of
         // dragging — does not end the gesture.

@@ -545,6 +545,137 @@ public sealed class WorkspaceLayoutControllerTests
         Assert.True(newHeader!.IsFocused);
     }
 
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K3, proven headless: `WP 21.0K` found the
+    /// keyboard move gesture applying itself in
+    /// <see cref="WorkspaceLayoutHost"/> rather than through the
+    /// controller, so the re-render it causes destroyed the very header the
+    /// user was operating and left the strip with nothing focused —
+    /// decision 7's focus restore was never reached from the one path that
+    /// most needs it. The gesture now raises intent the controller applies.
+    /// </summary>
+    [AvaloniaFact]
+    public void AKeyboardMove_FromAFocusedTabHeader_LeavesFocusOnThatPanelsNewHeader()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+        var explorerHeader = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(explorerHeader);
+        Assert.True(explorerHeader.IsFocused);
+
+        RaiseKeyboardGesture(explorerHeader, Key.Right);
+
+        var newHeader = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(newHeader);
+        Assert.True(newHeader!.IsFocused);
+    }
+
+    // ----------------------------------------------------------------
+    // ADR-0153 decision 8: keyboard tab reordering (`TD-133`'s residual)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// The whole gesture, end to end through the real controller: a real
+    /// <c>KeyDown</c> on a real tab header reorders the model, re-renders,
+    /// and leaves the same header focused so the next keypress continues
+    /// the move rather than going nowhere.
+    /// </summary>
+    [AvaloniaFact]
+    public void CtrlShiftComma_AndCtrlShiftPeriod_MoveATabWithinItsOwnGroup_AndKeepItFocused()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+
+        // Three tabs in one group, so "one position later" and "one
+        // position earlier" are both genuinely observable.
+        rig.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        rig.Controller.Apply(t => t.Dock(Output, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var groupId = rig.Controller.Tree.FindGroupContaining(Explorer)!.Id;
+        Assert.Equal([Explorer, Inspector, Output], rig.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds);
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+        Assert.True(header.IsFocused);
+
+        RaiseKeyboardGesture(header, Key.OemPeriod);
+
+        Assert.Equal([Inspector, Explorer, Output], rig.Controller.Tree.FindNode(groupId) is LayoutTabGroupNode later ? later.PanelIds : []);
+        var afterLater = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(afterLater);
+        Assert.True(afterLater!.IsFocused);
+
+        RaiseKeyboardGesture(afterLater, Key.OemComma);
+
+        Assert.Equal([Explorer, Inspector, Output], rig.Controller.Tree.FindNode(groupId) is LayoutTabGroupNode earlier ? earlier.PanelIds : []);
+        var afterEarlier = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(afterEarlier);
+        Assert.True(afterEarlier!.IsFocused);
+    }
+
+    /// <summary>Off either end the gesture changes nothing at all — and, in particular, does not throw away the focus it was holding.</summary>
+    [AvaloniaFact]
+    public void CtrlShiftComma_OnTheFirstTab_ChangesNothing_AndKeepsFocus()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+        rig.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var groupId = rig.Controller.Tree.FindGroupContaining(Explorer)!.Id;
+        var before = ((LayoutTabGroupNode)rig.Controller.Tree.FindNode(groupId)!).PanelIds.ToList();
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+
+        RaiseKeyboardGesture(header, Key.OemComma);
+
+        Assert.Equal(before, ((LayoutTabGroupNode)rig.Controller.Tree.FindNode(groupId)!).PanelIds);
+        Assert.True(rig.Controller.Host.FindPanelHeader(Explorer)!.IsFocused);
+    }
+
+    /// <summary>A reorder is part of the arrangement, not a per-session accident: it survives the shutdown save and the next start's restore.</summary>
+    [AvaloniaFact]
+    public async Task AKeyboardReorderedTabStrip_SurvivesASaveAndRestore()
+    {
+        var settings = NewSettings();
+        var first = BuildRig(settings);
+        first.Window.Activate();
+
+        first.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        first.Controller.Apply(t => t.Dock(Output, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var header = first.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+        RaiseKeyboardGesture(header, Key.OemPeriod);
+        RaiseKeyboardGesture(first.Controller.Host.FindPanelHeader(Explorer)!, Key.OemPeriod);
+
+        var reordered = first.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds.ToList();
+        Assert.Equal([Inspector, Output, Explorer], reordered);
+        await first.Controller.SaveAsync();
+
+        var second = BuildRig(settings);
+        await second.Controller.RestoreAsync(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
+
+        Assert.Equal(reordered, second.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds);
+    }
+
+    /// <summary>A real <c>Ctrl+Shift+</c><paramref name="key"/> press on <paramref name="header"/>, settled the way a real re-render settles.</summary>
+    private static void RaiseKeyboardGesture(Control header, Key key)
+    {
+        header.RaiseEvent(new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = key,
+            KeyModifiers = KeyModifiers.Control | KeyModifiers.Shift,
+        });
+
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+    }
+
     // ----------------------------------------------------------------
     // ADR-0153 decision 4: cross-window drag, in screen coordinates
     // ----------------------------------------------------------------
