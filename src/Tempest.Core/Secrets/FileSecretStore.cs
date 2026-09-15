@@ -106,16 +106,33 @@ public sealed class FileSecretStore : ISecretStore
             return;
         }
 
+        // `Directory.CreateDirectory(path, mode)` applies the mode only to a
+        // directory it creates; a secrets directory that already exists
+        // (created by an earlier build before OSA-04, restored from a
+        // backup, or made by hand) keeps whatever mode it had. The
+        // explicit `SetUnixFileMode` below makes the 0700 promise hold for
+        // an existing directory too - found by this store's own test
+        // running on Linux for the first time (the overnight acceptance
+        // campaign, 2026-09-15): the test's pre-created temp directory
+        // stayed 0755.
         Directory.CreateDirectory(_secretsDirectory, DirectoryPermissions);
+        File.SetUnixFileMode(_secretsDirectory, DirectoryPermissions);
 
-        await using var stream = new FileStream(path, new FileStreamOptions
+        await using (var stream = new FileStream(path, new FileStreamOptions
         {
             Mode = FileMode.Create,
             Access = FileAccess.Write,
             Share = FileShare.None,
             UnixCreateMode = FilePermissions,
-        });
-        await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+        }))
+        {
+            await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Same reasoning for the file: `UnixCreateMode` applies only when
+        // `FileMode.Create` actually creates the file, not when it
+        // truncates an existing one.
+        File.SetUnixFileMode(path, FilePermissions);
     }
 
     /// <inheritdoc />
