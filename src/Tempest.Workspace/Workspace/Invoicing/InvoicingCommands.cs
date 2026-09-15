@@ -5,9 +5,13 @@ namespace Tempest.Workspace.Invoicing;
 
 /// <summary>
 /// Raises a new <see cref="InvoiceRequest"/> from a completed deliverable
-/// (<see cref="IInvoicingService.RaiseFromCompletionAsync"/>) — the target
-/// is the selected <c>DeliverableCompletion</c>, the subject a create
-/// command reveals is the new request (`WP 19.1A`, `ADR-0151`).
+/// (<see cref="IInvoicingService.RaiseFromCompletionAsync"/>) or, `WP
+/// 21.3B`, from a billable expense with no completion available at all
+/// (<see cref="IInvoicingService.RaiseFromExpenseAsync"/>) — the target is
+/// the selected <c>DeliverableCompletion</c> or <c>ProjectExpense</c>,
+/// <see cref="RaiseInvoiceCommandHandler"/> reading
+/// <see cref="TargetKind"/> to know which; the subject a create command
+/// reveals is the new request either way (`WP 19.1A`, `ADR-0151`).
 /// </summary>
 public sealed class RaiseInvoiceCommand : IWorkspaceCommand
 {
@@ -42,7 +46,12 @@ public sealed class RaiseInvoiceCommandHandler : ICommandHandler<RaiseInvoiceCom
     /// <inheritdoc />
     public async Task<CommandResult> HandleAsync(RaiseInvoiceCommand command, CancellationToken cancellationToken)
     {
-        var result = await _service.RaiseFromCompletionAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false);
+        // `WP 21.3B`: the identical command, over whichever Kind the
+        // caller selected — a project whose only unbilled work is an
+        // expense has no completion to raise from at all.
+        var result = string.Equals(command.TargetKind, Tempest.Core.Expenses.ProjectExpense.CanonicalKind, StringComparison.Ordinal)
+            ? await _service.RaiseFromExpenseAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false)
+            : await _service.RaiseFromCompletionAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false);
 
         // The shell reveals and opens whatever a create command names here
         // (Product Owner guard, `WP 17.9.4`).

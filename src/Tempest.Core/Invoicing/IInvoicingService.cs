@@ -31,6 +31,24 @@ public interface IInvoicingService
     Task<InvoiceRequestResult> RaiseFromCompletionAsync(Guid deliverableCompletionId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Builds a new <see cref="InvoiceRequest"/> from a billable, unbilled
+    /// <c>Tempest.Core.Expenses.ProjectExpense</c>'s own project (`WP
+    /// 21.3B`) — the identical act as <see cref="RaiseFromCompletionAsync"/>,
+    /// keyed by an expense rather than a completion, for a project whose
+    /// only unbilled work, right now, is an expense: every unbilled
+    /// timesheet entry and expense for that project joins the one named
+    /// line, at whatever rates and VAT each already carries.
+    /// </summary>
+    /// <remarks>
+    /// Refused, as a result, when <paramref name="expenseId"/> does not
+    /// identify a live expense (or no expense service is composed at all),
+    /// when its project has no client recorded or no Released rate-card
+    /// pin, when the expense already carries an <c>InvoicedBy</c> link (the
+    /// refusal names the first request), or when there is nothing to bill.
+    /// </remarks>
+    Task<InvoiceRequestResult> RaiseFromExpenseAsync(Guid expenseId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends <paramref name="requestId"/>'s own request to its project's
     /// configured connector, with the request's own id as the idempotency
     /// key. Moves the request to <see cref="InvoiceRequestStatus.Sending"/>

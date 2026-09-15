@@ -80,12 +80,19 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector
         if (string.IsNullOrWhiteSpace(request.ClientName))
             return ConnectorResult<CreatedInvoice>.Rejected($"client organisation '{request.ClientOrganisationId}' is not in the catalogue");
 
+        // `WP 21.3B`: refuse outright, before ever building the payload,
+        // rather than send Xero a line it would itself reject — the
+        // identical "a result, never an exception" discipline this
+        // connector already applies to every other rejection (`ADR-0151`).
+        if (VatRateTaxTypeMapping.FindUnmappableReason(request.Lines) is { } unmappableReason)
+            return ConnectorResult<CreatedInvoice>.Rejected(unmappableReason);
+
         var payload = new XeroInvoicesEnvelope(
         [
             new XeroInvoice(
                 Type: "ACCREC",
                 Contact: new XeroContact(Name: request.ClientName),
-                LineItems: [.. request.Lines.Select(l => new XeroLineItem(l.Description, l.Quantity, l.UnitRate.Amount, l.Amount.Amount))],
+                LineItems: [.. request.Lines.Select(ToXeroLineItem)],
                 Reference: idempotencyKey,
                 CurrencyCode: request.Currency.ToString()),
         ]);
@@ -405,6 +412,13 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector
             return (null, ConnectorResult<T>.Unavailable("No Xero organisation is connected; re-authorise to select one."));
 
         return (access, null);
+    }
+
+    /// <summary>Builds one outbound line item, mapping <paramref name="line"/>'s own <see cref="Tempest.Core.BusinessGovernance.VatRate"/> to Xero's own tax type (`WP 21.3B`) — never called once <see cref="VatRateTaxTypeMapping.FindUnmappableReason"/> has already found a line this table cannot map, so <see cref="VatRateTaxTypeMapping.TryMap"/> always succeeds here.</summary>
+    private static XeroLineItem ToXeroLineItem(InvoiceRequestLine line)
+    {
+        VatRateTaxTypeMapping.TryMap(line.VatRate, out var taxType);
+        return new XeroLineItem(line.Description, line.Quantity, line.UnitRate.Amount, line.Amount.Amount, taxType);
     }
 
     private static BillDue ToBillDue(XeroInvoice invoice) => new(

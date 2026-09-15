@@ -3,11 +3,13 @@ using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
+using Tempest.Workspace.PurchaseOrders;
 using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Tasks;
@@ -22,12 +24,14 @@ using Tempest.Core.Deliverables;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Expenses;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Macros;
 using Tempest.Core.Materials;
 using Tempest.Core.Projects;
+using Tempest.Core.PurchaseOrders;
 using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
@@ -193,6 +197,8 @@ public static class EngineeringWorkspaceComposer
         var invoicingService = (IInvoicingService)services.GetService(typeof(IInvoicingService));
         var quotationService = (IQuotationService)services.GetService(typeof(IQuotationService));
         var taskService = (ITaskService)services.GetService(typeof(ITaskService));
+        var expenseService = (IExpenseService)services.GetService(typeof(IExpenseService));
+        var purchaseOrderService = (IPurchaseOrderService)services.GetService(typeof(IPurchaseOrderService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -217,6 +223,14 @@ public static class EngineeringWorkspaceComposer
         // mirroring Evidence's own shape.
         TimesheetsWorkspaceRegistration.Register(manager, domainContext, timesheetService, principalDirectory, commandDispatcher, commandRegistry);
         DeliverableCompletionWorkspaceRegistration.Register(manager, domainContext, deliverableService, principalDirectory, commandDispatcher, commandRegistry);
+
+        // `WP 21.3B`. Expenses and purchase orders — each a new canonical
+        // Kind with its own discipline registration, mirroring Timesheets'/
+        // Quotation's own identical shape. Expenses first: purchase
+        // orders' own "Record as expenses" command reads `IExpenseService`
+        // (already resolved above, not through this registration call).
+        ExpenseWorkspaceRegistration.Register(manager, domainContext, expenseService, commandDispatcher, commandRegistry);
+        PurchaseOrderWorkspaceRegistration.Register(manager, domainContext, purchaseOrderService, commandDispatcher, commandRegistry);
 
         // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the connector seam,
         // the request Kind and its own discipline registration, mirroring

@@ -1,3 +1,4 @@
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Quotations;
 
@@ -65,7 +66,9 @@ public sealed class QuotationPropertyFacetProvider : IPropertyFacetProvider
                 : string.Join("; ", quotation.Lines.Select(DescribeLine)),
             PropertyFacetKind.Relationship));
 
-        facets.Add(new("Total", quotation.Total.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("Total (net)", quotation.Total.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("VAT", quotation.VatTotal.ToString(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("Total (gross)", quotation.GrossTotal.ToString(), PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Status", quotation.Status.ToString(), PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Sent On", quotation.SentOn?.ToString("O") ?? "(not yet sent)", PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Decided On", quotation.DecidedOn?.ToString("O") ?? "(not yet decided)", PropertyFacetKind.DisciplineSpecific));
@@ -87,7 +90,7 @@ public sealed class QuotationPropertyFacetProvider : IPropertyFacetProvider
 
     private static string DescribeLine(QuotationLine line) => line.Basis switch
     {
-        QuotationLineBasis.Hourly => $"{line.Description} — {line.Hours} x {line.Rate} = {line.Amount}",
-        _ => $"{line.Description} — {line.Amount} (fixed)",
+        QuotationLineBasis.Hourly => $"{line.Description} — {line.Hours} x {line.Rate} = {line.Amount} (+ VAT {line.VatAmount}, {line.VatRate.DisplayName()})",
+        _ => $"{line.Description} — {line.Amount} (fixed, + VAT {line.VatAmount}, {line.VatRate.DisplayName()})",
     };
 }

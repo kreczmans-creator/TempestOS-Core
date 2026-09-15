@@ -12,7 +12,10 @@ using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Expenses;
+using Tempest.Core.People;
 using Tempest.Core.Projects;
+using Tempest.Core.PurchaseOrders;
 using Tempest.Core.Timesheets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
@@ -831,6 +834,27 @@ public sealed class TempestHost : ITempestHost
         // below, so `EngineeringWorkspaceComposer.RegisterEngineeringDisciplines`
         // and every Core-only test host can resolve it the same way.
         services.Singleton<IQuotationService, QuotationService>();
+
+        // `WP 21.3B`. Expenses and purchase orders — the commercial edges:
+        // an expense against a project, a purchase order raised against a
+        // supplier, whose received lines a consultant records as expenses
+        // in one act. Registered as ordinary Core services, exactly as
+        // `IQuotationService` above, so every Core-only test host and
+        // `EngineeringWorkspaceComposer.RegisterEngineeringDisciplines` can
+        // resolve them identically. `IExpenseService` before
+        // `IPurchaseOrderService` — the order service reads it to record a
+        // received order's own lines as expenses.
+        services.Singleton<IExpenseService, ExpenseService>();
+        services.Singleton<IPurchaseOrderService, PurchaseOrderService>();
+
+        // The "Switch person" seam (`WP 21.3B`, brief's own disclosed
+        // fallback): `WP 20.10F`'s real People directory was not in this
+        // Work Package's own base — see `IPeopleDirectory`'s own remarks.
+        // One process-lifetime, empty-until-seeded instance; nothing here
+        // seeds it, since no Desktop surface manages People on this branch
+        // either — a future `WP 20.10F` merge replaces this binding, not
+        // anything that reads through the interface.
+        services.Singleton<IPeopleDirectory, InMemoryPeopleDirectory>();
 
         // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the token store,
         // then the connector, then the service over both plus Timesheets/

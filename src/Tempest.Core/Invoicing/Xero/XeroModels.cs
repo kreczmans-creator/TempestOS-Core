@@ -20,12 +20,13 @@ internal sealed record XeroInvoice(
     [property: JsonPropertyName("Total")] decimal? Total = null,
     [property: JsonPropertyName("FullyPaidOnDate")] string? FullyPaidOnDate = null);
 
-/// <summary>A Xero line item — <c>Description</c>, <c>Quantity</c> and <c>UnitAmount</c> are what Xero prices from; <c>LineAmount</c> is sent alongside rather than left for Xero to recompute, matching <c>InvoiceRequestLine.Amount</c>'s own "carried alongside" convention.</summary>
+/// <summary>A Xero line item — <c>Description</c>, <c>Quantity</c> and <c>UnitAmount</c> are what Xero prices from; <c>LineAmount</c> is sent alongside rather than left for Xero to recompute, matching <c>InvoiceRequestLine.Amount</c>'s own "carried alongside" convention. <c>TaxType</c> (`WP 21.3B`) is this line's own <see cref="Tempest.Core.BusinessGovernance.VatRate"/>, mapped through <see cref="Tempest.Core.Invoicing.VatRateTaxTypeMapping"/> before this record is ever built — never a raw enum value handed to Xero directly.</summary>
 internal sealed record XeroLineItem(
     [property: JsonPropertyName("Description")] string Description,
     [property: JsonPropertyName("Quantity")] decimal Quantity,
     [property: JsonPropertyName("UnitAmount")] decimal UnitAmount,
-    [property: JsonPropertyName("LineAmount")] decimal LineAmount);
+    [property: JsonPropertyName("LineAmount")] decimal LineAmount,
+    [property: JsonPropertyName("TaxType")] string? TaxType = null);
 
 /// <summary>A Xero contact — sending only <see cref="Name"/> lets Xero itself match an existing contact by name or create one when absent (Xero's own documented behaviour for an invoice's inline <c>Contact</c>).</summary>
 internal sealed record XeroContact(

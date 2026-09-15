@@ -132,6 +132,14 @@ public sealed class FakeInvoicingConnector : IInvoicingConnector, IAccountsConne
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
+        // `WP 21.3B`: this fake models the identical Xero-shaped tax-type
+        // refusal a real send would answer (`XeroConnector.CreateDraftInvoiceAsync`'s
+        // own identical check) — so a Core test can exercise "refuse a send
+        // whose rate the connector cannot express" without any HTTP
+        // stubbing at all.
+        if (VatRateTaxTypeMapping.FindUnmappableReason(request.Lines) is { } unmappableReason)
+            return Task.FromResult(ConnectorResult<CreatedInvoice>.Rejected(unmappableReason));
+
         lock (_gate)
         {
             _calls.Add(new FakeConnectorCall(nameof(CreateDraftInvoiceAsync), idempotencyKey));

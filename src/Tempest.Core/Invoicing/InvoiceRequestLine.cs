@@ -19,13 +19,31 @@ namespace Tempest.Core.Invoicing;
 /// leaves a reader to multiply back out, and the one <see cref="InvoiceRequest.Total"/>
 /// actually sums.
 /// </param>
+/// <param name="VatRate">
+/// This line's own VAT treatment (`WP 21.3B`) — carried forward from the
+/// <c>Tempest.Core.Quotations.QuotationLine</c> or (for a line raised
+/// straight from a timesheet entry or a deliverable completion, which
+/// carry no VAT rate of their own) the consultant's own default from
+/// Settings → Organisation identity. Defaults to
+/// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/>, exactly as
+/// <c>QuotationLine.VatRate</c> does, so a request raised before this Work
+/// Package reads back at the identical <see cref="Amount"/> it always has.
+/// </param>
 public sealed record InvoiceRequestLine(
     string SourceKind,
     Guid SourceId,
     string Description,
     decimal Quantity,
     Money UnitRate,
-    Money Amount);
+    Money Amount,
+    VatRate VatRate = VatRate.OutOfScope)
+{
+    /// <summary>This line's own VAT amount — <see cref="Amount"/> (the net figure) times <see cref="VatRate"/>'s own percentage, rounded to two decimal places (`WP 21.3B`).</summary>
+    public Money VatAmount => (Amount * VatRate.Percentage()).RoundTo(2);
+
+    /// <summary>This line's own amount inclusive of VAT — <see cref="Amount"/> plus <see cref="VatAmount"/>.</summary>
+    public Money GrossAmount => Amount + VatAmount;
+}
 
 /// <summary>
 /// The read-only projection of an <see cref="InvoiceRequest"/> an

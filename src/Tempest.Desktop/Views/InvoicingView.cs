@@ -8,6 +8,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Expenses;
 using Tempest.Core.Invoicing;
 using Tempest.Desktop;
 using Tempest.Desktop.Theming;
@@ -162,6 +163,7 @@ public sealed class InvoicingView : UserControl
 
         var requestRows = new List<RequestRow>();
         var completionCandidates = new List<CompletionRow>();
+        var expenseCandidates = new List<ExpenseRow>();
 
         foreach (var project in projects)
         {
@@ -170,6 +172,13 @@ public sealed class InvoicingView : UserControl
 
             foreach (var request in children.OfType<InvoiceRequest>().Where(IsLive))
                 requestRows.Add(new RequestRow(request, projectName));
+
+            // `WP 21.3B`: a billable, unbilled expense is "available to
+            // invoice" exactly as an unbilled completion is — read here
+            // directly, over the same already-fetched children, mirroring
+            // how a completion is read rather than through `IExpenseService`.
+            foreach (var expense in children.OfType<ProjectExpense>().Where(e => IsLive(e) && e.Billable && e.InvoicedBy is null))
+                expenseCandidates.Add(new ExpenseRow(expense, projectName));
 
             var unbilled = children.OfType<DeliverableCompletion>().Where(c => IsLive(c) && c.InvoicedBy is null).ToList();
             if (unbilled.Count == 0)
@@ -204,9 +213,20 @@ public sealed class InvoicingView : UserControl
             .ThenBy(c => c.Completion.CompletedOn)
             .ToList();
 
-        _status.Text = requestRows.Count == 0 && availableRows.Count == 0
+        // `WP 21.3B`: an expense joins the identical group, so a project
+        // whose only unbilled work right now is an expense still shows
+        // something waiting for an invoice.
+        var availableExpenseRows = expenseCandidates
+            .Where(e => !carried.Contains(e.Expense.Id))
+            .OrderByDescending(e => e.Expense.Date)
+            .ThenBy(e => e.Expense.Description, StringComparer.Ordinal)
+            .ToList();
+
+        var availableCount = availableRows.Count + availableExpenseRows.Count;
+
+        _status.Text = requestRows.Count == 0 && availableCount == 0
             ? (scopedProjectId is null ? "No invoice requests yet." : "No invoice requests for this project yet.")
-            : $"{requestRows.Count} request(s), {availableRows.Count} completion(s) awaiting invoice, across {projects.Count} project(s).";
+            : $"{requestRows.Count} request(s), {availableCount} item(s) awaiting invoice, across {projects.Count} project(s).";
 
         var asOf = DateTimeOffset.UtcNow;
 
@@ -239,8 +259,9 @@ public sealed class InvoicingView : UserControl
         _groups.Children.Add(BuildStandardGroup(
             "New", $"New ({newRows.Count})", "No draft requests.", newRows.Select(BuildNewRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
-            "Available to invoice", $"Available to invoice ({availableRows.Count})",
-            "Nothing completed is waiting for an invoice.", availableRows.Select(BuildAvailableRow).ToList()));
+            "Available to invoice", $"Available to invoice ({availableCount})",
+            "Nothing completed or expensed is waiting for an invoice.",
+            availableRows.Select(BuildAvailableRow).Concat(availableExpenseRows.Select(BuildAvailableExpenseRow)).ToList()));
         _groups.Children.Add(BuildStandardGroup(
             "Sent", $"Sent ({sentRows.Count})", "Nothing has been sent yet.", sentRows.Select(BuildSentRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
@@ -459,12 +480,46 @@ public sealed class InvoicingView : UserControl
         var raise = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
         raise.Classes.Add(ChromeStyles.Flat);
         AutomationProperties.SetName(raise, $"Raise invoice for {deliverableName}");
-        raise.Click += async (_, _) => await OnRaiseAsync(completion.Id).ConfigureAwait(true);
+        raise.Click += async (_, _) => await OnRaiseAsync(completion.Id, DeliverableCompletion.CanonicalKind).ConfigureAwait(true);
         actions.Children.Add(raise);
 
         rows.Children.Add(actions);
 
         return RowBorder(rows, completion.Id);
+    }
+
+    /// <summary>Available to invoice: a billable, unbilled, uncarried expense (`WP 21.3B`) — expense, project, date, net/VAT/gross; Open expense, Raise invoice.</summary>
+    private Control BuildAvailableExpenseRow(ExpenseRow candidate)
+    {
+        var expense = candidate.Expense;
+
+        var rows = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        rows.Children.Add(new TextBlock
+        {
+            Text = $"{candidate.ProjectName} — {expense.Description} — {expense.Category} — {expense.Date:yyyy-MM-dd}"
+                + $" — {MoneyDisplay.Format(expense.NetAmount)} net, {MoneyDisplay.Format(expense.VatAmount)} VAT",
+            FontWeight = DesignTokens.WeightHeading,
+            FontSize = DesignTokens.FontSizeBody,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        });
+
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+
+        var open = new Button { Content = "Open expense", MinHeight = DesignTokens.MinControlSize };
+        open.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(open, $"Open the expense {expense.Description}");
+        open.Click += (_, _) => _openObject(expense.Id, ProjectExpense.CanonicalKind);
+        actions.Children.Add(open);
+
+        var raise = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
+        raise.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(raise, $"Raise invoice for {expense.Description}");
+        raise.Click += async (_, _) => await OnRaiseAsync(expense.Id, ProjectExpense.CanonicalKind).ConfigureAwait(true);
+        actions.Children.Add(raise);
+
+        rows.Children.Add(actions);
+
+        return RowBorder(rows, expense.Id);
     }
 
     /// <summary>Sent: Sending, Sent, Accepted requests not yet Outstanding — request, external number, sent date, external status; Review, Reconcile now (Sent/Accepted only).</summary>
@@ -647,16 +702,18 @@ public sealed class InvoicingView : UserControl
     }
 
     /// <summary>
-    /// Raises a new <see cref="InvoiceRequest"/> from a completion
-    /// (`invoicing.raise`, <see cref="IInvoicingService.RaiseFromCompletionAsync"/>)
-    /// — the identical command <see cref="ProjectDeliverablesView"/>'s own
+    /// Raises a new <see cref="InvoiceRequest"/> from a completion or, `WP
+    /// 21.3B`, an expense (`invoicing.raise`,
+    /// <see cref="IInvoicingService.RaiseFromCompletionAsync"/>/
+    /// <see cref="IInvoicingService.RaiseFromExpenseAsync"/>) — the
+    /// identical command <see cref="ProjectDeliverablesView"/>'s own
     /// "Raise invoice" dispatches, here through <see cref="ICommandRegistry"/>
     /// (with its own confirmation) rather than <see cref="ICommandDispatcher"/>
     /// directly, matching Send/Reconcile/Void's own shape in this view. A
     /// refusal (already invoiced, no client, no rate-card pin, nothing to
     /// bill) is shown, never swallowed.
     /// </summary>
-    private async Task OnRaiseAsync(Guid completionId)
+    private async Task OnRaiseAsync(Guid sourceId, string sourceKind)
     {
         if (ParameterPrompt is null)
         {
@@ -664,7 +721,7 @@ public sealed class InvoicingView : UserControl
             return;
         }
 
-        var context = new CommandContext([new CommandContextObject(completionId, DeliverableCompletion.CanonicalKind)]);
+        var context = new CommandContext([new CommandContextObject(sourceId, sourceKind)]);
         var invocation = await _commandRegistry.InvokeAsync(InvoicingCommandIds.Raise, context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
 
         if (invocation.Outcome == CommandOutcome.Cancelled)
@@ -692,7 +749,7 @@ public sealed class InvoicingView : UserControl
 
     private void OnWorkspaceChanged(WorkspaceChange change)
     {
-        if (!change.Entries.Any(e => e.Kind == InvoiceRequest.CanonicalKind || e.Kind == DeliverableCompletion.CanonicalKind))
+        if (!change.Entries.Any(e => e.Kind is InvoiceRequest.CanonicalKind or DeliverableCompletion.CanonicalKind or ProjectExpense.CanonicalKind))
             return;
 
         Dispatcher.UIThread.Post(async () =>
@@ -740,4 +797,6 @@ public sealed class InvoicingView : UserControl
     private sealed record RequestRow(InvoiceRequest Request, string ProjectName);
 
     private sealed record CompletionRow(DeliverableCompletion Completion, string ProjectName, Deliverable? Deliverable);
+
+    private sealed record ExpenseRow(ProjectExpense Expense, string ProjectName);
 }
