@@ -171,7 +171,9 @@ public sealed class LiftingLugPinJointCalculationDefinition : ICalculationDefini
         var pinToHole = pinMm / holeMm;
         context.RecordIntermediate("Pin-to-hole ratio", pinToHole);
 
-        if (pinToHole < MinimumPinToHoleRatio)
+        // With the framework's slack: a pin at exactly 0.9 of the hole, stated in
+        // another unit, must not be refused by a rounding artefact.
+        if (pinToHole < MinimumPinToHoleRatio * (1.0 - ModuleGuards.AcceptanceRelativeTolerance))
         {
             var reason = ModuleGuards.Refuse(
                 context,
