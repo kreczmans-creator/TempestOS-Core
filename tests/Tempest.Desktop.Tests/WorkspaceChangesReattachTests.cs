@@ -192,7 +192,8 @@ public sealed class WorkspaceChangesReattachTests
 
             var view = new EngineeringAreaView(
                 host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, librariesView, engineeringDashboard,
-                () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets);
+                () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets,
+                new CalculationModulesView(), () => Task.CompletedTask);
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }

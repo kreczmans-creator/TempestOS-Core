@@ -29,6 +29,7 @@ internal sealed record ComposedCoordinators(
     AttachmentViewerLauncher AttachmentViewers,
     WorkspaceLayoutPresetCoordinator LayoutPresets,
     EngineeringCalculationCoordinator EngineeringCalculationCoordinator,
+    CalculationModulesCoordinator CalculationModulesCoordinator,
     ProjectDeliveryCoordinator ProjectDelivery,
     ProjectGovernanceCoordinator ProjectGovernanceCoordinator);
 
@@ -253,8 +254,11 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103`, the same shape as the two above).
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
+        // The Engineering Calculators' own collaborator (`WP 21.7B`).
+        var calculationModulesCoordinator = new CalculationModulesCoordinator(host.CalculationModules!, views.CalculationModules);
+
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
-            engineeringCalculationCoordinator, projectDelivery, projectGovernanceCoordinator);
+            engineeringCalculationCoordinator, calculationModulesCoordinator, projectDelivery, projectGovernanceCoordinator);
     }
 }

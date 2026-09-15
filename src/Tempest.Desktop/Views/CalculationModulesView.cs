@@ -220,6 +220,14 @@ public sealed class CalculationModulesView : UserControl
             : "The picked record fills every input the calculation takes from the material, and is pinned, at its revision, onto the record of the calculation.";
     }
 
+    /// <summary>Picks the released material with <paramref name="recordId"/>, as the engineer would from the picker.</summary>
+    /// <exception cref="ArgumentException">The picker offers no such record.</exception>
+    public void PickMaterial(string recordId)
+    {
+        _materialPicker.SelectedItem = Materials.FirstOrDefault(m => string.Equals(m.RecordId, recordId, StringComparison.Ordinal))
+            ?? throw new ArgumentException($"No released material '{recordId}' is offered.", nameof(recordId));
+    }
+
     /// <summary>The form as typed, one field per input the form shows.</summary>
     public IReadOnlyList<CalculationFormField> ReadForm() =>
         _fields.Values.Select(f => new CalculationFormField(
