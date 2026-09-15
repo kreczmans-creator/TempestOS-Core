@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (13 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (10 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-05` — module discovery outside `[ModuleMetadata]` requires a public
 parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
@@ -163,9 +163,6 @@ longer appears below.
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned (`ADR-0153`, 2026-09-15, proposes retiring the projection that tries to answer it, rather than widening the frozen contract) |
-| `TD-98` | Document viewer has no markup or annotation (rotation closed by `WP 20.2B`) | `WP 18.2B` (partial) |
-| `TD-99` | SVG attachments still report `Unsupported` in the viewer — no SVG rasteriser (`Svg.Skia`, `SkiaSharp.Extended` or `Avalonia.Svg.Skia`) is referenced anywhere in this solution | unowned (narrowed by `WP 20.2B` — DWG/DXF closed: Product Owner decision 2026-09-15 §5 chose "stored attachment, opened externally" over a licensed SDK, and the viewer now says so honestly and offers the action; SVG stayed open because that decision's "small" in-app source needs a rendering library this build does not have, and the brief's own fallback for that case was to add none and report rather than implement) |
-| `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` — it takes no project id parameter, so guarding it needs a design step (how a Requirement's own creation would even learn which project it is scoped to), not a copy of the pattern every other guarded write already follows | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task guarded; narrowed to this one residual by `WP 19.10R` — `ArchivedProjectCommandGuard` closes the Structure tab's Ribbon and the Command Palette, and a macro replaying either, by teaching `Tempest.Core.Commands.CommandRegistry.Evaluate` the same archived-project check, consulted for every binding across the five discipline registrations plus Quotations, Deliverables, Tasks and Evidence whose own `CommandBinding.Mutates` is set) |
 | `TD-182` | `QuotationSheetRenderer` duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | unowned (raised by v0.19.1 — `WP 19.5B`) |
@@ -632,6 +629,77 @@ height are swapped, in `PositionPage`, to match the bitmap actually
 produced) — a render-only feature exactly as scoped, not a viewport-model
 change, so "Fit" on a 90°-rotated page does not itself re-derive a new fit
 zoom for the now-landscape shape.
+
+**Closed by `WP 21.4A` (2026-09-15), with evidence — moved out of the
+Live Backlog:** `TD-99` (the SVG half `WP 20.2B` left open), `TD-98`
+(markup and annotation, the gap `WP 20.2B`'s own rotation closure left
+standing) and `TD-101`. `Svg.Skia` **2.0.0.8** (MIT; see
+`THIRD-PARTY-NOTICES.md`) closes `TD-99`: pinned to the last release on
+its 2.x line — the only one whose own `SkiaSharp` dependency floor
+(2.88.9) matches the version this solution already resolved through
+`PDFtoImage`, satisfying this Work Package's own kill switch without a
+version bump. `SvgDocumentPageSource` rasterises to the same
+`SKBitmap`-backed page `PdfDocumentPageSource` already produces;
+`DocumentFormatDetector` recognises `.svg`, `image/svg+xml` and a bounded
+content sniff; a malformed file reports "This SVG could not be read:
+{reason}" with Open externally still offered. `TD-98` closes with
+`AttachmentAnnotation` — a new record kept beside an attachment's owner
+(`EngineeringObjectState.Annotations`), one transaction per write with an
+audit row through the same `MutateAndPersistAsync` path `AttachAsync`
+already uses, rehydrated with the owner and carried onto a revised
+instance exactly as attachments already are, never in the attachment's own
+bytes — and the Annotations toolbar group (Rectangle, Ellipse, Freehand,
+Arrow, Text note, five design-token colours, Delete, Clear page with
+confirmation, Save annotated copy…) over a hit-testable overlay on
+`DocumentViewerView`'s own rendered page. `TD-101` closes with `TileGrid`
+(pure tile-planning math, tile size **512px**) and `TileCache` (bounded
+least-recently-used cache, memory budget **256 MiB**) backing a new
+`ITiledDocumentPageSource`/`PdfDocumentPageSource.RenderTile`; the viewer
+composes a page from cached tiles rather than one `MaxRasterEdge`-capped
+render whenever a whole-page render at the requested zoom would exceed
+that cap — an A0 sheet at deep zoom renders sharp rather than blurred, and
+a pan at that zoom re-rasterises nothing already cached. The rotation fit
+bug `WP 20.2B` disclosed above ("Fit on a 90°-rotated page does not itself
+re-derive a new fit zoom") is fixed at its root in the same Work Package:
+`DocumentViewport.WithContentSizeSwapped` keeps the viewport's own content
+width/height tracking the page's currently-displayed (rotated) bounding
+box throughout, so a rotated landscape page fits with no manual zoom step —
+proven by `DocumentViewerRotationTests.RotatingAFittedView_StaysFitted_ToTheRotatedBoundingBox`.
+See `docs/releases/v0.21.0/Release Notes.md`'s own `WP 21.4A` row for the
+full account, including `TD-184` (below), found and closed in the same
+session.
+
+**Closed by `WP 21.4A` (2026-09-15), with evidence — never a Live Backlog
+row of its own:** `TD-184`, a RED security finding `WP 21.5E`'s parallel
+defensive review raised same-session against files `WP 21.4A` owns, fixed
+immediately per the Product Owner's rule that findings are fixed, not
+filed, rather than opened as a numbered row first.
+`AttachmentViewerLauncher.MaterialiseForExternalOpen` used to write a
+materialised copy under an attachment's own, completely unexamined file
+name into a directory keyed by the (guessable) attachment id — so an
+attachment named `invoice.pdf.exe` whose bytes were a real executable ran
+as code the instant "Open externally" was pressed
+(`Process.Start(UseShellExecute: true)` trusts whatever extension the
+written file happens to carry). Closed: a `DangerousExtensions` denylist
+refuses materialisation outright with an honest reason surfaced through
+the viewer (`DocumentViewSession.ExternalOpenRefusedReason`); an
+`ExternalOnly` (DWG/DXF) attachment's written extension comes from the
+detector's own verified match, never a second unverified read of the raw
+name; the file name is sanitised (path separators, control and Unicode
+bidi-override characters stripped, reserved device names guarded, trailing
+dots/spaces trimmed, length capped); the materialised copy now lands in a
+fresh, randomly-named per-launch directory this call creates for itself
+(never the attachment id), deleted when the viewer closes. The same
+finding's own second half: `Svg.Skia`'s own image resolution
+(`Svg.Model.SvgExtensions.GetImageFromWeb`) calls
+`WebRequest.Create(uri).GetResponse()` for any `<image>` reference that is
+not a `data:` URI — `http://`, `https://` and `file://` alike, the last
+reading an arbitrary local file into the rendered picture — closed by
+`SvgMarkupSanitiser`, which blanks every such reference to an inert
+`data:,` URI and strips a `<!DOCTYPE>` (the XXE vector) and any
+`<script>` element before the bytes ever reach `SKSvg.Load`. Proof-of-concept
+tests in `DocumentPageSourceTests.cs` and `DocumentViewerAcceptanceTests.cs`
+name the exact exploit each closes.
 
 ## Owned by Programme
 
