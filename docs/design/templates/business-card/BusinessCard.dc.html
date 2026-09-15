@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Business card" description="Two-sided 3.5×2in card: brand face + contact face, print-ready" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page width="3.5in" height="2in" margin="0">
+<section class="page" style="position:relative;box-sizing:border-box;background:var(--navy-800);clip-path:var(--notch-clip-tr);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+<img src="../../assets/logo/derived/mark-navy.svg" alt="" style="width:50px;height:50px">
+<div style="text-align:center">
+<div style="font-family:var(--font-display);font-weight:700;font-size:25px;letter-spacing:-0.01em;color:var(--paper-050);line-height:1">TEMPEST</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:9px;letter-spacing:.26em;color:var(--cyan-500);margin-top:4px">ENGINEERING</div>
+</div>
+</section>
+<section class="page t-light" style="position:relative;box-sizing:border-box;padding:24px 28px;background:var(--bg-page);clip-path:var(--notch-clip-tr);border-top:2px solid var(--cyan-500);display:flex;flex-direction:column;justify-content:space-between">
+<div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:16px;letter-spacing:-.01em;color:var(--text-heading)">Steven Kreczman</div>
+<div style="font-family:var(--font-body);font-size:10px;color:var(--cyan-600);margin-top:3px">Director&nbsp;</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px">
+<x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Icon" name="mail" size="12px" color="var(--text-muted)" hint-size="12px,12px"></x-import>
+<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">steven.k@tempest-engineering.co.uk</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Icon" name="phone" size="12px" color="var(--text-muted)" hint-size="12px,12px"></x-import>
+<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">07761 073202</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Icon" name="globe" size="12px" color="var(--text-muted)" hint-size="12px,12px"></x-import>
+<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">www.tempest-engineering.co.uk</span>
+</div>
+</div>
+<img src="../../assets/logo/derived/mark-paper.svg" alt="" style="position:absolute;right:22px;bottom:20px;width:22px;height:22px">
+</section>
+</doc-page>
+
+</x-dc>
+</body>
+</html>

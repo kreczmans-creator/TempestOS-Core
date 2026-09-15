@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Purchase order" description="A4 purchase order — supplier and delivery details, itemised lines, totals and PO conditions" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">PURCHASE ORDER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">No. [PO-0000]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-bottom:10mm">
+<div style="font-size:9.5pt;line-height:1.6">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.16em;color:var(--slate-600);margin-bottom:2mm">SUPPLIER</div>
+<div style="font-weight:600;color:var(--ink-900)">[Supplier company]</div>
+<div>[Contact name]</div>
+<div>[Street address]</div>
+<div>[Town, postcode]</div>
+<div style="font-family:var(--font-mono);font-size:8pt;margin-top:1.5mm;color:var(--slate-700)">[Supplier quote ref]</div>
+</div>
+<div style="font-size:9.5pt;line-height:1.6">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.16em;color:var(--slate-600);margin-bottom:2mm">DELIVER TO</div>
+<div style="font-weight:600;color:var(--ink-900)">[Delivery address / site]</div>
+<div>[Street address]</div>
+<div>[Town, postcode]</div>
+<div style="font-family:var(--font-mono);font-size:8pt;margin-top:1.5mm;color:var(--slate-700)">FAO [name] &middot; [phone] &middot; Required by [DD/MM/YYYY]</div>
+</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:9%">ITEM</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">DESCRIPTION / PART NO.</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">QTY</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">UNIT</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:14%">RATE</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:16%">AMOUNT</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">1</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Description, specification ref, part number]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[0]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[ea]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000.00]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Description]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[0]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[m]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000.00]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">3</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Delivery / carriage]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[—]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[—]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[—]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000.00]</td></tr>
+</tbody>
+</table>
+<div style="display:flex;justify-content:flex-end;margin-bottom:10mm">
+<div style="width:72mm">
+<div style="display:flex;justify-content:space-between;padding:2mm 3mm;font-size:9pt"><span style="color:var(--slate-700)">Subtotal</span><span style="font-family:var(--font-mono)">[£0,000.00]</span></div>
+<div style="display:flex;justify-content:space-between;padding:2mm 3mm;font-size:9pt;border-bottom:2px solid var(--indigo-600)"><span style="color:var(--slate-700)">VAT @ 20%</span><span style="font-family:var(--font-mono)">[£000.00]</span></div>
+<div style="display:flex;justify-content:space-between;padding:3mm;background:var(--paper-100)"><span style="font-family:var(--font-display);font-weight:600;color:var(--ink-900)">Order total</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[£0,000.00]</span></div>
+</div>
+</div>
+<div style="border-left:2px solid var(--cyan-500);padding-left:5mm;margin-bottom:10mm">
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2mm">CONDITIONS</div>
+<p style="margin:0;font-size:8.5pt;color:var(--slate-700);text-wrap:pretty">[This order is placed subject to Tempest Design Engineering Ltd conditions of purchase. Quote the PO number on all delivery notes, invoices and correspondence. Goods received without a PO number may be refused. Certificates of conformity required with delivery where the specification calls for them.]</p>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10mm;border-top:1px solid var(--ink-a14);padding-top:5mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">RAISED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">AUTHORISED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

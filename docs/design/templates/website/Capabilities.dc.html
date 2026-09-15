@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../tokens/fonts.css">
+  <link rel="stylesheet" href="../../tokens/colors.css">
+  <link rel="stylesheet" href="../../tokens/typography.css">
+  <link rel="stylesheet" href="../../tokens/spacing.css">
+  <link rel="stylesheet" href="../../tokens/radius.css">
+  <link rel="stylesheet" href="../../tokens/elevation.css">
+  <link rel="stylesheet" href="../../tokens/motion.css">
+  <link rel="stylesheet" href="../../tokens/semantic.css">
+  <link rel="stylesheet" href="../../tokens/base.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="../../_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:var(--navy-800)}
+    a{color:var(--cyan-500)} a:hover{color:var(--cyan-400)}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--navy-800);color:var(--text-body);font-family:var(--font-body)" data-screen-label="Capabilities">
+  <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:40px;height:72px;padding:0 32px;background:rgba(11,14,30,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border-subtle)">
+    <a href="Home.dc.html" style="border-bottom:0;display:flex"><img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:38px;display:block"></img></a>
+    <nav style="display:flex;align-items:center;gap:28px">
+      <a href="Home.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Home</a>
+      <a href="About.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">About</a>
+      <a href="Capabilities.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-050);border-bottom:0">Capabilities</a>
+      <a href="Work.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Work</a>
+      <a href="Contact.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Contact</a>
+    </nav>
+    <div style="flex:1"></div>
+    <a href="mailto:StevenK@Tempest-Engineering.com" style="font-family:var(--font-mono);font-size:12px;color:var(--cyan-500);border-bottom:0">StevenK@Tempest-Engineering.com</a>
+  </header>
+
+  <section style="padding:96px 32px 72px;background-color:var(--navy-800);background-image:var(--bg-grid);border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <h1 style="margin:0;font-family:var(--font-display);font-size:var(--text-4xl);font-weight:600;letter-spacing:var(--tracking-tightest);color:var(--text-heading)">Capabilities</h1>
+      <p style="margin:20px 0 0;max-width:56ch;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--text-body)">Software, standards and the kind of work I take on. If you're checking whether I can work in your toolchain, the answer is probably here.</p>
+    </div>
+  </section>
+
+  <section style="padding:72px 32px 96px">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Design &amp; development</div>
+        <div>
+          <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Concept through detailed design and release. Sheet metal, machined components, castings, enclosures and multi-part assemblies. Design for manufacture is part of the process rather than a review gate at the end — I'd rather resolve a tooling constraint at concept than redraw at release.</p>
+          <div style="margin-top:16px;font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">PTC Creo · Siemens NX · SolidWorks</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Analysis</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Structural FEA and CFD, used to inform design decisions and to substantiate them at design review. Static, modal, thermal and flow work, sized to the question being asked — a hand calculation that answers it is a better deliverable than an analysis that impresses.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Drawings &amp; data packs</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Fully dimensioned, GD&amp;T-toleranced drawings to BS8888 or ASME Y14.5, issued to your title block, numbering and revision scheme. Tolerances derived from function and assembly stack, not applied by habit. Native and neutral CAD (STEP, Parasolid) supplied as required.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Reverse engineering &amp; metrology</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Scan-to-CAD reconstruction where no model exists — legacy hardware, obsolete parts, or geometry that was never captured. Inspection fixture design for repeatable measurement.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Hydraulics</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Valve and manifold design, circuit work, and component selection. CETOP Level 3, Mobile Hydraulics.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0;border-bottom:1px solid var(--border-subtle)">
+        <div class="t-eyebrow">Defence &amp; secure programmes</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">UK SC cleared, with experience of MoD equipment support contracts and defence electronics programmes. Comfortable working within controlled environments and to customer configuration management processes.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:36px 0">
+        <div class="t-eyebrow" style="color:var(--text-faint)">What I don't do</div>
+        <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-muted)">Electronics and PCB design, software, and certification sign-off. If a package needs those, I'll say so and where possible point you somewhere sensible.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;background-color:var(--navy-800);background-image:var(--bg-grid);border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center">
+      <h2 style="margin:0;font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;letter-spacing:var(--tracking-tight);color:var(--text-heading)">Checking a package against this list?</h2>
+      <div style="margin-top:28px"><a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">StevenK@Tempest-Engineering.com</x-import></a></div>
+    </div>
+  </section>
+
+  <footer class="t-light" style="background:var(--bg-page);color:var(--text-body);padding:40px 32px;border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Tempest Design Engineering Ltd, trading as Tempest Engineering. Registered in England and Wales, company no. {{ companyNumber }}.</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint)"><a href="Privacy.dc.html" style="color:var(--text-faint)">Privacy Notice</a><span>·</span><span>© 2026</span></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;companyNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;17349874&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Footer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      companyNumber: this.props.companyNumber ?? '17349874',
+    };
+  }
+}
+</script>
+</body>
+</html>

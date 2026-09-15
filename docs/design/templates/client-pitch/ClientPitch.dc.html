@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Client pitch deck" description="Win-the-work pitch: their problem, our approach, why us, evidence, commercial shape, ask" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" data-screen-label="01" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.22em;color:var(--cyan-500);margin-bottom:36px">PREPARED FOR [CLIENT NAME]</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:104px;letter-spacing:-.02em;line-height:1.05;color:var(--paper-050);max-width:1500px;text-wrap:pretty">[The outcome the client wants, as a headline]</div>
+<div style="font-size:38px;color:var(--slate-400);margin-top:36px">[Opportunity name / tender ref]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>Tempest Design Engineering Ltd</span><span>[DD Month YYYY] &middot; Commercial in confidence</span>
+</div>
+</section>
+<section data-label="Your problem" data-screen-label="02" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 200px;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body);position:relative">
+<img src="../../assets/logo/derived/mark-paper.svg" alt="" style="position:absolute;top:100px;left:120px;width:64px;height:64px">
+<div style="border-left:8px solid var(--cyan-500);padding-left:72px">
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.2em;color:var(--cyan-600);margin-bottom:40px">WHAT WE HEARD</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:64px;letter-spacing:-.01em;line-height:1.3;color:var(--ink-900);text-wrap:pretty">[The client's problem, in their words — constraint, deadline, and what failure costs them.]</div>
+</div>
+</section>
+<section data-label="Approach" data-screen-label="03" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">OUR APPROACH</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:64px">How we'd deliver it</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:64px;flex:1;align-content:start">
+<div style="border-top:4px solid var(--cyan-500);padding-top:28px"><div style="font-family:var(--font-mono);font-size:26px;color:var(--cyan-600);margin-bottom:16px">STAGE 1</div><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Stage name]</div><p style="margin:0;font-size:26px;line-height:1.55;color:var(--slate-700)">[What happens, what the client gets, how long it takes.]</p></div>
+<div style="border-top:4px solid var(--indigo-600);padding-top:28px"><div style="font-family:var(--font-mono);font-size:26px;color:var(--indigo-600);margin-bottom:16px">STAGE 2</div><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Stage name]</div><p style="margin:0;font-size:26px;line-height:1.55;color:var(--slate-700)">[What happens.]</p></div>
+<div style="border-top:4px solid var(--violet-500);padding-top:28px"><div style="font-family:var(--font-mono);font-size:26px;color:var(--violet-500);margin-bottom:16px">STAGE 3</div><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Stage name]</div><p style="margin:0;font-size:26px;line-height:1.55;color:var(--slate-700)">[What happens.]</p></div>
+</div>
+</section>
+<section data-label="Why us" data-screen-label="04" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--cyan-500);padding-bottom:28px;margin-bottom:96px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-400)">WHY US</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--paper-050);margin-bottom:96px">The numbers behind the claim</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:96px">
+<div style="border-left:6px solid var(--cyan-500);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[00]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[Comparable projects delivered]</div></div>
+<div style="border-left:6px solid var(--indigo-600);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[00%]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[On-time delivery / repeat business]</div></div>
+<div style="border-left:6px solid var(--violet-500);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[£0m]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[Value engineered for clients like you]</div></div>
+</div>
+</section>
+<section data-label="Evidence" data-screen-label="05" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">EVIDENCE</span>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:96px;flex:1;min-height:0">
+<div style="border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:26px;color:var(--slate-600)">[Case-study project photo]</div>
+<div style="display:flex;flex-direction:column;justify-content:center">
+<div style="font-family:var(--font-display);font-weight:700;font-size:48px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:32px">[Case study — nearest comparable project]</div>
+<p style="margin:0;font-size:27px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[Client, brief, what we did, the measured result. One reference contact offered.]</p>
+</div>
+</div>
+</section>
+<section data-label="Commercial" data-screen-label="06" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">COMMERCIAL</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Commercial shape</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1">
+<div style="border-top:4px solid var(--cyan-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:24px">Fee basis</div>
+<p style="margin:0;font-size:28px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[Lump sum by stage / time charge with cap. Indicative range, firmed on instruction of stage 1.]</p>
+</div>
+<div style="border-top:4px solid var(--violet-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:24px">What's included</div>
+<p style="margin:0;font-size:28px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[Deliverables, meetings, site visits included; exclusions named plainly so there are no surprises.]</p>
+</div>
+</div>
+</section>
+<section data-label="The ask" data-screen-label="07" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:96px;letter-spacing:-.02em;color:var(--paper-050);max-width:1500px;text-wrap:pretty">[The ask — instruct stage 1 by [date] to hold the programme]</div>
+<div style="font-size:34px;color:var(--slate-400);margin-top:32px">[Named contact &middot; email &middot; phone]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span><span>www.tempest-engineering.co.uk</span>
+</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

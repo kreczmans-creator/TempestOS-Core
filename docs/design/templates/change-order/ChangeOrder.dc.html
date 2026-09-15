@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Change order" description="A4 change / variation order — description of change, reason, cost and programme impact, approval" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">CHANGE ORDER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">No. [CO-000] &middot; REV [00]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:20pt;letter-spacing:-.02em;line-height:1.15;color:var(--ink-900);text-wrap:pretty">[Change title — short description of the variation]</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin:7mm 0 8mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">PROJECT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Project name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">CONTRACT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Contract ref]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">RAISED BY</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">DATE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[DD/MM/YYYY]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">DESCRIPTION OF CHANGE</div>
+<p style="margin:0 0 7mm;text-wrap:pretty">[What is changing from the contracted scope: reference the affected drawings, specification clauses, or work packages by number, and state the change in plain terms.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">REASON FOR CHANGE</div>
+<p style="margin:0 0 7mm;text-wrap:pretty">[Client instruction, site condition, design development, or statutory requirement — with the originating reference (instruction letter, RFI, minute).]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:3mm">IMPACT</div>
+<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:24%">AREA</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">EFFECT</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:20%">VALUE</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">Cost</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Addition / omission — basis of valuation]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[+£0,000]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">Programme</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Effect on completion date or key milestones]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[+0 days]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">Quality / safety</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Any effect on compliance, testing, or risk assessments]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[—]</td></tr>
+</tbody>
+</table>
+<div style="display:flex;align-items:center;gap:5mm;background:var(--paper-100);border:1px solid var(--ink-a14);padding:4mm 5mm;margin-bottom:10mm">
+<span style="font-family:var(--font-display);font-weight:600;font-size:9pt;letter-spacing:.14em;color:var(--ink-900)">STATUS</span>
+<span style="font-family:var(--font-mono);font-size:9pt;color:var(--slate-700)">[ &nbsp;] PROPOSED &nbsp;&nbsp;[ &nbsp;] APPROVED &nbsp;&nbsp;[ &nbsp;] REJECTED &nbsp;&nbsp;[ &nbsp;] SUPERSEDED BY [CO-000]</span>
+</div>
+<p style="margin:0 0 8mm;font-size:8.5pt;color:var(--slate-700);text-wrap:pretty">No varied work shall proceed until this order is approved below. Approval varies the contract sum and programme as stated; all other terms remain unchanged.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10mm;border-top:1px solid var(--ink-a14);padding-top:5mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">FOR TEMPEST DESIGN ENGINEERING</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Title] &middot; [Date]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">FOR THE CLIENT</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Title] &middot; [Date]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Timesheet" description="A4 weekly timesheet — hours by project and day, totals and approval" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">TIMESHEET</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">WEEK ENDING [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:9.5pt;line-height:1.5;color:var(--slate-700)">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin-bottom:8mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">NAME</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Employee name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">ROLE / GRADE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Title]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">CONTRACTED HOURS</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[00.0]</div>
+</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt;table-layout:fixed">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:26%">PROJECT / TASK</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">MON</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">TUE</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">WED</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">THU</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">FRI</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">SAT</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a08)">SUN</th>
+<th style="text-align:center;padding:2.5mm 1mm;font-family:var(--font-mono);font-size:6.5pt;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);border-left:1px solid var(--ink-a14);width:11%">TOTAL</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[TDE-0000] [Task]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a14);text-align:center;font-family:var(--font-mono);font-weight:700">[0.0]</td></tr>
+<tr><td style="padding:2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[TDE-0000] [Task]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[0.0]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a14);text-align:center;font-family:var(--font-mono);font-weight:700">[0.0]</td></tr>
+<tr><td style="padding:2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Leave / training / office]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2.5mm 1mm;border-bottom:1px solid var(--ink-a08);border-left:1px solid var(--ink-a14);text-align:center;font-family:var(--font-mono);font-weight:700">[0.0]</td></tr>
+<tr style="background:var(--paper-100)"><td style="padding:2.5mm;font-family:var(--font-display);font-weight:600;color:var(--ink-900);border-top:2px solid var(--indigo-600)">Daily totals</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[0.0]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[0.0]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[0.0]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[0.0]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[0.0]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[–]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a08)">[–]</td><td style="padding:2.5mm 1mm;text-align:center;font-family:var(--font-mono);font-weight:700;color:var(--indigo-600);border-top:2px solid var(--indigo-600);border-left:1px solid var(--ink-a14)">[00.0]</td></tr>
+</tbody>
+</table>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10mm;border-top:1px solid var(--ink-a14);padding-top:5mm;margin-top:10mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">EMPLOYEE SIGNATURE</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">APPROVED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

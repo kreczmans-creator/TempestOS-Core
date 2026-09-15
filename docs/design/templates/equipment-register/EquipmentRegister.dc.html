@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Equipment register" description="A4 landscape plant and equipment register — identity, location, calibration and service status" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" orientation="landscape" margin="14mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:6mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:3mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:10mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">EQUIPMENT REGISTER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1mm">[TDE-EQP-000] &middot; UPDATED [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:8.5pt;line-height:1.5;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:15pt;letter-spacing:-.01em;color:var(--ink-900);margin-bottom:5mm">Plant and equipment register</div>
+<table style="width:100%;border-collapse:collapse;font-size:8pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">ASSET ID</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:22%">DESCRIPTION</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:16%">MAKE / MODEL</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">SERIAL NO.</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">LOCATION</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">CAL. DUE</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">SERVICE DUE</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">STATUS</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[EQ-001]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Description and range]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Make, model]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Store / site]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:#fff;background:var(--cyan-600);padding:.8mm 2mm">IN SERVICE</span></td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[EQ-002]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Description]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Make, model]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Store / site]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:var(--ink-900);background:var(--amber-500);padding:.8mm 2mm">CAL. DUE</span></td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[EQ-003]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Description]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Make, model]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Store / site]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:#fff;background:var(--red-500);padding:.8mm 2mm">QUARANTINED</span></td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[EQ-004]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Description]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Make, model]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Store / site]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:var(--slate-600);border:1px solid var(--paper-300);padding:.8mm 2mm">ON HIRE</span></td></tr>
+</tbody>
+</table>
+<p style="margin:4mm 0 0;font-size:7.5pt;color:var(--slate-600)">Quarantined items are removed from use and labelled. Calibration certificates filed under the asset ID.</p>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

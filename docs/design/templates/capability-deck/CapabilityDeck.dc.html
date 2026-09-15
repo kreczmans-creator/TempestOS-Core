@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Corporate capability deck" description="Who we are, services, sectors, track record, team and contact — client-facing credentials" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" data-screen-label="01" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.22em;color:var(--cyan-500);margin-bottom:36px">CAPABILITY STATEMENT</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:110px;letter-spacing:-.02em;line-height:1.05;color:var(--paper-050);max-width:1500px">Engineering that holds up</div>
+<div style="font-size:38px;color:var(--slate-400);margin-top:36px">[One-line positioning — who we serve and what we're best at]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>Tempest Design Engineering Ltd</span><span>[DD Month YYYY]</span>
+</div>
+</section>
+<section data-label="Who we are" data-screen-label="02" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">WHO WE ARE</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px;text-wrap:pretty">[A design engineering practice built around ...]</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1">
+<p style="margin:0;font-size:30px;line-height:1.65;color:var(--slate-700);text-wrap:pretty">[Two short paragraphs: what the practice does, the sectors it serves, and the way it works. Written for a client who has never heard of you.]</p>
+<div style="display:flex;flex-direction:column;gap:40px">
+<div style="border-left:6px solid var(--cyan-500);padding-left:36px"><div style="font-family:var(--font-display);font-weight:700;font-size:72px;color:var(--ink-900);line-height:1">[00]</div><div style="font-size:26px;color:var(--slate-600);margin-top:12px">[Years / projects / engineers]</div></div>
+<div style="border-left:6px solid var(--violet-500);padding-left:36px"><div style="font-family:var(--font-display);font-weight:700;font-size:72px;color:var(--ink-900);line-height:1">[00]</div><div style="font-size:26px;color:var(--slate-600);margin-top:12px">[Second headline figure]</div></div>
+</div>
+</div>
+</section>
+<section data-label="Services" data-screen-label="03" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">SERVICES</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:64px">What we do</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:64px;flex:1;align-content:start">
+<div style="border-top:4px solid var(--cyan-500);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service one]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers and the deliverable a client receives.]</p></div>
+<div style="border-top:4px solid var(--indigo-600);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service two]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers.]</p></div>
+<div style="border-top:4px solid var(--violet-500);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service three]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers.]</p></div>
+<div style="border-top:4px solid var(--cyan-500);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service four]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers.]</p></div>
+<div style="border-top:4px solid var(--indigo-600);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service five]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers.]</p></div>
+<div style="border-top:4px solid var(--violet-500);padding-top:28px"><div style="font-family:var(--font-display);font-weight:600;font-size:34px;color:var(--ink-900);margin-bottom:16px">[Service six]</div><p style="margin:0;font-size:25px;line-height:1.55;color:var(--slate-700)">[What it covers.]</p></div>
+</div>
+</section>
+<section data-label="Track record" data-screen-label="04" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">TRACK RECORD</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Selected projects</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:64px;flex:1;min-height:0">
+<div style="display:flex;flex-direction:column;gap:24px"><div style="flex:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[Project photo]</div><div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Project name]</div><div style="font-size:24px;color:var(--slate-600);margin-top:8px">[Client &middot; value &middot; year]</div></div></div>
+<div style="display:flex;flex-direction:column;gap:24px"><div style="flex:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[Project photo]</div><div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Project name]</div><div style="font-size:24px;color:var(--slate-600);margin-top:8px">[Client &middot; value &middot; year]</div></div></div>
+<div style="display:flex;flex-direction:column;gap:24px"><div style="flex:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[Project photo]</div><div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Project name]</div><div style="font-size:24px;color:var(--slate-600);margin-top:8px">[Client &middot; value &middot; year]</div></div></div>
+</div>
+</section>
+<section data-label="Team" data-screen-label="05" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">TEAM</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:64px">Who you'll work with</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:56px;flex:1;align-content:start">
+<div><div style="width:100%;aspect-ratio:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;color:var(--slate-600);margin-bottom:24px">[Photo]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Name]</div><div style="font-size:24px;color:var(--cyan-600);margin-top:6px">[Role]</div><div style="font-size:22px;color:var(--slate-600);margin-top:10px">[One line of relevant experience]</div></div>
+<div><div style="width:100%;aspect-ratio:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;color:var(--slate-600);margin-bottom:24px">[Photo]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Name]</div><div style="font-size:24px;color:var(--cyan-600);margin-top:6px">[Role]</div><div style="font-size:22px;color:var(--slate-600);margin-top:10px">[One line]</div></div>
+<div><div style="width:100%;aspect-ratio:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;color:var(--slate-600);margin-bottom:24px">[Photo]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Name]</div><div style="font-size:24px;color:var(--cyan-600);margin-top:6px">[Role]</div><div style="font-size:22px;color:var(--slate-600);margin-top:10px">[One line]</div></div>
+<div><div style="width:100%;aspect-ratio:1;border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:22px;color:var(--slate-600);margin-bottom:24px">[Photo]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900)">[Name]</div><div style="font-size:24px;color:var(--cyan-600);margin-top:6px">[Role]</div><div style="font-size:22px;color:var(--slate-600);margin-top:10px">[One line]</div></div>
+</div>
+</section>
+<section data-label="Contact" data-screen-label="06" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:96px;letter-spacing:-.02em;color:var(--paper-050)">Let's talk</div>
+<div style="font-size:34px;color:var(--slate-400);margin-top:32px">[Named contact &middot; direct email &middot; direct phone]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span><span>www.tempest-engineering.co.uk</span>
+</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

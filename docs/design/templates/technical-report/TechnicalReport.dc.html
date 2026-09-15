@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Technical report" description="A4 technical report — cover block, revision history, numbered sections, running header and footer" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">TECHNICAL REPORT</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">[TDE-0000-000] &middot; REV [00]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:24pt;letter-spacing:-.02em;line-height:1.15;color:var(--ink-900);text-wrap:pretty">[Report title]</div>
+<div style="font-family:var(--font-body);font-size:12pt;color:var(--cyan-600);margin-top:2mm">[Subtitle — scope of the assessment]</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin:8mm 0 10mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">PROJECT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Project name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">CLIENT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Client name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">DATE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[DD Month YYYY]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">STATUS</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Draft / Issued]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:3mm">REVISION HISTORY</div>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:10mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">REV</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:18%">DATE</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14)">DESCRIPTION</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:14%">BY</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:14%">APPROVED</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">00</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[First issue]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">01</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Revision description]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">02</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Revision description]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td></tr>
+</tbody>
+</table>
+<div style="border-left:2px solid var(--cyan-500);padding:0 0 0 5mm;margin-bottom:10mm">
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">EXECUTIVE SUMMARY</div>
+<p style="margin:0;text-wrap:pretty">[Three to five sentences covering the purpose of the work, the method used, the principal findings, and the recommendation. Written so a reader who goes no further still leaves with the conclusion.]</p>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:14pt;letter-spacing:-.01em;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin-bottom:4mm"><span style="font-family:var(--font-mono);font-size:11pt;color:var(--cyan-600);margin-right:4mm">1.0</span>Introduction</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Background to the commission, the instructing party, and the terms of reference. Reference the scope document or contract that defines the work.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:11pt;color:var(--ink-900);margin:6mm 0 2.5mm"><span style="font-family:var(--font-mono);font-size:9.5pt;color:var(--cyan-600);margin-right:4mm">1.1</span>Scope of works</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[What is included and, importantly, what is excluded. List assumptions and any limitations on the survey, data, or access.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:14pt;letter-spacing:-.01em;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:10mm 0 4mm"><span style="font-family:var(--font-mono);font-size:11pt;color:var(--cyan-600);margin-right:4mm">2.0</span>Methodology</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Standards, codes, and software used. Describe the analysis approach and any calibration or validation performed.]</p>
+<div style="background:var(--paper-100);border:1px solid var(--ink-a08);padding:5mm;margin:6mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:2mm">FIGURE / TABLE PLACEHOLDER</div>
+<div style="height:45mm;border:1px dashed var(--ink-a14);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:8pt;color:var(--slate-600)">[Insert drawing, chart, or photograph]</div>
+<div style="font-size:8pt;color:var(--slate-700);margin-top:2.5mm"><span style="font-family:var(--font-mono);color:var(--cyan-600)">Fig. 1</span> &nbsp;[Caption describing what the figure shows and its source.]</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:14pt;letter-spacing:-.01em;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:10mm 0 4mm"><span style="font-family:var(--font-mono);font-size:11pt;color:var(--cyan-600);margin-right:4mm">3.0</span>Findings</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Present results in the order the method was described. Keep interpretation separate from observation.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:14pt;letter-spacing:-.01em;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:10mm 0 4mm"><span style="font-family:var(--font-mono);font-size:11pt;color:var(--cyan-600);margin-right:4mm">4.0</span>Conclusions and recommendations</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Numbered conclusions, each traceable to a finding above. Follow with recommended actions, owners, and priority.]</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10mm;border-top:1px solid var(--ink-a14);padding-top:5mm;margin-top:12mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">PREPARED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9.5pt;color:var(--ink-900)">[Name] &middot; [Title]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">APPROVED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9.5pt;color:var(--ink-900)">[Name] &middot; [Title]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

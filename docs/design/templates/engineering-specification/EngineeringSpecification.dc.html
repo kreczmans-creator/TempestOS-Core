@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Engineering specification" description="A4 specification — clause-numbered requirements with reference, verification and status columns" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">SPECIFICATION</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">[TDE-0000-SPE-000] &middot; REV [00]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:22pt;letter-spacing:-.02em;line-height:1.15;color:var(--ink-900);text-wrap:pretty">[Specification title]</div>
+<div style="font-size:11.5pt;color:var(--cyan-600);margin-top:2mm">[Equipment, system, or package this specification governs]</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin:8mm 0 10mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">PROJECT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Project name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">DISCIPLINE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Mechanical / Electrical / Civil]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">ISSUE STATUS</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[For tender / For construction]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:13pt;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin-bottom:4mm"><span style="font-family:var(--font-mono);font-size:10.5pt;color:var(--cyan-600);margin-right:4mm">1</span>Scope and applicable documents</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[State what the specification covers and the boundary of supply. List the codes, standards, and client documents that apply, with edition or revision.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:13pt;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:9mm 0 4mm"><span style="font-family:var(--font-mono);font-size:10.5pt;color:var(--cyan-600);margin-right:4mm">2</span>Requirements</div>
+<p style="margin:0 0 5mm;font-size:9pt;color:var(--slate-700);text-wrap:pretty">Each requirement carries a unique clause reference. <strong style="color:var(--ink-900);font-weight:600">M</strong> = mandatory, <strong style="color:var(--ink-900);font-weight:600">D</strong> = desirable, <strong style="color:var(--ink-900);font-weight:600">I</strong> = for information. Verification method states how compliance will be demonstrated.</p>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:11%">CLAUSE</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14)">REQUIREMENT</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">CAT</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:22%">VERIFICATION</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-700);font-weight:400;border-bottom:1px solid var(--ink-a14);width:16%">REFERENCE</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.1</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Performance requirement — duty, capacity, tolerance, with units]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">M</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Test / calculation]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);font-size:7.5pt">[BS EN 0000]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.2</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Material or construction requirement]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">M</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Certificate review]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);font-size:7.5pt">[BS EN 0000]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.3</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Interface requirement — connections, envelope, services]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">M</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Drawing check]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);font-size:7.5pt">[Drg 0000]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.4</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Environmental or duty condition]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">D</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Type test]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);font-size:7.5pt">[BS EN 0000]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.5</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Documentation and O&amp;M deliverable]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">M</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Submittal review]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);font-size:7.5pt">[Contract cl. 00]</td></tr>
+</tbody>
+</table>
+<div style="font-family:var(--font-display);font-weight:600;font-size:13pt;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:9mm 0 4mm"><span style="font-family:var(--font-mono);font-size:10.5pt;color:var(--cyan-600);margin-right:4mm">3</span>Inspection, testing and acceptance</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Hold points, witness points, and the documentation required at each. State who signs off acceptance and what constitutes a pass.]</p>
+<div style="font-family:var(--font-display);font-weight:600;font-size:13pt;color:var(--ink-900);border-bottom:1px solid var(--ink-a14);padding-bottom:2mm;margin:9mm 0 4mm"><span style="font-family:var(--font-mono);font-size:10.5pt;color:var(--cyan-600);margin-right:4mm">4</span>Deviations and concessions</div>
+<p style="margin:0 0 4mm;text-wrap:pretty">[Route for requesting a deviation, the information required, and who may approve it. Deviations are not valid until issued in writing.]</p>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8mm;border-top:1px solid var(--ink-a14);padding-top:5mm;margin-top:12mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">PREPARED</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Title]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">CHECKED</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Title]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">APPROVED</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Title]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

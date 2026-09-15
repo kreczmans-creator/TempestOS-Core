@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../tokens/fonts.css">
+  <link rel="stylesheet" href="../../tokens/colors.css">
+  <link rel="stylesheet" href="../../tokens/typography.css">
+  <link rel="stylesheet" href="../../tokens/spacing.css">
+  <link rel="stylesheet" href="../../tokens/radius.css">
+  <link rel="stylesheet" href="../../tokens/elevation.css">
+  <link rel="stylesheet" href="../../tokens/motion.css">
+  <link rel="stylesheet" href="../../tokens/semantic.css">
+  <link rel="stylesheet" href="../../tokens/base.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="../../_ds_bundle.js"></script>
+  <script src="image-slot.js"></script>
+  <style>
+    body{margin:0;background:var(--navy-800)}
+    a{color:var(--cyan-500)} a:hover{color:var(--cyan-400)}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--navy-800);color:var(--text-body);font-family:var(--font-body)" data-screen-label="Work">
+  <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:40px;height:72px;padding:0 32px;background:rgba(11,14,30,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border-subtle)">
+    <a href="Home.dc.html" style="border-bottom:0;display:flex"><img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:38px;display:block"></img></a>
+    <nav style="display:flex;align-items:center;gap:28px">
+      <a href="Home.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Home</a>
+      <a href="About.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">About</a>
+      <a href="Capabilities.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Capabilities</a>
+      <a href="Work.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-050);border-bottom:0">Work</a>
+      <a href="Contact.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Contact</a>
+    </nav>
+    <div style="flex:1"></div>
+    <a href="mailto:StevenK@Tempest-Engineering.com" style="font-family:var(--font-mono);font-size:12px;color:var(--cyan-500);border-bottom:0">StevenK@Tempest-Engineering.com</a>
+  </header>
+
+  <section style="padding:96px 32px 72px;background-color:var(--navy-800);background-image:var(--bg-grid);border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <h1 style="margin:0;font-family:var(--font-display);font-size:var(--text-4xl);font-weight:600;letter-spacing:var(--tracking-tightest);color:var(--text-heading)">Work</h1>
+      <p style="margin:20px 0 0;max-width:56ch;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--text-body)">Most of my work is covered by NDA or is classified. What follows is representative of the type and standard of work, not of any specific programme.</p>
+    </div>
+  </section>
+
+  <section style="padding:72px 32px 96px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div class="t-eyebrow">Demonstration pieces</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:36px">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="width:100%;aspect-ratio:4/3;border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden">
+            <image-slot id="work-manifold" shape="rect" placeholder="Render — manifold block, three-quarter view"></image-slot>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Hydraulic manifold block</h3>
+            <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Own design. Cross-drilled porting, cavity selection to standard, and a drawing pack with full GD&amp;T applied to the mounting face and port positions. Shown alongside the section view and the release drawing.</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="width:100%;aspect-ratio:4/3;border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden">
+            <image-slot id="work-bracket" shape="rect" placeholder="Render — bracket + full drawing sheet"></image-slot>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Machined bracket, drawing pack</h3>
+            <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">A deliberately ordinary part, drawn properly. Datum scheme, position and profile tolerances derived from the assembly stack, and a title block to BS8888. This is what a drawing from me looks like.</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="width:100%;aspect-ratio:4/3;border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden">
+            <image-slot id="work-fea" shape="rect" placeholder="Screenshot — FEA mesh and results, side by side"></image-slot>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Structural FEA study</h3>
+            <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Static analysis of the bracket above, showing mesh, boundary conditions and results. The point isn't the colours — it's that the assumptions are stated and the result is defensible at a design review.</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="width:100%;aspect-ratio:4/3;border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden">
+            <image-slot id="work-scan" shape="rect" placeholder="Render or scan overlay — scan-to-CAD"></image-slot>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Scan-to-CAD reconstruction</h3>
+            <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Point cloud through to a fully parametric solid model, with deviation analysis showing how closely the model matches the physical part.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div style="display:flex;align-items:baseline;gap:16px">
+        <div class="t-eyebrow">Representative engagements</div>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-faint)">Anonymised, and deliberately general.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:36px">
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,160px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--text-heading)">Enclosure design for a defence electronics assembly</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Detailed design from an interface specification and thermal budget, through to a released drawing pack under customer configuration control.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,160px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--text-heading)">Obsolete component reinstatement</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">No drawings, one surviving sample. Scanned, modelled, dimensioned and re-drawn to modern standards so it could be re-procured.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,160px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--text-heading)">Inspection fixture family</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">A set of fixtures for repeatable measurement of a variant part range, designed around a single common base to reduce setup time.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,160px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-base);font-weight:600;color:var(--text-heading)">Hydraulic valve development support</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Design iterations against pressure-drop and packaging targets, with analysis to support the down-selection.</p>
+        </x-import>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;background-color:var(--navy-800);background-image:var(--bg-grid)">
+    <div style="max-width:1240px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center">
+      <h2 style="margin:0;font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;letter-spacing:var(--tracking-tight);color:var(--text-heading)">Interested in something similar?</h2>
+      <div style="margin-top:28px"><a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">StevenK@Tempest-Engineering.com</x-import></a></div>
+    </div>
+  </section>
+
+  <footer class="t-light" style="background:var(--bg-page);color:var(--text-body);padding:40px 32px;border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Tempest Design Engineering Ltd, trading as Tempest Engineering. Registered in England and Wales, company no. {{ companyNumber }}.</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint)"><a href="Privacy.dc.html" style="color:var(--text-faint)">Privacy Notice</a><span>·</span><span>© 2026</span></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;companyNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;17349874&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Footer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      companyNumber: this.props.companyNumber ?? '17349874',
+    };
+  }
+}
+</script>
+</body>
+</html>

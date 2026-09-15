@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Drawing register" description="A4 landscape drawing issue register — number, title, revision, status and issue history" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" orientation="landscape" margin="14mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:6mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:3mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:10mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">DRAWING REGISTER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1mm">[TDE-0000-DRG-REG] &middot; UPDATED [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>[Project name] &middot; www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:8.5pt;line-height:1.5;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5mm">
+<div style="font-family:var(--font-display);font-weight:700;font-size:15pt;letter-spacing:-.01em;color:var(--ink-900)">[Project name — drawing register]</div>
+<div style="font-family:var(--font-mono);font-size:7pt;color:var(--slate-700)">STATUS: S0 WIP &middot; S2 INFORMATION &middot; S4 CONSTRUCTION &middot; AB AS-BUILT</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:8pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:16%">DRAWING NO.</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">TITLE</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:7%">SIZE</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">SCALE</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:6%">REV</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">DATE</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">STATUS</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:18%">ISSUED TO</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[TDE-0000-001]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[General arrangement]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[A1]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[1:50]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono);font-weight:700">[P02]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-size:6.5pt;color:#fff;background:var(--indigo-600);padding:.8mm 2mm">[S4]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Client, contractor — transmittal ref]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[TDE-0000-002]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Sections and details]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[A1]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[1:20]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono);font-weight:700">[P01]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-size:6.5pt;color:var(--ink-900);border:1px solid var(--paper-300);padding:.8mm 2mm">[S2]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Client — transmittal ref]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[TDE-0000-003]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Connection schedule]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[A3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[NTS]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono);font-weight:700">[P01]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[DD/MM/YY]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-size:6.5pt;color:var(--ink-900);border:1px solid var(--paper-300);padding:.8mm 2mm">[S0]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Internal]</td></tr>
+</tbody>
+</table>
+<p style="margin:4mm 0 0;font-size:7.5pt;color:var(--slate-600)">Superseded revisions are withdrawn on issue of the next revision. Electronic issue via [system]; the register is the record of current revision.</p>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

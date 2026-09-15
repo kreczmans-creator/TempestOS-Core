@@ -1,0 +1,79 @@
+/* Semantic aliases. Defaults are the dark ("instrument") theme — Tempest's home ground.
+   Wrap a subtree in .t-light for the paper theme. */
+:root{
+  --bg-page:var(--navy-800);
+  --bg-surface:var(--navy-700);
+  --bg-surface-raised:var(--navy-600);
+  --bg-surface-sunken:var(--navy-900);
+  --bg-input:var(--navy-900);
+  --bg-hover:rgba(245,246,250,.05);
+  --bg-active:rgba(245,246,250,.09);
+  --bg-selected:var(--cyan-a12);
+
+  --text-heading:var(--paper-050);
+  --text-body:rgba(245,246,250,.82);
+  --text-muted:var(--slate-400);
+  --text-faint:var(--slate-500);
+  --text-inverse:var(--ink-900);
+  --text-accent:var(--cyan-500);
+  --text-link:var(--cyan-400);
+  --text-link-hover:var(--paper-050);
+
+  --border-subtle:var(--paper-a08);
+  --border-default:var(--paper-a14);
+  --border-strong:var(--navy-400);
+  --border-accent:var(--cyan-500);
+
+  --surface-card:var(--navy-700);
+  --surface-card-border:var(--paper-a08);
+  --surface-overlay:rgba(7,9,21,.72);
+
+  --accent-primary:var(--cyan-500);
+  --accent-primary-hover:var(--cyan-400);
+  --accent-primary-press:var(--cyan-600);
+  --accent-secondary:var(--violet-500);
+  --accent-tertiary:var(--indigo-500);
+  --on-accent:var(--navy-900);
+
+  --status-success:var(--green-500);
+  --status-warning:var(--amber-500);
+  --status-danger:var(--red-500);
+  --status-info:var(--cyan-500);
+
+  --focus-ring:var(--glow-focus);
+}
+.t-light{
+  --bg-page:var(--paper-050);
+  --bg-surface:var(--paper-000);
+  --bg-surface-raised:var(--paper-000);
+  --bg-surface-sunken:var(--paper-100);
+  --bg-input:var(--paper-000);
+  --bg-hover:rgba(22,24,29,.04);
+  --bg-active:rgba(22,24,29,.07);
+  --bg-selected:var(--cyan-a12);
+
+  --text-heading:var(--ink-900);
+  --text-body:var(--slate-700);
+  --text-muted:var(--slate-600);
+  --text-faint:var(--slate-500);
+  --text-inverse:var(--paper-050);
+  --text-accent:var(--indigo-600);
+  --text-link:var(--indigo-600);
+  --text-link-hover:var(--violet-500);
+
+  --border-subtle:var(--ink-a08);
+  --border-default:var(--ink-a14);
+  --border-strong:var(--paper-300);
+  --border-accent:var(--indigo-600);
+
+  --surface-card:var(--paper-000);
+  --surface-card-border:var(--ink-a08);
+  --surface-overlay:rgba(11,14,30,.5);
+
+  --accent-primary:var(--indigo-600);
+  --accent-primary-hover:var(--indigo-500);
+  --accent-primary-press:#16226f;
+  --on-accent:var(--paper-050);
+
+  --focus-ring:0 0 0 2px var(--paper-050),0 0 0 4px var(--indigo-600);
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Risk register" description="A4 landscape risk register — likelihood × severity scoring, mitigation, owner and residual risk" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" orientation="landscape" margin="14mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:6mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:3mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:10mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">RISK REGISTER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1mm">[TDE-0000-RSK-000] &middot; REV [00] &middot; REVIEWED [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>[Project name] &middot; www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:8.5pt;line-height:1.5;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5mm">
+<div style="font-family:var(--font-display);font-weight:700;font-size:15pt;letter-spacing:-.01em;color:var(--ink-900)">[Project name — risk register]</div>
+<div style="font-family:var(--font-mono);font-size:7pt;color:var(--slate-700)">SCORE = LIKELIHOOD (1–5) × SEVERITY (1–5) &middot; &ge;15 HIGH &middot; 8–12 MEDIUM &middot; &le;6 LOW</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:8pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:6%">ID</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:24%">RISK — CAUSE AND EFFECT</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:5%">L</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:5%">S</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">SCORE</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">MITIGATION</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:9%">OWNER</th>
+<th style="text-align:center;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:9%">RESIDUAL</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">R01</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Ground conditions differ from survey — redesign of foundations, delay and cost]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[5]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-weight:700;color:#fff;background:var(--red-500);padding:1mm 2.5mm">[15]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Additional boreholes before detailed design; foundation options held open to stage 3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[6]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">R02</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Long-lead equipment delivery slips — programme delay]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-weight:700;color:var(--ink-900);background:var(--amber-500);padding:1mm 2.5mm">[9]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Order at design freeze; expedite clause in PO; weekly supplier reporting]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[4]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">R03</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Design interface with third party unresolved — abortive work]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[2]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[3]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center"><span style="font-family:var(--font-mono);font-weight:700;color:var(--ink-900);background:var(--paper-200);padding:1mm 2.5mm">[6]</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Interface register maintained; agreement at each design gate]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[2]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">R04</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[New risk]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Mitigation]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);text-align:center;font-family:var(--font-mono)">[–]</td></tr>
+</tbody>
+</table>
+<p style="margin:4mm 0 0;font-size:7.5pt;color:var(--slate-600)">Reviewed at each progress meeting. Closed risks move to the register archive with closure date and evidence.</p>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

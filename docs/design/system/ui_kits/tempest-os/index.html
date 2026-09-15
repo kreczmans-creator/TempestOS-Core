@@ -1,0 +1,87 @@
+<!-- @dsCard group="Tempest OS" viewport="1400x900" name="Tempest OS console" subtitle="Sign in, fleet overview, telemetry, alert queue — click through" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Tempest OS</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="tempest-boot.js"></script>
+<style>html,body,#root{height:100%}body{margin:0;overflow:hidden}</style></head>
+<body><div id="root"></div>
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="SplashScreen.jsx"></script>
+<script type="text/babel" src="AppShell.jsx"></script>
+<script type="text/babel" src="LoginScreen.jsx"></script>
+<script type="text/babel" src="OverviewScreen.jsx"></script>
+<script type="text/babel" src="TelemetryScreen.jsx"></script>
+<script type="text/babel" src="AlertsScreen.jsx"></script>
+<script type="text/babel" data-presets="react">
+(() => {
+const { Button, IconButton, Badge, Dialog, Toast, Icon, Tag } = window.TempestEngineeringDesignSystem_1d4355;
+
+const TITLES = {
+  overview: ['Fleet overview', 'tempest-os / fleet'],
+  telemetry: ['Telemetry', 'tempest-os / north-ridge / array-04'],
+  alerts: ['Alerts', 'tempest-os / alerts'],
+  dispatch: ['Dispatch', 'tempest-os / dispatch'],
+  assets: ['Assets', 'tempest-os / assets'],
+  settings: ['Settings', 'tempest-os / settings'],
+};
+
+function Placeholder({ name }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, height: 380, border: '1px dashed var(--border-default)', borderRadius: 'var(--radius-md)', color: 'var(--text-faint)' }}>
+      <Icon name="square-dashed" size={22} />
+      <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, letterSpacing: '.14em', textTransform: 'uppercase' }}>{name}</span>
+      <span style={{ fontSize: 13, maxWidth: '40ch', textAlign: 'center' }}>No source design was provided for this view, so it is intentionally left blank.</span>
+    </div>
+  );
+}
+
+function App() {
+  const boot = React.useMemo(() => window.TempestBoot.start(), []);
+  const [booted, setBooted] = React.useState(false);
+  const [signedIn, setSignedIn] = React.useState(false);
+  const [screen, setScreen] = React.useState('overview');
+  const [confirm, setConfirm] = React.useState(false);
+  const [toasts, setToasts] = React.useState([]);
+
+  const push = (t) => setToasts((s) => [...s, { ...t, key: Date.now() + Math.random() }]);
+  const drop = (key) => setToasts((s) => s.filter((t) => t.key !== key));
+
+  if (!booted) return <SplashScreen boot={boot} onDone={() => setBooted(true)} />;
+  if (!signedIn) return <LoginScreen onSignIn={() => { setSignedIn(true); push({ tone: 'success', title: 'Signed in', body: 'Session open on north-ridge.', t: '14:02:12Z' }); }} />;
+
+  const [title, crumb] = TITLES[screen];
+  return (
+    <>
+      <AppShell
+        screen={screen} onNavigate={setScreen} title={title} breadcrumb={crumb}
+        headerRight={<>
+          <Badge tone="success" dot>Grid nominal</Badge>
+          <Tag>north-ridge</Tag>
+          <IconButton icon="bell" label="Alerts" onClick={() => setScreen('alerts')} />
+          <IconButton icon="search" label="Search" />
+          <Button size="sm" variant="secondary" iconLeft={<Icon name="download" size={12} />}>Export</Button>
+          <Button size="sm" iconLeft={<Icon name="zap" size={12} />} onClick={() => push({ tone: 'info', title: 'Dispatch re-planned', body: '142 of 144 units accepted the new schedule.', t: '14:03:02Z' })}>Re-plan</Button>
+        </>}
+        toasts={toasts.map((t) => (
+          <Toast key={t.key} tone={t.tone} title={t.title} timestamp={t.t} onClose={() => drop(t.key)}>{t.body}</Toast>
+        ))}
+      >
+        {screen === 'overview' && <OverviewScreen onOpenAlerts={() => setScreen('alerts')} />}
+        {screen === 'telemetry' && <TelemetryScreen />}
+        {screen === 'alerts' && <AlertsScreen onConfirmOffline={() => setConfirm(true)} />}
+        {!['overview', 'telemetry', 'alerts'].includes(screen) && <Placeholder name={title} />}
+      </AppShell>
+      <Dialog open={confirm} eyebrow="Confirm" title="Take array offline?" onClose={() => setConfirm(false)}
+        footer={<><Button variant="ghost" onClick={() => setConfirm(false)}>Cancel</Button>
+        <Button variant="danger" onClick={() => { setConfirm(false); push({ tone: 'warning', title: 'Array 04 offline', body: 'Output will return in ~40 minutes.', t: '14:04:18Z' }); }}>Take offline</Button></>}>
+        Output will drop to zero for roughly 40 minutes. The dispatch schedule will re-plan automatically.
+      </Dialog>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+})();
+</script></body></html>

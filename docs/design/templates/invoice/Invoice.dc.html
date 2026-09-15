@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Invoice" description="A4 invoice — itemised lines, VAT summary, payment terms and bank details" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">INVOICE</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">No. [INV-0000]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;gap:32px;margin-bottom:10mm">
+<div style="font-size:9.5pt;line-height:1.6">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.16em;color:var(--slate-600);margin-bottom:2mm">BILL TO</div>
+<div style="font-weight:600;color:var(--ink-900)">[Client company]</div>
+<div>[Contact name]</div>
+<div>[Street address]</div>
+<div>[Town, postcode]</div>
+<div style="font-family:var(--font-mono);font-size:8pt;margin-top:1.5mm;color:var(--slate-700)">VAT No. [GB 000 0000 00]</div>
+</div>
+<div style="text-align:right;font-family:var(--font-mono);font-size:8pt;letter-spacing:.04em;color:var(--slate-700);line-height:2;white-space:nowrap">
+<div><span style="color:var(--slate-600)">INVOICE DATE &nbsp;</span>[DD/MM/YYYY]</div>
+<div><span style="color:var(--slate-600)">DUE DATE &nbsp;</span>[DD/MM/YYYY]</div>
+<div><span style="color:var(--slate-600)">PROJECT &nbsp;</span>[TDE-0000]</div>
+<div><span style="color:var(--slate-600)">PO REF &nbsp;</span>[Client PO]</div>
+</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">DESCRIPTION</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">QTY</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:16%">RATE</th>
+<th style="text-align:right;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:18%">AMOUNT</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Work stage or service — period covered]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[0]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000.00]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Work stage or service]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[0]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000.00]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Expenses / disbursements]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[—]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[—]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000.00]</td></tr>
+</tbody>
+</table>
+<div style="display:flex;justify-content:flex-end;margin-bottom:10mm">
+<div style="width:72mm">
+<div style="display:flex;justify-content:space-between;padding:2mm 3mm;font-size:9pt"><span style="color:var(--slate-700)">Subtotal</span><span style="font-family:var(--font-mono)">[£0,000.00]</span></div>
+<div style="display:flex;justify-content:space-between;padding:2mm 3mm;font-size:9pt;border-bottom:2px solid var(--indigo-600)"><span style="color:var(--slate-700)">VAT @ 20%</span><span style="font-family:var(--font-mono)">[£000.00]</span></div>
+<div style="display:flex;justify-content:space-between;padding:3mm;background:var(--paper-100)"><span style="font-family:var(--font-display);font-weight:600;color:var(--ink-900)">Total due</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[£0,000.00]</span></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm;border-top:1px solid var(--ink-a14);padding-top:5mm">
+<div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">PAYMENT</div>
+<div style="font-family:var(--font-mono);font-size:8pt;color:var(--slate-700);line-height:2">Account name &nbsp;[Tempest Design Engineering Ltd]<br>Sort code &nbsp;[00-00-00] &nbsp;&middot;&nbsp; Account &nbsp;[00000000]<br>Reference &nbsp;[INV-0000]</div>
+</div>
+<div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">TERMS</div>
+<p style="margin:0;font-size:8.5pt;color:var(--slate-700);text-wrap:pretty">[Payment within 30 days of invoice date. Queries to accounts@tempest-engineering.co.uk quoting the invoice number. Late payment subject to statutory interest.]</p>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

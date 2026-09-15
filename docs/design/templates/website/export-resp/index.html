@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempest Engineering — Home</title>
+<link rel="stylesheet" href="../../../tokens/fonts.css">
+<link rel="stylesheet" href="../../../tokens/colors.css">
+<link rel="stylesheet" href="../../../tokens/typography.css">
+<link rel="stylesheet" href="../../../tokens/spacing.css">
+<link rel="stylesheet" href="../../../tokens/radius.css">
+<link rel="stylesheet" href="../../../tokens/elevation.css">
+<link rel="stylesheet" href="../../../tokens/motion.css">
+<link rel="stylesheet" href="../../../tokens/semantic.css">
+<link rel="stylesheet" href="../../../tokens/base.css">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#0b0e1e"><svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><rect width="1200" height="800" fill="#0b0e1e"></rect></svg></template>
+<div id="site-intro" aria-hidden="true">
+<style>
+#site-intro{position:fixed;inset:0;z-index:100;background:#0b0e1e;opacity:1;transition:opacity 500ms cubic-bezier(.2,0,.2,1)}
+#site-intro.out{opacity:0;pointer-events:none}
+#site-intro .in-lock{position:absolute;transform-origin:top left;transition:top 900ms cubic-bezier(.2,0,.2,1),left 900ms cubic-bezier(.2,0,.2,1),transform 900ms cubic-bezier(.2,0,.2,1)}
+#site-intro .in-mark{position:absolute;left:0;aspect-ratio:1;transition:transform 640ms cubic-bezier(.2,0,.2,1)}
+#site-intro .in-l{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition-property:opacity;transition-timing-function:cubic-bezier(.2,0,.2,1)}
+#site-intro.go .in-l{opacity:1}
+#site-intro.slide .in-mark{transform:translateX(0)!important}
+#site-intro .in-word{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 620ms cubic-bezier(.2,0,.2,1),transform 620ms cubic-bezier(.2,0,.2,1)}
+#site-intro.word .in-word{opacity:1;transform:translateX(0)!important}
+#site-intro .in-rp{position:absolute;inset:0;width:100%;height:100%}
+#site-intro .rp{fill:none;opacity:0}
+@keyframes in-ripple{0%{r:0.4vmax;opacity:0}5%{opacity:1}45%{opacity:.7}100%{r:78vmax;opacity:0}}
+@keyframes in-glow{0%{r:0.6vmax;opacity:.55}100%{r:62vmax;opacity:0}}
+@media(prefers-reduced-motion:reduce){#site-intro{display:none}}
+</style>
+<svg class="in-rp" aria-hidden="true"><defs><radialGradient id="in-g"><stop offset="0%" stop-color="#1c2d97" stop-opacity=".8"></stop><stop offset="65%" stop-color="#1c2d97" stop-opacity=".22"></stop><stop offset="100%" stop-color="#1c2d97" stop-opacity="0"></stop></radialGradient></defs><circle cx="50%" cy="50%" fill="url(#in-g)" style="opacity:0;animation:in-glow 1400ms cubic-bezier(.2,.45,.55,1) 120ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#40a2ce" stroke-width="3" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 120ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#1c2d97" stroke-width="2.25" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 300ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#40a2ce" stroke-width="1.25" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 480ms 1 forwards"></circle></svg>
+<div class="in-lock" id="in-lock"><svg class="in-word" id="in-word" viewBox="0 0 474 120" xmlns="http://www.w3.org/2000/svg"><path transform="translate(122,73.5)" fill="#f5f6fa" d="M17.02 -44.46L1.14 -44.46L1.14 -53.20L43.24 -53.20L43.24 -44.46L27.36 -44.46L27.36 0.00L17.02 0.00L17.02 -44.46ZM48.82 -53.20L87.28 -53.20L87.28 -44.46L59.16 -44.46L59.16 -31.01L85.08 -31.01L85.08 -22.42L59.16 -22.42L59.16 -8.74L87.28 -8.74L87.28 0.00L48.82 0.00L48.82 -53.20ZM94.38 -53.20L103.96 -53.20L119.76 -18.85L119.92 -18.85L135.80 -53.20L145.38 -53.20L145.38 0.00L135.42 0.00L135.42 -32.38L135.27 -32.38L123.03 -7.45L116.65 -7.45L104.49 -32.38L104.34 -32.38L104.34 0.00L94.38 0.00L94.38 -53.20ZM154.76 -53.20L188.12 -53.20L196.25 -44.99L196.25 -26.37L188.04 -18.09L165.09 -18.09L165.09 0.00L154.76 0.00L154.76 -53.20ZM183.41 -26.75L186.07 -29.41L186.07 -41.88L183.41 -44.54L165.09 -44.54L165.09 -26.75L183.41 -26.75ZM203.35 -53.20L241.81 -53.20L241.81 -44.46L213.69 -44.46L213.69 -31.01L239.60 -31.01L239.60 -22.42L213.69 -22.42L213.69 -8.74L241.81 -8.74L241.81 0.00L203.35 0.00L203.35 -53.20ZM247.77 -8.21L247.77 -15.81L257.95 -15.81L257.95 -11.32L260.46 -8.82L276.19 -8.82L278.78 -11.40L278.78 -20.22L276.27 -22.72L256.13 -22.72L247.92 -30.93L247.92 -44.99L256.13 -53.20L280.14 -53.20L288.35 -44.99L288.35 -37.32L278.17 -37.32L278.17 -41.88L275.66 -44.38L260.61 -44.38L258.10 -41.88L258.10 -34.05L260.61 -31.54L280.75 -31.54L288.96 -23.33L288.96 -8.36L280.60 0.00L255.98 0.00L247.77 -8.21ZM308.90 -44.46L293.02 -44.46L293.02 -53.20L335.12 -53.20L335.12 -44.46L319.24 -44.46L319.24 0.00L308.90 0.00L308.90 -44.46Z"></path><g transform="translate(122,101.5)"><path fill="#a7aec4" d="M1.33 -13.30L10.60 -13.30L10.60 -11.42L3.53 -11.42L3.53 -7.62L10.05 -7.62L10.05 -5.76L3.53 -5.76L3.53 -1.88L10.60 -1.88L10.60 0.00L1.33 0.00L1.33 -13.30ZM34.17 -13.30L36.18 -13.30L42.45 -3.63L42.49 -3.63L42.49 -13.30L44.60 -13.30L44.60 0.00L42.58 0.00L36.31 -9.65L36.27 -9.65L36.27 0.00L34.17 0.00L34.17 -13.30ZM68.54 -2.15L68.54 -11.15L70.69 -13.30L77.03 -13.30L79.14 -11.19L79.14 -9.44L76.94 -9.44L76.94 -10.41L75.93 -11.40L71.83 -11.40L70.74 -10.34L70.74 -2.96L71.83 -1.90L75.93 -1.90L77.00 -2.94L77.00 -5.36L74.09 -5.36L74.09 -7.26L79.14 -7.26L79.14 -2.15L77.00 0.00L70.69 0.00L68.54 -2.15ZM102.99 -13.30L105.20 -13.30L105.20 0.00L102.99 0.00L102.99 -13.30ZM129.43 -13.30L131.44 -13.30L137.71 -3.63L137.75 -3.63L137.75 -13.30L139.86 -13.30L139.86 0.00L137.84 0.00L131.57 -9.65L131.53 -9.65L131.53 0.00L129.43 0.00L129.43 -13.30ZM163.99 -13.30L173.26 -13.30L173.26 -11.42L166.19 -11.42L166.19 -7.62L172.71 -7.62L172.71 -5.76L166.19 -5.76L166.19 -1.88L173.26 -1.88L173.26 0.00L163.99 0.00L163.99 -13.30ZM196.83 -13.30L206.10 -13.30L206.10 -11.42L199.03 -11.42L199.03 -7.62L205.55 -7.62L205.55 -5.76L199.03 -5.76L199.03 -1.88L206.10 -1.88L206.10 0.00L196.83 0.00L196.83 -13.30ZM239.77 -4.29L239.77 0.00L237.57 0.00L237.57 -3.76L236.20 -5.26L231.87 -5.26L231.87 0.00L229.66 0.00L229.66 -13.30L237.76 -13.30L239.69 -11.34L239.69 -7.26L238.31 -5.87L239.77 -4.29ZM231.87 -7.09L236.77 -7.09L237.53 -7.85L237.53 -10.68L236.77 -11.44L231.87 -11.44L231.87 -7.09ZM263.90 -13.30L266.11 -13.30L266.11 0.00L263.90 0.00L263.90 -13.30ZM290.34 -13.30L292.35 -13.30L298.62 -3.63L298.66 -3.63L298.66 -13.30L300.77 -13.30L300.77 0.00L298.75 0.00L292.48 -9.65L292.45 -9.65L292.45 0.00L290.34 0.00L290.34 -13.30ZM324.71 -2.15L324.71 -11.15L326.86 -13.30L333.20 -13.30L335.31 -11.19L335.31 -9.44L333.11 -9.44L333.11 -10.41L332.10 -11.40L328.00 -11.40L326.92 -10.34L326.92 -2.96L328.00 -1.90L332.10 -1.90L333.17 -2.94L333.17 -5.36L330.26 -5.36L330.26 -7.26L335.31 -7.26L335.31 -2.15L333.17 0.00L326.86 0.00L324.71 -2.15Z"></path></g></svg><div class="in-mark" id="in-mark"><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:900ms;transition-duration:680ms" xmlns="http://www.w3.org/2000/svg"><polygon points="546.5,512 529.25,541.88 494.75,541.88 477.5,512 494.75,482.12 529.25,482.12" fill="#F5F6FA" stroke="#F5F6FA" stroke-width="20" stroke-linejoin="round"></polygon></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:1500ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#1c2d97"><line x1="558.5" y1="569.5" x2="885.5" y2="569.5"></line><line x1="485.45" y1="581.02" x2="648.95" y2="864.21"></line><line x1="438.95" y1="523.52" x2="275.45" y2="806.71"></line><line x1="465.5" y1="454.5" x2="138.5" y2="454.5"></line><line x1="538.55" y1="442.98" x2="375.05" y2="159.79"></line><line x1="585.05" y1="500.48" x2="748.55" y2="217.29"></line></g></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:1950ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#40a2ce"><line x1="580.5" y1="634.5" x2="830" y2="634.5"></line><line x1="440.16" y1="632.57" x2="564.91" y2="848.65"></line><line x1="371.66" y1="510.07" x2="246.91" y2="726.15"></line><line x1="443.5" y1="389.5" x2="194" y2="389.5"></line><line x1="583.84" y1="391.43" x2="459.09" y2="175.35"></line><line x1="652.34" y1="513.93" x2="777.09" y2="297.85"></line></g></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:2400ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#6c29d9"><line x1="624" y1="698" x2="781" y2="698"></line><line x1="406.92" y1="701.99" x2="485.42" y2="837.96"></line><line x1="294.92" y1="515.99" x2="216.42" y2="651.96"></line><line x1="400" y1="326" x2="243" y2="326"></line><line x1="617.08" y1="322.01" x2="538.58" y2="186.04"></line><line x1="729.08" y1="508.01" x2="807.58" y2="372.04"></line></g></svg></div></div>
+<script>(function(){var el=document.getElementById('site-intro');var seen=false;try{seen=sessionStorage.getItem('tmpst-intro')==='1'}catch(e){}var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;if(seen||rm){el.parentNode.removeChild(el);return}try{sessionStorage.setItem('tmpst-intro','1')}catch(e){}
+var lock=document.getElementById('in-lock'),mark=document.getElementById('in-mark'),word=document.getElementById('in-word');
+var w=innerWidth,hgt=innerHeight,vmin=Math.min(w,hgt),mobile=w<640;
+var icon=Math.round(Math.max(mobile?96:130,Math.min(0.21*vmin,240)));
+var lockW=icon*4.74,lockH=icon*1.2;
+lock.style.width=lockW+'px';lock.style.height=lockH+'px';
+mark.style.width=icon+'px';mark.style.top=(0.1*icon)+'px';
+mark.style.transform='translateX('+(1.87*icon)+'px)';
+word.style.transform='translateX('+(icon*-0.12)+'px)';
+lock.style.top=((hgt-lockH)/2)+'px';lock.style.left=((w-lockW)/2)+'px';
+requestAnimationFrame(function(){requestAnimationFrame(function(){el.classList.add('go')})});
+setTimeout(function(){el.classList.add('slide')},3300);
+setTimeout(function(){el.classList.add('word')},3650);
+setTimeout(function(){var img=document.querySelector('.hdr-logo img'),r=img?img.getBoundingClientRect():null;var sc,top,left;if(r&&r.height>0){sc=r.height/lockH;top=r.top;left=r.left}else{sc=38/lockH;top=17;left=32}lock.style.top=top+'px';lock.style.left=left+'px';lock.style.transform='scale('+sc+')'},4700);
+setTimeout(function(){el.classList.add('out')},5650);
+setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},6300)})()</script>
+</div>
+<header class="hdr"><div class="hdr-row"><a class="hdr-logo" href="index.html"><img src="../../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering"></a><nav class="hdr-nav"><a class="nl on" href="index.html">Home</a><a class="nl" href="about.html">About</a><a class="nl" href="capabilities.html">Capabilities</a><a class="nl" href="work.html">Work</a><a class="nl" href="contact.html">Contact</a></nav><div class="sp"></div><a class="hdr-mail" href="mailto:StevenK@Tempest-Engineering.com">StevenK@Tempest-Engineering.com</a><a class="hdr-mail-m" href="mailto:StevenK@Tempest-Engineering.com">Email</a></div><nav class="hdr-nav-m"><a class="nl on" href="index.html">Home</a><a class="nl" href="about.html">About</a><a class="nl" href="capabilities.html">Capabilities</a><a class="nl" href="work.html">Work</a><a class="nl" href="contact.html">Contact</a></nav></header>
+<section class="sec sec-hero grid-bg"><div class="wrap">
+<h1 class="h1-hero" style="max-width:20ch">Mechanical design engineering, from concept to release-ready drawings.</h1>
+<p class="lead" style="margin-top:28px;max-width:58ch">Tempest Engineering is the design practice of Steven Kreczman — ten years of mechanical design across defence electronics, MoD equipment support, and industrial hydraulics.</p>
+<div style="display:flex;align-items:center;gap:20px;margin-top:44px;flex-wrap:wrap"><a class="btn" href="mailto:StevenK@Tempest-Engineering.com">Get in touch</a><span style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted)">StevenK@Tempest-Engineering.com</span></div>
+</div></section>
+<section class="sec"><div class="wrap g2x">
+<div><div class="t-eyebrow">Positioning</div><h2 class="h2" style="margin-top:14px;max-width:20ch">Discrete packages, not open-ended resource.</h2></div>
+<p class="lead" style="max-width:56ch">I take on a small number of design packages at a time, working directly with the engineering team rather than through account managers. Scope is defined up front, delivery is to your standards and your title block, and drawings go out checked.</p>
+</div></section>
+<section class="sec"><div class="wrap">
+<div style="display:flex;align-items:baseline;gap:24px"><div class="t-eyebrow">Capabilities</div><div class="sp"></div><a class="nl" href="capabilities.html" style="color:var(--cyan-500)">Full capabilities →</a></div>
+<div class="g4" style="margin-top:36px">
+<div class="card"><h3 class="h3">Design &amp; development</h3><p class="sm">Concept through detailed design in PTC Creo, Siemens NX and SolidWorks. Sheet metal, machined components, enclosures and assemblies.</p></div>
+<div class="card"><h3 class="h3">Analysis</h3><p class="sm">FEA and CFD to support design decisions — and to justify them at design review.</p></div>
+<div class="card"><h3 class="h3">Drawings &amp; data packs</h3><p class="sm">Fully dimensioned, GD&amp;T-toleranced drawings to BS8888 or ASME Y14.5, released to your standard.</p></div>
+<div class="card"><h3 class="h3">Reverse engineering &amp; metrology</h3><p class="sm">Scan-to-CAD reconstruction and inspection fixture design where no model exists.</p></div>
+</div>
+</div></section>
+<section class="sec"><div class="wrap">
+<div class="t-eyebrow">How it works</div>
+<div class="g3" style="margin-top:36px">
+<div><div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">01</div><h3 class="h3" style="margin:14px 0 10px;font-size:var(--text-xl)">Brief</h3><p class="sm">A call and a written scope. If it isn't a fit, I'll say so at this stage.</p></div>
+<div><div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">02</div><h3 class="h3" style="margin:14px 0 10px;font-size:var(--text-xl)">Design</h3><p class="sm">Regular check-ins against agreed milestones. No surprises at delivery.</p></div>
+<div><div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">03</div><h3 class="h3" style="margin:14px 0 10px;font-size:var(--text-xl)">Release</h3><p class="sm">Native and neutral CAD, drawings checked and issued to your numbering.</p></div>
+</div>
+</div></section>
+<div class="cred"><div class="wrap">BEng (Hons) Mechanical Engineering · AMIMechE · UK SC Clearance · ISO 9001 Internal Auditor · CETOP Level 3 Mobile Hydraulics</div></div>
+<section class="sec-cta grid-bg"><div class="wrap cta-col">
+<h2 class="h2">Current availability is limited.</h2>
+<p class="bp" style="margin-top:20px;max-width:52ch">If you have a package in mind, get in touch and I'll tell you honestly whether the timing works.</p>
+<div style="margin-top:36px"><a class="btn" href="mailto:StevenK@Tempest-Engineering.com">StevenK@Tempest-Engineering.com</a></div>
+</div></section>
+<footer class="ftr t-light"><div class="wrap fcol"><div class="fline">Tempest Design Engineering Ltd, trading as Tempest Engineering. Registered in England and Wales, company no. 17349874.</div><div class="fmeta"><a href="privacy.html">Privacy Notice</a><span>·</span><span>© 2026</span></div></div></footer>
+</body>
+</html>
