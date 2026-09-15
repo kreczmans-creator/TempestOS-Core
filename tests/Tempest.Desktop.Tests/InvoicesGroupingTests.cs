@@ -128,6 +128,11 @@ public sealed class InvoicesGroupingTests
             AssertOnlyInGroup(groups, "Available to invoice", freeCompletion.Id);
             Assert.False(ContainsRow(view, carriedCompletion.Id), "The carried completion must not appear anywhere in this view.");
 
+            // ---- `TD-180` (`WP 20.1B`): a row shows its own terms and due date ----
+            var sentText = string.Join(" | ", groups["Sent"].GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
+            Assert.Contains($"Terms {sentRecent.PaymentTerms.DisplayName()}", sentText, StringComparison.Ordinal);
+            Assert.Contains($"Due {sentRecent.DueOn:yyyy-MM-dd}", sentText, StringComparison.Ordinal);
+
             // ---- captions state the counts and, for Outstanding, the own-due-date rule (`TD-180`) ----
             AssertHeaderPresent(view, "New (1)");
             AssertHeaderPresent(view, "Available to invoice (1)");
