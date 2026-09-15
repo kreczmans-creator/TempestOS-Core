@@ -965,20 +965,33 @@ platform-wide `LifecycleTransitionTable` will not permit reversing
 compensation and says so in Command History ("cannot be undone:
 ..."), never a silent no-op. A macro's own run records one compound
 action for the whole run, not one per step.
-**Requirements is deliberately excluded — kill switch, named here
-rather than silently shipped incomplete:** it runs on
-`IRequirementsService`/`IEngineeringDocumentStore`, not
-`EngineeringDomainContext.Repository`/`EngineeringObjectBase` the
-compensation mechanism (and the archived-project guard it must never
-cross) is built against — extending it safely needs its own
-investigation into whether that guard even resolves a Requirement at
-all, plus a new `IRequirementsService` restore capability, neither of
-which this Work Package's own night reached. Create/Delete/Move/
-Set-Status for Requirement/RequirementGroup/RequirementCollection stay
-exactly as undoable as they were before this Work Package: not at all,
-with nothing recorded either way — the same behaviour every other
-command outside this Work Package's scope (Timesheets, Invoicing,
-Quotations) already has, not a new gap this Work Package introduced.
+**Requirements' own exclusion above closed by `WP 21.6A` (2026-09-15).**
+The investigation this row itself called for: `ArchivedProjectCommandGuard`
+walks `EngineeringDomainContext.Repository`/`IHasParent.ParentId` to find
+the project a command would mutate, and a Requirement/RequirementGroup/
+RequirementCollection document is never registered in that repository at
+all (it lives in `IEngineeringDocumentStore` only) — the guard's own
+`Repository.FindAsync` call resolves nothing for a Requirement id, so it
+is structurally inapplicable to this discipline today, not merely
+untested against it; `WP 21.6A`'s own Requirements compensation handlers
+therefore dispatch their Undo/Redo directly through `ICommandDispatcher`,
+with no guard call to thread through (nothing to cross, because there is
+nothing here for the guard to see). `IRequirementsService.UndeleteAsync`
+is the restore capability this row asked for, the same two-guard shape
+(`RequirementNotFoundException`/`RequirementNotDeletedException`/
+`RequirementGroupDeletedException`) `EngineeringObjectBase.UndeleteAsync`
+already established. `requirements.create`/`delete`/`move`/`move-group`/
+`set-status` are now genuinely undoable/redoable, the same
+`CommandCompensation` seam `WP 21.1A` built; a status transition the
+platform-wide `RequirementStatusTransitions` table will not permit
+reversing carries no compensation and says so in Command History, exactly
+as every other discipline's own status change already does.
+`create-group`/`delete-group`/`create-collection`/`delete-collection`/
+`add-to-collection`/`revise`/`set-owner`/`set-priority`/`link` stay
+outside this closure's own scope — undoable exactly as they were before
+`WP 21.6A`: not at all, with nothing recorded either way, the same
+behaviour every other command outside `WP 21.1A`'s own five disciplines
+already has, not a new gap either Work Package introduced.
 
 ## Archived with the Layer
 
