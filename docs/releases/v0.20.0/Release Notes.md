@@ -36,7 +36,39 @@ require.
 
 ## Warnings
 
-- *(filled at each merge)*
+- **SVG stays unsupported in the viewer** (`WP 20.2B`): no SVG rasteriser
+  is referenced by the solution and the brief forbade a new package
+  without saying so; DWG and DXF now open externally with honest wording,
+  and the SVG half of `TD-99` stays in the live backlog.
+- **Rehydration is still eager** (`WP 20.1C2`, `TD-88` open): the index
+  stage and its hook are in, but about seventy callers read full state
+  straight from list results, so lazy materialisation could not be proven
+  equivalent in the night; startup measured about 190 ms for a thousand
+  objects, so the cost is not felt at today's scale.
+- **Rotation rotates the rendered bitmap only** (`WP 20.2B`): the
+  viewport-fit and zoom maths run over the un-rotated page size, so a
+  rotated landscape page may need a zoom step to fit; materialised copies
+  for Open externally are left under the user's temp folder.
+- **The archived-project command guard is opt-in per binding**
+  (`WP 19.10R`): 77 mutating commands carry the marker; a future binding
+  that mutates and forgets `Mutates = true` is not guarded. Requirements
+  are not engineering objects, so only their create is guarded by project
+  scope; per-requirement commands on an archived project remain reachable.
+- **Business identifiers are enforced for the Kinds a person creates**
+  (`WP 20.1A2`): Part, Calculation, Document, Manufacturing, Verification
+  and Evidence; the other Mechanical Kinds (Assembly, Component, Project…)
+  are not, because the fixtures legitimately share default names.
+- **The OAuth loopback test collides under concurrent runs**: it binds its
+  own port, but ten agents running the Core suite at once produced one
+  collision per night; a retry-on-bind or a bound-before-handout listener
+  is a small test-hardening item for the next tranche.
+- **Payment terms default to Up front** for a client with none set, and a
+  request freezes its client's terms when raised (`WP 20.1B`, the lead's
+  default from the Product Owner's decision); a calculation is a task only
+  within a project.
+- **A macro run stays unattended** (`WP 20.2C`): a step whose value was
+  never recorded is refused in production rather than prompting mid-run;
+  confirmation-gated commands cannot be steps.
 
 ## Related
 
