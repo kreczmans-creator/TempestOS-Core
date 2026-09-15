@@ -100,7 +100,7 @@ if ($SelfTest) {
         Write-Host "PASS: clean output is correctly classified as passing."
     }
     else {
-        Write-Error "FAIL: clean output was misclassified as failing. $($cleanResult.Reason)"
+        [Console]::Error.WriteLine("FAIL: clean output was misclassified as failing. $($cleanResult.Reason)")
         $failures++
     }
 
@@ -121,7 +121,7 @@ if ($SelfTest) {
         Write-Host "PASS: a synthetic vulnerable line is correctly classified as failing."
     }
     else {
-        Write-Error "FAIL: a synthetic vulnerable line was misclassified as passing."
+        [Console]::Error.WriteLine("FAIL: a synthetic vulnerable line was misclassified as passing.")
         $failures++
     }
 
@@ -133,12 +133,12 @@ if ($SelfTest) {
         Write-Host "PASS: an unparsable/empty scan is correctly classified as failing."
     }
     else {
-        Write-Error "FAIL: an unparsable/empty scan was misclassified as passing."
+        [Console]::Error.WriteLine("FAIL: an unparsable/empty scan was misclassified as passing.")
         $failures++
     }
 
     if ($failures -gt 0) {
-        Write-Error "$failures self-test assertion(s) failed."
+        [Console]::Error.WriteLine("$failures self-test assertion(s) failed.")
         exit 1
     }
 
@@ -146,13 +146,16 @@ if ($SelfTest) {
     exit 0
 }
 
+# The reasons below go through [Console]::Error.WriteLine rather than Write-Error: Windows PowerShell wraps an
+# error record at the console width when stderr is redirected, which split the reason across lines on the hosted
+# runner (its checkout path is long) and failed CheckVulnerablePackagesScriptTests there while passing locally.
 if (-not $InputPath) {
-    Write-Error "Either -SelfTest or -InputPath must be supplied."
+    [Console]::Error.WriteLine("Either -SelfTest or -InputPath must be supplied.")
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $InputPath)) {
-    Write-Error "Input file '$InputPath' does not exist."
+    [Console]::Error.WriteLine("Input file '$InputPath' does not exist.")
     exit 1
 }
 
