@@ -4,7 +4,9 @@ using Avalonia.Headless.XUnit;
 using PDFtoImage;
 using SkiaSharp;
 using Tempest.Core.Evidence;
+using Tempest.Desktop.Documents;
 using Tempest.Desktop.IssueSheets;
+using Tempest.Desktop.Tests.Quotations;
 using Tempest.Workspace.Evidence;
 
 namespace Tempest.Desktop.Tests.Evidence;
@@ -28,6 +30,14 @@ namespace Tempest.Desktop.Tests.Evidence;
 [SupportedOSPlatform("macos")]
 public class IssueSheetRendererTests
 {
+    [Fact]
+    public void Render_WithNoIdentity_UsesTheProvider_ThatTheComposerPointsAtSettings()
+    {
+        var renderer = new IssueSheetRenderer { IdentityProvider = () => OrganisationIdentity.TempestDefaults with { LegalName = "Provider Test Ltd" } };
+        var text = PdfTextExtractor.ExtractText(renderer.Render(IssueSheetModelFixtures.Minimal()).ToArray());
+        Assert.Contains("Provider Test Ltd", text, StringComparison.Ordinal);
+    }
+
     [AvaloniaFact]
     public void Render_ProducesAValidPdf_WithTheExpectedPageCount()
     {
@@ -66,6 +76,54 @@ public class IssueSheetRendererTests
         // here is time-of-day dependent — two renders of one model must
         // be the same bytes, not merely the same visible content.
         Assert.Equal(first, second);
+    }
+
+    /// <summary>
+    /// `WP 20.10G` (scope item 5): every field `PHYSICAL_REVIEW.md` §7a
+    /// E9 needs (issue reference, revision, client) plus every other
+    /// field the sheet names — project, evidence reference and title,
+    /// classification, author, checker, outcome, every citation and
+    /// declared figure — is genuinely readable back out of the rendered
+    /// PDF's own text, proven the same way `QuotationSheetRendererTests`
+    /// proves it, now that both renderers share one text-run plumbing
+    /// (`DocumentTemplate`, `TD-182`).
+    /// </summary>
+    [AvaloniaFact]
+    public void Render_EveryFieldTheSheetNames_IsReadableBackOutOfTheText()
+    {
+        var model = IssueSheetModelFixtures.Minimal();
+        var bytes = new IssueSheetRenderer().Render(model).ToArray();
+
+        var text = PdfTextExtractor.ExtractText(bytes);
+
+        Assert.Contains("ISSUE SHEET", text, StringComparison.Ordinal);
+        Assert.Contains(model.ProjectCode, text, StringComparison.Ordinal);
+        Assert.Contains(model.ProjectName, text, StringComparison.Ordinal);
+        Assert.Contains(model.Client, text, StringComparison.Ordinal);
+        Assert.Contains(model.EvidenceReference!, text, StringComparison.Ordinal);
+        Assert.Contains(model.Title, text, StringComparison.Ordinal);
+        Assert.Contains(model.Revision, text, StringComparison.Ordinal);
+        Assert.Contains(model.IssueReference, text, StringComparison.Ordinal);
+        Assert.Contains(model.AuthorDisplayName, text, StringComparison.Ordinal);
+        Assert.Contains(model.CheckerName, text, StringComparison.Ordinal);
+        Assert.Contains(model.CheckerOrganisation, text, StringComparison.Ordinal);
+
+        foreach (var citation in model.Citations)
+        {
+            Assert.Contains(citation.Library, text, StringComparison.Ordinal);
+            Assert.Contains(citation.RecordId, text, StringComparison.Ordinal);
+        }
+
+        foreach (var figure in model.DeclaredFigures)
+            Assert.Contains(figure.Name, text, StringComparison.Ordinal);
+
+        // The footer's own organisation identity (Tempest defaults, no
+        // Settings override supplied), export detail line and sequence.
+        Assert.Contains("Tempest Design Engineering Ltd", text, StringComparison.Ordinal);
+        Assert.Contains("Company No. 17349874", text, StringComparison.Ordinal);
+        Assert.Contains(model.ApplicationVersionText, text, StringComparison.Ordinal);
+        Assert.Contains(model.StoreSequence.ToString(System.Globalization.CultureInfo.InvariantCulture), text, StringComparison.Ordinal);
+        Assert.Contains("Page 1 of 1", text, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

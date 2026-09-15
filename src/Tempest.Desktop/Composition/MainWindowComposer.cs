@@ -278,7 +278,7 @@ internal sealed partial class MainWindowComposer
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
-            accountsReadModel, accountsRefreshService);
+            accountsReadModel, accountsRefreshService, session.OrganisationIdentity);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
@@ -510,6 +510,12 @@ internal sealed partial class MainWindowComposer
         var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker);
         var projectPicker = new ProjectPicker(projectDirectory);
         var quotationSheetRenderer = new QuotationSheetRenderer();
+        // `WP 20.10G` (threaded at merge): both sheet renderers read Settings → Organisation
+        // at render time when a caller supplies no identity, so the footer carries
+        // what the user configured rather than the Tempest defaults.
+        quotationSheetRenderer.IdentityProvider = () => session.OrganisationIdentity.ToIdentity();
+        if (host.IssueSheetRenderer is Tempest.Desktop.IssueSheets.IssueSheetRenderer issueSheetRendererForIdentity)
+            issueSheetRendererForIdentity.IdentityProvider = () => session.OrganisationIdentity.ToIdentity();
         string IssuerName() => host.SessionPrincipal?.Identity.DisplayName ?? "TempestOS";
         string ApplicationVersionText() => MainWindow.DescribeBuild(services);
 

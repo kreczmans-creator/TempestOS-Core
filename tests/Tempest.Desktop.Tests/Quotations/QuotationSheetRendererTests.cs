@@ -3,6 +3,7 @@ using System.Text;
 using Avalonia.Headless.XUnit;
 using PDFtoImage;
 using SkiaSharp;
+using Tempest.Desktop.Documents;
 using Tempest.Desktop.Quotations;
 
 namespace Tempest.Desktop.Tests.Quotations;
@@ -29,6 +30,16 @@ namespace Tempest.Desktop.Tests.Quotations;
 [SupportedOSPlatform("macos")]
 public class QuotationSheetRendererTests
 {
+    [Fact]
+    public void Render_WithNoIdentity_UsesTheProvider_ThatTheComposerPointsAtSettings()
+    {
+        // `WP 20.10G`, threaded at merge: a caller that passes no identity gets
+        // Settings → Organisation through the provider, not the Tempest defaults.
+        var renderer = new QuotationSheetRenderer { IdentityProvider = () => OrganisationIdentity.TempestDefaults with { LegalName = "Provider Test Ltd" } };
+        var text = PdfTextExtractor.ExtractText(renderer.Render(QuotationSheetModelFixtures.Minimal()).ToArray());
+        Assert.Contains("Provider Test Ltd", text, StringComparison.Ordinal);
+    }
+
     [AvaloniaFact]
     public void Render_ProducesAValidOnePagePdf()
     {
@@ -73,6 +84,57 @@ public class QuotationSheetRendererTests
         Assert.Contains(model.Reference, text, StringComparison.Ordinal);
         Assert.Contains(model.Client, text, StringComparison.Ordinal);
         Assert.Contains(model.IssuerName, text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// `WP 20.10G` (scope item 5): every field `PHYSICAL_REVIEW.md` §7c
+    /// D4 names — issuer, project code and name, client, reference, date,
+    /// validity, status, currency, every line's own description/hours/
+    /// rate/amount, the total, and terms — is genuinely readable back out
+    /// of the rendered PDF's own text, not merely present as ink
+    /// somewhere. Proven after routing both renderers through
+    /// `DocumentTemplate` (`TD-182`), so a regression in the shared
+    /// template's own text-run plumbing would fail this exactly as it
+    /// would have failed the pre-`WP 20.10G` renderer.
+    /// </summary>
+    [AvaloniaFact]
+    public void Render_EveryD4Field_IsReadableBackOutOfTheText()
+    {
+        var model = QuotationSheetModelFixtures.Minimal();
+        var bytes = new QuotationSheetRenderer().Render(model).ToArray();
+
+        var text = PdfTextExtractor.ExtractText(bytes);
+
+        Assert.Contains("QUOTATION", text, StringComparison.Ordinal);
+        Assert.Contains(model.IssuerName, text, StringComparison.Ordinal);
+        Assert.Contains(model.ProjectCode, text, StringComparison.Ordinal);
+        Assert.Contains(model.ProjectName, text, StringComparison.Ordinal);
+        Assert.Contains(model.Client, text, StringComparison.Ordinal);
+        Assert.Contains(model.Reference, text, StringComparison.Ordinal);
+        Assert.Contains(model.QuoteDate.ToString("yyyy-MM-dd"), text, StringComparison.Ordinal);
+        Assert.Contains(model.ValidityDays.ToString(System.Globalization.CultureInfo.InvariantCulture), text, StringComparison.Ordinal);
+        Assert.Contains(model.Status, text, StringComparison.Ordinal);
+        Assert.Contains(model.Currency, text, StringComparison.Ordinal);
+        Assert.Contains(model.Total, text, StringComparison.Ordinal);
+        Assert.Contains(model.Terms!, text, StringComparison.Ordinal);
+
+        foreach (var line in model.Lines)
+        {
+            Assert.Contains(line.Description, text, StringComparison.Ordinal);
+            Assert.Contains(line.Amount, text, StringComparison.Ordinal);
+            if (line.Hours is not null)
+                Assert.Contains(line.Hours, text, StringComparison.Ordinal);
+            if (line.Rate is not null)
+                Assert.Contains(line.Rate, text, StringComparison.Ordinal);
+        }
+
+        // The footer's own organisation identity (Tempest defaults, no
+        // Settings override supplied) and export detail line.
+        Assert.Contains("Tempest Design Engineering Ltd", text, StringComparison.Ordinal);
+        Assert.Contains("Company No. 17349874", text, StringComparison.Ordinal);
+        Assert.Contains("www.tempest-engineering.co.uk", text, StringComparison.Ordinal);
+        Assert.Contains(model.ApplicationVersionText, text, StringComparison.Ordinal);
+        Assert.Contains("Page 1 of 1", text, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
