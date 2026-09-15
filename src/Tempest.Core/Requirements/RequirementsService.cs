@@ -288,12 +288,16 @@ public sealed class RequirementsService : IRequirementsService
     }
 
     /// <inheritdoc />
-    public async Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, CancellationToken cancellationToken = default)
+    public Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, CancellationToken cancellationToken = default) =>
+        SetOwnerAsync(requirementId, owner, ownerPersonId: null, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, string? ownerPersonId, CancellationToken cancellationToken = default)
     {
         var current = await ReadDtoAsync(requirementId, cancellationToken).ConfigureAwait(false)
             ?? throw new RequirementNotFoundException(requirementId);
 
-        var dto = current with { Owner = owner };
+        var dto = current with { Owner = owner, OwnerPersonId = ownerPersonId };
         IDocumentRevision? revision = null;
 
         await _transactionalStore.ExecuteInTransactionAsync(
@@ -802,7 +806,9 @@ public sealed class RequirementsService : IRequirementsService
 
     /// <summary>Builds an <see cref="IRequirement"/> snapshot from a DTO — the one place every read/write construction site goes through, so a new DTO field is never forgotten at a second call site (`WP 9.1A`).</summary>
     private static IRequirement ToRequirement(Guid id, RequirementDto dto, int revisionNumber) =>
-        new Requirement(id, dto.Identifier, dto.Statement, dto.Category, dto.Status, revisionNumber, dto.CreatedByPrincipalId, dto.CreatedAt, dto.Owner, dto.Priority, dto.IsDeleted, dto.GroupId);
+        new Requirement(
+            id, dto.Identifier, dto.Statement, dto.Category, dto.Status, revisionNumber, dto.CreatedByPrincipalId, dto.CreatedAt, dto.Owner,
+            dto.Priority, dto.IsDeleted, dto.GroupId, dto.OwnerPersonId);
 
     private async Task<RequirementGroupDto?> ReadGroupDtoAsync(Guid groupId, CancellationToken cancellationToken)
     {

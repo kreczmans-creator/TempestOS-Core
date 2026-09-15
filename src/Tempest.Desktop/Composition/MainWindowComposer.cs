@@ -72,6 +72,13 @@ internal sealed record ComposedViews(
     // this same phase, can be threaded the identical instance
     // `WorkspaceViewCoordinator` (built next, in `BuildCoordinators`) uses.
     ProjectCommercialEditorSupport CommercialSupport,
+    // `WP 20.10F` (Product Owner finding D8): the People library's own
+    // catalogue and its "Add person…" prompt, threaded into
+    // `BuildCoordinators` exactly as `OrganisationCatalog`/`RateCardCatalog`
+    // and `OrganisationPicker`/`RateCardPicker` already are, for the
+    // requirement Owner section's own `RequirementOwnerEditorSupport`.
+    Tempest.Core.People.IPersonCatalog PersonCatalog,
+    PersonAddPrompt PersonAddPrompt,
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
@@ -386,6 +393,11 @@ internal sealed partial class MainWindowComposer
         var componentCatalog = (Tempest.Core.Components.IComponentCatalog)services.GetService(typeof(Tempest.Core.Components.IComponentCatalog));
         var processCatalog = (Tempest.Core.Manufacturing.IProcessCatalog)services.GetService(typeof(Tempest.Core.Manufacturing.IProcessCatalog));
 
+        // `WP 20.10F` (Product Owner finding D8): the People library's own
+        // catalogue, resolved the identical way every other reference
+        // library not exposed directly on `host` already is.
+        var personCatalog = (Tempest.Core.People.IPersonCatalog)services.GetService(typeof(Tempest.Core.People.IPersonCatalog));
+
         var organisationPicker = new OrganisationPicker(organisationCatalog);
         var rateCardPicker = new RateCardPicker(rateCardCatalog);
 
@@ -425,6 +437,7 @@ internal sealed partial class MainWindowComposer
             await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
         }
 
+        var personAddPrompt = new PersonAddPrompt(personCatalog, host.ReferenceReview!);
         var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog, OpenProjectDetailsAsync);
         var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
 
@@ -568,7 +581,7 @@ internal sealed partial class MainWindowComposer
 
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
             referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -596,7 +609,7 @@ internal sealed partial class MainWindowComposer
         // control can only ever be parented once.
         var referenceDataLibrariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-            componentCatalog, rateCardCatalog, host.ReferenceReview!, host.BracketCalculations!,
+            componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
             referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -676,7 +689,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,

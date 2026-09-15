@@ -36,6 +36,19 @@ public interface IRequirement
     /// <summary>The principal currently accountable for this requirement, or <see langword="null"/> if unset. Distinct from <see cref="CreatedByPrincipalId"/> — ownership may change; authorship never does (`WP 9.1A`).</summary>
     string? Owner { get; }
 
+    /// <summary>
+    /// The <see cref="People.IPersonCatalog"/> record id <see cref="Owner"/>
+    /// was picked from, or <see langword="null"/> where <see cref="Owner"/>
+    /// is unset, or was typed before the People library existed (`WP
+    /// 20.10F`, Product Owner finding D8). Carried alongside <see cref="Owner"/>
+    /// rather than replacing it: <see cref="Owner"/> stays the display name
+    /// so an existing requirement always shows a name, even for a person
+    /// since renamed, deleted or never linked here at all; this id is what
+    /// lets a rename of the person follow through to the requirement the
+    /// next time it is read.
+    /// </summary>
+    string? OwnerPersonId { get; }
+
     /// <summary>This requirement's own relative importance, or <see langword="null"/> if unset (`WP 9.1A`).</summary>
     RequirementPriority? Priority { get; }
 
