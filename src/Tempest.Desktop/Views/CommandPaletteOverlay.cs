@@ -393,22 +393,47 @@ public sealed class CommandPaletteOverlay : Border
                 e.Handled = true;
                 break;
             case Key.Down:
-                if (_results.SelectedIndex < _rows.Count - 1)
+                if (NextSelectableIndex(_results.SelectedIndex, +1) is { } down)
                 {
-                    _results.SelectedIndex++;
-                    _results.ScrollIntoView(_results.SelectedIndex);
+                    _results.SelectedIndex = down;
+                    _results.ScrollIntoView(down);
                 }
                 e.Handled = true;
                 break;
             case Key.Up:
-                if (_results.SelectedIndex > 0)
+                if (NextSelectableIndex(_results.SelectedIndex, -1) is { } up)
                 {
-                    _results.SelectedIndex--;
-                    _results.ScrollIntoView(_results.SelectedIndex);
+                    _results.SelectedIndex = up;
+                    _results.ScrollIntoView(up);
                 }
                 e.Handled = true;
                 break;
         }
+    }
+
+    /// <summary>
+    /// The next row index in <paramref name="step"/>'s own direction
+    /// (<c>+1</c>/<c>-1</c>) that is not a header — skipping over one when
+    /// found, rather than landing on it — or <see langword="null"/> if none
+    /// remains. TD-77's own grouped, empty-query listing (this class's own
+    /// remarks) made a header the *first* row of every render, where it
+    /// used to appear only in the typed-query "Objects" section; Up/Down
+    /// never selected one before this method existed only because nothing
+    /// had reached that section's own header row in practice.
+    /// </summary>
+    private int? NextSelectableIndex(int fromIndex, int step)
+    {
+        var index = fromIndex + step;
+
+        while (index >= 0 && index < _rows.Count)
+        {
+            if (!_rows[index].IsHeader)
+                return index;
+
+            index += step;
+        }
+
+        return null;
     }
 
     private async Task InvokeSelectedAsync()
