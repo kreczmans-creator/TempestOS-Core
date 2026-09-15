@@ -335,7 +335,7 @@ rebuild then takes about 15 seconds after restore.
 
 ---
 
-## 7. Physical smoke test (10–15 minutes)
+## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7k add about two hours in total, each timed in its own heading)
 
 Every step below uses behaviour that exists today. Where something is
 deliberately not implemented, the step says so rather than asking for it.
@@ -623,6 +623,31 @@ words.
   monitor, fully visible, never off-screen.
 - **K6.** Reset the layout (the existing command). **Expect:** every panel
   back in its default place, one window.
+
+### 7k. The first live Xero authorisation (`WP 21.6`, with `WP 21.6P`'s fixes; about 10 minutes, the Product Owner's own Xero app)
+
+Until `WP 21.6P` (the overnight acceptance campaign, 2026-09-15/16) this
+journey could not be completed from the product at all: **Authorise** only
+re-read the stored state, the client id typed in Settings was stored under
+a key the authoriser never read, and the connector chosen in Settings never
+reached the host at the next start. All three are fixed and driven in the
+real application up to the token exchange (`docs/releases/v0.21.0/WP21.6P
+Xero Authorisation Path Report.md`, evidence under `evidence/xero/`). The
+live sign-in itself needs your Xero app and your consent — it has not been
+performed by anyone yet. Record every status line verbatim.
+
+| Step | Action | Expect | Wrong if |
+|---|---|---|---|
+| X1 | In the Xero developer console, confirm the app's redirect URI is exactly `http://127.0.0.1:49301/callback/` (`ADR-0151` addendum). Copy the client id (and the secret, if the app is not PKCE-only). | — | The redirect URI differs by a character: Xero will refuse the sign-in at step X4 with a redirect-URI error. |
+| X2 | TempestOS → the account chip (top right, *root · Engineer*) → **Settings** → *Connector authorisation*: Connector **Xero**, paste the Client Id (and Secret), click **Authorise**. | Status: **"Saved. Restart TempestOS to use Xero — this session is running the Fake connector."** No browser opens. | The status says "Authorised." while the Fake is still running (this was the pre-fix behaviour). |
+| X3 | Close TempestOS and reopen it. Settings → *Connector authorisation*. | Connector **Xero**; the Client Id shown; status **"Not authorised."** | Connector back on Fake (the choice did not persist); "Not authorised. not configured" (the client id was not read). |
+| X4 | Click **Authorise**. | The button greys out; status **"Waiting for you to sign in to Xero in your browser (up to 5 minutes)…"**; the default browser opens on Xero's sign-in/consent page. Sign in, pick the organisation, allow. The browser shows *"Authorisation complete. You can close this window and return to TempestOS."*; the status reads **"Authorised."** | Any other wording — the status line names the cause (port in use, consent denied, token endpoint refusal, the browser could not open, the five-minute timeout). Record it. |
+| X5 | Business → **Invoices**, or Settings → *Refresh accounts reading*. | Contacts, bills or the cash position read from your Xero organisation (the accounts reading status changes from "No accounts reading yet"). | An error naming a Xero scope or tenant — record it verbatim for the lead. |
+
+Decision for you before X1: the default loopback port 49301 sits inside
+Windows' dynamic range (Release Notes, Warnings). Changing it means
+changing the redirect URI registered in the Xero app; leaving it means a
+rare "Port 49301 is already in use" refusal, answered by trying again.
 
 ---
 
