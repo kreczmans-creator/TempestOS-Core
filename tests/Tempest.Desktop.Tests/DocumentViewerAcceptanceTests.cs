@@ -647,4 +647,127 @@ public sealed class DocumentViewerAcceptanceTests
             await host.DisposeAsync();
         }
     }
+
+    [AvaloniaFact]
+    public async Task ADwgAttachment_OpensExternally_RatherThanReportingUnsupported()
+    {
+        // TD-99, closed for DWG only tonight (Product Owner decision
+        // 2026-09-15 §5): the file is stored and intact — DWG has no
+        // renderer in this platform and never will without a licensed
+        // SDK — so the viewer says, honestly, that it opens in its own
+        // application, offers the real button, and the button really does
+        // launch a materialised copy of the real bytes.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            byte[] drawing = "not a real DWG parser would ever accept, but real, intact bytes"u8.ToArray();
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-970", "pump-housing.dwg", "application/octet-stream", drawing);
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            Assert.Equal(DocumentViewStatus.Unsupported, viewer.Session!.Status);
+            Assert.Equal(ViewableDocumentFormat.ExternalOnly, viewer.Session!.Format);
+            Assert.True(viewer.IsShowingUnavailableState);
+            Assert.Contains("own application", viewer.UnavailableHeadline, StringComparison.Ordinal);
+
+            // A real copy really was written — never beside the
+            // persistence root, which this path is nowhere near.
+            var materialisedPath = viewer.Session!.MaterialisedPath;
+            Assert.NotNull(materialisedPath);
+            Assert.False(materialisedPath!.StartsWith(root, StringComparison.OrdinalIgnoreCase));
+            Assert.True(File.Exists(materialisedPath));
+            Assert.Equal(drawing, await File.ReadAllBytesAsync(materialisedPath));
+
+            // The launcher is injected, so this proves the button's own
+            // action reads that path and hands it off — with no real
+            // application actually opening during a test run.
+            string? launchedPath = null;
+            viewer.ExternalLauncher = path => launchedPath = path;
+
+            viewer.OpenExternally();
+
+            Assert.Equal(materialisedPath, launchedPath);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ADxfAttachment_IsAlsoExternalOnly_ByItsExtensionAlone()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            // A generic content type, not one of DXF's own — the extension
+            // has to carry the whole decision, exactly as it does for a
+            // real upload path with no better guess to offer.
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DWG-971", "bracket.dxf", "application/octet-stream", "real bytes"u8.ToArray());
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            Assert.Equal(ViewableDocumentFormat.ExternalOnly, viewer.Session!.Format);
+            Assert.NotNull(viewer.Session!.MaterialisedPath);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task AnUnsupportedFormatWithNoRenderer_AlsoOffersOpenExternally()
+    {
+        // Item 2's own scope: the "Open externally" action is offered for
+        // any Unsupported format, not only the named ExternalOnly ones —
+        // a docx TempestOS was never going to render either, and the file
+        // is exactly as intact.
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+
+        var host = new WorkspaceHost(root);
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+
+            byte[] zipContainer = [0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00, 0x08, 0x00, 0xFF, 0xFE, 0x00, 0x1A];
+            var (documentId, attachmentId) = await CreateDocumentWithAttachmentAsync(
+                host, "DOC-972", "notes.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document", zipContainer);
+
+            var (owner, attachment) = await ResolveAsync(host, documentId, attachmentId);
+            var viewer = await window.AttachmentViewers.OpenAsync(owner, attachment, 800, 600);
+
+            Assert.Equal(ViewableDocumentFormat.Unsupported, viewer.Session!.Format);
+            Assert.NotNull(viewer.Session!.MaterialisedPath);
+
+            string? launchedPath = null;
+            viewer.ExternalLauncher = path => launchedPath = path;
+            viewer.OpenExternally();
+
+            Assert.Equal(viewer.Session!.MaterialisedPath, launchedPath);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
 }

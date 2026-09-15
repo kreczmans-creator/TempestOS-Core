@@ -289,4 +289,14 @@ public class DocumentPageSourceTests
         // be displayed", which is a different message from "damaged".
         Assert.Null(DocumentPageSourceFactory.Create(ViewableDocumentFormat.Unsupported, [1, 2, 3]));
     }
+
+    [AvaloniaFact]
+    public void AnExternalOnlyFormat_AlsoYieldsNoSource_ItIsNeverGoingToRenderInApp()
+    {
+        // DWG and DXF are not a gap the way a genuinely unhandled format
+        // is: this platform is never going to draw them, so the factory's
+        // answer is the same null, and the launcher's own materialised
+        // copy plus "Open externally" is the whole of what the file needs.
+        Assert.Null(DocumentPageSourceFactory.Create(ViewableDocumentFormat.ExternalOnly, [1, 2, 3]));
+    }
 }

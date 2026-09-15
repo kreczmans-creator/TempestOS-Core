@@ -136,6 +136,32 @@ public class DocumentViewSessionTests
     }
 
     [Fact]
+    public void AnUnsupportedSession_CarriesTheMaterialisedPath_ForOpenExternally()
+    {
+        var session = DocumentViewSession.Unavailable(
+            Guid.NewGuid(), "part.dwg", "application/acad", DocumentViewStatus.Unsupported,
+            ViewableDocumentFormat.ExternalOnly, materialisedPath: @"C:\temp\part.dwg");
+
+        Assert.Equal(@"C:\temp\part.dwg", session.MaterialisedPath);
+    }
+
+    [Theory]
+    [InlineData(DocumentViewStatus.Missing)]
+    [InlineData(DocumentViewStatus.Corrupt)]
+    public void AMissingOrCorruptSession_NeverCarriesAMaterialisedPath_EvenIfOneWasPassed(DocumentViewStatus status)
+    {
+        // There are no bytes to materialise for either status — nothing was
+        // ever stored, or what was stored failed its own integrity check —
+        // so a path passed in regardless (a caller's mistake) is dropped
+        // rather than handed to a button that would open the wrong thing.
+        var session = DocumentViewSession.Unavailable(
+            Guid.NewGuid(), "x.pdf", "application/pdf", status,
+            materialisedPath: @"C:\temp\should-not-appear.pdf");
+
+        Assert.Null(session.MaterialisedPath);
+    }
+
+    [Fact]
     public void APageCountBelowOne_IsTreatedAsASinglePage()
     {
         var session = DocumentViewSession.Ready(
@@ -229,5 +255,59 @@ public class DocumentFormatDetectorTests
     {
         Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect(null, []));
         Assert.Equal(ViewableDocumentFormat.Text, DocumentFormatDetector.Detect("text/plain", []));
+    }
+
+    [Theory]
+    [InlineData("drawing.dwg")]
+    [InlineData("drawing.dxf")]
+    [InlineData("DRAWING.DWG")]
+    [InlineData("Pump Housing.Dxf")]
+    public void ADwgOrDxfFileName_IsExternalOnly_EvenWithNoUsefulContentType(string fileName)
+    {
+        // Neither format has an IANA-registered content type, so a real
+        // upload commonly arrives as "application/octet-stream" or with no
+        // content type claimed at all. The extension has to be enough on
+        // its own, and case must not matter — a Windows-authored file name
+        // is exactly as likely to be "DRAWING.DWG" as "drawing.dwg".
+        Assert.Equal(
+            ViewableDocumentFormat.ExternalOnly,
+            DocumentFormatDetector.Detect("application/octet-stream", [0x00, 0x01, 0x02], fileName));
+        Assert.Equal(
+            ViewableDocumentFormat.ExternalOnly,
+            DocumentFormatDetector.FromContentType(null, fileName));
+    }
+
+    [Theory]
+    [InlineData("application/acad")]
+    [InlineData("image/vnd.dwg")]
+    [InlineData("application/dxf")]
+    public void ADwgOrDxfContentType_IsExternalOnly_WithNoFileNameToGoBy(string contentType)
+    {
+        // The extension is the primary signal (above); this is the
+        // fallback for a correctly labelled upload whose name was typed
+        // without one.
+        Assert.Equal(ViewableDocumentFormat.ExternalOnly, DocumentFormatDetector.FromContentType(contentType));
+    }
+
+    [Fact]
+    public void ADwgFileName_BeatsAContentTypeThatWouldOtherwiseSayText()
+    {
+        // The extension is checked before content type is even parsed, so
+        // a DWG mislabelled as text/plain — which happens, since many
+        // upload paths default to it for anything with no better guess —
+        // still opens externally rather than trying (and failing) to lay
+        // it out as a datasheet.
+        Assert.Equal(ViewableDocumentFormat.ExternalOnly, DocumentFormatDetector.FromContentType("text/plain", "part.dwg"));
+    }
+
+    [Fact]
+    public void AnSvgIsStillUnsupported_NoRendererIsReferencedInThisBuild()
+    {
+        // TD-99's SVG half was stopped, not shipped: no SVG rasteriser
+        // (Svg.Skia, SkiaSharp.Extended or Avalonia.Svg.Skia) is referenced
+        // anywhere in this solution, and the brief's own fallback for that
+        // case was to report and stop rather than add one. SVG stays
+        // exactly the Unsupported format it already was.
+        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect("image/svg+xml", "<svg/>"u8, "icon.svg"));
     }
 }

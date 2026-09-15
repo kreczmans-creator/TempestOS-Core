@@ -358,6 +358,13 @@ public static class DocumentPageSourceFactory
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
+
+        // ExternalOnly falls to the same null the default arm returns for
+        // any other unmatched format — named here rather than left to fall
+        // through silently, because unlike a genuinely unhandled format
+        // this one is not a gap: a DWG or DXF is never meant to gain an
+        // in-app source, only the "open externally" path (`TD-99`).
+        ViewableDocumentFormat.ExternalOnly => null,
         _ => null,
     };
 }

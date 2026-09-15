@@ -59,7 +59,8 @@ public sealed record DocumentViewSession
         ViewableDocumentFormat format,
         int pageCount,
         int currentPage,
-        DocumentViewport viewport)
+        DocumentViewport viewport,
+        string? materialisedPath)
     {
         AttachmentId = attachmentId;
         FileName = fileName;
@@ -69,6 +70,7 @@ public sealed record DocumentViewSession
         PageCount = pageCount;
         CurrentPage = currentPage;
         Viewport = viewport;
+        MaterialisedPath = materialisedPath;
     }
 
     /// <summary>The attachment being viewed.</summary>
@@ -94,6 +96,16 @@ public sealed record DocumentViewSession
 
     /// <summary>Where the user is looking, and how closely.</summary>
     public DocumentViewport Viewport { get; private init; }
+
+    /// <summary>
+    /// A temporary copy of this document's bytes on local disk, under the
+    /// file's own name, for the OS to open — set only when
+    /// <see cref="Status"/> is <see cref="DocumentViewStatus.Unsupported"/>
+    /// and the copy could actually be written; <see langword="null"/> for
+    /// every other status, and for that one when the write itself failed
+    /// (`TD-99`).
+    /// </summary>
+    public string? MaterialisedPath { get; private init; }
 
     /// <summary>Whether a document is actually showing.</summary>
     public bool IsReady => Status is DocumentViewStatus.Ready;
@@ -129,7 +141,8 @@ public sealed record DocumentViewSession
             format,
             Math.Max(1, pageCount),
             1,
-            DocumentViewport.Create(contentWidth, contentHeight, viewportWidth, viewportHeight));
+            DocumentViewport.Create(contentWidth, contentHeight, viewportWidth, viewportHeight),
+            materialisedPath: null);
     }
 
     /// <summary>A document that could not be shown, and the reason.</summary>
@@ -143,7 +156,8 @@ public sealed record DocumentViewSession
         string fileName,
         string contentType,
         DocumentViewStatus status,
-        ViewableDocumentFormat format = ViewableDocumentFormat.Unsupported)
+        ViewableDocumentFormat format = ViewableDocumentFormat.Unsupported,
+        string? materialisedPath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
@@ -152,7 +166,7 @@ public sealed record DocumentViewSession
 
         return new DocumentViewSession(
             attachmentId, fileName, contentType ?? string.Empty, status, format, 0, 0,
-            DocumentViewport.Create(1, 1, 1, 1));
+            DocumentViewport.Create(1, 1, 1, 1), status is DocumentViewStatus.Unsupported ? materialisedPath : null);
     }
 
     /// <summary>The status a content read maps to, before any format decision.</summary>
