@@ -43,6 +43,53 @@ public sealed class XeroConnectorTests
         Assert.Equal(idempotencyKey, result.Value.Reference);
     }
 
+    /// <summary>`WP 21.3B`: each line's own <see cref="VatRate"/> is mapped to Xero's own tax type before the payload is ever built.</summary>
+    [Fact]
+    public async Task CreateDraftInvoiceAsync_MapsEachLinesOwnVatRate_ToXerosOwnTaxType()
+    {
+        var (connector, handler, _) = await BuildAsync();
+        var requestId = Guid.NewGuid();
+
+        handler.When(HttpMethod.Post, "Invoices", (_, body) =>
+        {
+            Assert.Contains("\"TaxType\":\"OUTPUT2\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"TaxType\":\"ZERORATEDOUTPUT\"", body, StringComparison.Ordinal);
+            return JsonResponse(HttpStatusCode.OK, $$"""{"Invoices":[{"InvoiceID":"inv-001","Reference":"{{requestId}}","Status":"DRAFT"}]}""");
+        });
+
+        var snapshot = new InvoiceRequestSnapshot(
+            requestId, "ORG-1", "Fictional Client Ltd", "PO-1", CurrencyCode.Gbp,
+            [
+                new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Standard-rated time", 5m, new Money(100m, CurrencyCode.Gbp), new Money(500m, CurrencyCode.Gbp), VatRate.Standard),
+                new InvoiceRequestLine("ProjectExpense", Guid.NewGuid(), "Zero-rated expense", 1m, new Money(200m, CurrencyCode.Gbp), new Money(200m, CurrencyCode.Gbp), VatRate.Zero),
+            ],
+            new Money(700m, CurrencyCode.Gbp));
+
+        var result = await connector.CreateDraftInvoiceAsync(snapshot, requestId.ToString());
+
+        Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
+    }
+
+    /// <summary>`WP 21.3B`: refused before the payload is ever built or any HTTP call is ever made — the identical "a result, never an exception" discipline every other rejection here already follows.</summary>
+    [Fact]
+    public async Task CreateDraftInvoiceAsync_ALineWithAnUnmappableVatRate_IsRejectedWithNoHttpCall()
+    {
+        var (connector, handler, _) = await BuildAsync();
+
+        // No `handler.When` registered at all — if the connector attempted
+        // an HTTP call regardless, `StubHttpMessageHandler` would throw for
+        // the unregistered request and this test would fail with that
+        // exception rather than the clean assertion below.
+        var requestId = Guid.NewGuid();
+        var badLine = new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Undeclared rate", 1m, new Money(100m, CurrencyCode.Gbp), new Money(100m, CurrencyCode.Gbp), (VatRate)99);
+        var snapshot = new InvoiceRequestSnapshot(requestId, "ORG-1", "Fictional Client Ltd", "PO-1", CurrencyCode.Gbp, [badLine], new Money(100m, CurrencyCode.Gbp));
+
+        var result = await connector.CreateDraftInvoiceAsync(snapshot, requestId.ToString());
+
+        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Contains("Undeclared rate", result.Reason, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task CreateDraftInvoiceAsync_Rejected_ReturnsTheValidationMessageFromTheBody()
     {
