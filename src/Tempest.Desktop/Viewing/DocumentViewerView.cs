@@ -572,6 +572,16 @@ public sealed class DocumentViewerView : UserControl
             $"'{session.FileName}' is a format TempestOS stores but does not render in-app. " +
             "Open externally shows it in the application registered for it on this computer."),
 
+        // `TD-184`: the file's own name or content looks like something
+        // that runs as code — an executable, a script, a shortcut — rather
+        // than a document, image or drawing. Said honestly, the same way
+        // the ExternalOnly case above is: this is a deliberate refusal with
+        // a real reason, not the generic "we have no viewer" answer, and
+        // Open externally is not offered at all for it.
+        _ when session.ExternalOpenRefusedReason is { } reason => (
+            "This file was not opened",
+            $"'{session.FileName}' {reason} TempestOS will not hand it to another application to run."),
+
         _ => (
             "This format cannot be displayed",
             $"'{session.FileName}' is intact, and TempestOS has no viewer for {DescribeType(session.ContentType)}. " +

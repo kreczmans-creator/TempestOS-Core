@@ -1,5 +1,6 @@
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -534,8 +535,16 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 
         try
         {
+            string markup;
+            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
+                markup = reader.ReadToEnd();
+
+            var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+
             svg = new SKSvg();
-            var picture = svg.Load(stream);
+            SKPicture? picture;
+            using (var sanitisedStream = new MemoryStream(Encoding.UTF8.GetBytes(sanitised)))
+                picture = svg.Load(sanitisedStream);
 
             if (picture is null)
             {
@@ -579,6 +588,83 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
             return requested;
 
         return Math.Min(requested, MaxRasterEdge / longestEdge);
+    }
+}
+
+/// <summary>
+/// Strips an SVG document of anything that could make rendering it touch
+/// the network or the local disk, or run script — none of which a static
+/// rasteriser has any legitimate reason to do (`TD-184`). Deliberately not
+/// a member of <see cref="SvgDocumentPageSource"/>: this is pure text
+/// processing with nothing platform-specific about it, so it carries none
+/// of that class's own <see cref="System.Runtime.Versioning.SupportedOSPlatformAttribute"/>
+/// declarations and can be called (and tested) from anywhere.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Why this exists, specifically:</b> <c>Svg.Skia</c>'s own image
+/// resolution (<c>Svg.Model.SvgExtensions.GetImageFromWeb</c>) calls
+/// <c>System.Net.WebRequest.Create(uri).GetResponse()</c> for any
+/// <c>&lt;image&gt;</c> reference that is not a <c>data:</c> URI —
+/// <c>http://</c>, <c>https://</c> <b>and</b> <c>file://</c> alike, the last
+/// of which reads an arbitrary local file and folds its bytes into the
+/// rendered picture. An SVG is untrusted, attacker-controlled input the
+/// moment it reaches this platform (an attachment's own bytes), so a
+/// reference resolved against the document's own base URI runs at this
+/// platform's own expense the instant the document renders — before any
+/// content is even shown, with no further action from the user. Every
+/// <c>href</c>/<c>xlink:href</c> that is not a same-document fragment
+/// (<c>#id</c>) or an embedded <c>data:</c> URI is blanked by
+/// <see cref="Sanitise"/>, before the bytes ever reach <c>SKSvg.Load</c>, so
+/// the vulnerable call is never given anything to resolve.
+/// </para>
+/// <para>
+/// A <c>&lt;!DOCTYPE&gt;</c> declaration is removed outright — the XXE
+/// vector, and an SVG has no legitimate reason to declare one. A
+/// <c>&lt;script&gt;</c> element is removed too: this rasteriser has no
+/// script engine to run it, so it is already inert, but stripping it is
+/// cheap, unambiguous defence in depth against a future rendering path (or a
+/// future library upgrade) that does.
+/// </para>
+/// </remarks>
+internal static class SvgMarkupSanitiser
+{
+    private static readonly Regex DoctypePattern = new(
+        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex ScriptElementPattern = new(
+        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex ExternalReferencePattern = new(
+        @"(?<attr>xlink:href|href)\s*=\s*(?<quote>[""'])(?!\s*(#|data:))(?<value>[^""']*)\k<quote>",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// A dangerous <c>href</c>/<c>xlink:href</c> is replaced with this,
+    /// never with an empty string. Both are equally inert content — an
+    /// empty <c>data:</c> URI resolves locally to nothing — but an empty
+    /// <em>string</em> is a same-document <b>relative</b> reference per
+    /// RFC 3986, which some SVG readers resolve against the document's own
+    /// base URI regardless of the value being empty; a document loaded
+    /// from a bare stream (every attachment this platform opens) carries
+    /// no base URI at all, and resolving a relative reference against a
+    /// null one throws. A <c>data:</c> URI is absolute — Svg.Skia's own
+    /// image resolution (<c>Svg.Model.SvgExtensions.GetImageUri</c>)
+    /// returns it immediately, before any base-URI resolution is even
+    /// attempted — so this is the one substitution that is both inert and
+    /// never touches that code path at all.
+    /// </summary>
+    private const string InertReferenceValue = "data:,";
+
+    /// <summary>Returns <paramref name="markup"/> with every DOCTYPE, script element and non-fragment/non-<c>data:</c> href removed or blanked.</summary>
+    public static string Sanitise(string markup)
+    {
+        ArgumentNullException.ThrowIfNull(markup);
+
+        var sanitised = DoctypePattern.Replace(markup, string.Empty);
+        sanitised = ScriptElementPattern.Replace(sanitised, string.Empty);
+        sanitised = ExternalReferencePattern.Replace(sanitised, m => $"{m.Groups["attr"].Value}=\"{InertReferenceValue}\"");
+        return sanitised;
     }
 }
 
