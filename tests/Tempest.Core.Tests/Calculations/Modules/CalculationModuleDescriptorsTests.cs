@@ -1,56 +1,64 @@
 using Tempest.Core.Calculations;
 using Tempest.Core.Calculations.Modules;
+using Tempest.Core.Materials;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Calculations.Modules;
 
 /// <summary>
 /// The form descriptors cannot drift from the definitions they describe:
-/// every module has one, every input is named exactly as the input record
-/// names it, and every quantity names a real dimension.
+/// every product calculation has one, every input is named exactly as the
+/// input record names it, every quantity names a registered dimension and
+/// a real unit of it, and every material-sourced input names a well-known
+/// property of the same dimension.
 /// </summary>
 public class CalculationModuleDescriptorsTests
 {
-    private static readonly IReadOnlyList<Type> ModuleTypes =
-    [
-        typeof(BeamDeflectionCalculationDefinition),
-        typeof(BoltedJointPreloadCalculationDefinition),
-        typeof(BoltGroupEccentricShearCalculationDefinition),
-        typeof(FilletWeldThroatStressCalculationDefinition),
-        typeof(LiftingLugPinJointCalculationDefinition),
-        typeof(ColumnBucklingCalculationDefinition),
-        typeof(ShaftCombinedStressCalculationDefinition),
-        typeof(BearingRatingLifeCalculationDefinition),
-        typeof(ThickWalledCylinderCalculationDefinition),
-        typeof(ThermalExpansionStressCalculationDefinition),
-        typeof(FatigueMinerCalculationDefinition),
-    ];
-
-    /// <summary>Every module type with its descriptor.</summary>
-    public static TheoryData<Type> EveryModule() => [.. ModuleTypes];
+    /// <summary>Every product definition, original and `WP 21.7A` module alike.</summary>
+    public static TheoryData<Type> EveryDefinition() =>
+        [.. CalculationModuleDescriptors.All.Select(d => d.DefinitionType)];
 
     [Fact]
-    public void EveryModuleHasADescriptor_AndEveryDescriptorIsAModule()
+    public void EveryProductCalculationHasADescriptor_AndEveryDescriptorIsAProductCalculation()
     {
-        var moduleIds = ModuleTypes.Select(t => (string)t.GetField("Id")!.GetValue(null)!).OrderBy(id => id, StringComparer.Ordinal).ToList();
         var describedIds = CalculationModuleDescriptors.All.Select(d => d.Id).OrderBy(id => id, StringComparer.Ordinal).ToList();
+        var catalogueIds = ProductCalculationCatalogue.CalculationIds.OrderBy(id => id, StringComparer.Ordinal).ToList();
 
-        Assert.Equal(moduleIds, describedIds);
-        Assert.All(moduleIds, id => Assert.Contains(id, ProductCalculationCatalogue.CalculationIds));
-        Assert.All(moduleIds, id => Assert.NotNull(CalculationModuleDescriptors.For(id)));
+        Assert.Equal(catalogueIds, describedIds);
+        Assert.Equal(16, describedIds.Count);
+        Assert.All(describedIds, id => Assert.NotNull(CalculationModuleDescriptors.For(id)));
         Assert.Null(CalculationModuleDescriptors.For("calc.no-such-module"));
     }
 
     [Theory]
-    [MemberData(nameof(EveryModule))]
-    public void TheDescriptorNamesEveryInputOfTheInputRecord_InOrder(Type moduleType)
+    [MemberData(nameof(EveryDefinition))]
+    public void TheDescriptorIdAndTitleMatchTheDefinition(Type definitionType)
     {
-        var id = (string)moduleType.GetField("Id")!.GetValue(null)!;
+        var id = (string)definitionType.GetField("Id")!.GetValue(null)!;
         var descriptor = CalculationModuleDescriptors.For(id)!;
 
-        var definitionInterface = moduleType.GetInterfaces().Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICalculationDefinition<,>));
-        var inputType = definitionInterface.GetGenericArguments()[0];
-        var parameters = inputType.GetConstructors().Single().GetParameters();
+        Assert.Same(definitionType, descriptor.DefinitionType);
+        Assert.Equal(id, descriptor.Id);
+        Assert.False(string.IsNullOrWhiteSpace(descriptor.Title));
+        Assert.False(string.IsNullOrWhiteSpace(descriptor.MethodReference));
+        Assert.Equal(descriptor.Metadata.Category, descriptor.Category);
+        Assert.Equal(descriptor.DefinitionInterface.GetGenericArguments()[0], descriptor.InputType);
+        Assert.Equal(descriptor.DefinitionInterface.GetGenericArguments()[1], descriptor.ResultType);
+
+        if (descriptor.SpecificationPath is { } path)
+        {
+            Assert.StartsWith("docs/engineering/calculations/calc.", path, StringComparison.Ordinal);
+            Assert.Equal(id + ".md", path["docs/engineering/calculations/".Length..]);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(EveryDefinition))]
+    public void TheDescriptorNamesEveryInputOfTheInputRecord_InOrder(Type definitionType)
+    {
+        var id = (string)definitionType.GetField("Id")!.GetValue(null)!;
+        var descriptor = CalculationModuleDescriptors.For(id)!;
+        var parameters = descriptor.InputType.GetConstructors().Single().GetParameters();
 
         Assert.Equal(parameters.Select(p => p.Name!).ToList(), descriptor.Inputs.Select(i => i.Name).ToList());
 
@@ -63,10 +71,11 @@ public class CalculationModuleDescriptorsTests
                 case CalculationInputKind.Quantity:
                     Assert.True(parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Quantity<>), $"{id}.{input.Name} is described as a quantity but is a {parameter.ParameterType.Name}.");
                     Assert.Equal(parameterType.GetGenericArguments()[0].Name, input.DimensionName);
-                    Assert.False(string.IsNullOrWhiteSpace(input.DefaultUnitSymbol));
+                    Assert.True(CalculationInputUnits.IsKnown(input.DimensionName!), $"{id}.{input.Name}: no unit catalogue is registered for {input.DimensionName}.");
+                    Assert.Contains(input.DefaultUnitSymbol, CalculationInputUnits.SymbolsOf(input.DimensionName!));
                     break;
                 case CalculationInputKind.Number:
-                    Assert.Equal(typeof(double), parameterType);
+                    Assert.True(parameterType == typeof(double) || parameterType == typeof(int), $"{id}.{input.Name} is described as a number but is a {parameter.ParameterType.Name}.");
                     break;
                 case CalculationInputKind.Text:
                     Assert.Equal(typeof(string), parameterType);
@@ -79,7 +88,8 @@ public class CalculationModuleDescriptorsTests
                     Assert.Equal(typeof(bool), parameterType);
                     break;
                 case CalculationInputKind.List:
-                    Assert.True(typeof(System.Collections.IEnumerable).IsAssignableFrom(parameterType), $"{id}.{input.Name} is described as a list but is a {parameter.ParameterType.Name}.");
+                    Assert.True(parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(IReadOnlyList<>), $"{id}.{input.Name} is described as a list but is a {parameter.ParameterType.Name}.");
+                    Assert.Equal(parameterType.GetGenericArguments()[0].GetConstructors().Single().GetParameters().Select(p => p.Name!).ToList(), input.Choices);
                     break;
                 case CalculationInputKind.Reference:
                     Assert.Equal(typeof(Tempest.Core.ReferenceData.ReferencePin), parameterType);
@@ -91,42 +101,43 @@ public class CalculationModuleDescriptorsTests
                 || (!parameter.ParameterType.IsValueType && new System.Reflection.NullabilityInfoContext().Create(parameter).WriteState == System.Reflection.NullabilityState.Nullable);
             Assert.Equal(nullable, input.IsOptional);
 
+            // A material-sourced input names a well-known property of its own dimension.
+            if (input.MaterialPropertyName is { } property)
+            {
+                Assert.Equal(CalculationInputKind.Quantity, input.Kind);
+                Assert.True(MaterialPropertyNames.IsWellKnown(property), $"{id}.{input.Name}: {property} is not a well-known material property.");
+                Assert.Equal(MaterialPropertyNames.ExpectedDimensionOf(property), input.DimensionName);
+            }
+
             Assert.False(string.IsNullOrWhiteSpace(input.Label));
             Assert.False(string.IsNullOrWhiteSpace(input.Limits));
             Assert.False(string.IsNullOrWhiteSpace(input.Description));
         }
-
-        Assert.False(string.IsNullOrWhiteSpace(descriptor.MethodReference));
-        Assert.StartsWith("docs/engineering/calculations/calc.", descriptor.SpecificationPath, StringComparison.Ordinal);
-        Assert.Equal(id + ".md", descriptor.SpecificationPath["docs/engineering/calculations/".Length..]);
     }
 
-    [Theory]
-    [MemberData(nameof(EveryModule))]
-    public void TheDescriptorsUnitSymbols_AreRealUnitsOfTheirDimension(Type moduleType)
+    [Fact]
+    public void TheUnitRegistry_ParsesAndConvertsEveryRegisteredDimension()
     {
-        var id = (string)moduleType.GetField("Id")!.GetValue(null)!;
-        var descriptor = CalculationModuleDescriptors.For(id)!;
-
-        foreach (var input in descriptor.Inputs.Where(i => i.Kind == CalculationInputKind.Quantity))
+        foreach (var dimension in CalculationInputUnits.DimensionNames)
         {
-            var symbols = input.DimensionName switch
-            {
-                nameof(Length) => LengthUnits.All.Select(u => u.Symbol),
-                nameof(Force) => ForceUnits.All.Select(u => u.Symbol),
-                nameof(Pressure) => PressureUnits.All.Select(u => u.Symbol),
-                nameof(Area) => AreaUnits.All.Select(u => u.Symbol),
-                nameof(SecondMomentOfArea) => SecondMomentOfAreaUnits.All.Select(u => u.Symbol),
-                nameof(Torque) => TorqueUnits.All.Select(u => u.Symbol),
-                nameof(Stiffness) => StiffnessUnits.All.Select(u => u.Symbol),
-                nameof(RotationalSpeed) => RotationalSpeedUnits.All.Select(u => u.Symbol),
-                nameof(Duration) => DurationUnits.All.Select(u => u.Symbol),
-                nameof(ThermalExpansion) => ThermalExpansionUnits.All.Select(u => u.Symbol),
-                nameof(TemperatureDelta) => TemperatureDeltaUnits.All.Select(u => u.Symbol),
-                _ => throw new Xunit.Sdk.XunitException($"{id}.{input.Name}: no unit catalogue known for dimension {input.DimensionName}."),
-            };
+            var symbols = CalculationInputUnits.SymbolsOf(dimension);
+            Assert.NotEmpty(symbols);
 
-            Assert.Contains(input.DefaultUnitSymbol, symbols);
+            var parsed = CalculationInputUnits.TryParse(dimension, "2.5", symbols[0], out var problem);
+            Assert.Null(problem);
+            Assert.NotNull(parsed);
+            Assert.Equal(2.5, CalculationInputUnits.ValueIn(dimension, parsed, symbols[0]), 1e-12);
         }
+
+        Assert.Null(CalculationInputUnits.TryParse(nameof(Length), "abc", "mm", out var notANumber));
+        Assert.Contains("not a number", notANumber);
+        Assert.Null(CalculationInputUnits.TryParse(nameof(Length), "5", "kg", out var wrongUnit));
+        Assert.Contains("not a unit of Length", wrongUnit);
+        Assert.Null(CalculationInputUnits.TryParseWithUnit(nameof(Length), "75", out var noUnit));
+        Assert.Contains("needs a unit", noUnit);
+        Assert.Throws<ArgumentException>(() => CalculationInputUnits.SymbolsOf("Voltage"));
+
+        var inches = CalculationInputUnits.TryParseWithUnit(nameof(Length), "2 in", out _);
+        Assert.Equal(50.8, CalculationInputUnits.ValueIn(nameof(Length), inches!, "mm"), 1e-9);
     }
 }

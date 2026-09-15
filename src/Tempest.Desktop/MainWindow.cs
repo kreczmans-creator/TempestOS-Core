@@ -106,6 +106,9 @@ public sealed class MainWindow : Window
     private readonly EngineeringCalculationCoordinator _engineeringCalculationCoordinator;
     private bool _engineeringCalculationLoaded;
 
+    // The Engineering Calculators (`WP 21.7B`).
+    private readonly CalculationModulesCoordinator _calculationModulesCoordinator;
+
     // The Settings area (`WP 19.2B`).
     private readonly SettingsView _settingsView;
 
@@ -184,7 +187,7 @@ public sealed class MainWindow : Window
         var callbacks = new MainWindowCallbacks(
             RecordHistory, RefreshOutputPanelExtras, RefreshStatusBar, SetCurrentArea,
             OpenObjectAsync, OpenProjectAttachmentAsync, OpenEvidenceRecordAsync, PromptForNewProjectAsync, RenderCurrentModuleAsync,
-            EnterEngineeringCalculationAsync);
+            EnterEngineeringCalculationAsync, EnterCalculationModulesAsync);
 
         var views = composer.BuildViews(host, this, evidenceFilePickerOverride, callbacks);
         var coordinators = composer.BuildCoordinators(host, this, views, callbacks);
@@ -235,6 +238,7 @@ public sealed class MainWindow : Window
         _engineeringSurface = layout.EngineeringSurface;
         _projectDirectory = views.ProjectDirectory;
         _engineeringCalculationCoordinator = coordinators.EngineeringCalculationCoordinator;
+        _calculationModulesCoordinator = coordinators.CalculationModulesCoordinator;
         _settingsView = views.SettingsView;
         _newProjectPrompt = views.NewProjectPrompt;
         _quotationService = (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
@@ -587,6 +591,15 @@ public sealed class MainWindow : Window
             .ConfigureAwait(true);
         _engineeringCalculationLoaded = true;
     }
+
+    /// <summary>
+    /// The Engineering Calculators' own entry action (`WP 21.7B`): the
+    /// catalogue and the released materials are re-read on every entry,
+    /// for the same reason <see cref="EnterEngineeringCalculationAsync"/>
+    /// re-reads the library — a record released elsewhere in the session
+    /// must be offered here at once.
+    /// </summary>
+    private Task EnterCalculationModulesAsync() => _calculationModulesCoordinator.RefreshAsync();
 
     /// <summary>
     /// Shows the current project in the Status Bar (`TD-84`) — the "see

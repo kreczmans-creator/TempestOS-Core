@@ -318,6 +318,14 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
+        // `WP 21.7B`: the Engineering Calculators' own read-and-run model —
+        // every product calculation from a generated form, materials from
+        // released records only, the same two services the bracket
+        // workbench above already stands on.
+        CalculationModules = new CalculationModuleWorkbench(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+
         // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
         // own three governed libraries and their validation services, so the
         // Engineering Assets area can list every calculation pack, template
@@ -483,6 +491,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// no rule of its own.
     /// </remarks>
     public BracketCalculationWorkbench? BracketCalculations { get; private set; }
+
+    /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public CalculationModuleWorkbench? CalculationModules { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

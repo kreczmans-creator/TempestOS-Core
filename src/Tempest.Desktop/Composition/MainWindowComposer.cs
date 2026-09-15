@@ -63,6 +63,8 @@ internal sealed record ComposedViews(
     ProjectBrowserView ProjectBrowser,
     ProjectWorkspaceView ProjectWorkspace,
     EngineeringCalculationView EngineeringCalculation,
+    // `WP 21.7B`: the Engineering Calculators, threaded to `BuildCoordinators` for their own collaborator.
+    CalculationModulesView CalculationModules,
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
@@ -133,7 +135,8 @@ internal sealed record MainWindowCallbacks(
     Func<Guid, string, Task> OpenEvidenceRecordAsync,
     Func<string, string, Task<bool>> PromptForNewProjectAsync,
     Func<Task> RenderCurrentModuleAsync,
-    Func<Task> EnterEngineeringCalculationAsync);
+    Func<Task> EnterEngineeringCalculationAsync,
+    Func<Task> EnterCalculationModulesAsync);
 
 /// <summary>
 /// Assembles <see cref="MainWindow"/>'s entire object graph — every view,
@@ -657,6 +660,10 @@ internal sealed partial class MainWindowComposer
 
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
+        // `WP 21.7B`: the Engineering Calculators — every product
+        // calculation from a form generated from its own descriptor.
+        var calculationModules = new CalculationModulesView();
+
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
         // own (`Workspace/Evidence/ReferenceCitationIndex.cs`'s own
@@ -769,7 +776,7 @@ internal sealed partial class MainWindowComposer
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
-            engineeringAssetsView)
+            engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -788,7 +795,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, calculationModules, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
