@@ -328,6 +328,64 @@ public class CalculationsCommandsTests
         Assert.False(result.Succeeded);
     }
 
+    // ---- CompleteCalculationCommand (`WP 20.1B`, `TD-181`) ----
+
+    [Fact]
+    public async Task Complete_OpenCalculation_Succeeds_AndRecordsCompletedOn()
+    {
+        var context = BuildContext();
+        var calculation = await CreateCalculationAsync(context);
+        var handler = new CompleteCalculationCommandHandler(context, new FakeTimeProvider(new DateTimeOffset(2026, 9, 15, 0, 0, 0, TimeSpan.Zero)));
+
+        var result = await handler.HandleAsync(new CompleteCalculationCommand(calculation.Id, "Calculation"), default);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.True(calculation.Completed);
+        Assert.Equal(new DateOnly(2026, 9, 15), calculation.CompletedOn);
+    }
+
+    [Fact]
+    public async Task Complete_AlreadyComplete_Fails_NoIndependenceRuleNeeded()
+    {
+        // "The same person may complete it" (Product Owner decision
+        // 2026-09-15 §2) — no independence check exists here at all;
+        // completing twice is refused only because it is already done.
+        var context = BuildContext();
+        var calculation = await CreateCalculationAsync(context);
+        var handler = new CompleteCalculationCommandHandler(context);
+
+        var first = await handler.HandleAsync(new CompleteCalculationCommand(calculation.Id, "Calculation"), default);
+        Assert.True(first.Succeeded, first.Message);
+
+        var second = await handler.HandleAsync(new CompleteCalculationCommand(calculation.Id, "Calculation"), default);
+
+        Assert.False(second.Succeeded);
+        Assert.Contains("already complete", second.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Complete_UnknownTarget_Fails()
+    {
+        var context = BuildContext();
+        var handler = new CompleteCalculationCommandHandler(context);
+
+        var result = await handler.HandleAsync(new CompleteCalculationCommand(Guid.NewGuid(), "Calculation"), default);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task Complete_ACalculationSet_Fails_NeverTheContainer()
+    {
+        var context = BuildContext();
+        var set = await CreateCalculationSetAsync(context, "SET-1", "Set");
+        var handler = new CompleteCalculationCommandHandler(context);
+
+        var result = await handler.HandleAsync(new CompleteCalculationCommand(set.Id, "CalculationSet"), default);
+
+        Assert.False(result.Succeeded);
+    }
+
     // ---- ExecuteCalculationCommand / RecalculateCalculationCommand ----
 
     [Fact]
