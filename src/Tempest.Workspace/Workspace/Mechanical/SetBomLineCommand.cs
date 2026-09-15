@@ -72,6 +72,14 @@ public sealed class SetBomLineCommandHandler : ICommandHandler<SetBomLineCommand
         {
             return CommandResult.Failure(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            // An unrecognised unit of measure (`Tempest.Core.EngineeringDomain.BomUnitsOfMeasure`,
+            // `ADR-0083` addendum, `WP 20.3A`) — a refusal message, exactly
+            // like the non-positive-quantity catch above it, not an
+            // unhandled exception surfaced to the command surface.
+            return CommandResult.Failure(ex.Message);
+        }
 
         return CommandResult.Success($"Set BOM line for '{command.TargetObjectId}': ×{command.Quantity} {command.UnitOfMeasure}.");
     }

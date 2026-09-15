@@ -110,3 +110,58 @@ point-in-time configuration snapshot — the two are orthogonal
 `ADR-0080`; `ADR-0054`; `ADR-0055`; `WP7.1B Units and Quantities
 Framework Implementation.md`; `src/Tempest.Core/EngineeringDomain/Contracts/BillOfMaterials.cs`;
 `src/Tempest.Core/EngineeringDomain/Implementation/EngineeringObjectBase.cs`.
+
+## Addendum (`WP 20.3A`) — the disclosed Future Capability, built: a small closed vocabulary
+
+The first Negative consequence above named its own remedy: "a small
+closed vocabulary/lookup." `BomUnitsOfMeasure`
+(`src/Tempest.Core/EngineeringDomain/BomUnitsOfMeasure.cs`) is exactly
+that, and nothing more — still deliberately separate from
+`UnitsAndQuantities`, for the identical reason this ADR's own Decision
+and both rejected-hybrid Alternatives already give: a BOM count is not a
+physical dimension, and a display-only vocabulary must not import
+calculation-grade conversion machinery it will never use. Twelve
+canonical symbols (`EA`, `SET`, `PR`, `BOX`, `ROLL`, `SHT`, `M`, `MM`,
+`KG`, `G`, `L`, `HR`) each carry a small, fixed list of case-insensitive
+aliases — `"EA"`, `"ea"` and `"Each"` all resolve to `EA` — covering this
+ADR's own worked examples plus the handful of ordinary
+packaging/count/labour units a consultancy's own BOM lines and calc
+sheets actually use; nothing speculative beyond that list.
+
+`EngineeringObjectBase.SetBomLineAsync` canonicalises `unitOfMeasure`
+against this vocabulary before its write transaction ever opens — the
+same placement, and the same "exception, not a refusal result" shape,
+that method's own pre-existing non-positive-quantity guard immediately
+above it already uses, and the same distinction
+`Tempest.Core.Evidence.EvidenceUnitCatalog.Parse` already draws for a
+declared figure's own unrecognised unit: a caller's typing error, not an
+engineering-governance finding. A blank or absent unit is left `null`,
+exactly as before — this addendum validates a *given* unit, it does not
+make one mandatory. An unrecognised unit is refused naming both the
+rejected value and the full known list.
+
+The second Negative consequence's own hazard — a value stored before
+this addendum existed, or one this vocabulary still does not recognise —
+is handled on **read**, not by rewriting history: the `UnitOfMeasure`
+getter runs the raw stored string through the same vocabulary's own
+lenient `TryCanonicalise`, returning the canonical symbol when the raw
+value matches a known alias and the raw value itself, completely
+unchanged, when it does not. Reading a BOM line's own unit therefore
+never refuses and never silently invents a value it cannot ground in
+either the vocabulary or the record itself — `"each"` written years ago
+now displays as `EA`, and `"XYZ"` — this ADR's own worked example of data
+the platform was never asked to validate — still displays as `XYZ`,
+neither corrected nor rejected. No migration of durably stored data was
+needed or performed.
+
+`BomUnitsOfMeasureTests` proves the vocabulary directly (every alias
+resolves to its one symbol, case-insensitively and whitespace-trimmed; no
+two definitions share an alias; the leniency and refusal shapes for
+`TryCanonicalise`/`Canonicalise`); `BillOfMaterialsTests` and
+`EngineeringObjectRehydrationTests` prove the two integration points —
+`SetBomLineAsync`'s own canonicalise-before-write, and a value read back
+after a restart that was written directly to durable state before this
+vocabulary existed. `SetBomLineCommandHandler` (`Tempest.Workspace`)
+gained one more `catch` clause, alongside its pre-existing one for a
+non-positive quantity, so an unrecognised unit reaches the command
+surface as an ordinary refusal rather than an unhandled exception.

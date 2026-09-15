@@ -68,6 +68,67 @@ public class BillOfMaterialsTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => part.SetBomLineAsync(quantity));
     }
 
+    // ---- UnitOfMeasure vocabulary (ADR-0083 addendum, WP 20.3A) ----
+
+    [Theory]
+    [InlineData("EA")]
+    [InlineData("ea")]
+    [InlineData("Each")]
+    public async Task SetBomLineAsync_AnyAliasOfEach_CanonicalisesToOneStoredUnit(string alias)
+    {
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+
+        await part.SetBomLineAsync(4m, alias);
+
+        Assert.Equal("EA", part.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task SetBomLineAsync_UnknownUnitOfMeasure_ThrowsArgumentException_NamingTheKnownList()
+    {
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() => part.SetBomLineAsync(4m, "furlongs"));
+
+        Assert.Contains("furlongs", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("EA", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(1m, part.Quantity); // refused before any write - the default is untouched
+        Assert.Null(part.UnitOfMeasure);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SetBomLineAsync_NullOrBlankUnitOfMeasure_LeavesItNull_NeverRefuses(string? unitOfMeasure)
+    {
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+
+        await part.SetBomLineAsync(2m, unitOfMeasure);
+
+        Assert.Null(part.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task UnitOfMeasure_ReadDirectlyAfterSetBomLineAsync_IsAlreadyCanonical()
+    {
+        // The write-time canonicaliser and the read-time one agree: there
+        // is no way, through the one write path this Kind exposes, to
+        // observe a non-canonical value on the same instance that wrote
+        // it. (EngineeringObjectRehydrationTests covers the read-time
+        // canonicaliser's own separate job: a value written before this
+        // vocabulary existed, read back after a restart.)
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+
+        await part.SetBomLineAsync(4m, "each");
+
+        Assert.Equal("EA", part.UnitOfMeasure);
+    }
+
     [Fact]
     public async Task SetBomLineAsync_DoesNotCreateANewRevision()
     {

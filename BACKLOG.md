@@ -482,6 +482,26 @@ which moves this handler's own registration to `RoutingStrategies.Direct`
 and drives a real capture-lost event through the real controller, rather
 than opening a numbered row for a fix already scoped into that package.
 
+**Closed by `WP 20.3A`** (no live row for any of the three — `docs/releases/v0.19.1`'s
+own Part B audit found each, undisclosed in the backlog until now):
+**B2**, issuing evidence's sheet, record and pointer were three separate
+commits, so a crash between the first two left an Issued record with no
+sheet — the sheet is now attached (bytes and metadata, one transaction)
+before the issue record that names it is ever written, so a fault
+anywhere leaves the evidence merely Checked, never falsely Issued.
+**ADR-0051's disclosed gap**, export schema-version compatibility was
+reject-only with no migration path — `IExportSchemaMigration` and
+`ImportService.RegisterMigration` now walk a section behind the
+registered schema version forward one registered step at a time before
+the exact-equality check; compression and encryption remain out of
+scope. **ADR-0083's disclosed gap**, a Bill of Materials line's own
+`UnitOfMeasure` was unvalidated free text (`"EA"`/`"ea"`/`"Each"` three
+different strings) — `BomUnitsOfMeasure` is the small closed vocabulary
+that ADR's own Future Capability named, canonicalising on
+`SetBomLineAsync` and on every read of an already-stored value, refusing
+an unrecognised unit with the known list. See the `ADR-0051` and
+`ADR-0083` addenda for the full account.
+
 ## Owned by Programme
 
 Every remaining row closed by one of the nine substrate/surface Work
