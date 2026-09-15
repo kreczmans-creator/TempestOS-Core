@@ -17,6 +17,10 @@ namespace Tempest.Desktop.Documents;
 /// <param name="AddressLine2">The second address line, or <see langword="null"/>.</param>
 /// <param name="Email">A contact email, or <see langword="null"/>.</param>
 /// <param name="Phone">A contact phone number, or <see langword="null"/>.</param>
+/// <param name="BankSortCode">The bank account's own sort code, for the invoice's own payment-details section (`WP 21.2A`). <see langword="null"/> when none is recorded.</param>
+/// <param name="BankAccountNumber">The bank account number. <see langword="null"/> when none is recorded.</param>
+/// <param name="BankAccountName">The account holder's own name, where it differs from <see cref="LegalName"/> enough to state separately. <see langword="null"/> when none is recorded.</param>
+/// <param name="BankIban">The IBAN, for an international client. <see langword="null"/> when none is recorded.</param>
 public sealed record OrganisationIdentity(
     string LegalName,
     string? CompanyNumber,
@@ -24,7 +28,11 @@ public sealed record OrganisationIdentity(
     string? AddressLine1,
     string? AddressLine2,
     string? Email,
-    string? Phone)
+    string? Phone,
+    string? BankSortCode = null,
+    string? BankAccountNumber = null,
+    string? BankAccountName = null,
+    string? BankIban = null)
 {
     /// <summary>
     /// The Tempest Design Engineering Ltd defaults — transcribed verbatim
@@ -33,7 +41,11 @@ public sealed record OrganisationIdentity(
     /// `templates/invoice/Invoice.dc.html`, `templates/cost-estimate/CostEstimate.dc.html`'s
     /// own footer slot: "Tempest Design Engineering Ltd · Company No.
     /// 17349874" / "www.tempest-engineering.co.uk"). Every Settings →
-    /// Organisation field pre-fills from this until a user changes it.
+    /// Organisation field pre-fills from this until a user changes it. No
+    /// bank details — the design system's own templates name no real
+    /// account to default to, and inventing one would be worse than
+    /// leaving the invoice's own payment-details section honestly blank
+    /// until a user enters real ones (`WP 21.2A`).
     /// </summary>
     public static OrganisationIdentity TempestDefaults { get; } = new(
         LegalName: "Tempest Design Engineering Ltd",
@@ -43,6 +55,11 @@ public sealed record OrganisationIdentity(
         AddressLine2: null,
         Email: null,
         Phone: null);
+
+    /// <summary>Whether any bank detail at all is recorded — what an invoice renderer checks before drawing a "Payment details" section rather than drawing an empty one.</summary>
+    public bool HasBankDetails =>
+        !string.IsNullOrWhiteSpace(BankSortCode) || !string.IsNullOrWhiteSpace(BankAccountNumber)
+        || !string.IsNullOrWhiteSpace(BankAccountName) || !string.IsNullOrWhiteSpace(BankIban);
 
     /// <summary>
     /// The footer's own left-hand text — legal name, then "Company No.
