@@ -12,6 +12,7 @@ internal sealed class Requirement : IRequirement
     public string CreatedByPrincipalId { get; }
     public DateTimeOffset CreatedAt { get; }
     public string? Owner { get; }
+    public string? OwnerPersonId { get; }
     public RequirementPriority? Priority { get; }
     public bool IsDeleted { get; }
     public Guid? GroupId { get; }
@@ -28,7 +29,8 @@ internal sealed class Requirement : IRequirement
         string? owner = null,
         RequirementPriority? priority = null,
         bool isDeleted = false,
-        Guid? groupId = null)
+        Guid? groupId = null,
+        string? ownerPersonId = null)
     {
         Id = id;
         Identifier = identifier;
@@ -42,5 +44,6 @@ internal sealed class Requirement : IRequirement
         Priority = priority;
         IsDeleted = isDeleted;
         GroupId = groupId;
+        OwnerPersonId = ownerPersonId;
     }
 }

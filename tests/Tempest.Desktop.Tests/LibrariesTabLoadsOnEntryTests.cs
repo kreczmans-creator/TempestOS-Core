@@ -57,20 +57,22 @@ public sealed class LibrariesTabLoadsOnEntryTests
                 Assert.True(count >= 1, $"{library} lists no records.");
             }
 
-            // `WP 19.10P` (D15): every one of the eight governed libraries
+            // `WP 19.10P` (D15): every one of the nine governed libraries
             // gets its own heading, whether or not it currently holds a
-            // record — Manufacturing, Components and the rate-card
-            // library (its own routing key stays "BusinessRateCards";
-            // its screen name is "Rate cards") carry no baseline seed
-            // (only the five above do), so on a genuinely fresh root they
-            // are the three that read "(0)" with "No records yet"
-            // beneath, rather than being missing entirely.
-            foreach (var library in new[] { "Manufacturing", "Components", "Rate cards" })
+            // record — Manufacturing, Components, the rate-card library
+            // (its own routing key stays "BusinessRateCards"; its screen
+            // name is "Rate cards") and People (`WP 20.10F`, Product Owner
+            // finding D8 — nobody is seeded, "the first person is added by
+            // the user") carry no baseline seed (only the five above do),
+            // so on a genuinely fresh root they are the four that read
+            // "(0)" with "No records yet" beneath, rather than being
+            // missing entirely.
+            foreach (var library in new[] { "Manufacturing", "Components", "Rate cards", "People" })
                 Assert.Contains(headings, h => h == $"{library} (0)");
 
             var emptyLibraryTexts = librariesView.GetLogicalDescendants().OfType<TextBlock>()
                 .Count(t => t.Text == "No records yet");
-            Assert.Equal(3, emptyLibraryTexts);
+            Assert.Equal(4, emptyLibraryTexts);
 
             Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "No reference records are seeded.");
         }

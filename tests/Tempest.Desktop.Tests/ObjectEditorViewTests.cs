@@ -6,6 +6,8 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.People;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
@@ -403,12 +405,30 @@ public sealed class ObjectEditorViewTests
             var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
             var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
 
+            // `WP 20.10F` (Product Owner finding D8): the Owner control is
+            // now a drop-down of Released people — a Released person,
+            // registered directly through the catalogue, is what this
+            // test's own Save path now picks. The People library's own UI
+            // (Add a person, Verify, Release) is proven separately
+            // (`PersonLibraryJourneyTests`); this test's own focus stays the
+            // Save path once a person is pickable.
+            var personCatalog = (IPersonCatalog)host.Services!.GetService(typeof(IPersonCatalog));
+            const string personId = "person-wp2010f-test-owner";
+            const string personDisplayName = "WP 20.10F Test Owner";
+            await personCatalog.RegisterAsync(personId, new Person { DisplayName = personDisplayName }, PersonProvenance.Default);
+            var statement = new ReferenceReviewStatement("Test fixture — registered directly, not through the People library's own UI.");
+            await host.ReferenceReview!.VerifyAsync(personCatalog, personId, statement);
+            await host.ReferenceReview!.ReleaseAsync(personCatalog, personId, "Test fixture.");
+            var ownerSupport = new RequirementOwnerEditorSupport(personCatalog, _ => Task.FromResult<(string RecordId, string DisplayName)?>(null));
+
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
             var target = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, roots, RequirementsService.RequirementDocumentKind);
             if (target is null)
                 return; // no real Requirement in this sample set — honestly nothing to prove here.
 
-            var editor = ObjectEditorView.TryCreate(target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, requirementsService);
+            var editor = ObjectEditorView.TryCreate(
+                target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, requirementsService,
+                ownerSupport: ownerSupport);
             Assert.NotNull(editor);
 
             var sampleRequirement = await requirementsService.FindAsync(target.Id);
@@ -419,8 +439,23 @@ public sealed class ObjectEditorViewTests
             var requirementExpander = editor!.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
             Assert.True(requirementExpander.IsVisible);
 
-            var ownerBox = FindByLabelWithin<TextBox>(requirementExpander, "Owner");
-            ownerBox.Text = "WP10.7A Test Owner";
+            // The Owner section's own options are read through
+            // IPersonCatalog in the background (`PopulateRequirementInBackground`)
+            // — bounded poll for the option to appear, the same remedy this
+            // file's own Save-path polls already use for a real disk write.
+            var ownerBox = FindByLabelWithin<ComboBox>(requirementExpander, "Owner");
+            ComboBoxItem? ownerOption = null;
+            var optionDeadline = DesktopTestHelpers.Deadline(2);
+            while (ownerOption is null && DateTime.UtcNow < optionDeadline)
+            {
+                ownerOption = (ownerBox.ItemsSource as IEnumerable<ComboBoxItem>)?.FirstOrDefault(i => Equals(i.Content, personDisplayName));
+                if (ownerOption is null)
+                    await Task.Delay(10);
+            }
+
+            Assert.NotNull(ownerOption);
+            ownerBox.SelectedItem = ownerOption;
+
             var priorityBox = FindByLabelWithin<ComboBox>(requirementExpander, "Priority");
             priorityBox.SelectedItem = "High";
 
@@ -434,13 +469,14 @@ public sealed class ObjectEditorViewTests
             // the write genuinely never lands.
             var reread = await requirementsService.FindAsync(target.Id);
             var ownerDeadline = DesktopTestHelpers.Deadline(2);
-            while ((reread is null || reread.Owner != "WP10.7A Test Owner") && DateTime.UtcNow < ownerDeadline)
+            while ((reread is null || reread.Owner != personDisplayName) && DateTime.UtcNow < ownerDeadline)
             {
                 await Task.Delay(10);
                 reread = await requirementsService.FindAsync(target.Id);
             }
 
-            Assert.Equal("WP10.7A Test Owner", reread!.Owner);
+            Assert.Equal(personDisplayName, reread!.Owner);
+            Assert.Equal(personId, reread.OwnerPersonId);
             Assert.Equal(RequirementPriority.High, reread.Priority);
         }
         finally
