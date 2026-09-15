@@ -7,6 +7,7 @@ using Avalonia.Styling;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Core.Notifications;
+using Tempest.Desktop.Composition;
 using Tempest.Desktop.Docking;
 using Tempest.Desktop.Views;
 using Tempest.Samples;
@@ -200,6 +201,45 @@ public sealed class MainWindowCompositionTests
             Assert.Contains(registry.Items, d => d.DisplayName == "Toggle Theme");
             Assert.Contains(registry.Items, d => d.DisplayName == "Macros");
             Assert.Contains(registry.Items, d => d.DisplayName == "View Relationships");
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// `WP 20.10D`, PO finding T4: every panel — docked, floating or
+    /// hidden — is listed in one place, so there is always a route to a
+    /// panel regardless of how it was lost. One "Show Panel: X" entry per
+    /// panel registered when the shell composes (the four standard
+    /// panels); invoking it redocks a floating panel and selects it.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CommandPalette_ListsShowPanelForEveryRegisteredPanel_AndInvokingItRedocksAFloatingOne()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var window = new MainWindow(host);
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var dockingComposer = GetPrivateField<WorkspaceDockingComposer>(window, "_dockingComposer");
+
+            foreach (var descriptor in dockingComposer.Registry.All)
+                Assert.Contains(registry.Items, d => d.DisplayName == $"Show Panel: {descriptor.Title}");
+
+            dockingComposer.Layout.Apply(t => t.Float(dockingComposer.ExplorerPanelId, -50, 40, 420, 320));
+            Assert.True(dockingComposer.Layout.Tree.IsFloating(dockingComposer.ExplorerPanelId));
+
+            var invocation = await registry.InvokeAsync(
+                $"shell.showPanel:{dockingComposer.ExplorerPanelId}", CommandContext.Empty, prompt: null, CancellationToken.None).ConfigureAwait(true);
+
+            Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
+            Assert.False(dockingComposer.Layout.Tree.IsFloating(dockingComposer.ExplorerPanelId));
+            Assert.Contains(dockingComposer.ExplorerPanelId, dockingComposer.Layout.Tree.DockedPanels);
+            Assert.Empty(dockingComposer.Layout.FloatingWindows);
         }
         finally
         {

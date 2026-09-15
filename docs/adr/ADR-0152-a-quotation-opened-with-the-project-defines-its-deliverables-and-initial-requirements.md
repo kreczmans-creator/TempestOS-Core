@@ -236,6 +236,69 @@ button on the Deliverables tab, no quote-at-project-creation prompt, all
 `WP 19.5B`'s own scope, per the brief's explicit "nothing under
 `src/Tempest.Desktop`."
 
+## Addendum (`WP 20.10E`, 2026-09-15, Product Owner finding D18)
+
+**"No revision of an accepted quotation... a change is a new quotation"**
+(§3) is the hook this addendum hangs from: the Product Owner's D18 finding
+on `v0.19.1` — "Project → Sign off ... Project able to be closed with work
+still open against the quote - this needs to either be flagged that there
+is still open tasks which need to either be closed or need to have a
+change order against the quote" — names exactly the "new quotation" §3
+already promised, and gives it a name: a **change order**.
+
+**1. `Quotation` gains a closed `QuotationKind`** (`Quotation` — the
+default, every existing quotation and every behaviour above, unchanged —
+or `ChangeOrder`), a plain field alongside `Reference`/`Currency`/etc.,
+immutable once set. A change order is opened through the identical
+`IQuotationService.CreateAsync`, generating its own `CO-<yyyy>-<nnn>`
+reference from the same scan-the-store discipline §4 already established
+for `Q-<yyyy>-<nnn>` — the two vocabularies never collide, so one scan
+serves both. It moves through the identical Draft → Sent → Accepted |
+Declined table (§3) — no new status vocabulary.
+
+**2. A change order's own line carries an existing deliverable, from the
+moment it is added, not from Accept.** `AddLineAsync` gains an optional
+`carriedDeliverableId`, refused unless the quotation is a `ChangeOrder`
+and the id names a live `Deliverable` — the line's own `DeliverableId`
+(§2's own field, previously `null` until Accept) is set immediately. This
+is the addendum's whole mechanism: `ProjectLifecycleService.SignOffAsync`
+(`Tempest.Core.Projects`, `WP 19.5C`) can now ask, of any open deliverable
+under the project, "does a live change order's line already name you?" —
+a plain lookup over `QuotationLine.DeliverableId`, no second linking
+mechanism, no new relationship kind.
+
+**3. `AcceptAsync` branches per line on whether `DeliverableId` is already
+set.** Carried: no new Deliverable, the carried id is used as-is; not
+carried (an ordinary quotation's line, always, since every one of a change
+order's own lines carries one — this release raises no new-work change
+order): the existing milestone-and-Deliverable creation from §5, unchanged.
+Either way, one Requirement per line — a change order's own line is still
+real, requirement-worthy scope, `AcceptAsync` does not special-case that
+half. The reference milestone (§5) is now found-or-created lazily, the
+first time a line actually needs one, so a change order whose every line
+is carried — the only shape this release creates — never creates an empty
+milestone of its own.
+
+**4. The sign-off rule itself, in `Tempest.Core.Projects.ProjectLifecycleService`
+(`WP 19.5C`), not this file's own `QuotationService`.** `SignOffAsync`
+gains `ProjectLifecycleRefusal.WorkStillOpen`: refused while the project
+carries a live deliverable with no completion, a live `Tempest.Core.Tasks.ManualTask`
+not done, or a live `Tempest.Core.EngineeringDomain.Calculation` not
+complete — unless, for a deliverable only, a live (not Declined) change
+order's own line already names it. A `ManualTask`/`Calculation` is never
+on a quotation line at all, so neither can ever be "carried" — the two
+ways out the refusal message states, "complete or close them, or raise a
+change order that carries them," only the first half ever applies to
+those two. `GetOpenWorkAsync` reads the identical snapshot for the Sign
+off tab to show before any attempt, naming each item's own carrying
+reference once one exists.
+
+**5. The kill switch this Work Package's own brief named — carrying
+deliverable ids on the change order itself, beside its lines, rather than
+on `QuotationLine`, if the record's own shape fought it — was not needed**:
+`QuotationLine.DeliverableId` was already exactly the right shape, already
+nullable, already meant "the deliverable this line is about."
+
 ## Related Documents
 
 `D-028`; `ADR-0145` (one object, one transaction); `ADR-0150` (the

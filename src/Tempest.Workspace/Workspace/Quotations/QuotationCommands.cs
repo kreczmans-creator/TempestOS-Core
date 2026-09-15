@@ -42,7 +42,9 @@ public sealed class CreateQuotationCommandHandler : ICommandHandler<CreateQuotat
     /// <inheritdoc />
     public async Task<CommandResult> HandleAsync(CreateQuotationCommand command, CancellationToken cancellationToken)
     {
-        var result = await _service.CreateAsync(command.ProjectId, command.Reference, clientOrganisationId: null, cancellationToken).ConfigureAwait(false);
+        var result = await _service
+            .CreateAsync(command.ProjectId, command.Reference, clientOrganisationId: null, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
 
         // The shell reveals and opens whatever a create command names here
         // (Product Owner guard, `WP 17.9.4`).
@@ -104,7 +106,7 @@ public sealed class AddQuotationLineCommandHandler : ICommandHandler<AddQuotatio
     public async Task<CommandResult> HandleAsync(AddQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .AddLineAsync(command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken)
+            .AddLineAsync(command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded

@@ -37,6 +37,14 @@ public sealed class WorkspaceLayoutController
     private readonly Dictionary<Guid, FloatingPanelWindow> _floatingWindows = [];
     private readonly Func<FloatingLayoutWindow, FloatingPanelWindow>? _floatingWindowFactory;
 
+    /// <summary>
+    /// Where each panel was docked immediately before it last floated —
+    /// consulted when its floating window closes, or when "Show Panel"
+    /// redocks it, so it goes back near where it came from rather than to a
+    /// fixed edge every time (`WP 20.10D`, PO finding T4).
+    /// </summary>
+    private readonly Dictionary<Guid, DockAnchor> _lastDockedAnchor = [];
+
     private WorkspaceLayoutTree _tree = WorkspaceLayoutTree.Empty;
     private Guid? _draggingPanelId;
     private Point _dragOrigin;
@@ -44,6 +52,13 @@ public sealed class WorkspaceLayoutController
 
     /// <summary>Raised after any change to the arrangement.</summary>
     public event Action<WorkspaceLayoutTree>? LayoutChanged;
+
+    /// <summary>
+    /// Raised when a gesture completes with something worth telling the
+    /// user in the status bar — a deliberate tear-out into a floating
+    /// window, or an accidental miss that changed nothing (`WP 20.10D`).
+    /// </summary>
+    public event Action<string>? Announced;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceLayoutController"/> class.</summary>
     /// <param name="registry">The panels that can participate.</param>
@@ -91,9 +106,41 @@ public sealed class WorkspaceLayoutController
         if (_draggingPanelId is null)
             return;
 
-        CompleteDrag(e.GetPosition(Host));
+        var position = e.GetPosition(Host);
+        CompleteDrag(position, ToScreenPoint(position));
         CurrentDropTarget = null;
         DropTargetChanged?.Invoke(null);
+    }
+
+    /// <summary>
+    /// <paramref name="hostPosition"/> (in <see cref="Host"/>'s own
+    /// coordinates) as a real screen point, or <see langword="null"/> when
+    /// <see cref="Host"/> is not attached to a real window — so a torn-out
+    /// panel opens where the user actually dropped it (`WP 20.10D`, PO
+    /// finding T4: the caller's own fallback previously used
+    /// <see cref="Host"/>-local coordinates directly as screen pixels
+    /// whenever this returned <see langword="null"/>, which was every time
+    /// — nothing ever passed a real screen point in).
+    /// </summary>
+    /// <remarks>
+    /// No public <c>PointToScreen</c> exists on <see cref="Visual"/> or
+    /// <see cref="TopLevel"/> in this Avalonia version; this is the
+    /// window's own screen <see cref="Window.Position"/> plus the point
+    /// translated into the window and scaled by
+    /// <see cref="TopLevel.RenderScaling"/> — exact for a borderless
+    /// window, and close enough for placement purposes otherwise.
+    /// </remarks>
+    private PixelPoint? ToScreenPoint(Point hostPosition)
+    {
+        if (TopLevel.GetTopLevel(Host) is not Window window)
+            return null;
+
+        var pointInWindow = Host.TranslatePoint(hostPosition, window) ?? hostPosition;
+        var scaling = window.RenderScaling;
+
+        return new PixelPoint(
+            window.Position.X + (int)Math.Round(pointInWindow.X * scaling),
+            window.Position.Y + (int)Math.Round(pointInWindow.Y * scaling));
     }
 
     /// <summary>The drop target currently under the pointer during a drag, or <see langword="null"/>.</summary>
@@ -104,6 +151,16 @@ public sealed class WorkspaceLayoutController
 
     /// <summary>The main window's own layout surface.</summary>
     public WorkspaceLayoutHost Host { get; }
+
+    /// <summary>
+    /// The real shell window every floating window is owned by (`WP
+    /// 20.10D`, PO finding T4) — so a floating window can never end up
+    /// behind the main window with no way back, the way an un-owned
+    /// top-level can on some window managers. Set once, by the composition
+    /// root, once that window exists; <see langword="null"/> in a test that
+    /// never sets it opens floating windows un-owned, exactly as before.
+    /// </summary>
+    public Window? OwnerWindow { get; set; }
 
     /// <summary>The current arrangement.</summary>
     public WorkspaceLayoutTree Tree => _tree;
@@ -161,11 +218,40 @@ public sealed class WorkspaceLayoutController
             var window = _floatingWindowFactory?.Invoke(model) ?? new FloatingPanelWindow(model, _registry);
             window.LayoutPanels = _tree.Panels;
             window.Update(model);
+
+            // `WP 20.10D`, PO finding T4: a floating window's saved or
+            // dropped position must never be able to place it somewhere the
+            // user can never see or reach — clamped before it is ever
+            // shown, whether it was just created from a drag or restored
+            // from a saved arrangement.
+            window.ClampToScreen();
+
             window.GeometryChanged += (id, x, y, w, h) => Apply(t => t.MoveFloating(id, x, y, w, h));
             window.Host.LayoutChanged += tree => Adopt(tree, render: false);
 
+            // Closing the OS window (the title bar's own close button) is
+            // not "discard this panel" — its content goes back to where it
+            // was docked before it floated (`WP 20.10D`).
+            window.WindowClosed += HandleFloatingWindowClosed;
+
             _floatingWindows[model.Id] = window;
-            window.Show();
+
+            // Owned by the shell, so it can never be left behind it with
+            // nothing else naming it (`WP 20.10D`). Avalonia refuses
+            // `Show(owner)` against a not-yet-visible owner ("Cannot show
+            // window with non-visible owner"), which a test constructing
+            // `MainWindow` without ever showing it can hit; falling back to
+            // an un-owned `Show()` there is exactly the pre-`WP 20.10D`
+            // behaviour, never a crash.
+            if (OwnerWindow is { IsVisible: true } owner)
+                window.Show(owner);
+            else
+                window.Show();
+
+            // Owned and shown is not yet "in front" — the second half of
+            // "never lost": a panel that just floated is exactly the one a
+            // user is looking for right now.
+            window.Activate();
         }
 
         // A window whose panels have all gone back to the docked tree is a
@@ -176,6 +262,137 @@ public sealed class WorkspaceLayoutController
             _floatingWindows.Remove(orphan);
             window.Close();
         }
+    }
+
+    /// <summary>
+    /// A floating window's own OS-level close (the title bar's close
+    /// button, Alt+F4, the platform's own window-close gesture) redocks its
+    /// content rather than discarding it (`WP 20.10D`, PO finding T4: a
+    /// floating window that simply closed with nothing left naming its
+    /// panel is exactly how one "disappeared somewhere and broken away").
+    /// A no-op when the model is already gone from the tree — the ordinary
+    /// case when this fires because <see cref="SyncFloatingWindows"/>
+    /// itself just called <see cref="FloatingPanelWindow.Close"/> on an
+    /// orphan (docked back in through the normal drag/redock path, or by
+    /// <see cref="ResetTo"/>), which must never redock a second time.
+    /// </summary>
+    private void HandleFloatingWindowClosed(Guid windowId)
+    {
+        _floatingWindows.Remove(windowId);
+
+        if (_tree.Floating.FirstOrDefault(f => f.Id == windowId) is not { } floatingModel)
+            return;
+
+        Apply(t => floatingModel.Content.Panels.Aggregate(t, RedockToLastPosition));
+    }
+
+    /// <summary>
+    /// Docks <paramref name="panelId"/> back in from wherever it is
+    /// floating, at the position remembered from before it floated, or a
+    /// sensible edge when nothing was remembered — the "Show Panel"
+    /// command's own half of "never lost" (`WP 20.10D`). A no-op when
+    /// <paramref name="panelId"/> is not currently floating.
+    /// </summary>
+    public void RedockFloating(Guid panelId)
+    {
+        if (!_tree.IsFloating(panelId))
+            return;
+
+        Apply(t => RedockToLastPosition(t, panelId));
+    }
+
+    /// <summary>
+    /// Returns to <paramref name="defaultTree"/>: every floating window
+    /// closes, and any panel <paramref name="defaultTree"/> does not itself
+    /// place — one registered after the default was fixed, a floating
+    /// attachment viewer, say — is folded back into the docked tree instead
+    /// of silently vanishing (`WP 20.10D`, PO finding T4: Reset Layout must
+    /// be able to answer "where did my panel go" with "it's docked" for
+    /// every panel that existed, not only the ones the preset happens to
+    /// know about).
+    /// </summary>
+    public void ResetTo(WorkspaceLayoutTree defaultTree)
+    {
+        ArgumentNullException.ThrowIfNull(defaultTree);
+
+        var extra = _tree.AllPanels.Except(defaultTree.AllPanels).ToList();
+        var restored = extra.Aggregate(defaultTree, (t, panelId) => t.DockToEdge(panelId, DockRelation.Left));
+
+        _lastDockedAnchor.Clear();
+        Load(restored);
+    }
+
+    /// <summary>Where a panel was docked, expressed so it can be redocked later: a node that will still exist once the panel is removed, and which of the five zones to drop it back into.</summary>
+    private readonly record struct DockAnchor(Guid TargetNodeId, DockRelation Relation);
+
+    /// <summary>Records <paramref name="panelId"/>'s own current dock position as its <see cref="DockAnchor"/>, so a later float-then-close or float-then-redock can put it back close to where it came from.</summary>
+    private void RememberDockAnchor(Guid panelId)
+    {
+        if (ComputeDockAnchor(_tree, panelId) is { } anchor)
+            _lastDockedAnchor[panelId] = anchor;
+    }
+
+    /// <summary>
+    /// Where <paramref name="panelId"/> sits right now, expressed as "dock
+    /// it here, this way" against a node that survives its own removal — a
+    /// sibling in its own tab group when it shares one, or a sibling in its
+    /// immediate parent split when it does not.
+    /// </summary>
+    private static DockAnchor? ComputeDockAnchor(WorkspaceLayoutTree tree, Guid panelId)
+    {
+        if (tree.FindGroupContaining(panelId) is not { } group)
+            return null;
+
+        if (group.PanelIds.Count > 1)
+            return new DockAnchor(group.Id, DockRelation.Into);
+
+        if (FindParentSplit(tree.Root, group.Id) is not { } parentInfo)
+            return null;
+
+        var (parent, index) = parentInfo;
+        var siblingIndex = index == 0 ? 1 : index - 1;
+        if (siblingIndex < 0 || siblingIndex >= parent.Children.Count)
+            return null;
+
+        var sibling = parent.Children[siblingIndex];
+        var horizontal = parent.Orientation == LayoutOrientation.Horizontal;
+        var panelWasBefore = index < siblingIndex;
+
+        var relation = horizontal
+            ? panelWasBefore ? DockRelation.Left : DockRelation.Right
+            : panelWasBefore ? DockRelation.Above : DockRelation.Below;
+
+        return new DockAnchor(sibling.Id, relation);
+    }
+
+    /// <summary>The <see cref="LayoutSplitNode"/> that directly contains <paramref name="childId"/>, and its index among that split's own children — searched from <paramref name="node"/> down.</summary>
+    private static (LayoutSplitNode Split, int Index)? FindParentSplit(WorkspaceLayoutNode? node, Guid childId)
+    {
+        if (node is not LayoutSplitNode split)
+            return null;
+
+        var index = split.Children.ToList().FindIndex(c => c.Id == childId);
+        if (index >= 0)
+            return (split, index);
+
+        foreach (var child in split.Children)
+        {
+            if (FindParentSplit(child, childId) is { } found)
+                return found;
+        }
+
+        return null;
+    }
+
+    /// <summary>Docks <paramref name="panelId"/> at its remembered <see cref="DockAnchor"/> when that node still exists, or a sensible edge otherwise — and forgets the anchor either way, since it is now stale.</summary>
+    private WorkspaceLayoutTree RedockToLastPosition(WorkspaceLayoutTree tree, Guid panelId)
+    {
+        var redocked = _lastDockedAnchor.TryGetValue(panelId, out var anchor) && tree.FindNode(anchor.TargetNodeId) is not null
+            ? tree.Dock(panelId, anchor.TargetNodeId, anchor.Relation)
+            : tree.DockToEdge(panelId, DockRelation.Left);
+
+        _lastDockedAnchor.Remove(panelId);
+        return redocked;
     }
 
     /// <summary>
@@ -213,6 +430,23 @@ public sealed class WorkspaceLayoutController
     }
 
     /// <summary>
+    /// Starts a drag of <paramref name="panelId"/> as an already-past-the-
+    /// threshold gesture — the model-level counterpart of a real mouse
+    /// press followed by enough travel, needed because <see cref="UpdateDrag"/>
+    /// and <see cref="CompleteDrag"/> are already public "the gesture, as an
+    /// operation" seams (`WorkspaceLayoutControllerTests`'s own established
+    /// convention of driving a gesture through the controller's public
+    /// surface rather than synthesising raw pointer input) but nothing let a
+    /// test start one from nothing (`WP 20.10D`).
+    /// </summary>
+    public void BeginDrag(Guid panelId)
+    {
+        _draggingPanelId = panelId;
+        _dragOrigin = default;
+        _dragActive = true;
+    }
+
+    /// <summary>
     /// Advances an in-progress drag. Returns the drop target the pointer is
     /// currently over, so an overlay can highlight it.
     /// </summary>
@@ -237,8 +471,14 @@ public sealed class WorkspaceLayoutController
 
     /// <summary>
     /// Completes a drag at <paramref name="position"/>: docks onto the
-    /// target under the pointer, or — when the pointer is outside the host
-    /// entirely — undocks the panel into its own window.
+    /// target under the pointer; tears the panel out into its own window
+    /// when the pointer has left the workspace's own bounds entirely (the
+    /// one deliberate "give this its own window" gesture); or, dropped
+    /// over no target but still inside the workspace, changes nothing — an
+    /// accidental miss is not a gesture (`WP 20.10D`, PO finding T4: every
+    /// release outside every candidate used to float the panel, so a
+    /// one-pixel miss in the gutter between two panes was
+    /// indistinguishable from someone actually tearing it out).
     /// </summary>
     public void CompleteDrag(Point position, PixelPoint? screenPosition = null)
     {
@@ -249,21 +489,35 @@ public sealed class WorkspaceLayoutController
         }
 
         var target = DockTargetResolver.Resolve(CurrentCandidates(), position.X, position.Y);
+        var title = _registry.Find(panelId)?.Title ?? "Panel";
 
         if (target is { } dock)
         {
             Apply(t => t.Dock(panelId, dock.NodeId, dock.Relation));
         }
-        else
+        else if (IsOutsideWorkspace(position))
         {
-            // Dropped outside every pane: the gesture that means "undock
-            // this into its own window", at the point it was released.
+            // Torn out past the edge of the workspace itself: undock into
+            // its own window, at the point it was released.
+            RememberDockAnchor(panelId);
             var origin = screenPosition ?? new PixelPoint((int)position.X, (int)position.Y);
             Apply(t => t.Float(panelId, origin.X, origin.Y, 420, 320));
+            Announced?.Invoke($"{title} undocked into its own window.");
+        }
+        else
+        {
+            // Released inside the workspace but over no target: nothing
+            // was ever mutated mid-drag, so the panel is already exactly
+            // where it was — this just says so.
+            Announced?.Invoke($"{title} stays where it was — drop it on a highlighted target to move it.");
         }
 
         CancelDrag();
     }
+
+    /// <summary>Whether <paramref name="position"/> — in <see cref="Host"/>'s own coordinates — has left the workspace's own rendered bounds: the one deliberate tear-out gesture <see cref="CompleteDrag"/> honours.</summary>
+    private bool IsOutsideWorkspace(Point position) =>
+        position.X < 0 || position.Y < 0 || position.X > Host.Bounds.Width || position.Y > Host.Bounds.Height;
 
     /// <summary>Abandons any in-progress drag without changing the arrangement.</summary>
     public void CancelDrag()

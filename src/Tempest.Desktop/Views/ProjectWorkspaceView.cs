@@ -64,6 +64,7 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectQuoteView _quoteView;
     private readonly EvidenceWorkspaceView _evidenceView;
     private readonly ProjectSignOffView _signOffView;
+    private readonly ProjectDetailsView _detailsView;
 
     // `WP 19.2B`: the Structure tab's own content host — a stable
     // placeholder built at construction time, before the engineering
@@ -187,6 +188,9 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>The Quote surface, so the shell can drive and inspect it (`WP 19.5B`, `ADR-0152`).</summary>
     public ProjectQuoteView QuoteView => _quoteView;
 
+    /// <summary>The Sign off surface, so the shell can drive and inspect it (`WP 19.7A`, `WP 20.10E`).</summary>
+    public ProjectSignOffView SignOffView => _signOffView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
     /// <param name="deliverablesView">
     /// This project's own Deliverables tab (`WP 19.0A`, `ADR-0150`) — built
@@ -199,6 +203,7 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <param name="quoteView">This project's own Quote tab (`WP 19.5B`, `ADR-0152`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
     /// <param name="evidenceView">This project's own Evidence tab (`WP 19.7A`) — the same Evidence surface (`WP 18.2A`), already scoped to whichever project is open, built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
     /// <param name="signOffView">This project's own Sign off tab (`WP 19.7A`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="detailsView">This project's own Details tab (`WP 20.10A`, Product Owner findings D2/D12/T1) — the project's own identity and Commercial section, built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
     /// <param name="domainContext">Reads this project's own <c>ClosedOn</c>/<c>Held</c> facts for the lifecycle banner — <see cref="ProjectSummary"/> carries neither.</param>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
@@ -213,6 +218,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ProjectQuoteView quoteView,
         EvidenceWorkspaceView evidenceView,
         ProjectSignOffView signOffView,
+        ProjectDetailsView detailsView,
         EngineeringDomainContext domainContext)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
@@ -227,6 +233,7 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(quoteView);
         ArgumentNullException.ThrowIfNull(evidenceView);
         ArgumentNullException.ThrowIfNull(signOffView);
+        ArgumentNullException.ThrowIfNull(detailsView);
         ArgumentNullException.ThrowIfNull(domainContext);
 
         _projectContext = projectContext;
@@ -241,6 +248,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _quoteView = quoteView;
         _evidenceView = evidenceView;
         _signOffView = signOffView;
+        _detailsView = detailsView;
         _domainContext = domainContext;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
@@ -446,6 +454,7 @@ public sealed class ProjectWorkspaceView : UserControl
             _evidenceView.SetArchived(false);
             await _evidenceView.RefreshAsync().ConfigureAwait(true);
             await _signOffView.RefreshAsync().ConfigureAwait(true);
+            await _detailsView.RefreshAsync().ConfigureAwait(true);
             _lifecycleBanner.IsVisible = false;
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
@@ -508,6 +517,7 @@ public sealed class ProjectWorkspaceView : UserControl
         _evidenceView.SetArchived(isArchived);
         await _evidenceView.RefreshAsync().ConfigureAwait(true);
         await _signOffView.RefreshAsync().ConfigureAwait(true);
+        await _detailsView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();
         _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
         var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
@@ -544,6 +554,7 @@ public sealed class ProjectWorkspaceView : UserControl
     {
         var content = descriptor.Area switch
         {
+            ProjectArea.Details => _detailsView,
             ProjectArea.Overview => _overview,
             ProjectArea.Quote => _quoteView,
             // `WP 19.2B`: the Structure tab embeds the engineering surface

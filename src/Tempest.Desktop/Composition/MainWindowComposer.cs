@@ -9,6 +9,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
+using Tempest.Core.Quotations;
 using Tempest.Desktop.Editors;
 using Tempest.Desktop.Files;
 using Tempest.Desktop.History;
@@ -66,6 +67,11 @@ internal sealed record ComposedViews(
     RateCardPicker RateCardPicker,
     Tempest.Core.BusinessOperations.Crm.IOrganisationCatalog OrganisationCatalog,
     Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog RateCardCatalog,
+    // `WP 20.10A`: moved up from `BuildCoordinators` (see `BuildViews`'
+    // own remarks at its construction) so `ProjectDetailsView`, built in
+    // this same phase, can be threaded the identical instance
+    // `WorkspaceViewCoordinator` (built next, in `BuildCoordinators`) uses.
+    ProjectCommercialEditorSupport CommercialSupport,
     TimesheetEntryPrompt TimesheetEntryPrompt,
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
@@ -382,8 +388,60 @@ internal sealed partial class MainWindowComposer
 
         var organisationPicker = new OrganisationPicker(organisationCatalog);
         var rateCardPicker = new RateCardPicker(rateCardCatalog);
-        var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog);
+
+        // `WP 19.0A` (`ADR-0150`): the project Commercial section's own
+        // pickers — the real `OrganisationPicker`/`RateCardPicker`
+        // overlays just above, threaded into the Object Editor's own
+        // declaration-driven Commercial section exactly as `evidenceSupport`
+        // threads Evidence's own pickers into its declared sections.
+        // `WP 19.2B`: the same section's own name resolvers, over the
+        // identical real `IOrganisationCatalog`/`IRateCardCatalog` the
+        // pickers themselves already read from — the Commercial section
+        // shows the client's organisation name and the rate card's own
+        // code, never the bare record id either stores.
+        //
+        // `WP 20.10A`: built here now, ahead of `WorkspaceViewCoordinator`
+        // (moved up from `BuildCoordinators`, where it used to live, under
+        // the identical local name) — the project workspace's own new
+        // Details tab (`projectDetailsView`, below) needs it too, and that
+        // view is built in this phase, not the next.
+        var commercialSupport = new ProjectCommercialEditorSupport(
+            ct => organisationPicker.PickAsync(ct),
+            ct => rateCardPicker.PickAsync(ct),
+            () => host.SessionPrincipal?.IdentityId,
+            async (organisationId, ct) => (await organisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
+            async (pin, ct) => await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
+                ? (card.Definition.Code, card.Definition.Name)
+                : null);
+
+        // `WP 20.10A` (D12): Open Details, from the Record dialog's own
+        // inline "no rate card pinned" note — closes that dialog (already
+        // done by the caller) and lands on the named project's own Details
+        // tab, the identical path `OpenQuoteAsync` below already
+        // establishes for a quotation's own "opens right up" destination.
+        async Task OpenProjectDetailsAsync(Guid projectId)
+        {
+            await host.ShellNavigator!.OpenProjectAsync(projectId, ProjectArea.Details).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        }
+
+        var timesheetEntryPrompt = new TimesheetEntryPrompt(composition.DomainContext, rateCardCatalog, OpenProjectDetailsAsync);
         var deliverableCompletionPrompt = new DeliverableCompletionPrompt(composition.DomainContext, host.ProjectDocuments!);
+
+        // `WP 20.10A` (Product Owner findings D2/D12/T1): the project
+        // workspace's own Details tab — the project's own identity and
+        // Commercial section, reachable directly rather than only through
+        // the generic Object Editor (`T1`: "This doesnt exist at all. Not
+        // seen anywhere and cannot navigate to it anywhere"). Built here,
+        // externally, for the identical reason `deliverablesView`/
+        // `projectQuoteView`/`evidenceWorkspace` are (needs collaborators
+        // `ProjectWorkspaceView` does not otherwise depend on).
+        var projectDetailsView = new ProjectDetailsView(
+            composition.DomainContext, composition.CommandDispatcher, () => host.ProjectContext!.Current?.Id, commercialSupport)
+        {
+            WorkspaceChanges = composition.WorkspaceChanges,
+        };
+        projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // Fire-and-forget at the view boundary, but never silently: an open
         // that throws is reported like any other failed action, so "it
@@ -449,7 +507,7 @@ internal sealed partial class MainWindowComposer
         // defines its initial deliverables and requirements once accepted,
         // and exports as a PDF through the same SkiaSharp path the issue
         // sheet already established (comment item 9).
-        var newProjectPrompt = new NewProjectPrompt();
+        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker);
         var projectPicker = new ProjectPicker(projectDirectory);
         var quotationSheetRenderer = new QuotationSheetRenderer();
         string IssuerName() => host.SessionPrincipal?.Identity.DisplayName ?? "TempestOS";
@@ -544,13 +602,22 @@ internal sealed partial class MainWindowComposer
         // 19.5C`) is already registered in DI with zero prior UI
         // consumers.
         var projectLifecycleService = (Tempest.Core.Projects.IProjectLifecycleService)services.GetService(typeof(Tempest.Core.Projects.IProjectLifecycleService));
-        var signOffView = new ProjectSignOffView(projectLifecycleService, composition.DomainContext, () => host.ProjectContext!.Current?.Id);
+
+        // `WP 20.10E` (Product Owner finding D18): the Sign off tab's own
+        // open-work list and its "Raise change order…" — the identical
+        // `IQuotationService` `ProjectQuoteView`/`QuotesView` reach through
+        // commands, called directly here exactly as `IProjectLifecycleService`
+        // itself already is, above.
+        var quotationServiceForSignOff = (IQuotationService)services.GetService(typeof(IQuotationService));
+        var signOffView = new ProjectSignOffView(
+            projectLifecycleService, quotationServiceForSignOff, composition.DomainContext, () => host.ProjectContext!.Current?.Id,
+            openObjectRightUp, openQuote);
         signOffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var projectWorkspace = new ProjectWorkspaceView(
             host.ProjectContext!, host.ProjectDirectory!, host.ShellNavigator!, host.ProjectDocuments!, host.ProjectRequirements!,
             host.ProjectTasks!, host.ProjectGovernance!, host.ProjectMilestones!, deliverablesView, projectQuoteView,
-            evidenceWorkspace, signOffView, composition.DomainContext);
+            evidenceWorkspace, signOffView, projectDetailsView, composition.DomainContext);
 
         // `WP 19.7A` (`po-comments.md` item 6 delta (a)): the Tasks
         // read model — a "sibling reader" over the identical persistence
@@ -603,7 +670,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
