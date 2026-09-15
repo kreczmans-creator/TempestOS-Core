@@ -57,3 +57,28 @@ head, three green CI Gate runs, the candidate page. The Product Owner
 is asleep; every decision the packages needed was taken from
 `docs/releases/v0.19.1/Product Owner Decisions 2026-09-15.md` or
 disclosed as the lead's default in the brief.
+
+## 4. Outcome (recorded by `WP 20.9.0`, 2026-09-15)
+
+| Work Package | Outcome | Merged |
+|---|---|---|
+| `WP 20.3D` | Delivered. Core plus three alphabet-ranged Desktop shards per configuration; the ceiling back at 45 minutes. First hosted timings on `94cbb5ba`: every shard between 6 and 10 minutes. | `5dcaff34` |
+| `WP 20.0A` (design) | Delivered as a draft. `ADR-0153` *Proposed* and the design note; the honest estimate is about 20 developer-days in six steps, not the six days first carried — split across two or three Work Packages in the next tranche. | `c3df93c4` |
+| `WP 20.1A1` | Delivered. Fourteen Requirements writes each one transaction, each published afterwards. | `0a389dc7` |
+| `WP 20.3A` | Delivered. Issue in one transaction (B2), export schema versions migrate one step at a time, BOM units a twelve-symbol vocabulary with aliases. | `b5227eb8` |
+| `WP 20.3B` | Delivered. `TD-20`, `TD-18`, `TD-21`, `TD-03`, `TD-05`, `TD-170` closed; `TD-84` re-scoped to `TD-79`. | `6f455091` |
+| `WP 20.2B` | Delivered in part, kill switch invoked honestly on SVG: no rasteriser is referenced and the brief forbade a new package. DWG/DXF open externally; rotation is render-only. | `c9a7e326` |
+| `WP 20.1A2` | Delivered. The index, the creation refusal and startup rebuild; the lead added the rename-handler refusal the package disclosed (`a330024a`). | `3d85eb66` |
+| `WP 20.2C` | Delivered. Macros record real commands with their values and replay unattended; `Unregister`. | `484a154e` |
+| `WP 20.1C2` | Delivered in part, kill switch invoked: the index-first stage and its hook shipped; lazy materialisation could not be proven equivalent in the night (about seventy list-result callers), so `TD-88` stays open with the measurement (about 190 ms per thousand objects). The lead restored a closing brace lost in the merge (`d4b106a8`). | `fc0d9802` |
+| `WP 20.1B` | Delivered. Payment terms per client, frozen on the request, due at send; a calculation is a task from creation. A stray second backlog heading from the merge was removed (`fa614466`). | `253a8c14` |
+| `WP 20.1C1` | Delivered. Content-addressed storage with reference counts; streamed reads through SQLite's incremental blob I/O. One sibling test from `WP 20.3A` asserted the old key and was re-pointed (`94cbb5ba`). | `8896c0ba` |
+| `WP 20.2A` | Delivered. The object picker; Move and Copy for twelve commands by keyboard and Palette; `TD-115`'s three bindings; the contextual Palette. The lead reconciled the descriptor counts (105 invocable / 3 unavailable / 108 production) and re-pointed two macro tests at a command that is still unavailable. | `c91d12a1` |
+| `WP 20.9.0` | The two CI defects on `94cbb5ba` fixed (the ADR Register row; a bounded wait), the notes, §7d, `PROJECT_STATUS.md`, the candidate page, three CI Gate runs. | tip |
+
+Deferred, as §2 said: the P4 rows; Undo across commands; `TD-22`/`TD-29`;
+`TD-101`; `TD-165`/`TD-160`; the two P0 features (docking, the document
+templates) after their ADRs and the templates folder. Added to the next
+tranche by this one: `TD-88`'s lazy half; the SVG half of `TD-99`; the
+OAuth loopback test's port collision under concurrent runs; the
+per-requirement commands on an archived project.

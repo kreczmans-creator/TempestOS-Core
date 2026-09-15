@@ -1,7 +1,7 @@
 # TempestOS — Project Status
 
-**Branch:** `release/v0.19.1` (the one branch for every v0.19.1 Work Package, cut from `release/v0.19.0`'s candidate head `947c50d` on 2026-09-14 after the Product Owner's first pass over it; `v0.19.1` supersedes `v0.19.0` for testing, and `release/v0.19.0` stays as it is, unreleased; nothing is merged to `main` until a release is accepted)
-**VERSION:** `0.19.1` (bumped when the branch opened; `v0.18.0` was merged to `main`, tagged and published on 2026-09-14 after the Product Owner's acceptance; `v0.17.0` on 2026-09-09)
+**Branch:** `release/v0.20.0` (the debt tranche, cut from the `v0.19.1` candidate at `4f5ee83a` on 2026-09-15 at the Product Owner's instruction to close the P1–P3 technical debt before the release; it contains all of `release/v0.19.1`, whose final head `94998b9e` stays pushed, gated three times on CI, as the fallback candidate). `release/v0.19.0` (`947c50d`) is superseded and stays unreleased.
+**VERSION:** `0.20.0` (bumped when the branch opened on 2026-09-15; `v0.18.0` was merged to `main`, tagged and published on 2026-09-14 after the Product Owner's acceptance; `v0.17.0` on 2026-09-09)
 
 ## What a user can do today
 
@@ -41,29 +41,40 @@ the `v0.19.1` candidate under the Product Owner's manual test:
 
 ## Work in flight
 
-`v0.19.1` on `release/v0.19.1`, executed per
-`docs/releases/v0.19.1/Execution Plan.md` against the Product Owner's
-nine comments in `docs/releases/v0.19.1/Product Owner Comments.md`.
-Merged and gated on 2026-09-14, in order: `WP 19.4A`, `19.4B`, `19.6A`,
-`19.5A`, `19.8B`, `19.5C`, `19.5B`, `19.5D` (added: blank optional
-parameters, the invocation contract over Quotations and Tasks), `19.7A`,
-`19.7B`, `19.7C` (added: a view keeps reacting after it is shown again),
-and `WP 19.9.1` (two idle-machine waits in the quotation journey, the
-cockpit's card buttons named, `PHYSICAL_REVIEW.md` §7c, the backlog
-reconciliation, the release notes, this file). Overnight on 2026-09-14/15,
-as lead in the Product Owner's absence, `WP 19.10A`–`19.10R` followed: a
-headless dress rehearsal of §7c whose one blocker and four wording
-defects were fixed (a Deliverable had no view factory at all), the
-technical-debt rationalisation in two documents under
-`docs/releases/v0.19.1/` with every closure verified against the code,
-and twenty backlog rows closed with gates (TD-23, 27, 32, 33, 41, 42, 63,
-92, 93, 131, 134, 141, 150, 154, 156, 157, 158, 176, 177, 179 for the
-shell, four services, the ribbon and the Palette), plus the two evening
-requests (Business → Invoices as sketched; the rail and tree columns
-collapse on demand). The live backlog stands at 17 of its cap of 30. It
-is a release candidate under the Product Owner's manual test; its PR to `main`, tag
-and GitHub Release follow acceptance, the way `v0.18.0` went.
-`release/v0.19.0` (head `947c50d`) is superseded and stays unreleased.
+`v0.20.0` on `release/v0.20.0`, executed overnight on 2026-09-15 per
+`docs/releases/v0.20.0/Execution Plan.md` as lead in the Product
+Owner's absence, against the technical-debt rationalisation of
+2026-09-14 (`docs/releases/v0.19.1/Technical Debt Rationalisation —
+Part 1.md` and `Part 2.md`) and the Product Owner's seven decisions of
+2026-09-15 (`docs/releases/v0.19.1/Product Owner Decisions
+2026-09-15.md`). Twelve packages merged and gated, in order: `WP 20.3D`
+(CI in shards), `20.0A` (`ADR-0153`, tear-out and dock everywhere —
+*Proposed*, about 20 developer-days, for review), `20.1A1` (every
+Requirements write reaches the change bus), `20.3A` (issue in one
+transaction, export schema migrations, BOM units), `20.3B` (seven small
+P3 closures), `20.2B` (DWG opens externally, rotation; SVG stopped
+honestly), `20.1A2` (a business identifier is unique within its
+project), `20.2C` (macros over real commands), `20.1C2` (index-first
+rehydration; the lazy half's kill switch invoked, `TD-88` stays open),
+`20.1B` (payment terms per client; a calculation is a task from
+creation), `20.1C1` (attachments stored once by content hash, streamed
+reads), `20.2A` (the object picker: Move and Copy for twelve commands,
+`TD-115`'s three bindings, the contextual Palette); then `WP 20.9.0`
+(the two CI defects on `94cbb5ba` — `ADR-0153`'s register row and a
+bounded wait in `ProjectAreaAcceptanceTests` — the release notes,
+`PHYSICAL_REVIEW.md` §7d, this file). The live backlog stands at 12 of
+its cap of 30. It is a release candidate under the Product Owner's
+manual test (§7c then §7d); its PR to `main`, tag and GitHub Release
+follow acceptance, the way `v0.18.0` went. `v0.19.1` is the fallback
+if this candidate is refused.
+
+## Gate (the candidate head, re-derived by `WP 20.9.0` on 2026-09-15)
+
+- Core tests: {{CORE_TESTS}} passed, 0 failed, 0 skipped, Debug and Release (from 4,455: payment terms and due dates, the calculation task, the identifier index, requirements on the change bus, transactional issue, export migrations, BOM units, macros, the attachment content store, the rehydration index, the fifteen picker bindings)
+- Desktop tests: {{DESKTOP_TESTS}} passed, 0 failed, 0 skipped, Debug ({{DESKTOP_DEBUG_TIME}}) and Release ({{DESKTOP_RELEASE_TIME}})
+- Build: 0 warnings, 0 errors, both configurations, `TreatWarningsAsErrors`
+- Governance health check: 5/5 passed
+- CI: the sharded workflow (`WP 20.3D`, Core plus three Desktop shards per configuration, the job ceiling back at 45 minutes) — {{CI_LINE}}
 
 ## Gate (the candidate head `df2ebe8`, re-derived by `WP 19.9.1` on 2026-09-14)
 
