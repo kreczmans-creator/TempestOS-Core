@@ -8,11 +8,21 @@ the archived index (`archive/docs-2026-09/academy/Academy Index.md`) that
 short: a line per document and nothing else, so that keeping it current
 costs one line per new chapter.
 
-**If you are not a software engineer,** start with the two documents under
+**If you are not a software engineer,** start with the three documents under
 *Introduction*, then read *Runtime Architecture* from chapter `59` onward
 (the product as it is today) and work backwards. Every chapter from `42`
 opens with an **In plain terms** paragraph and closes with **What to take
 away**.
+
+**A note on release status.** Chapters `01`–`64` describe work that has
+been merged to `main` and released (`v0.18.0`, tagged 2026-09-14, is the
+newest release). Chapters `65`–`76`, case study `08` and standards `10`–`11`
+describe the `v0.19.0`, `v0.19.1` and `v0.20.0` **release candidates** —
+branches `release/v0.19.0`, `release/v0.19.1` and `release/v0.20.0`, cut
+2026-09-10 to 2026-09-15 and still under the Product Owner's manual test
+when this index was written — and the `v0.21.0` plan, which had no code at
+all. Each of those chapters says so in its header. Nothing they describe is
+released until its Release Notes say it is.
 
 **A note on paths.** A chapter written before 2026-09-08 may cite a
 `docs/architecture/…` or `docs/governance/…` document that has since moved
@@ -30,7 +40,7 @@ Orientation. Read these first, in order.
 
 ## Runtime Architecture — the platform, then the product, in build order
 
-Sixty-four chapters. The folder's name is historical: from chapter `13` onward the subject is the engineering product as much as the runtime beneath it.
+Seventy-six chapters. The folder's name is historical: from chapter `13` onward the subject is the engineering product as much as the runtime beneath it.
 
 
 ### The runtime (`v0.3.0`–`v0.5.0`)
@@ -118,6 +128,27 @@ Sixty-four chapters. The folder's name is historical: from chapter `13` onward t
 - [The Evidence Workspace: File Picker, Editor Declarations and Libraries](02%20Runtime%20Architecture/63-the-evidence-workspace.md) — the Evidence rail area, a file picker behind an interface so a test can attach a real file, editors declared per Kind rather than branched, the Libraries tab — and the tab that never loaded because every test had refreshed it by hand.
 - [Independent Check and the Issue Sheet](02%20Runtime%20Architecture/64-independent-check-and-the-issue-sheet.md) — a check stored verbatim with an independence rule built in but switched off by default, an issue sheet rendered as a PDF and attached to the record, supersession that keeps the issued revision immutable, and the three-transaction issue disclosed as a warning.
 
+### `v0.19.0` Consultancy Seam and Desktop (release candidate)
+
+- [The Project Commercial Core: Client, Rate Card, Time and Deliverables](02%20Runtime%20Architecture/65-the-project-commercial-core.md) — `WP 19.0A`, `ADR-0150`: a project gains a client, PO reference, budget and pinned Released rate card; a timesheet entry freezes its billing and cost rate on the day; a deliverable completes once; extended on `v0.20.0` by frozen payment terms, calculation-as-task and commercial identity at New Project.
+- [Outbound Invoicing and the Connector Seam](02%20Runtime%20Architecture/66-outbound-invoicing-and-the-connector-seam.md) — `WP 19.1A` (parts 1–3), `19.1A-R1`, `19.9.0`, `19.10D`, `ADR-0151`: one connector seam to Xero and QuickBooks Online — a network call is a result state never a retry loop, the request's own id is the idempotency key, Paid is read never set, tokens live outside the database, and the double-draft defect the Desktop journey found one run in two.
+- [Read Models: KPIs, Project Status, Tasks and Accounts](02%20Runtime%20Architecture/67-read-models-kpis-status-tasks-and-accounts.md) — `WP 19.1B`, `19.5C`, `19.7B`, `19.8B`, `20.1B`: the five `ADR-0150` KPI equations, six project statuses with a reason, eight task buckets, and a read-only accounts reading from the accounting package — every figure recomputed from the records, none stored.
+- [The Layout Walk and the Composer](02%20Runtime%20Architecture/68-the-layout-walk-and-the-composer.md) — `WP 19.3A`, `19.3A-R1`, `19.2A`: every screen rendered headlessly at two window sizes and checked for overlap and overflow — with the tab-strip defect the walk could not see until it was asked — and the 830-line window constructor split into four named phases.
+- [The Honest Rail and the Structure Tab](02%20Runtime%20Architecture/69-the-honest-rail-and-the-structure-tab.md) — `WP 19.2B`, `19.4A`: five declared-but-empty rail modules removed rather than dimmed, Engineering folded into a project's Structure tab, the rail-surface contract and automation-name tests, and the overlap and menu-bar fixes the Product Owner's first pass demanded.
+
+### `v0.19.1` the Product Owner's first pass (release candidate)
+
+- [Quotations, Change Orders and the Project Lifecycle](02%20Runtime%20Architecture/70-quotations-change-orders-and-the-project-lifecycle.md) — `WP 19.5A`–`D`, `19.10H`, `19.10R`, `20.10E`, `ADR-0152`: accepting a quotation creates the project's milestones, deliverables and requirements (disclosed as non-atomic), Hold/Resume/Sign off/Reopen with a ninety-day archive, one archived-project guard at the point availability is decided, and the change order finding D18 demanded.
+- [The Shell as Sketched: Five Areas, Three Trees, Four Dashboards](02%20Runtime%20Architecture/71-the-shell-as-sketched.md) — `WP 19.7A`, `19.7B`, `19.10O`, `19.10Q`, `19.10C`, `19.10D`: the Product Owner's nine paper sketches become the rail (Home, Projects, Tasks, Engineering, Business), three trees, four dashboards and collapsible columns, with the five defects re-navigating nineteen suites found.
+- [Real Files and Real Records: Attachments, the Library Editor and the Viewer](02%20Runtime%20Architecture/72-real-files-and-real-records.md) — `WP 19.4B`, `19.6A`, `19.10P`, `20.1C1`, `20.2B`: a real drop zone on every attachable Kind, a generic record editor across the eight libraries, content-addressed attachment storage with streamed reads, DWG opened externally, and the SVG kill switch invoked honestly.
+- [The Technical-Debt Rationalisation and the Overnight Tranche](02%20Runtime%20Architecture/73-the-technical-debt-rationalisation-and-the-overnight-tranche.md) — `WP 19.10F`, `19.10G`, `19.10B`–`19.10R`: every backlog row re-verified against the code at one commit and scored P1–P4 — the register found wrong in both directions — then sixteen rows closed overnight with a test each.
+
+### `v0.20.0` the debt tranche (release candidate) and the `v0.21.0` plan
+
+- [The Debt Tranche: Writes on the Bus, Unique Identifiers, Index-First Rehydration](02%20Runtime%20Architecture/74-the-debt-tranche.md) — `WP 20.1A1`, `20.1A2`, `20.1C2`, `20.3A`, `20.3B`: Requirements writes on the change bus, business identifiers unique within a project, index-first rehydration with the kill switch invoked, evidence never falsely Issued, and seven small closures including a defect that was not there.
+- [The Object Picker, Move and Copy, and Macros That Replay](02%20Runtime%20Architecture/75-the-object-picker-move-copy-and-macros.md) — `WP 20.2A`, `20.2C`: one object-picker dialog unblocks fifteen commands across two backlog rows, the Palette becomes contextual, the absence test retires itself, and macros record real values while still never running past a person's yes.
+- [Tear-Out and Dock Everywhere: a Panel Can Never Be Lost](02%20Runtime%20Architecture/76-tear-out-and-dock-everywhere.md) — `WP 20.0A` (`ADR-0153`, Proposed), `WP 20.10D`, the `v0.21.0` plan: a panel can never be lost, as five tested invariants; why the cross-monitor docking design was written and costed (twenty days, not six) before any of it was built; and what `v0.21.0` plans.
+
 ## Design Patterns
 
 Recurring structural patterns TempestOS actually uses, explained in terms of the real code that uses them.
@@ -139,6 +170,7 @@ Narrative deep-dives into one decision or one defect each.
 - [Case Study: Why Isn't Configuration Mutable?](05%20Case%20Studies/05-why-isnt-configuration-mutable.md) — why the configuration provider is immutable, and what Settings exists for instead.
 - [The Attachment Sweep That Could Delete Live Content](05%20Case%20Studies/06-the-attachment-sweep-that-could-delete-live-content.md) — a data-loss race that shipped with its debt row already marked Resolved, the write-intent marker whose first fix had the ordering wrong, the lost update inside the fix for the first, and the transaction that finally made the whole class impossible.
 - [Case Study: The Design-Freeze Review — Keep the Substrate, Remediate the Surface, Buy the Option to Pivot](05%20Case%20Studies/07-the-design-freeze-review.md) — continue or re-implement: the review that answered with reproducible figures, named its hazards, recommended keeping the substrate and remediating the surface, and led to `D-028` the next day.
+- [The View That Stopped Listening](05%20Case%20Studies/08-the-view-that-stopped-listening.md) — `WP 19.7C`: thirteen screens whose change-feed subscription died on the first navigate-away, hidden for a release by the on-entry re-read; the fix tied to the control's own lifetime, and the difference between a test that passes on both versions and one that proves the fix.
 
 ## Engineering Standards
 
@@ -153,6 +185,8 @@ The conventions TempestOS holds itself to, and how they changed.
 - [Test Determinism and Suite Hygiene](06%20Engineering%20Standards/07-test-determinism-and-suite-hygiene.md) — fixed delays replaced by real joins, tests that could not fail, console capture that serialised the suite, one host fixture for ninety-three copies, property assertions, mutation testing — and the rules a contributor follows now.
 - [The Physical Review and the Release Gate](06%20Engineering%20Standards/08-the-physical-review-and-the-release-gate.md) — `PHYSICAL_REVIEW.md`, the CI Gate that requires the health check, the release path that was weaker than the merge path, and the gate as it is actually run on a release-candidate head.
 - [The Governance Reset, and How a Release Is Now Run](06%20Engineering%20Standards/09-the-governance-reset-and-how-a-release-is-now-run.md) — why 807 governance files were archived, what `CONTRIBUTING.md` and `BACKLOG.md` replaced, the Markdown budget, and how a release is now run from an Execution Plan in waves with a gate at every merge.
+- [The Product Owner's Test as the Source of Record](06%20Engineering%20Standards/10-the-product-owners-test-as-the-source-of-record.md) — How the Product Owner's manual test drives a release: comments transcribed verbatim as the source of record, a rehearsal of the review script before the reviewer sees it, decisions taken in the Product Owner's absence disclosed as defaults, and the `v0.20.0` findings closed the same day.
+- [CI in Shards, and the Gate at Scale](06%20Engineering%20Standards/11-ci-in-shards-and-the-gate-at-scale.md) — `WP 19.9.1`, `19.10M`, `20.3D`, `20.9.0`: the Desktop suite outgrows its CI ceiling, the build-script bugs found while buying time back, the suite sharded three ways by namespace, and the race a faster gate exposed; what `v0.21.0` still leaves advisory.
 - [TempestOS Engineering Governance](06%20Engineering%20Standards/Engineering%20Governance.md) — the project's constitution from `WP 2.1` to `v0.16.0`: Work Package lifecycle, review gates, Definition of Done, ADR rules, decision authority. Read with its September 2026 status note; `CONTRIBUTING.md` governs today.
 - [Engineering Lifecycle](06%20Engineering%20Standards/Engineering%20Lifecycle.md) — the Idea → Investigation → Architecture → ADR → Implementation → Testing → Review → Release pipeline, elaborating Governance §1; three stages changed at `WP 17.0B`.
 
