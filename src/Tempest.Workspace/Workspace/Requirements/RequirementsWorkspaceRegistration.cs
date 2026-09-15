@@ -216,8 +216,18 @@ public static class RequirementsWorkspaceRegistration
             id: RequirementsCommandIds.Move, displayName: "Move Requirement", category: "Requirements",
             description: "Moves the selected Requirement into a different group, or ungroups it.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement needs a destination Requirement Group chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination Group is chosen
+            // from the object picker, scoped to RequirementGroup. Blank
+            // means ungrouped — MoveRequirementCommand's own NewGroupId is
+            // nullable for exactly that.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveRequirementCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination group", [RequirementsService.RequirementGroupDocumentKind])],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.Duplicate, displayName: "Duplicate Requirement", category: "Requirements",
@@ -239,8 +249,26 @@ public static class RequirementsWorkspaceRegistration
             id: RequirementsCommandIds.Link, displayName: "Link Requirement", category: "Requirements",
             description: "Records a typed relationship from the selected Requirement to another document — allocation, dependency, derivation, reference, or satisfaction.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Linking a Requirement needs a target object chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the target is now chosen from
+            // the object picker (any Kind — LinkRequirementCommand's own
+            // remarks: "another requirement, a group, a collection, an
+            // allocated engineering object, or any other document").
+            // RelationshipKind is offered as the five linkable kinds this
+            // descriptor's own description already names — GroupedUnder/
+            // CollectedIn are structural relationships this generic command
+            // does not record (Move/Add-to-Collection already own those).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new LinkRequirementCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["targetDocumentId"])!.Value,
+                    values["relationshipKind"]),
+                [
+                    WorkspaceCommandBindings.RequiredObjectReference("targetDocumentId", "Target document"),
+                    WorkspaceCommandBindings.Choice("relationshipKind", "Relationship kind", LinkableRelationshipKinds, RequirementRelationshipKinds.AllocatedTo),
+                ],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.CreateGroup, displayName: "Create Requirement Group", category: "Requirements",
@@ -260,8 +288,18 @@ public static class RequirementsWorkspaceRegistration
             id: RequirementsCommandIds.MoveGroup, displayName: "Move Requirement Group", category: "Requirements",
             description: "Reparents the selected Requirement Group, or makes it a root group.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement Group needs a destination parent Group chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination parent Group is
+            // chosen from the object picker, scoped to RequirementGroup.
+            // Blank means root — MoveRequirementGroupCommand's own
+            // NewParentGroupId is nullable for exactly that.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveRequirementGroupCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination group", [RequirementsService.RequirementGroupDocumentKind])],
+                [RequirementsService.RequirementGroupDocumentKind],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.DeleteGroup, displayName: "Delete Requirement Group", category: "Requirements",
@@ -299,8 +337,18 @@ public static class RequirementsWorkspaceRegistration
             id: RequirementsCommandIds.AddToCollection, displayName: "Add Requirement to Collection", category: "Requirements",
             description: "Adds the selected Requirement to an existing Requirement Collection.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Adding a Requirement to a Collection needs the target Collection chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the target Collection is chosen
+            // from the object picker, scoped to RequirementCollection.
+            // Required — there is no "add to nothing".
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new AddRequirementToCollectionCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["collectionId"])!.Value),
+                [WorkspaceCommandBindings.RequiredObjectReference(
+                    "collectionId", "Collection", [RequirementsService.RequirementCollectionDocumentKind])],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: RequirementsCommandIds.BulkSetStatus, displayName: "Bulk Set Requirement Status", category: "Requirements",
@@ -353,4 +401,19 @@ public static class RequirementsWorkspaceRegistration
     internal static readonly IReadOnlyList<string> RequirementKinds =
         [RequirementsService.RequirementDocumentKind];
 
+    /// <summary>
+    /// The five relationship kinds <c>requirements.link</c> offers (`WP
+    /// 20.2A`) — this descriptor's own description, named exactly:
+    /// allocation, dependency, derivation, reference, satisfaction.
+    /// <c>GroupedUnder</c>/<c>CollectedIn</c> are excluded: those are the
+    /// structural relationships <c>requirements.move</c>/
+    /// <c>requirements.add-to-collection</c> already record, never this
+    /// generic command's own concern.
+    /// </summary>
+    internal static readonly IReadOnlyList<string> LinkableRelationshipKinds =
+    [
+        RequirementRelationshipKinds.AllocatedTo, RequirementRelationshipKinds.DependsOn,
+        RequirementRelationshipKinds.DerivesFrom, RequirementRelationshipKinds.References,
+        RequirementRelationshipKinds.Satisfies,
+    ];
 }

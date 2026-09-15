@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;
@@ -288,14 +289,32 @@ public sealed class DialogFrameworkKeyboardTests
             var panel = (StackPanel)palette.Child!;
             var queryBox = (TextBox)panel.Children[0];
             var results = (ListBox)panel.Children[1];
-            Assert.Equal(0, results.SelectedIndex);
+
+            // `WP 20.2A` (TD-77): an empty query is grouped by category, so
+            // the first row is always a header and the row layout no longer
+            // has a fixed shape this test can hardcode (it now depends on
+            // how many categories have exactly one available command under
+            // an empty context). The initial selection is real behaviour
+            // pinned elsewhere (`Publish` skips to the first non-header);
+            // what this test proves is Down/Up moving among selectable rows
+            // only, never landing on a header — the specific gap a
+            // header-first render newly makes reachable.
+            var initial = results.SelectedIndex;
+            Assert.True(initial >= 0, "Expected a real initial selection.");
+            Assert.False(IsHeaderRow(results, initial), "The initial selection must never be a header.");
 
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down });
+            var afterOneDown = results.SelectedIndex;
+            Assert.True(afterOneDown > initial, "Down must move the selection forward.");
+            Assert.False(IsHeaderRow(results, afterOneDown), "Down must never land on a header.");
+
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down });
-            Assert.Equal(2, results.SelectedIndex);
+            var afterTwoDowns = results.SelectedIndex;
+            Assert.True(afterTwoDowns > afterOneDown, "A second Down must move further forward.");
+            Assert.False(IsHeaderRow(results, afterTwoDowns), "Down must never land on a header.");
 
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Up });
-            Assert.Equal(1, results.SelectedIndex);
+            Assert.Equal(afterOneDown, results.SelectedIndex);
         }
         finally
         {
@@ -303,6 +322,10 @@ public sealed class DialogFrameworkKeyboardTests
             await host.DisposeAsync();
         }
     }
+
+    /// <summary>A header row is disabled and this empty-query listing shows no other disabled row (every command it lists is available) — the identical proxy `CommandPaletteOverlay.Publish`'s own rendering already relies on.</summary>
+    private static bool IsHeaderRow(ListBox results, int index) =>
+        !((System.Collections.IEnumerable)results.ItemsSource!).Cast<ListBoxItem>().ElementAt(index).IsEnabled;
 
     [AvaloniaFact]
     public async Task CommandPaletteOverlay_EnterOnARealCommand_CollectsItsValues_DispatchesAndCreatesTheRealObject()
@@ -321,8 +344,10 @@ public sealed class DialogFrameworkKeyboardTests
             var descriptor = registry.Items.Single(d => d.Id == "mechanical.create");
 
             var inputDialog = new InputDialog();
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            var objectPicker = new ObjectPickerDialog(domainContext);
             var confirmationDialog = new ConfirmationDialog();
-            var commandPrompt = new DesktopCommandPrompt(inputDialog, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
+            var commandPrompt = new DesktopCommandPrompt(inputDialog, objectPicker, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
 
             var palette = new CommandPaletteOverlay(registry)
             {
@@ -371,9 +396,8 @@ public sealed class DialogFrameworkKeyboardTests
             Assert.NotNull(result);
             Assert.True(result!.Succeeded);
 
-            var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
+            Assert.Contains(created, o => (o as IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
         }
         finally
         {

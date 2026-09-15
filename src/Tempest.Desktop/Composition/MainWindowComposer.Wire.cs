@@ -1,8 +1,14 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Projects;
+using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Shell;
+using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
@@ -286,6 +292,75 @@ internal sealed partial class MainWindowComposer
             views.ToastHost.Show(reason, FeedbackSeverity.Warning);
         };
 
+        // `WP 20.2A` (S2-2): Ctrl+Shift+M (Move…) / Ctrl+Shift+C (Copy…),
+        // with an object selected in the Project Explorer. Kind-dependent —
+        // twelve different command Ids across six disciplines
+        // (`MoveOrCopyCommandId`, below) — so `KeyboardCommandBindingProvider`'s
+        // fixed gesture -> one Id map (Ctrl+B's own mechanism, above) cannot
+        // serve it: a raw KeyDown check, mirroring `KeyboardShortcuts`'s own
+        // established shape, resolves the right Id from the current
+        // selection's own Kind and invokes it through the identical
+        // canonical Evaluate/InvokeAsync(id, context, prompt) path the
+        // Palette above already uses — so the destination is collected by
+        // the same picker (`DesktopCommandPrompt`/`ObjectPickerDialog`)
+        // whichever surface asked for it. Deliberately not registered
+        // through `KeyboardCommandBindingProvider.Bind` (and so carries no
+        // `DormantKeyboardBindingTests.DisclosedBindings` entry): that
+        // guard's own allow-list names gestures bound to one fixed Id,
+        // which a Kind-resolved dispatch genuinely is not.
+        window.KeyDown += async (_, e) =>
+        {
+            if (e.Handled || e.KeyModifiers != (KeyModifiers.Control | KeyModifiers.Shift) || (e.Key != Key.M && e.Key != Key.C))
+                return;
+
+            var selected = workspace.Selection.Current;
+            if (selected is null)
+            {
+                views.StatusBar.SetText("Select an object first to Move or Copy it.");
+                e.Handled = true;
+                return;
+            }
+
+            var isMove = e.Key == Key.M;
+            var commandId = MoveOrCopyCommandId(selected.Kind, isMove);
+            if (commandId is null)
+            {
+                views.StatusBar.SetText($"{(isMove ? "Moving" : "Copying")} a {selected.Kind} isn't supported yet.");
+                e.Handled = true;
+                return;
+            }
+
+            e.Handled = true;
+            var context = WorkspaceCommandContext.From(workspace.Selection, projectContext.Current?.Id);
+            var invocation = await composition.CommandRegistry
+                .InvokeAsync(commandId, context, views.CommandPrompt.Prompt)
+                .ConfigureAwait(true);
+
+            switch (invocation.Outcome)
+            {
+                case CommandOutcome.Executed:
+                    var result = invocation.Result!;
+                    callbacks.RecordHistory(result.Succeeded
+                        ? $"{(isMove ? "Moved" : "Copied")} via Ctrl+Shift+{(isMove ? 'M' : 'C')}."
+                        : $"{(isMove ? "Move" : "Copy")} failed: {result.Message ?? "Command failed."}");
+                    callbacks.RefreshStatusBar(manager);
+                    break;
+
+                case CommandOutcome.Cancelled:
+                    // Closing the picker is not an error and changed
+                    // nothing: no toast, no status text, no history entry —
+                    // the identical rule the Palette's own InvokeSelectedAsync
+                    // already follows.
+                    break;
+
+                default:
+                    var reason = invocation.Reason ?? $"{(isMove ? "Move" : "Copy")} is not available.";
+                    views.StatusBar.SetText(reason);
+                    views.ToastHost.Show(reason, FeedbackSeverity.Warning);
+                    break;
+            }
+        };
+
         // `WP 18.1B` §2: the palette's own Objects section.
         var searchStore = (Tempest.Core.Persistence.IQueryablePersistenceStore)host.Services!.GetService(typeof(Tempest.Core.Persistence.IQueryablePersistenceStore));
         views.CommandPalette.ObjectSearchSource = async (query, cancellationToken) =>
@@ -346,4 +421,38 @@ internal sealed partial class MainWindowComposer
 
         toastHost.Show(message, FeedbackSeverity.Error, TimeSpan.FromSeconds(20));
     }
+
+    /// <summary>
+    /// The Move/Copy command Id for <paramref name="kind"/> (`WP 20.2A`,
+    /// S2-2), or <see langword="null"/> if this Kind has neither —
+    /// Requirement/RequirementGroup have no Copy among this Work Package's
+    /// own twelve. Matches each discipline's own already-declared Kind
+    /// scope exactly (each registration file's own <c>boundKinds</c>/
+    /// <c>appliesToKinds</c>), so <see cref="Tempest.Core.Commands.ICommandRegistry.Evaluate"/>
+    /// never refuses a resolved Id on a Kind mismatch.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not the Explorer's own separate drag-and-drop switch
+    /// (<c>WorkspaceViewCoordinator.ObjectMoveRequested</c>), which
+    /// constructs <c>MoveDocumentObjectCommand</c>/<c>MoveVerificationActivityCommand</c>
+    /// directly for <c>"WorkInstruction"</c>/<c>"Inspection"</c> — a
+    /// disclosed, pre-existing reuse quirk of that one call site, not a
+    /// Kind restriction: both paths reach the identical domain object
+    /// either way, since neither handler inspects Kind beyond passing it
+    /// through (<c>ManufacturingWorkspaceRegistration</c>'s own Rename/
+    /// Delete/Duplicate bindings already dispatch
+    /// <c>Rename</c>/<c>Delete</c>/<c>DuplicateManufacturingObjectCommand</c>
+    /// for all three Manufacturing Kinds the identical way).
+    /// </remarks>
+    private static string? MoveOrCopyCommandId(string kind, bool isMove) => kind switch
+    {
+        "Calculation" or "CalculationSet" => isMove ? CalculationsCommandIds.Move : CalculationsCommandIds.Copy,
+        _ when DocumentObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? DocumentsCommandIds.Move : DocumentsCommandIds.Copy,
+        _ when ManufacturingObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? ManufacturingCommandIds.Move : ManufacturingCommandIds.Copy,
+        _ when MechanicalObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? MechanicalCommandIds.Move : MechanicalCommandIds.Copy,
+        "VerificationActivity" => isMove ? VerificationCommandIds.Move : VerificationCommandIds.Copy,
+        "Requirement" when isMove => RequirementsCommandIds.Move,
+        "RequirementGroup" when isMove => RequirementsCommandIds.MoveGroup,
+        _ => null,
+    };
 }

@@ -169,15 +169,33 @@ public static class VerificationWorkspaceRegistration
             id: VerificationCommandIds.Move, displayName: "Move Verification Activity", category: "Verification",
             description: "Reparents the selected Verification Activity.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Verification Activity needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Copy, displayName: "Copy Verification Activity", category: "Verification",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Verification Activity needs a destination parent chosen from the object tree")),
+            // NewDisplayName stays at the command's own optional default,
+            // exactly as Duplicate's own binding already leaves it.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyVerificationActivityCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: VerificationCommandIds.Duplicate, displayName: "Duplicate Verification Activity", category: "Verification",

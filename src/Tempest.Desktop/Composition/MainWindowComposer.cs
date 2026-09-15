@@ -46,6 +46,7 @@ internal sealed record ComposedViews(
     ActionOutcomeReporter ActionReporter,
     CitationPicker CitationPicker,
     SubjectPicker SubjectPicker,
+    ObjectPickerDialog ObjectPickerDialog,
     DeclaredFigureEntry DeclaredFigureEntry,
     CheckEntry CheckEntry,
     IssueEntry IssueEntry,
@@ -308,8 +309,17 @@ internal sealed partial class MainWindowComposer
             ConfirmDeleteAsync = ConfirmDeleteAsync,
         };
 
+        // `WP 20.2A` (FCR-0073): the object-reference picker every
+        // ObjectPickerKinds-declaring parameter is collected through —
+        // built here, alongside every other Dialog Framework overlay, so
+        // it is available before commandPrompt (immediately below) needs
+        // it. `host.ProjectContext` orders "the current project's own
+        // objects first" only; it never restricts what the picker offers.
+        var objectPicker = new ObjectPickerDialog(composition.DomainContext, host.ProjectContext);
+
         var commandPrompt = new DesktopCommandPrompt(
             inputDialog,
+            objectPicker,
             confirm: (descriptor, message) => SurfaceCommandPolicy.DeleteCommandIds.Contains(descriptor.Id)
                 ? ConfirmDeleteAsync(message)
                 : confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
@@ -591,7 +601,7 @@ internal sealed partial class MainWindowComposer
         return new ComposedViews(
             composition, diagnostics, session, theme, toastHost, new BusyOverlay(), confirmationDialog, inputDialog, messageDialog,
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
-            citationPicker, subjectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
+            citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
             engineeringCalculation, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,

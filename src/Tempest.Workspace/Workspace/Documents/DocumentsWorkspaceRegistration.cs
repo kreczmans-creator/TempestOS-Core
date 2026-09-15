@@ -165,15 +165,34 @@ public static class DocumentsWorkspaceRegistration
             id: DocumentsCommandIds.Move, displayName: "Move Document", category: "Documents",
             description: "Reparents the selected Document Domain object.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Document needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveDocumentObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Copy, displayName: "Copy Document", category: "Documents",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Document needs a destination parent chosen from the object tree")),
+            // NewIdentifier/NewDisplayName stay at the command's own
+            // optional defaults, exactly as Duplicate's own binding already
+            // leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyDocumentObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: DocumentsCommandIds.Duplicate, displayName: "Duplicate Document", category: "Documents",

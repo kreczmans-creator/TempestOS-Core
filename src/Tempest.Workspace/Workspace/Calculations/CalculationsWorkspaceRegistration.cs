@@ -199,15 +199,36 @@ public static class CalculationsWorkspaceRegistration
             id: CalculationsCommandIds.Move, displayName: "Move Calculation", category: "Calculations",
             description: "Reparents the selected Calculation Domain object.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Calculation needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level —
+            // MoveCalculationObjectCommand's own NewParentId is nullable for
+            // exactly that.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveCalculationObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: CalculationsCommandIds.Copy, displayName: "Copy Calculation", category: "Calculations",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Calculation needs a destination parent chosen from the object tree")),
+            // NewIdentifier/NewDisplayName stay at the command's own
+            // optional defaults, exactly as Duplicate's own binding already
+            // leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyCalculationObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: CalculationsCommandIds.Duplicate, displayName: "Duplicate Calculation", category: "Calculations",

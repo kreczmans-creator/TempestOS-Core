@@ -81,8 +81,13 @@ public sealed class SurfaceCommandIntegrationTests
             var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
             var palette = Palette(registry, host.Workspace!);
 
+            // `WP 20.2A` (FCR-0073): `mechanical.move` — this test's own
+            // former example — is invocable now that the object picker
+            // exists; `calculations.execute` is one of the three structured-
+            // input commands still genuinely unavailable (this platform's
+            // command input surface collects single-line text only).
             palette.Open();
-            Query(palette).Text = "mechanical.move";
+            Query(palette).Text = "calculations.execute";
 
             // `TD-119`: `ApplyFilter` itself is synchronous, but `TextBox`
             // raises `TextChanged` on a later dispatcher pass rather than inside
@@ -100,7 +105,7 @@ public sealed class SurfaceCommandIntegrationTests
 
             // ADR-0070: listed, findable, visibly disabled, and saying why.
             Assert.False(row.IsEnabled);
-            Assert.Contains("object picker", (string)row.Content!, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("single-line text only", (string)row.Content!, StringComparison.OrdinalIgnoreCase);
 
             string? reason = null;
             palette.CommandUnavailable += (_, r) => reason = r;
@@ -118,7 +123,7 @@ public sealed class SurfaceCommandIntegrationTests
                 await Task.Delay(10);
 
             Assert.NotNull(reason);
-            Assert.Contains("destination parent", reason!, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("structured input document", reason!, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -306,7 +311,12 @@ public sealed class SurfaceCommandIntegrationTests
             var ribbon = new RibbonView(registry, host.Manager!, workspace, _ => { }, _ => { });
             var revise = FindButton(ribbon, registry, "requirements.revise");
             var deleteGroup = FindButton(ribbon, registry, "requirements.delete-group");
-            var move = FindButton(ribbon, registry, "requirements.move");
+            // `WP 20.2A` (FCR-0073): `requirements.move` — this test's own
+            // former example of a command that "declares itself unavailable"
+            // — is invocable now that the object picker exists;
+            // `calculations.execute` is one of the three structured-input
+            // commands still genuinely unavailable, whatever is selected.
+            var unavailable = FindButton(ribbon, registry, "calculations.execute");
 
             // A Requirement: revise applies, delete-group does not.
             await SelectFirstAsync(workspace, RequirementsWorkspaceExplorerModule.NavigationItemId, RequirementsService.RequirementDocumentKind);
@@ -326,8 +336,8 @@ public sealed class SurfaceCommandIntegrationTests
 
             // And a command that declares itself unavailable stays disabled
             // whatever is selected, carrying its own reason as its tooltip.
-            Assert.False(move.IsEnabled);
-            Assert.Contains("object picker", (string)ToolTip.GetTip(move)!, StringComparison.OrdinalIgnoreCase);
+            Assert.False(unavailable.IsEnabled);
+            Assert.Contains("single-line text only", (string)ToolTip.GetTip(unavailable)!, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -410,12 +420,18 @@ public sealed class SurfaceCommandIntegrationTests
             Assert.Contains("mechanical.create", offered);
             Assert.Contains("mechanical.rename", offered);
 
+            // `WP 20.2A` (FCR-0073): `mechanical.move` is invocable now and
+            // declares no confirmation, so it is offered on the identical
+            // terms as any other parameterised command - Add Step records
+            // its destination through the same prompt (the object picker,
+            // for a parameter declaring ObjectPickerKinds).
+            Assert.Contains("mechanical.move", offered);
+
             // A declared confirmation, or a binding this platform cannot
             // invoke at all, still keeps a command out - by what its own
             // binding declares, not by a list maintained in the dialog.
             Assert.DoesNotContain("mechanical.delete", offered);
             Assert.DoesNotContain("mechanical.duplicate", offered);
-            Assert.DoesNotContain("mechanical.move", offered);
         }
         finally
         {

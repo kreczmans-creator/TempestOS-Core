@@ -207,8 +207,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // descriptors (`create`, `complete`), none of them unavailable, so
         // 80 becomes 89.
         // `WP 20.1B` (`TD-181`) adds one more invocable Calculations
-        // descriptor (`calculations.complete`), so 89 becomes 90.
-        Assert.Equal(90, built);
+        // descriptor (`calculations.complete`), so 89 becomes 90; `WP 20.2A`
+        // (FCR-0073): the object picker turns fifteen U1 descriptors invocable
+        // (`CommandDescriptorBindingTests.ObjectPickerBound`) — the twelve
+        // S2-2 Move/Copy commands and TD-115's own three — so 90 becomes 105.
+        Assert.Equal(105, built);
     }
 
     [Fact]
@@ -275,8 +278,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // descriptors join, all reaching a registered handler, so 80
         // becomes 89.
         // `WP 20.1B`: `calculations.complete` joins, reaching its own
-        // registered handler too, so 89 becomes 90.
-        Assert.Equal(90, executed);
+        // registered handler too, so 89 becomes 90; `WP 20.2A`: the same
+        // fifteen FCR-0073 descriptors join (see
+        // `EveryInvocableBinding_BuildsACommand_WithoutThrowing`'s own
+        // identical comment), all reaching their own already-registered
+        // handler, so 90 becomes 105.
+        Assert.Equal(105, executed);
     }
 
     [Fact]
@@ -325,7 +332,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             checkedCount++;
         }
 
-        Assert.Equal(18, checkedCount);
+        // `WP 20.2A` (FCR-0073): fifteen of the eighteen U1/U2 descriptors
+        // this file used to find here were U1 (object-picker unavailable);
+        // the picker now exists, so only the three U2 (structured-input)
+        // descriptors remain unavailable.
+        Assert.Equal(3, checkedCount);
     }
 
     [Fact]
@@ -490,7 +501,16 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `quotation.create.reference` carries no rule of its own (see
         // `TheParametersWithNoRuleOfTheirOwn...`'s own updated list) so
         // adds none - so 61 becomes 73.
-        Assert.Equal(73, refused);
+        // `WP 20.2A` (FCR-0073) adds sixteen rule-having parameters across
+        // the fifteen newly-bound descriptors: one destination each for the
+        // ten Move/Copy commands, one each for `requirements.move`/
+        // `move-group`, `requirements.add-to-collection.collectionId`,
+        // `mechanical.compare-baselines.secondId`, and both of
+        // `requirements.link`'s own two (`targetDocumentId`,
+        // `relationshipKind`) — every one refuses a bad value (a malformed
+        // Guid, or a relationship kind outside the closed set) - so 73
+        // becomes 89.
+        Assert.Equal(89, refused);
     }
 
     [Fact]
@@ -548,7 +568,15 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (one, free text — joins the list above), `quotation.add-line`'s
         // four, `quotation.update-line`'s five, `quotation.remove-line.lineId`
         // (one), and `task.create`'s two — so 76 becomes 89.
-        Assert.Equal(89, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // `WP 20.2A` (FCR-0073) adds sixteen declared parameters across the
+        // fifteen newly-bound descriptors (ten single-destination Move/Copy
+        // commands, `requirements.move`/`move-group`,
+        // `requirements.add-to-collection.collectionId`,
+        // `mechanical.compare-baselines.secondId`, and `requirements.link`'s
+        // own two) — every one rule-having (a Guid check, or a closed
+        // relationship-kind set), none joining the free-text list above —
+        // so 89 becomes 105.
+        Assert.Equal(105, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -610,7 +638,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `decline` — every one declares a parameter, a confirmation, or
         // both) plus `task.create` (two parameters). `task.complete` needs
         // neither, so it alone of the nine stays out — so 66 becomes 74.
-        Assert.Equal(74, refused);
+        // `WP 20.2A` adds all fifteen FCR-0073 descriptors — every one
+        // declares at least its own destination/target parameter — so 74
+        // becomes 89.
+        Assert.Equal(89, refused);
     }
 
     [Fact]
@@ -783,9 +814,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // unchanged.
         // `WP 20.1B` (`TD-181`) adds one more, invocable, production
         // Calculations descriptor (`calculations.complete`), so 89 becomes
-        // 90 and 107 becomes 108; 18 is unchanged.
-        Assert.Equal(90, Invocable.Count());
-        Assert.Equal(18, Unavailable.Count());
+        // 90 and 107 becomes 108; `WP 20.2A` (FCR-0073): the object picker
+        // lands, and the fifteen U1 descriptors this file used to count as
+        // unavailable are real bindings now — 90 becomes 105, 108 is
+        // unchanged (no descriptor added or removed), and 18 becomes 3 (the
+        // three U2 descriptors alone).
+        Assert.Equal(105, Invocable.Count());
+        Assert.Equal(3, Unavailable.Count());
         Assert.Equal(108, Production.Count);
     }
 

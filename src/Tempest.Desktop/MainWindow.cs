@@ -76,6 +76,10 @@ public sealed class MainWindow : Window
     // The Evidence workspace's own picker/entry dialogs (`WP 18.2A`).
     private readonly CitationPicker _citationPicker;
     private readonly SubjectPicker _subjectPicker;
+
+    /// <summary>The object-reference picker (`WP 20.2A`, FCR-0073) Ctrl+Shift+M/Ctrl+Shift+C open directly; every Palette-invoked Move/Copy/Link/Add-to-Collection/Compare-Baselines reaches the identical instance through <see cref="Composition.DesktopCommandPrompt"/>.</summary>
+    private readonly ObjectPickerDialog _objectPicker;
+
     private readonly DeclaredFigureEntry _declaredFigureEntry;
     private readonly CheckEntry _checkEntry;
     private readonly IssueEntry _issueEntry;
@@ -206,6 +210,7 @@ public sealed class MainWindow : Window
         _dock = layout.Dock;
         _citationPicker = views.CitationPicker;
         _subjectPicker = views.SubjectPicker;
+        _objectPicker = views.ObjectPickerDialog;
         _declaredFigureEntry = views.DeclaredFigureEntry;
         _checkEntry = views.CheckEntry;
         _issueEntry = views.IssueEntry;

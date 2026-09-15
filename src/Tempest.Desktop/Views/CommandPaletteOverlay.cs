@@ -57,14 +57,36 @@ public sealed record PaletteObjectHit(Guid ObjectId, string Kind, string Title, 
 /// search's own result if a newer query has already superseded it, so a
 /// slow first keystroke can never overwrite what a fast second one found.
 /// </para>
+/// <para>
+/// <b>TD-77 — an empty query lists what applies, not everything.</b>
+/// Before `WP 20.2A`, opening the palette with nothing typed listed every
+/// registered command (over a hundred), most of them disabled for the
+/// current selection — availability was annotated, never a membership
+/// filter. An empty query now lists only the commands
+/// <see cref="ICommandRegistry.Evaluate"/> currently reports available,
+/// grouped by <see cref="CommandDescriptor.Category"/> and, within a
+/// group, most-recently-invoked first — a session-only ranking
+/// (<see cref="_recentlyInvokedIds"/>), never persisted: this overlay is
+/// reconstructed per <c>MainWindow</c>, and a cross-session "recent
+/// commands" list was judged not worth the
+/// <see cref="Tempest.Desktop.RecentObjectsState"/>-style persistence
+/// machinery for what a query substring already finds instantly. Typing
+/// still finds every command, available or not, exactly as before — an
+/// unavailable one is shown with its own reason, never hidden, per
+/// <c>ADR-0070</c>.
+/// </para>
 /// </remarks>
 public sealed class CommandPaletteOverlay : Border
 {
+    /// <summary>The most recent <see cref="Tempest.Core.Commands.CommandDescriptor.Id"/>s this overlay has itself invoked to completion, most recent first — the empty-query ranking's own session-only memory (this class's own TD-77 remarks).</summary>
+    private const int RecentCapacity = 10;
+
     private readonly ICommandRegistry _registry;
     private readonly TextBox _query = new() { Watermark = "Type a command...", Margin = new Avalonia.Thickness(8) };
     private readonly ListBox _results = new() { MaxHeight = 400 };
     private List<PaletteRow> _rows = [];
     private int _searchGeneration;
+    private readonly List<string> _recentlyInvokedIds = [];
 
     /// <summary>Raised after a command is successfully invoked from this palette.</summary>
     public event Action<CommandDescriptor, CommandResult>? CommandInvoked;
@@ -211,21 +233,29 @@ public sealed class CommandPaletteOverlay : Border
     {
         var query = _query.Text ?? string.Empty;
         var generation = ++_searchGeneration;
+        var context = CurrentContext();
 
-        var filteredCommands = string.IsNullOrWhiteSpace(query)
-            ? _registry.Items
-            : (IReadOnlyList<CommandDescriptor>)
-              [.. _registry.Items.Where(d => d.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(query, StringComparison.OrdinalIgnoreCase))];
+        // TD-77: an empty query is rendered as its own grouped,
+        // available-only listing (this class's own remarks) — never mixed
+        // with the substring-filtered path below, and never followed by an
+        // Objects search (that search only ever runs for a typed query).
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            RenderAvailableGrouped(context);
+            return;
+        }
+
+        var filteredCommands = (IReadOnlyList<CommandDescriptor>)
+            [.. _registry.Items.Where(d => d.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase) || d.Id.Contains(query, StringComparison.OrdinalIgnoreCase))];
 
         // Evaluated once per render, against the same context Enter will
         // use - so what the row shows and what pressing Enter does cannot
         // disagree.
-        var context = CurrentContext();
         var availability = filteredCommands.Select(d => _registry.Evaluate(d.Id, context)).ToList();
 
         RenderRows(filteredCommands, availability, objectHits: null);
 
-        if (string.IsNullOrWhiteSpace(query) || ObjectSearchSource is null)
+        if (ObjectSearchSource is null)
             return;
 
         IReadOnlyList<PaletteObjectHit> hits;
@@ -265,6 +295,73 @@ public sealed class CommandPaletteOverlay : Border
                 rows.Add(PaletteRow.ForObject(hit));
         }
 
+        Publish(rows);
+    }
+
+    /// <summary>
+    /// TD-77's own empty-query listing: only the commands
+    /// <paramref name="context"/> currently makes available, grouped by
+    /// <see cref="CommandDescriptor.Category"/> (ascending ordinal, a
+    /// <see langword="null"/> category's own group labelled "General"),
+    /// most-recently-invoked first within a group
+    /// (<see cref="_recentlyInvokedIds"/>) and then by
+    /// <see cref="CommandDescriptor.DisplayName"/> — no unavailable row, no
+    /// Objects section (that search only ever runs for a typed query).
+    /// </summary>
+    private void RenderAvailableGrouped(CommandContext context)
+    {
+        var available = _registry.Items
+            .Select(descriptor => (Descriptor: descriptor, Availability: _registry.Evaluate(descriptor.Id, context)))
+            .Where(pair => pair.Availability.IsAvailable)
+            .OrderBy(pair => pair.Descriptor.Category ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(pair => RecencyRank(pair.Descriptor.Id))
+            .ThenBy(pair => pair.Descriptor.DisplayName, StringComparer.Ordinal)
+            .ToList();
+
+        var rows = new List<PaletteRow>(available.Count + 8);
+        string? currentGroup = null;
+        var isFirstGroup = true;
+
+        foreach (var (descriptor, availability) in available)
+        {
+            if (isFirstGroup || descriptor.Category != currentGroup)
+            {
+                rows.Add(PaletteRow.Header(descriptor.Category ?? "General"));
+                currentGroup = descriptor.Category;
+                isFirstGroup = false;
+            }
+
+            // Every row here is already known available - PaletteRow.ForCommand
+            // still takes the real CommandAvailability rather than a
+            // fabricated one, so its own text/enablement logic stays the
+            // single implementation both listings share; showCategoryPrefix:
+            // false because the header immediately above already named it.
+            rows.Add(PaletteRow.ForCommand(descriptor, availability, showCategoryPrefix: false));
+        }
+
+        Publish(rows);
+    }
+
+    /// <summary>A command's own position in <see cref="_recentlyInvokedIds"/> — 0 is most recent, and a command never invoked this session sorts after every one that has been.</summary>
+    private int RecencyRank(string commandId)
+    {
+        var index = _recentlyInvokedIds.IndexOf(commandId);
+        return index < 0 ? int.MaxValue : index;
+    }
+
+    /// <summary>Records <paramref name="commandId"/> as just invoked — moves an existing entry to the front rather than duplicating it, then trims to <see cref="RecentCapacity"/>. Session-only (this class's own TD-77 remarks): never persisted.</summary>
+    private void RecordInvoked(string commandId)
+    {
+        _recentlyInvokedIds.RemoveAll(id => id == commandId);
+        _recentlyInvokedIds.Insert(0, commandId);
+
+        if (_recentlyInvokedIds.Count > RecentCapacity)
+            _recentlyInvokedIds.RemoveRange(RecentCapacity, _recentlyInvokedIds.Count - RecentCapacity);
+    }
+
+    /// <summary>The tail every render path shares: sets <see cref="_rows"/>, rebuilds the visible list, and selects the first non-header row.</summary>
+    private void Publish(List<PaletteRow> rows)
+    {
         _rows = rows;
 
         // ADR-0070: an unavailable command stays listed, visibly disabled,
@@ -296,22 +393,47 @@ public sealed class CommandPaletteOverlay : Border
                 e.Handled = true;
                 break;
             case Key.Down:
-                if (_results.SelectedIndex < _rows.Count - 1)
+                if (NextSelectableIndex(_results.SelectedIndex, +1) is { } down)
                 {
-                    _results.SelectedIndex++;
-                    _results.ScrollIntoView(_results.SelectedIndex);
+                    _results.SelectedIndex = down;
+                    _results.ScrollIntoView(down);
                 }
                 e.Handled = true;
                 break;
             case Key.Up:
-                if (_results.SelectedIndex > 0)
+                if (NextSelectableIndex(_results.SelectedIndex, -1) is { } up)
                 {
-                    _results.SelectedIndex--;
-                    _results.ScrollIntoView(_results.SelectedIndex);
+                    _results.SelectedIndex = up;
+                    _results.ScrollIntoView(up);
                 }
                 e.Handled = true;
                 break;
         }
+    }
+
+    /// <summary>
+    /// The next row index in <paramref name="step"/>'s own direction
+    /// (<c>+1</c>/<c>-1</c>) that is not a header — skipping over one when
+    /// found, rather than landing on it — or <see langword="null"/> if none
+    /// remains. TD-77's own grouped, empty-query listing (this class's own
+    /// remarks) made a header the *first* row of every render, where it
+    /// used to appear only in the typed-query "Objects" section; Up/Down
+    /// never selected one before this method existed only because nothing
+    /// had reached that section's own header row in practice.
+    /// </summary>
+    private int? NextSelectableIndex(int fromIndex, int step)
+    {
+        var index = fromIndex + step;
+
+        while (index >= 0 && index < _rows.Count)
+        {
+            if (!_rows[index].IsHeader)
+                return index;
+
+            index += step;
+        }
+
+        return null;
     }
 
     private async Task InvokeSelectedAsync()
@@ -348,6 +470,14 @@ public sealed class CommandPaletteOverlay : Border
         switch (invocation.Outcome)
         {
             case CommandOutcome.Executed:
+                // TD-77: recorded regardless of the handler's own
+                // success/failure — "recently used" means recently
+                // attempted through this palette, the same sense
+                // RecentObjectsState.Record uses for "recently opened"
+                // (attempting a command against the wrong target is still
+                // evidence a person reaches for it often).
+                RecordInvoked(descriptor.Id);
+
                 // The result travels with the event (`TD-58`) — the
                 // subscriber refreshes dependent surfaces only on success.
                 CommandInvoked?.Invoke(descriptor, invocation.Result!);
@@ -399,9 +529,19 @@ public sealed class CommandPaletteOverlay : Border
 
         public PaletteObjectHit? ObjectHit { get; }
 
-        public static PaletteRow ForCommand(CommandDescriptor descriptor, CommandAvailability availability)
+        /// <param name="descriptor">The command this row shows.</param>
+        /// <param name="availability">Its own evaluated availability.</param>
+        /// <param name="showCategoryPrefix">
+        /// <see langword="true"/> (the default, every typed-query row) shows
+        /// <c>"Category: Name"</c> — the category is the only grouping a
+        /// flat, substring-filtered list has. <see langword="false"/> (the
+        /// empty-query grouped listing, `WP 20.2A`/TD-77) shows the name
+        /// alone: its own <see cref="PaletteRow.Header"/> already named the
+        /// group.
+        /// </param>
+        public static PaletteRow ForCommand(CommandDescriptor descriptor, CommandAvailability availability, bool showCategoryPrefix = true)
         {
-            var name = descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
+            var name = !showCategoryPrefix || descriptor.Category is null ? descriptor.DisplayName : $"{descriptor.Category}: {descriptor.DisplayName}";
             var text = availability.IsAvailable ? name : $"{name} — {availability.Reason}";
 
             return new PaletteRow(text, availability.IsAvailable, isHeader: false, descriptor, availability, objectHit: null);

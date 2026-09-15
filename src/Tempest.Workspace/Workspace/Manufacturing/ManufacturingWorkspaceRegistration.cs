@@ -227,15 +227,33 @@ public static class ManufacturingWorkspaceRegistration
             id: ManufacturingCommandIds.Move, displayName: "Move Manufacturing Object", category: "Manufacturing",
             description: "Reparents the selected Manufacturing object — for an Operation, this adds/removes it from a Routing's own sequence.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Manufacturing object needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Copy, displayName: "Copy Manufacturing Object", category: "Manufacturing",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Manufacturing object needs a destination parent chosen from the object tree")),
+            // NewDisplayName stays at the command's own optional default,
+            // exactly as Duplicate's own binding already leaves it.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: ManufacturingCommandIds.Duplicate, displayName: "Duplicate Manufacturing Object", category: "Manufacturing",

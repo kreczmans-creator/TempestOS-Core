@@ -446,9 +446,12 @@ public sealed class RibbonViewTests
             ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
             // TD-77 Stage 5 replaced one catch-all sentence with each
-            // command's own reason. A Move declares that it needs a
-            // destination chosen from the object tree, and says so by name.
-            FindButtonById(ribbon, registry, "mechanical.move")
+            // command's own reason. `calculations.execute` declares exactly
+            // what it cannot collect, and says so by name — `mechanical.move`,
+            // this test's own former example, is invocable now that the
+            // object picker exists (`WP 20.2A`, FCR-0073), so it no longer
+            // demonstrates an uninvocable command.
+            FindButtonById(ribbon, registry, "calculations.execute")
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`/Class B: no wait. An unavailable command is refused
@@ -456,8 +459,8 @@ public sealed class RibbonViewTests
             // availability and raises `ActionCompleted` before its first
             // `await`, so the message is already recorded when `RaiseEvent`
             // returns.
-            Assert.Contains(messages, m => m.Contains("Moving a Mechanical object", StringComparison.Ordinal));
-            Assert.Contains(messages, m => m.Contains("object picker", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(messages, m => m.Contains("Executing a Calculation", StringComparison.Ordinal));
+            Assert.Contains(messages, m => m.Contains("single-line text only", StringComparison.OrdinalIgnoreCase));
 
             // A Create needs values, and this view was constructed with no
             // prompt wired - so it says that, rather than running without
