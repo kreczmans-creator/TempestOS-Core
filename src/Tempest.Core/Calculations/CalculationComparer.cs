@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Calculations;
@@ -73,7 +74,14 @@ public static class CalculationComparer
         return diffs;
     }
 
-    /// <summary>Formats one field's value for display — a boxed <c>Quantity&lt;TDimension&gt;</c> becomes "value unit"; everything else is its own <see cref="object.ToString"/>.</summary>
+    /// <summary>
+    /// Formats one field's value for display — a boxed <c>Quantity&lt;TDimension&gt;</c>
+    /// becomes "value unit"; a plain number reads to six significant figures
+    /// with trailing zeros trimmed; an enum reads as spaced words ("Meets
+    /// criteria"); everything else is its own <see cref="object.ToString"/>.
+    /// What changed is decided by <see cref="object.Equals(object?)"/> on the
+    /// values themselves, never on these strings.
+    /// </summary>
     private static string? FormatFieldValue(object? value)
     {
         if (value is null)
@@ -90,6 +98,35 @@ public static class CalculationComparer
             return symbol is not null ? $"{quantityValue} {symbol}" : quantityValue?.ToString() ?? value.ToString();
         }
 
-        return value.ToString();
+        return value switch
+        {
+            double number => EngineeringNumber.Format(number),
+            float number => EngineeringNumber.Format(number),
+            decimal number => EngineeringNumber.Format((double)number),
+            Enum member => SpaceWords(member.ToString()),
+            _ => value.ToString(),
+        };
+    }
+
+    /// <summary>"DoesNotMeetCriteria" as "Does not meet criteria": a word break before each capital that follows a lower-case letter.</summary>
+    private static string SpaceWords(string name)
+    {
+        var text = new StringBuilder(name.Length + 4);
+
+        for (var i = 0; i < name.Length; i++)
+        {
+            var c = name[i];
+            if (i > 0 && char.IsUpper(c) && char.IsLower(name[i - 1]))
+            {
+                text.Append(' ');
+                text.Append(char.ToLowerInvariant(c));
+            }
+            else
+            {
+                text.Append(c);
+            }
+        }
+
+        return text.ToString();
     }
 }

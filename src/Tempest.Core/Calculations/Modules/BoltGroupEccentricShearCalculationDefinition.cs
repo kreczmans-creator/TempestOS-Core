@@ -97,11 +97,11 @@ public sealed class BoltGroupEccentricShearCalculationDefinition
         var loadYN = input.LoadY.BaseValue;
         var allowableN = input.AllowableShearPerBolt.BaseValue;
 
-        ModuleGuards.Require(context, "Fastener grade must be named.", !string.IsNullOrWhiteSpace(input.FastenerGrade), $"'{input.FastenerGrade}'");
+        ModuleGuards.Require(context, "Fastener grade must be named.", !string.IsNullOrWhiteSpace(input.FastenerGrade), input, nameof(input.FastenerGrade));
         ModuleGuards.Require(context, "At least one bolt is required.", count >= 1, $"{count} bolt(s)");
         ModuleGuards.Require(context, "No two bolts may be coincident.", !AnyCoincident(bolts), "coincident bolt positions");
         ModuleGuards.Require(context, "The load must have at least one non-zero component.", loadXN != 0 || loadYN != 0, "a zero load");
-        ModuleGuards.Require(context, "Allowable shear per bolt must be positive.", allowableN > 0, $"{allowableN:0.###} N");
+        ModuleGuards.Require(context, "Allowable shear per bolt must be positive.", allowableN > 0, input, nameof(input.AllowableShearPerBolt));
 
         context.RecordIntermediate("Fastener grade", input.FastenerGrade);
         if (input.FastenerPin is { } fastenerPin)

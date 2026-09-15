@@ -146,22 +146,22 @@ public sealed class LiftingLugPinJointCalculationDefinition : ICalculationDefini
         var pinBendingMPa = input.PinAllowableBendingStress.ConvertTo(PressureUnits.Megapascal).Value;
         var pinShearMPa = input.PinAllowableShearStress.ConvertTo(PressureUnits.Megapascal).Value;
 
-        ModuleGuards.Require(context, "Load must be positive.", loadN > 0, $"{loadN:0.###} N");
-        ModuleGuards.Require(context, "Lug thickness must be positive.", tMm > 0, $"{tMm:0.###} mm");
-        ModuleGuards.Require(context, "Hole diameter must be positive.", holeMm > 0, $"{holeMm:0.###} mm");
+        ModuleGuards.Require(context, "Load must be positive.", loadN > 0, input, nameof(input.Load));
+        ModuleGuards.Require(context, "Lug thickness must be positive.", tMm > 0, input, nameof(input.LugThickness));
+        ModuleGuards.Require(context, "Hole diameter must be positive.", holeMm > 0, input, nameof(input.HoleDiameter));
         ModuleGuards.Require(context, "Lug width must exceed the hole diameter.", widthMm > holeMm, $"width {widthMm:0.###} mm, hole {holeMm:0.###} mm");
-        ModuleGuards.Require(context, "Pin diameter must be positive.", pinMm > 0, $"{pinMm:0.###} mm");
+        ModuleGuards.Require(context, "Pin diameter must be positive.", pinMm > 0, input, nameof(input.PinDiameter));
         // With the framework's slack: a pin stated as exactly the hole size in
         // another unit must not be refused as "does not fit" by a rounding artefact.
         ModuleGuards.Require(context, "Pin diameter must not exceed the hole diameter.", pinMm <= holeMm * (1.0 + ModuleGuards.AcceptanceRelativeTolerance), $"pin {pinMm:0.###} mm, hole {holeMm:0.###} mm");
-        ModuleGuards.Require(context, "Edge distance must be positive.", edgeMm > 0, $"{edgeMm:0.###} mm");
-        ModuleGuards.Require(context, "Cheek plate thickness must be positive.", cheekMm > 0, $"{cheekMm:0.###} mm");
-        ModuleGuards.Require(context, "Clearance must not be negative.", clearanceMm >= 0, $"{clearanceMm:0.###} mm");
-        ModuleGuards.Require(context, "Allowable tensile stress must be positive.", tensileMPa > 0, $"{tensileMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Allowable bearing stress must be positive.", bearingMPa > 0, $"{bearingMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Allowable shear stress must be positive.", shearMPa > 0, $"{shearMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Pin allowable bending stress must be positive.", pinBendingMPa > 0, $"{pinBendingMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Pin allowable shear stress must be positive.", pinShearMPa > 0, $"{pinShearMPa:0.###} MPa");
+        ModuleGuards.Require(context, "Edge distance must be positive.", edgeMm > 0, input, nameof(input.EdgeDistance));
+        ModuleGuards.Require(context, "Cheek plate thickness must be positive.", cheekMm > 0, input, nameof(input.CheekPlateThickness));
+        ModuleGuards.Require(context, "Clearance must not be negative.", clearanceMm >= 0, input, nameof(input.Clearance));
+        ModuleGuards.Require(context, "Allowable tensile stress must be positive.", tensileMPa > 0, input, nameof(input.AllowableTensileStress));
+        ModuleGuards.Require(context, "Allowable bearing stress must be positive.", bearingMPa > 0, input, nameof(input.AllowableBearingStress));
+        ModuleGuards.Require(context, "Allowable shear stress must be positive.", shearMPa > 0, input, nameof(input.AllowableShearStress));
+        ModuleGuards.Require(context, "Pin allowable bending stress must be positive.", pinBendingMPa > 0, input, nameof(input.PinAllowableBendingStress));
+        ModuleGuards.Require(context, "Pin allowable shear stress must be positive.", pinShearMPa > 0, input, nameof(input.PinAllowableShearStress));
 
         context.ReferenceMaterial(input.LugMaterialPin.RecordId);
         context.ReferenceMaterial(input.PinMaterialPin.RecordId);

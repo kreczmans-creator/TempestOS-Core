@@ -85,14 +85,14 @@ public sealed class ShaftCombinedStressCalculationDefinition : ICalculationDefin
         var torqueNmm = input.Torque.ConvertTo(TorqueUnits.NewtonMillimetre).Value;
         var yieldMPa = input.YieldStrength.ConvertTo(PressureUnits.Megapascal).Value;
 
-        ModuleGuards.Require(context, "Diameter must be positive.", diameterMm > 0, $"{diameterMm:0.###} mm");
-        ModuleGuards.Require(context, "Bending moment must not be negative.", momentNmm >= 0, $"{momentNmm:0.###} N.mm");
-        ModuleGuards.Require(context, "Torque must not be negative.", torqueNmm >= 0, $"{torqueNmm:0.###} N.mm");
+        ModuleGuards.Require(context, "Diameter must be positive.", diameterMm > 0, input, nameof(input.Diameter));
+        ModuleGuards.Require(context, "Bending moment must not be negative.", momentNmm >= 0, input, nameof(input.BendingMoment));
+        ModuleGuards.Require(context, "Torque must not be negative.", torqueNmm >= 0, input, nameof(input.Torque));
         ModuleGuards.Require(context, "Bending moment and torque must not both be zero.", momentNmm > 0 || torqueNmm > 0, "no load");
-        ModuleGuards.Require(context, "Yield strength must be positive.", yieldMPa > 0, $"{yieldMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Bending stress concentration factor must be at least 1.0.", input.BendingStressConcentrationFactor >= 1.0, $"{input.BendingStressConcentrationFactor:0.###}");
-        ModuleGuards.Require(context, "Torsional stress concentration factor must be at least 1.0.", input.TorsionalStressConcentrationFactor >= 1.0, $"{input.TorsionalStressConcentrationFactor:0.###}");
-        ModuleGuards.Require(context, "Required safety factor must be at least 1.0.", input.RequiredSafetyFactor >= 1.0, $"{input.RequiredSafetyFactor:0.###}");
+        ModuleGuards.Require(context, "Yield strength must be positive.", yieldMPa > 0, input, nameof(input.YieldStrength));
+        ModuleGuards.Require(context, "Bending stress concentration factor must be at least 1.0.", input.BendingStressConcentrationFactor >= 1.0, input, nameof(input.BendingStressConcentrationFactor));
+        ModuleGuards.Require(context, "Torsional stress concentration factor must be at least 1.0.", input.TorsionalStressConcentrationFactor >= 1.0, input, nameof(input.TorsionalStressConcentrationFactor));
+        ModuleGuards.Require(context, "Required safety factor must be at least 1.0.", input.RequiredSafetyFactor >= 1.0, input, nameof(input.RequiredSafetyFactor));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference", input.MaterialPin.ToString());

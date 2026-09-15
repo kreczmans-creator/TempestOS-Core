@@ -386,7 +386,8 @@ public sealed class CalculationModulesViewTests
             await RenderUntilAsync(window, () => SurfaceOf(window).LastComparison?.HasChanges == true);
             view = SurfaceOf(window);
             var rows = view.LastComparison!.Rows;
-            Assert.Contains(rows, r => r.Section == "Input" && r.Field == "Safety factor" && r.Before.Contains("1.5", StringComparison.Ordinal) && r.After.Contains("2", StringComparison.Ordinal));
+            Assert.Contains(rows, r => r.Section == "Input" && r.Field == "Safety factor" && r.Before == "1.5" && r.After == "2");
+            AssertRendered(window, view, "1.5");
             Assert.Contains(rows, r => r.Section == "Result" && r.Field == "Allowable shear capacity");
             AssertRendered(window, view, "Before");
             AssertRendered(window, view, "After");

@@ -91,13 +91,13 @@ public sealed class ThermalExpansionStressCalculationDefinition : ICalculationDe
         var restraintNpm = input.RestraintStiffness?.BaseValue;
         var allowablePa = input.AllowableStress.BaseValue;
 
-        ModuleGuards.Require(context, "Length must be positive.", lengthM > 0, $"{lengthM:0.######} m");
-        ModuleGuards.Require(context, "Area must be positive.", areaM2 > 0, $"{areaM2:E3} m^2");
-        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusPa > 0, $"{modulusPa:0.###} Pa");
-        ModuleGuards.Require(context, "Expansion coefficient must be positive.", alphaPerK > 0, $"{alphaPerK:E3} 1/K");
-        ModuleGuards.Require(context, "Gap must not be negative.", gapM >= 0, $"{gapM:0.######} m");
-        ModuleGuards.Require(context, "Restraint stiffness must be positive when given.", restraintNpm is null || restraintNpm > 0, $"{restraintNpm:0.###} N/m");
-        ModuleGuards.Require(context, "Allowable stress must be positive.", allowablePa > 0, $"{allowablePa:0.###} Pa");
+        ModuleGuards.Require(context, "Length must be positive.", lengthM > 0, input, nameof(input.Length));
+        ModuleGuards.Require(context, "Area must be positive.", areaM2 > 0, input, nameof(input.Area));
+        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusPa > 0, input, nameof(input.YoungsModulus));
+        ModuleGuards.Require(context, "Expansion coefficient must be positive.", alphaPerK > 0, input, nameof(input.ExpansionCoefficient));
+        ModuleGuards.Require(context, "Gap must not be negative.", gapM >= 0, input, nameof(input.Gap));
+        ModuleGuards.Require(context, "Restraint stiffness must be positive when given.", restraintNpm is null || restraintNpm > 0, input, nameof(input.RestraintStiffness));
+        ModuleGuards.Require(context, "Allowable stress must be positive.", allowablePa > 0, input, nameof(input.AllowableStress));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference", input.MaterialPin.ToString());

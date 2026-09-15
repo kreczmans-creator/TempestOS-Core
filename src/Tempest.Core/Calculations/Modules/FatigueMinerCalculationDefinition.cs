@@ -89,10 +89,10 @@ public sealed class FatigueMinerCalculationDefinition : ICalculationDefinition<F
         var blocks = input.Blocks ?? [];
 
         ModuleGuards.Require(context, "A material pin or a curve reference must name where the S-N curve comes from.", input.MaterialPin is not null || !string.IsNullOrWhiteSpace(input.CurveReference), "neither");
-        ModuleGuards.Require(context, "Reference stress range must be positive.", referencePa > 0, $"{referencePa:0.###} Pa");
-        ModuleGuards.Require(context, "Reference cycles must be positive.", input.ReferenceCycles > 0, $"{input.ReferenceCycles:0.###}");
-        ModuleGuards.Require(context, "Slope must be positive.", input.Slope > 0, $"{input.Slope:0.###}");
-        ModuleGuards.Require(context, "Endurance limit must be positive when given.", limitPa is null || limitPa > 0, $"{limitPa:0.###} Pa");
+        ModuleGuards.Require(context, "Reference stress range must be positive.", referencePa > 0, input, nameof(input.ReferenceStressRange));
+        ModuleGuards.Require(context, "Reference cycles must be positive.", input.ReferenceCycles > 0, input, nameof(input.ReferenceCycles));
+        ModuleGuards.Require(context, "Slope must be positive.", input.Slope > 0, input, nameof(input.Slope));
+        ModuleGuards.Require(context, "Endurance limit must be positive when given.", limitPa is null || limitPa > 0, input, nameof(input.EnduranceLimit));
         ModuleGuards.Require(context, "At least one load block is required.", blocks.Count >= 1, $"{blocks.Count} block(s)");
 
         for (var i = 0; i < blocks.Count; i++)
