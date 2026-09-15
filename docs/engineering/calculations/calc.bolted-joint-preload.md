@@ -6,6 +6,16 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/BoltedJointPreloadV
 
 ## Method
 
+**In plain terms.** Tightening a bolt stretches it and squeezes the parts
+it clamps, like a soft spring pulling against a stiffer one. When an
+outside load then tries to pull the joint apart, most of that load goes
+into relaxing the squeeze on the parts and only a fraction, set by the
+ratio of the two stiffnesses, adds to the bolt. That is why a
+well-preloaded joint barely feels its working load and why fatigue life
+improves with preload. The joint fails in two ways: the parts separate
+(the squeeze runs out) or the bolt reaches its proof stress. This module
+reports how far the joint is from each.
+
 The joint-diagram method for a preloaded bolted joint in tension, as set
 out in Shigley's *Mechanical Engineering Design* (the chapter on
 non-permanent joints, "tension joints — the external load") and, in its

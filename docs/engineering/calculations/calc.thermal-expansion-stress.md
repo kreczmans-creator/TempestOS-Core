@@ -6,6 +6,14 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/ThermalExpansionStr
 
 ## Method
 
+**In plain terms.** A bar warmed by ΔT wants to grow by α·L·ΔT. If nothing
+stops it, it simply grows and carries no stress. If rigid walls stop it
+completely, the whole growth is pushed back into the bar as compression
+and the stress is E·α·ΔT, independent of the bar's length: 60 K on steel
+gives about 144 MPa, a large figure. A gap lets part of the growth happen
+freely, and an elastic restraint takes some of the movement itself, so the
+stress falls between the two extremes. Cooling reverses every sign.
+
 Linear thermal expansion of a prismatic bar and the axial stress that
 develops when its restraints stop it moving — the compatibility problem
 every mechanics-of-materials text treats under "thermal stress"

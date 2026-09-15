@@ -8,6 +8,16 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/ThickWalledCylinder
 
 ## Method
 
+**In plain terms.** In a thin-walled vessel the hoop stress is taken as
+uniform through the wall. When the wall is thick the stress is not
+uniform: it is highest at the bore and falls towards the outer surface,
+and the pressure itself compresses the inner surface radially. Lamé's
+solution gives the radial and hoop stresses at any radius exactly, as a
+constant plus a term that falls with the square of the radius. This
+module reports them at the two surfaces, combines them with the axial
+stress into von Mises and Tresca values, and shows how far the thin-wall
+estimate falls short.
+
 Lamé's solution for a thick-walled cylinder under internal and external
 pressure (Timoshenko, *Strength of Materials* Part II; Roark's *Formulas
 for Stress and Strain*, thick-walled vessels): radial and hoop stresses

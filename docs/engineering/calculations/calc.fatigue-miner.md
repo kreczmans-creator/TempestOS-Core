@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/FatigueMinerVectors
 
 ## Method
 
+**In plain terms.** Stress cycles far below the yield strength still crack
+a part eventually. The S-N curve says how many cycles a given stress range
+can be endured; on log-log axes it is a straight line, so halving the
+stress range multiplies the life by two to the power of the slope, eight
+times for slope 3. A real loading history is a mix of ranges. Miner's rule
+adds up, block by block, the fraction of life each range uses, and
+predicts failure when the fractions sum to one. Ranges below the endurance
+limit use nothing.
+
 A single-slope stress-life (Basquin) curve through one reference point,
 with an optional constant-amplitude endurance limit, and the linear
 damage summation of Palmgren and Miner over a block-loading spectrum —

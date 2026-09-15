@@ -6,6 +6,16 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/FilletWeldThroatStr
 
 ## Method
 
+**In plain terms.** A fillet weld is a triangle of metal joining two
+surfaces, and the plane through its throat, the shortest distance from the
+root to the face, is where it is weakest. The Eurocode's simplified method
+asks one question: does the resultant force on each unit length of weld,
+whatever its direction, stay below what the throat can carry in shear? The
+weld's strength is the parent material's ultimate strength reduced by √3
+(for shear), by a correlation factor for the steel grade and by a partial
+safety factor. Sizing a weld is then arithmetic: the throat the load
+needs, and the leg length that gives that throat.
+
 The simplified method of EN 1993-1-8 (Eurocode 3, design of joints),
 clause 4.5.3.3: the resultant of all the forces a fillet weld transmits,
 per unit length, must not exceed the weld's design resistance per unit

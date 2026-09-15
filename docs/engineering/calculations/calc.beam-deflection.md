@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/BeamDeflectionVecto
 
 ## Method
 
+**In plain terms.** A beam carries a load by bending. The load makes it
+curve; the curvature stretches one face and squeezes the other, and the
+stress at the faces is the bending moment divided by the section's
+resistance to bending, I over c. How far the beam sags depends on the load,
+the cube of the span, and the product of the material's stiffness E and the
+section's I: doubling the span gives eight times the deflection. This
+module answers the two questions a designer asks of a simple beam: is the
+material overstressed, and does it sag too much?
+
 Euler–Bernoulli beam theory: a linear-elastic prismatic beam whose plane
 sections stay plane, with shear deformation neglected. The four closed-form
 cases are the ones every strength-of-materials text tabulates (for example

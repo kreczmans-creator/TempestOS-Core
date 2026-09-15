@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/ShaftCombinedStress
 
 ## Method
 
+**In plain terms.** A shaft in a machine usually bends and twists at once:
+bending gives a normal stress on the surface, torsion a shear stress, and
+neither alone decides whether it yields. Two failure theories combine
+them. The maximum-shear-stress theory finds the largest shear stress on
+any plane and compares it with half the yield strength; the
+distortion-energy theory forms the von Mises stress and compares it with
+the yield strength. Both give a factor of safety; the module reports both
+and takes the lower.
+
 Static strength of a solid circular shaft carrying a bending moment and a
 torque at the same section: the elastic bending and torsional stresses of
 a round bar, combined by the maximum-shear-stress (Tresca) and the

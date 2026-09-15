@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/BearingRatingLifeVe
 
 ## Method
 
+**In plain terms.** A rolling bearing does not wear out; it fails by
+fatigue of its rolling surfaces after a number of revolutions that varies
+widely from one bearing to the next. ISO 281 therefore states the life
+that 90 % of a batch will reach, the L10 life: the load rating over the
+load, cubed for balls and to the power 10/3 for rollers, in millions of
+revolutions. Halving the load gives eight times the life. Speed converts
+revolutions to hours, and a reliability factor shortens the figure when
+more than 90 % must survive.
+
 The basic rating life of ISO 281 (rolling bearings — dynamic load ratings
 and rating life): the life that 90 % of a group of identical bearings
 reach, as the basic dynamic load rating over the equivalent dynamic load

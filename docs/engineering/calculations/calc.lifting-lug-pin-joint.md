@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/LiftingLugPinJointV
 
 ## Method
 
+**In plain terms.** A lifting lug is a plate with a hole and a pin through
+it, and it can fail in five separate ways: the plate can tear across the
+narrowest section beside the hole, the pin can crush the hole, the plate
+can shear out along two planes from the hole to its edge, the pin can
+shear through, and the pin can bend between the plates that support it.
+Each check is a load divided by an area (or a moment divided by a section
+modulus) compared with what the material allows. The largest of the five
+ratios governs, and it is often the pin in bending rather than the plate.
+
 The classical hand check of a pinned lug — the checks ASME BTH-1
 (*Design of Below-the-Hook Lifting Devices*, the pinned-connection
 provisions of chapter 3) and every lifting-lug design guide perform:

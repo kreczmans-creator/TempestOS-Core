@@ -6,6 +6,17 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/ColumnBucklingVecto
 
 ## Method
 
+**In plain terms.** A slender strut fails not by crushing but by bowing
+sideways at Euler's critical load, which falls with the square of its
+slenderness (length over radius of gyration). A real strut is never
+perfectly straight, so it bows a little from the start and reaches yield
+on its concave face before the Euler load. Perry's formula puts that
+initial bow into the yield condition, and Robertson chose the size of the
+bow to fit tests, giving the strut curves: a stocky strut reaches its
+yield strength, a slender one tends to Euler's value, and the curve
+bridges the two. The Robertson constant selects the curve for the section
+shape.
+
 Euler's elastic critical stress for a pin-ended strut of effective length
 L_E, corrected for initial imperfection by the Perry-Robertson formula in
 the form BS 5950-1:2000 gives in Annex C (the basis of its strut curves,

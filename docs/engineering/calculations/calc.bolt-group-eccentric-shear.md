@@ -6,6 +6,15 @@ Test vectors: `tests/Tempest.Core.Tests/Calculations/Modules/BoltGroupEccentricS
 
 ## Method
 
+**In plain terms.** When a load acts beside a group of bolts rather than
+through its centre, the group must resist both the load and the twist the
+offset creates. The elastic method shares the load equally between the
+bolts, then adds to each a twisting share that grows with its distance
+from the group's centroid and acts at right angles to that distance. The
+bolt furthest from the centroid on the side where the two shares add is
+the one that governs. The picture is a small rigid plate trying to spin
+about its centroid, with every bolt a spring holding it.
+
 The elastic (vector) method for a bolt group loaded in its own plane by a
 force that does not pass through the group's centroid — Shigley's
 *Mechanical Engineering Design*, "shear joints with eccentric loading",
