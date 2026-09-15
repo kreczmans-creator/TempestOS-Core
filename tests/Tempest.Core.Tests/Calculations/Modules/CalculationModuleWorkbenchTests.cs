@@ -170,8 +170,8 @@ public class CalculationModuleWorkbenchTests
 
         Assert.True(comparison.HasChanges);
         var factor = Assert.Single(comparison.Rows, r => r.Section == "Input" && r.Field == "Safety factor");
-        Assert.Contains("1.5", factor.Before, StringComparison.Ordinal);
-        Assert.Contains("2", factor.After, StringComparison.Ordinal);
+        Assert.Equal("1.5", factor.Before);
+        Assert.Equal("2", factor.After);
         var capacity = Assert.Single(comparison.Rows, r => r.Section == "Result" && r.Field == "Allowable shear capacity");
         Assert.NotEqual(capacity.Before, capacity.After);
         Assert.DoesNotContain(comparison.Rows, r => r.Field == "Diameter");
@@ -220,6 +220,23 @@ public class CalculationModuleWorkbenchTests
         Assert.True(rerun.Succeeded, rerun.Outcome.Reason);
         Assert.Contains(MaterialSeed.S355J2, rerun.Run!.Run.ReferencedMaterialIds);
         Assert.Contains(rerun.Run.Run.Results, r => r.Label == "Maximum deflection" && r.Display == "3.96825 mm");
+
+        // A tighter limit recorded onto the same calculation: the comparison
+        // table reads the outcome as words and the utilisation to six figures.
+        var tighter = await session.Workbench.CalculateAsync(
+            Module(BeamDeflectionCalculationDefinition.Id),
+            [
+                new("MaterialPin", RecordId: MaterialSeed.S355J2),
+                new("Support", Choice: nameof(BeamSupport.SimplySupported)), new("Loading", Choice: nameof(BeamLoading.PointLoad)),
+                F("Load", "10", "kN"), F("Span", "2000", "mm"), F("SecondMomentOfArea", "2000000", "mm^4"), F("ExtremeFibreDistance", "50", "mm"), F("DeflectionLimit", "3", "mm"),
+            ],
+            onto: rerun.Run);
+        Assert.True(tighter.Succeeded, tighter.Outcome.Reason);
+
+        var comparison = await session.Workbench.CompareAsync(tighter.Run!);
+        Assert.Contains(comparison.Rows, r => r.Section == "Input" && r.Field == "Deflection limit" && r.Before == "8 mm" && r.After == "3 mm");
+        Assert.Contains(comparison.Rows, r => r.Section == "Result" && r.Field == "Outcome" && r.Before == "Meets criteria" && r.After == "Does not meet criteria");
+        Assert.Contains(comparison.Rows, r => r.Section == "Result" && r.Field == "Deflection utilisation" && r.Before == "0.496032" && r.After == "1.32275");
     }
 
     // ---- The host ----

@@ -120,13 +120,13 @@ public sealed class BeamDeflectionCalculationDefinition : ICalculationDefinition
         var allowablePa = input.AllowableBendingStress.BaseValue;
         var limitM = input.DeflectionLimit.BaseValue;
 
-        ModuleGuards.Require(context, "Load must be positive.", loadN > 0, $"{loadN:0.###} N");
-        ModuleGuards.Require(context, "Span must be positive.", spanM > 0, $"{spanM:0.######} m");
-        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusPa > 0, $"{modulusPa:0.###} Pa");
-        ModuleGuards.Require(context, "Second moment of area must be positive.", secondMomentM4 > 0, $"{secondMomentM4:E3} m^4");
-        ModuleGuards.Require(context, "Extreme fibre distance must be positive.", fibreM > 0, $"{fibreM:0.######} m");
-        ModuleGuards.Require(context, "Allowable bending stress must be positive.", allowablePa > 0, $"{allowablePa:0.###} Pa");
-        ModuleGuards.Require(context, "Deflection limit must be positive.", limitM > 0, $"{limitM:0.######} m");
+        ModuleGuards.Require(context, "Load must be positive.", loadN > 0, input, nameof(input.Load));
+        ModuleGuards.Require(context, "Span must be positive.", spanM > 0, input, nameof(input.Span));
+        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusPa > 0, input, nameof(input.YoungsModulus));
+        ModuleGuards.Require(context, "Second moment of area must be positive.", secondMomentM4 > 0, input, nameof(input.SecondMomentOfArea));
+        ModuleGuards.Require(context, "Extreme fibre distance must be positive.", fibreM > 0, input, nameof(input.ExtremeFibreDistance));
+        ModuleGuards.Require(context, "Allowable bending stress must be positive.", allowablePa > 0, input, nameof(input.AllowableBendingStress));
+        ModuleGuards.Require(context, "Deflection limit must be positive.", limitM > 0, input, nameof(input.DeflectionLimit));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference", input.MaterialPin.ToString());

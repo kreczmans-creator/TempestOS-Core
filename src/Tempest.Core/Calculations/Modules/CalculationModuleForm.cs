@@ -231,7 +231,7 @@ public static class CalculationModuleForm
             when element.TryGetProperty("Value", out var magnitude) && magnitude.ValueKind == System.Text.Json.JsonValueKind.Number
               && element.TryGetProperty("Unit", out var unit) && unit.ValueKind == System.Text.Json.JsonValueKind.Object
               && unit.TryGetProperty("Symbol", out var symbol) && symbol.ValueKind == System.Text.Json.JsonValueKind.String
-            => $"{magnitude.GetDouble().ToString("G6", CultureInfo.InvariantCulture)} {symbol.GetString()}",
+            => $"{EngineeringNumber.Format(magnitude.GetDouble())} {symbol.GetString()}",
         _ => element.ToString(),
     };
 
@@ -267,7 +267,7 @@ public static class CalculationModuleForm
             case bool flag:
                 return flag ? "Yes" : "No";
             case double number:
-                return number.ToString("G6", CultureInfo.InvariantCulture);
+                return EngineeringNumber.Format(number);
             case int count:
                 return count.ToString(CultureInfo.InvariantCulture);
             case string text:
@@ -287,7 +287,7 @@ public static class CalculationModuleForm
             var magnitude = (double)type.GetProperty("Value")!.GetValue(value)!;
             var unit = type.GetProperty("Unit")!.GetValue(value)!;
             var symbol = (string)unit.GetType().GetProperty("Symbol")!.GetValue(unit)!;
-            return $"{magnitude.ToString("G6", CultureInfo.InvariantCulture)} {symbol}";
+            return $"{EngineeringNumber.Format(magnitude)} {symbol}";
         }
 
         if (value is IEnumerable items)

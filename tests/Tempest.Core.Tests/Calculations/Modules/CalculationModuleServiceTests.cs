@@ -93,6 +93,12 @@ public class CalculationModuleServiceTests
         Assert.Equal("Valid", run.ValidationOutcome);
         Assert.Contains(MaterialSeed.S355J2, run.ReferencedMaterialIds);
 
+        // "Every constraint it checked" names what was received in the
+        // form's own unit, never the SI base value.
+        Assert.Contains(run.Checks, c => c.Description == "Young's modulus must be positive." && c.IsSatisfied && c.Detail == "Received 210 GPa.");
+        Assert.Contains(run.Checks, c => c.Description == "Deflection limit must be positive." && c.Detail == "Received 8 mm.");
+        Assert.DoesNotContain(run.Checks, c => (c.Detail ?? string.Empty).EndsWith(" Pa.", StringComparison.Ordinal));
+
         // The record is the source: the seeded 355 MPa yield stands as the
         // allowable, not the 165 MPa typed, and the fill says so.
         var fill = Assert.Single(outcome.Fills);

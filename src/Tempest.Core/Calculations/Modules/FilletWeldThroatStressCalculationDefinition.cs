@@ -107,11 +107,11 @@ public sealed class FilletWeldThroatStressCalculationDefinition
         var ultimateMPa = input.UltimateStrength.ConvertTo(PressureUnits.Megapascal).Value;
 
         ModuleGuards.Require(context, "At least one force component must be non-zero.", parallelN != 0 || transverseN != 0 || normalN != 0, "a zero load");
-        ModuleGuards.Require(context, "Effective length must be positive.", lengthMm > 0, $"{lengthMm:0.###} mm");
-        ModuleGuards.Require(context, "Throat thickness must be positive.", throatMm > 0, $"{throatMm:0.###} mm");
-        ModuleGuards.Require(context, "Ultimate strength must be positive.", ultimateMPa > 0, $"{ultimateMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Correlation factor must be positive.", input.CorrelationFactor > 0, $"{input.CorrelationFactor:0.###}");
-        ModuleGuards.Require(context, "Partial factor must be at least 1.0.", input.PartialFactor >= 1.0, $"{input.PartialFactor:0.###}");
+        ModuleGuards.Require(context, "Effective length must be positive.", lengthMm > 0, input, nameof(input.EffectiveLength));
+        ModuleGuards.Require(context, "Throat thickness must be positive.", throatMm > 0, input, nameof(input.ThroatThickness));
+        ModuleGuards.Require(context, "Ultimate strength must be positive.", ultimateMPa > 0, input, nameof(input.UltimateStrength));
+        ModuleGuards.Require(context, "Correlation factor must be positive.", input.CorrelationFactor > 0, input, nameof(input.CorrelationFactor));
+        ModuleGuards.Require(context, "Partial factor must be at least 1.0.", input.PartialFactor >= 1.0, input, nameof(input.PartialFactor));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference (weaker part)", input.MaterialPin.ToString());

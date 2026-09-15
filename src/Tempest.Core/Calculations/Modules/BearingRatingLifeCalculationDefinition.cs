@@ -108,15 +108,15 @@ public sealed class BearingRatingLifeCalculationDefinition : ICalculationDefinit
         var speedRps = input.Speed.BaseValue;
         var requiredS = input.RequiredLife.BaseValue;
 
-        ModuleGuards.Require(context, "Bearing designation must be named.", !string.IsNullOrWhiteSpace(input.BearingDesignation), $"'{input.BearingDesignation}'");
-        ModuleGuards.Require(context, "Basic dynamic load rating must be positive.", ratingN > 0, $"{ratingN:0.###} N");
-        ModuleGuards.Require(context, "Radial load must not be negative.", radialN >= 0, $"{radialN:0.###} N");
-        ModuleGuards.Require(context, "Axial load must not be negative.", axialN >= 0, $"{axialN:0.###} N");
-        ModuleGuards.Require(context, "Radial factor must not be negative.", input.RadialFactor >= 0, $"{input.RadialFactor:0.###}");
-        ModuleGuards.Require(context, "Axial factor must not be negative.", input.AxialFactor >= 0, $"{input.AxialFactor:0.###}");
-        ModuleGuards.Require(context, "Speed must be positive.", speedRps > 0, $"{speedRps:0.###} r/s");
-        ModuleGuards.Require(context, "Reliability factor must be within (0, 1].", input.ReliabilityFactor > 0 && input.ReliabilityFactor <= 1.0, $"{input.ReliabilityFactor:0.###}");
-        ModuleGuards.Require(context, "Required life must not be negative.", requiredS >= 0, $"{requiredS:0.###} s");
+        ModuleGuards.Require(context, "Bearing designation must be named.", !string.IsNullOrWhiteSpace(input.BearingDesignation), input, nameof(input.BearingDesignation));
+        ModuleGuards.Require(context, "Basic dynamic load rating must be positive.", ratingN > 0, input, nameof(input.BasicDynamicLoadRating));
+        ModuleGuards.Require(context, "Radial load must not be negative.", radialN >= 0, input, nameof(input.RadialLoad));
+        ModuleGuards.Require(context, "Axial load must not be negative.", axialN >= 0, input, nameof(input.AxialLoad));
+        ModuleGuards.Require(context, "Radial factor must not be negative.", input.RadialFactor >= 0, input, nameof(input.RadialFactor));
+        ModuleGuards.Require(context, "Axial factor must not be negative.", input.AxialFactor >= 0, input, nameof(input.AxialFactor));
+        ModuleGuards.Require(context, "Speed must be positive.", speedRps > 0, input, nameof(input.Speed));
+        ModuleGuards.Require(context, "Reliability factor must be within (0, 1].", input.ReliabilityFactor > 0 && input.ReliabilityFactor <= 1.0, input, nameof(input.ReliabilityFactor));
+        ModuleGuards.Require(context, "Required life must not be negative.", requiredS >= 0, input, nameof(input.RequiredLife));
 
         var equivalentN = input.RadialFactor * radialN + input.AxialFactor * axialN;
         ModuleGuards.Require(context, "Equivalent dynamic load must be positive (an unloaded bearing has no finite life to report).", equivalentN > 0, $"{equivalentN:0.###} N");

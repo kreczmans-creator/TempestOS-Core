@@ -354,6 +354,24 @@ public sealed class CalculationInputRetentionAndReadbackTests
     }
 
     [Fact]
+    public async Task CompareAsync_PlainNumbers_ReadToSixSignificantFigures_TrailingZerosTrimmed()
+    {
+        var engine = BuildEngine(out _);
+        var recordA = await engine.ExecuteAsync<SquareInput, SquareResult>(SquareCalculation.Id, new SquareInput(1.5));
+        var recordB = await engine.ExecuteAsync<SquareInput, SquareResult>(SquareCalculation.Id, new SquareInput(1.1111111111));
+
+        var comparison = await engine.CompareAsync<SquareInput, SquareResult>(recordA.Id, recordB.Id);
+
+        var inputDiff = Assert.Single(comparison.InputChanges);
+        Assert.Equal("1.5", inputDiff.OldDisplay);
+        Assert.Equal("1.11111", inputDiff.NewDisplay);
+
+        var resultDiff = Assert.Single(comparison.ResultChanges);
+        Assert.Equal("2.25", resultDiff.OldDisplay);
+        Assert.Equal("1.23457", resultDiff.NewDisplay);
+    }
+
+    [Fact]
     public async Task CompareAsync_SameInput_ReportsNoChanges()
     {
         var engine = BuildEngine(out _);

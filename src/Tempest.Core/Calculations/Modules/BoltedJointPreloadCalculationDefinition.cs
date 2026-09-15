@@ -99,13 +99,13 @@ public sealed class BoltedJointPreloadCalculationDefinition : ICalculationDefini
         var areaM2 = input.TensileStressArea.BaseValue;
         var proofPa = input.ProofStrength.BaseValue;
 
-        ModuleGuards.Require(context, "Fastener grade must be named.", !string.IsNullOrWhiteSpace(input.FastenerGrade), $"'{input.FastenerGrade}'");
-        ModuleGuards.Require(context, "Preload must be positive.", preloadN > 0, $"{preloadN:0.###} N");
-        ModuleGuards.Require(context, "External load must not be negative (compression is outside this method).", externalN >= 0, $"{externalN:0.###} N");
-        ModuleGuards.Require(context, "Bolt stiffness must be positive.", boltStiffness > 0, $"{boltStiffness:0.###} N/m");
-        ModuleGuards.Require(context, "Member stiffness must be positive.", memberStiffness > 0, $"{memberStiffness:0.###} N/m");
-        ModuleGuards.Require(context, "Tensile stress area must be positive.", areaM2 > 0, $"{areaM2:E3} m^2");
-        ModuleGuards.Require(context, "Proof strength must be positive.", proofPa > 0, $"{proofPa:0.###} Pa");
+        ModuleGuards.Require(context, "Fastener grade must be named.", !string.IsNullOrWhiteSpace(input.FastenerGrade), input, nameof(input.FastenerGrade));
+        ModuleGuards.Require(context, "Preload must be positive.", preloadN > 0, input, nameof(input.Preload));
+        ModuleGuards.Require(context, "External load must not be negative (compression is outside this method).", externalN >= 0, input, nameof(input.ExternalLoad));
+        ModuleGuards.Require(context, "Bolt stiffness must be positive.", boltStiffness > 0, input, nameof(input.BoltStiffness));
+        ModuleGuards.Require(context, "Member stiffness must be positive.", memberStiffness > 0, input, nameof(input.MemberStiffness));
+        ModuleGuards.Require(context, "Tensile stress area must be positive.", areaM2 > 0, input, nameof(input.TensileStressArea));
+        ModuleGuards.Require(context, "Proof strength must be positive.", proofPa > 0, input, nameof(input.ProofStrength));
 
         context.RecordIntermediate("Fastener grade", input.FastenerGrade);
         if (input.FastenerPin is { } pin)

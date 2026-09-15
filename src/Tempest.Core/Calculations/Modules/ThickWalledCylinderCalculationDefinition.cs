@@ -110,12 +110,12 @@ public sealed class ThickWalledCylinderCalculationDefinition : ICalculationDefin
         var poMPa = input.ExternalPressure.ConvertTo(PressureUnits.Megapascal).Value;
         var allowableMPa = input.AllowableStress.ConvertTo(PressureUnits.Megapascal).Value;
 
-        ModuleGuards.Require(context, "Inner radius must be positive.", aMm > 0, $"{aMm:0.###} mm");
+        ModuleGuards.Require(context, "Inner radius must be positive.", aMm > 0, input, nameof(input.InnerRadius));
         ModuleGuards.Require(context, "Outer radius must exceed the inner radius.", bMm > aMm, $"outer {bMm:0.###} mm, inner {aMm:0.###} mm");
-        ModuleGuards.Require(context, "Internal pressure must not be negative.", piMPa >= 0, $"{piMPa:0.###} MPa");
-        ModuleGuards.Require(context, "External pressure must not be negative.", poMPa >= 0, $"{poMPa:0.###} MPa");
+        ModuleGuards.Require(context, "Internal pressure must not be negative.", piMPa >= 0, input, nameof(input.InternalPressure));
+        ModuleGuards.Require(context, "External pressure must not be negative.", poMPa >= 0, input, nameof(input.ExternalPressure));
         ModuleGuards.Require(context, "At least one pressure must be non-zero.", piMPa > 0 || poMPa > 0, "no pressure");
-        ModuleGuards.Require(context, "Allowable stress must be positive.", allowableMPa > 0, $"{allowableMPa:0.###} MPa");
+        ModuleGuards.Require(context, "Allowable stress must be positive.", allowableMPa > 0, input, nameof(input.AllowableStress));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference", input.MaterialPin.ToString());

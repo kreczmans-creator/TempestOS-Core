@@ -97,13 +97,13 @@ public sealed class ColumnBucklingCalculationDefinition : ICalculationDefinition
         var yieldMPa = input.YieldStrength.ConvertTo(PressureUnits.Megapascal).Value;
         var loadN = input.AppliedLoad.BaseValue;
 
-        ModuleGuards.Require(context, "Effective length must be positive.", lengthMm > 0, $"{lengthMm:0.###} mm");
-        ModuleGuards.Require(context, "Area must be positive.", areaMm2 > 0, $"{areaMm2:0.###} mm^2");
-        ModuleGuards.Require(context, "Second moment of area must be positive.", secondMomentMm4 > 0, $"{secondMomentMm4:0.###} mm^4");
-        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusMPa > 0, $"{modulusMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Yield strength must be positive.", yieldMPa > 0, $"{yieldMPa:0.###} MPa");
-        ModuleGuards.Require(context, "Robertson constant must be positive.", input.RobertsonConstant > 0, $"{input.RobertsonConstant:0.###}");
-        ModuleGuards.Require(context, "Applied load must not be negative.", loadN >= 0, $"{loadN:0.###} N");
+        ModuleGuards.Require(context, "Effective length must be positive.", lengthMm > 0, input, nameof(input.EffectiveLength));
+        ModuleGuards.Require(context, "Area must be positive.", areaMm2 > 0, input, nameof(input.Area));
+        ModuleGuards.Require(context, "Second moment of area must be positive.", secondMomentMm4 > 0, input, nameof(input.SecondMomentOfArea));
+        ModuleGuards.Require(context, "Young's modulus must be positive.", modulusMPa > 0, input, nameof(input.YoungsModulus));
+        ModuleGuards.Require(context, "Yield strength must be positive.", yieldMPa > 0, input, nameof(input.YieldStrength));
+        ModuleGuards.Require(context, "Robertson constant must be positive.", input.RobertsonConstant > 0, input, nameof(input.RobertsonConstant));
+        ModuleGuards.Require(context, "Applied load must not be negative.", loadN >= 0, input, nameof(input.AppliedLoad));
 
         context.ReferenceMaterial(input.MaterialPin.RecordId);
         context.RecordIntermediate("Material reference", input.MaterialPin.ToString());
