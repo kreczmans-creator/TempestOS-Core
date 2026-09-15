@@ -1,7 +1,11 @@
 using Tempest.Core.Audit;
+using Tempest.Core.BusinessGovernance;
+using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Projects;
+using Tempest.Core.Quotations;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tasks;
 using Tempest.Core.Tests.Plugins;
 using Tempest.Core.Tests.Quotations;
 
@@ -152,6 +156,196 @@ public sealed class ProjectLifecycleServiceTests
 
         await manager.ShutdownAsync();
         await host.DisposeAsync();
+    }
+
+    // ================================================================
+    // `WP 20.10E` (Product Owner finding D18): sign-off is refused while
+    // work is still open against the quote, unless a change order carries
+    // it.
+    // ================================================================
+
+    [Fact]
+    public async Task SignOffAsync_RefusedWhileADeliverableIsOpen_NamedInTheMessage_ThenSucceedsOnceItIsCompleted()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "OPEN-DELIVERABLE");
+        var lifecycle = Lifecycle(host);
+        var deliverables = QuotationTestHost.Deliverables(host);
+
+        var deliverable = await deliverables.AddDeliverableAsync(projectId, "Bracket redesign");
+
+        var openWork = await lifecycle.GetOpenWorkAsync(projectId);
+        var item = Assert.Single(openWork);
+        Assert.Equal(deliverable.Id, item.ObjectId);
+        Assert.Equal("Deliverable", item.Kind);
+        Assert.True(item.IsBlocking);
+
+        var refused = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.False(refused.Succeeded);
+        Assert.Equal(ProjectLifecycleRefusal.WorkStillOpen, refused.Refusal);
+        Assert.Contains("Bracket redesign", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("Deliverable", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("change order", refused.Reason, StringComparison.OrdinalIgnoreCase);
+
+        var completion = await deliverables.CompleteAsync(deliverable.Id, projectId, DateOnly.FromDateTime(DateTime.UtcNow));
+        Assert.True(completion.Succeeded, completion.Reason);
+
+        Assert.Empty(await lifecycle.GetOpenWorkAsync(projectId));
+
+        var signedOff = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.True(signedOff.Succeeded, signedOff.Reason);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SignOffAsync_RefusedWhileAManualTaskIsOpen_NamedInTheMessage_ThenSucceedsOnceItIsDone()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "OPEN-TASK");
+        var lifecycle = Lifecycle(host);
+        var tasks = QuotationTestHost.Tasks(host);
+
+        var created = await tasks.CreateAsync("Chase the client for sign-off", projectId, dueDate: null);
+        Assert.True(created.Succeeded, created.Reason);
+
+        var refused = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.False(refused.Succeeded);
+        Assert.Equal(ProjectLifecycleRefusal.WorkStillOpen, refused.Refusal);
+        Assert.Contains("Chase the client for sign-off", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains(ManualTask.CanonicalKind, refused.Reason, StringComparison.Ordinal);
+
+        var completed = await tasks.CompleteAsync(created.Task!.Id);
+        Assert.True(completed.Succeeded, completed.Reason);
+
+        var signedOff = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.True(signedOff.Succeeded, signedOff.Reason);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SignOffAsync_RefusedWhileACalculationIsIncomplete_NamedInTheMessage_ThenSucceedsOnceItIsComplete()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "OPEN-CALC");
+        var lifecycle = Lifecycle(host);
+        var domain = QuotationTestHost.Domain(host);
+
+        var calculation = await CreateCalculationAsync(domain, projectId, "Impeller stress check");
+
+        var refused = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.False(refused.Succeeded);
+        Assert.Equal(ProjectLifecycleRefusal.WorkStillOpen, refused.Refusal);
+        Assert.Contains("Impeller stress check", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("Calculation", refused.Reason, StringComparison.Ordinal);
+
+        await calculation.MarkCompletedAsync(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var signedOff = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.True(signedOff.Succeeded, signedOff.Reason);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SignOffAsync_AChangeOrderCarryingTheOpenDeliverable_LiftsTheRefusal_WhileStillDraft()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "CO-CARRIES");
+        var lifecycle = Lifecycle(host);
+        var deliverables = QuotationTestHost.Deliverables(host);
+        var quotations = QuotationTestHost.Quotations(host);
+
+        var deliverable = await deliverables.AddDeliverableAsync(projectId, "Extra site survey");
+
+        var refused = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.Equal(ProjectLifecycleRefusal.WorkStillOpen, refused.Refusal);
+
+        var changeOrder = await quotations.CreateAsync(projectId, kind: QuotationKind.ChangeOrder);
+        Assert.True(changeOrder.Succeeded, changeOrder.Reason);
+        Assert.StartsWith("CO-", changeOrder.Quotation!.Reference, StringComparison.Ordinal);
+
+        var lineAdded = await quotations.AddLineAsync(
+            changeOrder.Quotation.Id, "Extra site survey — additional scope", null, null, new Money(500m, CurrencyCode.Gbp),
+            carriedDeliverableId: deliverable.Id);
+        Assert.True(lineAdded.Succeeded, lineAdded.Reason);
+
+        // Still Draft — carrying starts the moment the change order exists (`WP 20.10E` scope item 3: "Draft or later, not Declined").
+        var openWork = await lifecycle.GetOpenWorkAsync(projectId);
+        var item = Assert.Single(openWork);
+        Assert.Equal(changeOrder.Quotation.Reference, item.CarriedByReference);
+        Assert.False(item.IsBlocking);
+
+        var signedOff = await lifecycle.SignOffAsync(projectId, "Delivered, remaining scope carried by change order.");
+        Assert.True(signedOff.Succeeded, signedOff.Reason);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task SignOffAsync_ADeclinedChangeOrder_DoesNotLiftTheRefusal()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "CO-DECLINED");
+        var lifecycle = Lifecycle(host);
+        var deliverables = QuotationTestHost.Deliverables(host);
+        var quotations = QuotationTestHost.Quotations(host);
+
+        var deliverable = await deliverables.AddDeliverableAsync(projectId, "Extra structural check");
+
+        var changeOrder = await quotations.CreateAsync(projectId, kind: QuotationKind.ChangeOrder);
+        var lineAdded = await quotations.AddLineAsync(
+            changeOrder.Quotation!.Id, "Extra structural check — additional scope", null, null, new Money(400m, CurrencyCode.Gbp),
+            carriedDeliverableId: deliverable.Id);
+        Assert.True(lineAdded.Succeeded, lineAdded.Reason);
+
+        Assert.True((await quotations.SendAsync(changeOrder.Quotation.Id)).Succeeded);
+        var declined = await quotations.DeclineAsync(changeOrder.Quotation.Id);
+        Assert.True(declined.Succeeded, declined.Reason);
+
+        var openWork = await lifecycle.GetOpenWorkAsync(projectId);
+        var item = Assert.Single(openWork);
+        Assert.Null(item.CarriedByReference);
+        Assert.True(item.IsBlocking);
+
+        var refused = await lifecycle.SignOffAsync(projectId, "Delivered.");
+        Assert.False(refused.Succeeded);
+        Assert.Equal(ProjectLifecycleRefusal.WorkStillOpen, refused.Refusal);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    private static async Task<Calculation> CreateCalculationAsync(EngineeringDomainContext domain, Guid projectId, string title)
+    {
+        var factory = new EngineeringObjectFactory<Calculation>(
+            "Calculation", domain, (doc, rev) => new Calculation(doc, rev, domain, identifier: null, title, EngineeringObjectMetadata.Empty));
+        var created = (Calculation)await factory.CreateAsync($"{title} — for test purposes.");
+
+        if (created is IHasParent hasParent)
+            await hasParent.MoveAsync(projectId);
+
+        return created;
     }
 
     private static IProjectLifecycleService Lifecycle(ITempestHost host) =>

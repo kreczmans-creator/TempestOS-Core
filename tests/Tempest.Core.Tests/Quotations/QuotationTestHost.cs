@@ -13,6 +13,7 @@ using Tempest.Core.Projects;
 using Tempest.Core.Quotations;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
+using Tempest.Core.Tasks;
 
 namespace Tempest.Core.Tests.Quotations;
 
@@ -65,6 +66,14 @@ internal static class QuotationTestHost
 
     public static IQuotationService Quotations(ITempestHost host) =>
         (IQuotationService)host.Services!.GetService(typeof(IQuotationService));
+
+    /// <summary>`WP 20.10E`: <see cref="ITaskService"/>, for a <c>ManualTask</c> fixture in the sign-off open-work tests.</summary>
+    public static ITaskService Tasks(ITempestHost host) =>
+        (ITaskService)host.Services!.GetService(typeof(ITaskService));
+
+    /// <summary>`WP 20.10E`: <see cref="IProjectLifecycleService"/>, for the sign-off open-work tests.</summary>
+    public static IProjectLifecycleService Lifecycle(ITempestHost host) =>
+        (IProjectLifecycleService)host.Services!.GetService(typeof(IProjectLifecycleService));
 
     public static IInvoicingService Invoicing(ITempestHost host) =>
         (IInvoicingService)host.Services!.GetService(typeof(IInvoicingService));
