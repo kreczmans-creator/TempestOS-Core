@@ -83,6 +83,27 @@ public class DimensionTests
     }
 
     [Fact]
+    public void Multiplication_AddsEveryOneOfTheSevenExponentsIndependently()
+    {
+        // Every exponent non-zero and asymmetric between operands, so a
+        // mutation swapping + for - on any single component (Length,
+        // Time and LuminousIntensity aside — the other four are otherwise
+        // always 0+0, where + and - coincide) is observable.
+        var left = new Dimension(length: 1, mass: 2, time: 3, temperature: 4, electricCurrent: 5, amountOfSubstance: 6, luminousIntensity: 7);
+        var right = new Dimension(length: 10, mass: 20, time: 30, temperature: 40, electricCurrent: 50, amountOfSubstance: 60, luminousIntensity: 70);
+
+        var product = left * right;
+
+        Assert.Equal(11, product.Length);
+        Assert.Equal(22, product.Mass);
+        Assert.Equal(33, product.Time);
+        Assert.Equal(44, product.Temperature);
+        Assert.Equal(55, product.ElectricCurrent);
+        Assert.Equal(66, product.AmountOfSubstance);
+        Assert.Equal(77, product.LuminousIntensity);
+    }
+
+    [Fact]
     public void Multiplication_ByDimensionless_IsUnchanged()
     {
         var length = Dimensions.Length;
@@ -110,6 +131,26 @@ public class DimensionTests
         Assert.Equal(1, velocity.Length);
         Assert.Equal(-1, velocity.Time);
         Assert.Equal(0, velocity.Mass);
+    }
+
+    [Fact]
+    public void Division_SubtractsEveryOneOfTheSevenExponentsIndependently()
+    {
+        // Same reasoning as the multiplication equivalent above: every
+        // exponent non-zero and asymmetric, so a mutation swapping - for +
+        // on any single component is observable.
+        var left = new Dimension(length: 10, mass: 20, time: 30, temperature: 40, electricCurrent: 50, amountOfSubstance: 60, luminousIntensity: 70);
+        var right = new Dimension(length: 1, mass: 2, time: 3, temperature: 4, electricCurrent: 5, amountOfSubstance: 6, luminousIntensity: 7);
+
+        var quotient = left / right;
+
+        Assert.Equal(9, quotient.Length);
+        Assert.Equal(18, quotient.Mass);
+        Assert.Equal(27, quotient.Time);
+        Assert.Equal(36, quotient.Temperature);
+        Assert.Equal(45, quotient.ElectricCurrent);
+        Assert.Equal(54, quotient.AmountOfSubstance);
+        Assert.Equal(63, quotient.LuminousIntensity);
     }
 
     [Fact]

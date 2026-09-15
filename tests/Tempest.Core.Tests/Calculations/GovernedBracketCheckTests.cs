@@ -629,7 +629,11 @@ public class GovernedBracketCheckTests
         {
             var service = new GovernedBracketCheckService(Materials(host), Engine(host));
 
-            await Assert.ThrowsAsync<ArgumentException>(() => service.CheckAsync(Request("   ")));
+            // ParamName distinguishes the explicit guard from a coincidental
+            // ArgumentException a downstream lookup on a blank id might also
+            // throw for an entirely different reason.
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() => service.CheckAsync(Request("   ")));
+            Assert.Equal("request.MaterialRecordId", exception.ParamName);
         });
     }
 

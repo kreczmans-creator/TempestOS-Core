@@ -324,9 +324,11 @@ public class BracketSectionCheckTests
 
         Assert.Equal("Bracket Section Check", metadata.Name);
         Assert.Equal("Structural", metadata.Category);
+        Assert.Contains("First-order direct stress and mass check on a bracket's minimum section", metadata.Description, StringComparison.Ordinal);
         Assert.Contains("sigma = F / A", metadata.Description, StringComparison.Ordinal);
         Assert.Contains("margin = (allowable / sigma) - 1", metadata.Description, StringComparison.Ordinal);
         Assert.Contains("mass = density x area x length", metadata.Description, StringComparison.Ordinal);
+        Assert.Contains("Meets criteria when margin >= 0 and mass <= limit", metadata.Description, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -352,7 +354,9 @@ public class BracketSectionCheckTests
         Assert.Contains(justifications, j => j?.Contains("bending or fatigue case", StringComparison.Ordinal) == true);
         Assert.Contains(justifications, j => j?.Contains("it divides by the area", StringComparison.Ordinal) == true);
         Assert.Contains(justifications, j => j?.Contains("specification minima", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("not measured properties of a particular bar", StringComparison.Ordinal) == true);
         Assert.Contains(justifications, j => j?.Contains("tapered or featured part", StringComparison.Ordinal) == true);
+        Assert.Contains(justifications, j => j?.Contains("not failed by unit-conversion rounding", StringComparison.Ordinal) == true);
         Assert.Contains(justifications, j => j?.Contains("precision any material property", StringComparison.Ordinal) == true);
     }
 
@@ -374,14 +378,47 @@ public class BracketSectionCheckTests
 
     // ---- The exact figure in the refusal message, not only the constraint name ----
 
-    [Fact]
-    public void InvalidInput_MessageStatesTheReceivedValue_NotOnlyTheConstraintName()
+    [Theory]
+    [InlineData(0.0, 60.0, 150.0, 260.0, 2700.0, 0.05, "Received 0 N")]
+    [InlineData(12_000.0, 0.0, 150.0, 260.0, 2700.0, 0.05, "Received 0 m2")]
+    [InlineData(12_000.0, 60.0, 0.0, 260.0, 2700.0, 0.05, "Received 0 m")]
+    [InlineData(12_000.0, 60.0, 150.0, 0.0, 2700.0, 0.05, "Received 0 Pa")]
+    [InlineData(12_000.0, 60.0, 150.0, 260.0, 0.0, 0.05, "Received 0 kg/m3")]
+    [InlineData(12_000.0, 60.0, 150.0, 260.0, 2700.0, 0.0, "Received 0 kg")]
+    public void InvalidInput_MessageStatesTheReceivedValue_NotOnlyTheConstraintName(
+        double load, double area, double length, double allowable, double density, double massLimit, string expectedFragment)
     {
-        var input = Nominal(loadNewtons: 0.0);
+        var input = Nominal(
+            loadNewtons: load,
+            areaSquareMillimetres: area,
+            lengthMillimetres: length,
+            allowableMegapascals: allowable,
+            densityKilogramsPerCubicMetre: density,
+            massLimitKilograms: massLimit);
 
         var refused = Assert.Throws<CalculationInputInvalidException>(() => Run(input));
 
-        Assert.Contains("Received 0 N", refused.Message, StringComparison.Ordinal);
+        Assert.Contains(expectedFragment, refused.Message, StringComparison.Ordinal);
+    }
+
+    // ---- Every Require() call records its own constraint check with the
+    //      received value, whether satisfied or not — not only the one
+    //      that ultimately fails and throws. ----
+
+    [Fact]
+    public void EveryRequireCall_RecordsAConstraintCheck_WithTheReceivedValueInItsDetail()
+    {
+        var context = new CalculationContext();
+        new BracketSectionCheckCalculationDefinition().Calculate(Nominal(), context);
+
+        var loadCheck = context.ConstraintChecks.Single(c => c.Description == "Applied load must be positive.");
+        Assert.Contains("Received 12000 N", loadCheck.Detail!, StringComparison.Ordinal);
+
+        var areaCheck = context.ConstraintChecks.Single(c => c.Description == "Section area must be positive.");
+        Assert.Contains("Received 0.00006 m2", areaCheck.Detail!, StringComparison.Ordinal);
+
+        var massLimitCheck = context.ConstraintChecks.Single(c => c.Description == "Mass limit must be positive.");
+        Assert.Contains("Received 0.05 kg", massLimitCheck.Detail!, StringComparison.Ordinal);
     }
 
     // ---- Every intermediate the calculation records about itself ----

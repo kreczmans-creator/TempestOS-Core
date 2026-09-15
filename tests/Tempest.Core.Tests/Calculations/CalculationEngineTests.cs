@@ -121,6 +121,21 @@ public class CalculationEngineTests
         Assert.Throws<ArgumentNullException>(() => engine.RegisterDefinition<double, double>(null!));
     }
 
+    private sealed class BlankCalculationIdCalculation : ICalculationDefinition<double, double>
+    {
+        public string CalculationId => "   ";
+        public CalculationMetadata Metadata { get; } = new("Blank Id", null, null, [], []);
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default) => input;
+    }
+
+    [Fact]
+    public void RegisterDefinition_BlankCalculationId_ThrowsArgumentException()
+    {
+        var engine = BuildEngine(out _, out _);
+
+        Assert.Throws<ArgumentException>(() => engine.RegisterDefinition(new BlankCalculationIdCalculation()));
+    }
+
     // ----------------------------------------------------------------
     // ExecuteAsync — round-trip / dispatch
     // ----------------------------------------------------------------

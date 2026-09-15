@@ -212,12 +212,13 @@ public class QuantityTests
     }
 
     [Fact]
-    public void Addition_LeftNonAffine_RightAffine_Throws()
+    public void Addition_LeftNonAffine_RightAffine_Throws_WithAMessageAboutBeingAdded()
     {
         var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
         var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
 
-        Assert.Throws<IncompatibleUnitsException>(() => kelvin + celsius);
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => kelvin + celsius);
+        Assert.Contains("added", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -231,12 +232,13 @@ public class QuantityTests
     }
 
     [Fact]
-    public void Subtraction_LeftNonAffine_RightAffine_Throws()
+    public void Subtraction_LeftNonAffine_RightAffine_Throws_WithAMessageAboutBeingSubtracted()
     {
         var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
         var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
 
-        Assert.Throws<IncompatibleUnitsException>(() => kelvin - celsius);
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => kelvin - celsius);
+        Assert.Contains("subtracted", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -244,11 +246,13 @@ public class QuantityTests
     {
         // The `left.Unit == right.Unit` branch of ValueInLeftUnit is only
         // distinguishable from the general FromBase(ToBase(...)) round trip
-        // against a factor that does not divide evenly.
+        // against a factor/value combination where that round trip is not
+        // bit-exact — verified empirically (7.0 through the 0.3048 Foot
+        // factor loses a ulp; smaller integers do not).
         var a = new Quantity<Length>(1.0, LengthUnits.Foot);
-        var b = new Quantity<Length>(2.0, LengthUnits.Foot);
+        var b = new Quantity<Length>(7.0, LengthUnits.Foot);
 
-        Assert.Equal(3.0, (a + b).Value); // bit-exact
+        Assert.Equal(8.0, (a + b).Value); // bit-exact
     }
 
     // ----------------------------------------------------------------

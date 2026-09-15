@@ -377,6 +377,99 @@ public class BracketEngineeringDemonstrationTests
         Assert.Equal(VerificationStanding.Passed, artefact.Definition.Result!.Standing);
     }
 
+    // ---- Agrees()'s own scale: the LARGER of the two magnitudes, not the
+    //      smaller — a near-zero independent figure must not pull a
+    //      genuinely-different, normal-scale calculated one into the
+    //      near-zero absolute fallback. ----
+
+    [Fact]
+    public async Task WhenOnlyTheIndependentFigureIsNearZero_TheComparisonStillUsesTheCalculatedFiguresScale()
+    {
+        var harness = new Harness();
+        await harness.PrepareAsync();
+
+        // 260 MPa (the governed 6082-T6 record's own allowable, fixed by
+        // the seed data) divided by an applied stress a hair below it
+        // gives a margin of a few hundred parts per billion — not near
+        // zero by the 1e-12 threshold, but small.
+        const double allowablePascals = 260_000_000.0;
+        var appliedPascals = allowablePascals / 1.0000002;
+
+        var request = BracketRequest() with
+        {
+            AppliedLoad = new Quantity<Force>(appliedPascals, ForceUnits.Newton),
+            SectionArea = new Quantity<Area>(1.0, AreaUnits.SquareMetre),
+        };
+
+        var check = await harness.Check.CheckAsync(request);
+        var calculatedMargin = check.Result!.StressMargin;
+        Assert.True(Math.Abs(calculatedMargin) is > 1e-9 and < 1e-3, $"Test setup: margin was {calculatedMargin}.");
+
+        // The independent figure is exactly zero — near zero by the
+        // threshold — but the calculated one is not, so the scale Agrees()
+        // compares against must be the calculated figure's own magnitude,
+        // not zero. Using the smaller of the two (zero) would wrongly pull
+        // this into the absolute fallback and call a genuine, order-of-
+        // magnitude relative disagreement an agreement.
+        // The mass side must agree independently of the margin side under
+        // test here, so it is read back from the same result rather than
+        // reused from the nominal scenario's own unrelated figure (the
+        // 1 m2 section above gives a very different mass).
+        var agreeingMass = check.Result.EstimatedMass.ConvertTo(MassUnits.Kilogram).Value;
+
+        var artefact = await harness.Records.RecordVerificationAsync(
+            EngineeringAssetSeed.VerificationRecordId,
+            check,
+            new IndependentCheck("Hand calculation: independently, the margin rounds to zero.", 0.0, new Quantity<Mass>(agreeingMass, MassUnits.Kilogram)),
+            CheckerId,
+            new DateOnly(2026, 9, 7));
+
+        Assert.Equal(VerificationStanding.Failed, artefact.Definition.Result!.Standing);
+    }
+
+    // ---- Agrees()'s own relative comparison at normal scale must not be
+    //      rejected by an absolute one — the near-zero fallback is for
+    //      near-zero figures only. ----
+
+    [Fact]
+    public async Task ARelativeAgreement_AtNormalScale_IsNotRejectedByAnAbsoluteComparison()
+    {
+        var harness = new Harness();
+        await harness.PrepareAsync();
+
+        // Applied stress a thousandth of the allowable gives a margin
+        // around 999 — comfortably "normal scale" (nowhere near the
+        // 1e-12 near-zero threshold).
+        const double allowablePascals = 260_000_000.0;
+        var appliedPascals = allowablePascals / 1000.0;
+
+        var request = BracketRequest() with
+        {
+            AppliedLoad = new Quantity<Force>(appliedPascals, ForceUnits.Newton),
+            SectionArea = new Quantity<Area>(1.0, AreaUnits.SquareMetre),
+        };
+
+        var check = await harness.Check.CheckAsync(request);
+        var calculatedMargin = check.Result!.StressMargin;
+        Assert.True(calculatedMargin > 100.0, $"Test setup: margin was {calculatedMargin}.");
+
+        // 0.0005 off a margin of about 999 is roughly five parts per
+        // million relative — inside the default 1e-6 relative tolerance —
+        // but an absolute comparison against that same 1e-6 tolerance
+        // would reject it outright (0.0005 is nowhere near that small).
+        var independentMargin = calculatedMargin + 0.0005;
+        var agreeingMass = check.Result.EstimatedMass.ConvertTo(MassUnits.Kilogram).Value;
+
+        var artefact = await harness.Records.RecordVerificationAsync(
+            EngineeringAssetSeed.VerificationRecordId,
+            check,
+            new IndependentCheck("Hand calculation, agreeing to five significant figures.", independentMargin, new Quantity<Mass>(agreeingMass, MassUnits.Kilogram)),
+            CheckerId,
+            new DateOnly(2026, 9, 7));
+
+        Assert.Equal(VerificationStanding.Passed, artefact.Definition.Result!.Standing);
+    }
+
     // ---- Not-found — refusing to write into a record that does not exist ----
 
     [Fact]

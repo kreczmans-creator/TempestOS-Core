@@ -117,13 +117,14 @@ public class QuantityVectorTests
     public void Addition_SameNonUnityUnit_TakesTheFastPath_NoRoundTripRoundingApplied()
     {
         // Exercises the `left.Unit == right.Unit` branch of the internal
-        // ternary against a factor that does not divide evenly, so a
-        // conversion round trip (ToBase then FromBase) would show up as a
-        // bit-level difference from the direct fast-path sum.
+        // ternary against a factor/value combination where the general
+        // FromBase(ToBase(...)) round trip is not bit-exact — verified
+        // empirically (7.0 through the 0.3048 Foot factor loses a ulp;
+        // smaller integers do not).
         var a = new Quantity(1.0, LengthUnits.Foot.UnitDefinition);
-        var b = new Quantity(2.0, LengthUnits.Foot.UnitDefinition);
+        var b = new Quantity(7.0, LengthUnits.Foot.UnitDefinition);
 
-        Assert.Equal(3.0, (a + b).Value); // bit-exact
+        Assert.Equal(8.0, (a + b).Value); // bit-exact
     }
 
     [Fact]
@@ -167,6 +168,19 @@ public class QuantityVectorTests
 
         Assert.Throws<IncompatibleUnitsException>(() => length + mass);
         Assert.Throws<IncompatibleUnitsException>(() => length - mass);
+    }
+
+    [Fact]
+    public void RequireSameDimension_Message_NamesBothDimensions()
+    {
+        var length = new Quantity(1.0, LengthUnits.Metre.UnitDefinition);
+        var mass = new Quantity(1.0, MassUnits.Kilogram.UnitDefinition);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => length.ConvertTo(MassUnits.Kilogram.UnitDefinition));
+
+        Assert.Contains("not the same physical dimension", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(length.Unit.Dimension.ToString(), exception.Message, StringComparison.Ordinal);
+        Assert.Contains(mass.Unit.Dimension.ToString(), exception.Message, StringComparison.Ordinal);
     }
 
     // ----------------------------------------------------------------
@@ -286,42 +300,53 @@ public class QuantityVectorTests
     [Fact]
     public void Multiplication_ComposesUnitSymbolAndDimensionAndFactor()
     {
+        // Both operand factors are non-unity (Kilonewton 1000, Foot
+        // 0.3048) so a mutation swapping * for / in the factor composition
+        // is observable: with a unity factor on either side, * and /
+        // coincide and the mutation would go unnoticed.
         var force = new Quantity(6.0, ForceUnits.Kilonewton.UnitDefinition);
-        var length = new Quantity(2.0, LengthUnits.Metre.UnitDefinition);
+        var length = new Quantity(2.0, LengthUnits.Foot.UnitDefinition);
 
         var torque = force * length;
 
         Assert.Equal(12.0, torque.Value);
-        Assert.Equal("kN.m", torque.Unit.Symbol);
+        Assert.Equal("kN.ft", torque.Unit.Symbol);
         Assert.Equal(Dimensions.Force * Dimensions.Length, torque.Unit.Dimension);
         Assert.Equal(
-            ForceUnits.Kilonewton.UnitDefinition.ToBaseFactor * LengthUnits.Metre.UnitDefinition.ToBaseFactor,
+            ForceUnits.Kilonewton.UnitDefinition.ToBaseFactor * LengthUnits.Foot.UnitDefinition.ToBaseFactor,
             torque.Unit.ToBaseFactor);
     }
 
     [Fact]
-    public void Multiplication_EitherOperandAffine_Throws()
+    public void Multiplication_EitherOperandAffine_Throws_WithAMessageAboutBeingMultiplied()
     {
         var temperature = new Quantity(20.0, TemperatureUnits.DegreeCelsius.UnitDefinition);
         var length = new Quantity(2.0, LengthUnits.Metre.UnitDefinition);
 
-        Assert.Throws<IncompatibleUnitsException>(() => temperature * length);
-        Assert.Throws<IncompatibleUnitsException>(() => length * temperature);
+        var leftException = Assert.Throws<IncompatibleUnitsException>(() => temperature * length);
+        Assert.Contains("multiplied", leftException.Message, StringComparison.Ordinal);
+
+        var rightException = Assert.Throws<IncompatibleUnitsException>(() => length * temperature);
+        Assert.Contains("multiplied", rightException.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Division_ForceOverArea_DiscoversPressureAtRunTime()
     {
-        var force = new Quantity(200.0, ForceUnits.Newton.UnitDefinition);
-        var area = new Quantity(2.0, AreaUnits.SquareMetre.UnitDefinition);
+        // Both operand factors are non-unity (Kilonewton 1000, square
+        // millimetre 1e-6) so a mutation swapping / for * in the factor
+        // composition is observable — a unity factor on either side would
+        // make * and / coincide.
+        var force = new Quantity(200.0, ForceUnits.Kilonewton.UnitDefinition);
+        var area = new Quantity(2.0, AreaUnits.SquareMillimetre.UnitDefinition);
 
         var pressure = force / area;
 
         Assert.Equal(100.0, pressure.Value);
-        Assert.Equal("N/m²", pressure.Unit.Symbol);
+        Assert.Equal("kN/mm²", pressure.Unit.Symbol);
         Assert.Equal(Dimensions.Pressure, pressure.Unit.Dimension);
         Assert.Equal(
-            ForceUnits.Newton.UnitDefinition.ToBaseFactor / AreaUnits.SquareMetre.UnitDefinition.ToBaseFactor,
+            ForceUnits.Kilonewton.UnitDefinition.ToBaseFactor / AreaUnits.SquareMillimetre.UnitDefinition.ToBaseFactor,
             pressure.Unit.ToBaseFactor);
     }
 
@@ -339,22 +364,29 @@ public class QuantityVectorTests
     }
 
     [Fact]
-    public void Division_EitherOperandAffine_Throws()
+    public void Division_EitherOperandAffine_Throws_WithAMessageAboutBeingDivided()
     {
         var temperature = new Quantity(20.0, TemperatureUnits.DegreeCelsius.UnitDefinition);
         var length = new Quantity(2.0, LengthUnits.Metre.UnitDefinition);
 
-        Assert.Throws<IncompatibleUnitsException>(() => temperature / length);
-        Assert.Throws<IncompatibleUnitsException>(() => length / temperature);
+        var leftException = Assert.Throws<IncompatibleUnitsException>(() => temperature / length);
+        Assert.Contains("divided", leftException.Message, StringComparison.Ordinal);
+
+        var rightException = Assert.Throws<IncompatibleUnitsException>(() => length / temperature);
+        Assert.Contains("divided", rightException.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void Division_ByZeroValue_ThrowsArgumentOutOfRangeException()
+    public void Division_ByZeroValue_ThrowsArgumentOutOfRangeException_WithAMessageNamingTheReason()
     {
         var force = new Quantity(10.0, ForceUnits.Newton.UnitDefinition);
         var zero = new Quantity(0.0, LengthUnits.Metre.UnitDefinition);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => force / zero);
+        // Distinguishes the explicit zero-divisor guard from the
+        // constructor's own non-finite-value guard, which an infinite
+        // quotient would otherwise also trip with a different message.
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => force / zero);
+        Assert.Contains("whose own value is zero", exception.Message, StringComparison.Ordinal);
     }
 
     // ----------------------------------------------------------------
