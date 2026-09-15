@@ -135,6 +135,7 @@ public interface IEditorSection
 /// <param name="OwnerSupport">Non-<see langword="null"/> only when the Owner drop-down's own People catalogue/Add-person prompt are wired.</param>
 /// <param name="RefreshAsync">Re-reads the real object and reloads every section — a section calls this after every successful write, exactly as the pre-split shell's own <c>Populate*</c> methods called <c>ObjectEditorView.RefreshAsync</c> directly.</param>
 /// <param name="ReportAction">Reports one action's own outcome — a section calls this exactly where its own pre-split method invoked <c>ActionCompleted</c> directly.</param>
+/// <param name="GetOpenAttachmentHandler">Reads the shell's own current <c>OpenAttachmentRequested</c> subscriber, live — the Attachments section's own row-building (does this Kind's attachments even offer "Open"?) and its own row click both read this fresh, mirroring the pre-split shell's own direct field read.</param>
 public sealed record EditorSectionContext(
     Guid ObjectId,
     string ObjectKind,
@@ -150,4 +151,5 @@ public sealed record EditorSectionContext(
     ProjectCommercialEditorSupport? CommercialSupport,
     RequirementOwnerEditorSupport? OwnerSupport,
     Func<Task> RefreshAsync,
-    Action<string, ActionOutcome> ReportAction);
+    Action<string, ActionOutcome> ReportAction,
+    Func<Action<IHasAttachments, IAttachment>?> GetOpenAttachmentHandler);

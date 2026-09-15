@@ -255,31 +255,9 @@ public sealed class ObjectEditorView : UserControl
 
     private readonly VerificationResultSection _verificationResultSection = new();
 
-    private readonly StackPanel _attachmentsListPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly TextBox _attachmentFileNameBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _attachmentContentTypeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _attachmentSizeBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _attachmentAddButton = new() { Content = "Attach", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _addFileViaPickerButton = new() { Content = "Browse…", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly TextBlock _attachmentStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _attachmentsSection = null!;
-
-    // `WP 19.4B` — the drop target every `IHasAttachments` Kind's
-    // Attachments section now offers, alongside the un-gated
-    // `_addFileViaPickerButton` (`Browse…`) it hosts inline: "Drop a file
-    // here, or Browse…". `_attachmentReferenceExpander` demotes the old
-    // typed-metadata mini-form (File Name/Content Type/Size/Attach) below
-    // the drop zone, collapsed by default — the honest path for an
-    // attachment whose file lives elsewhere, kept exactly as it validated
-    // before.
-    private readonly TextBlock _attachmentsDropZoneLabel = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, VerticalAlignment = VerticalAlignment.Center };
-    private readonly Border _attachmentsDropZone = new()
-    {
-        BorderThickness = new Thickness(1.5),
-        CornerRadius = new CornerRadius(DesignTokens.PanelCornerRadius),
-        Padding = new Thickness(DesignTokens.SpaceMd),
-    };
-    private Expander _attachmentReferenceExpander = null!;
+    // `WP 21.1B`: the Attachments section now lives in its own file under
+    // Editors/Sections/.
+    private readonly AttachmentsSection _attachmentsSection = new();
 
     // `WP 18.2A` — declaration-per-Kind: the Description (read-only
     // mechanical metadata) and Where-used sections Part/Assembly/Component
@@ -317,11 +295,6 @@ public sealed class ObjectEditorView : UserControl
     private bool _suppressDirtyTracking;
 
     private Action<IHasAttachments, IAttachment>? _openAttachmentRequested;
-
-    // The object the sections were last built from, so the attachment rows
-    // can be rebuilt when OpenAttachmentRequested gains its first
-    // subscriber without going back to the repository for a second read.
-    private IEngineeringObject? _populatedTarget;
 
     /// <summary>Raised whenever <see cref="IsDirty"/> changes.</summary>
     public event Action<bool>? DirtyChanged;
@@ -418,8 +391,12 @@ public sealed class ObjectEditorView : UserControl
             var hadNone = _openAttachmentRequested is null;
             _openAttachmentRequested += value;
 
-            if (hadNone && _openAttachmentRequested is not null && _populatedTarget is not null)
-                _ = PopulateAttachmentsSafelyAsync(_populatedTarget);
+            // `WP 21.1B`: the "was anything already populated" guard now
+            // lives inside AttachmentsSection.ReloadIfPopulatedAsync itself
+            // (its own _lastSubject, the section's local mirror of the
+            // pre-split shell's own _populatedTarget field).
+            if (hadNone && _openAttachmentRequested is not null)
+                _ = _attachmentsSection.ReloadIfPopulatedAsync();
         }
 
         remove => _openAttachmentRequested -= value;
@@ -462,7 +439,8 @@ public sealed class ObjectEditorView : UserControl
             _requirementsService, _calculationTemplates, _declarations, _evidenceSupport, _auditQuery,
             _commercialSupport, _ownerSupport,
             RefreshAsync: () => RefreshAsync(),
-            ReportAction: (message, outcome) => ActionCompleted?.Invoke(message, outcome));
+            ReportAction: (message, outcome) => ActionCompleted?.Invoke(message, outcome),
+            GetOpenAttachmentHandler: () => _openAttachmentRequested);
 
         Content = BuildLayout();
 
@@ -474,8 +452,6 @@ public sealed class ObjectEditorView : UserControl
         _readOnlyToggle.Classes.Add(ChromeStyles.Subtle);
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
-        _attachmentAddButton.Classes.Add(ChromeStyles.Primary);
-        _addFileViaPickerButton.Classes.Add(ChromeStyles.Primary);
 
         // PropertyChanged, not the TextChanged routed event — fires
         // reliably for every Text value change regardless of source (real
@@ -493,26 +469,9 @@ public sealed class ObjectEditorView : UserControl
         // Execute/Record/Attach actions, each independent of the main
         // Name/Content Save above (a different command, a different
         // buffered-edit lifecycle). `WP 21.1B`: Bill of Materials,
-        // Owner/Priority, Execute, Due and Record Result now wire their
-        // own actions inside their own Build().
-        _attachmentAddButton.Click += async (_, _) => await OnAttachAsync().ConfigureAwait(true);
-        _addFileViaPickerButton.Click += async (_, _) => await OnAddFileViaPickerAsync().ConfigureAwait(true);
-
-        // `WP 19.4B` — the Attachments section's own drop target, mirroring
-        // `EvidenceWorkspaceView`'s identical `SetAllowDrop`/`DragOverEvent`/
-        // `DropEvent` wiring (that class's own remarks explain why the
-        // obsolete `IDataObject`/`GetFiles` API is used narrowly, suppressed
-        // rather than migrated). `DragEnterEvent`/`DragLeaveEvent` add only
-        // the highlight the brief asks for; the accept/reject decision is
-        // still made in `OnAttachmentsDragOver`.
-        DragDrop.SetAllowDrop(_attachmentsDropZone, true);
-        _attachmentsDropZone.AddHandler(DragDrop.DragEnterEvent, OnAttachmentsDragEnter);
-        _attachmentsDropZone.AddHandler(DragDrop.DragOverEvent, OnAttachmentsDragOver);
-        _attachmentsDropZone.AddHandler(DragDrop.DragLeaveEvent, OnAttachmentsDragLeave);
-        _attachmentsDropZone.AddHandler(DragDrop.DropEvent, OnAttachmentsDrop);
-
-        // `WP 21.1B`: the project Commercial section and all five Evidence
-        // sections now wire their own actions inside their own Build().
+        // Owner/Priority, Execute, Due, Record Result, the project
+        // Commercial section, all five Evidence sections and Attachments
+        // now wire their own actions inside their own Build().
     }
 
     /// <summary>Gets whether this editor holds local, buffered edits (Name and/or Content) not yet committed via Save — this Work Package's own genuine, buffered dirty-state (distinct from and unrelated to <see cref="IWorkspaceView.IsDirty"/>, which remains permanently <see langword="false"/>, by design, unchanged — see class remarks).</summary>
@@ -744,39 +703,9 @@ public sealed class ObjectEditorView : UserControl
 
         var verificationResultExpander = _verificationResultSection.Build(_sectionContext);
 
-        var dropZoneContent = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = DesignTokens.SpaceXs,
-            HorizontalAlignment = HorizontalAlignment.Center,
-        };
-        dropZoneContent.Children.Add(_attachmentsDropZoneLabel);
-        dropZoneContent.Children.Add(_addFileViaPickerButton);
-        _attachmentsDropZone.Child = dropZoneContent;
-        Avalonia.Automation.AutomationProperties.SetName(_attachmentsDropZone, "Drop a file here, or Browse…");
-        ThemeReactiveBrush.Bind(_attachmentsDropZone, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
-        ThemeReactiveBrush.Bind(_attachmentsDropZone, Border.BackgroundProperty, BrandPalette.SurfaceBackgroundBrushKey);
-
-        var referencePanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        referencePanel.Children.Add(LabeledRow("File Name", _attachmentFileNameBox));
-        referencePanel.Children.Add(LabeledRow("Content Type", _attachmentContentTypeBox));
-        referencePanel.Children.Add(LabeledRow("Size (bytes)", _attachmentSizeBox));
-        referencePanel.Children.Add(_attachmentAddButton);
-        _attachmentReferenceExpander = new Expander
-        {
-            Header = "Record a reference without the file",
-            IsExpanded = false,
-            Content = referencePanel,
-        };
-
-        var attachmentsPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        attachmentsPanel.Children.Add(_attachmentsListPanel);
-        attachmentsPanel.Children.Add(new Separator());
-        attachmentsPanel.Children.Add(_attachmentsDropZone);
-        attachmentsPanel.Children.Add(_attachmentReferenceExpander);
-        attachmentsPanel.Children.Add(_attachmentStatusMessage);
-        _attachmentsSection = BuildSection("Attachments", attachmentsPanel);
-        _attachmentsSection.IsVisible = false;
+        // `WP 21.1B`: Attachments now lives in its own file under
+        // Editors/Sections/.
+        var attachmentsExpander = _attachmentsSection.Build(_sectionContext);
 
         // `WP 18.2A` — declaration-per-Kind (Part/Assembly/Component): a
         // read-only mechanical-metadata block and the "Where used" facet,
@@ -829,7 +758,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(verificationResultExpander);
         body.Children.Add(evidenceCitationsExpander);
         body.Children.Add(evidenceFiguresExpander);
-        body.Children.Add(_attachmentsSection);
+        body.Children.Add(attachmentsExpander);
         body.Children.Add(whereUsedExpander);
         body.Children.Add(lifecycleExpander);
         body.Children.Add(invoiceExternalExpander);
@@ -863,7 +792,6 @@ public sealed class ObjectEditorView : UserControl
     private async Task PopulateFromAsync(IEngineeringObject target)
     {
         _suppressDirtyTracking = true;
-        _populatedTarget = target;
 
         var identifier = (target as IHasBusinessIdentifier)?.Identifier;
         _identityReadout.Text = identifier is null
@@ -889,7 +817,7 @@ public sealed class ObjectEditorView : UserControl
         await _calculationPointerSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _calculationDueSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _verificationResultSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await PopulateAttachmentsAsync(target).ConfigureAwait(true);
+        await _attachmentsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _descriptionSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _whereUsedSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _commercialSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
@@ -937,12 +865,12 @@ public sealed class ObjectEditorView : UserControl
         _suppressDirtyTracking = true;
 
         // No real IEngineeringObject backs a Requirement (see class
-        // remarks) — the attachment re-population fallback on
-        // OpenAttachmentRequested's first subscriber (this field's own
-        // remarks) has nothing to re-populate from, honestly, since the
-        // Attachments section never applies here (BuildLayout's own
-        // default IsVisible = false, left untouched below).
-        _populatedTarget = null;
+        // remarks) — the Attachments section's own _lastSubject stays
+        // null here (never populated in this path, matching Build()'s own
+        // default IsVisible = false, left untouched below), so
+        // AttachmentsSection.ReloadIfPopulatedAsync has nothing to
+        // re-populate from, honestly, if OpenAttachmentRequested's first
+        // subscriber fires while this editor is showing a Requirement.
 
         // Identity: the requirement's own Identifier/Id/Revision, plus
         // Category (the brief's own fourth named field) — there is no
@@ -1081,332 +1009,27 @@ public sealed class ObjectEditorView : UserControl
         return row;
     }
 
-    /// <summary>Files' own "add via picker" affordance (`WP 18.2A`, §4) — reads real bytes through <see cref="IFilePicker"/> and attaches them directly (<see cref="IHasAttachments.AttachContentAsync"/>), never the metadata-only mini-form below it.</summary>
-    private async Task OnAddFileViaPickerAsync()
-    {
-        if (_evidenceSupport is null || _populatedTarget is not IHasAttachments attachable)
-            return;
-
-        var picked = await _evidenceSupport.FilePicker.PickFilesAsync(
-            new FilePickerRequest("Pick files to attach", AllowMultiple: true)).ConfigureAwait(true);
-
-        if (picked.Count == 0)
-            return;
-
-        foreach (var file in picked)
-        {
-            var content = await file.ReadAsync().ConfigureAwait(true);
-            await attachable.AttachContentAsync(file.Name, file.ContentType, content).ConfigureAwait(true);
-        }
-
-        await RefreshAsync().ConfigureAwait(true);
-        var message = $"Attached {picked.Count} file(s).";
-        _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(true));
-    }
+    /// <summary>
+    /// Delegates to <see cref="AttachmentsSection.AttachFilesAsync"/> —
+    /// kept here, under its exact original name and signature, purely
+    /// because <c>AttachmentsSectionTests</c> calls
+    /// <c>editor.AttachFilesAsync(...)</c> directly as an <c>internal</c>
+    /// member (`InternalsVisibleTo`); see <see cref="Sections.AttachmentsSection"/>'s
+    /// own remarks (`WP 21.1B`).
+    /// </summary>
+    internal Task AttachFilesAsync(IReadOnlyList<string> paths) => _attachmentsSection.AttachFilesAsync(paths);
 
     /// <summary>
-    /// Reads each path's bytes straight off disk and attaches it through
-    /// <see cref="IHasAttachments.AttachContentAsync"/> — the same
-    /// real-bytes path <see cref="OnAddFileViaPickerAsync"/> uses, minus the
-    /// <see cref="IFilePicker"/> indirection a drop does not need (the
-    /// dropped files already name real paths). One attachment per path
-    /// (`WP 19.4B`, Scope §2).
+    /// Delegates to <see cref="AttachmentsSection.LoadAsync"/> — kept here,
+    /// under its exact original name and signature, purely because
+    /// <c>AttachmentsSectionTests.ObjectThatIsNotIHasAttachments_ShowsNoAttachmentsSection</c>
+    /// finds and invokes this by name through reflection (no live Kind
+    /// reachable through the real Repository implements nothing but
+    /// <see cref="IEngineeringObject"/>, so that test drives the gate's own
+    /// negative branch with a bare stand-in instead); see
+    /// <see cref="Sections.AttachmentsSection"/>'s own remarks (`WP 21.1B`).
     /// </summary>
-    /// <remarks>
-    /// Both <see cref="OnAttachmentsDrop"/> and <c>Tempest.Desktop.Tests</c>
-    /// (`InternalsVisibleTo`) call this directly — headless Avalonia cannot
-    /// raise a real OS drag/drop reliably, the identical reasoning
-    /// <c>EvidenceWorkspaceView.CreateFromFilesAsync</c>'s own remarks give
-    /// for the same shape (a real drop handler funnelling into one shared
-    /// method a test can call without a real `DragEventArgs`).
-    /// </remarks>
-    internal async Task AttachFilesAsync(IReadOnlyList<string> paths)
-    {
-        ArgumentNullException.ThrowIfNull(paths);
-
-        if (paths.Count == 0 || _populatedTarget is not IHasAttachments attachable)
-            return;
-
-        foreach (var path in paths)
-        {
-            var fileName = Path.GetFileName(path);
-            var content = await File.ReadAllBytesAsync(path).ConfigureAwait(true);
-            await attachable.AttachContentAsync(fileName, FileContentTypes.ForFileName(fileName), content).ConfigureAwait(true);
-        }
-
-        await RefreshAsync().ConfigureAwait(true);
-        var message = paths.Count == 1 ? $"Attached '{Path.GetFileName(paths[0])}'." : $"Attached {paths.Count} file(s).";
-        _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(true));
-    }
-
-    /// <summary>
-    /// The Attachments section's own drop target (`WP 19.4B`, Scope §2):
-    /// highlights on <c>DragEnter</c>, decides Copy-vs-reject on
-    /// <c>DragOver</c> (files only, mirroring
-    /// <c>EvidenceWorkspaceView.OnListDragOver</c>), un-highlights on
-    /// <c>DragLeave</c>/<c>Drop</c>, and funnels a real drop into
-    /// <see cref="AttachFilesAsync"/> — the same "read real bytes, attach,
-    /// refresh, report" path <see cref="OnAddFileViaPickerAsync"/> already
-    /// established.
-    /// </summary>
-    private void OnAttachmentsDragEnter(object? sender, DragEventArgs e) => SetAttachmentsDropZoneHighlighted(true);
-
-    private void OnAttachmentsDragLeave(object? sender, DragEventArgs e) => SetAttachmentsDropZoneHighlighted(false);
-
-#pragma warning disable CS0618 // 'DragEventArgs.Data' is obsolete — see EvidenceWorkspaceView.OnListDragOver's own identical remark: the old IDataObject API is fully functional, Avalonia only warns, and the typed DataTransfer/DataFormat<T> replacement has no built-in file format.
-    private void OnAttachmentsDragOver(object? sender, DragEventArgs e)
-    {
-        var isFileDrag = e.Data.Contains(DataFormats.Files);
-        e.DragEffects = isFileDrag ? DragDropEffects.Copy : DragDropEffects.None;
-        SetAttachmentsDropZoneHighlighted(isFileDrag);
-    }
-
-    private async void OnAttachmentsDrop(object? sender, DragEventArgs e)
-    {
-        e.DragEffects = DragDropEffects.None;
-        SetAttachmentsDropZoneHighlighted(false);
-
-        var dropped = e.Data.GetFiles()?.OfType<Avalonia.Platform.Storage.IStorageFile>()
-            .Select(f => f.Path.LocalPath).ToList();
-        if (dropped is not { Count: > 0 })
-            return;
-
-        await AttachFilesAsync(dropped).ConfigureAwait(true);
-    }
-#pragma warning restore CS0618
-
-    /// <summary>
-    /// Paints the drop zone's border/background from the accent/hover
-    /// tokens while a file drag is over it, or back to the resting hairline
-    /// tokens otherwise — a one-off resource lookup (not another
-    /// <see cref="ThemeReactiveBrush.Bind"/> registration) since the
-    /// resting state is already theme-reactive from construction and a
-    /// drag interaction is always over a control already attached and
-    /// themed.
-    /// </summary>
-    private void SetAttachmentsDropZoneHighlighted(bool highlighted)
-    {
-        var borderKey = highlighted ? BrandPalette.AccentBrushKey : BrandPalette.HairlineStrongBrushKey;
-        var backgroundKey = highlighted ? BrandPalette.HoverBackgroundBrushKey : BrandPalette.SurfaceBackgroundBrushKey;
-        var variant = _attachmentsDropZone.ActualThemeVariant;
-
-        if (Application.Current?.TryGetResource(borderKey, variant, out var border) == true && border is IBrush borderBrush)
-            _attachmentsDropZone.BorderBrush = borderBrush;
-        if (Application.Current?.TryGetResource(backgroundKey, variant, out var background) == true && background is IBrush backgroundBrush)
-            _attachmentsDropZone.Background = backgroundBrush;
-    }
-
-    /// <summary>
-    /// The Documents Attachments section (`WP 10.7A`) — gated on
-    /// <see cref="IHasAttachments"/>. Lists already-attached metadata via
-    /// the real <see cref="IHasAttachments.GetAttachmentsAsync"/> read;
-    /// the Attach mini-form collects the metadata an attachment carries.
-    ///
-    /// `TD-80`: each attachment now also offers <b>Open</b>, which is the
-    /// entry point to the real viewer. It is offered for every attachment
-    /// rather than only for those with stored content, because "this
-    /// attachment has no content" is something the viewer says clearly and
-    /// a disabled button does not — a greyed-out Open leaves the user
-    /// guessing whether the file is missing, the format is unsupported, or
-    /// the application is broken.
-    /// </summary>
-    /// <summary>
-    /// Runs <see cref="PopulateAttachmentsAsync"/> fire-and-forget, for the
-    /// <see cref="OpenAttachmentRequested"/> accessor's own synchronous
-    /// re-population on first subscriber (`WP 18.1A`) — a failure is
-    /// reported through <see cref="ActionCompleted"/> rather than thrown
-    /// into the void, mirroring <see cref="PopulateInBackground"/>.
-    /// </summary>
-    private async Task PopulateAttachmentsSafelyAsync(IEngineeringObject target)
-    {
-        try
-        {
-            await PopulateAttachmentsAsync(target).ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            ActionCompleted?.Invoke($"Failed to load attachments: {ex.Message}", ActionOutcome.Failed);
-        }
-    }
-
-    private async Task PopulateAttachmentsAsync(IEngineeringObject target)
-    {
-        if (target is not IHasAttachments attachable)
-        {
-            _attachmentsSection.IsVisible = false;
-            return;
-        }
-
-        _attachmentsSection.IsVisible = true;
-        _attachmentsListPanel.Children.Clear();
-
-        // `WP 19.4B`: every `IHasAttachments` Kind gets the drop zone and
-        // Browse — the Evidence-only `Kind` gate this used to carry is
-        // gone; real bytes can be added directly on a Calculation exactly
-        // as they always could on Evidence
-        // (`IHasAttachments.AttachContentAsync` was never Evidence-only,
-        // only this button's own visibility was). `_evidenceSupport` being
-        // `null` (no `IFilePicker` wired) still leaves Browse — and, since
-        // it sits inside the drop zone's own label, the "or Browse…" half
-        // of that label — honestly unavailable rather than run without one;
-        // the drop zone itself and `AttachFilesAsync` need no picker at all.
-        _addFileViaPickerButton.IsVisible = _evidenceSupport is not null;
-        _attachmentsDropZoneLabel.Text = _evidenceSupport is not null ? "Drop a file here, or" : "Drop a file here.";
-
-        var attachments = await attachable.GetAttachmentsAsync().ConfigureAwait(true);
-        if (attachments.Count == 0)
-        {
-            _attachmentsListPanel.Children.Add(new TextBlock { Text = "No attachments recorded.", Opacity = 0.7 });
-        }
-        else
-        {
-            foreach (var attachment in attachments)
-            {
-                var row = new StackPanel
-                {
-                    Orientation = Avalonia.Layout.Orientation.Horizontal,
-                    Spacing = 8,
-                    Children =
-                    {
-                        IconGeometry.Build(IconGeometry.Paperclip, 13),
-                        new TextBlock
-                        {
-                            Text = $"{attachment.FileName}  ({attachment.ContentType}, {attachment.SizeInBytes:N0} bytes"
-                                + (attachment.ContentHash is { } hash ? $", sha256 {hash}" : string.Empty) + ")",
-                            FontSize = DesignTokens.FontSizeBody,
-                            TextWrapping = TextWrapping.Wrap,
-                            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
-                        },
-                    },
-                };
-
-                if (_openAttachmentRequested is not null)
-                {
-                    var open = new Button { Content = "Open", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
-                    open.Classes.Add(ChromeStyles.Flat);
-                    var captured = attachment;
-
-                    // `WP 16.5A-R2`. Named explicitly, and named per file.
-                    //
-                    // Without this the button had no accessible name of its
-                    // own at all: `ContentControlAutomationPeer.GetNameCore()`
-                    // fell back to `Content?.ToString()`, which reads "Open"
-                    // only because `Content` happens to be that literal
-                    // string today. An object with several attachments
-                    // therefore announced "Open, button" once per row with
-                    // nothing to tell them apart, and any redesign that made
-                    // the content a panel or a glyph — the shape the sibling
-                    // relationship-row button already uses — would have
-                    // silently degraded the name to a type name with no test
-                    // to notice.
-                    //
-                    // Including the file name also avoids reproducing
-                    // `TD-132` here: that row's identical-name problem is the
-                    // reason this one is named for its target rather than for
-                    // its verb.
-                    Avalonia.Automation.AutomationProperties.SetName(open, $"Open {captured.FileName}");
-                    open.Click += (_, _) => _openAttachmentRequested?.Invoke(attachable, captured);
-                    row.Children.Add(open);
-                }
-
-                // `WP 18.2B`, §2: "Export saves [the issue sheet] through
-                // IFilePicker.PickSavePathAsync" — offered for every
-                // attachment on an Evidence record, not the issue sheet
-                // alone, since nothing distinguishes it from any other
-                // attached file once it is one, and a second, narrower
-                // mechanism naming just that one attachment would only
-                // duplicate this one.
-                if (_evidenceSupport is not null && string.Equals(_objectKind, Core.Evidence.Evidence.CanonicalKind, StringComparison.Ordinal))
-                {
-                    var export = new Button { Content = "Export", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
-                    export.Classes.Add(ChromeStyles.Flat);
-                    var captured = attachment;
-                    Avalonia.Automation.AutomationProperties.SetName(export, $"Export {captured.FileName}");
-                    export.Click += async (_, _) => await OnExportAttachmentAsync(attachable, captured).ConfigureAwait(true);
-                    row.Children.Add(export);
-                }
-
-                _attachmentsListPanel.Children.Add(row);
-            }
-        }
-
-        _attachmentFileNameBox.Text = string.Empty;
-        _attachmentContentTypeBox.Text = string.Empty;
-        _attachmentSizeBox.Text = string.Empty;
-        _attachmentStatusMessage.Text = string.Empty;
-    }
-
-    /// <summary>
-    /// Export: reads one attachment's own verified bytes and saves them
-    /// through <see cref="IFilePicker.PickSavePathAsync"/> (`WP 18.2B`,
-    /// §2) — the mechanism the issue sheet exports through, offered for
-    /// every Evidence attachment rather than that one alone (this row's
-    /// own remarks).
-    /// </summary>
-    private async Task OnExportAttachmentAsync(IHasAttachments attachable, IAttachment attachment)
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var destination = await _evidenceSupport.FilePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {attachment.FileName}", attachment.FileName), CancellationToken.None)
-            .ConfigureAwait(true);
-
-        if (destination is null)
-        {
-            _attachmentStatusMessage.Text = "Export was cancelled.";
-            return;
-        }
-
-        var content = await attachable.ReadAttachmentContentAsync(attachment.Id).ConfigureAwait(true);
-        if (!content.IsAvailable)
-        {
-            _attachmentStatusMessage.Text = $"'{attachment.FileName}' could not be read — its stored content is {content.Status}.";
-            ActionCompleted?.Invoke(_attachmentStatusMessage.Text, ActionOutcome.Failed);
-            return;
-        }
-
-        await File.WriteAllBytesAsync(destination, content.Bytes, CancellationToken.None).ConfigureAwait(true);
-
-        // Reading and saving a copy changes nothing in the domain — never
-        // `ActionOutcome.Changed`, which would (wrongly) tell a WorkspaceChanged
-        // subscriber to reload as though a write had happened.
-        var message = $"Exported '{attachment.FileName}' to '{destination}'.";
-        _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.NoChange);
-    }
-
-    private async Task OnAttachAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_attachmentFileNameBox.Text))
-        {
-            _attachmentStatusMessage.Text = "A file name is required.";
-            return;
-        }
-
-        if (!long.TryParse(_attachmentSizeBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var sizeInBytes) || sizeInBytes < 0)
-        {
-            _attachmentStatusMessage.Text = "Size (bytes) must be a non-negative whole number.";
-            return;
-        }
-
-        var contentType = NullIfEmpty(_attachmentContentTypeBox.Text) ?? "application/octet-stream";
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new AttachDocumentCommand(_objectId, _objectKind, _attachmentFileNameBox.Text, contentType, sizeInBytes),
-            CancellationToken.None).ConfigureAwait(true);
-
-        // Refresh() before the final message — see OnSaveBomAsync's own identical remarks.
-        var message = result.Succeeded ? "Attached." : result.Message ?? "Attach failed.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _attachmentStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    private static string? NullIfEmpty(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    private Task PopulateAttachmentsAsync(IEngineeringObject target) => _attachmentsSection.LoadAsync(target, CancellationToken.None);
 
     private void UpdateDirty()
     {
