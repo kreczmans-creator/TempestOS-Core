@@ -180,6 +180,180 @@ public sealed class WorkspaceLayoutControllerTests
     }
 
     // ----------------------------------------------------------------
+    // A panel can never be lost (`WP 20.10D`, PO finding T4)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// Read T4 literally: docking the Requirements tree beside a
+    /// requirement's editor "disappeared somewhere and broken away". Before
+    /// this Work Package, every release outside every drop-target candidate
+    /// floated the dragged panel — including a one-pixel miss in the 4px
+    /// splitter gutter between two panes, indistinguishable from someone
+    /// actually tearing it out. Released inside the workspace but over no
+    /// target must instead change nothing.
+    /// </summary>
+    [AvaloniaFact]
+    public void AnAccidentalMissInsideTheWorkspace_ChangesNothing_AndAnnouncesIt()
+    {
+        var rig = BuildRig();
+        var announcements = new List<string>();
+        rig.Controller.Announced += announcements.Add;
+
+        var candidates = rig.Controller.CurrentCandidates().OrderBy(c => c.X).ToList();
+        var gapX = (candidates[0].X + candidates[0].Width + candidates[1].X) / 2;
+        var gapY = candidates[0].Y + candidates[0].Height / 2;
+
+        rig.Controller.BeginDrag(Explorer);
+        rig.Controller.CompleteDrag(new Point(gapX, gapY));
+
+        Assert.False(rig.Controller.Tree.IsFloating(Explorer));
+        Assert.Contains(Explorer, rig.Controller.Tree.DockedPanels);
+        Assert.Empty(rig.Controller.FloatingWindows);
+        var announcement = Assert.Single(announcements);
+        Assert.Contains("stays where it was", announcement, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The one deliberate gesture that still means "give this its own
+    /// window": released past the workspace's own edge entirely, not
+    /// merely over no candidate.
+    /// </summary>
+    [AvaloniaFact]
+    public void ATearOutPastTheWorkspacesOwnEdge_FloatsThePanel_AndAnnouncesIt()
+    {
+        var rig = BuildRig();
+        var announcements = new List<string>();
+        rig.Controller.Announced += announcements.Add;
+
+        rig.Controller.BeginDrag(Explorer);
+        rig.Controller.CompleteDrag(new Point(-50, 100));
+
+        Assert.True(rig.Controller.Tree.IsFloating(Explorer));
+        Assert.Single(rig.Controller.FloatingWindows);
+        var announcement = Assert.Single(announcements);
+        Assert.Contains("undocked into its own window", announcement, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The floating window's own OS-level close (the title bar's close
+    /// button — never routed through the model directly) redocks its
+    /// content rather than discarding it, at the position it was docked at
+    /// before it floated — Document | Inspector, the arrangement it tore
+    /// out of.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClosingAFloatingWindowFromOutsideTheModel_RedocksItsContent_AtItsLastPosition()
+    {
+        var rig = BuildRig();
+        rig.Controller.BeginDrag(Inspector);
+        rig.Controller.CompleteDrag(new Point(-50, 100));
+        Assert.True(rig.Controller.Tree.IsFloating(Inspector));
+
+        var windowId = rig.Controller.Tree.Floating.Single().Id;
+        var window = rig.Controller.FloatingWindows[windowId];
+
+        window.Close();
+
+        Assert.False(rig.Controller.Tree.IsFloating(Inspector));
+        Assert.Contains(Inspector, rig.Controller.Tree.DockedPanels);
+        Assert.Empty(rig.Controller.FloatingWindows);
+
+        var order = rig.Controller.Tree.Root!.Panels.ToList();
+        Assert.True(order.IndexOf(Inspector) > order.IndexOf(Document), "Inspector was not redocked beside Document, where it started.");
+    }
+
+    /// <summary>The "Show Panel" command's own half of "never lost": redocks a floating panel at its remembered position.</summary>
+    [AvaloniaFact]
+    public void RedockFloating_DocksAFloatingPanelBackIn_AndClosesItsWindow()
+    {
+        var rig = BuildRig();
+        rig.Controller.BeginDrag(Explorer);
+        rig.Controller.CompleteDrag(new Point(-50, 100));
+        Assert.True(rig.Controller.Tree.IsFloating(Explorer));
+
+        rig.Controller.RedockFloating(Explorer);
+
+        Assert.False(rig.Controller.Tree.IsFloating(Explorer));
+        Assert.Contains(Explorer, rig.Controller.Tree.DockedPanels);
+        Assert.Empty(rig.Controller.FloatingWindows);
+    }
+
+    /// <summary>A panel already docked is unaffected by "Show Panel"'s own redock path — nothing to redock.</summary>
+    [AvaloniaFact]
+    public void RedockFloating_OnAPanelThatIsNotFloating_IsANoOp()
+    {
+        var rig = BuildRig();
+        var before = rig.Controller.Tree;
+
+        rig.Controller.RedockFloating(Explorer);
+
+        Assert.Same(before, rig.Controller.Tree);
+    }
+
+    /// <summary>
+    /// Reset Layout must be able to answer "where did my panel go" with
+    /// "it's docked" for every panel that existed — not only the ones the
+    /// default preset happens to know about (a floating attachment viewer,
+    /// registered long after the default was fixed, say).
+    /// </summary>
+    [AvaloniaFact]
+    public void ResetTo_FoldsAPanelTheDefaultTreeDoesNotPlace_BackIntoTheDockedTree()
+    {
+        var registry = new WorkspacePanelRegistry();
+        registry.Register(new WorkspacePanelDescriptor(Explorer, "Explorer", new TextBlock()));
+        registry.Register(new WorkspacePanelDescriptor(Document, "Documents", new TextBlock(), CanClose: false));
+        registry.Register(new WorkspacePanelDescriptor(Inspector, "Inspector", new TextBlock()));
+        registry.Register(new WorkspacePanelDescriptor(Output, "Output", new TextBlock()));
+        var stranger = Guid.NewGuid();
+        registry.Register(new WorkspacePanelDescriptor(stranger, "Attachment", new TextBlock()));
+
+        var controller = new WorkspaceLayoutController(registry, new WorkspaceLayoutStore(NewSettings()), model => new FloatingPanelWindow(model, registry));
+        var window = new Window { Content = controller.Host, Width = 1280, Height = 800 };
+        window.Show();
+        controller.Load(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
+
+        controller.Apply(t => t.Dock(stranger, t.FindGroupContaining(Document)!.Id, DockRelation.Below));
+        controller.Apply(t => t.Float(stranger, 300, 200, 420, 320));
+        Assert.True(controller.Tree.IsFloating(stranger));
+
+        controller.ResetTo(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
+
+        Assert.False(controller.Tree.IsFloating(stranger));
+        Assert.Contains(stranger, controller.Tree.AllPanels);
+        Assert.Empty(controller.FloatingWindows);
+        Assert.Contains(Explorer, controller.Tree.DockedPanels);
+    }
+
+    /// <summary>
+    /// A saved arrangement can name a floating window's own bounds from a
+    /// monitor that is no longer connected; restoring it must still place
+    /// the window somewhere reachable rather than off whatever screen the
+    /// machine actually has now.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task RestoringASavedFloatingWindow_WithBoundsOffAnyRealScreen_PlacesItOnAScreenAnyway()
+    {
+        var settings = NewSettings();
+        var first = BuildRig(settings);
+        first.Controller.Apply(t => t.Float(Inspector, -50000, -50000, 420, 320));
+        await first.Controller.SaveAsync();
+
+        var second = BuildRig(settings);
+        await second.Controller.RestoreAsync(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
+
+        Assert.True(second.Controller.Tree.IsFloating(Inspector));
+        var windowId = second.Controller.Tree.Floating.Single().Id;
+        var window = second.Controller.FloatingWindows[windowId];
+
+        // Headless reports one screen; the clamp's own off-screen branch is
+        // proved directly in FloatingWindowPlacementTests — this proves the
+        // wiring calls it at all, for the restore path and not only a drag.
+        var screen = window.Screens.All.Single();
+        var bounds = new PixelRect(window.Position.X, window.Position.Y, (int)window.Width, (int)window.Height);
+        Assert.True(screen.WorkingArea.Intersects(bounds), $"Restored floating window at {bounds} does not land on the one real screen {screen.WorkingArea}.");
+    }
+
+    // ----------------------------------------------------------------
     // Toggling panels
     // ----------------------------------------------------------------
 
@@ -209,7 +383,12 @@ public sealed class WorkspaceLayoutControllerTests
         var first = BuildRig(settings);
 
         first.Controller.Apply(t => t.Dock(Output, t.FindGroupContaining(Document)!.Id, DockRelation.Below));
-        first.Controller.Apply(t => t.Float(Inspector, -900, 40, 460, 340));
+        // A position that genuinely lands on a real screen (`WP 20.10D`'s
+        // own off-screen clamp — proved separately by
+        // RestoringASavedFloatingWindow_WithBoundsOffAnyRealScreen_PlacesItOnAScreenAnyway
+        // — would otherwise reposition this one and this test would no
+        // longer be proving round-trip fidelity).
+        first.Controller.Apply(t => t.Float(Inspector, 300, 40, 460, 340));
         first.Controller.Apply(t => t.SetCollapsed(Explorer, true));
         await first.Controller.SaveAsync();
 
@@ -219,7 +398,7 @@ public sealed class WorkspaceLayoutControllerTests
         Assert.Contains(Output, second.Controller.Tree.DockedPanels);
         Assert.True(second.Controller.Tree.IsFloating(Inspector));
         Assert.True(second.Controller.Tree.PresentationOf(Explorer).IsCollapsed);
-        Assert.Equal(-900, second.Controller.Tree.Floating.Single().X);
+        Assert.Equal(300, second.Controller.Tree.Floating.Single().X);
     }
 
     [AvaloniaFact]
