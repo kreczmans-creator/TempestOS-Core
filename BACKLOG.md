@@ -496,7 +496,8 @@ been retired — closed since by `WP 19.10L`, below); `TD-158` and `TD-170`
 `ReferenceDataCatalog` and the calculation naming path, which need their
 own transaction boundary rather than this one); and `TD-86`, `TD-95`,
 `TD-96` (batching, content-addressed deduplication and streaming
-payloads, none of which this Work Package touched).
+payloads, none of which this Work Package touched — `TD-95` and `TD-96`
+closed since by `WP 20.1C1`, below).
 
 ### Closed by `WP 19.10K`
 
@@ -510,6 +511,18 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 |---|---|---|
 | `TD-156` | A superseded reference record keeps its secondary index entry | `RequireSecondaryKeyFreeAsync` (`src/Tempest.Core/ReferenceData/ReferenceDataCatalog.cs`) no longer treats a secondary key as permanently held once its own holder is superseded, so a replacement record may legitimately claim the designation its predecessor carried; `SupersedeAsync` itself deliberately leaves the secondary index untouched — a superseded record keeps resolving by its own former key, retained rather than deleted, until another record legitimately claims it (`SupersedeAsync_LeavesTheSupersededValuesReadable`, `ASupersededConstantStopsBeingHandedToCalculations`, both unchanged and still passing). Proven by `SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync` run against the shared Widget layer and `MaterialCatalog`/`StandardCatalog`/`ConstantCatalog`'s own fixtures, and by `RegisterAsync_ReusingASupersededRecordsSecondaryKey_Succeeds`. |
 | `TD-158` | `ReferenceDataCatalog` composes durable writes with no all-or-nothing semantics | `RegisterAsync`, `ReviseAsync` (`ReviseCoreAsync`) and `SupersedeAsync` now run every durable write they compose — the document/revision, the primary index entry, the secondary index entry, the `Supersedes` link — inside one `IQueryablePersistenceStore.ExecuteInTransactionAsync` transaction, through the same internal `ITransactionalDocumentWriter` seam `EngineeringObjectBase` already uses (`ADR-0145`); the constructor now refuses (`ArgumentException`) a persistence or document store that cannot support this, rather than falling back to the old sequential writes silently. Proven by the shared `ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync`/`SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync` facts, run against the shared Widget layer and against `MaterialCatalog`, `FastenerCatalog`, `BearingCatalog`, `StandardCatalog`, `ComponentCatalog`, `ConstantCatalog` and `ProcessCatalog`'s own fixtures — `CommitFailingPersistenceStore` (`WP 17.1B`'s own fault-injection double) fails each transaction's commit after its body has staged every write, and every test then finds nothing durable, or the original record exactly as it was. |
+
+### Closed by `WP 20.1C1`
+
+`TD-95` and `TD-96` are the two rows `WP 17.1B`'s own note above named as
+not closed by it: content-addressed attachment storage and a streamed
+BLOB read, neither of which that Work Package's transaction boundary
+touched.
+
+| ID | Title | Closed by |
+|---|---|---|
+| `TD-95` | Attachment bytes are stored per attachment, never deduplicated by content | `AttachmentContentStore` (`src/Tempest.Core/EngineeringDomain/Implementation/AttachmentContentStore.cs`) now keys stored bytes by their own SHA-256 rather than by attachment Id, with a reference count (`ReferenceCountCollectionName`) and an attachment-to-hash mapping (`HashByAttachmentCollectionName`) riding in the same generic `records` table (no SQL schema change — `ADR-0144`'s table was already collection/key-agnostic) and the same domain write transaction as the object-state write, through both the plain `IAttachmentContentStore` and the transactional `ITransactionalAttachmentWriter`. Attaching identical bytes to two objects stores them once; deleting one attachment's reference leaves the other's content intact until the last reference is released. A legacy, attachment-Id-keyed row (everything written before this Work Package) migrates into the content-addressed layout the first time `ReadAsync` finds it. Proven by `tests/Tempest.Core.Tests/EngineeringDomain/AttachmentContentStoreTests.cs`'s `TwoAttachmentsOfTheSameBytes_ShareOneStoredBlob`, `DeletingOneOfTwoAttachmentsSharingContent_LeavesTheOtherReadable`, `DeletingBothAttachmentsSharingContent_RemovesTheBytes`, `ReplacingOneAttachmentsContent_ReleasesTheOldHash_WithoutDisturbingASiblingThatStillUsesIt` and `ALegacyAttachmentIdKeyedRow_MigratesToContentAddressedStorage_OnFirstRead`. |
+| `TD-96` | `IBinaryPersistenceStore` materialises whole file content in memory | `IBinaryPersistenceStore.OpenReadAsync` (`src/Tempest.Core/Persistence/IBinaryPersistenceStore.cs`, implemented by `SqlitePersistenceStore.OpenReadAsync`/`SqliteBlobStream`) opens a seekable `Stream` over one BLOB through `Microsoft.Data.Sqlite`'s `SqliteBlob` — real incremental blob I/O (`sqlite3_blob_read`), not a chunked `ReadBytesAsync` fallback. `IAttachmentContentStore.OpenReadAsync` exposes the same shape, verifying size and hash over a dedicated bounded-memory pass (`AttachmentContentStore.VerifyAsync`) before handing back a second, independent stream. The Document Viewer's read path (`src/Tempest.Desktop/Viewing/DocumentPageSources.cs`'s Stream-backed page sources and `DocumentPageSourceFactory.CreateFromStream`; `AttachmentViewerLauncher.TryOpenStreamedAsync`) reads through it, so a large scanned drawing is never pulled into one array to open it. Proven by `tests/Tempest.Core.Tests/Persistence/BinaryPersistenceStoreTests.cs`'s `OpenReadAsync_A20MegabyteRecord_IsReadInBoundedChunks_AllocatingNothingNearItsSize`, `tests/Tempest.Core.Tests/EngineeringDomain/AttachmentContentStoreTests.cs`'s `OpenReadAsync_A20MegabyteAttachment_VerifiesAndReadsWithoutOneBigArray`, and `tests/Tempest.Desktop.Tests/DocumentViewerAcceptanceTests.cs`'s `ALargeAttachment_OpensThroughTheRealViewer_ReadThroughTheStreamedPath`. |
 
 | ID | Title | Owner |
 |---|---|---|
@@ -526,8 +539,6 @@ lifecycle handling, audited alongside it by `WP 19.10G`.
 | `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (requirements half and verification half closed by `WP 19.10L` — `RequirementsService.CreateAsync`'s document-then-identifier-index write and `VerificationService.RecordAsync`'s document-then-link writes are each now the one-transaction primitive this row's own `TD-23` entry (see "Closed" below) closes with; the requirements half is proven the same way, by `tests/Tempest.Core.Tests/Requirements/RequirementsServiceTests.cs`'s `CreateAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument`; reference-data half `WP 19.10K`) |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
 | `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` |
-| `TD-95` | Attachment bytes are stored per attachment, never deduplicated by content | `WP 17.1B` |
-| `TD-96` | `IBinaryPersistenceStore` materialises whole file content in memory | `WP 17.1B` |
 | `TD-130` | Reconciliation services (one of which deletes data) have no authorization seam | `WP 17.2A` |
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |

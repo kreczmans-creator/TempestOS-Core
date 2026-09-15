@@ -19,6 +19,7 @@ require.
 
 | Work Package | Delivered | Merged |
 |---|---|---|
+| `WP 20.1C1` Attachments: content-addressed storage and streamed reads (`TD-95`, `TD-96`) | `AttachmentContentStore` keys bytes by SHA-256 content hash with a reference count, so two attachments of the same file share one BLOB and deleting one keeps the other's content; a legacy, attachment-Id-keyed row migrates on first read; no SQL schema change. `IBinaryPersistenceStore.OpenReadAsync` opens a seekable `Stream` over one BLOB through `Microsoft.Data.Sqlite`'s `SqliteBlob` (real incremental blob I/O); `IAttachmentContentStore.OpenReadAsync` verifies size and hash over a bounded-memory pass before handing back a second stream. The Document Viewer's read path (`DocumentPageSourceFactory.CreateFromStream`; `AttachmentViewerLauncher`) reads a large drawing through it instead of materialising the whole file; falls back to the byte-array path for a format the streamed sources do not (yet) cover |  |
 
 ## Figures
 
