@@ -4,12 +4,15 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Invoicing;
 using Tempest.Desktop;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.Invoicing;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Projects;
@@ -89,6 +92,11 @@ public sealed class InvoicingView : UserControl
     private readonly ICommandRegistry _commandRegistry;
     private readonly Func<Guid?> _currentProjectId;
     private readonly Action<Guid, string> _openObject;
+    private readonly IOrganisationCatalog? _organisations;
+    private readonly DocumentExporter? _documentExporter;
+    private readonly InvoiceDocumentRenderer? _invoiceRenderer;
+    private readonly Func<string>? _issuerName;
+    private readonly Func<string>? _applicationVersionText;
 
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly StackPanel _groups = new() { Spacing = DesignTokens.SpaceMd };
@@ -117,8 +125,14 @@ public sealed class InvoicingView : UserControl
     }
 
     /// <summary>Initialises a new instance of the <see cref="InvoicingView"/> class.</summary>
+    /// <param name="organisations">Resolves a client's own display name for the exported invoice document. <see langword="null"/> (a test that does not thread it through) leaves Export unavailable, exactly as <c>ParameterPrompt</c> being <see langword="null"/> already leaves Send/Reconcile/Void unavailable.</param>
+    /// <param name="documentExporter">Saves the rendered invoice document through the file picker (`WP 21.2A`, scope item 3). <see langword="null"/> leaves Export unavailable.</param>
+    /// <param name="invoiceRenderer">Renders the invoice document (`WP 21.2A`, scope item 2). <see langword="null"/> leaves Export unavailable.</param>
+    /// <param name="applicationVersionText">The running application's own version text, for the document's own footer. <see langword="null"/> leaves Export unavailable.</param>
     public InvoicingView(
-        EngineeringDomainContext domainContext, ICommandRegistry commandRegistry, Func<Guid?> currentProjectId, Action<Guid, string> openObject)
+        EngineeringDomainContext domainContext, ICommandRegistry commandRegistry, Func<Guid?> currentProjectId, Action<Guid, string> openObject,
+        IOrganisationCatalog? organisations = null, DocumentExporter? documentExporter = null, InvoiceDocumentRenderer? invoiceRenderer = null,
+        Func<string>? issuerName = null, Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(commandRegistry);
@@ -127,6 +141,11 @@ public sealed class InvoicingView : UserControl
 
         _domainContext = domainContext;
         _commandRegistry = commandRegistry;
+        _organisations = organisations;
+        _documentExporter = documentExporter;
+        _invoiceRenderer = invoiceRenderer;
+        _issuerName = issuerName;
+        _applicationVersionText = applicationVersionText;
         _currentProjectId = currentProjectId;
         _openObject = openObject;
 
@@ -408,6 +427,20 @@ public sealed class InvoicingView : UserControl
         return reconcile;
     }
 
+    /// <summary>Export invoice (`WP 21.2A`, scope item 3) — offered on every request row, exactly as <c>ObjectEditorView</c>'s own attachment Export is offered for every attachment on an Evidence record rather than one alone, since reading and saving a copy is safe at every status. Disabled, honestly, when this view was constructed without the exporter/renderer/organisation catalogue it needs (a test, mainly) — the identical "unavailable rather than run without asking" shape <see cref="ParameterPrompt"/> being <see langword="null"/> already gives Send/Reconcile/Void.</summary>
+    private Button ExportButton(InvoiceRequest request)
+    {
+        var export = new Button { Content = "Export invoice", MinHeight = DesignTokens.MinControlSize };
+        export.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(export, $"Export invoice {request.DisplayName}");
+        var available = _documentExporter is not null && _invoiceRenderer is not null && _organisations is not null && _issuerName is not null && _applicationVersionText is not null;
+        export.IsEnabled = available;
+        if (!available)
+            ToolTip.SetTip(export, "Export is unavailable here.");
+        export.Click += async (_, _) => await OnExportInvoiceAsync(request.Id).ConfigureAwait(true);
+        return export;
+    }
+
     /// <summary>New: Draft requests — request, project, client, total, raised date; Review, Send, Void.</summary>
     private Control BuildNewRow(RequestRow row)
     {
@@ -423,6 +456,7 @@ public sealed class InvoicingView : UserControl
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         actions.Children.Add(ReviewButton(request));
+        actions.Children.Add(ExportButton(request));
         actions.Children.Add(SendButton(request));
         actions.Children.Add(VoidButton(request));
         rows.Children.Add(actions);
@@ -477,6 +511,7 @@ public sealed class InvoicingView : UserControl
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         actions.Children.Add(ReviewButton(request));
+        actions.Children.Add(ExportButton(request));
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted)
             actions.Children.Add(ReconcileButton(request));
         rows.Children.Add(actions);
@@ -500,6 +535,7 @@ public sealed class InvoicingView : UserControl
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         actions.Children.Add(ReviewButton(request));
+        actions.Children.Add(ExportButton(request));
 
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted or InvoiceRequestStatus.Unknown)
             actions.Children.Add(ReconcileButton(request));
@@ -550,6 +586,7 @@ public sealed class InvoicingView : UserControl
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         actions.Children.Add(ReviewButton(request));
+        actions.Children.Add(ExportButton(request));
         rows.Children.Add(actions);
 
         return RowBorder(rows, request.Id);
@@ -688,6 +725,68 @@ public sealed class InvoicingView : UserControl
         // `WP 17.9.4`: what you make opens right up.
         if (result.SubjectId is { } createdId)
             _openObject(createdId, InvoiceRequest.CanonicalKind);
+    }
+
+    /// <summary>Renders the invoice document and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3) — the same file-picker path <see cref="ProjectQuoteView.OnExportAsync"/> already established for the quote sheet.</summary>
+    private async Task OnExportInvoiceAsync(Guid requestId)
+    {
+        if (_documentExporter is null || _invoiceRenderer is null || _organisations is null || _issuerName is null || _applicationVersionText is null)
+        {
+            Report("Export is unavailable here.", succeeded: false);
+            return;
+        }
+
+        if (await _domainContext.Repository.FindAsync(requestId).ConfigureAwait(true) is not InvoiceRequest request)
+        {
+            Report("The invoice could not be found.", succeeded: false);
+            return;
+        }
+
+        var (projectCode, projectName) = await ResolveProjectAsync(request.ParentId).ConfigureAwait(true);
+        var clientName = await ResolveClientNameAsync(request.ClientOrganisationId).ConfigureAwait(true);
+
+        var lines = request.Lines.Select(l => new InvoiceDocumentLineRow(
+            l.Description,
+            l.Quantity.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
+            MoneyDisplay.Format(l.UnitRate),
+            MoneyDisplay.Format(l.Amount))).ToList();
+
+        var model = new InvoiceDocumentModel(
+            IssuerName: _issuerName(),
+            ProjectCode: projectCode,
+            ProjectName: projectName,
+            Client: clientName,
+            Reference: request.DisplayName,
+            PurchaseOrderReference: request.PurchaseOrderReference,
+            IssueDate: request.IssuedDate ?? DateOnly.FromDateTime(request.CreatedAt.UtcDateTime),
+            DueDate: request.DueOn,
+            PaymentTermsDisplay: request.PaymentTerms.DisplayName(),
+            Currency: request.Currency.ToString(),
+            Lines: lines,
+            Total: MoneyDisplay.Format(request.Total),
+            Status: request.Status.ToString(),
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var result = await _documentExporter.ExportAsync(_invoiceRenderer, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        Report(result.Message, succeeded: result.Succeeded);
+    }
+
+    private async Task<(string Code, string Name)> ResolveProjectAsync(Guid? projectId)
+    {
+        if (projectId is not { } id || await _domainContext.Repository.FindAsync(id).ConfigureAwait(true) is not { } project)
+            return (string.Empty, string.Empty);
+
+        return ((project as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (project as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
+    }
+
+    private async Task<string> ResolveClientNameAsync(string? clientOrganisationId)
+    {
+        if (string.IsNullOrWhiteSpace(clientOrganisationId) || _organisations is null)
+            return "(none)";
+
+        var found = await _organisations.FindAsync(clientOrganisationId, CancellationToken.None).ConfigureAwait(true);
+        return found?.Definition.Name ?? clientOrganisationId;
     }
 
     private void OnWorkspaceChanged(WorkspaceChange change)

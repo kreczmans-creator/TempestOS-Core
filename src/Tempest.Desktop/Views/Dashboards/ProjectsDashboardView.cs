@@ -3,7 +3,10 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Workspace.Projects;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.ProgressReports;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -27,33 +30,58 @@ namespace Tempest.Desktop.Views.Dashboards;
 public sealed class ProjectsDashboardView : UserControl
 {
     private readonly IProjectStatusReadModel _readModel;
+    private readonly IProjectGovernanceRegister? _governance;
+    private readonly DocumentExporter? _documentExporter;
+    private readonly ProgressReportDocumentRenderer? _progressReportRenderer;
+    private readonly Func<string>? _applicationVersionText;
 
     private readonly WrapPanel _tiles = new() { Orientation = Orientation.Horizontal };
     private readonly StackPanel _blockedList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _atRiskList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _readyList = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly StackPanel _allProjectsList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly ScrollViewer _ganttScroll = new() { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
     private readonly ContentControl _ganttHost = new();
+    private readonly TextBlock _exportStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
+
+    private IReadOnlyList<ProjectStatusRow> _currentProjects = [];
 
     /// <summary>Raised when the user opens a project from one of this dashboard's own lists — the shell opens it, exactly as <see cref="ProjectsAreaView.OpenProjectRequestedAsync"/> already does.</summary>
     public event Func<Guid, Task>? OpenProjectRequestedAsync;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectsDashboardView"/> class.</summary>
-    public ProjectsDashboardView(IProjectStatusReadModel readModel)
+    /// <param name="governance">Reads a project's own live risks for the exported progress report's own Risks section (`WP 21.2A`, scope item 2). <see langword="null"/> renders that section as unavailable rather than omitting Export entirely.</param>
+    /// <param name="documentExporter">Saves the rendered progress report through the file picker (`WP 21.2A`, scope item 3). <see langword="null"/> leaves Export progress report unavailable.</param>
+    /// <param name="progressReportRenderer">Renders the progress report document. <see langword="null"/> leaves Export progress report unavailable.</param>
+    /// <param name="applicationVersionText">The running application's own version text, for the document's own footer. <see langword="null"/> leaves Export progress report unavailable.</param>
+    public ProjectsDashboardView(
+        IProjectStatusReadModel readModel, IProjectGovernanceRegister? governance = null, DocumentExporter? documentExporter = null,
+        ProgressReportDocumentRenderer? progressReportRenderer = null, Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(readModel);
         _readModel = readModel;
+        _governance = governance;
+        _documentExporter = documentExporter;
+        _progressReportRenderer = progressReportRenderer;
+        _applicationVersionText = applicationVersionText;
 
         _ganttScroll.Content = _ganttHost;
 
         var page = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceXl };
         page.Children.Add(PageHeading.Label("PROJECTS"));
         page.Children.Add(PageHeading.Title("Dashboard"));
+        page.Children.Add(_exportStatus);
         page.Children.Add(Section("Status", _tiles));
         page.Children.Add(Section("Blocked projects", _blockedList));
         page.Children.Add(Section("At risk", _atRiskList));
         page.Children.Add(Section("Ready to invoice", _readyList));
         page.Children.Add(Section("Schedule", _ganttScroll));
+        // `WP 21.2A`, scope item 3: every open project, each with its own
+        // Export progress report — the three status-filtered lists above
+        // never show an On track/On hold project, and this button belongs
+        // wherever a project is, not only where it is Blocked/At risk/Ready
+        // to invoice.
+        page.Children.Add(Section("Projects", _allProjectsList));
 
         AutomationProperties.SetName(this, "Projects dashboard");
         Content = new ScrollViewer { Content = page };
@@ -68,11 +96,14 @@ public sealed class ProjectsDashboardView : UserControl
 
     private void Render(ProjectStatusSnapshot snapshot)
     {
+        _currentProjects = snapshot.Projects;
+
         RenderTiles(snapshot);
 
         RenderList(_blockedList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.Blocked).ToList(), "No blocked projects.");
         RenderList(_atRiskList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.AtRisk).ToList(), "Nothing at risk.");
         RenderList(_readyList, snapshot.Projects.Where(p => p.Status == ProjectHealthStatus.ReadyToInvoice).ToList(), "Nothing ready to invoice.");
+        RenderList(_allProjectsList, snapshot.Projects, "No open projects.");
 
         RenderGantt(snapshot);
     }
@@ -124,7 +155,7 @@ public sealed class ProjectsDashboardView : UserControl
 
     private Control Row(ProjectStatusRow row)
     {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
 
         var text = new StackPanel { Spacing = 2 };
         text.Children.Add(new TextBlock { Text = row.ProjectName, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody });
@@ -139,7 +170,77 @@ public sealed class ProjectsDashboardView : UserControl
         Grid.SetColumn(open, 1);
         grid.Children.Add(open);
 
+        // `WP 21.2A`, scope item 3.
+        var export = new Button { Content = "Export progress report", MinHeight = DesignTokens.ControlSizeSmall, VerticalAlignment = VerticalAlignment.Top };
+        export.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(export, $"Export progress report {row.ProjectName}");
+        var exportAvailable = _documentExporter is not null && _progressReportRenderer is not null && _applicationVersionText is not null;
+        export.IsEnabled = exportAvailable;
+        if (!exportAvailable)
+            ToolTip.SetTip(export, "Export is unavailable here.");
+        export.Click += async (_, _) => await OnExportProgressReportAsync(row.ProjectId).ConfigureAwait(true);
+        Grid.SetColumn(export, 2);
+        grid.Children.Add(export);
+
         return grid;
+    }
+
+    /// <summary>Renders this project's own progress report and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3) — built from the identical <see cref="ProjectStatusRow"/> this dashboard already reads, plus this project's own live risks (<see cref="IProjectGovernanceRegister.ListRisksAsync"/>) read only at export time, not on every render.</summary>
+    private async Task OnExportProgressReportAsync(Guid projectId)
+    {
+        if (_documentExporter is null || _progressReportRenderer is null || _applicationVersionText is null)
+        {
+            _exportStatus.Text = "Export is unavailable here.";
+            return;
+        }
+
+        if (_currentProjects.FirstOrDefault(p => p.ProjectId == projectId) is not { } row)
+        {
+            _exportStatus.Text = "That project could not be found.";
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var milestones = row.Milestones
+            .Select(m => new ProgressReportMilestoneRow(m.Title, m.TargetDate, ProgressReportDocumentModel.RagFor(m.TargetDate, today)))
+            .OrderBy(m => m.TargetDate)
+            .ToList();
+        var lookAhead = milestones.Where(m => m.TargetDate >= today && m.TargetDate <= today.AddDays(28)).ToList();
+
+        IReadOnlyList<ProgressReportRiskRow> risks = [];
+        var deliverablesNote = "Deliverable-level progress is not available from the project status summary this report renders from.";
+        if (_governance is not null)
+        {
+            var liveRisks = await _governance.ListRisksAsync(projectId).ConfigureAwait(true);
+            risks =
+            [
+                .. liveRisks
+                    .Where(r => r.IsLive)
+                    .Select(r => new ProgressReportRiskRow(r.DisplayName, r.Status.ToString(), r.Likelihood, r.Severity)),
+            ];
+        }
+
+        var model = new ProgressReportDocumentModel(
+            // `ProjectStatusRow` carries no business identifier of its own
+            // (only `ProjectId`/`ProjectName`) — the project's own name
+            // stands in for both fields rather than leaving the header
+            // band's own eyebrow blank.
+            ProjectCode: row.ProjectName,
+            ProjectName: row.ProjectName,
+            AsOfDate: today,
+            HealthStatus: row.Status.ToString(),
+            HealthReason: row.Reason,
+            Milestones: milestones,
+            LookAheadMilestones: lookAhead,
+            QuotedHours: row.QuotedHours,
+            RecordedHours: row.RecordedHours,
+            Risks: risks,
+            DeliverablesNote: deliverablesNote,
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var result = await _documentExporter.ExportAsync(_progressReportRenderer, model, row.ProjectName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        _exportStatus.Text = result.Message;
     }
 
     private void RenderGantt(ProjectStatusSnapshot snapshot)

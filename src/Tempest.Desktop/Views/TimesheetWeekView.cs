@@ -7,6 +7,8 @@ using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Timesheets;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.Timesheets;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -45,6 +47,9 @@ public sealed class TimesheetWeekView : UserControl
     private readonly Func<string?> _currentPrincipalId;
     private readonly TimesheetEntryPrompt _recordPrompt;
     private readonly Action<Guid, string> _openObject;
+    private readonly DocumentExporter? _documentExporter;
+    private readonly TimesheetDocumentRenderer? _timesheetRenderer;
+    private readonly Func<string>? _applicationVersionText;
 
     private readonly TextBlock _weekLabel = new() { FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -52,9 +57,11 @@ public sealed class TimesheetWeekView : UserControl
     private readonly Button _previousWeek = new() { Content = "◀ Previous", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _nextWeek = new() { Content = "Next ▶", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.MinControlSize };
+    private readonly Button _exportButton = new() { Content = "Export week", MinHeight = DesignTokens.MinControlSize };
     private readonly StackPanel _days = new() { Spacing = DesignTokens.SpaceMd };
 
     private DateOnly _weekStart;
+    private List<EntryRow> _currentRows = [];
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
@@ -79,10 +86,14 @@ public sealed class TimesheetWeekView : UserControl
     }
 
     /// <summary>Initialises a new instance of the <see cref="TimesheetWeekView"/> class.</summary>
+    /// <param name="documentExporter">Saves the rendered timesheet document through the file picker (`WP 21.2A`, scope item 3). <see langword="null"/> leaves Export week unavailable.</param>
+    /// <param name="timesheetRenderer">Renders the timesheet document (`WP 21.2A`, scope item 2). <see langword="null"/> leaves Export week unavailable.</param>
+    /// <param name="applicationVersionText">The running application's own version text, for the document's own footer. <see langword="null"/> leaves Export week unavailable.</param>
     public TimesheetWeekView(
         EngineeringDomainContext domainContext, ITimesheetService timesheetService, IWorkingPatternProvider workingPatterns,
         ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Func<string?> currentPrincipalId,
-        TimesheetEntryPrompt recordPrompt, Action<Guid, string> openObject)
+        TimesheetEntryPrompt recordPrompt, Action<Guid, string> openObject,
+        DocumentExporter? documentExporter = null, TimesheetDocumentRenderer? timesheetRenderer = null, Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(timesheetService);
@@ -101,6 +112,9 @@ public sealed class TimesheetWeekView : UserControl
         _currentPrincipalId = currentPrincipalId;
         _recordPrompt = recordPrompt;
         _openObject = openObject;
+        _documentExporter = documentExporter;
+        _timesheetRenderer = timesheetRenderer;
+        _applicationVersionText = applicationVersionText;
 
         _weekStart = TimesheetWeek.WeekOf(DateOnly.FromDateTime(DateTime.Now));
 
@@ -109,15 +123,25 @@ public sealed class TimesheetWeekView : UserControl
         _recordButton.Classes.Add(ChromeStyles.Primary);
         _previousWeek.Classes.Add(ChromeStyles.Subtle);
         _nextWeek.Classes.Add(ChromeStyles.Subtle);
+        _exportButton.Classes.Add(ChromeStyles.Flat);
 
         _previousWeek.Click += async (_, _) => await ChangeWeekAsync(-7).ConfigureAwait(true);
         _nextWeek.Click += async (_, _) => await ChangeWeekAsync(7).ConfigureAwait(true);
         _recordButton.Click += async (_, _) => await OnRecordAsync().ConfigureAwait(true);
+        // `WP 21.2A`, scope item 3: honestly unavailable when this view was
+        // constructed without the exporter/renderer it needs (a test,
+        // mainly) — the identical shape every other optional collaborator
+        // in this codebase already uses.
+        _exportButton.IsEnabled = _documentExporter is not null && _timesheetRenderer is not null && _applicationVersionText is not null;
+        if (!_exportButton.IsEnabled)
+            ToolTip.SetTip(_exportButton, "Export is unavailable here.");
+        _exportButton.Click += async (_, _) => await OnExportWeekAsync().ConfigureAwait(true);
 
         var nav = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         nav.Children.Add(_previousWeek);
         nav.Children.Add(_nextWeek);
         nav.Children.Add(_recordButton);
+        nav.Children.Add(_exportButton);
 
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         Grid.SetColumn(_weekLabel, 0);
@@ -135,6 +159,7 @@ public sealed class TimesheetWeekView : UserControl
         AutomationProperties.SetName(_previousWeek, "◀ Previous");
         AutomationProperties.SetName(_nextWeek, "Next ▶");
         AutomationProperties.SetName(_recordButton, "Record");
+        AutomationProperties.SetName(_exportButton, "Export week");
         ToolTip.SetTip(_previousWeek, "Previous week");
         ToolTip.SetTip(_nextWeek, "Next week");
         ToolTip.SetTip(_recordButton, "Record time");
@@ -160,6 +185,7 @@ public sealed class TimesheetWeekView : UserControl
             _status.Text = "No principal is signed in.";
             _utilisation.Text = string.Empty;
             _days.Children.Clear();
+            _currentRows = [];
             return;
         }
 
@@ -169,6 +195,7 @@ public sealed class TimesheetWeekView : UserControl
         var rows = new List<EntryRow>(entries.Count);
         foreach (var entry in entries)
             rows.Add(await ToRowAsync(entry).ConfigureAwait(true));
+        _currentRows = rows;
 
         var weekTotal = rows.Sum(r => r.Hours);
         var billableTotal = rows.Where(r => r.Billable).Sum(r => r.Hours);
@@ -269,6 +296,38 @@ public sealed class TimesheetWeekView : UserControl
     {
         _weekStart = _weekStart.AddDays(days);
         await RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Renders the current week's own timesheet document and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3).</summary>
+    private async Task OnExportWeekAsync()
+    {
+        if (_documentExporter is null || _timesheetRenderer is null || _applicationVersionText is null)
+        {
+            Report("Export is unavailable here.", succeeded: false);
+            return;
+        }
+
+        var identityId = _currentPrincipalId();
+        var principalName = identityId ?? "(no principal signed in)";
+
+        var rows = _currentRows
+            .Select(r => new Tempest.Desktop.Documents.Timesheets.TimesheetDocumentRow(r.Entry.Date, r.ProjectName, r.Entry.TaskDescription, r.Hours, r.Billable))
+            .ToList();
+        var weekTotal = rows.Sum(r => r.Hours);
+        var billableTotal = rows.Where(r => r.Billable).Sum(r => r.Hours);
+
+        var model = new TimesheetDocumentModel(
+            PrincipalName: principalName,
+            WeekStart: _weekStart,
+            Rows: rows,
+            WeekTotalHours: weekTotal.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
+            BillableHours: billableTotal.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var reference = $"{principalName}-{_weekStart:yyyy-MM-dd}";
+        var result = await _documentExporter.ExportAsync(_timesheetRenderer, model, reference, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        Report(result.Message, succeeded: result.Succeeded);
     }
 
     private async Task OnRecordAsync()

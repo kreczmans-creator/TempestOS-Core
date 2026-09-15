@@ -7,6 +7,8 @@ using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Projects;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.DrawingRegisters;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -65,6 +67,9 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly EvidenceWorkspaceView _evidenceView;
     private readonly ProjectSignOffView _signOffView;
     private readonly ProjectDetailsView _detailsView;
+    private readonly DocumentExporter? _documentExporter;
+    private readonly DrawingRegisterDocumentRenderer? _drawingRegisterRenderer;
+    private readonly Func<string>? _applicationVersionText;
 
     // `WP 19.2B`: the Structure tab's own content host — a stable
     // placeholder built at construction time, before the engineering
@@ -101,6 +106,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
     /// <summary>Raised after the user closes the project.</summary>
     public event Action? ProjectClosed;
+
+    /// <summary>Raised after Export register completes (`WP 21.2A`) — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`); this view's own other actions raise intent events the shell performs instead, but Export reads and saves a copy entirely within this view, exactly as <c>ProjectQuoteView.OnExportAsync</c> does for the quote sheet.</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>
     /// Raised when the user asks to open one of this project's files,
@@ -219,7 +227,10 @@ public sealed class ProjectWorkspaceView : UserControl
         EvidenceWorkspaceView evidenceView,
         ProjectSignOffView signOffView,
         ProjectDetailsView detailsView,
-        EngineeringDomainContext domainContext)
+        EngineeringDomainContext domainContext,
+        DocumentExporter? documentExporter = null,
+        DrawingRegisterDocumentRenderer? drawingRegisterRenderer = null,
+        Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -250,9 +261,14 @@ public sealed class ProjectWorkspaceView : UserControl
         _signOffView = signOffView;
         _detailsView = detailsView;
         _domainContext = domainContext;
+        _documentExporter = documentExporter;
+        _drawingRegisterRenderer = drawingRegisterRenderer;
+        _applicationVersionText = applicationVersionText;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
+        // `WP 21.2A`, scope item 3.
+        _documentsView.ExportRegisterRequested += () => _ = OnExportRegisterAsync();
 
         _requirementsView.EngineeringRequested += async () =>
         {
@@ -528,6 +544,53 @@ public sealed class ProjectWorkspaceView : UserControl
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.0, Height = 0 });
 
         SyncSelectedArea();
+    }
+
+    /// <summary>Renders this project's own drawing register and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3) — every document/drawing/file-carrying object <see cref="IProjectDocumentRegister.ListAsync"/> already resolves for the Documents tab, re-read at export time for each row's own current status and revision number.</summary>
+    private async Task OnExportRegisterAsync()
+    {
+        if (_documentExporter is null || _drawingRegisterRenderer is null || _applicationVersionText is null)
+        {
+            ActionCompleted?.Invoke("Export is unavailable here.", ActionOutcome.Failed);
+            return;
+        }
+
+        if (_projectContext.Current is not { } project)
+        {
+            ActionCompleted?.Invoke("Open a project to export its own drawing register.", ActionOutcome.Failed);
+            return;
+        }
+
+        var entries = await _documents.ListAsync(project.Id).ConfigureAwait(true);
+        var rows = new List<DrawingRegisterRow>(entries.Count);
+        foreach (var entry in entries)
+        {
+            var target = await _domainContext.Repository.FindAsync(entry.ObjectId).ConfigureAwait(true);
+            var status = (target as IHasLifecycle)?.Status.ToString() ?? "—";
+            // Every revision-by-revision date would need `IEngineeringDocumentStore`
+            // threaded through this view as well — not named by this Work
+            // Package's own "files you own" list, so the register's own
+            // "issue history" column states the current revision only,
+            // honestly, rather than a fabricated history.
+            var issueHistory = target is { } t ? $"Current: rev {t.CurrentRevisionNumber}" : "—";
+
+            rows.Add(new DrawingRegisterRow(
+                entry.Identifier ?? "—",
+                entry.DisplayName,
+                target?.CurrentRevisionNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+                status,
+                issueHistory));
+        }
+
+        var model = new DrawingRegisterDocumentModel(
+            ProjectCode: project.Identifier ?? project.DisplayName,
+            ProjectName: project.DisplayName,
+            Rows: rows,
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var result = await _documentExporter.ExportAsync(_drawingRegisterRenderer, model, project.Label, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        ActionCompleted?.Invoke(result.Message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>Selects the tab matching the navigator's own current project area, without re-raising navigation.</summary>
