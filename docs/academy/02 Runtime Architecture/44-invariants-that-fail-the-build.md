@@ -205,3 +205,19 @@ time on a different rule.
   like one.** When `Tempest.App` split in two, the dependency-direction
   test was rewritten for the new shape on the same day as the code it
   protects — that is what keeping an invariant actually costs.
+
+## Postscript (release candidates, September 2026)
+
+Two rows this chapter carried close on the unreleased `v0.20.0`
+candidate. `TD-115` closes by `WP 20.2A` (`c91d12a`): once the object
+picker exists, all three dormant commands get a real `CommandBinding`,
+and `FutureCapabilityCommandTests` is retired — its own remarks name
+this outcome as the trigger. `TD-05` closes by `WP 20.3B` (`6f45509`),
+pinned the same structural way: all 32 shipped `IModule` types already
+carry `[ModuleMetadata]`, now asserted by `ModuleMetadataCoverageTests`.
+Two more invariants of this shape join the five counted above:
+`WP 19.2B`'s `RailSurfaceContractTests` and `WP 19.10R`'s
+`ArchivedProjectCommandGuard` (`033ac18`), one rule both `Evaluate` and
+`InvokeAsync` consult. `PROJECT_STATUS.md` no longer carries the
+"Architecture invariants: 5/5 green" line this chapter quoted. None of
+this is released.

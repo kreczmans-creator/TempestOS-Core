@@ -229,3 +229,20 @@ large enough to review on its own.
   an implementation detail** — get it wrong, as this Work Package briefly
   did, and the very race the transaction was built to remove can reappear
   in the seam between committing and remembering.
+
+## Postscript (release candidates, September 2026)
+
+On the unreleased `v0.19.1`/`v0.20.0` candidates, `ADR-0145`'s
+one-transaction discipline spreads to every writer this chapter left
+outside it. `TD-150` (`WP 19.10J`) and `TD-170` (`WP 20.3B`) close, as
+does `TD-18` (`WP 20.3B`, `6f45509`: a twenty-writer battery finds
+`LinkAsync` already correct under the write lock). `WP 19.10L`
+(`21e81d0`) closes `TD-23`, `TD-32` and `TD-141`:
+`VerificationService.RecordAsync` and its links now commit as one
+transaction, its `verifiedBy` edge joins `IEngineeringRelationshipRepository`
+like any other, and `EngineeringRelationshipFactory.CreateAsync`
+refuses a superseded end before writing. `TD-28` (`WP 20.1A1`,
+`0a389dc`) brings Requirements onto the change bus this chapter
+started. `WP 19.10K` (`78aa625`) extends the same primitive to a
+fourth writer family, the reference-data catalogue (`TD-156`,
+`TD-158`). None of this has shipped.

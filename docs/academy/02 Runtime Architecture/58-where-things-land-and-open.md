@@ -200,6 +200,22 @@ drawing shows it, or the invoicing seam needs it.
   not the fifth month.** The Part-model proposal that drifted toward PLM
   was named and withdrawn the same day it was written.
 
+## Postscript (release candidates, September 2026)
+
+`TD-41` — a Requirement still opening the generic editor's empty body —
+closes on the unreleased `v0.19.1` candidate: `WP 19.10I` (`31418a4`)
+falls back to `IRequirementsService` when the domain repository has
+nothing for the id, and a Requirement finally opens on its own real
+body. The v0.19.1 rationalisation independently reverified `TD-172`
+fully Closed, exactly as this chapter's residual note expected. The
+"opens right up" guarantee is extended twice more: `WP 19.10P`
+(`ca181b2`) registers the `IWorkspaceViewFactory` a Deliverable never
+had; `WP 19.10Q` (`d46e910`) fixes New Project's own stale-filter gap,
+unrelated to a missing factory. `WP 20.10A` (`e179616`), on `v0.20.0`,
+gives a project a Details tab and Client/Rate card/PO fields at
+creation. See `65-the-project-commercial-core.md`. None of this is
+released.
+
 
 
 

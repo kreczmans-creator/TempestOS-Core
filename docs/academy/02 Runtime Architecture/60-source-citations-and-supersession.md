@@ -206,3 +206,20 @@ consumer needs its own decision.
   job.** Fixing "79" to "41" in the same breath as shipping the feature
   is what keeps a number anyone might later cite from quietly becoming
   folklore.
+
+## Postscript (release candidates, September 2026)
+
+`TD-157` — the never-fires "pinned source superseded" warning — closes
+on the unreleased `v0.19.1` candidate: `WP 19.10E` (`4bed806`) registers
+a `CatalogPinResolver<T>` per library. The rationalisation's own audit
+found the closure currently dormant regardless — neither validation
+service it feeds has a Desktop screen yet. `WP 19.10K` (`78aa625`)
+makes the catalogue itself transactional, closing `TD-156` (a
+superseded record's key can now be reclaimed) and `TD-158`
+(register/revise/supersede run inside one transaction). `WP 19.6A`
+(`e9aeabc`) gives every library record the `ReferenceRecordView` this
+chapter's citations wanted a home in — identity, history, citation, and
+a "cited by" scan through `ReferenceCitationIndex`. `WP 19.10P`
+(`ca181b2`) fixes the rehearsal's own D15 finding: an empty library
+rendered no heading at all, and library eight's internal name leaked to
+screen as "BusinessRateCards" rather than "Rate cards." None shipped.

@@ -196,4 +196,20 @@ kept, not merged); `56-frozen-layers.md` (`ApiRequestHandler`'s later
 move); `58-where-things-land-and-open.md` (`CommandContext.ProjectId`,
 `WP 17.9.2`, after this chapter).
 
+## Postscript (release candidates, September 2026)
+
+On the unreleased `v0.20.0` candidate, `TD-77` — this chapter's own open
+row — closes: `WP 20.2A` (`c91d12a`) makes an empty-query Palette open
+list only what `Evaluate` reports available, most-recently-invoked
+first (a typed query is unchanged). `AT-23`'s deliberate emptiness
+gains its first two disclosed exceptions: the same package's
+Kind-resolved Move/Copy bindings (`Ctrl+Shift+M`/`C`) are a raw
+`KeyDown` check, deliberately not a `KeyboardCommandBindingProvider.Bind`
+call, so they need no `DisclosedBindings` entry; `WP 19.10O`'s earlier
+rail-collapse shortcut (`Ctrl+B`) is the one gesture that does.
+`WP 19.10R` (`033ac18`) adds a sixth binding-time question,
+`CommandBinding.Mutates` and `ArchivedProjectCommandGuard`, inside
+`CommandRegistry.Evaluate` itself. See `75-the-object-picker-move-copy-and-macros.md`.
+Neither has shipped.
+
 

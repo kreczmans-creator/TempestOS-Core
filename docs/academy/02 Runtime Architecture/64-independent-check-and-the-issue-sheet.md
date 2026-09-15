@@ -203,3 +203,18 @@ than this Work Package's files could touch.
   `IssueEvidenceCommand`'s own remarks say exactly what state a crash
   between its three commits leaves, and why re-issuing is the recovery,
   rather than pretending three commits are one.
+
+## Postscript (release candidates, September 2026)
+
+`TD-38` — no business-identifier uniqueness, the gap Evidence's own
+`identifier: null` left this Work Package unable to close — closes on
+the unreleased `v0.20.0` candidate by `WP 20.1A2` (`3d85eb6`), enforced
+for Evidence too. The three-commit issue window named here as `B2`
+closes the same candidate (`WP 20.3A`, `b5227eb`): the sheet is now
+attached before the issue record that names it. The rationalisation
+rates both this chapter's own deferred debts **P4**: `TD-25`, deferred
+by its governing `ADR-0060`, `BACKLOG.md`'s stale `WP 18.2B` owner
+still uncorrected; and `TD-171`, reverified **Not closed**. `WP 19.5B`'s
+quote PDF duplicates, rather than reuses, `IssueSheetRenderer`'s
+layout — now its own row, `TD-182`. See
+`70-quotations-change-orders-and-the-project-lifecycle.md`. Unreleased.

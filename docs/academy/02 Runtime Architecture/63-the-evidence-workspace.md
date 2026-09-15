@@ -227,3 +227,18 @@ clicks the tab.
   a BOM box" a fact you can read, not a behaviour you have to trace.
 - **If your test sets up the very thing you are testing whether the
   application sets up, you are not testing the application.**
+
+## Postscript (release candidates, September 2026)
+
+On the unreleased `v0.19.1` candidate, `WP 19.4B` (`6710d64`) gives
+every canonical Kind's Attachments section the Browse button and drop
+zone this chapter describes only for Evidence. `WP 19.6A` (`e9aeabc`)
+makes Libraries a real master and detail over `ReferenceRecordView`,
+with all eight libraries listed (Manufacturing, Components and rate
+cards newly wired). `WP 19.10P` (`ca181b2`) fixes the rehearsal's own
+D15 finding on the same view: an empty library previously showed no
+heading at all, and the eighth library's internal name,
+"BusinessRateCards," now reads "Rate cards" on screen. `WP 19.7A`
+(`2c3ce7e`) moves Evidence itself out of the global rail this chapter
+describes and onto each project's own workspace, a tab beside Sign off.
+See `72-real-files-and-real-records.md`. None of this has shipped.

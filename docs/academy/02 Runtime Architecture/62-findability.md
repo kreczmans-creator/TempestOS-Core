@@ -203,3 +203,18 @@ findability.
   assumption that it is not.**
 - **A correction of your own change, recorded honestly in the same Work
   Package, is what makes the mistake cheap rather than repeatable.**
+
+## Postscript (release candidates, September 2026)
+
+`TD-77` closes on the unreleased `v0.20.0` candidate (`WP 20.2A`,
+`c91d12a`), but only for the Palette's empty-query command list — the
+Objects section this chapter covers still searches only on a typed,
+non-empty query, unaffected. `TD-177` closes on `v0.19.1`: `WP 19.10C`
+(`12f0f14`) makes the header's own global search seed the Palette's
+query instead of blanking it, the exact D1 gap the design-freeze
+audit's own script named. `CreationPlacement.ParentFor`, described here
+as serving four disciplines, is no longer four: `WP 19.0A` routes
+Timesheets' own creation through it too, alongside Mechanical,
+Documents, Calculations and Evidence — the three with their own rule
+(Requirements, Manufacturing, Verification) are unchanged. See
+`75-the-object-picker-move-copy-and-macros.md`. Neither has shipped.

@@ -219,3 +219,19 @@ deliberately construct a future version.
   is the only time it is cheap.** The collision guard cost one Work
   Package before a real migration existed; finding it afterwards would
   have meant finding it against live data.
+
+## Postscript (release candidates, September 2026)
+
+`TD-134` — `SettingsDocument<TDocument>.ApplyMigrations` had no fixed
+"current version," so a document ahead of what a caller's migrations
+reach was returned as-is rather than discarded — closes on the
+unreleased `v0.20.0` candidate. `WP 19.10M` (`8a18709`) gives the
+constructor an optional, per-consumer `currentVersion`; a stored
+document strictly ahead of it is discarded and logged, exactly the
+postcondition discipline this chapter's `EngineeringObjectState`
+migration walk was already sent back once for omitting. Export carries
+the identical gap this chapter never covered: `WP 20.3A` (`b5227eb`)
+gives `ADR-0051` its own migration chain, `IExportSchemaMigration` and
+`ImportService.RegisterMigration`, walking a section forward one step
+at a time before its exact-version check refuses. See
+`74-the-debt-tranche.md`. Neither has shipped.

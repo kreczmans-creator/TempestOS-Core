@@ -244,3 +244,20 @@ large enough to review on its own.
   register catching `WP 18.1A`'s own false claim on `TD-108`/`TD-118`,
   and `WP 18.1A-R1` then closing it for real, is the discipline working
   exactly as it should.
+
+## Postscript (release candidates, September 2026)
+
+`TD-28` — named here as a judgement call, sitting in the mechanism this
+chapter replaces without being literally listed — closes directly, with
+real code, on the unreleased `v0.20.0` candidate: `WP 20.1A1`
+(`0a389dc`) puts all fourteen `RequirementsService` mutators through
+one transaction and one `WorkspaceChange` publish. `TD-90`, left
+"claimed, not closed," is still not closed; the `v0.21.0` execution
+plan now schedules its real fix under `WP 21.0C` (areas as dockable
+units, focus and keyboard, all to `ADR-0153`) — no code exists yet. A
+defect in the same family this chapter did not cover surfaced on
+`v0.19.1`: every view subscribing to `IWorkspaceChanges` dropped that
+subscription on first detach and never resumed it, so a second visit
+stopped reacting to a live commit; `WP 19.7C` (`df2ebe8`) fixes all
+thirteen views, told in full in
+`05 Case Studies/08-the-view-that-stopped-listening.md`. None released.

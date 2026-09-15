@@ -200,3 +200,20 @@ absolutely.** `Tempest.Core`'s package-free stance held for every release
 until this one, and was then spent, once and deliberately, on
 `Microsoft.Data.Sqlite` — the one thing a hand-written layer would only have
 rebuilt with the platform's own bugs in it.
+
+## Postscript (release candidates, September 2026)
+
+`TD-150` — a post-commit connection-close failure reported a landed
+write as failed — closes on the unreleased `v0.19.1` candidate:
+`WP 19.10J` (`747f736`) moves the close inside a `committed` flag, so a
+failure there is logged and swallowed only once `COMMIT;` has landed.
+`TD-20`, a latest-only lookup reading the whole revision history,
+closes on `v0.20.0` by `WP 20.3B`'s new `GetLatestRevisionAsync`. The
+same candidate's `WP 20.1C1` (`8896c0b`) builds on this store directly:
+content-addressed attachment storage by SHA-256, and
+`IBinaryPersistenceStore.OpenReadAsync` opening a real seekable
+`Stream` over one BLOB through `SqliteBlob`'s incremental I/O. `TD-88`,
+index-first rehydration, was attempted by `WP 20.1C2` but its own kill
+switch was invoked: an index now builds first, but full materialisation
+stays eager for about seventy untouched callers — the row stays open.
+See `72-real-files-and-real-records.md`. None of this is released.

@@ -221,3 +221,19 @@ is the same scope creep as fixing none of the listed ones.
 - **Disclosing a defect in your own retrospective before an outside
   review finds it is worth more than a clean report** — it is what let
   the next Work Package fix exactly the right thing, fast.
+
+## Postscript (release candidates, September 2026)
+
+`TD-128`, the Digital Thread edges left keyboard-unreachable here,
+closes on the unreleased `v0.19.0` candidate by `WP 19.2B` (`6d0ceaa`):
+each edge's hit-test `Line` becomes `Focusable` in a deterministic tab
+order, proven by `KeyboardOnlyJourneyTests`. The same package closes
+`TD-65`'s residual with a structural walk giving 122 controls a real
+`AutomationProperties.Name`. `TD-131` — the Flat-treatment focus-ring
+test that could not fail because it skipped every transparent
+background it was meant to measure — closes on the later, also
+unreleased `v0.19.1` candidate: `WP 19.10M` (`8a18709`)
+alpha-composites the background before measuring instead of skipping
+it. `WP 19.9.1` (`a5e783c`), the same candidate, removed the coverage
+walk's one remaining exemption. See
+`69-the-honest-rail-and-the-structure-tab.md`. Neither has shipped.
