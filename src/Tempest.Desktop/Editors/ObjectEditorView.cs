@@ -223,14 +223,14 @@ public sealed class ObjectEditorView : UserControl
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private readonly StackPanel _relationshipsPanel = new() { Spacing = DesignTokens.SpaceXs };
 
-    // `WP 21.1B`: Lifecycle (generic) and Validation now live in their own
-    // files under Editors/Sections/ — each owns its own panel/Expander and
-    // is driven through IEditorSection uniformly (this class's own
-    // EditorSectionContext, built once in the constructor).
+    // `WP 21.1B`: Lifecycle (generic), Validation and Relationships now
+    // live in their own files under Editors/Sections/ — each owns its own
+    // panel/Expander and is driven through IEditorSection uniformly (this
+    // class's own EditorSectionContext, built once in the constructor).
     private readonly LifecycleSection _lifecycleSection = new();
     private readonly ValidationSection _validationSection = new();
+    private readonly RelationshipsSection _relationshipsSection = new();
     private EditorSectionContext _sectionContext = null!;
 
     // WP 10.7A — Feature Completion: five real, discipline-specific
@@ -861,7 +861,7 @@ public sealed class ObjectEditorView : UserControl
         var identitySection = BuildSection("Identity", new StackPanel { Spacing = DesignTokens.SpaceXs, Children = { LabeledRow("Name", _nameBox) } });
         _contentSection = BuildSection("Content", _contentBox);
         var lifecycleExpander = _lifecycleSection.Build(_sectionContext);
-        var relationshipsSection = BuildSection("Relationships", _relationshipsPanel);
+        var relationshipsExpander = _relationshipsSection.Build(_sectionContext);
         var validationExpander = _validationSection.Build(_sectionContext);
 
         // WP 10.7A — Feature Completion: five real, discipline-specific
@@ -1094,7 +1094,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(lifecycleExpander);
         body.Children.Add(_invoiceExternalSection);
         body.Children.Add(_evidenceLifecycleSection);
-        body.Children.Add(relationshipsSection);
+        body.Children.Add(relationshipsExpander);
         body.Children.Add(validationExpander);
         body.Children.Add(_evidenceAuditSection);
 
@@ -1156,7 +1156,7 @@ public sealed class ObjectEditorView : UserControl
         PopulateQuotation(target);
 
         await _lifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
-        await PopulateRelationshipsAsync(target).ConfigureAwait(true);
+        await _relationshipsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await _validationSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
 
         // `WP 18.2A`: Evidence renders from its own declaration — Subject,
@@ -1243,8 +1243,8 @@ public sealed class ObjectEditorView : UserControl
         // "verified by" (VerificationService.RecordAsync) are recorded as
         // outgoing references from the requirement itself, so the
         // requirement register's own GetRelationshipsAsync alone covers
-        // both — see PopulateRequirementRelationshipsAsync's own remarks.
-        await PopulateRequirementRelationshipsAsync(requirement.Id).ConfigureAwait(true);
+        // both — see RelationshipsSection's own remarks.
+        await _relationshipsSection.LoadAsync(null, CancellationToken.None).ConfigureAwait(true);
 
         // Lifecycle / Validation: a Requirement implements neither
         // IHasLifecycle nor IValidatable (genuinely true, not merely
@@ -1269,119 +1269,6 @@ public sealed class ObjectEditorView : UserControl
         ApplyReadOnlyState();
 
         _suppressDirtyTracking = false;
-    }
-
-    /// <summary>
-    /// The Relationship summary (`WP 10.3A`) — a real, flat list, both
-    /// directions (outgoing via <see cref="IHasRelationships.GetRelationshipsAsync"/>,
-    /// incoming via <see cref="EngineeringDomainContext.RelationshipRepository"/>
-    /// directly, both already-permitted reads, `ADR-0063`). Deliberately
-    /// flat, never a node-link graph — <c>ADR-0093</c>'s own Digital Thread
-    /// graph is explicitly out of this Work Package's own scope; each row
-    /// is independently, honestly presented, never composed into a
-    /// traversable structure.
-    /// </summary>
-    private async Task PopulateRelationshipsAsync(IEngineeringObject target)
-    {
-        _relationshipsPanel.Children.Clear();
-
-        if (target is IHasRelationships hasRelationships)
-        {
-            var outgoing = await hasRelationships.GetRelationshipsAsync().ConfigureAwait(true);
-            foreach (var relationship in outgoing)
-                _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.TargetId, relationship.RelationshipKind, "→").ConfigureAwait(true));
-        }
-
-        var incoming = await _domainContext.RelationshipRepository.GetIncomingAsync(_objectId).ConfigureAwait(true);
-        foreach (var relationship in incoming)
-            _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.SourceId, relationship.RelationshipKind, "←").ConfigureAwait(true));
-
-        if (_relationshipsPanel.Children.Count == 0)
-            _relationshipsPanel.Children.Add(new TextBlock { Text = "No relationships recorded.", Opacity = 0.7 });
-    }
-
-    /// <summary>
-    /// The Requirement-only analogue of <see cref="PopulateRelationshipsAsync"/>
-    /// (`TD-41`, `WP 19.10I`) — reuses the identical
-    /// <see cref="_relationshipsPanel"/>/<see cref="BuildRelationshipRowAsync"/>
-    /// rendering, fed from <see cref="IRequirementsService.GetRelationshipsAsync"/>
-    /// instead of an <see cref="IHasRelationships"/> cast (no
-    /// <see cref="IEngineeringObject"/> backs a Requirement to cast).
-    /// </summary>
-    /// <remarks>
-    /// No incoming-relationship query runs here, unlike
-    /// <see cref="PopulateRelationshipsAsync"/>'s own <see cref="EngineeringDomainContext.RelationshipRepository"/>
-    /// read — that repository backs the engineering-object relationship
-    /// store, a different store from the one <see cref="IRequirementsService"/>
-    /// records against (`ADR-0058`), and exposes no "incoming" read of its
-    /// own. This is not a gap for the two relationship kinds the brief
-    /// names: both "allocated to" (<c>LinkRequirementCommand</c> →
-    /// <see cref="IRequirementsService.LinkAsync"/>) and "verified by"
-    /// (<c>VerificationService.RecordAsync</c>'s own
-    /// <c>subjectDocumentId, verificationRecordId, "verifiedBy"</c> link)
-    /// are recorded with the requirement itself as source, so
-    /// <see cref="IRequirementsService.GetRelationshipsAsync"/> alone
-    /// already returns both, as real outgoing references.
-    /// </remarks>
-    private async Task PopulateRequirementRelationshipsAsync(Guid requirementId)
-    {
-        _relationshipsPanel.Children.Clear();
-
-        if (_requirementsService is not null)
-        {
-            var outgoing = await _requirementsService.GetRelationshipsAsync(requirementId).ConfigureAwait(true);
-            foreach (var relationship in outgoing)
-                _relationshipsPanel.Children.Add(await BuildRelationshipRowAsync(relationship.TargetDocumentId, relationship.RelationshipKind, "→").ConfigureAwait(true));
-        }
-
-        if (_relationshipsPanel.Children.Count == 0)
-            _relationshipsPanel.Children.Add(new TextBlock { Text = "No relationships recorded.", Opacity = 0.7 });
-    }
-
-    /// <summary>Builds one relationship row — "Navigation between related objects" (`WP 10.3A`), reusing <see cref="INavigationService.OpenAsync"/> via the injected navigate callback, never a new navigation mechanism.</summary>
-    private async Task<Control> BuildRelationshipRowAsync(Guid otherId, string relationshipKind, string direction)
-    {
-        var other = await _domainContext.Repository.FindAsync(otherId).ConfigureAwait(true);
-        var displayName = (other as IHasBusinessIdentifier)?.DisplayName ?? otherId.ToString();
-        var otherKind = other?.Kind ?? _objectKind;
-
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), Margin = new Avalonia.Thickness(0, DesignTokens.SpaceXs) };
-
-        var icon = new TextBlock { Text = IconRegistry.Resolve(otherKind), Margin = new Avalonia.Thickness(0, 0, DesignTokens.SpaceSm, 0) };
-        var text = new TextBlock { Text = $"{direction} {relationshipKind} — {displayName}", TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center };
-
-        Grid.SetColumn(icon, 0);
-        Grid.SetColumn(text, 1);
-        row.Children.Add(icon);
-        row.Children.Add(text);
-
-        if (other is not null)
-        {
-            var openContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceXs };
-            openContent.Children.Add(new TextBlock { Text = "Open", FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center });
-            openContent.Children.Add(IconGeometry.Build(IconGeometry.ChevronRight, 11));
-            var openButton = new Button { Content = openContent, Padding = new Avalonia.Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs) };
-            openButton.Classes.Add(ChromeStyles.Flat);
-
-            // `WP 19.2B` (`TD-132`). Every relationship row's Open button
-            // carried the identical literal name "Open" — a screen-reader
-            // user sweeping the Relationships panel of an object with
-            // several relationships heard "Open, button" once per row with
-            // nothing to tell them apart, the same defect the sibling
-            // `BuildObjectReferenceRowAsync`'s own Open button (below) and
-            // the attachments row's own Open button (`WP 16.5A-R2`) were
-            // already fixed against. Direction and relationship kind are
-            // included, not just the related object's name, because one
-            // object can legitimately appear in more than one relationship
-            // to the same object (e.g. both an incoming and an outgoing
-            // edge to it).
-            Avalonia.Automation.AutomationProperties.SetName(openButton, $"Open {direction} {relationshipKind} — {displayName}");
-            openButton.Click += (_, _) => _navigateToObject(otherId, otherKind);
-            Grid.SetColumn(openButton, 2);
-            row.Children.Add(openButton);
-        }
-
-        return row;
     }
 
     /// <summary>
