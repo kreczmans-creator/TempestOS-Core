@@ -65,6 +65,7 @@ public sealed class SettingsView : UserControl
     private readonly AccountsRefreshService? _accountsRefreshService;
     private readonly IConfigurationProvider _configuration;
     private readonly string _persistenceRootPath;
+    private readonly OrganisationIdentitySettings? _organisationIdentity;
 
     private readonly TextBox _persistenceRootBox = new() { IsReadOnly = true, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _openPersistenceFolder = new() { Content = "Open folder", MinHeight = DesignTokens.ControlSizeMedium };
@@ -87,6 +88,17 @@ public sealed class SettingsView : UserControl
     private readonly Button _saveButton = new() { Content = "Save", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _savedStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
+    // `WP 20.10G` (PO finding D4): Settings → Organisation identity — the
+    // fields every exported document's footer reads at render time
+    // (`Documents.DocumentTemplate`), pre-filled with the Tempest defaults.
+    private readonly TextBox _orgLegalName = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
+    private readonly TextBox _orgCompanyNumber = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
+    private readonly TextBox _orgWebsite = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+    private readonly TextBox _orgAddressLine1 = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
+    private readonly TextBox _orgAddressLine2 = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 260 };
+    private readonly TextBox _orgEmail = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+    private readonly TextBox _orgPhone = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 180 };
+
     private bool _invoicingSettingsRegistered;
 
     /// <summary>Opens <paramref name="folderPath"/> in the operating system's own file manager — real by default (<see cref="Process.Start(ProcessStartInfo)"/>), overridable by a test.</summary>
@@ -102,7 +114,8 @@ public sealed class SettingsView : UserControl
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
         IInvoicingConnector? invoicingConnector = null, ISecretStore? secretStore = null,
-        IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null)
+        IAccountsReadModel? accountsReadModel = null, AccountsRefreshService? accountsRefreshService = null,
+        OrganisationIdentitySettings? organisationIdentity = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -120,6 +133,7 @@ public sealed class SettingsView : UserControl
         _secretStore = secretStore;
         _accountsReadModel = accountsReadModel;
         _accountsRefreshService = accountsRefreshService;
+        _organisationIdentity = organisationIdentity;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -142,6 +156,13 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_confirmBeforeDelete, "Confirm before deleting an object");
         AutomationProperties.SetName(_independentCheckRequired, "Independent check required");
         AutomationProperties.SetName(_invoicingAuthoriseButton, "Authorise invoicing connector");
+        AutomationProperties.SetName(_orgLegalName, "Organisation legal name");
+        AutomationProperties.SetName(_orgCompanyNumber, "Organisation company number");
+        AutomationProperties.SetName(_orgWebsite, "Organisation website");
+        AutomationProperties.SetName(_orgAddressLine1, "Organisation address line 1");
+        AutomationProperties.SetName(_orgAddressLine2, "Organisation address line 2");
+        AutomationProperties.SetName(_orgEmail, "Organisation email");
+        AutomationProperties.SetName(_orgPhone, "Organisation phone");
 
         var persistenceRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         persistenceRow.Children.Add(_persistenceRootBox);
@@ -189,6 +210,20 @@ public sealed class SettingsView : UserControl
 
         var invoicing = BuildSection("Connector authorisation", invoicingStack);
 
+        // `WP 20.10G` (PO finding D4): the fields every exported
+        // document's footer shows — `DocumentTemplate.AppendFooters`
+        // reads `OrganisationIdentitySettings.ToIdentity()` at render
+        // time, never a constant baked into a renderer.
+        var orgStack = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        orgStack.Children.Add(LabeledRow("Legal name", _orgLegalName));
+        orgStack.Children.Add(LabeledRow("Company number", _orgCompanyNumber));
+        orgStack.Children.Add(LabeledRow("Website", _orgWebsite));
+        orgStack.Children.Add(LabeledRow("Address line 1", _orgAddressLine1));
+        orgStack.Children.Add(LabeledRow("Address line 2", _orgAddressLine2));
+        orgStack.Children.Add(LabeledRow("Email", _orgEmail));
+        orgStack.Children.Add(LabeledRow("Phone", _orgPhone));
+        var organisation = BuildSection("Organisation identity", orgStack);
+
         var saveRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
         saveRow.Children.Add(_saveButton);
         saveRow.Children.Add(_savedStatus);
@@ -209,6 +244,9 @@ public sealed class SettingsView : UserControl
 
         if (_invoicingConnector is not null && _secretStore is not null)
             body.Children.Add(invoicing);
+
+        if (_organisationIdentity is not null)
+            body.Children.Add(organisation);
 
         body.Children.Add(saveRow);
 
@@ -265,6 +303,17 @@ public sealed class SettingsView : UserControl
         if (_accountsReadModel is not null)
             await RefreshAccountsReadingStatusAsync().ConfigureAwait(true);
 
+        if (_organisationIdentity is not null)
+        {
+            _orgLegalName.Text = _organisationIdentity.LegalName;
+            _orgCompanyNumber.Text = _organisationIdentity.CompanyNumber;
+            _orgWebsite.Text = _organisationIdentity.Website;
+            _orgAddressLine1.Text = _organisationIdentity.AddressLine1;
+            _orgAddressLine2.Text = _organisationIdentity.AddressLine2;
+            _orgEmail.Text = _organisationIdentity.Email;
+            _orgPhone.Text = _organisationIdentity.Phone;
+        }
+
         _savedStatus.Text = string.Empty;
     }
 
@@ -313,6 +362,18 @@ public sealed class SettingsView : UserControl
 
         if (_invoicingConnector is not null && _secretStore is not null)
             await SaveInvoicingSectionAsync().ConfigureAwait(true);
+
+        if (_organisationIdentity is not null)
+        {
+            _organisationIdentity.LegalName = _orgLegalName.Text ?? string.Empty;
+            _organisationIdentity.CompanyNumber = _orgCompanyNumber.Text ?? string.Empty;
+            _organisationIdentity.Website = _orgWebsite.Text ?? string.Empty;
+            _organisationIdentity.AddressLine1 = _orgAddressLine1.Text ?? string.Empty;
+            _organisationIdentity.AddressLine2 = _orgAddressLine2.Text ?? string.Empty;
+            _organisationIdentity.Email = _orgEmail.Text ?? string.Empty;
+            _organisationIdentity.Phone = _orgPhone.Text ?? string.Empty;
+            await _organisationIdentity.SaveAsync().ConfigureAwait(true);
+        }
 
         _savedStatus.Text = $"Saved at {DateTime.Now:HH:mm:ss}.";
         ActionCompleted?.Invoke("Settings saved.", ActionOutcome.Changed);

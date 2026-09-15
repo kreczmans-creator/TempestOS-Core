@@ -272,7 +272,7 @@ internal sealed partial class MainWindowComposer
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
-            accountsReadModel, accountsRefreshService);
+            accountsReadModel, accountsRefreshService, session.OrganisationIdentity);
 
         var confirmationDialog = new ConfirmationDialog();
         var inputDialog = new InputDialog();
