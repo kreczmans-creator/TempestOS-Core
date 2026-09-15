@@ -62,4 +62,16 @@ public sealed record AccessTokenResult(AccessTokenOutcome Outcome, string? Acces
 
     /// <summary>The stored refresh token was refused.</summary>
     public static AccessTokenResult Reauthorise(string? reason) => new(AccessTokenOutcome.Reauthorise, Reason: reason);
+
+    /// <summary>
+    /// Redacted deliberately (`WP 21.5F` Offensive Security Audit, OSA-04):
+    /// this type is <see langword="public"/> and crosses into
+    /// <c>Tempest.Desktop</c> — a compiler-generated <c>record ToString()</c>
+    /// would print <see cref="AccessToken"/> verbatim if any future caller
+    /// ever logged this result directly (<c>$"{result}"</c> reads as
+    /// entirely ordinary code). Reduced to nothing about the token's own
+    /// value.
+    /// </summary>
+    public override string ToString() =>
+        $"AccessTokenResult {{ Outcome = {Outcome}, AccessToken = {(AccessToken is null ? "<none>" : "<redacted>")}, TenantId = {TenantId}, Reason = {Reason} }}";
 }
