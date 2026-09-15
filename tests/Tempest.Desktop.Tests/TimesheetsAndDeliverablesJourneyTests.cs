@@ -84,8 +84,9 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             Assert.NotNull(editor);
             AssertSectionPresent(editor!, "Commercial");
 
-            await ChangeClientViaRealDialogAsync(window, editor!, organisationId);
-            await PinRateCardViaRealDialogAsync(window, editor!, rateCardId);
+            var domainForWaits = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            await ChangeClientViaRealDialogAsync(window, editor!, organisationId, domainForWaits, project.Id);
+            await PinRateCardViaRealDialogAsync(window, editor!, rateCardId, domainForWaits, project.Id);
 
             var startDatePicker = editor!.GetLogicalDescendants().OfType<DatePicker>().First();
             var targetDatePicker = editor.GetLogicalDescendants().OfType<DatePicker>().Skip(1).First();
@@ -515,7 +516,8 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             return Task.FromResult<IReadOnlyDictionary<string, string>?>(new Dictionary<string, string>());
         };
 
-    private static async Task ChangeClientViaRealDialogAsync(MainWindow window, ObjectEditorView editor, string organisationId)
+    private static async Task ChangeClientViaRealDialogAsync(
+        MainWindow window, ObjectEditorView editor, string organisationId, EngineeringDomainContext domain, Guid projectId)
     {
         var changeClient = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Change Client"));
         changeClient.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -528,9 +530,20 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
 
         picker.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Choose")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await RenderUntilAsync(window, () => !picker.IsVisible);
+
+        // `!picker.IsVisible` only proves the dialog closed — `Complete`
+        // flips it before its own `TryComplete`/`PickAsync` continuation
+        // (the real `SetClientAsync` domain write) has necessarily run.
+        // Waiting for the real effect, not the dialog's own visibility, is
+        // what makes this deterministic regardless of how much other work
+        // (`OrganisationPicker`'s own layout among it) shares the
+        // dispatcher queue with that continuation.
+        await RenderUntilAsync(window, () =>
+            string.Equals(((Project)domain.Repository.FindAsync(projectId).GetAwaiter().GetResult()!).ClientOrganisationId, organisationId, StringComparison.Ordinal));
     }
 
-    private static async Task PinRateCardViaRealDialogAsync(MainWindow window, ObjectEditorView editor, string rateCardId)
+    private static async Task PinRateCardViaRealDialogAsync(
+        MainWindow window, ObjectEditorView editor, string rateCardId, EngineeringDomainContext domain, Guid projectId)
     {
         var changeRateCard = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Pin Rate Card"));
         changeRateCard.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -543,6 +556,12 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
 
         picker.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Pin")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await RenderUntilAsync(window, () => !picker.IsVisible);
+
+        // `!picker.IsVisible` only proves the dialog closed, not that the
+        // real `PinRateCardAsync` domain write behind it has landed yet —
+        // see `ChangeClientViaRealDialogAsync`'s own identical remark.
+        await RenderUntilAsync(window, () =>
+            ((Project)domain.Repository.FindAsync(projectId).GetAwaiter().GetResult()!).RateCardPin?.RecordId == rateCardId);
     }
 
     private static async Task RecordViaRealDialogAsync(

@@ -569,13 +569,16 @@ internal sealed partial class MainWindowComposer
             WorkspaceChanges = composition.WorkspaceChanges,
         };
 
-        var engineeringDashboardView = new EngineeringDashboardView(tasksReadModel, openObjectRightUp);
+        var engineeringDashboardView = new EngineeringDashboardView(tasksReadModel, composition.CommandDispatcher, openObjectRightUp);
+        engineeringDashboardView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
-            engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync)
+            engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
+        engineeringAreaView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 

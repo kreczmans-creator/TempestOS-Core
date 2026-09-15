@@ -1,6 +1,7 @@
 using Tempest.Workspace.Tasks;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Persistence;
@@ -136,6 +137,147 @@ public sealed class TasksReadModelTests
 
         await manager.ShutdownAsync();
         await host.DisposeAsync();
+    }
+
+    /// <summary>
+    /// `TD-180` (`WP 20.1B`): the Finance bucket now reads each request's
+    /// own <c>DueOn</c> — a Sent request on Days30 terms, sent moments
+    /// ago, is nowhere near its own due date and must not appear, unlike
+    /// the identical-status request the acceptance journey above sends
+    /// thirty-one days in the past.
+    /// </summary>
+    [Fact]
+    public async Task ASentRequestNotYetPastItsOwnDueDate_DoesNotAppearInFinance()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var deliverables = QuotationTestHost.Deliverables(host);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var (projectId, organisationId) = await SetUpBillableProjectAsync(host, "NOTYETDUE");
+        await QuotationTestHost.Organisations(host).ReviseAsync(
+            organisationId, OperationsFixtures.Organisation(organisationId) with { PaymentTerms = PaymentTerms.Days30 },
+            OperationsFixtures.Verified(), "Thirty-day terms for this fixture.");
+
+        var deliverable = await deliverables.AddDeliverableAsync(projectId, "Just billed", today.AddDays(60));
+        var completion = await deliverables.CompleteAsync(deliverable.Id, projectId, today, fixedPriceValue: new Money(500m, CurrencyCode.Gbp));
+        Assert.True(completion.Succeeded, completion.Reason);
+
+        var request = await QuotationTestHost.RequestRaisedByCompletionAsync(host, completion.Completion!.Id);
+        var sent = await QuotationTestHost.Invoicing(host).SendAsync(request.Id);
+        Assert.True(sent.Succeeded, sent.Reason);
+        Assert.Equal(today.AddDays(30), sent.Request!.DueOn);
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var snapshot = await new TasksReadModelService(store).ReadAsync();
+
+        Assert.DoesNotContain(snapshot.Finance, i => i.ObjectId == request.Id);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    // ---- `WP 20.1B` (`TD-181`): a calculation is a task from creation ----
+
+    [Fact]
+    public async Task ACalculationCreatedUnderAProject_AppearsInTheCalculationsBucket_UntilItIsCompleted()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var domain = QuotationTestHost.Domain(host);
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "TASK-CALC");
+        var calculation = await CreateCalculationAsync(domain, projectId, "Bracket check");
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var reader = new TasksReadModelService(store);
+
+        var before = await reader.ReadAsync();
+        Assert.Contains(before.Calculations, i => i.ObjectId == calculation.Id && i.Title == "Bracket check" && i.ProjectId == projectId);
+        Assert.True(before.Counts[TaskBucket.Calculations] >= 1);
+
+        await calculation.MarkCompletedAsync(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        var after = await reader.ReadAsync();
+        Assert.DoesNotContain(after.Calculations, i => i.ObjectId == calculation.Id);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    /// <summary>`TD-181`'s own "whichever first": issuing evidence citing a calculation closes it exactly as completing it directly does — no separate flag needs setting.</summary>
+    [Fact]
+    public async Task IssuedEvidenceCitingACalculation_RemovesItFromTheBucket_EvenWithoutCompletingItDirectly()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var domain = QuotationTestHost.Domain(host);
+        var evidenceService = (IEvidenceService)host.Services!.GetService(typeof(IEvidenceService));
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "TASK-CALC-EV");
+        var calculation = await CreateCalculationAsync(domain, projectId, "Beam check");
+
+        var evidence = await evidenceService.CreateAsync(projectId, "Beam check report", EvidenceClassification.Calculation, calculation.Id);
+        await evidence.AttachContentAsync("beam.xlsx", "application/vnd.ms-excel", new byte[] { 1, 2, 3 });
+        var checked_ = await evidenceService.RecordCheckAsync(evidence.Id, "J. Reviewer", "Client Co", "Reviewed.", CheckOutcome.Accepted);
+        Assert.True(checked_.Succeeded, checked_.Reason);
+        var issued = await evidenceService.IssueAsync(evidence.Id, "ISS-1", "A", "Client Co");
+        Assert.True(issued.Succeeded, issued.Reason);
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var reader = new TasksReadModelService(store);
+
+        var snapshot = await reader.ReadAsync();
+        Assert.DoesNotContain(snapshot.Calculations, i => i.ObjectId == calculation.Id);
+
+        // The calculation's own Completed flag was never set directly —
+        // the issued evidence alone closed it.
+        var reloaded = (Calculation)(await domain.Repository.FindAsync(calculation.Id))!;
+        Assert.False(reloaded.Completed);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ACalculationWithNoProjectAncestorAtAll_DoesNotAppear()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host);
+
+        var domain = QuotationTestHost.Domain(host);
+
+        // Created, but never moved under any project — the lead's own
+        // default (brief-20.1B.md §2's own open question, resolved "no").
+        var factory = new EngineeringObjectFactory<Calculation>(
+            "Calculation", domain, (doc, rev) => new Calculation(doc, rev, domain, identifier: null, "Orphan calculation", EngineeringObjectMetadata.Empty));
+        var orphan = (Calculation)await factory.CreateAsync("Orphan calculation — no project.");
+
+        var store = (IQueryablePersistenceStore)host.Services!.GetService(typeof(IQueryablePersistenceStore));
+        var reader = new TasksReadModelService(store);
+
+        var snapshot = await reader.ReadAsync();
+        Assert.DoesNotContain(snapshot.Calculations, i => i.ObjectId == orphan.Id);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    private static async Task<Calculation> CreateCalculationAsync(EngineeringDomainContext domain, Guid projectId, string title)
+    {
+        var factory = new EngineeringObjectFactory<Calculation>(
+            "Calculation", domain, (doc, rev) => new Calculation(doc, rev, domain, identifier: null, title, EngineeringObjectMetadata.Empty));
+        var created = (Calculation)await factory.CreateAsync($"{title} — for test purposes.");
+
+        if (created is IHasParent hasParent)
+            await hasParent.MoveAsync(projectId);
+
+        return created;
     }
 
     [Fact]

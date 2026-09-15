@@ -2,9 +2,12 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Shell;
 using Tempest.Workspace.Tasks;
+using Tempest.Core.Commands;
 using Tempest.Core.Events;
+using Tempest.Desktop;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views.Dashboards;
 
@@ -22,12 +25,11 @@ namespace Tempest.Desktop.Views;
 /// Every node embeds an already-built, already-tested view rather than
 /// rendering anything new: Dashboard + Reports carries
 /// <see cref="EngineeringDashboardView"/> (`WP 19.7B`) plus the existing
-/// <see cref="ReportsView"/>; Tasks filters the existing
-/// <see cref="ITasksReadModel"/> to Reviews and
-/// Approvals (the read model has no "Calculations" bucket of its own to
-/// filter by, so that sketched sub-heading is not shown — the kill
-/// switch's own "leave it out and say so" rather than inventing a second
-/// placeholder); Modules → Mechanical navigates on to
+/// <see cref="ReportsView"/>; Tasks shows the existing
+/// <see cref="ITasksReadModel"/>'s own Calculations, Reviews and Approvals
+/// (`WP 20.1B`, `TD-181` gives the read model its own Calculations bucket
+/// — the sketched sub-heading this view used to disclose as missing);
+/// Modules → Mechanical navigates on to
 /// <see cref="ShellArea.Engineering"/>, the ribbon-and-docking surface's
 /// own long-established scope-aware location, exactly as it always has
 /// (see <see cref="ShellArea.EngineeringDepartment"/>'s own remarks) —
@@ -47,6 +49,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly LibrariesView _referenceData;
     private readonly Func<Task> _onEngineeringCalculationSelected;
+    private readonly ICommandDispatcher _commandDispatcher;
+    private readonly Action<Guid, string> _openObjectRightUp;
 
     private readonly EngineeringDashboardView _dashboard;
 
@@ -71,6 +75,9 @@ public sealed class EngineeringAreaView : UserControl
     /// <summary>Raised after the user asks to enter the Mechanical module, so the shell can render the ribbon-and-docking surface.</summary>
     public event Action? EngineeringRequested;
 
+    /// <summary>Raised after Complete completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
+
     /// <summary>The change feed the Dashboard + Reports and Tasks nodes reload from while shown.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -79,10 +86,12 @@ public sealed class EngineeringAreaView : UserControl
     }
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
+    /// <param name="openObjectRightUp">Opens a Tasks row's own source object right up — the same delegate every other rail area's Tasks/dashboard rows already use.</param>
     public EngineeringAreaView(
         IShellNavigator navigator, ITasksReadModel tasksReadModel, ReportsView reportsView,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
-        EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected)
+        EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
+        ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -91,6 +100,8 @@ public sealed class EngineeringAreaView : UserControl
         ArgumentNullException.ThrowIfNull(referenceData);
         ArgumentNullException.ThrowIfNull(dashboard);
         ArgumentNullException.ThrowIfNull(onEngineeringCalculationSelected);
+        ArgumentNullException.ThrowIfNull(commandDispatcher);
+        ArgumentNullException.ThrowIfNull(openObjectRightUp);
 
         _navigator = navigator;
         _tasksReadModel = tasksReadModel;
@@ -99,6 +110,8 @@ public sealed class EngineeringAreaView : UserControl
         _referenceData = referenceData;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
+        _commandDispatcher = commandDispatcher;
+        _openObjectRightUp = openObjectRightUp;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -257,12 +270,62 @@ public sealed class EngineeringAreaView : UserControl
         _tasksPanel.Children.Clear();
 
         _tasksPanel.Children.Add(PageHeading.Label("ENGINEERING · TASKS"));
-        _tasksPanel.Children.Add(PageHeading.Title("Reviews and approvals"));
-        _tasksPanel.Children.Add(PageHeading.Lead(
-            "Evidence awaiting check or issue — the Tasks read model carries no separate Calculations bucket, so that sketched sub-heading is not shown here."));
+        _tasksPanel.Children.Add(PageHeading.Title("Calculations, reviews and approvals"));
 
+        AddCalculationsSection(snapshot.Calculations);
         AddSection("Reviews", snapshot.Reviews);
         AddSection("Approvals", snapshot.Approvals);
+    }
+
+    /// <summary>`WP 20.1B` (`TD-181`): every open Calculation, each row opening it right up and offering Complete.</summary>
+    private void AddCalculationsSection(IReadOnlyList<TaskItem> items)
+    {
+        var section = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        section.Children.Add(new TextBlock { Text = $"Calculations ({items.Count})", FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody + 2 });
+
+        if (items.Count == 0)
+        {
+            section.Children.Add(new TextBlock { Text = "Nothing here.", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7 });
+        }
+        else
+        {
+            foreach (var item in items)
+                section.Children.Add(CalculationRow(item));
+        }
+
+        _tasksPanel.Children.Add(section);
+    }
+
+    private Control CalculationRow(TaskItem item)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        row.Children.Add(new TextBlock { Text = item.Title, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center });
+
+        var open = new Button { Content = "Open", MinHeight = DesignTokens.ControlSizeSmall };
+        open.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(open, $"Open {item.Title}");
+        open.Click += (_, _) => _openObjectRightUp(item.ObjectId, item.Kind);
+        row.Children.Add(open);
+
+        var complete = new Button { Content = "Complete", MinHeight = DesignTokens.ControlSizeSmall };
+        complete.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(complete, $"Complete {item.Title}");
+        complete.Click += async (_, _) => await OnCompleteAsync(item).ConfigureAwait(true);
+        row.Children.Add(complete);
+
+        return row;
+    }
+
+    private async Task OnCompleteAsync(TaskItem item)
+    {
+        var result = await _commandDispatcher
+            .DispatchAsync(new CompleteCalculationCommand(item.ObjectId, item.Kind), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        ActionCompleted?.Invoke(result.Message ?? "Complete failed.", ActionOutcome.From(result.Succeeded));
+
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
     }
 
     private void AddSection(string title, IReadOnlyList<TaskItem> items)

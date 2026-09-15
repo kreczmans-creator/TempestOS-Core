@@ -26,8 +26,11 @@ public enum TaskBucket
     /// <summary>Evidence Checked — awaiting issue.</summary>
     Approvals,
 
-    /// <summary>An unpaid invoice request past terms, or a quote sent more than seven days ago — to chase.</summary>
+    /// <summary>An unpaid invoice request past its own due date, or a quote sent more than seven days ago — to chase.</summary>
     Finance,
+
+    /// <summary>A Calculation, created under a project, not yet complete and not yet cited by issued evidence (`TD-181`, Product Owner decision 2026-09-15 §2).</summary>
+    Calculations,
 }
 
 /// <summary>
@@ -56,7 +59,8 @@ public sealed record UpcomingMilestone(Guid MilestoneId, string Title, Guid Proj
 /// <param name="OpenTasks">Every due-bucketed item (Overdue/Due today/Due this week/Later) — deliverables, milestones and manual tasks — the Home task list and the Engineering dashboard's "Open tasks" panel.</param>
 /// <param name="Reviews">Evidence Draft, with a subject and a file — genuinely ready to check.</param>
 /// <param name="Approvals">Evidence Checked — awaiting issue.</param>
-/// <param name="Finance">Unpaid invoice requests past terms, and quotes sent more than seven days ago.</param>
+/// <param name="Finance">Unpaid invoice requests past their own due date, and quotes sent more than seven days ago.</param>
+/// <param name="Calculations">Every Calculation created under a project, not yet complete and not yet cited by issued evidence (`TD-181`).</param>
 /// <param name="UpcomingMilestones">The next ten milestones across open projects, by date.</param>
 public sealed record TasksSnapshot(
     IReadOnlyDictionary<TaskBucket, int> Counts,
@@ -64,4 +68,5 @@ public sealed record TasksSnapshot(
     IReadOnlyList<TaskItem> Reviews,
     IReadOnlyList<TaskItem> Approvals,
     IReadOnlyList<TaskItem> Finance,
+    IReadOnlyList<TaskItem> Calculations,
     IReadOnlyList<UpcomingMilestone> UpcomingMilestones);

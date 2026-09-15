@@ -182,11 +182,11 @@ public sealed class WorkspaceChangesReattachTests
                 host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!,
                 Resolve<IProcessCatalog>(host), Resolve<IComponentCatalog>(host), Resolve<IRateCardCatalog>(host),
                 host.ReferenceReview!, host.BracketCalculations!, referenceCitationIndex, (_, _) => { });
-            var engineeringDashboard = new EngineeringDashboardView(tasksReadModel, (_, _) => { });
+            var engineeringDashboard = new EngineeringDashboardView(tasksReadModel, Resolve<ICommandDispatcher>(host), (_, _) => { });
 
             var view = new EngineeringAreaView(
                 host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, librariesView, engineeringDashboard,
-                () => Task.CompletedTask);
+                () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { });
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }

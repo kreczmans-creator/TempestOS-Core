@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessOperations;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
@@ -136,6 +137,33 @@ public sealed class CrmTests
         var found = await contacts.FindForOrganisationAsync("ORG-1");
 
         Assert.Equal("CON-1", found[0].Definition.Reference);
+    }
+
+    // ---- `WP 20.1B` (`TD-180`): payment terms ----
+
+    [Fact]
+    public void An_organisation_defaults_to_up_front_payment_terms()
+    {
+        Assert.Equal(PaymentTerms.UpFront, OperationsFixtures.Organisation().PaymentTerms);
+    }
+
+    [Fact]
+    public async Task An_organisations_payment_terms_are_set_through_the_existing_revise_path_with_a_new_document_revision()
+    {
+        var catalog = OperationsFixtures.BuildOrganisationCatalog();
+        await OperationsFixtures.RegisterAsync(catalog, "org-terms", OperationsFixtures.Organisation("ORG-TERMS"));
+
+        var revised = await catalog.ReviseAsync(
+            "org-terms",
+            OperationsFixtures.Organisation("ORG-TERMS") with { PaymentTerms = PaymentTerms.Days30 },
+            OperationsFixtures.Verified(),
+            "Payment terms set to 30 days.");
+
+        Assert.Equal(PaymentTerms.Days30, revised.Definition.PaymentTerms);
+        Assert.Equal(2, revised.RevisionNumber);
+
+        var reloaded = (await catalog.FindByReferenceAsync("ORG-TERMS"))!.Definition;
+        Assert.Equal(PaymentTerms.Days30, reloaded.PaymentTerms);
     }
 }
 

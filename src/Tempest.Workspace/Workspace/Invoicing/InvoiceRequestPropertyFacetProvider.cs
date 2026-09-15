@@ -1,3 +1,4 @@
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Invoicing;
 
@@ -63,6 +64,12 @@ public sealed class InvoiceRequestPropertyFacetProvider : IPropertyFacetProvider
 
         facets.Add(new("Total", request.Total.ToString(), PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Status", request.Status.ToString(), PropertyFacetKind.DisciplineSpecific));
+
+        // `WP 20.1B` (`TD-180`): frozen at raise, from the client's own
+        // standing terms — read-only here, exactly like every other
+        // frozen figure this facet list already shows (`Currency`, above).
+        facets.Add(new("Payment Terms", request.PaymentTerms.DisplayName(), PropertyFacetKind.DisciplineSpecific));
+        facets.Add(new("Due Date", request.DueOn?.ToString("O") ?? "(not yet due — still Draft)", PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("Connector", request.Connector ?? "(not yet sent)", PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("External Id", request.ExternalId ?? "(none)", PropertyFacetKind.DisciplineSpecific));
         facets.Add(new("External Invoice Number", request.ExternalInvoiceNumber ?? "(none)", PropertyFacetKind.DisciplineSpecific));

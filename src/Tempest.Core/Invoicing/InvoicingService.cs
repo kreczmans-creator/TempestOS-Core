@@ -143,6 +143,15 @@ public sealed class InvoicingService : IInvoicingService
         var card = await _rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, cancellationToken).ConfigureAwait(false);
         var currency = card.Definition.Currency;
 
+        // `TD-180`: the client's own standing terms, copied onto the
+        // request at the moment it is raised and frozen there from then on
+        // (`InvoiceRequest.PaymentTerms`'s own remarks) — an unresolved
+        // client id (never validated as a real record, this class's own
+        // remarks) reads as `PaymentTerms.UpFront`, same as a client that
+        // has simply never set anything else.
+        var client = await _organisations.FindAsync(project.ClientOrganisationId!, cancellationToken).ConfigureAwait(false);
+        var paymentTerms = client?.Definition.PaymentTerms ?? PaymentTerms.UpFront;
+
         var unbilled = await _timesheets.ListUnbilledForProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
 
         var lines = new List<InvoiceRequestLine>(unbilled.Count + 1);
@@ -190,7 +199,8 @@ public sealed class InvoicingService : IInvoicingService
             _context,
             (doc, rev) => new InvoiceRequest(
                 doc, rev, _context, identifier: null, $"Invoice request — {project.DisplayName} — {_time.GetUtcNow():yyyy-MM-dd}",
-                EngineeringObjectMetadata.Empty, project.ClientOrganisationId!, project.PurchaseOrderReference, currency, lines, total))
+                EngineeringObjectMetadata.Empty, project.ClientOrganisationId!, project.PurchaseOrderReference, currency, lines, total,
+                paymentTerms: paymentTerms))
             .CreateAsync($"Invoice request raised from deliverable completion '{deliverableCompletionId}'.", cancellationToken)
             .ConfigureAwait(false);
 

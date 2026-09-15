@@ -57,6 +57,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     private string? _lastError;
     private string? _connector;
     private DateTimeOffset? _sentAtUtc;
+    private PaymentTerms _paymentTerms;
+    private DateOnly? _dueOn;
 
     /// <summary>Initialises a new instance of the <see cref="InvoiceRequest"/> class.</summary>
     public InvoiceRequest(
@@ -67,7 +69,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         InvoiceRequestStatus status = InvoiceRequestStatus.Draft,
         string? externalId = null, string? externalInvoiceNumber = null, string? externalStatus = null,
         DateOnly? issuedDate = null, DateOnly? paidDate = null, string? lastError = null,
-        string? connector = null, DateTimeOffset? sentAtUtc = null)
+        string? connector = null, DateTimeOffset? sentAtUtc = null,
+        PaymentTerms paymentTerms = PaymentTerms.UpFront, DateOnly? dueOn = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientOrganisationId);
@@ -87,6 +90,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _lastError = lastError;
         _connector = connector;
         _sentAtUtc = sentAtUtc;
+        _paymentTerms = paymentTerms;
+        _dueOn = dueOn;
     }
 
     /// <summary>The client this invoice is raised against — an Organisation-catalogue id, never validated as a real record by this class.</summary>
@@ -137,6 +142,33 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// <summary>When this request was last handed to <see cref="IInvoicingConnector.CreateDraftInvoiceAsync"/>. <see langword="null"/> until the first send.</summary>
     public DateTimeOffset? SentAtUtc => _sentAtUtc;
 
+    /// <summary>
+    /// This request's own payment terms (`TD-180`) — copied from
+    /// <see cref="Tempest.Core.BusinessOperations.Crm.Organisation.PaymentTerms"/>
+    /// at the moment this request was raised, and frozen from then on, as
+    /// <see cref="Currency"/> already is: a later change to the client's
+    /// own standing terms never moves an already-raised request's own due
+    /// date. A request raised before `WP 20.1B` reads back as
+    /// <see cref="Core.BusinessGovernance.PaymentTerms.UpFront"/> — this
+    /// Kind's own default, and the term every request actually billed
+    /// under before terms existed at all.
+    /// </summary>
+    public PaymentTerms PaymentTerms => _paymentTerms;
+
+    /// <summary>
+    /// When this request falls due — <see cref="SentAtUtc"/>'s own date
+    /// plus <see cref="PaymentTerms"/>'s own days, computed once,
+    /// the moment this request is actually sent (<see cref="MarkSentAsync"/>),
+    /// and never recomputed afterwards. <see langword="null"/> while this
+    /// request is still <see cref="InvoiceRequestStatus.Draft"/> — nothing
+    /// is due before an invoice exists to be due. A request sent before
+    /// `WP 20.1B`, which carries no stored due date of its own, reads back
+    /// as due the day it was sent (<see cref="PaymentTerms"/>'s own
+    /// backfilled <see cref="Core.BusinessGovernance.PaymentTerms.UpFront"/>,
+    /// zero days out).
+    /// </summary>
+    public DateOnly? DueOn => _dueOn;
+
     /// <summary>Moves this request to <see cref="InvoiceRequestStatus.Sending"/> and records which connector the attempt is through. <see cref="InvoicingService.SendAsync"/> checks <see cref="InvoiceRequestStatusTransitions"/> before this ever runs.</summary>
     internal Task MoveToSendingAsync(string connectorName, CancellationToken cancellationToken = default)
     {
@@ -159,19 +191,32 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
             cancellationToken);
     }
 
-    /// <summary>Records a successful send: moves to <see cref="InvoiceRequestStatus.Sent"/> with the connector's own external id known.</summary>
+    /// <summary>
+    /// Records a successful send: moves to
+    /// <see cref="InvoiceRequestStatus.Sent"/> with the connector's own
+    /// external id known, and computes <see cref="DueOn"/> from
+    /// <paramref name="sentAtUtc"/>'s own date plus <see cref="PaymentTerms"/>'s
+    /// own days (`TD-180`) — the one place <see cref="DueOn"/> is ever set.
+    /// </summary>
     internal Task MarkSentAsync(string externalId, string? externalInvoiceNumber, DateTimeOffset sentAtUtc, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(externalId);
 
+        var dueOn = DateOnly.FromDateTime(sentAtUtc.UtcDateTime).AddDays(_paymentTerms.Days());
+
         return MutateTypeStateAndPersistAsync(
-            () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            () =>
             {
-                [nameof(Status)] = InvoiceRequestStatus.Sent.ToString(),
-                [nameof(ExternalId)] = externalId,
-                [nameof(ExternalInvoiceNumber)] = externalInvoiceNumber,
-                [nameof(LastError)] = null,
-                [nameof(SentAtUtc)] = sentAtUtc.ToString("O", CultureInfo.InvariantCulture),
+                var state = new Dictionary<string, string?>(StringComparer.Ordinal)
+                {
+                    [nameof(Status)] = InvoiceRequestStatus.Sent.ToString(),
+                    [nameof(ExternalId)] = externalId,
+                    [nameof(ExternalInvoiceNumber)] = externalInvoiceNumber,
+                    [nameof(LastError)] = null,
+                    [nameof(SentAtUtc)] = sentAtUtc.ToString("O", CultureInfo.InvariantCulture),
+                };
+                WriteJson(state, nameof(DueOn), dueOn);
+                return state;
             },
             () =>
             {
@@ -180,8 +225,9 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                 _externalInvoiceNumber = externalInvoiceNumber;
                 _lastError = null;
                 _sentAtUtc = sentAtUtc;
+                _dueOn = dueOn;
             },
-            $"Sent — external id '{externalId}'.",
+            $"Sent — external id '{externalId}'. Due {dueOn:yyyy-MM-dd} ({_paymentTerms.DisplayName()}).",
             cancellationToken);
     }
 
@@ -307,6 +353,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         state[nameof(LastError)] = _lastError;
         state[nameof(Connector)] = _connector;
         state[nameof(SentAtUtc)] = _sentAtUtc?.ToString("O", CultureInfo.InvariantCulture);
+        state[nameof(PaymentTerms)] = _paymentTerms.ToString();
+        WriteJson(state, nameof(DueOn), _dueOn);
     }
 
     /// <inheritdoc />
@@ -321,6 +369,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _lastError = state.Type(nameof(LastError));
         _connector = state.Type(nameof(Connector));
         _sentAtUtc = ParseSentAtUtc(state);
+        _paymentTerms = ReadPaymentTerms(state);
+        _dueOn = ReadDueOn(state, _sentAtUtc);
     }
 
     private static InvoiceRequestStatus ReadStatus(EngineeringObjectState state) =>
@@ -331,11 +381,28 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
             ? value
             : null;
 
+    /// <summary>Reads <see cref="PaymentTerms"/> back, defaulting to <see cref="Core.BusinessGovernance.PaymentTerms.UpFront"/> for a pre-`WP 20.1B` record that carries no term at all.</summary>
+    private static PaymentTerms ReadPaymentTerms(EngineeringObjectState state) =>
+        Enum.TryParse<PaymentTerms>(state.Type(nameof(PaymentTerms)), out var value) ? value : PaymentTerms.UpFront;
+
+    /// <summary>
+    /// Reads <see cref="DueOn"/> back — the stored value if this record
+    /// carries one, else, for a request already <see cref="SentAtUtc"/>
+    /// before `WP 20.1B` ever computed one, backfilled as due the day it
+    /// was sent (the Product Owner decision's own worked example:
+    /// "existing requests read as `UpFront` with `DueOn == SentOn`").
+    /// </summary>
+    private static DateOnly? ReadDueOn(EngineeringObjectState state, DateTimeOffset? sentAtUtc) =>
+        state.TypeJson<DateOnly?>(nameof(DueOn)) ?? (sentAtUtc is { } sent ? DateOnly.FromDateTime(sent.UtcDateTime) : null);
+
     private static List<InvoiceRequestLine> ReadLines(EngineeringObjectState state) =>
         state.TypeJson<List<InvoiceRequestLine>>(nameof(Lines)) ?? [];
 
-    static InvoiceRequest IRehydratable<InvoiceRequest>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
-        new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
+    static InvoiceRequest IRehydratable<InvoiceRequest>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state)
+    {
+        var sentAtUtc = ParseSentAtUtc(state);
+
+        return new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
             state.Type(nameof(ClientOrganisationId)) ?? string.Empty,
             state.Type(nameof(PurchaseOrderReference)),
             state.TypeJson<CurrencyCode>(nameof(Currency)),
@@ -349,5 +416,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
             state.TypeJson<DateOnly?>(nameof(PaidDate)),
             state.Type(nameof(LastError)),
             state.Type(nameof(Connector)),
-            ParseSentAtUtc(state));
+            sentAtUtc,
+            ReadPaymentTerms(state),
+            ReadDueOn(state, sentAtUtc));
+    }
 }

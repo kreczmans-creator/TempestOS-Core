@@ -266,3 +266,46 @@ public sealed class CurrencyMismatchException : Exception
     /// <summary>The currency it was handed.</summary>
     public CurrencyCode Actual { get; }
 }
+
+/// <summary>
+/// A closed vocabulary of standing payment terms (`TD-180`, Product Owner
+/// decision 2026-09-15 §1) — a client's own default, and what a raised
+/// <see cref="Tempest.Core.Invoicing.InvoiceRequest"/> freezes at the
+/// moment it is raised. Deliberately closed, not a number of days: the
+/// Product Owner asked for exactly these three named terms, and a closed
+/// enum is what keeps "30 days" from silently drifting into "29" or "31"
+/// entered by hand.
+/// </summary>
+public enum PaymentTerms
+{
+    /// <summary>Payable on receipt — the default, and the only term a pre-`TD-180` client or request is ever read back as.</summary>
+    UpFront,
+
+    /// <summary>Payable within 30 days.</summary>
+    Days30,
+
+    /// <summary>Payable within 60 days.</summary>
+    Days60,
+}
+
+/// <summary>Reads <see cref="PaymentTerms"/> as the figures a due-date calculation and a screen actually need.</summary>
+public static class PaymentTermsExtensions
+{
+    /// <summary>How many days after the invoice date <paramref name="terms"/> allows — <c>0</c> for <see cref="PaymentTerms.UpFront"/>.</summary>
+    public static int Days(this PaymentTerms terms) => terms switch
+    {
+        PaymentTerms.UpFront => 0,
+        PaymentTerms.Days30 => 30,
+        PaymentTerms.Days60 => 60,
+        _ => 0,
+    };
+
+    /// <summary>The words the Commercial section's drop-down and every screen showing terms use — "Up front", "30 days", "60 days".</summary>
+    public static string DisplayName(this PaymentTerms terms) => terms switch
+    {
+        PaymentTerms.UpFront => "Up front",
+        PaymentTerms.Days30 => "30 days",
+        PaymentTerms.Days60 => "60 days",
+        _ => terms.ToString(),
+    };
+}

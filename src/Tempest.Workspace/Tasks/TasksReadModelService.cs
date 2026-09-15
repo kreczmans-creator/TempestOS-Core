@@ -58,8 +58,20 @@ public sealed class TasksReadModelService : ITasksReadModel
                 var invoiceRequests = new List<InvoiceChaseFact>();
                 var quotations = new List<QuotationChaseFact>();
                 var manualTasks = new List<ManualTaskFact>();
+                var calculationCandidates = new List<(Guid CalculationId, string Title, Guid? ParentId, bool Completed)>();
                 var completedDeliverableIds = new HashSet<Guid>();
                 var closedProjectIds = new HashSet<Guid>();
+
+                // Every live object's own Kind and direct parent (`TD-181`)
+                // — not only the Kinds this reader otherwise recognises —
+                // so a Calculation's own owning project can be found by
+                // walking up through however many Assemblies, Parts or
+                // Calculation Sets sit in between; `CalculationsWorkspaceRegistration.CalculationContainerKinds`
+                // is exactly this list, and none of it is single-hop from
+                // "Calculation" the way Deliverable -> Milestone -> Project
+                // already is above.
+                var kindByObjectId = new Dictionary<Guid, string>();
+                var parentByObjectId = new Dictionary<Guid, Guid?>();
 
                 foreach (var (key, json) in records)
                 {
@@ -70,6 +82,9 @@ public sealed class TasksReadModelService : ITasksReadModel
                         continue;
 
                     var typeState = state.TypeState ?? EmptyTypeState;
+
+                    kindByObjectId[objectId] = state.Kind ?? string.Empty;
+                    parentByObjectId[objectId] = state.ParentId;
 
                     switch (state.Kind)
                     {
@@ -102,18 +117,42 @@ public sealed class TasksReadModelService : ITasksReadModel
                             break;
 
                         case Tempest.Core.Evidence.Evidence.CanonicalKind:
+                            var subjectId = TypeGuid(typeState, "SubjectId");
                             evidence.Add(new EvidenceReviewFact(
                                 objectId, state.DisplayName ?? string.Empty, state.ParentId,
                                 Enum.TryParse<EvidenceStatus>(TypeString(typeState, "Status"), out var evStatus) ? evStatus : EvidenceStatus.Draft,
-                                TypeGuid(typeState, "SubjectId") is not null && state.Attachments is { Length: > 0 }));
+                                subjectId is not null && state.Attachments is { Length: > 0 },
+                                subjectId));
                             break;
 
                         case InvoiceRequest.CanonicalKind:
+                            var sentAtUtc = TypeDateTimeOffset(typeState, "SentAtUtc");
+
+                            // `TD-180`: a pre-`WP 20.1B` request carries no
+                            // stored `DueOn` at all — backfilled here
+                            // exactly as `InvoiceRequest.ReadDueOn` itself
+                            // does (due the day it was sent), so the two
+                            // independent readers of this same durable
+                            // state — the domain object and this raw
+                            // read model — agree.
+                            var dueOn = TypeJson<DateOnly?>(typeState, "DueOn")
+                                ?? (sentAtUtc is { } sent ? DateOnly.FromDateTime(sent.UtcDateTime) : null);
+
                             invoiceRequests.Add(new InvoiceChaseFact(
                                 objectId, state.DisplayName ?? string.Empty, state.ParentId,
                                 Enum.TryParse<InvoiceRequestStatus>(TypeString(typeState, "Status"), out var invStatus) ? invStatus : InvoiceRequestStatus.Draft,
-                                TypeDateTimeOffset(typeState, "SentAtUtc"),
-                                TypeJson<DateOnly?>(typeState, "PaidDate")));
+                                sentAtUtc,
+                                TypeJson<DateOnly?>(typeState, "PaidDate"),
+                                dueOn));
+                            break;
+
+                        // `TD-181`: every Calculation, wherever it sits —
+                        // its own owning project is resolved below, once
+                        // every object's own parent is known.
+                        case "Calculation":
+                            calculationCandidates.Add((
+                                objectId, state.DisplayName ?? string.Empty, state.ParentId,
+                                bool.TryParse(TypeString(typeState, "Completed"), out var calcDone) && calcDone));
                             break;
 
                         case Quotation.CanonicalKind:
@@ -154,8 +193,33 @@ public sealed class TasksReadModelService : ITasksReadModel
                 var approvals = TaskEquations.ApprovalItems(evidence);
 
                 var finance = new List<TaskItem>();
-                finance.AddRange(TaskEquations.InvoiceFinanceItems(invoiceRequests, asOf));
+                finance.AddRange(TaskEquations.InvoiceFinanceItems(invoiceRequests, today));
                 finance.AddRange(TaskEquations.QuotationFinanceItems(quotations, today));
+
+                // `TD-181`: a calculation leaves the bucket on completion or
+                // when evidence citing it is issued, whichever first — the
+                // Product Owner decision's own words. "Citing" is
+                // `Evidence.SubjectId`; only a live, Issued piece of
+                // evidence closes the calculation it names, mirroring
+                // `EvidenceStatus.Issued`'s own remarks ("Issued to the
+                // client").
+                var issuedSubjectIds = evidence
+                    .Where(e => e.Status == EvidenceStatus.Issued && e.SubjectId is not null)
+                    .Select(e => e.SubjectId!.Value)
+                    .ToHashSet();
+
+                // Not orphans outside a project (the lead's default,
+                // disclosed in the brief): a calculation whose parent chain
+                // never reaches a live "Project" is left off entirely,
+                // rather than shown with no project to open it from.
+                var calculations = calculationCandidates
+                    .Select(c => (c.CalculationId, c.Title, ProjectId: ResolveProjectId(c.ParentId, kindByObjectId, parentByObjectId), c.Completed))
+                    .Where(c => c.ProjectId is not null && !closedProjectIds.Contains(c.ProjectId.Value))
+                    .Select(c => new CalculationChaseFact(
+                        c.CalculationId, c.Title, c.ProjectId!.Value, c.Completed || issuedSubjectIds.Contains(c.CalculationId)))
+                    .ToList();
+
+                var calculationItems = TaskEquations.CalculationItems(calculations);
 
                 var counts = new Dictionary<TaskBucket, int>
                 {
@@ -166,13 +230,40 @@ public sealed class TasksReadModelService : ITasksReadModel
                     [TaskBucket.Reviews] = reviews.Count,
                     [TaskBucket.Approvals] = approvals.Count,
                     [TaskBucket.Finance] = finance.Count,
+                    [TaskBucket.Calculations] = calculationItems.Count,
                 };
 
                 var upcomingMilestones = TaskEquations.UpcomingMilestones(milestones, UpcomingMilestoneCount);
 
-                return new TasksSnapshot(counts, openTasks, reviews, approvals, finance, upcomingMilestones);
+                return new TasksSnapshot(counts, openTasks, reviews, approvals, finance, calculationItems, upcomingMilestones);
             },
             cancellationToken);
+
+    /// <summary>
+    /// Walks up from <paramref name="startParentId"/> through <paramref name="parentByObjectId"/>
+    /// until it finds an object <paramref name="kindByObjectId"/> reports as
+    /// Kind <c>"Project"</c>, or runs out — a Calculation's own direct
+    /// parent may be a Project, an Assembly, a Part, a Component or a
+    /// Calculation Set (`CalculationsWorkspaceRegistration.CalculationContainerKinds`),
+    /// so a single-hop lookup (Deliverable -> Milestone -> Project's own
+    /// shape, above) is not enough. Bounded, defensively, against a cycle
+    /// nothing in this platform's own write paths can actually create.
+    /// </summary>
+    private static Guid? ResolveProjectId(
+        Guid? startParentId, IReadOnlyDictionary<Guid, string> kindByObjectId, IReadOnlyDictionary<Guid, Guid?> parentByObjectId)
+    {
+        var current = startParentId;
+
+        for (var hop = 0; hop < 64 && current is { } id; hop++)
+        {
+            if (kindByObjectId.TryGetValue(id, out var kind) && string.Equals(kind, "Project", StringComparison.Ordinal))
+                return id;
+
+            current = parentByObjectId.TryGetValue(id, out var next) ? next : null;
+        }
+
+        return null;
+    }
 
     private static string? TypeString(IReadOnlyDictionary<string, string?> typeState, string key) =>
         typeState.TryGetValue(key, out var value) ? value : null;

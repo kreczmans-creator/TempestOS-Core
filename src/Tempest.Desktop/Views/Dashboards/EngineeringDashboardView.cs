@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Tasks;
+using Tempest.Core.Commands;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 
@@ -10,52 +12,47 @@ namespace Tempest.Desktop.Views.Dashboards;
 
 /// <summary>
 /// The Engineering dashboard (`WP 19.7B`, Product Owner comment item 6,
-/// sheet 4): Open tasks and Engineering reviews, each row opening right
-/// up — the tree's own "Dashboard + Reports" node in
+/// sheet 4): Calculations, Open tasks and Engineering reviews, each row
+/// opening right up — the tree's own "Dashboard + Reports" node in
 /// <see cref="EngineeringAreaView"/>.
 /// </summary>
 /// <remarks>
-/// <para>
 /// One read, on entry and on <see cref="Tempest.Core.Events.IWorkspaceChanges"/>
 /// (via the parent <see cref="EngineeringAreaView"/>'s own subscription):
-/// <see cref="ITasksReadModel"/>.
-/// </para>
-/// <para>
-/// <b>"Open tasks (calculations and manual tasks)" — the sketch names a
-/// bucket the read model does not carry.</b> <see cref="TasksSnapshot.OpenTasks"/>
-/// is deliverables, milestones and manual tasks — <see cref="ITasksReadModel"/>
-/// has no "Calculations" bucket of its own, the identical gap
-/// <see cref="EngineeringAreaView"/>'s own Tasks node already discloses
-/// rather than papering over with a second placeholder (that view's own
-/// remarks). This panel shows the real <c>OpenTasks</c> list — genuine
-/// data, just not calculation-scoped — with the same one-line disclosure
-/// printed above it, the kill switch's own "leave it out and say so"
-/// applied to a bucket rather than a whole panel.
-/// </para>
+/// <see cref="ITasksReadModel"/>. <see cref="TasksSnapshot.Calculations"/>
+/// (`WP 20.1B`, `TD-181`) is its own section, each row also offering
+/// Complete — <see cref="TasksSnapshot.OpenTasks"/> stays deliverables,
+/// milestones and manual tasks only, exactly as it always has.
 /// </remarks>
 public sealed class EngineeringDashboardView : UserControl
 {
     private readonly ITasksReadModel _readModel;
+    private readonly ICommandDispatcher _commandDispatcher;
     private readonly Action<Guid, string> _openObjectRightUp;
 
+    private readonly StackPanel _calculationsList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _openTasksList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _reviewsList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _approvalsList = new() { Spacing = DesignTokens.SpaceXs };
 
+    /// <summary>Raised after Complete completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
+
     /// <summary>Initialises a new instance of the <see cref="EngineeringDashboardView"/> class.</summary>
-    public EngineeringDashboardView(ITasksReadModel readModel, Action<Guid, string> openObjectRightUp)
+    public EngineeringDashboardView(ITasksReadModel readModel, ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp)
     {
         ArgumentNullException.ThrowIfNull(readModel);
+        ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(openObjectRightUp);
 
         _readModel = readModel;
+        _commandDispatcher = commandDispatcher;
         _openObjectRightUp = openObjectRightUp;
 
         var page = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceXl, MaxWidth = 900 };
         page.Children.Add(PageHeading.Label("ENGINEERING"));
         page.Children.Add(PageHeading.Title("Dashboard"));
-        page.Children.Add(PageHeading.Lead(
-            "The Tasks read model carries no separate Calculations bucket, so \"Open tasks\" below shows deliverables, milestones and manual tasks — not calculation-scoped."));
+        page.Children.Add(Section("Calculations", _calculationsList));
         page.Children.Add(Section("Open tasks", _openTasksList));
         page.Children.Add(Section("Engineering reviews — awaiting check", _reviewsList));
         page.Children.Add(Section("Engineering reviews — awaiting issue", _approvalsList));
@@ -69,9 +66,67 @@ public sealed class EngineeringDashboardView : UserControl
     {
         var snapshot = await _readModel.ReadAsync().ConfigureAwait(true);
 
+        RenderCalculationsList(snapshot.Calculations);
         RenderList(_openTasksList, snapshot.OpenTasks, "No open tasks.");
         RenderList(_reviewsList, snapshot.Reviews, "Nothing awaiting check.");
         RenderList(_approvalsList, snapshot.Approvals, "Nothing awaiting issue.");
+    }
+
+    /// <summary>`WP 20.1B` (`TD-181`): each Calculation row opens right up and offers Complete.</summary>
+    private void RenderCalculationsList(IReadOnlyList<TaskItem> items)
+    {
+        _calculationsList.Children.Clear();
+
+        if (items.Count == 0)
+        {
+            _calculationsList.Children.Add(new TextBlock { Text = "No open calculations.", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7 });
+            return;
+        }
+
+        foreach (var item in items)
+            _calculationsList.Children.Add(CalculationRow(item));
+    }
+
+    private Control CalculationRow(TaskItem item)
+    {
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
+
+        var label = new TextBlock
+        {
+            Text = item.Title,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+        };
+        Grid.SetColumn(label, 0);
+        grid.Children.Add(label);
+
+        var open = new Button { Content = "Open", MinHeight = DesignTokens.ControlSizeSmall };
+        open.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(open, $"Open {item.Title}");
+        open.Click += (_, _) => _openObjectRightUp(item.ObjectId, item.Kind);
+        Grid.SetColumn(open, 1);
+        grid.Children.Add(open);
+
+        var complete = new Button { Content = "Complete", MinHeight = DesignTokens.ControlSizeSmall };
+        complete.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(complete, $"Complete {item.Title}");
+        complete.Click += async (_, _) => await OnCompleteAsync(item).ConfigureAwait(true);
+        Grid.SetColumn(complete, 2);
+        grid.Children.Add(complete);
+
+        return grid;
+    }
+
+    private async Task OnCompleteAsync(TaskItem item)
+    {
+        var result = await _commandDispatcher
+            .DispatchAsync(new CompleteCalculationCommand(item.ObjectId, item.Kind), CancellationToken.None)
+            .ConfigureAwait(true);
+
+        ActionCompleted?.Invoke(result.Message ?? "Complete failed.", ActionOutcome.From(result.Succeeded));
+
+        if (result.Succeeded)
+            await RefreshAsync().ConfigureAwait(true);
     }
 
     private void RenderList(StackPanel host, IReadOnlyList<TaskItem> items, string emptyText)

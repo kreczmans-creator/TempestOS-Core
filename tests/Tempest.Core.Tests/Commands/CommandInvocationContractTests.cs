@@ -206,7 +206,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `remove-line`, `send`, `accept`, `decline`) and two Tasks
         // descriptors (`create`, `complete`), none of them unavailable, so
         // 80 becomes 89.
-        Assert.Equal(89, built);
+        // `WP 20.1B` (`TD-181`) adds one more invocable Calculations
+        // descriptor (`calculations.complete`), so 89 becomes 90.
+        Assert.Equal(90, built);
     }
 
     [Fact]
@@ -272,7 +274,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // identical comment) — seven Quotations descriptors and two Tasks
         // descriptors join, all reaching a registered handler, so 80
         // becomes 89.
-        Assert.Equal(89, executed);
+        // `WP 20.1B`: `calculations.complete` joins, reaching its own
+        // registered handler too, so 89 becomes 90.
+        Assert.Equal(90, executed);
     }
 
     [Fact]
@@ -407,7 +411,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.5D`: `Disciplines` (above) now names "Quotations" and
         // "Tasks" too, bringing in the seven Quotations and two Tasks
         // production descriptors, so 98 becomes 107.
-        Assert.Equal(107 * 4, compared);
+        // `WP 20.1B` (`TD-181`) adds one more production descriptor
+        // (`calculations.complete`), so 107 becomes 108.
+        Assert.Equal(108 * 4, compared);
     }
 
     // ==================================================================
@@ -623,7 +629,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TheFifteenUnattendedCommands_RunWithNoPromptAtAll()
+    public async Task TheSixteenUnattendedCommands_RunWithNoPromptAtAll()
     {
         var ran = 0;
 
@@ -645,7 +651,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
         // adds one: `task.complete` — `CommandContextRequirement.SelectedObject`,
         // no declared parameter, no confirmation — so 14 becomes 15.
-        Assert.Equal(15, ran);
+        // `WP 20.1B` (`TD-181`) adds `calculations.complete`, the identical
+        // shape, so 15 becomes 16.
+        Assert.Equal(16, ran);
     }
 
     [Fact]
@@ -742,7 +750,9 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
         // adds the seven Quotations and two Tasks production descriptors,
         // so 98 becomes 107.
-        Assert.Equal(107, Production.Count);
+        // `WP 20.1B` (`TD-181`) adds one more (`calculations.complete`), so
+        // 107 becomes 108.
+        Assert.Equal(108, Production.Count);
     }
 
     [Fact]
@@ -771,9 +781,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // descriptors, all invocable (none needs an object picker or
         // structured input) — so 80 becomes 89 and 98 becomes 107; 18 is
         // unchanged.
-        Assert.Equal(89, Invocable.Count());
+        // `WP 20.1B` (`TD-181`) adds one more, invocable, production
+        // Calculations descriptor (`calculations.complete`), so 89 becomes
+        // 90 and 107 becomes 108; 18 is unchanged.
+        Assert.Equal(90, Invocable.Count());
         Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(107, Production.Count);
+        Assert.Equal(108, Production.Count);
     }
 
     [Fact]
