@@ -22,6 +22,9 @@ public sealed class RequirementExportAdapter : IExportable, IExportableKind, IIm
     /// <summary>The schema version this adapter's own payload shape uses.</summary>
     public const int CurrentSchemaVersion = 1;
 
+    /// <summary>Explicit rather than implicit (`WP 21.5F` Offensive Security Audit, OSA-05) — see <c>Tempest.Core.ExportImport.JsonExportFormat</c>'s own identical remark.</summary>
+    private static readonly JsonSerializerOptions Options = new() { MaxDepth = 64 };
+
     private readonly IRequirementsService _requirementsService;
     private readonly Guid _requirementId;
 
@@ -50,7 +53,7 @@ public sealed class RequirementExportAdapter : IExportable, IExportableKind, IIm
         var requirement = await _requirementsService.FindAsync(_requirementId, cancellationToken).ConfigureAwait(false);
 
         var payload = JsonSerializer.SerializeToUtf8Bytes(new RequirementExportPayload(
-            requirement?.Identifier ?? string.Empty, requirement?.Statement ?? string.Empty, requirement?.Category));
+            requirement?.Identifier ?? string.Empty, requirement?.Statement ?? string.Empty, requirement?.Category), Options);
 
         await destination.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
     }
@@ -63,8 +66,24 @@ public sealed class RequirementExportAdapter : IExportable, IExportableKind, IIm
         using var buffer = new MemoryStream();
         await payload.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<RequirementExportPayload>(buffer.ToArray())
-            ?? throw new InvalidOperationException("Requirement export payload could not be deserialised.");
+        RequirementExportPayload? data;
+        try
+        {
+            data = JsonSerializer.Deserialize<RequirementExportPayload>(buffer.ToArray(), Options);
+        }
+        catch (JsonException ex)
+        {
+            // `WP 21.5F` Offensive Security Audit, OSA-05: this inner
+            // payload's own deserialize call had no try/catch at all - a
+            // malformed inner payload (a valid outer export envelope
+            // around garbage JSON) propagated a raw JsonException rather
+            // than the same CorruptedExportArtifactException every other
+            // corruption case in this pipeline already reports.
+            throw new CorruptedExportArtifactException(ex.Message);
+        }
+
+        if (data is null)
+            throw new CorruptedExportArtifactException("Requirement export payload could not be deserialised.");
 
         var reimportedIdentifier = $"{data.Identifier}-imported-{Guid.NewGuid():N}";
         await _requirementsService.CreateAsync(reimportedIdentifier, data.Statement, data.Category, cancellationToken).ConfigureAwait(false);

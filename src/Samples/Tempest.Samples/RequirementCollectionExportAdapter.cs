@@ -49,6 +49,9 @@ public sealed class RequirementCollectionExportAdapter : IExportable, IExportabl
     /// <summary>The schema version this adapter's own payload shape uses.</summary>
     public const int CurrentSchemaVersion = 1;
 
+    /// <summary>Explicit rather than implicit (`WP 21.5F` Offensive Security Audit, OSA-05) — see <c>Tempest.Core.ExportImport.JsonExportFormat</c>'s own identical remark.</summary>
+    private static readonly JsonSerializerOptions Options = new() { MaxDepth = 64 };
+
     private readonly IRequirementsService _requirementsService;
     private readonly Guid _collectionId;
 
@@ -90,7 +93,7 @@ public sealed class RequirementCollectionExportAdapter : IExportable, IExportabl
             }
         }
 
-        var payload = JsonSerializer.SerializeToUtf8Bytes(new RequirementCollectionExportPayload(collection?.Name ?? string.Empty, members));
+        var payload = JsonSerializer.SerializeToUtf8Bytes(new RequirementCollectionExportPayload(collection?.Name ?? string.Empty, members), Options);
         await destination.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
     }
 
@@ -102,8 +105,20 @@ public sealed class RequirementCollectionExportAdapter : IExportable, IExportabl
         using var buffer = new MemoryStream();
         await payload.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-        var data = JsonSerializer.Deserialize<RequirementCollectionExportPayload>(buffer.ToArray())
-            ?? throw new InvalidOperationException("Requirement Collection export payload could not be deserialised.");
+        RequirementCollectionExportPayload? data;
+        try
+        {
+            data = JsonSerializer.Deserialize<RequirementCollectionExportPayload>(buffer.ToArray(), Options);
+        }
+        catch (JsonException ex)
+        {
+            // `WP 21.5F` Offensive Security Audit, OSA-05: see
+            // RequirementExportAdapter's own identical fix and remark.
+            throw new CorruptedExportArtifactException(ex.Message);
+        }
+
+        if (data is null)
+            throw new CorruptedExportArtifactException("Requirement Collection export payload could not be deserialised.");
 
         var importedCollection = await _requirementsService.CreateCollectionAsync(
             $"{data.Name} (Imported {Guid.NewGuid().ToString("N")[..8]})", cancellationToken).ConfigureAwait(false);
