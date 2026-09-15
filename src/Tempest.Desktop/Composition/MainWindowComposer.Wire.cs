@@ -339,10 +339,25 @@ internal sealed partial class MainWindowComposer
             switch (invocation.Outcome)
             {
                 case CommandOutcome.Executed:
+                    // `WP 20.10C` (PO finding T6): `RefreshStatusBar` alone
+                    // re-displays `manager.StatusBar.StatusText` — whatever
+                    // the last *selection* set it to — never this
+                    // command's own result. The picker closed, the Domain
+                    // genuinely moved or copied the object, and the user
+                    // saw nothing say so. `WorkspaceStatusBar.SetStatus`
+                    // (already `Tempest.Harness`'s own established way to
+                    // report a command's own result — see
+                    // `WorkspaceShell.HandleRunCommandAsync`) is the one
+                    // piece this path was missing: set first, so the
+                    // subsequent `RefreshStatusBar` carries it onto the
+                    // real, visible Status Bar rather than the stale text
+                    // it would otherwise re-read.
                     var result = invocation.Result!;
-                    callbacks.RecordHistory(result.Succeeded
-                        ? $"{(isMove ? "Moved" : "Copied")} via Ctrl+Shift+{(isMove ? 'M' : 'C')}."
-                        : $"{(isMove ? "Move" : "Copy")} failed: {result.Message ?? "Command failed."}");
+                    var message = result.Message ?? (result.Succeeded
+                        ? $"{(isMove ? "Moved" : "Copied")}."
+                        : $"{(isMove ? "Move" : "Copy")} failed.");
+                    manager.StatusBar.SetStatus(message);
+                    callbacks.RecordHistory(message);
                     callbacks.RefreshStatusBar(manager);
                     break;
 
