@@ -167,11 +167,18 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
         foreach (var descriptor in Production.Where(d => d.Binding is { IsInvocable: false }))
             Assert.DoesNotContain(descriptor.Id, offered);
 
-        // The object-picker set, named directly (`WP 20.2A` will make
-        // these invocable; until then they stay refused here and at
-        // MacroManager.CreateAsync's own record-time check).
-        foreach (var id in new[] { "mechanical.move", "mechanical.copy", "mechanical.compare-baselines" })
+        // The structured-input set, named directly - the three descriptors
+        // still declared Unavailable once `WP 20.2A` (FCR-0073) made the
+        // object-picker set invocable: a file's bytes and a calculation's
+        // own typed inputs are not strings a prompt can collect.
+        foreach (var id in new[] { "calculations.execute", "calculations.recalculate", "documents.attach" })
             Assert.DoesNotContain(id, offered);
+
+        // And the object-picker set is offered now (`WP 20.2A`): a
+        // destination is collected through the picker when the step is
+        // added, exactly as any other declared value.
+        foreach (var id in new[] { "mechanical.move", "mechanical.copy", "mechanical.compare-baselines" })
+            Assert.Contains(id, offered);
     }
 
     // ==================================================================
@@ -378,15 +385,16 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
     {
         var (macros, _) = await MacroSetupAsync();
 
-        // mechanical.move is the object-picker set (WP 20.2A, not yet
-        // landed): its own binding is declared Unavailable, so recording
-        // it as a step is refused here, naming the reason, rather than
+        // documents.attach is the structured-input set (`WP 20.2A` made the
+        // object-picker set invocable, so mechanical.move no longer serves
+        // here): its own binding is declared Unavailable, so recording it
+        // as a step is refused here, naming the reason, rather than
         // accepted and left to fail unexplained the first time this macro
         // ran.
         var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => macros.CreateAsync("Bad step", [new MacroStep(MechanicalCommandIds.Move)]));
+            () => macros.CreateAsync("Bad step", [new MacroStep(DocumentsCommandIds.Attach)]));
 
-        Assert.Contains(MechanicalCommandIds.Move, exception.Message, StringComparison.Ordinal);
-        Assert.Contains("destination parent", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(DocumentsCommandIds.Attach, exception.Message, StringComparison.Ordinal);
+        Assert.Contains("file picker", exception.Message, StringComparison.Ordinal);
     }
 }

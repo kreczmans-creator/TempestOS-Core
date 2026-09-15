@@ -145,6 +145,13 @@ public sealed class ProjectAreaAcceptanceTests
 
             // And the row the user pressed says where the document went,
             // rather than looking as though nothing happened.
+            // The row is marked on the open's own continuation, after the
+            // viewer is already open, so a loaded machine (CI's Debug shard,
+            // 2026-09-15) can reach this line first: bounded poll on the
+            // real collection, the assertions below unchanged.
+            for (var attempt = 0; attempt < 200 && !documents.OpenedAttachmentIds.Contains(attachmentId); attempt++)
+                await Task.Delay(10);
+
             Assert.Contains(attachmentId, documents.OpenedAttachmentIds);
             Assert.Contains(
                 documents.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),
