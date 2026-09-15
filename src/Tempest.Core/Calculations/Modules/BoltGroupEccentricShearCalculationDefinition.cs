@@ -1,3 +1,4 @@
+using Tempest.Core.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Calculations.Modules;
@@ -6,6 +7,7 @@ namespace Tempest.Core.Calculations.Modules;
 public sealed record BoltPosition(Quantity<Length> X, Quantity<Length> Y);
 
 /// <summary>The inputs to one bolt-group eccentric shear check.</summary>
+/// <param name="FastenerPin">The released fastener record the allowable shear belongs to, where one exists; <see langword="null"/> when the grade is named by <paramref name="FastenerGrade"/> alone.</param>
 /// <param name="FastenerGrade">The fastener the allowable shear belongs to, for example "ISO 898-1 class 8.8 M16". Recorded, so the figure is attributable.</param>
 /// <param name="Bolts">Every bolt's position. Equal bolt areas are assumed.</param>
 /// <param name="LoadX">The in-plane load's x component.</param>
@@ -14,6 +16,7 @@ public sealed record BoltPosition(Quantity<Length> X, Quantity<Length> Y);
 /// <param name="LoadPointY">Where the load acts, y.</param>
 /// <param name="AllowableShearPerBolt">The allowable shear force on one bolt.</param>
 public sealed record BoltGroupEccentricShearInput(
+    ReferencePin? FastenerPin,
     string FastenerGrade,
     IReadOnlyList<BoltPosition> Bolts,
     Quantity<Force> LoadX,
@@ -101,6 +104,8 @@ public sealed class BoltGroupEccentricShearCalculationDefinition
         ModuleGuards.Require(context, "Allowable shear per bolt must be positive.", allowableN > 0, $"{allowableN:0.###} N");
 
         context.RecordIntermediate("Fastener grade", input.FastenerGrade);
+        if (input.FastenerPin is { } fastenerPin)
+            context.RecordIntermediate("Fastener reference", fastenerPin.ToString());
 
         var xs = new double[count];
         var ys = new double[count];
