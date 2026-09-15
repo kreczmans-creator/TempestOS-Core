@@ -48,6 +48,17 @@ public sealed class DocumentViewerView : UserControl
     /// <summary>An arrow annotation's own head half-angle, in radians (about 25°).</summary>
     private const double AnnotationArrowHeadAngle = Math.PI / 7;
 
+    /// <summary>
+    /// Mirrors <see cref="PdfDocumentPageSource.MaxRasterEdge"/>'s own
+    /// value exactly (`TD-101`) — kept as this view's own constant, rather
+    /// than referenced from that platform-guarded class directly, so this
+    /// general-purpose control (meaningful, and buildable, on every
+    /// platform regardless of whether a PDF renderer is available on it)
+    /// does not have to carry that class's own <see cref="System.Runtime.Versioning.SupportedOSPlatformAttribute"/>
+    /// triple itself merely to compare against one of its constants.
+    /// </summary>
+    private const int TiledRenderMaxRasterEdge = 8000;
+
     private readonly Image _page = new() { Stretch = Stretch.Fill };
     private readonly Canvas _canvas = new() { Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x3D, 0x41)) };
     private readonly TextBlock _pageIndicator = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0) };
@@ -100,6 +111,15 @@ public sealed class DocumentViewerView : UserControl
     /// was written without a real save dialog appearing (`TD-98`).
     /// </summary>
     public IFilePicker FilePicker { get; set; }
+
+    /// <summary>
+    /// This tab's own tiled-render cache (`TD-101`) — cleared, never
+    /// reused, whenever a different document opens into this tab: a cached
+    /// tile is keyed by page index and scale alone, which a different
+    /// attachment's own page 1 at 1.0x would collide with if the cache
+    /// outlived the document it was rasterised from.
+    /// </summary>
+    private readonly TileCache _tileCache = new();
 
     private IDocumentPageSource? _source;
     private Bitmap? _rendered;
@@ -271,6 +291,7 @@ public sealed class DocumentViewerView : UserControl
 
         _source?.Dispose();
         _source = source;
+        _tileCache.Clear();
         _renderedPage = -1;
         _renderedZoom = 0;
         _renderedRotation = 0;
@@ -289,6 +310,7 @@ public sealed class DocumentViewerView : UserControl
 
         _source?.Dispose();
         _source = null;
+        _tileCache.Clear();
         _rendered = null;
         _page.Source = null;
         _sizedPage = -1;
@@ -617,7 +639,7 @@ public sealed class DocumentViewerView : UserControl
             // requested scale, and this view turns the resulting bitmap —
             // the same separation `IDocumentPageSource`'s own remarks draw
             // between "what a format is" and "how the viewer behaves".
-            var raw = _source.RenderPage(pageIndex, zoom);
+            var raw = RenderWholePage(pageIndex, zoom);
             _rendered = RotateForDisplay(raw, _rotationDegrees);
             _renderedPage = pageIndex;
             _renderedZoom = zoom;
@@ -633,6 +655,71 @@ public sealed class DocumentViewerView : UserControl
             _page.Source = null;
         }
     }
+
+    /// <summary>
+    /// Renders the whole of page <paramref name="pageIndex"/> at
+    /// <paramref name="zoom"/> — through <see cref="_source"/>'s own
+    /// <see cref="IDocumentPageSource.RenderPage"/> directly for the
+    /// ordinary case, or, when that single render would exceed
+    /// <see cref="PdfDocumentPageSource.MaxRasterEdge"/> and the source
+    /// supports it, composed from cached tiles instead (`TD-101`): the
+    /// fix for the case that ceiling exists for at all — an A0 sheet at a
+    /// deep zoom — which would otherwise ask for one enormous bitmap and
+    /// get it back capped, and therefore blurred, rather than at the scale
+    /// actually requested. Every tile this composes from is cached in
+    /// <see cref="_tileCache"/>, so a later render at the identical page
+    /// and zoom (a rotation, a page-and-back, a zoom-out-and-back-in) pays
+    /// for only whichever tiles are not already there.
+    /// </summary>
+    private Bitmap RenderWholePage(int pageIndex, double zoom)
+    {
+        if (_source is ITiledDocumentPageSource tiled)
+        {
+            var nativeSize = _source.PageSize(pageIndex);
+            var longestEdge = Math.Max(nativeSize.Width, nativeSize.Height) * zoom;
+
+            if (longestEdge > TiledRenderMaxRasterEdge)
+                return ComposeFromTiles(tiled, pageIndex, zoom, nativeSize);
+        }
+
+        return _source!.RenderPage(pageIndex, zoom);
+    }
+
+    /// <summary>Builds one bitmap covering the whole of <paramref name="nativeSize"/> at <paramref name="scale"/> from <see cref="_tileCache"/>'s own tiles, rendering (and caching) only the ones not already there.</summary>
+    private Bitmap ComposeFromTiles(ITiledDocumentPageSource tiled, int pageIndex, double scale, Size nativeSize)
+    {
+        var renderedWidth = Math.Max(1, (int)Math.Round(nativeSize.Width * scale));
+        var renderedHeight = Math.Max(1, (int)Math.Round(nativeSize.Height * scale));
+
+        var target = new RenderTargetBitmap(new PixelSize(renderedWidth, renderedHeight), new Vector(96, 96));
+        using (var context = target.CreateDrawingContext())
+        {
+            var tiles = TileGrid.VisibleTiles(
+                nativeSize.Width, nativeSize.Height, scale,
+                viewportOffsetX: 0, viewportOffsetY: 0, viewportWidth: renderedWidth, viewportHeight: renderedHeight, ringSize: 0);
+
+            foreach (var (column, row) in tiles)
+            {
+                var key = new TileCache.Key(pageIndex, scale, column, row);
+                var bitmap = _tileCache.TryGet(key);
+                if (bitmap is null)
+                {
+                    bitmap = tiled.RenderTile(pageIndex, scale, column, row, TileGrid.TileSize);
+                    _tileCache.Add(key, bitmap, EstimateBitmapBytes(bitmap));
+                }
+
+                var x = column * TileGrid.TileSize;
+                var y = row * TileGrid.TileSize;
+                context.DrawImage(bitmap, new Rect(x, y, bitmap.PixelSize.Width, bitmap.PixelSize.Height));
+            }
+        }
+
+        return target;
+    }
+
+    /// <summary>A tile bitmap's own approximate memory footprint — BGRA8888, 4 bytes per pixel, the same format every page source in this file renders to.</summary>
+    private static long EstimateBitmapBytes(Bitmap bitmap) =>
+        (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4;
 
     /// <summary>
     /// Turns <paramref name="source"/> by <paramref name="degrees"/>

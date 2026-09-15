@@ -35,7 +35,7 @@ namespace Tempest.Desktop.Viewing;
 [SupportedOSPlatform("windows")]
 [SupportedOSPlatform("linux")]
 [SupportedOSPlatform("macos")]
-public sealed class PdfDocumentPageSource : IDocumentPageSource
+public sealed class PdfDocumentPageSource : IDocumentPageSource, ITiledDocumentPageSource
 {
     /// <summary>The resolution a PDF page's "natural size" is expressed at.</summary>
     /// <remarks>
@@ -184,6 +184,48 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
         // drawing does not re-open its content store's connection every
         // time — and disposing it here is what releases that connection.
         _stream?.Dispose();
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Unlike <see cref="RenderPage"/>, this never applies <see cref="MaxRasterEdge"/>:
+    /// one tile is <see cref="TileGrid.TileSize"/> pixels on a side by
+    /// construction, always comfortably under that ceiling regardless of
+    /// scale, which is the entire reason tiling raises it — a whole A0
+    /// sheet at 400% zoom would hit the cap and degrade; the same sheet as
+    /// a grid of 512px tiles never does, because no single render this
+    /// method ever issues is large enough to.
+    /// </remarks>
+    public Bitmap RenderTile(int pageIndex, double scale, int column, int row, int tileSize)
+    {
+        var index = Math.Clamp(pageIndex, 0, PageCount - 1);
+        var page = PageSize(index);
+        var effective = double.IsFinite(scale) && scale > 0 ? scale : 1;
+
+        var (x, y, width, height) = TileGrid.TileContentRect(page.Width, page.Height, effective, column, row);
+        if (width <= 0 || height <= 0)
+            throw new DocumentRenderException($"Tile ({column},{row}) of page {index + 1} lies entirely outside the page.");
+
+        var pixelWidth = Math.Max(1, (int)Math.Round(width * effective));
+        var pixelHeight = Math.Max(1, (int)Math.Round(height * effective));
+
+        try
+        {
+            var options = new PDFtoImage.RenderOptions(
+                Width: pixelWidth,
+                Height: pixelHeight,
+                Bounds: new System.Drawing.RectangleF((float)x, (float)y, (float)width, (float)height));
+
+            using var skia = _content is { } bytes
+                ? Conversion.ToImage(bytes, new Index(index), options: options)
+                : Conversion.ToImage(_stream!, new Index(index), leaveOpen: true, options: options);
+
+            return ToAvaloniaBitmap(skia);
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException($"Tile ({column},{row}) of page {index + 1} could not be rendered.", ex);
+        }
     }
 
     private static double EffectiveScale(Size page, double scale)
