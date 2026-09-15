@@ -484,8 +484,30 @@ public class CalculationModuleServiceTests
         Assert.Equal(run.RecordId, presented!.RecordId);
         Assert.Equal(run.Results, presented.Results);
         Assert.Null(await libraries.Service.PresentAsync(module, Guid.NewGuid()));
-
         await Assert.ThrowsAsync<ArgumentException>(() => libraries.Service.ExecuteAsync(Module(BeamDeflectionCalculationDefinition.Id), input));
+
+        // A record read back from the store presents its working exactly
+        // as the live run did: quantities with units, numbers to six
+        // figures — never the JSON the store holds them as.
+        Assert.Equal(run.Working, presented.Working);
+        Assert.Equal(run.Checks, presented.Checks);
+    }
+
+    [Fact]
+    public async Task ARecordReadBack_PresentsItsWorkingAsValues_NotAsTheStoredJson()
+    {
+        var libraries = await WithSeededSteelAsync();
+        var module = Module(BeamDeflectionCalculationDefinition.Id);
+
+        var live = (await RunAsync(libraries, BeamDeflectionCalculationDefinition.Id, BeamExample1())).Run!;
+        var readBack = (await libraries.Service.PresentAsync(module, live.RecordId))!;
+
+        Assert.Contains(readBack.Working, w => w.Label == "Maximum deflection" && w.Display == "3.96825 mm");
+        Assert.Contains(readBack.Working, w => w.Label == "Span-to-depth ratio" && w.Display == "20");
+        Assert.Contains(readBack.Working, w => w.Label == "Material reference" && w.Display.StartsWith("Materials/mat-s355j2@", StringComparison.Ordinal));
+        Assert.Contains(readBack.Working, w => w.Label == "Case" && w.Display == "SimplySupported, PointLoad");
+        Assert.DoesNotContain(readBack.Working, w => w.Display.Contains("{", StringComparison.Ordinal));
+        Assert.Equal(live.Working, readBack.Working);
     }
 
     [Fact]

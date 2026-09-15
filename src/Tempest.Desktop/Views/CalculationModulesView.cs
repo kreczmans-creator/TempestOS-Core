@@ -173,6 +173,9 @@ public sealed class CalculationModulesView : UserControl
     /// <summary>What the engineer typed as the calculation's name, or <see langword="null"/> for the default.</summary>
     public string? CalculationName => string.IsNullOrWhiteSpace(_nameBox.Text) ? null : _nameBox.Text;
 
+    /// <summary>Types a calculation name, as a test would.</summary>
+    public void SetCalculationName(string? name) => _nameBox.Text = name;
+
     /// <summary>The released records the picker of <paramref name="library"/> offers.</summary>
     public IReadOnlyList<ReleasedRecordOption> Released(ReferenceLibrary library) => _released.TryGetValue(library, out var options) ? options : [];
 
@@ -646,7 +649,7 @@ public sealed class CalculationModulesView : UserControl
         commands.Children.Add(_compareButton);
         commands.Children.Add(_newButton);
         panel.Children.Add(commands);
-        panel.Children.Add(Caption("Re-run repeats the recorded calculation with its retained input as a new record; Compare with previous shows what changed between the last two records. Both are the calculation's own commands, the same ones the Ribbon offers. Calculate again records another run against the same calculation; Start a new calculation leaves it, so the next Calculate names a new one."));
+        panel.Children.Add(Caption("Re-run repeats the recorded calculation with its retained input as a new record; Compare with previous shows what changed between the last two records. Both are the calculation's own commands, the same ones the Ribbon offers. Calculate again records another run against the same calculation; typing a different name, or Start a new calculation, makes the next Calculate name a new one."));
         return panel;
     }
 
