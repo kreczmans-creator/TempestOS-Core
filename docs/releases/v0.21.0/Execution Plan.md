@@ -31,14 +31,15 @@ rather than another recovery.
 | No installer, upgrade, backup or restore | `WP 21.5A` the programme's `RC.0A` brought forward: a Velopack-packaged Windows installer with in-place update from the GitHub Release feed, the database backed up beside itself before migration, a `--persistence-root` argument and a first-run data-location dialog, backup and restore from Settings, the support matrix | 1 | 5 | — |
 | Startup linear in object count (`TD-88`) | `WP 21.5B` lazy, project-scoped materialisation over the index `WP 20.1C2` built, the seventy list-result callers moved to the index, behaviour proven identical | 1 | 3 | — |
 | Mutation score 67.58 % against a 70 % break | `WP 21.5D` the surviving mutants in Core answered with assertions, the threshold met | 3 | 3 | everything else merged |
+| No security audit since the v0.5.0 baseline (2026-07-28); no dependency scan in CI; new surfaces unread (connectors, loopback listener, Open externally, macros, import, tonight's SVG parser and installer) | `WP 21.5E` the programme's `RC.0C` brought forward: a review of every surface added since the baseline with RED findings fixed and AMBER filed, the security posture statement, `dotnet list package --vulnerable` as a required CI check, Dependabot, the third-party notices | 1 | 3 | — |
 | Live Xero never authorised | `WP 21.6` the first live authorisation against the Product Owner's organisation, with the lead on hand; any mismatch fixed | 3 | 0.5 + the Product Owner | — |
 | Release | `WP 21.9.0` notes, figures, `PHYSICAL_REVIEW.md` §7e, three green CI runs, the candidate page | 3 | 1 | all |
 
-Effort: about 71.5 developer-days across sixteen packages.
+Effort: about 74.5 developer-days across seventeen packages.
 
 ## 3. Waves
 
-- **Wave 1, started 2026-09-15 15:50 beside the seven `20.10` packages:** `21.3A`, `21.4A`, `21.5A`, `21.5B` — none touches a file a `20.10` package owns.
+- **Wave 1, started 2026-09-15 15:50 beside the seven `20.10` packages:** `21.3A`, `21.4A`, `21.5A`, `21.5B`, `21.5E` (added 16:20 on the Product Owner's security question) — none touches a file a `20.10` package owns.
 - **Wave 2, as the `20.10` packages merge:** `21.1A` after `20.10C`; `21.1B` after `20.10A` and `20.10F`; `21.2A` after `20.10G`; `21.3B` after `20.10A` and `20.10E`; `21.2B` any time; `21.0A`→`21.0B`→`21.0C` after `20.10D` and the ADR review.
 - **Wave 3:** `21.5C` after `21.0C`; `21.5D` last; `21.6` when the Product Owner is at the computer; `21.9.0`.
 
