@@ -238,15 +238,8 @@ public sealed class ObjectEditorView : UserControl
     // collapsed-and-hidden (IsVisible = false) by default and made
     // visible only when PopulateFrom's own gate matches the real target.
 
-    private readonly TextBox _bomQuantityBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _bomUnitOfMeasureBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _bomFindNumberBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _bomItemNumberBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _bomReferenceDesignatorBox = new() { FontSize = DesignTokens.FontSizeBody, MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _bomSaveButton = new() { Content = "Save BOM Line", MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBlock _bomStatusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _contentSection = null!;
-    private Expander _bomSection = null!;
+    private readonly BillOfMaterialsSection _bomSection = new();
 
     // `WP 20.10F` (Product Owner finding D8): a drop-down of Released
     // people, not a free `TextBox` — see `PopulateOwnerOptionsAsync`'s own
@@ -573,7 +566,6 @@ public sealed class ObjectEditorView : UserControl
         _readOnlyToggle.Classes.Add(ChromeStyles.Subtle);
         _saveButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
-        _bomSaveButton.Classes.Add(ChromeStyles.Primary);
         _requirementSaveButton.Classes.Add(ChromeStyles.Primary);
         _calculationExecuteButton.Classes.Add(ChromeStyles.Primary);
         _calculationDueSaveButton.Classes.Add(ChromeStyles.Primary);
@@ -604,8 +596,8 @@ public sealed class ObjectEditorView : UserControl
         // WP 10.7A — Feature Completion: the five new sections' own Save/
         // Execute/Record/Attach actions, each independent of the main
         // Name/Content Save above (a different command, a different
-        // buffered-edit lifecycle).
-        _bomSaveButton.Click += async (_, _) => await OnSaveBomAsync().ConfigureAwait(true);
+        // buffered-edit lifecycle). `WP 21.1B`: Bill of Materials now wires
+        // its own Save button inside its own Build().
         _requirementSaveButton.Click += async (_, _) => await OnSaveRequirementAsync().ConfigureAwait(true);
         // `WP 20.10F`: picking the drop-down's own trailing "Add person…"
         // row is an immediate action, not a value to save — handled here,
@@ -865,17 +857,9 @@ public sealed class ObjectEditorView : UserControl
         // WP 10.7A — Feature Completion: five real, discipline-specific
         // sections (see class remarks) — each collapsed-and-hidden by
         // default, made visible only for the Kind/object it genuinely
-        // applies to.
-        var bomPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        bomPanel.Children.Add(LabeledRow("Quantity", _bomQuantityBox));
-        bomPanel.Children.Add(LabeledRow("Unit of Measure", _bomUnitOfMeasureBox));
-        bomPanel.Children.Add(LabeledRow("Find Number", _bomFindNumberBox));
-        bomPanel.Children.Add(LabeledRow("Item Number", _bomItemNumberBox));
-        bomPanel.Children.Add(LabeledRow("Reference Designator", _bomReferenceDesignatorBox));
-        bomPanel.Children.Add(_bomSaveButton);
-        bomPanel.Children.Add(_bomStatusMessage);
-        _bomSection = BuildSection("Bill of Materials", bomPanel);
-        _bomSection.IsVisible = false;
+        // applies to. `WP 21.1B`: Bill of Materials now lives in its own
+        // file under Editors/Sections/.
+        var bomExpander = _bomSection.Build(_sectionContext);
 
         var requirementPanel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         requirementPanel.Children.Add(LabeledRow("Owner", _requirementOwnerBox));
@@ -1078,7 +1062,7 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(_quotationLinesSection);
         body.Children.Add(_contentSection);
         body.Children.Add(_evidenceSubjectSection);
-        body.Children.Add(_bomSection);
+        body.Children.Add(bomExpander);
         body.Children.Add(_requirementSection);
         body.Children.Add(_calculationSection);
         body.Children.Add(_calculationPointerSection);
@@ -1140,7 +1124,7 @@ public sealed class ObjectEditorView : UserControl
         // surface audit found this on RequirementGroup and RequirementCollection).
         _contentSection.IsVisible = _manager.CanRevise(_objectKind) || !string.IsNullOrEmpty(_originalContent);
 
-        PopulateBom(target);
+        await _bomSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
         await PopulateRequirementAsync().ConfigureAwait(true);
         await PopulateCalculationExecutionAsync(target).ConfigureAwait(true);
         PopulateCalculationDue(target);
@@ -1312,61 +1296,6 @@ public sealed class ObjectEditorView : UserControl
     {
         MechanicalObjectFactoryRegistry.Assembly, MechanicalObjectFactoryRegistry.SubAssembly, MechanicalObjectFactoryRegistry.Part, MechanicalObjectFactoryRegistry.Component, MechanicalObjectFactoryRegistry.Configuration,
     };
-
-    private void PopulateBom(IEngineeringObject target)
-    {
-        // `WP 18.2A`: where a Kind has a real declaration, the declaration
-        // decides — a Part shows no BOM input at all (`TD-175`), even
-        // though it still structurally implements `IHasBomLine`. A Kind
-        // with no declaration keeps today's own <see cref="BomKinds"/> gate,
-        // unchanged.
-        var declaration = _declarations?.For(_objectKind);
-        var showBom = declaration is not null
-            ? declaration.HasSection(EditorSectionKeys.BillOfMaterials)
-            : _objectKind is not null && BomKinds.Contains(_objectKind);
-
-        if (target is not IHasBomLine bomLine || !showBom)
-        {
-            _bomSection.IsVisible = false;
-            return;
-        }
-
-        _bomSection.IsVisible = true;
-        _bomQuantityBox.Text = bomLine.Quantity.ToString(CultureInfo.InvariantCulture);
-        _bomUnitOfMeasureBox.Text = bomLine.UnitOfMeasure ?? string.Empty;
-        _bomFindNumberBox.Text = bomLine.FindNumber ?? string.Empty;
-        _bomItemNumberBox.Text = bomLine.ItemNumber ?? string.Empty;
-        _bomReferenceDesignatorBox.Text = bomLine.ReferenceDesignator ?? string.Empty;
-        _bomStatusMessage.Text = string.Empty;
-    }
-
-    private async Task OnSaveBomAsync()
-    {
-        if (!decimal.TryParse(_bomQuantityBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var quantity) || quantity <= 0)
-        {
-            _bomStatusMessage.Text = "Quantity must be a positive number.";
-            return;
-        }
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new SetBomLineCommand(
-                _objectId, _objectKind, quantity,
-                NullIfEmpty(_bomUnitOfMeasureBox.Text), NullIfEmpty(_bomFindNumberBox.Text),
-                NullIfEmpty(_bomItemNumberBox.Text), NullIfEmpty(_bomReferenceDesignatorBox.Text)),
-            CancellationToken.None).ConfigureAwait(true);
-
-        // Refresh() first — it re-runs PopulateBom, which resets this
-        // section's own status message to empty as part of a clean
-        // re-read; setting the real outcome message only after Refresh()
-        // returns is what makes it actually survive to be seen, rather
-        // than being immediately overwritten by the same success path
-        // that produced it.
-        var message = result.Succeeded ? "BOM line saved." : result.Message ?? "Save failed.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _bomStatusMessage.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
 
     /// <summary>Builds one read-only, named, linked row for an object referenced by id — shared by Evidence's own <em>Subject</em> (<em>Where used</em>'s identical copy now lives in <c>Editors/Sections/WhereUsedSection.cs</c>, `WP 21.1B`).</summary>
     private async Task<Control> BuildObjectReferenceRowAsync(Guid referencedId)
