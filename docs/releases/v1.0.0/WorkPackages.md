@@ -120,7 +120,10 @@ package) and records it in Tempest as evidence: the files, what it is
 about, the governed references it cites at the revision held, its key
 figures, and its check and issue. **Everything is recorded, cited, checked and issued in Tempest; the
 calculation surfaces that ship in `v0.17.0` stay in place for now,
-unextended (Product Owner, 2026-09-09).**
+unextended (Product Owner, 2026-09-09; amended 2026-09-15 — eleven
+catalogue-driven calculation modules and the Engineering Calculators
+surface were added on the Product Owner's own instruction as `WP 21.7A`–`21.7C`
+in `v0.21.0`; see `D-028`'s addendum).**
 Decided by the Product Owner on 2026-09-09 (`D-028`), replacing
 "Calculation as Document". Deliberately not an ERP and not a PLM: the
 subject of a piece of evidence is a tag, never a managed structure.
@@ -266,7 +269,11 @@ the outcome is predictable.
   grammar, no cell editor, no run diff. The calculation surfaces that
   ship in `v0.17.0` stay in place, unextended, on the Product Owner's
   instruction of 2026-09-09; calculations for evidence are done in the
-  engineer's own tools and recorded as evidence.
+  engineer's own tools and recorded as evidence. *Amended 2026-09-15 by
+  the Product Owner: the eleven descriptor-driven calculation modules of
+  `WP 21.7A`–`21.7C` (`v0.21.0`) are the one addition — fixed methods with
+  a teaching register and worked-example vectors, not authoring; the
+  grammar, editor and diff stay unbuilt.*
 - **Not an ERP and not a PLM** (`D-028`): no part-occurrence model, no
   multi-assembly usage, no change control on lines, no procurement,
   supplier, cost or stock field, no workflow engine. An attribute earns
