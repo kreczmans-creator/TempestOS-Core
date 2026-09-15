@@ -49,12 +49,14 @@ internal sealed class MechanicalCockpitReadModel
     /// <summary>Loads every live (non-deleted) <c>Project</c> — the one read every property below is derived from.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var projects = await _domainContext.Repository.ListByKindAsync("Project", cancellationToken).ConfigureAwait(false);
-
-        _liveProjects = projects
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IHasBusinessIdentifier>()
-            .ToList();
+        // `TD-88`/`WP 21.5B`: liveness is filtered from the index alone;
+        // every survivor is materialised so its own `DisplayName` (via
+        // `IHasBusinessIdentifier`) is available — a plain projection, but
+        // exposed as a live object elsewhere in this discipline's own
+        // members.
+        var entries = await _domainContext.Repository.ListByKindAsync("Project", cancellationToken).ConfigureAwait(false);
+        var liveEntries = entries.Where(entry => !entry.IsDeleted).ToList();
+        _liveProjects = await _domainContext.Repository.MaterialiseAsync<IHasBusinessIdentifier>(liveEntries, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Gets every live (non-deleted) <c>Project</c>, newest-created first is not guaranteed — insertion order from the repository.</summary>

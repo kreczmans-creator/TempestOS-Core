@@ -59,7 +59,7 @@ public sealed class InvoicingServiceJourneyTests
         Assert.False(raisedAgain.Succeeded);
         Assert.Equal(InvoiceRequestRefusal.AlreadyInvoiced, raisedAgain.Refusal);
         Assert.Equal(request.Id, raisedAgain.Request!.Id);
-        Assert.Single((await domain.Repository.ListChildrenAsync(projectId)).OfType<InvoiceRequest>());
+        Assert.Single(await domain.Repository.ListChildrenAsync(projectId), entry => entry.Kind == InvoiceRequest.CanonicalKind);
 
         Assert.Equal(4, request.Lines.Count);
         Assert.Equal(new Money(150m * 4 + 150m * 3 + 150m * 2 + 500m, CurrencyCode.Gbp), request.Total);

@@ -656,7 +656,7 @@ public sealed class ObjectEditorViewTests
                 CalculationObjectFactoryRegistry.CalculationKind, "Quick Bolt Check", "QC-1"), CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
             var calculation = (await domainContext.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QC-1");
+                .Single(entry => entry.Identifier == "QC-1");
 
             var editor = ObjectEditorView.TryCreate(calculation.Id, calculation.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher)!;
             Assert.NotNull(editor);

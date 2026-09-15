@@ -38,10 +38,12 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
     /// <inheritdoc />
     public async Task<IReadOnlyList<ProjectExplorerNode>> GetRootNodesAsync(CancellationToken cancellationToken = default)
     {
-        var projects = await _context.Repository.ListByKindAsync("Project", cancellationToken).ConfigureAwait(false);
+        var projectEntries = await _context.Repository.ListByKindAsync("Project", cancellationToken).ConfigureAwait(false);
+        var projects = await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. projectEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
         var nodes = new List<ProjectExplorerNode>();
-        foreach (var project in OrderForBom(projects.Where(IsLive)))
+        foreach (var project in OrderForBom(projects))
             nodes.Add(await ToNodeAsync(project, cancellationToken).ConfigureAwait(false));
 
         // Every live object must be reachable from a root (`WP 17.9.2`).
@@ -143,21 +145,29 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
     /// </summary>
     private async Task<IReadOnlyList<IEngineeringObject>> GetOrphansAsync(CancellationToken cancellationToken)
     {
+        // `TD-88`/`WP 21.5B`: Kind, liveness and the parent-liveness check
+        // are all answerable from the index alone; only the actual orphans
+        // are materialised, for `ToNodeAsync`'s own BOM title.
         var all = await _context.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var byId = all.ToDictionary(o => o.Id);
+        var byId = all.ToDictionary(entry => entry.Id);
 
-        return all
-            .Where(o => o.Kind is { } kind && StructuralKinds.Contains(kind) && IsLive(o))
-            .Where(o => o is not IHasParent { ParentId: { } pid } || !byId.TryGetValue(pid, out var parent) || !IsLive(parent))
+        var orphanEntries = all
+            .Where(entry => StructuralKinds.Contains(entry.Kind) && !entry.IsDeleted)
+            .Where(entry => entry.ParentId is not { } pid || !byId.TryGetValue(pid, out var parent) || parent.IsDeleted)
             .ToList();
+
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(orphanEntries, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<IEngineeringObject>> GetLiveChildrenAsync(Guid parentId, CancellationToken cancellationToken)
     {
         // `WP 17.9.3`: an indexed lookup (hazard H4), not a copy of every object per rendered node.
-        var children = await _context.Repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
+        var entries = await _context.Repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        return children.Where(IsLive).ToList();
+        // `TD-88`/`WP 21.5B`: `BuildBomTitle` needs each child's own BOM-line
+        // state, not on the index row, so every live child is materialised.
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<ProjectExplorerNode> ToNodeAsync(IEngineeringObject o, CancellationToken cancellationToken)
@@ -217,6 +227,4 @@ public sealed class MechanicalProductStructureNodeProvider : IProjectExplorerNod
 
         return list.OrderBy(o => ((IHasBomLine)o).ItemNumber, StringComparer.Ordinal).ToList();
     }
-
-    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }

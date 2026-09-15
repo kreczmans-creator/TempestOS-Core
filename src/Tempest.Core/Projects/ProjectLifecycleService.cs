@@ -347,7 +347,10 @@ public sealed class ProjectLifecycleService : IProjectLifecycleService
     /// </summary>
     private async Task<IReadOnlyList<IEngineeringObject>> ListLiveDescendantsAsync(Guid projectId, CancellationToken cancellationToken)
     {
-        var result = new List<IEngineeringObject>();
+        // `WP 21.5B` (`TD-88`), reconciled at merge: `ListChildrenAsync` answers
+        // index rows now, so the walk reads `IsDeleted` from the row and
+        // materialises only the live children it returns.
+        var liveEntries = new List<EngineeringObjectIndexEntry>();
         var visited = new HashSet<Guid> { projectId };
         var frontier = new Queue<Guid>();
         frontier.Enqueue(projectId);
@@ -366,14 +369,14 @@ public sealed class ProjectLifecycleService : IProjectLifecycleService
 
                 frontier.Enqueue(child.Id);
 
-                if (child is IDeletable { IsDeleted: true })
+                if (child.IsDeleted)
                     continue;
 
-                result.Add(child);
+                liveEntries.Add(child);
             }
         }
 
-        return result;
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false);
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

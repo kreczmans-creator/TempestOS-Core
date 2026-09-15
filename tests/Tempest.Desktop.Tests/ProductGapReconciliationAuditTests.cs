@@ -106,7 +106,7 @@ public sealed class ProductGapReconciliationAuditTests
 
             var all = await domain.Repository.ListAllAsync();
             var fictional = all
-                .Where(o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.Identifier?.StartsWith("SAMPLE-", StringComparison.Ordinal) == true)
+                .Where(entry => entry.Identifier?.StartsWith("SAMPLE-", StringComparison.Ordinal) == true)
                 .ToList();
 
             Assert.True(

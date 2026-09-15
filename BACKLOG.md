@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (15 of 30 cap — see the `WP 19.9.1` note below the table; `TD-184`/`TD-185` added by `WP 21.5E`, 2026-09-15)
+## Live Backlog (10 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-05` — module discovery outside `[ModuleMetadata]` requires a public
 parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
@@ -163,15 +163,10 @@ longer appears below.
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | unowned |
 | `TD-91` | `IWorkspaceLayout` cannot express a tabbed or floating panel | unowned (`ADR-0153`, 2026-09-15, proposes retiring the projection that tries to answer it, rather than widening the frozen contract) |
-| `TD-98` | Document viewer has no markup or annotation (rotation closed by `WP 20.2B`) | `WP 18.2B` (partial) |
-| `TD-99` | SVG attachments still report `Unsupported` in the viewer — no SVG rasteriser (`Svg.Skia`, `SkiaSharp.Extended` or `Avalonia.Svg.Skia`) is referenced anywhere in this solution | unowned (narrowed by `WP 20.2B` — DWG/DXF closed: Product Owner decision 2026-09-15 §5 chose "stored attachment, opened externally" over a licensed SDK, and the viewer now says so honestly and offers the action; SVG stayed open because that decision's "small" in-app source needs a rendering library this build does not have, and the brief's own fallback for that case was to add none and report rather than implement) |
-| `TD-101` | A page rasterises at full size even when only part of it is visible | unowned |
 | `TD-174` | A Part carries none of what a calculation and a drawing need from it: no material assignment pinned to a released reference revision (`IPart.MaterialId` is a bare string nothing on the Desktop sets), no standard-versus-custom designation (a Component is the de-facto standard part but nothing says so), no part number distinct from the display name, no mass. **Not ERP**: no procurement, supplier, cost or stock fields; the attributes are the ones a calc sheet cites and a title block shows (Product Owner, second Windows review, 2026-09-09) | `D-028` (re-scoped: material is cited on evidence, `WP 18.0A`; part number, mass and standard-versus-custom deferred until a drawing or a calc sheet needs them) |
 | `TD-179` | Archived-project write guards (`ProjectArchival.IsArchived`) do not cover `IRequirementsService.CreateAsync` — it takes no project id parameter, so guarding it needs a design step (how a Requirement's own creation would even learn which project it is scoped to), not a copy of the pattern every other guarded write already follows | unowned (raised by v0.19.1 — `WP 19.5C`; narrowed by `WP 19.10H` — commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task guarded; narrowed to this one residual by `WP 19.10R` — `ArchivedProjectCommandGuard` closes the Structure tab's Ribbon and the Command Palette, and a macro replaying either, by teaching `Tempest.Core.Commands.CommandRegistry.Evaluate` the same archived-project check, consulted for every binding across the five discipline registrations plus Quotations, Deliverables, Tasks and Evidence whose own `CommandBinding.Mutates` is set) |
 | `TD-182` | `QuotationSheetRenderer` duplicates `IssueSheetRenderer`'s own private two-phase layout rather than sharing it | Closed by `WP 20.10G` — `Tempest.Desktop.Documents.DocumentTemplate` carries the shared page geometry, header band, body type styles, colour tokens and the two-phase measure/draw plan; both renderers render through it, each keeping only its own content. Proof: `tests/Tempest.Desktop.Tests/Documents/DocumentTemplateTests.cs` (the template's own pagination/footer numbering), the existing `QuotationSheetRendererTests`/`IssueSheetRendererTests` green unchanged plus a golden-text test per renderer. |
 | `TD-183` | `OAuthAuthoriserTests` binds a real loopback port for the authorisation round-trip and collides when several suites run at once — one failure per night under ten concurrent agent runs on 2026-09-14/15 (Core Release leg; green alone, three of three), so a gate that runs beside other work cannot trust a single Core run without a rerun. Fix is in the test alone: retry on `AddressInUse` with a fresh port, or bind the listener before the port is handed to the authoriser. | unowned (raised by `WP 20.9.0`, 2026-09-15; S — a test-hardening item, no product change) |
-| `TD-184` | **RED** (`docs/security/Security Posture.md`). `AttachmentViewerLauncher.MaterialiseForExternalOpen` (`src/Tempest.Desktop/Viewing/AttachmentViewerLauncher.cs:329-352`) writes a materialised copy of an attachment's bytes under its own, attacker-chosen file name and extension with no check on what that extension is; `DocumentViewerView`'s "Open externally" button (`DefaultExternalLauncher`, `src/Tempest.Desktop/Viewing/DocumentViewerView.cs:247-260`) then hands that path to `Process.Start(..., UseShellExecute = true)`. An attachment named `invoice.pdf.exe` or `report.lnk` **runs** when the button is clicked, rather than opening in its own application as every other unsupported format honestly promises. Exact fix: in `MaterialiseForExternalOpen`, check `Path.GetExtension(safeName)` against a denylist of directly-executable/shell-dangerous extensions (`.exe`, `.com`, `.bat`, `.cmd`, `.msi`, `.scr`, `.ps1`, `.vbs`, `.js`, `.jar`, `.cpl`, `.lnk`, `.reg`, `.hta`, and similar) and append a neutral, non-executable suffix (e.g. `.blocked`) to the written file's own name when it matches, before combining it into `path` — additive, no change needed to `DocumentViewerView`. A regression test belongs beside `ADwgAttachment_OpensExternally_RatherThanReportingUnsupported` in `tests/Tempest.Desktop.Tests/DocumentViewerAcceptanceTests.cs`. | `WP 21.4A` (raised by `WP 21.5E`, 2026-09-15 — not fixed there: `src/Tempest.Desktop/Viewing/*` is `WP 21.4A`'s own "Files you own" tonight, and this Work Package's kill switch records a RED fix that touches another package's files rather than applying it) |
-| `TD-185` | **AMBER** (`docs/security/Security Posture.md`). Import/export artifact parsing has no explicit size cap: `JsonExportFormat.ReadAsync` (`src/Tempest.Core/ExportImport/JsonExportFormat.cs:40-68`) calls `JsonSerializer.DeserializeAsync` directly over the caller-supplied stream, and `ImportService.ImportAsync` (`src/Tempest.Core/ExportImport/ImportService.cs:129-133`) reads the whole result before validating any section. Nesting depth is already bounded (`System.Text.Json`'s default `MaxDepth`, 64) and the entity-expansion class of attack does not apply (JSON, never XML), but a very large file handed to the operator could exhaust memory during import — a local denial-of-service via a hostile or merely huge file, no crash-safety net beyond process OOM. No live need has demonstrated this yet (`Security Principles.md` Principle 7); filed rather than fixed. | unowned (raised by `WP 21.5E`, 2026-09-15) |
 
 **Six rows added by `WP 19.9.1` (2026-09-14):** `TD-176` (closed by
 `WP 19.10B` — see the note above the table), `TD-177` (closed by
@@ -635,6 +630,77 @@ produced) — a render-only feature exactly as scoped, not a viewport-model
 change, so "Fit" on a 90°-rotated page does not itself re-derive a new fit
 zoom for the now-landscape shape.
 
+**Closed by `WP 21.4A` (2026-09-15), with evidence — moved out of the
+Live Backlog:** `TD-99` (the SVG half `WP 20.2B` left open), `TD-98`
+(markup and annotation, the gap `WP 20.2B`'s own rotation closure left
+standing) and `TD-101`. `Svg.Skia` **2.0.0.8** (MIT; see
+`THIRD-PARTY-NOTICES.md`) closes `TD-99`: pinned to the last release on
+its 2.x line — the only one whose own `SkiaSharp` dependency floor
+(2.88.9) matches the version this solution already resolved through
+`PDFtoImage`, satisfying this Work Package's own kill switch without a
+version bump. `SvgDocumentPageSource` rasterises to the same
+`SKBitmap`-backed page `PdfDocumentPageSource` already produces;
+`DocumentFormatDetector` recognises `.svg`, `image/svg+xml` and a bounded
+content sniff; a malformed file reports "This SVG could not be read:
+{reason}" with Open externally still offered. `TD-98` closes with
+`AttachmentAnnotation` — a new record kept beside an attachment's owner
+(`EngineeringObjectState.Annotations`), one transaction per write with an
+audit row through the same `MutateAndPersistAsync` path `AttachAsync`
+already uses, rehydrated with the owner and carried onto a revised
+instance exactly as attachments already are, never in the attachment's own
+bytes — and the Annotations toolbar group (Rectangle, Ellipse, Freehand,
+Arrow, Text note, five design-token colours, Delete, Clear page with
+confirmation, Save annotated copy…) over a hit-testable overlay on
+`DocumentViewerView`'s own rendered page. `TD-101` closes with `TileGrid`
+(pure tile-planning math, tile size **512px**) and `TileCache` (bounded
+least-recently-used cache, memory budget **256 MiB**) backing a new
+`ITiledDocumentPageSource`/`PdfDocumentPageSource.RenderTile`; the viewer
+composes a page from cached tiles rather than one `MaxRasterEdge`-capped
+render whenever a whole-page render at the requested zoom would exceed
+that cap — an A0 sheet at deep zoom renders sharp rather than blurred, and
+a pan at that zoom re-rasterises nothing already cached. The rotation fit
+bug `WP 20.2B` disclosed above ("Fit on a 90°-rotated page does not itself
+re-derive a new fit zoom") is fixed at its root in the same Work Package:
+`DocumentViewport.WithContentSizeSwapped` keeps the viewport's own content
+width/height tracking the page's currently-displayed (rotated) bounding
+box throughout, so a rotated landscape page fits with no manual zoom step —
+proven by `DocumentViewerRotationTests.RotatingAFittedView_StaysFitted_ToTheRotatedBoundingBox`.
+See `docs/releases/v0.21.0/Release Notes.md`'s own `WP 21.4A` row for the
+full account, including `TD-184` (below), found and closed in the same
+session.
+
+**Closed by `WP 21.4A` (2026-09-15), with evidence — never a Live Backlog
+row of its own:** `TD-184`, a RED security finding `WP 21.5E`'s parallel
+defensive review raised same-session against files `WP 21.4A` owns, fixed
+immediately per the Product Owner's rule that findings are fixed, not
+filed, rather than opened as a numbered row first.
+`AttachmentViewerLauncher.MaterialiseForExternalOpen` used to write a
+materialised copy under an attachment's own, completely unexamined file
+name into a directory keyed by the (guessable) attachment id — so an
+attachment named `invoice.pdf.exe` whose bytes were a real executable ran
+as code the instant "Open externally" was pressed
+(`Process.Start(UseShellExecute: true)` trusts whatever extension the
+written file happens to carry). Closed: a `DangerousExtensions` denylist
+refuses materialisation outright with an honest reason surfaced through
+the viewer (`DocumentViewSession.ExternalOpenRefusedReason`); an
+`ExternalOnly` (DWG/DXF) attachment's written extension comes from the
+detector's own verified match, never a second unverified read of the raw
+name; the file name is sanitised (path separators, control and Unicode
+bidi-override characters stripped, reserved device names guarded, trailing
+dots/spaces trimmed, length capped); the materialised copy now lands in a
+fresh, randomly-named per-launch directory this call creates for itself
+(never the attachment id), deleted when the viewer closes. The same
+finding's own second half: `Svg.Skia`'s own image resolution
+(`Svg.Model.SvgExtensions.GetImageFromWeb`) calls
+`WebRequest.Create(uri).GetResponse()` for any `<image>` reference that is
+not a `data:` URI — `http://`, `https://` and `file://` alike, the last
+reading an arbitrary local file into the rendered picture — closed by
+`SvgMarkupSanitiser`, which blanks every such reference to an inert
+`data:,` URI and strips a `<!DOCTYPE>` (the XXE vector) and any
+`<script>` element before the bytes ever reach `SKSvg.Load`. Proof-of-concept
+tests in `DocumentPageSourceTests.cs` and `DocumentViewerAcceptanceTests.cs`
+name the exact exploit each closes.
+
 ## Owned by Programme
 
 Every remaining row closed by one of the nine substrate/surface Work
@@ -729,7 +795,6 @@ none of the platform's own architecture decisions call for.
 | `TD-12` | `IPersistenceStore` has no native query or filter capability | `WP 17.1A` |
 | `TD-67` | Crash-window write ordering can strand an invisible orphan document | `WP 17.1A` (requirements half and verification half closed by `WP 19.10L` — `RequirementsService.CreateAsync`'s document-then-identifier-index write and `VerificationService.RecordAsync`'s document-then-link writes are each now the one-transaction primitive this row's own `TD-23` entry (see "Closed" below) closes with; the requirements half is proven the same way, by `tests/Tempest.Core.Tests/Requirements/RequirementsServiceTests.cs`'s `CreateAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument`; reference-data half `WP 19.10K`) |
 | `TD-86` | Engineering object mutation writes are per-object and unbatched | `WP 17.1B` |
-| `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 17.1A` (attempted by `WP 20.1C2`, kill switch invoked — `EngineeringObjectRehydrationService.RehydrateAsync` now builds an index-stage row per object and raises `IndexBuilt` before any document read, the seam `WP 20.1A2`'s business-identifier index rebuild runs from, but full materialisation stays eager: dozens of existing callers — `EngineeringCockpit.PrimeAsync`, `InvoicingService.ListCarriedSourcesAsync`, `MechanicalPropertyFacetProvider.GetBaselineDisplayAsync` among ~60 more — read full, type-specific object state straight off `ListAllAsync`/`ListByKindAsync`/`ListChildrenAsync` results with no `FindAsync` step, and sit outside that Work Package's files-you-own list, so deferring materialisation behind those methods could not be proven behaviourally equivalent in scope; a measured 1,000-object/10-project estate showed no material change, ~185ms before and after, since the unchanged eager loop still dominates) |
 | `TD-130` | Reconciliation services (one of which deletes data) have no authorization seam | `WP 17.2A` |
 | `TD-137` | `PersistenceStore`'s atomic writes are crash-safe but not `fsync`'d | `WP 17.1A` |
 | `TD-149` | A deleted legacy-encoded record can resurrect as live on delete failure | `WP 17.1A` |
@@ -737,8 +802,6 @@ none of the platform's own architecture decisions call for.
 | `TD-171` | Three verification models remain (`Core/Verification`, `EngineeringDomain/RequirementsVerification`, `EngineeringAssets/Verification`); collapse deferred to `WP 18.2B` | `WP 18.2B` |
 | `TD-79` | Engineering Workspace has deep domain support and almost no dedicated UI | `WP 18.2A` |
 | `TD-90` | A docking re-render does not restore keyboard focus | `WP 18.1A` (claimed, not closed — see note) |
-| `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 18.2A` (partial — see note) |
-| `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 18.2A` (claimed, not closed — see note) |
 
 ### Closed by `WP 21.5A`
 
@@ -774,8 +837,12 @@ this table can now point at, rather than merely name.
 | `TD-32` | Verification's `verifiedBy` link is invisible to `RelationshipRepository` | `WP 19.10L` (audited not closed by `WP 19.10G`, 2026-09-14) — `VerificationService.RecordAsync` now records the "verifiedBy" edge with `IEngineeringRelationshipRepository` immediately after its transaction commits, exactly as every other relationship-creating mutator in this codebase does; `RecordVerificationResultCommand`'s own identical edge from the Activity's subject (`TD-173`'s fix) gets the same fix. Proven by `tests/Tempest.Core.Tests/Verification/VerificationServiceTests.cs`'s `RecordAsync_RegistersVerifiedByLink_DiscoverableFromBothEnds_InThisSameSession`, which reads the edge back through `RelationshipDiscoveryService` from both ends in the same session, with no restart or rehydration. |
 | `TD-141` | Two durable relationship-write paths carry no supersession guard | `WP 19.10L` (audited partly closed by `WP 19.10G`, 2026-09-14 — `EngineeringObjectBase.LinkAsync`'s own instance-handle guard already existed; `EngineeringRelationshipFactory.CreateAsync` still had none) — the factory now resolves both ends inside its transaction and refuses with `SupersededEngineeringObjectException` when either is already `LifecycleState.Superseded`, before writing anything: a raw id carries no instance handle to go stale, so the durable signal it checks instead is the resolved object's own `IHasLifecycle.Status`, the public surface `WP 19.10G`'s own audit found missing. Proven by `tests/Tempest.Core.Tests/EngineeringDomain/RelationshipFactorySupersessionTests.cs`'s `CreateAsync_SourceAlreadySuperseded_ThrowsSupersededEngineeringObjectException_AndWritesNothing` and `CreateAsync_TargetAlreadySuperseded_ThrowsSupersededEngineeringObjectException_AndWritesNothing` (one per end, per the audit's own "a test per end" instruction), plus a third fact that the identical call still succeeds, and is discoverable, once neither end is superseded. |
 | `TD-77` | Command Palette is not contextual; most real commands are unavailable there | `WP 20.2A` — an empty-query open now lists only the commands `ICommandRegistry.Evaluate` reports available against the real selection, grouped by `CommandDescriptor.Category`, most-recently-invoked first this session (`CommandPaletteOverlay.RenderAvailableGrouped`); a typed query is unchanged — every command, available or not, with its own reason, so a search still finds one. Proven by `CommandPaletteOverlayTests.Open_WithEmptyQuery_ListsOnlyAvailableCommands_GroupedByCategory` (the whole listing reconstructed independently from the real registry and asserted exactly) and `InvokingACommand_MovesItToTheFrontOfItsOwnGroup_OnTheNextEmptyQueryOpen`. |
+| `TD-185` | Import/export artifact parsing had no explicit size cap | `WP 21.5F` (OSA-05) — `JsonExportFormat.ReadAsync`/`ImportService` now parse with an explicit `MaxDepth`, a size cap and a section-count cap, refusing with the reason; proof-of-concept tests in `tests/Tempest.Core.Tests/Security/`. |
 | `TD-115` | Three registered commands (`LinkRequirementCommand`, `AddRequirementToCollectionCommand`, `CompareBaselinesCommand`) have no production construction path, pending the object picker (`FCR-0073`) | `WP 20.2A` — the object picker this row was gated on now exists (closing `S2-2`, below, at the same time), and all three turn out to need nothing beyond its own parameter kind: `requirements.link`/`requirements.add-to-collection`/`mechanical.compare-baselines` each gained a real `CommandBinding` (a target/Collection/second-Baseline chosen from the picker, required — there is no "link to nothing"). `FutureCapabilityCommandTests.cs`, the guard this row's own prior claims cite, is retired — its own remarks named exactly this outcome as the retirement trigger. Proven by `CommandDescriptorBindingTests.EveryObjectPickerBoundDescriptor_IsInvocable_WithExactlyOnePickerParameter` and the two commands' own `LinkBuild`/`CompareBaselinesBuild` round-trip tests. |
 | `S2-2` | Move is keyboard-inaccessible and Copy has no working path anywhere in the Desktop, across twelve commands (`docs/releases/v0.19.1` Part B audit, §B5 — no backlog row of its own until now) | `WP 20.2A` — `ObjectPickerDialog` (`src/Tempest.Desktop/Views/ObjectPickerDialog.cs`), modelled on `ProjectPicker`/`SubjectPicker`: objects by Kind, a filter box, the current project's own objects first. `calculations.move/copy`, `documents.move/copy`, `manufacturing.move/copy`, `mechanical.move/copy`, `verification.move/copy`, `requirements.move`, `requirements.move-group` each gained a real binding collecting their destination through it; `Ctrl+Shift+M`/`Ctrl+Shift+C`, with an object selected in the Project Explorer, resolve the right command Id from the selection's own Kind and invoke through the identical canonical path the Palette uses. Proven end-to-end (a real `MainWindow`, a real `KeyDown`, a real picker interaction, the real Domain/Explorer state after) by `ObjectPickerMoveAndCopyJourneyTests`. |
+| `TD-88` | Startup rehydration is eager and linear, never lazy or project-scoped | `WP 21.5B` (`WP 17.1A`, attempted by `WP 20.1C2`, kill switch invoked) — `EngineeringObjectRehydrationService.RehydrateAsync` no longer reconstructs the estate unconditionally: for every state with a known Kind and an existing document, it registers the object lazily (`IEngineeringObjectRepository.RegisterLazy`), deferring revision-content reads and the rehydrator's own type-specific parsing to first access; `FindAsync` is the single-flight materialising loader (an id materialises once no matter how many concurrent callers ask, and joins the identity map permanently — no eviction). `ListAllAsync`/`ListByKindAsync`/`ListChildrenAsync` answer `EngineeringObjectIndexEntry` rows from the index alone (id/Kind/identifier/display name/parent/status/deleted — computed live for a materialised object, so a rename or a delete is never stale), and every one of the roughly seventy/eighty callers `WP 20.1C2` could not reach — `EngineeringCockpit.PrimeAsync`, `InvoicingService.ListCarriedSourcesAsync`, `MechanicalPropertyFacetProvider.GetBaselineDisplayAsync` and the rest, across `Tempest.Core`/`Tempest.Workspace`/`Tempest.Desktop`/`Tempest.Samples` — now either reads the index type directly (the compiler proves it needs nothing else) or materialises explicitly through the new `EngineeringObjectRepositoryExtensions.MaterialiseAsync<T>` seam before touching a type-specific field; no caller keeps an untyped "list then cast". Opening a project materialises its own subtree eagerly (`IEngineeringObjectRepository.MaterialiseSubtreeAsync`, wired at `ProjectContext.OpenAsync`/`LoadAsync`) — "the objects a user is about to touch" — and leaves the rest lazy; closing a project releases nothing (no eviction shipped). **Kill switch, named and bounded**: `WP 20.1A2`'s business-identifier index rebuild still materialises every enforced-Kind object eagerly inside `RehydrateAsync` (`BusinessIdentifier` is a computed, type-specific projection absent from the index row, and `BusinessIdentifierScope.ResolveProjectId`'s own synchronous repository read — outside this Work Package's files-you-own list, the business-identifier index's contract explicitly not to be touched — depends on an already-materialised ancestor chain); bounded to the enforced-Kind set (Part, Calculation/CalculationSet, Document/Drawing/CadModel, the three Manufacturing Kinds, VerificationActivity, Evidence), never the unenforced majority (Task, InvoiceRequest, Quotation, Assembly and the rest) a large estate is mostly made of. Measured (`RehydrationLazyMaterialisationBenchmarkTests`, a 10,000-object estate, 300 under the one project opened, `InMemoryQueryablePersistenceStore`): `IndexBuilt` at ~387 ms; first project open (300-object subtree) ~55 ms; first read of one un-materialised object ~1.4 ms, a second read of the same object (identity map) ~0.9 ms. `RehydrateAsync` returning (the whole call, lazy registration included) measured ~5.14 s (~514 ms/1000) — slower in raw total than `WP 20.1C2`'s own ~190 ms/1000, and disclosed rather than hidden: that figure is dominated by `RebuildRelationshipsAsync`'s per-object `GetReferencesAsync` call, unchanged by this Work Package (kept fully eager — it is id-keyed, not materialisation) and, under this test double's own whole-store `ListKeysAsync(collection)` scan (never claimed to model the real `SqlitePersistenceStore`'s indexed query), superlinear with total estate size — a cost identical in the pre-`WP 21.5B` eager path, just never benchmarked past 1,000 objects before. The metrics this Work Package's own change actually moves — index availability, project-scoped materialisation, per-object read cost — are the other four, all improved. Proven by `tests/Tempest.Core.Tests/EngineeringDomain/LazyMaterialisationTests.cs` (single-flight, identity-map preservation across lazy loads, a rehydrated revision chain read from its newest end) and the unchanged `ProductionRehydrationTests`/`EngineeringObjectRehydrationTests`/`RevisionRehydrationEquivalenceTests`/`ObjectRehydrationAcceptanceTests` facts; `tests/Tempest.Core.Tests` (4,666) and `tests/Tempest.Desktop.Tests` (660) green in Debug, per this Work Package's own acceptance gate; both configurations build clean with warnings as errors. |
+| `TD-165` | The bracket verification artefact cannot be filled in from the Desktop | `WP 21.2B` (2026-09-15), on the Product Owner's "close all of those" instruction against the gap list naming this surface's absence — Engineering → Modules → **Engineering Assets** → **Bracket verification** (`src/Tempest.Desktop/Views/EngineeringAssets/BracketVerificationView.cs`): a form over `GovernedBracketCheckRequest` (a material picker, four quantity fields — applied load, section area, member length, mass limit — each with its own unit picker drawn from that dimension's own catalogue) runs **Check** through the identical `GovernedBracketCheckService` the Engineering Calculations surface already used, showing the result and its intermediates with units and the pass/fail against the governed limits (never "Approved"); **Record verification artefact** then calls `BracketEngineeringRecordService.RecordCalculationAsync` and `.RecordVerificationAsync` — the two methods `WorkspaceHost` had exposed since `v0.19.0` (`BracketCheck`/`BracketEngineeringRecords`) and nothing under `src/Tempest.Desktop` had ever called, the exact fact `WP 19.9.0`'s re-verification recorded above — against an existing calculation pack and verification artefact picked from the two libraries' own live records (`CalculationPackListView.cs`, `VerificationArtefactListView.cs`), writing an independent check (basis, margin, mass — never a second call to the same arithmetic) alongside it. Proven end to end through the real `MainWindow`, no simulated pointer but a real routed click and real `TextBox`/`ComboBox` state, by `tests/Tempest.Desktop.Tests/EngineeringAssetsJourneyTests.cs`'s `TheBracketVerificationJourney_ChecksAndRecords_TheArtefactThenListsAndTraces`: Check, Record, and the artefact then lists under Verification artefacts at its own new `Passed` standing. |
+| `TD-160` | The whole merged engineering capability has no Desktop UI surface | `WP 21.2B` (2026-09-15) — the row's own three named gaps (the `WP 18.9.0` note, above): the reference libraries were already browsable (`LibrariesView`, `WP 18.2A`); `EngineeringTraceRegister`'s own `CalculationTrace` now renders on a calculation pack's own **Trace** tab (`CalculationPackListView.cs`) — steps, traced inputs (each resolved to the governed reference it pins, or reported untraceable), the template used, the outputs, the pack's own revision — read-only, exported as text through the file picker; `BracketEngineeringRecordService` is now reachable from the **Bracket verification** tab (`TD-165`, above). Beyond the three named gaps, the whole capability now has a surface, not a corner of one: **Engineering Assets** (`EngineeringAssetsView.cs`) lists every registered calculation pack, template and verification artefact (`CalculationPackListView.cs`, `EngineeringTemplateListView.cs`, `VerificationArtefactListView.cs`), each row a filter box and Open away from its own detail, and each detail showing its own applicability (`AssetApplicability`) and validation (`ICalculationPackValidationService`/`ITemplateValidationService`/`IVerificationArtefactValidationService`, every error and warning named by its own rule code, e.g. `TEMPEST-EAG-001`) — Core-only facts this row named as never reaching the screen — plus an aggregated **Engineering evidence** list (`EngineeringEvidenceListView.cs`) over every item any of the three governance facts cite, naming which record cites it. Proven by `tests/Tempest.Desktop.Tests/EngineeringAssetsJourneyTests.cs` (the area's rows and automation names, the bracket journey, the trace) and the shared `AutomationNameCoverageTests`/`LayoutWalkTests` structural walks, both extended to the new tree entry so no control here can go unnamed or overlap unnoticed. |
 
 **Claimed by `v0.18.0` Work Packages and verified NOT closed, `WP 18.9.0`
 (2026-09-09):** `TD-90` — no focus-capture/restore mechanism exists
@@ -791,8 +858,9 @@ by `WP 18.1A-R1`**, below. `TD-160` — **partial only:** the new `LibrariesView
 reference libraries, closing one of the row's three named gaps, but
 `EngineeringTraceRegister`'s `CalculationTrace` is still rendered nowhere
 and `BracketEngineeringRecordService` is still reachable from no screen
-(`TD-165`). `TD-165` — unchanged: `BracketEngineeringRecordService` has
-no consumer anywhere under `src/Tempest.Desktop`.
+(`TD-165`). **Now closed by `WP 21.2B`**, above. `TD-165` — unchanged:
+`BracketEngineeringRecordService` has no consumer anywhere under
+`src/Tempest.Desktop`. **Now closed by `WP 21.2B`**, above.
 
 **Re-verified on `release/v0.19.0`, `WP 19.9.0` (2026-09-10) — all five
 `WP 18.9.0` findings above still hold, unchanged by this release's own
@@ -806,11 +874,12 @@ makes the missing restore worse, not incidental. `TD-108`/`TD-118` stay closed (
 predates this branch's own point of divergence, `8df3466`, and nothing
 in `v0.19.0` touches `EngineeringCockpit.PrimeAsync`). `TD-160` —
 still partial: `CalculationTrace` still has no consumer under
-`src/Tempest.Desktop`. `TD-165` — still unchanged:
+`src/Tempest.Desktop`. **Now closed by `WP 21.2B`**, above. `TD-165` — still unchanged:
 `src/Tempest.Desktop/WorkspaceHost.cs` was not touched by any `v0.19.0`
 Work Package; `BracketEngineeringRecordService` is constructed there
 (line 266) and exposed as a property (line 401), but nothing under
 `src/Tempest.Desktop` reads `WorkspaceHost.BracketEngineeringRecords`.
+**Now closed by `WP 21.2B`**, above.
 
 **Claimed by `v0.19.0` Work Packages and verified NOT closed, `WP 19.9.0`
 (2026-09-10):** `TD-33` — `EngineeringCockpit.FormatCoverage` is now

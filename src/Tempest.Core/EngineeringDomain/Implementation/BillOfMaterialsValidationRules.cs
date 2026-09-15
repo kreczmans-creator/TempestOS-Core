@@ -128,9 +128,12 @@ public sealed class DuplicateItemNumberValidationRule : IValidationRule
     {
         var children = await _repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        return children.Where(o =>
-            o.Id != excludingId &&
-            o is not IDeletable { IsDeleted: true }).ToList();
+        // `TD-88`/`WP 21.5B`: `ItemNumber` is a BOM-specific field, not on
+        // the index row, so a live sibling still has to be materialised —
+        // only the "which ids are worth materialising" filter (excluded id,
+        // not deleted) is answerable from the index alone.
+        var liveSiblingEntries = children.Where(entry => entry.Id != excludingId && !entry.IsDeleted).ToList();
+        return await _repository.MaterialiseAsync<IEngineeringObject>(liveSiblingEntries, cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -153,12 +156,15 @@ public sealed class DuplicateFindNumberValidationRule : IValidationRule
         if (subject is not IHasBomLine { FindNumber: { } findNumber } || subject is not IHasParent { ParentId: { } parentId })
             return ValidationResult.Valid;
 
-        var siblings = await _repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
+        var childEntries = await _repository.ListChildrenAsync(parentId, cancellationToken).ConfigureAwait(false);
 
-        var collision = siblings.Any(o =>
-            o.Id != subject.Id &&
-            o is not IDeletable { IsDeleted: true } &&
-            o is IHasBomLine sibling && sibling.FindNumber == findNumber);
+        // `TD-88`/`WP 21.5B`: `FindNumber` is a BOM-specific field, not on
+        // the index row, so materialise only the candidates (live, not the
+        // subject itself) rather than the whole sibling set.
+        var liveSiblingEntries = childEntries.Where(entry => entry.Id != subject.Id && !entry.IsDeleted).ToList();
+        var siblings = await _repository.MaterialiseAsync<IHasBomLine>(liveSiblingEntries, cancellationToken).ConfigureAwait(false);
+
+        var collision = siblings.Any(sibling => sibling.FindNumber == findNumber);
 
         return collision
             ? ValidationResult.SingleError(RuleCode, $"Find Number '{findNumber}' is already used by another live object under parent '{parentId}'.", subject.Id)

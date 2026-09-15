@@ -159,17 +159,20 @@ public sealed class ObjectPickerDialog : Border
 
     private async Task<IReadOnlyList<Candidate>> LoadCandidatesAsync(IReadOnlyList<string> kinds, CancellationToken cancellationToken)
     {
+        // `TD-88`/`WP 21.5B`: id, Kind, display name, liveness and parent
+        // are all on the index row, so this candidate list never
+        // materialises a single object.
         var all = await _domainContext.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var live = all.Where(o => o is not IDeletable { IsDeleted: true }).ToList();
+        var live = all.Where(entry => !entry.IsDeleted).ToList();
 
         var scoped = kinds.Count == 0
             ? live
-            : live.Where(o => kinds.Contains(o.Kind, StringComparer.Ordinal)).ToList();
+            : live.Where(entry => kinds.Contains(entry.Kind, StringComparer.Ordinal)).ToList();
 
         // Built once, over every live object (not just the scoped subset),
         // so a candidate's own ancestry can be walked purely in memory —
         // one repository read serves both the listing and this ordering.
-        var parentById = live.ToDictionary(o => o.Id, o => (o as IHasParent)?.ParentId);
+        var parentById = live.ToDictionary(entry => entry.Id, entry => entry.ParentId);
         var openProjectId = _projectContext?.Current?.Id;
 
         bool InOpenProject(Guid candidateId)
@@ -193,7 +196,7 @@ public sealed class ObjectPickerDialog : Border
         }
 
         return [.. scoped
-            .Select(o => new Candidate(o.Id, o.Kind, (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString(), InOpenProject(o.Id)))
+            .Select(entry => new Candidate(entry.Id, entry.Kind, entry.DisplayName, InOpenProject(entry.Id)))
             .OrderByDescending(c => c.InOpenProject)
             .ThenBy(c => c.Kind, StringComparer.Ordinal)
             .ThenBy(c => c.DisplayName, StringComparer.Ordinal)];

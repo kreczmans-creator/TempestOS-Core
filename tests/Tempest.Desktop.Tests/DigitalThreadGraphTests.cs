@@ -373,7 +373,7 @@ public sealed class DigitalThreadGraphModelTests
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
             var activities = await domainContext.Repository.ListByKindAsync("VerificationActivity");
-            IEngineeringObject? verifiedActivity = null;
+            EngineeringObjectIndexEntry? verifiedActivity = null;
             IReadOnlyList<VerificationRecordSnapshot>? expectedRecords = null;
             foreach (var activity in activities)
             {
@@ -444,7 +444,7 @@ public sealed class DigitalThreadGraphModelTests
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
             var activities = await domainContext.Repository.ListByKindAsync("VerificationActivity");
-            IEngineeringObject? verifiedActivity = null;
+            EngineeringObjectIndexEntry? verifiedActivity = null;
             foreach (var activity in activities)
             {
                 var records = await VerificationRecordReader.GetResultHistoryAsync(domainContext, activity.Id);

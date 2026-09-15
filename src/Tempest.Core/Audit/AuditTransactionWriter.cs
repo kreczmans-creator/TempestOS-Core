@@ -117,6 +117,15 @@ public static class EngineeringAuditActions
     /// <summary>Attachment metadata and its bytes were recorded against this object.</summary>
     public const string ContentAttached = "engineering.object.content-attached";
 
+    /// <summary>An attachment annotation was recorded against this object (`TD-98`).</summary>
+    public const string AnnotationAdded = "engineering.object.annotation-added";
+
+    /// <summary>An attachment annotation was removed from this object (`TD-98`).</summary>
+    public const string AnnotationDeleted = "engineering.object.annotation-deleted";
+
+    /// <summary>Every annotation on one page of one attachment was removed from this object (`TD-98`).</summary>
+    public const string AnnotationsCleared = "engineering.object.annotations-cleared";
+
     /// <summary>An object's structural parent changed.</summary>
     public const string Moved = "engineering.object.moved";
 

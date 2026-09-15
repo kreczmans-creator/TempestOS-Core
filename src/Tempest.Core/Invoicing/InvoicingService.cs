@@ -393,9 +393,12 @@ public sealed class InvoicingService : IInvoicingService
     private async Task<Dictionary<Guid, InvoiceRequest>> ListCarriedSourcesAsync(CancellationToken cancellationToken)
     {
         var carried = new Dictionary<Guid, InvoiceRequest>();
-        var requests = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `Status`/`Lines` are `InvoiceRequest`-own
+        // fields, not on the index row.
+        var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var requests = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
 
-        foreach (var request in requests.OfType<InvoiceRequest>())
+        foreach (var request in requests)
         {
             if (!IsLive(request) || request.Status is InvoiceRequestStatus.Rejected or InvoiceRequestStatus.Voided)
                 continue;

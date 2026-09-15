@@ -198,16 +198,15 @@ public sealed class EngineeringCalculationRegister
     /// </remarks>
     public async Task<IReadOnlyList<NamedCalculation>> ListAsync(CancellationToken cancellationToken = default)
     {
-        var objects = await _domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: liveness is filtered from the index alone;
+        // `DescribeAsync` needs the real object for every survivor.
+        var entries = await _domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind, cancellationToken).ConfigureAwait(false);
+        var liveEntries = entries.Where(entry => !entry.IsDeleted).ToList();
+        var objects = await _domain.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false);
         var named = new List<NamedCalculation>(objects.Count);
 
         foreach (var candidate in objects)
-        {
-            if (candidate is IDeletable { IsDeleted: true })
-                continue;
-
             named.Add(await DescribeAsync(candidate, cancellationToken).ConfigureAwait(false));
-        }
 
         return [.. named.OrderByDescending(n => n.CreatedAt)];
     }

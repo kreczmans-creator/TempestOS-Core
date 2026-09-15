@@ -231,38 +231,43 @@ public sealed class EngineeringCockpit
         await _verification.LoadAsync(cancellationToken).ConfigureAwait(false);
         await _manufacturing.LoadAsync(cancellationToken).ConfigureAwait(false);
 
-        _liveDecisions = (await _domainContext.Repository.ListByKindAsync("Decision", cancellationToken).ConfigureAwait(false))
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IDecision>()
-            .ToList();
+        // `TD-88`/`WP 21.5B`: liveness is filtered from the index alone;
+        // each `OfType<T>()` marker projection (`IDecision`/`IRisk`/
+        // `IMilestone`/`ITask`) needs the real object, so the survivors are
+        // materialised as that type directly.
+        var decisionEntries = await _domainContext.Repository.ListByKindAsync("Decision", cancellationToken).ConfigureAwait(false);
+        _liveDecisions = await _domainContext.Repository.MaterialiseAsync<IDecision>(
+            [.. decisionEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
         var risks = new List<IRisk>();
         foreach (var kind in new[] { "Risk", "Hazard" })
         {
-            risks.AddRange((await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false))
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .OfType<IRisk>());
+            var entries = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            risks.AddRange(await _domainContext.Repository.MaterialiseAsync<IRisk>(
+                [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false));
         }
 
         _liveRisks = risks;
 
-        _liveMilestones = (await _domainContext.Repository.ListByKindAsync("Milestone", cancellationToken).ConfigureAwait(false))
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<IMilestone>()
-            .ToList();
+        var milestoneEntries = await _domainContext.Repository.ListByKindAsync("Milestone", cancellationToken).ConfigureAwait(false);
+        _liveMilestones = await _domainContext.Repository.MaterialiseAsync<IMilestone>(
+            [.. milestoneEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
         var tasks = new List<ITask>();
         foreach (var kind in new[] { CanonicalObjectKinds.Task, CanonicalObjectKinds.Action })
         {
-            tasks.AddRange((await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false))
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .OfType<ITask>());
+            var entries = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            tasks.AddRange(await _domainContext.Repository.MaterialiseAsync<ITask>(
+                [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false));
         }
 
         _liveTasks = tasks;
 
+        // `TD-88`/`WP 21.5B`: the digital-thread summary only ever reads
+        // `.Id` and a count — both on the index row, so this block never
+        // materialises anything, unlike the four projections above.
         var liveObjects = (await _domainContext.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false))
-            .Where(o => o is not IDeletable { IsDeleted: true })
+            .Where(entry => !entry.IsDeleted)
             .ToList();
 
         if (liveObjects.Count == 0)

@@ -119,12 +119,15 @@ public sealed class SubjectPicker : Border
 
         var found = new List<(Guid, string, string)>();
 
+        // `TD-88`/`WP 21.5B`: id, Kind, display name and liveness are all
+        // on the index row, so this candidate list never materialises a
+        // single object.
         foreach (var kind in kinds)
         {
-            var objects = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
-            found.AddRange(objects
-                .Where(o => o is not IDeletable { IsDeleted: true })
-                .Select(o => (o.Id, o.Kind, (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString())));
+            var entries = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            found.AddRange(entries
+                .Where(entry => !entry.IsDeleted)
+                .Select(entry => (entry.Id, entry.Kind, entry.DisplayName)));
         }
 
         return [.. found.OrderBy(c => c.Item2, StringComparer.Ordinal).ThenBy(c => c.Item3, StringComparer.Ordinal)];

@@ -97,8 +97,9 @@ public sealed class EvidenceWorkspaceJourneyTests
             Core.Evidence.Evidence? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<Core.Evidence.Evidence>().FirstOrDefault(e => e.ParentId == project.Id);
+                var entry = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
+                    .FirstOrDefault(e => e.ParentId == project.Id);
+                created = entry is null ? null : domain.Repository.FindAsync(entry.Id).GetAwaiter().GetResult() as Core.Evidence.Evidence;
                 return created is not null;
             });
             Assert.NotNull(created);
@@ -310,8 +311,9 @@ public sealed class EvidenceWorkspaceJourneyTests
             Core.Evidence.Evidence? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<Core.Evidence.Evidence>().FirstOrDefault(e => e.ParentId == project.Id);
+                var entry = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
+                    .FirstOrDefault(e => e.ParentId == project.Id);
+                created = entry is null ? null : domain.Repository.FindAsync(entry.Id).GetAwaiter().GetResult() as Core.Evidence.Evidence;
                 return created is not null;
             });
             Assert.NotNull(created);

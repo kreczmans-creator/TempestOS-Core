@@ -78,7 +78,9 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
 
         if (target is IVerificationActivity)
         {
-            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
+            var childEntries = await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false);
+            var children = await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+                [.. childEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -109,14 +111,20 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
         return ancestry;
     }
 
-    private async Task<IReadOnlyList<IEngineeringObject>> LiveActivitiesAsync(CancellationToken cancellationToken) =>
-        (await _context.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind, cancellationToken).ConfigureAwait(false))
-        .Where(IsLive)
-        .ToList();
+    private async Task<IReadOnlyList<IEngineeringObject>> LiveActivitiesAsync(CancellationToken cancellationToken)
+    {
+        // `TD-88`/`WP 21.5B`: `VerificationMethodCategory.Of` needs each
+        // activity's own `Method`, not on the index row, so every live
+        // activity is materialised — liveness is filtered from the index
+        // first.
+        var entries = await _context.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind, cancellationToken).ConfigureAwait(false);
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+    }
 
     private async Task<ProjectExplorerNode> ToActivityNodeAsync(IEngineeringObject activity, CancellationToken cancellationToken)
     {
-        var hasChildren = (await _context.Repository.ListChildrenAsync(activity.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
+        var hasChildren = (await _context.Repository.ListChildrenAsync(activity.Id, cancellationToken).ConfigureAwait(false)).Any(entry => !entry.IsDeleted);
 
         return new ProjectExplorerNode(
             activity.Id, DisplayNameOf(activity), activity.Kind, hasChildren, ProjectExplorerNodeType.Object,
@@ -125,8 +133,6 @@ public sealed class VerificationActivityNodeProvider : IProjectExplorerNodeProvi
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();
-
-    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }
 
 /// <summary>

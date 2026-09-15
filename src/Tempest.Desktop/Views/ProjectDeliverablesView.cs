@@ -144,10 +144,9 @@ public sealed class ProjectDeliverablesView : UserControl
             .OrderBy(d => d.DisplayName, StringComparer.Ordinal)
             .ToList();
 
-        var completions = (await _domainContext.Repository.ListChildrenAsync(id, CancellationToken.None).ConfigureAwait(true))
-            .OfType<DeliverableCompletion>()
-            .Where(c => c is not IDeletable { IsDeleted: true })
-            .ToList();
+        var completionEntries = await _domainContext.Repository.ListChildrenAsync(id, CancellationToken.None).ConfigureAwait(true);
+        var completions = await _domainContext.Repository.MaterialiseAsync<DeliverableCompletion>(
+            [.. completionEntries.Where(entry => !entry.IsDeleted)], CancellationToken.None).ConfigureAwait(true);
 
         _status.Text = deliverables.Count == 0
             ? "No deliverables in this project yet."

@@ -132,7 +132,13 @@ public class InMemoryEngineeringObjectRepositoryOrderTests
         var listed = await repository.ListAllAsync();
 
         Assert.Equal([first.Id, second.Id], listed.Select(o => o.Id));
-        Assert.Same(firstRevised, listed[0]);
+
+        // `TD-88`/`WP 21.5B` rationale: `ListAllAsync` now answers index
+        // rows, not live objects, so `listed[0]` is never the same
+        // reference as anything registered — the identity-map guarantee
+        // this line originally proved is still real, just observed through
+        // `FindAsync` (the loader) instead of the list result itself.
+        Assert.Same(firstRevised, await repository.FindAsync(first.Id));
     }
 
     [Fact]

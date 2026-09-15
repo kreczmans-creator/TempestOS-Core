@@ -31,6 +31,27 @@ namespace Tempest.Core.Secrets;
 /// </remarks>
 public sealed class FileSecretStore : ISecretStore
 {
+    /// <summary>
+    /// <c>rwx------</c> — the secrets directory itself, owner-only.
+    /// </summary>
+    /// <remarks>
+    /// `WP 21.5F` Offensive Security Audit, OSA-04: this class previously
+    /// created its directory and every secret file with no permission
+    /// restriction of its own at all — "a file system permission is the
+    /// only protection a connector token has here" (this class's own doc
+    /// comment) was aspirational, not enforced; the class relied entirely
+    /// on whatever default/inherited ACL or umask happened to apply. Set
+    /// atomically at creation via the <see cref="UnixFileMode"/>-accepting
+    /// overloads below, so there is no window after creation and before a
+    /// permission-tightening call in which the directory or file exists
+    /// world- or group-readable.
+    /// </remarks>
+    private const UnixFileMode DirectoryPermissions =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+
+    /// <summary><c>rw-------</c> — one secret file, owner-only, never executable.</summary>
+    private const UnixFileMode FilePermissions = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
     private readonly string _secretsDirectory;
 
     /// <summary>Initialises a new instance of the <see cref="FileSecretStore"/> class, resolving the secrets directory from <paramref name="configuration"/>.</summary>
@@ -68,9 +89,33 @@ public sealed class FileSecretStore : ISecretStore
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        Directory.CreateDirectory(_secretsDirectory);
+        var bytes = Encoding.UTF8.GetBytes(value);
+        var path = PathFor(key);
 
-        await File.WriteAllBytesAsync(PathFor(key), Encoding.UTF8.GetBytes(value), cancellationToken).ConfigureAwait(false);
+        // UnixFileMode is a no-op parameter on Windows (this store is never
+        // selected there in production - TempestHost's own
+        // OperatingSystem.IsWindows() guard - but the internal test seam
+        // constructor can still be exercised directly on this project's
+        // Windows-only CI, so the Windows branch must not throw
+        // PlatformNotSupportedException rather than merely "not need" to
+        // run).
+        if (OperatingSystem.IsWindows())
+        {
+            Directory.CreateDirectory(_secretsDirectory);
+            await File.WriteAllBytesAsync(path, bytes, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        Directory.CreateDirectory(_secretsDirectory, DirectoryPermissions);
+
+        await using var stream = new FileStream(path, new FileStreamOptions
+        {
+            Mode = FileMode.Create,
+            Access = FileAccess.Write,
+            Share = FileShare.None,
+            UnixCreateMode = FilePermissions,
+        });
+        await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

@@ -106,16 +106,21 @@ public sealed class QuotationNodeProvider : IProjectExplorerNodeProvider
         return ancestry;
     }
 
-    private async Task<List<IEngineeringObject>> LiveProjectsAsync(CancellationToken cancellationToken) =>
-        (await _context.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(false))
-        .Where(IsLive)
-        .ToList();
+    private async Task<List<IEngineeringObject>> LiveProjectsAsync(CancellationToken cancellationToken)
+    {
+        var entries = await _context.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(false);
+        var live = await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+        return [.. live];
+    }
 
-    private async Task<List<Quotation>> LiveQuotationsUnderProjectAsync(Guid projectId, CancellationToken cancellationToken) =>
-        (await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false))
-        .OfType<Quotation>()
-        .Where(IsLive)
-        .ToList();
+    private async Task<List<Quotation>> LiveQuotationsUnderProjectAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        var entries = await _context.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var live = await _context.Repository.MaterialiseAsync<Quotation>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+        return [.. live];
+    }
 
     private async Task<ProjectExplorerNode> ToProjectNodeAsync(IEngineeringObject project, CancellationToken cancellationToken)
     {

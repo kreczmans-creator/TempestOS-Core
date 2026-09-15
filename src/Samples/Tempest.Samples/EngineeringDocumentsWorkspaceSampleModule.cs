@@ -250,7 +250,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
         ProcedureId = procedure.Id;
         await procedure.TransitionAsync(LifecycleState.InReview, cancellationToken).ConfigureAwait(false);
         var existingRisks = await _context.Repository.ListByKindAsync("Risk", cancellationToken).ConfigureAwait(false);
-        if (existingRisks.FirstOrDefault(r => r is not IDeletable { IsDeleted: true }) is { } existingRisk)
+        if (existingRisks.FirstOrDefault(entry => !entry.IsDeleted) is { } existingRisk)
             await procedure.LinkAsync(existingRisk.Id, "references", cancellationToken).ConfigureAwait(false);
 
         // ---- Standard: a fixed, external-body reference document ----

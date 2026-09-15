@@ -341,7 +341,7 @@ public sealed class MacroBindingEligibilityTests : IAsyncLifetime
         // Effect one: the new Part exists, with the recorded name — never
         // prompted for, only replayed from what was recorded.
         var allParts = await domainContext.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Part, CancellationToken.None);
-        var createdPart = Assert.Single(allParts, p => ((IHasBusinessIdentifier)p).DisplayName == "Recorded Part");
+        var createdPart = Assert.Single(allParts, p => p.DisplayName == "Recorded Part");
 
         // Effect two: the pre-existing Part carries the recorded new name.
         var renamed = await domainContext.Repository.FindAsync(existingPart.Id, CancellationToken.None);

@@ -106,7 +106,9 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
         if (target is IDocument)
         {
-            var children = (await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false)).Where(IsLive);
+            var childEntries = await _context.Repository.ListChildrenAsync(nodeId, cancellationToken).ConfigureAwait(false);
+            var children = await _context.Repository.MaterialiseAsync<IEngineeringObject>(
+                [.. childEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
             var nodes = new List<ProjectExplorerNode>();
             foreach (var child in children)
@@ -146,11 +148,19 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<IReadOnlyList<IEngineeringObject>> LiveDocumentsAsync(CancellationToken cancellationToken)
     {
-        var all = new List<IEngineeringObject>();
+        // `TD-88`/`WP 21.5B`: category membership (`DocumentCategory.Of`)
+        // needs each object's own type/`Classification`, neither of which
+        // is on the index row, so every live document is materialised —
+        // liveness itself is filtered first, from the index alone, so a
+        // deleted document is never materialised just to be discarded.
+        var liveEntries = new List<EngineeringObjectIndexEntry>();
         foreach (var kind in DocumentObjectFactoryRegistry.SupportedKinds)
-            all.AddRange(await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false));
+        {
+            var entries = await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            liveEntries.AddRange(entries.Where(entry => !entry.IsDeleted));
+        }
 
-        return all.Where(IsLive).ToList();
+        return await _context.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -165,7 +175,9 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
 
     private async Task<ProjectExplorerNode> ToDocumentNodeAsync(IEngineeringObject document, CancellationToken cancellationToken)
     {
-        var hasChildren = (await _context.Repository.ListChildrenAsync(document.Id, cancellationToken).ConfigureAwait(false)).Any(IsLive);
+        // `TD-88`/`WP 21.5B`: "has a live child" only needs `IsDeleted`,
+        // which is on the index row — no materialisation to answer it.
+        var hasChildren = (await _context.Repository.ListChildrenAsync(document.Id, cancellationToken).ConfigureAwait(false)).Any(entry => !entry.IsDeleted);
 
         return new ProjectExplorerNode(
             document.Id, DisplayNameOf(document), document.Kind, hasChildren, ProjectExplorerNodeType.Object,
@@ -174,8 +186,6 @@ public sealed class DocumentsNodeProvider : IProjectExplorerNodeProvider
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();
-
-    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }
 
 /// <summary>

@@ -317,12 +317,16 @@ public sealed class AccountsReadModel : IAccountsReadModel
             return AccountsSnapshot.Unavailable(reason, since, asOf);
         }
 
-        var all = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `Status`/`IssuedDate`/`DueOn`/`Total` are all
+        // `InvoiceRequest`-own fields, not on the index row, so every
+        // request of this Kind is materialised before it can be filtered.
+        var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var all = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
 
         // `TD-180`, `WP 20.1B`: due date is the request's own `DueOn` — its
         // client's own payment terms, frozen at raise — not a single
         // configured days-after-issue guess every client shared alike.
-        var receivable = all.OfType<InvoiceRequest>()
+        var receivable = all
             .Where(r => r.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted && r.IssuedDate is not null)
             .Select(r => new ReceivableInvoice(r.Id, r.ClientOrganisationId, r.IssuedDate!.Value, r.DueOn ?? r.IssuedDate!.Value, r.Total))
             .ToList();

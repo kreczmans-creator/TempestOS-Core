@@ -162,7 +162,7 @@ public sealed class EngineeringVerificationWorkspaceSampleModule : ModuleLifecyc
             await LinkSubjectToActivityAsync(fastenerComponentId, inspection.Id, cancellationToken).ConfigureAwait(false);
 
         var existingRisks = await _context.Repository.ListByKindAsync("Risk", cancellationToken).ConfigureAwait(false);
-        if (existingRisks.FirstOrDefault(r => r is not IDeletable { IsDeleted: true }) is { } existingRisk)
+        if (existingRisks.FirstOrDefault(entry => !entry.IsDeleted) is { } existingRisk)
             await inspection.LinkAsync(existingRisk.Id, "references", cancellationToken).ConfigureAwait(false);
 
         // ---- Analysis: verifies a real Requirement; recorded Pass, linking the real executed Beam Calculation record and referencing the real Material ----

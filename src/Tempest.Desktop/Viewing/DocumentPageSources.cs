@@ -1,11 +1,13 @@
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using PDFtoImage;
 using SkiaSharp;
+using Svg.Skia;
 using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
@@ -33,7 +35,7 @@ namespace Tempest.Desktop.Viewing;
 [SupportedOSPlatform("windows")]
 [SupportedOSPlatform("linux")]
 [SupportedOSPlatform("macos")]
-public sealed class PdfDocumentPageSource : IDocumentPageSource
+public sealed class PdfDocumentPageSource : IDocumentPageSource, ITiledDocumentPageSource
 {
     /// <summary>The resolution a PDF page's "natural size" is expressed at.</summary>
     /// <remarks>
@@ -184,6 +186,48 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
         _stream?.Dispose();
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Unlike <see cref="RenderPage"/>, this never applies <see cref="MaxRasterEdge"/>:
+    /// one tile is <see cref="TileGrid.TileSize"/> pixels on a side by
+    /// construction, always comfortably under that ceiling regardless of
+    /// scale, which is the entire reason tiling raises it — a whole A0
+    /// sheet at 400% zoom would hit the cap and degrade; the same sheet as
+    /// a grid of 512px tiles never does, because no single render this
+    /// method ever issues is large enough to.
+    /// </remarks>
+    public Bitmap RenderTile(int pageIndex, double scale, int column, int row, int tileSize)
+    {
+        var index = Math.Clamp(pageIndex, 0, PageCount - 1);
+        var page = PageSize(index);
+        var effective = double.IsFinite(scale) && scale > 0 ? scale : 1;
+
+        var (x, y, width, height) = TileGrid.TileContentRect(page.Width, page.Height, effective, column, row);
+        if (width <= 0 || height <= 0)
+            throw new DocumentRenderException($"Tile ({column},{row}) of page {index + 1} lies entirely outside the page.");
+
+        var pixelWidth = Math.Max(1, (int)Math.Round(width * effective));
+        var pixelHeight = Math.Max(1, (int)Math.Round(height * effective));
+
+        try
+        {
+            var options = new PDFtoImage.RenderOptions(
+                Width: pixelWidth,
+                Height: pixelHeight,
+                Bounds: new System.Drawing.RectangleF((float)x, (float)y, (float)width, (float)height));
+
+            using var skia = _content is { } bytes
+                ? Conversion.ToImage(bytes, new Index(index), options: options)
+                : Conversion.ToImage(_stream!, new Index(index), leaveOpen: true, options: options);
+
+            return ToAvaloniaBitmap(skia);
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException($"Tile ({column},{row}) of page {index + 1} could not be rendered.", ex);
+        }
+    }
+
     private static double EffectiveScale(Size page, double scale)
     {
         var requested = double.IsFinite(scale) && scale > 0 ? scale : 1;
@@ -232,10 +276,26 @@ public sealed class PdfDocumentPageSource : IDocumentPageSource
 /// </remarks>
 public sealed class ImageDocumentPageSource : IDocumentPageSource
 {
+    /// <summary>
+    /// The largest decoded pixel count (width &#215; height) this source will
+    /// ask Avalonia's own decoder to materialise.
+    /// </summary>
+    /// <remarks>
+    /// `WP 21.5F` Offensive Security Audit, OSA-01: unlike
+    /// <see cref="PdfDocumentPageSource"/>'s <see cref="PdfDocumentPageSource.MaxRasterEdge"/>,
+    /// nothing here previously bounded the decoded bitmap at all — a small
+    /// file that declares an enormous pixel grid (a classic decompression
+    /// bomb shape) was decoded to its full, real size with nothing to stop
+    /// it. 40 million pixels is generous for a real photograph or scanned
+    /// drawing (roughly 8000&#215;5000) while keeping one decoded bitmap's own
+    /// memory (4 bytes/pixel, BGRA32) under ~160&#160;MB.
+    /// </remarks>
+    public const long MaxDecodedPixels = 40_000_000;
+
     private readonly Bitmap _bitmap;
 
     /// <summary>Loads <paramref name="content"/> as an image.</summary>
-    /// <exception cref="DocumentRenderException">The bytes are not an image this platform can decode.</exception>
+    /// <exception cref="DocumentRenderException">The bytes are not an image this platform can decode, or declare more pixels than <see cref="MaxDecodedPixels"/> allows.</exception>
     public ImageDocumentPageSource(byte[] content)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -243,6 +303,7 @@ public sealed class ImageDocumentPageSource : IDocumentPageSource
         try
         {
             using var stream = new MemoryStream(content, writable: false);
+            GuardAgainstOversizedImage(stream);
             _bitmap = new Bitmap(stream);
 
             // A decoder that returns a zero-sized bitmap rather than
@@ -259,6 +320,48 @@ public sealed class ImageDocumentPageSource : IDocumentPageSource
         catch (Exception ex)
         {
             throw new DocumentRenderException("This image could not be decoded.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Peeks a seekable image stream's own declared dimensions through
+    /// <see cref="SKCodec"/> — parsing only the header, never the pixel
+    /// data — and refuses before Avalonia's own decoder ever allocates a
+    /// bitmap for more than <see cref="MaxDecodedPixels"/> pixels.
+    /// Restores <paramref name="stream"/>'s position before returning
+    /// either way, so the real decode afterwards sees the same stream it
+    /// would have without this check.
+    /// </summary>
+    /// <exception cref="DocumentRenderException">The declared pixel count exceeds <see cref="MaxDecodedPixels"/>.</exception>
+    private static void GuardAgainstOversizedImage(Stream stream)
+    {
+        if (!stream.CanSeek)
+            return;
+
+        var position = stream.Position;
+        try
+        {
+            // disposeManagedStream: false - SKCodec.Create(Stream) would
+            // otherwise take ownership and close the real stream once the
+            // codec itself is disposed, leaving the real decode below (and
+            // every other caller of this stream) working against a closed
+            // stream.
+            using var managedStream = new SKManagedStream(stream, disposeManagedStream: false);
+            using var codec = SKCodec.Create(managedStream);
+            if (codec is null)
+                return;
+
+            var declaredPixels = (long)codec.Info.Width * codec.Info.Height;
+            if (declaredPixels > MaxDecodedPixels)
+            {
+                throw new DocumentRenderException(
+                    $"This image declares {codec.Info.Width}x{codec.Info.Height} pixels " +
+                    $"({declaredPixels:N0} total) - more than this platform will decode.");
+            }
+        }
+        finally
+        {
+            stream.Position = position;
         }
     }
 
@@ -281,6 +384,7 @@ public sealed class ImageDocumentPageSource : IDocumentPageSource
 
         try
         {
+            GuardAgainstOversizedImage(content);
             _bitmap = new Bitmap(content);
 
             if (_bitmap.PixelSize.Width <= 0 || _bitmap.PixelSize.Height <= 0)
@@ -334,6 +438,25 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
     /// <summary>The page size text is laid out onto, in the viewport's own units.</summary>
     public static readonly Size TextPageSize = new(816, 1056);
 
+    /// <summary>
+    /// The most source bytes this page source will decode and hold as one
+    /// managed <see cref="string"/> before truncating.
+    /// </summary>
+    /// <remarks>
+    /// `WP 21.5F` Offensive Security Audit, OSA-01: unlike the PDF and
+    /// image page sources, nothing previously bounded this one at all —
+    /// the whole file was decoded into one <see cref="string"/> (and then
+    /// one <c>string[]</c> of lines) unconditionally, regardless of size.
+    /// 25&#160;MB is generous for a real datasheet, log or CSV export while
+    /// keeping one open document's worst-case decoded-text memory bounded
+    /// (roughly double this in UTF-16 <see cref="char"/>s, plus the line
+    /// array) rather than unlimited.
+    /// </remarks>
+    public const int MaxSourceBytes = 25_000_000;
+
+    private const string TruncationNotice =
+        "\n\n[TempestOS stopped reading this file at 25 MB for display - the stored file itself is unaffected.]";
+
     private const double Margin = 48;
     private const double LineHeight = 20;
     private const double FontSize = 13;
@@ -345,12 +468,18 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
     {
         ArgumentNullException.ThrowIfNull(content);
 
+        var truncated = content.Length > MaxSourceBytes;
+        var bounded = truncated ? content.AsSpan(0, MaxSourceBytes) : content.AsSpan();
+
         // Decoded permissively: a datasheet with one malformed byte is
         // still a datasheet worth reading, and replacement characters say
         // more to an engineer than a refusal to open the file does.
         var text = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false)
-            .GetString(content)
+            .GetString(bounded)
             .TrimStart('﻿');
+
+        if (truncated)
+            text += TruncationNotice;
 
         var lines = text.ReplaceLineEndings("\n").Split('\n');
         _pages = lines.Length == 0
@@ -362,10 +491,11 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
     }
 
     /// <summary>
-    /// Loads <paramref name="content"/> as text, read through a
-    /// <see cref="StreamReader"/> rather than requiring a <c>byte[]</c>
-    /// up front (`TD-96`) — the same permissive UTF-8 decoding as the
-    /// byte-array constructor, applied to whatever the stream yields.
+    /// Loads <paramref name="content"/> as text, read through a bounded
+    /// buffer rather than requiring a <c>byte[]</c> up front (`TD-96`) —
+    /// the same permissive UTF-8 decoding and the same
+    /// <see cref="MaxSourceBytes"/> cap as the byte-array constructor,
+    /// applied to whatever the stream yields.
     /// </summary>
     public TextDocumentPageSource(Stream content)
     {
@@ -373,13 +503,40 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
 
         string text;
         using (content)
-        using (var reader = new StreamReader(
-            content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), detectEncodingFromByteOrderMarks: true))
         {
+            var (bytes, truncated) = ReadBounded(content, MaxSourceBytes);
+            using var reader = new StreamReader(
+                new MemoryStream(bytes, writable: false),
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), detectEncodingFromByteOrderMarks: true);
             text = reader.ReadToEnd().TrimStart('﻿');
+            if (truncated)
+                text += TruncationNotice;
         }
 
         _pages = BuildPages(text);
+    }
+
+    /// <summary>
+    /// Reads at most <paramref name="maxBytes"/> from <paramref name="stream"/>,
+    /// never buffering more than one byte past that limit — the streamed-path
+    /// equivalent of the byte-array constructor's own <see cref="MaxSourceBytes"/>
+    /// slice, so a huge stream cannot be read to completion in memory before
+    /// this source gets a chance to bound it.
+    /// </summary>
+    private static (byte[] Bytes, bool Truncated) ReadBounded(Stream stream, int maxBytes)
+    {
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while (buffer.Length <= maxBytes && (read = stream.Read(chunk, 0, chunk.Length)) > 0)
+            buffer.Write(chunk, 0, read);
+
+        if (buffer.Length <= maxBytes)
+            return (buffer.ToArray(), false);
+
+        var bytes = new byte[maxBytes];
+        Array.Copy(buffer.GetBuffer(), bytes, maxBytes);
+        return (bytes, true);
     }
 
     /// <summary>Lays out <paramref name="text"/> into <see cref="LinesPerPage"/>-line pages, at least one even for empty text.</summary>
@@ -436,6 +593,236 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
     }
 }
 
+/// <summary>
+/// An SVG, rasterised through <c>Svg.Skia</c> (MIT-licensed; version pinned
+/// in <c>Tempest.Desktop.csproj</c>'s own remarks) to the same
+/// <see cref="SKBitmap"/>-backed page a PDF produces (`TD-99`).
+/// </summary>
+/// <remarks>
+/// One page, always — an SVG has no pagination concept. Rendered at the
+/// scale the viewer asks for, exactly like <see cref="PdfDocumentPageSource"/>:
+/// zooming into a detail re-rasterises the vector content at the new scale
+/// rather than magnifying an earlier render's pixels, which is the entire
+/// reason a vector format is worth a real rasteriser rather than a
+/// generic image decoder.
+/// </remarks>
+[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("linux")]
+[SupportedOSPlatform("macos")]
+public sealed class SvgDocumentPageSource : IDocumentPageSource
+{
+    /// <summary>The largest edge, in pixels, any single rasterised page may have — the same ceiling <see cref="PdfDocumentPageSource.MaxRasterEdge"/> applies, and for the same reason: an SVG's own <c>viewBox</c> can claim any size at all, and a deep zoom must not ask Skia for a bitmap of hundreds of megapixels.</summary>
+    public const int MaxRasterEdge = 8000;
+
+    private readonly SKSvg _svg;
+    private readonly Size _pageSize;
+
+    /// <summary>Loads <paramref name="content"/> as an SVG.</summary>
+    /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
+    public SvgDocumentPageSource(byte[] content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        using var stream = new MemoryStream(content, writable: false);
+        _svg = Load(stream);
+        _pageSize = NaturalSize(_svg);
+    }
+
+    /// <summary>
+    /// Loads an SVG from <paramref name="content"/> without requiring a
+    /// <c>byte[]</c> up front (`TD-96`'s own established convention for
+    /// every page source) — <see cref="SKSvg.Load(Stream)"/> reads the
+    /// stream directly.
+    /// </summary>
+    /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
+    public SvgDocumentPageSource(Stream content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+
+        try
+        {
+            _svg = Load(content);
+            _pageSize = NaturalSize(_svg);
+        }
+        finally
+        {
+            content.Dispose();
+        }
+    }
+
+    /// <inheritdoc />
+    public int PageCount => 1;
+
+    /// <inheritdoc />
+    public Size PageSize(int pageIndex) => _pageSize;
+
+    /// <inheritdoc />
+    public Bitmap RenderPage(int pageIndex, double scale)
+    {
+        try
+        {
+            var effective = EffectiveScale(_pageSize, scale);
+            var pixelWidth = Math.Max(1, (int)Math.Round(_pageSize.Width * effective));
+            var pixelHeight = Math.Max(1, (int)Math.Round(_pageSize.Height * effective));
+
+            using var bitmap = new SKBitmap(pixelWidth, pixelHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+            using (var canvas = new SKCanvas(bitmap))
+            {
+                canvas.Clear(SKColors.Transparent);
+                canvas.Scale((float)effective);
+                canvas.DrawPicture(_svg.Picture);
+            }
+
+            return PdfDocumentPageSource.ToAvaloniaBitmap(bitmap);
+        }
+        catch (Exception ex)
+        {
+            throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => _svg.Dispose();
+
+    private static SKSvg Load(Stream stream)
+    {
+        SKSvg svg;
+
+        try
+        {
+            string markup;
+            using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
+                markup = reader.ReadToEnd();
+
+            var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+
+            svg = new SKSvg();
+            SKPicture? picture;
+            using (var sanitisedStream = new MemoryStream(Encoding.UTF8.GetBytes(sanitised)))
+                picture = svg.Load(sanitisedStream);
+
+            if (picture is null)
+            {
+                svg.Dispose();
+                throw new DocumentRenderException("This SVG could not be read: the file has no readable SVG content.");
+            }
+
+            if (picture.CullRect.Width <= 0 || picture.CullRect.Height <= 0)
+            {
+                svg.Dispose();
+                throw new DocumentRenderException("This SVG could not be read: it has no visible size.");
+            }
+        }
+        catch (DocumentRenderException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Svg.Skia reports a malformed document by throwing (an
+            // XmlException over broken markup, most commonly) — translated
+            // here, at the boundary, into this platform's own type, exactly
+            // as PdfDocumentPageSource does for PDFium.
+            throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
+        }
+
+        return svg;
+    }
+
+    private static Size NaturalSize(SKSvg svg)
+    {
+        var bounds = svg.Picture!.CullRect;
+        return new Size(bounds.Width, bounds.Height);
+    }
+
+    private static double EffectiveScale(Size page, double scale)
+    {
+        var requested = double.IsFinite(scale) && scale > 0 ? scale : 1;
+        var longestEdge = Math.Max(page.Width, page.Height);
+        if (longestEdge <= 0)
+            return requested;
+
+        return Math.Min(requested, MaxRasterEdge / longestEdge);
+    }
+}
+
+/// <summary>
+/// Strips an SVG document of anything that could make rendering it touch
+/// the network or the local disk, or run script — none of which a static
+/// rasteriser has any legitimate reason to do (`TD-184`). Deliberately not
+/// a member of <see cref="SvgDocumentPageSource"/>: this is pure text
+/// processing with nothing platform-specific about it, so it carries none
+/// of that class's own <see cref="System.Runtime.Versioning.SupportedOSPlatformAttribute"/>
+/// declarations and can be called (and tested) from anywhere.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Why this exists, specifically:</b> <c>Svg.Skia</c>'s own image
+/// resolution (<c>Svg.Model.SvgExtensions.GetImageFromWeb</c>) calls
+/// <c>System.Net.WebRequest.Create(uri).GetResponse()</c> for any
+/// <c>&lt;image&gt;</c> reference that is not a <c>data:</c> URI —
+/// <c>http://</c>, <c>https://</c> <b>and</b> <c>file://</c> alike, the last
+/// of which reads an arbitrary local file and folds its bytes into the
+/// rendered picture. An SVG is untrusted, attacker-controlled input the
+/// moment it reaches this platform (an attachment's own bytes), so a
+/// reference resolved against the document's own base URI runs at this
+/// platform's own expense the instant the document renders — before any
+/// content is even shown, with no further action from the user. Every
+/// <c>href</c>/<c>xlink:href</c> that is not a same-document fragment
+/// (<c>#id</c>) or an embedded <c>data:</c> URI is blanked by
+/// <see cref="Sanitise"/>, before the bytes ever reach <c>SKSvg.Load</c>, so
+/// the vulnerable call is never given anything to resolve.
+/// </para>
+/// <para>
+/// A <c>&lt;!DOCTYPE&gt;</c> declaration is removed outright — the XXE
+/// vector, and an SVG has no legitimate reason to declare one. A
+/// <c>&lt;script&gt;</c> element is removed too: this rasteriser has no
+/// script engine to run it, so it is already inert, but stripping it is
+/// cheap, unambiguous defence in depth against a future rendering path (or a
+/// future library upgrade) that does.
+/// </para>
+/// </remarks>
+internal static class SvgMarkupSanitiser
+{
+    private static readonly Regex DoctypePattern = new(
+        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex ScriptElementPattern = new(
+        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex ExternalReferencePattern = new(
+        @"(?<attr>xlink:href|href)\s*=\s*(?<quote>[""'])(?!\s*(#|data:))(?<value>[^""']*)\k<quote>",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// A dangerous <c>href</c>/<c>xlink:href</c> is replaced with this,
+    /// never with an empty string. Both are equally inert content — an
+    /// empty <c>data:</c> URI resolves locally to nothing — but an empty
+    /// <em>string</em> is a same-document <b>relative</b> reference per
+    /// RFC 3986, which some SVG readers resolve against the document's own
+    /// base URI regardless of the value being empty; a document loaded
+    /// from a bare stream (every attachment this platform opens) carries
+    /// no base URI at all, and resolving a relative reference against a
+    /// null one throws. A <c>data:</c> URI is absolute — Svg.Skia's own
+    /// image resolution (<c>Svg.Model.SvgExtensions.GetImageUri</c>)
+    /// returns it immediately, before any base-URI resolution is even
+    /// attempted — so this is the one substitution that is both inert and
+    /// never touches that code path at all.
+    /// </summary>
+    private const string InertReferenceValue = "data:,";
+
+    /// <summary>Returns <paramref name="markup"/> with every DOCTYPE, script element and non-fragment/non-<c>data:</c> href removed or blanked.</summary>
+    public static string Sanitise(string markup)
+    {
+        ArgumentNullException.ThrowIfNull(markup);
+
+        var sanitised = DoctypePattern.Replace(markup, string.Empty);
+        sanitised = ScriptElementPattern.Replace(sanitised, string.Empty);
+        sanitised = ExternalReferencePattern.Replace(sanitised, m => $"{m.Groups["attr"].Value}=\"{InertReferenceValue}\"");
+        return sanitised;
+    }
+}
+
 /// <summary>A document this platform could not open or render.</summary>
 public sealed class DocumentRenderException : Exception
 {
@@ -482,6 +869,8 @@ public static class DocumentPageSourceFactory
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
+        ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
+            => new SvgDocumentPageSource(content),
 
         // ExternalOnly falls to the same null the default arm returns for
         // any other unmatched format — named here rather than left to fall
@@ -516,6 +905,8 @@ public static class DocumentPageSourceFactory
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
+        ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
+            => new SvgDocumentPageSource(content),
         _ => null,
     };
 }

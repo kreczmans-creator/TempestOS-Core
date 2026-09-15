@@ -244,11 +244,11 @@ public sealed class ProductConvergenceAcceptanceTests
 
             var domain = DomainOf(first);
             var calculation = (await domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QC-1");
+                .Single(entry => entry.Identifier == "QC-1");
             calculationId = calculation.Id;
 
             // It belongs to no project — that is the whole point.
-            Assert.Null(((IHasParent)calculation).ParentId);
+            Assert.Null(calculation.ParentId);
             Assert.True(await first.EngineeringScope.ContainsAsync(calculationId));
 
             // → Run the calculation, for real.
@@ -270,7 +270,7 @@ public sealed class ProductConvergenceAcceptanceTests
             Assert.True(setResult.Succeeded, setResult.Message);
 
             calculationSetId = (await domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationSetKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QS-1").Id;
+                .Single(entry => entry.Identifier == "QS-1").Id;
 
             await first.ShutdownAsync();
         }

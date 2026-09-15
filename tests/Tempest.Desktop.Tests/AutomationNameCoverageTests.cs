@@ -161,7 +161,7 @@ public sealed class AutomationNameCoverageTests
     private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
     {
         ShellArea.Projects => ["Dashboard + Reports", "Open", "Closed", "Archive"],
-        ShellArea.EngineeringDepartment => ["Dashboard + Reports", "Tasks", "Mechanical", "Engineering Calculations", "Reference data"],
+        ShellArea.EngineeringDepartment => ["Dashboard + Reports", "Tasks", "Mechanical", "Engineering Calculations", "Engineering Assets", "Reference data"],
         ShellArea.Business => ["Dashboard & Reports", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };

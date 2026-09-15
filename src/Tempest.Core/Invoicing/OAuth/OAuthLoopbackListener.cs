@@ -52,9 +52,58 @@ internal sealed class OAuthLoopbackListener : IDisposable
         var resolvedPort = port > 0 ? port : FindFreePort();
         RedirectUri = new Uri($"http://127.0.0.1:{resolvedPort}/callback/");
 
-        _listener = new HttpListener();
-        _listener.Prefixes.Add(RedirectUri.ToString());
-        _listener.Start();
+        _listener = StartWithRetry(RedirectUri);
+    }
+
+    /// <summary>
+    /// Builds and starts an <see cref="HttpListener"/> on
+    /// <paramref name="redirectUri"/>, retrying a handful of times on
+    /// <see cref="HttpListenerException"/> before giving up (`TD-183`).
+    /// </summary>
+    /// <remarks>
+    /// Folded in from `TD-183`: several suites binding the same fixed port
+    /// in quick succession (this class's own default, or a test's own
+    /// choice) can collide with a just-closed prior listener still
+    /// settling — a transient condition, not a genuinely occupied port.
+    /// Retrying the *same* port a few times absorbs that without ever
+    /// falling back to a different one: <see cref="OAuthAuthoriser"/>'s own
+    /// security property — the redirect URI a sandbox app registered ahead
+    /// of time is the one this run actually binds, or the run fails
+    /// outright and never opens the browser — must not be weakened by a
+    /// robustness fix. A port genuinely held by another long-lived process
+    /// still fails, exactly as before, after every attempt is exhausted.
+    /// A fresh <see cref="HttpListener"/> every attempt, not one reused
+    /// across retries: a listener whose own <see cref="HttpListener.Start"/>
+    /// throws leaves its underlying request queue unusable for a later
+    /// <c>Start()</c> call on that same instance (observed directly —
+    /// reusing the instance turned a retry into an immediate
+    /// <see cref="ObjectDisposedException"/> rather than a second real
+    /// attempt).
+    /// </remarks>
+    private static HttpListener StartWithRetry(Uri redirectUri)
+    {
+        const int maxAttempts = 5;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var listener = new HttpListener();
+            listener.Prefixes.Add(redirectUri.ToString());
+
+            try
+            {
+                listener.Start();
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                ((IDisposable)listener).Dispose();
+
+                if (attempt >= maxAttempts)
+                    throw;
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(50 * attempt));
+            }
+        }
     }
 
     /// <summary>The redirect URI this run's own authorisation URL carries, and the sandbox app must register — <c>http://127.0.0.1:&lt;port&gt;/callback/</c>, a fresh port every run.</summary>

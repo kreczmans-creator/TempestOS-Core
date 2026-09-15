@@ -35,11 +35,23 @@ public static class ProjectMembership
     /// <see langword="null"/> when it belongs to none (standalone) or does
     /// not exist.
     /// </summary>
-    public static async Task<Guid?> ResolveOwningProjectAsync(
+    public static Task<Guid?> ResolveOwningProjectAsync(
         IEngineeringObjectRepository repository, Guid objectId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(repository);
 
+        return Task.FromResult(WalkToOwningProject(repository, objectId, cancellationToken));
+    }
+
+    /// <summary>
+    /// `TD-88`/`WP 21.5B`: Kind and parent are both on the index row, so
+    /// this walk never materialises an object it is only passing through —
+    /// a genuinely synchronous, no-I/O read via
+    /// <see cref="IEngineeringObjectRepository.PeekIndexEntry"/>, not the
+    /// materialising <c>FindAsync</c> this walk used before.
+    /// </summary>
+    private static Guid? WalkToOwningProject(IEngineeringObjectRepository repository, Guid objectId, CancellationToken cancellationToken)
+    {
         var visited = new HashSet<Guid>();
         var current = objectId;
 
@@ -47,14 +59,14 @@ public static class ProjectMembership
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var found = await repository.FindAsync(current, cancellationToken).ConfigureAwait(false);
+            var found = repository.PeekIndexEntry(current);
             if (found is null)
                 return null;
 
             if (string.Equals(found.Kind, ProjectDirectory.ProjectKind, StringComparison.Ordinal))
                 return found.Id;
 
-            if (found is not IHasParent { ParentId: { } parentId })
+            if (found.ParentId is not { } parentId)
                 return null;
 
             current = parentId;
@@ -85,8 +97,12 @@ public static class ProjectMembership
     {
         ArgumentNullException.ThrowIfNull(repository);
 
+        // `TD-88`/`WP 21.5B`: Kind, liveness, and (via `WalkToOwningProject`)
+        // ownership are all answerable from the index alone, so filtering
+        // never materialises a candidate — only the ids that are actually
+        // members are, at the very end.
         var all = await repository.ListAllAsync(cancellationToken).ConfigureAwait(false);
-        var members = new List<IEngineeringObject>();
+        var memberIds = new List<Guid>();
 
         foreach (var candidate in all)
         {
@@ -99,14 +115,14 @@ public static class ProjectMembership
                 continue;
 
             // Deleted objects are not contents (`WP 9.0A` soft delete).
-            if (candidate is IDeletable { IsDeleted: true })
+            if (candidate.IsDeleted)
                 continue;
 
             var owner = await ResolveOwningProjectAsync(repository, candidate.Id, cancellationToken).ConfigureAwait(false);
             if (matches(owner))
-                members.Add(candidate);
+                memberIds.Add(candidate.Id);
         }
 
-        return members;
+        return await repository.MaterialiseAsync<IEngineeringObject>(memberIds, cancellationToken).ConfigureAwait(false);
     }
 }

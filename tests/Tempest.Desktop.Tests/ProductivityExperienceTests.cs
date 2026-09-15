@@ -120,7 +120,7 @@ public sealed class ProductivityExperienceTests
             Assert.True(createResult.Succeeded);
             var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = (await domainContext.Repository.ListByKindAsync("Part"))
-                .Single(o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Original Name");
+                .Single(entry => entry.DisplayName == "Original Name");
 
             var oldName = "Original Name";
             var newName = "Renamed";

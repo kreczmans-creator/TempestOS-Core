@@ -31,6 +31,7 @@ rendering dependency is directly relevant to what this platform ships.
 | [Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) | 10.0.11 | MIT |
 | [Microsoft.NET.Test.Sdk](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk) | 17.14.1 | MIT |
 | [PDFtoImage](https://www.nuget.org/packages/PDFtoImage) | 4.1.1 | MIT |
+| [Svg.Skia](https://www.nuget.org/packages/Svg.Skia) | 2.0.0.8 | MIT |
 | [System.Security.Cryptography.ProtectedData](https://www.nuget.org/packages/System.Security.Cryptography.ProtectedData) | 10.0.11 | MIT |
 | [Tmds.DBus.Protocol](https://www.nuget.org/packages/Tmds.DBus.Protocol) | 0.21.3 | MIT |
 | [Velopack](https://www.nuget.org/packages/Velopack) | 1.2.0 | MIT |
@@ -39,6 +40,7 @@ rendering dependency is directly relevant to what this platform ships.
 
 ## Notes
 
+- **Svg.Skia** (`WP 21.4A`) renders SVG attachments in the viewer through SkiaSharp; pinned to the last 2.x release because its SkiaSharp floor matches the version this solution resolves. Untrusted SVG is sanitised before parsing (external references blanked, DOCTYPE and script stripped).
 - **Velopack** (`WP 21.5A`, `WP RC.0A`) is referenced by `Tempest.Desktop` only: the Windows installer, the in-place update check (off by default, HTTPS feed) and installed-versus-development-run detection. `Tempest.Harness` carries no installer.
 - **PDFtoImage** (used by `Tempest.Desktop`'s PDF page source) pulls in
   `SkiaSharp` (MIT) and, for its native rendering engine,

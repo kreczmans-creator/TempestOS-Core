@@ -737,4 +737,93 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         await Assert.ThrowsAsync<ArgumentNullException>(
             () => store.ExecuteInReadTransactionAsync<int>(null!));
     }
+
+    // ========================================================================
+    // WP 21.5F — Offensive Security Audit: OSA-06, the persistence root and its lock file.
+    // ========================================================================
+
+    [Theory]
+    [InlineData(@"C:\Windows")]
+    [InlineData(@"C:\Windows\System32")]
+    [InlineData(@"C:\Windows\System32\config")]
+    [InlineData(@"C:\Program Files")]
+    [InlineData(@"C:\Program Files\SomeApp")]
+    [InlineData(@"C:\Program Files (x86)")]
+    public void OSA06_ARootPathInsideAProtectedSystemDirectory_IsRefused(string systemPath)
+    {
+        // The exploit: Persistence:RootPath is operator/command-line
+        // controlled input (the brief's own actor (e) - "can supply
+        // command-line arguments and environment") with, before this fix,
+        // no validation at all - naming a system directory here made this
+        // store create tempest.db and its instance lock file directly
+        // inside it.
+        if (!OperatingSystem.IsWindows())
+            return; // These fixtures are Windows paths; the store's own check runs the Unix-equivalent list there instead.
+
+        var ex = Assert.Throws<PersistenceStoreUnavailableException>(() => NewStore(systemPath));
+
+        Assert.Contains("protected system directory", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OSA06_ARootPathThatIsADriveRoot_IsRefused()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        var driveRoot = Path.GetPathRoot(Environment.SystemDirectory)!;
+
+        var ex = Assert.Throws<PersistenceStoreUnavailableException>(() => NewStore(driveRoot));
+
+        Assert.Contains("drive root", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OSA06_AnOrdinaryRootPath_IsStillAccepted()
+    {
+        // The guard must not be so aggressive it refuses a real, ordinary
+        // root - every other test in this file already proves this
+        // implicitly (NewStore() with no argument), but this makes the
+        // "not a false positive" property explicit and adjacent to the
+        // refusal tests above.
+        var store = NewStore();
+        Assert.NotNull(store);
+    }
+
+    [Fact]
+    public void OSA06_ALockFileThatIsASymlinkOrJunction_IsRefusedRatherThanFollowed()
+    {
+        // The exploit: a local process that already has write access to
+        // the persistence root directory (the same prerequisite this
+        // audit's own actor model assumes throughout) could plant
+        // tempest.lock as a reparse point pointing anywhere on disk;
+        // before this fix, the plain FileStream open here would silently
+        // follow it.
+        using var root = new TempDirectory();
+        using var target = new TempDirectory();
+        var lockPath = Path.Combine(root.Path, SqlitePersistenceStore.LockFileName);
+        var targetPath = Path.Combine(target.Path, "elsewhere.txt");
+        File.WriteAllText(targetPath, "not a lock file");
+
+        try
+        {
+            File.CreateSymbolicLink(lockPath, targetPath);
+        }
+        catch (Exception symlinkEx) when (symlinkEx is IOException or UnauthorizedAccessException)
+        {
+            // Creating a symlink on Windows needs SeCreateSymbolicLinkPrivilege
+            // or Developer Mode - not guaranteed on every CI runner. The
+            // production guard is exercised for real wherever this can run;
+            // elsewhere, there is nothing more this test can prove.
+            return;
+        }
+
+        var ex = Assert.Throws<PersistenceStoreUnavailableException>(() => NewStore(root.Path));
+
+        Assert.Contains("symlink or junction", ex.Message, StringComparison.Ordinal);
+
+        // The refusal must not have followed the link and touched the
+        // real target file at all.
+        Assert.Equal("not a lock file", File.ReadAllText(targetPath));
+    }
 }
