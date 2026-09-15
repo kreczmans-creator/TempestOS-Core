@@ -39,12 +39,14 @@ public sealed class SetManufacturingObjectStatusCommand : IWorkspaceCommand
 public sealed class SetManufacturingObjectStatusCommandHandler : ICommandHandler<SetManufacturingObjectStatusCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public SetManufacturingObjectStatusCommandHandler(EngineeringDomainContext context)
+    public SetManufacturingObjectStatusCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(SetManufacturingObjectStatusCommand command, CancellationToken cancellationToken)
@@ -53,6 +55,9 @@ public sealed class SetManufacturingObjectStatusCommandHandler : ICommandHandler
 
         if (target is not IHasLifecycle lifecycle)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind has no lifecycle status.");
+
+        var previousStatus = lifecycle.Status;
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? command.TargetObjectId.ToString();
 
         try
         {
@@ -63,6 +68,12 @@ public sealed class SetManufacturingObjectStatusCommandHandler : ICommandHandler
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Status set to '{command.Status}' for '{command.TargetObjectId}'.");
+        var compensation = WorkspaceCommandBindings.StatusCompensation(
+            _context, _dispatcher, command.TargetObjectId, command.TargetKind, sourceName, previousStatus, command.Status,
+            status => new SetManufacturingObjectStatusCommand(command.TargetObjectId, command.TargetKind, status));
+
+        return CommandResult.Success(
+            $"Status set to '{command.Status}' for '{command.TargetObjectId}'.", compensation: compensation,
+            undoUnavailableReason: compensation is null ? WorkspaceCommandBindings.UndoUnavailableForStatus(previousStatus, command.Status) : null);
     }
 }

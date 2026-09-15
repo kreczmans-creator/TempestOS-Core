@@ -120,16 +120,17 @@ public static class ManufacturingWorkspaceRegistration
         manager.RegisterReviseFactory("Inspection", static (id, targetKind, content) => new ReviseVerificationActivityCommand(id, targetKind, content));
 
         var factoryRegistry = new ManufacturingObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyManufacturingObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyManufacturingObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateManufacturingObjectCommand>(new CreateManufacturingObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateManufacturingObjectCommand>(new CreateManufacturingObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameManufacturingObjectCommand>(new RenameManufacturingObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseManufacturingObjectCommand>(new ReviseManufacturingObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteManufacturingObjectCommand>(new DeleteManufacturingObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveManufacturingObjectCommand>(new MoveManufacturingObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteManufacturingObjectCommand>(new DeleteManufacturingObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteManufacturingObjectCommand>(new UndeleteManufacturingObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveManufacturingObjectCommand>(new MoveManufacturingObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyManufacturingObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateManufacturingObjectCommand>(new DuplicateManufacturingObjectCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetManufacturingObjectStatusCommand>(new SetManufacturingObjectStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetManufacturingObjectStatusCommand>(new SetManufacturingObjectStatusCommandHandler(domainContext, commandDispatcher));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
         // hand-written lambda closing over the same constructor the handler

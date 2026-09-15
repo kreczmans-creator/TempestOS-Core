@@ -232,11 +232,13 @@ internal static class WorkspaceCommandBindings
     /// message differs by discipline in a couple of callers.
     /// </summary>
     internal static async Task<CommandResult> MoveResultAsync(
-        EngineeringDomainContext context, IHasParent target, Guid targetObjectId, string targetKind, Guid? newParentId, CancellationToken cancellationToken)
+        EngineeringDomainContext context, ICommandDispatcher? dispatcher, IHasParent target, Guid targetObjectId, string targetKind,
+        Guid? newParentId, Func<Guid?, ICommand> buildMove, CancellationToken cancellationToken)
     {
         var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? targetObjectId.ToString();
+        var previousParentId = target.ParentId;
 
-        if (target.ParentId == newParentId)
+        if (previousParentId == newParentId)
         {
             var already = newParentId is { } currentParentId
                 ? $"Already under '{await DisplayNameAsync(context, currentParentId, cancellationToken).ConfigureAwait(false)}'."
@@ -254,6 +256,168 @@ internal static class WorkspaceCommandBindings
         }
 
         var destinationPhrase = await DestinationPhraseAsync(context, newParentId, cancellationToken).ConfigureAwait(false);
-        return CommandResult.Success($"Moved '{sourceName}' {destinationPhrase}.", targetObjectId, targetKind);
+        var compensation = MoveCompensation(context, dispatcher, targetObjectId, targetKind, sourceName, previousParentId, newParentId, buildMove);
+        return CommandResult.Success($"Moved '{sourceName}' {destinationPhrase}.", targetObjectId, targetKind, compensation);
     }
+
+    // ==================================================================
+    // Compensation (`WP 21.1A`, `ADR-0099`'s own addendum)
+    // ==================================================================
+
+    /// <summary>
+    /// Dispatches <paramref name="command"/> as a compensation — after the
+    /// identical archived-project guard check <c>CommandRegistry.Evaluate</c>
+    /// performs for a <c>Mutates</c> binding, checked explicitly here
+    /// because a compensation is dispatched directly through
+    /// <see cref="ICommandDispatcher"/>, never through
+    /// <see cref="ICommandRegistry"/>'s own Id-based path (no compensation
+    /// is itself a Ribbon- or Palette-visible command). Never a direct
+    /// repository write: <paramref name="command"/> reaches its own
+    /// registered handler, which commits through the identical
+    /// one-transaction, one-audit-row state path any other command's
+    /// handler uses.
+    /// </summary>
+    internal static async Task<CommandResult> RunCompensationAsync(
+        EngineeringDomainContext context, ICommandDispatcher dispatcher, Guid targetObjectId, string targetKind,
+        ICommand command, CancellationToken cancellationToken)
+    {
+        var reason = new ArchivedProjectCommandGuard(context).FindReason(CommandContext.For(targetObjectId, targetKind));
+        if (reason is not null)
+            return CommandResult.Failure(reason);
+
+        return await dispatcher.DispatchAsync(command, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Refuses a Move compensation whose own destination parent is gone —
+    /// <paramref name="parentId"/> is <see langword="null"/> (top level,
+    /// always a legal destination) or still resolves to a live, non-deleted
+    /// object. <see cref="IHasParent.MoveAsync"/> itself never checks this
+    /// (it only guards against a cycle): a live top-level move never needed
+    /// to, since nothing before `WP 21.1A` ever moved an object back to a
+    /// parent it no longer had a live reference to. A compensation can, if
+    /// the parent it would restore under was itself deleted in between —
+    /// the identical "refusing if that parent is gone, with the reason"
+    /// requirement <see cref="IDeletable.UndeleteAsync"/> already applies to
+    /// Delete's own compensation.
+    /// </summary>
+    private static async Task<string?> MoveDestinationGoneReasonAsync(
+        EngineeringDomainContext context, Guid? parentId, CancellationToken cancellationToken)
+    {
+        if (parentId is not { } id)
+            return null;
+
+        var parent = await context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+
+        return parent is null || parent is IDeletable { IsDeleted: true }
+            ? $"'{id}' no longer exists."
+            : null;
+    }
+
+    /// <summary>
+    /// The compensation a real Move produces: undo moves back to
+    /// <paramref name="previousParentId"/>; redo moves forward to
+    /// <paramref name="newParentId"/> again — both through
+    /// <paramref name="buildMove"/>, the same command type the original
+    /// invocation itself used, with the recorded parent value each
+    /// direction needs (the redo half of `WP 20.2C`'s own "record values,
+    /// replay them" pattern, applied here directly rather than through a
+    /// second Id-based round trip). Either direction refuses first — see
+    /// <see cref="MoveDestinationGoneReasonAsync"/> — when its own
+    /// destination parent has since been deleted.
+    /// </summary>
+    internal static CommandCompensation? MoveCompensation(
+        EngineeringDomainContext context, ICommandDispatcher? dispatcher, Guid targetObjectId, string targetKind, string sourceName,
+        Guid? previousParentId, Guid? newParentId, Func<Guid?, ICommand> buildMove)
+    {
+        if (dispatcher is null)
+            return null;
+
+        return new CommandCompensation(
+            $"Move '{sourceName}'",
+            undo: async ct =>
+            {
+                if (await MoveDestinationGoneReasonAsync(context, previousParentId, ct).ConfigureAwait(false) is { } reason)
+                    return CommandResult.Failure(reason);
+
+                return await RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(previousParentId), ct).ConfigureAwait(false);
+            },
+            redo: async ct =>
+            {
+                if (await MoveDestinationGoneReasonAsync(context, newParentId, ct).ConfigureAwait(false) is { } reason)
+                    return CommandResult.Failure(reason);
+
+                return await RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildMove(newParentId), ct).ConfigureAwait(false);
+            });
+    }
+
+    /// <summary>
+    /// The compensation a real Delete produces: undo restores the deleted
+    /// object through <paramref name="buildUndelete"/> (<see cref="IDeletable.UndeleteAsync"/>,
+    /// `WP 21.1A`); redo deletes it again through <paramref name="buildDelete"/>
+    /// — the same command type the original Delete itself used.
+    /// </summary>
+    internal static CommandCompensation? DeleteCompensation(
+        EngineeringDomainContext context, ICommandDispatcher? dispatcher, Guid targetObjectId, string targetKind, string sourceName,
+        Func<ICommand> buildDelete, Func<ICommand> buildUndelete)
+    {
+        if (dispatcher is null)
+            return null;
+
+        return new CommandCompensation(
+            $"Delete '{sourceName}'",
+            undo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildUndelete(), ct),
+            redo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildDelete(), ct));
+    }
+
+    /// <summary>
+    /// The compensation a real Create or Copy produces — both make a new
+    /// object, so both invert the identical way: undo soft-deletes the
+    /// object <paramref name="createdId"/> names, through
+    /// <paramref name="buildDelete"/>; redo restores it through
+    /// <paramref name="buildUndelete"/> — never a second Create/Copy, which
+    /// would mint a second object under a new Id rather than restore the
+    /// one this action actually made.
+    /// </summary>
+    internal static CommandCompensation? CreationCompensation(
+        EngineeringDomainContext? context, ICommandDispatcher? dispatcher, Guid createdId, string kind, string description,
+        Func<ICommand> buildDelete, Func<ICommand> buildUndelete)
+    {
+        if (context is null || dispatcher is null)
+            return null;
+
+        return new CommandCompensation(
+            description,
+            undo: ct => RunCompensationAsync(context, dispatcher, createdId, kind, buildDelete(), ct),
+            redo: ct => RunCompensationAsync(context, dispatcher, createdId, kind, buildUndelete(), ct));
+    }
+
+    /// <summary>
+    /// The compensation a real status transition produces, or
+    /// <see langword="null"/> when the platform-wide lifecycle transition
+    /// table (`ADR-0074`, consulted here exactly as
+    /// <see cref="IHasLifecycle.TransitionAsync"/> itself already consults
+    /// it) does not permit going back from <paramref name="newStatus"/> to
+    /// <paramref name="previousStatus"/> — a Released document, for
+    /// example, since <c>Released</c> permits only <c>Superseded</c>/
+    /// <c>Obsolete</c>, never a return to <c>Approved</c>. A caller
+    /// receiving <see langword="null"/> reports
+    /// <see cref="UndoUnavailableForStatus"/> instead of a compensation.
+    /// </summary>
+    internal static CommandCompensation? StatusCompensation(
+        EngineeringDomainContext context, ICommandDispatcher? dispatcher, Guid targetObjectId, string targetKind, string sourceName,
+        LifecycleState previousStatus, LifecycleState newStatus, Func<LifecycleState, ICommand> buildSetStatus)
+    {
+        if (dispatcher is null || !context.LifecycleTable.IsPermitted(newStatus, previousStatus))
+            return null;
+
+        return new CommandCompensation(
+            $"Status change for '{sourceName}'",
+            undo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildSetStatus(previousStatus), ct),
+            redo: ct => RunCompensationAsync(context, dispatcher, targetObjectId, targetKind, buildSetStatus(newStatus), ct));
+    }
+
+    /// <summary>The reason recorded on <see cref="CommandResult.UndoUnavailableReason"/> when <see cref="StatusCompensation"/> returns <see langword="null"/>.</summary>
+    internal static string UndoUnavailableForStatus(LifecycleState previousStatus, LifecycleState newStatus) =>
+        $"the lifecycle does not permit reversing '{previousStatus}' → '{newStatus}'.";
 }

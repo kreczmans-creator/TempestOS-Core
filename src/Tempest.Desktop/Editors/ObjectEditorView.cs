@@ -3014,7 +3014,9 @@ public sealed class ObjectEditorView : UserControl
 
         if (contentChanged && _manager.CanRevise(_objectKind))
         {
-            var result = await _manager.ReviseObjectAsync(_objectId, _objectKind, _contentBox.Text ?? string.Empty).ConfigureAwait(true);
+            var oldContent = _originalContent;
+            var newContent = _contentBox.Text ?? string.Empty;
+            var result = await _manager.ReviseObjectAsync(_objectId, _objectKind, newContent).ConfigureAwait(true);
             if (!result.Succeeded)
             {
                 _statusMessage.Text = result.Message ?? "Revise failed.";
@@ -3026,6 +3028,20 @@ public sealed class ObjectEditorView : UserControl
                 ActionCompleted?.Invoke(_statusMessage.Text, new ActionOutcome(Succeeded: false, WorkspaceChanged: renameApplied));
                 return;
             }
+
+            // `WP 21.1A`: the identical Undo/Redo recording Rename's own
+            // commit above already does (`ADR-0098`) — the generalisation
+            // its own remarks disclosed as future work, closed here: a
+            // content revision is now undoable/redoable across all six
+            // disciplines from this one call site, the same way Rename
+            // already is.
+            var objectId = _objectId;
+            var objectKind = _objectKind;
+            var manager = _manager;
+            UndoableActionRecorded?.Invoke(new UndoableAction(
+                "Revise content",
+                undo: ct => manager.ReviseObjectAsync(objectId, objectKind, oldContent, ct),
+                redo: ct => manager.ReviseObjectAsync(objectId, objectKind, newContent, ct)));
         }
 
         await RefreshAsync().ConfigureAwait(true);

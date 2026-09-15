@@ -61,12 +61,16 @@ public sealed class CreateCalculationObjectCommand : ICommand
 public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<CreateCalculationObjectCommand>
 {
     private readonly CalculationObjectFactoryRegistry _registry;
+    private readonly EngineeringDomainContext? _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateCalculationObjectCommandHandler(CalculationObjectFactoryRegistry registry)
+    public CreateCalculationObjectCommandHandler(CalculationObjectFactoryRegistry registry, EngineeringDomainContext? context = null, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
+        _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateCalculationObjectCommand command, CancellationToken cancellationToken)
@@ -89,6 +93,12 @@ public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<Crea
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);
+        var displayName = (created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString();
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, created.Id, command.Kind, $"Create '{displayName}'",
+            buildDelete: () => new DeleteCalculationObjectCommand(created.Id, command.Kind),
+            buildUndelete: () => new UndeleteCalculationObjectCommand(created.Id, command.Kind));
+
+        return CommandResult.Success($"Created {command.Kind} '{displayName}'.", created.Id, command.Kind, compensation);
     }
 }

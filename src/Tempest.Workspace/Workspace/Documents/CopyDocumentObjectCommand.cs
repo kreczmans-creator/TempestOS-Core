@@ -47,14 +47,19 @@ public sealed class CopyDocumentObjectCommandHandler : ICommandHandler<CopyDocum
 {
     private readonly EngineeringDomainContext _context;
     private readonly DocumentObjectFactoryRegistry _registry;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CopyDocumentObjectCommandHandler(EngineeringDomainContext context, DocumentObjectFactoryRegistry registry)
+    /// <param name="context">Where the source object is found.</param>
+    /// <param name="registry">Creates the copy.</param>
+    /// <param name="dispatcher">Dispatches this copy's own compensation (`WP 21.1A`) — optional; <see langword="null"/> means no <see cref="CommandResult.Compensation"/> is attached.</param>
+    public CopyDocumentObjectCommandHandler(EngineeringDomainContext context, DocumentObjectFactoryRegistry registry, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(registry);
 
         _context = context;
         _registry = registry;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CopyDocumentObjectCommand command, CancellationToken cancellationToken)
@@ -85,6 +90,11 @@ public sealed class CopyDocumentObjectCommandHandler : ICommandHandler<CopyDocum
         }
 
         var destinationPhrase = await WorkspaceCommandBindings.DestinationPhraseAsync(_context, command.NewParentId, cancellationToken).ConfigureAwait(false);
-        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind);
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, copy.Id, source.Kind, $"Copy '{sourceDisplayName}'",
+            buildDelete: () => new DeleteDocumentObjectCommand(copy.Id, source.Kind),
+            buildUndelete: () => new UndeleteDocumentObjectCommand(copy.Id, source.Kind));
+
+        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind, compensation);
     }
 }

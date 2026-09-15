@@ -48,14 +48,16 @@ public sealed class CopyCalculationObjectCommandHandler : ICommandHandler<CopyCa
 {
     private readonly EngineeringDomainContext _context;
     private readonly CalculationObjectFactoryRegistry _registry;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CopyCalculationObjectCommandHandler(EngineeringDomainContext context, CalculationObjectFactoryRegistry registry)
+    public CopyCalculationObjectCommandHandler(EngineeringDomainContext context, CalculationObjectFactoryRegistry registry, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(registry);
 
         _context = context;
         _registry = registry;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CopyCalculationObjectCommand command, CancellationToken cancellationToken)
@@ -84,6 +86,11 @@ public sealed class CopyCalculationObjectCommandHandler : ICommandHandler<CopyCa
         }
 
         var destinationPhrase = await WorkspaceCommandBindings.DestinationPhraseAsync(_context, command.NewParentId, cancellationToken).ConfigureAwait(false);
-        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind);
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, copy.Id, source.Kind, $"Copy '{sourceDisplayName}'",
+            buildDelete: () => new DeleteCalculationObjectCommand(copy.Id, source.Kind),
+            buildUndelete: () => new UndeleteCalculationObjectCommand(copy.Id, source.Kind));
+
+        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind, compensation);
     }
 }

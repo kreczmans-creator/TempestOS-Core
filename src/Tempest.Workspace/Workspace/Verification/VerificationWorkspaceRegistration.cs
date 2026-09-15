@@ -74,16 +74,17 @@ public static class VerificationWorkspaceRegistration
         }
 
         var factoryRegistry = new VerificationActivityFactoryRegistry(domainContext);
-        var copyHandler = new CopyVerificationActivityCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyVerificationActivityCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateVerificationActivityCommand>(new CreateVerificationActivityCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateVerificationActivityCommand>(new CreateVerificationActivityCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameVerificationActivityCommand>(new RenameVerificationActivityCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseVerificationActivityCommand>(new ReviseVerificationActivityCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteVerificationActivityCommand>(new DeleteVerificationActivityCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveVerificationActivityCommand>(new MoveVerificationActivityCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteVerificationActivityCommand>(new DeleteVerificationActivityCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteVerificationActivityCommand>(new UndeleteVerificationActivityCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveVerificationActivityCommand>(new MoveVerificationActivityCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyVerificationActivityCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateVerificationActivityCommand>(new DuplicateVerificationActivityCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetVerificationActivityStatusCommand>(new SetVerificationActivityStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetVerificationActivityStatusCommand>(new SetVerificationActivityStatusCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RecordVerificationResultCommand>(new RecordVerificationResultCommandHandler(verificationService, domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a

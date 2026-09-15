@@ -65,6 +65,20 @@ internal sealed partial class MainWindowComposer
         // Stack.
         var undoRedo = new UndoRedoCoordinator(views.ActionReporter);
 
+        // `WP 21.1A`: the Undo/Redo stack starts over on every project
+        // switch — subscribed once, here, to the existing event every
+        // open/switch/close already publishes (see
+        // UndoRedoCoordinator.HandleAsync's own remarks).
+        composition.EventBus.Subscribe(undoRedo);
+
+        // `WP 21.1A`: the Ribbon is built earlier (`BuildViews`), before
+        // this Stack exists — supplied now, exactly like its own
+        // `ConfirmDeleteAsync`, so a successful Create/Delete/Move/Copy/
+        // status-change dispatched from a Ribbon button records its own
+        // compensation (see RibbonView.RecordCompensation's own remarks).
+        views.Ribbon.UndoRedoStack = undoRedo.Stack;
+        views.Ribbon.HistoryLog = views.CommandHistory;
+
         // `WP 19.0A` (`ADR-0150`): the project Commercial section's own
         // pickers — the real `OrganisationPicker`/`RateCardPicker`
         // overlays `BuildViews` already built, threaded into the Object

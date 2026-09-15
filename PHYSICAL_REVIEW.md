@@ -507,7 +507,7 @@ against the gap list that named it (`WP 21.2B`, `TD-160`, `TD-165`). As in
 
 ---
 
-### 7e. Documents from the templates in `v0.21.0` (about 15 minutes)
+### 7f. Documents from the templates in `v0.21.0` (about 15 minutes)
 
 Walk §7d first. Then these, `WP 21.2A`'s own six document renderers and
 the buttons that export them — the design system's three type families
@@ -523,6 +523,28 @@ face. Launch per §3; the title bar reads `TempestOS 0.21.0 (<commit>)`.
 | D4 | Open (or create) a Document, open its editor, **Attachments** section → **Export as report** | The saved PDF carries a cover block, a revision history table (every revision, oldest first) and numbered sections — split from the current revision's own content by leading `#` lines; content with no `#` at all renders as one "Content" section rather than empty (`src/Tempest.Desktop/Documents/TechnicalReports/TechnicalReportDocumentRenderer.cs`, `src/Tempest.Desktop/Editors/ObjectEditorView.cs`). The button appears only for a Document, never for another Kind's editor. | The button appears for a non-Document Kind; a revision is missing from the table; a heading-free document renders blank. |
 | D5 | Projects rail → **Dashboard + Reports** → any project row (now every open project lists here, not only Blocked/At risk/Ready to invoice) → **Export progress report** | The saved PDF is **landscape**, one page per section — RAG status, cost position (quoted vs recorded hours), risks (the project's own live governance register), a four-week look-ahead — never a fabricated deliverable-completion percentage: that section states plainly it is not available from this report's own data (`src/Tempest.Desktop/Documents/ProgressReports/ProgressReportDocumentRenderer.cs`, `src/Tempest.Desktop/Views/Dashboards/ProjectsDashboardView.cs`). | The PDF is one page, or portrait; a live risk from the Risks tab is missing; a deliverables percentage appears with nothing backing it. |
 | D6 | Any exported PDF from D1–D5 → open in a reader and select/copy the eyebrow heading text (e.g. "INVOICE") and a numeric table cell | The wordmark in the header band is the horizontal navy lockup image, not "TEMPEST"/"OS" text; the eyebrow/heading text copies out correctly (Chakra Petch); a numeric or right-aligned cell copies out correctly (Space Mono) — both embedded, not the platform default face (`src/Tempest.Desktop/Documents/DocumentFonts.cs`, `DocumentLogo.cs`). | The header still shows plain "TEMPEST"/"OS" text; copied text is garbled or empty for the eyebrow/heading or a numeric cell (prose body text staying the platform default face is expected — see this Work Package's own report). |
+### 7g. Undo across commands, in `v0.21.0` (about 10 minutes)
+
+Walk §7d first. Then these — `WP 21.1A`, closing the weakness "Undo
+covers Rename and Favourite only." Every claim names the file it comes
+from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| U1 | Documents → create a Document; Ctrl+Z; Ctrl+Y | The Undo/Redo toolbar buttons enable the moment the create completes, naming it in their own tooltip ("Undo: Create 'Name'"); Ctrl+Z removes it from the Project Explorer and Command History records "Undo completed."; Ctrl+Y brings back the same object — the same Id, not a second one created alongside a permanently-orphaned first (`src/Tempest.Core/Commands/CommandCompensation.cs`, the discipline `Create*Command.cs` handlers, `IDeletable.UndeleteAsync`). | The object stays listed after Ctrl+Z; Ctrl+Y creates a visibly different object; the toolbar never enables. |
+| U2 | Select an object with no children → **Delete** → Ctrl+Z → Ctrl+Y | Delete removes it from the tree as always; Ctrl+Z brings it straight back, in the same place, with its own name and content intact; Ctrl+Y deletes it again (`DeleteDocumentObjectCommand.cs`/`UndeleteDocumentObjectCommand.cs` and the mirrored pair in the other four disciplines). | Undo restores it with a blank name or content; Redo leaves it visible. |
+| U3 | Drag an object to a new parent in the Explorer (or Ctrl+Shift+M) → Ctrl+Z → Ctrl+Y | The object moves as always; Ctrl+Z moves it back to its own prior parent; Ctrl+Y moves it forward again (`WorkspaceCommandBindings.MoveCompensation`). Deleting the *old* parent before pressing Ctrl+Z (an edge case, not required for the walkthrough) refuses the undo, naming the missing parent, and leaves the object exactly where it was. | Ctrl+Z leaves the object under the new parent; the Explorer does not reflect either move. |
+| U4 | Ctrl+Shift+C to copy an object → Ctrl+Z → Ctrl+Y | The copy appears as always; Ctrl+Z removes only the copy — the original stays untouched; Ctrl+Y restores the same copy (`WorkspaceCommandBindings.CreationCompensation`). | Undo removes or alters the original; Redo produces a second, different copy. |
+| U5 | Select an object → **Request Review** (Draft → InReview) → Ctrl+Z → Ctrl+Y | Status changes as always; Ctrl+Z reverses it to Draft; Ctrl+Y reapplies InReview (`WorkspaceCommandBindings.StatusCompensation`, the platform-wide `LifecycleTransitionTable`). Then, separately: take an object all the way to **Released** — Command History reads "Cannot be undone: the lifecycle does not permit reversing 'Approved' → 'Released'." and the Undo toolbar's own tooltip does not name that action. | Undo/Redo do not change the status; a Released object is offered as undoable, or Undo silently does nothing with no explanation anywhere. |
+| U6 | Open any object → change its content in the editor → **Save** → Ctrl+Z → Ctrl+Y | Rename already worked this way; a content edit now does too — Ctrl+Z restores the prior content, Ctrl+Y reapplies the new content (`src/Tempest.Desktop/Editors/ObjectEditorView.cs`, `OnSaveAsync`). | Only a Rename in the same Save is undoable; the content half is not. |
+| U7 | Run any two-step macro (Palette → **Macro Manager**) → Ctrl+Z → Ctrl+Y | The whole run undoes as one action — both steps reversed, in reverse order — not two separate Undo presses; Ctrl+Y reapplies both, forward (`RunMacroCommandHandler`, the compound `CommandCompensation`). | Ctrl+Z undoes only the macro's own last step; two presses are needed to fully reverse a two-step run. |
+| U8 | With unsaved Undo history recorded (U1–U7, any one), switch to a different project (or close the open one) | The status bar and Command History both say "Undo history cleared." once, and Ctrl+Z/Ctrl+Y do nothing until a new action is recorded in the newly-open project (`UndoRedoCoordinator`, subscribed to `ProjectContextChangedEvent`). Opening a project with no Undo history yet recorded says nothing — no false "cleared" notice. | The stack survives a project switch (a stale Undo reaches into the wrong project's own objects); the notice appears on every project open regardless of whether anything was actually cleared. |
+
+**Requirements is a disclosed exception**, not a bug: Create/Delete/Move/
+status changes on a Requirement, a Requirement Group or a Requirement
+Collection are not undoable in `v0.21.0` — unchanged from `v0.20.0` and
+every earlier release. See `BACKLOG.md`'s own `WP 21.1A` entry for why.
+
 
 ---
 

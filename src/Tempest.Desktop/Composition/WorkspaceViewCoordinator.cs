@@ -275,6 +275,13 @@ internal sealed class WorkspaceViewCoordinator
             // commits through MoveAsync like any other, raising
             // WorkspaceChanged.
             await _reporter.ReportWithoutHistoryAsync(result, "Moved.", "Move failed.").ConfigureAwait(true);
+
+            // `WP 21.1A`: a drag-and-drop reparent is a real Move dispatch
+            // like any other — its own CommandResult carries the identical
+            // compensation `MoveResultAsync` attaches for the Ribbon/Palette
+            // path, recorded here the same way.
+            if (result is { Succeeded: true, Compensation: { } compensation })
+                _undoRedoStack.Record(new UndoableAction(compensation.Description, compensation.Undo, compensation.Redo));
         };
         // No `refresh` delegate (`WP 18.1A`) — see the identical remark on
         // `_explorerView.ActionCompleted` above.
