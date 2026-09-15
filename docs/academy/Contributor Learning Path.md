@@ -12,9 +12,33 @@ This document is repository-wide — it points into `README.md`,
 `docs/releases/`, `docs/academy/`, `docs/architecture/`, `docs/adr/`, and
 `docs/governance/` in the order a new contributor actually needs them,
 rather than assuming you already know which of those five trees to start
-in. `docs/academy/Academy Index.md`'s own "Learning Path" section is the
-*Academy-internal* continuation of step 4, below — read this document
-first.
+in. `docs/academy/Academy Index.md` is the Academy's own table of
+contents, one line per document — read this document first.
+
+> **Status note, September 2026.** `WP 17.0B` (2026-09-08) archived much
+> of what this path used to cite — the register suite under
+> `docs/governance/`, several `docs/architecture/` documents, the Academy's
+> `01 Engineering Principles` and `03 Work Packages` folders. Every one of
+> them was moved, not deleted, to `archive/docs-2026-09/` at the same
+> relative path; this document now points there where that is the case.
+> The current process is `CONTRIBUTING.md` at the repository root, and the
+> current programme is `docs/releases/v1.0.0/WorkPackages.md`.
+
+### 0. If you are not a software engineer
+
+Read, in this order, before anything below:
+
+- **[`docs/academy/00 Introduction/01-how-tempestos-gets-built.md`](00%20Introduction/01-how-tempestos-gets-built.md)**
+  — the stages of building software, explained with this repository's
+  own artefacts, and one Work Package followed end to end.
+- **[`docs/academy/00 Introduction/02-plain-language-glossary.md`](00%20Introduction/02-plain-language-glossary.md)**
+  — keep it open beside every chapter.
+- Then the chapters in `02 Runtime Architecture` from `59-evidence.md`
+  onward (the product as it is today), each of which opens with an
+  **In plain terms** paragraph, and then backwards through `50`–`58`
+  (the ground it was built on) and `42`–`49` (how the application was
+  made honest and durable). Steps 1–7 below are written for engineers;
+  the chapters are written for both.
 
 ## The Path
 
@@ -47,69 +71,76 @@ first.
   — the concrete Idea → Investigation → Architecture → ADR → Rejected
   Designs → Implementation → Testing → Architecture Review → Academy →
   Governance → Release → Maintenance pipeline every Work Package follows.
-- **[`docs/governance/Governance Index.md`](../governance/Governance%20Index.md)**
-  and **[`Governance Philosophy.md`](../governance/Governance%20Philosophy.md)**
-  — the governance register suite, and *why* it exists (read the
-  Philosophy document even if you only skim the registers themselves —
-  the "Unknown is preferable to invented data" discipline it describes
-  applies to every document you write from here on).
+- **`CONTRIBUTING.md`** (repository root) — what a Work Package must
+  produce today: a branch, a pull request whose description is the
+  retrospective, one review round, the Markdown budget, the Definition
+  of Done. Where it differs from Engineering Governance, it governs.
+- **`archive/docs-2026-09/governance/Governance Philosophy.md`** — *why*
+  the register suite existed, and the "Unknown is preferable to invented
+  data" discipline that still applies to every document you write from
+  here on. The registers themselves (`Governance Index.md` and the rest)
+  are archived beside it; `BACKLOG.md` and `docs/adr/` are the live
+  answers to what still needs doing and what was decided.
 
 ### 4. How the platform works
 
 - **[`docs/academy/00 Introduction/00-welcome-to-the-academy.md`](00%20Introduction/00-welcome-to-the-academy.md)**
   — what the Academy is and how it's organised.
-- **[`docs/academy/01 Engineering Principles/`](01%20Engineering%20Principles/)**
-  — the vocabulary the rest of the Academy assumes you already have
-  (SOLID, Immutability, Dependency Injection, Deterministic Systems, State
-  Machines, the Atomic Phase Principle, and the rest).
+- **`archive/docs-2026-09/academy/01 Engineering Principles/`** — the
+  vocabulary the older Academy chapters assume you already have (SOLID,
+  Immutability, Dependency Injection, Deterministic Systems, State
+  Machines, the Atomic Phase Principle, and the rest). Archived by
+  `WP 17.0B`, still worth the hour.
 - **[`docs/academy/02 Runtime Architecture/`](02%20Runtime%20Architecture/)**
   — how the whole platform fits together: the Module Pipeline, the
   Startup Sequence, Working with the TempestOS Host, Platform Layering,
   Plugin Architecture, Failure Isolation Across TempestOS.
 - **`docs/architecture/`** — the deeper reference documents these concept
   guides summarise: `Runtime Host Architecture.md`, `Host Lifecycle.md`,
-  `Runtime State Machine.md`, `Failure Behaviour.md`, `Ownership
-  Matrix.md`, `Platform Service Map.md`, `Engineering Glossary.md`.
+  `Runtime State Machine.md`, `Failure Behaviour.md` are still live there;
+  `Ownership Matrix.md`, `Platform Service Map.md` and `Engineering
+  Glossary.md` are at `archive/docs-2026-09/architecture/`.
 
 ### 5. Why specific decisions were made this way
 
-- **`docs/adr/`** — the full Architecture Decision Record catalogue (39
-  as of this baseline). You do not need to read all 39 now — read
-  ADR-0013 (platform-service vs. module failure), ADR-0017 (Host-owned
-  collaborators), and ADR-0023 (the four-layer platform model) first;
-  they are cited by nearly everything else.
-- **`docs/architecture/Rejected Designs.md`** — designs seriously
-  considered and declined. Read this alongside the ADRs it accompanies —
-  knowing what TempestOS chose *not* to do is often as informative as
-  knowing what it did.
-- **`docs/governance/Architecture/`** — the ADR Register, Rejected
-  Designs Register, Architecture Document Register, and Decision
-  Register, if you need to find a specific decision quickly rather than
-  read the catalogue front to back.
+- **`docs/adr/`** — the full Architecture Decision Record catalogue (149
+  as of `v0.18.0`; `docs/governance/Architecture/ADR Register.md` lists
+  them). You do not need to read them all now — read ADR-0013
+  (platform-service vs. module failure), ADR-0017 (Host-owned
+  collaborators), and ADR-0023 (the four-layer platform model) first; they
+  are cited by nearly everything else. Then the four `v0.17.0` substrate
+  decisions, ADR-0144 to ADR-0147, and the two `v0.18.0` ones, ADR-0148
+  and ADR-0149 — they are the ground the product now stands on.
+- **`archive/docs-2026-09/architecture/Rejected Designs.md`** — designs
+  seriously considered and declined. Read this alongside the ADRs it
+  accompanies — knowing what TempestOS chose *not* to do is often as
+  informative as knowing what it did.
+- **`docs/governance/Architecture/ADR Register.md`** — live; the Rejected
+  Designs, Architecture Document and Decision registers are archived
+  under `archive/docs-2026-09/governance/Architecture/`.
 
 ### 6. A real module and a real hosted service, end to end
 
 - **[`docs/academy/02 Runtime Architecture/03-building-a-module.md`](02%20Runtime%20Architecture/03-building-a-module.md)**
   and **[`04-building-an-event-driven-module.md`](02%20Runtime%20Architecture/04-building-an-event-driven-module.md)**
   — practical, module-author-facing guides.
-- **`src/Samples/Tempest.Samples/`** — seven real, production reference
-  modules as of `v0.5.0`: `ClockModule`/`ClockLifecycleObserverModule`
-  (the original pair every later Work Package validated against),
-  `NavigationSampleModule` and its two companions, `CommandSampleModule`,
-  and `DiagnosticsSampleModule` — see `docs/governance/Engineering/Module
-  Register.md` for the complete list with what each one demonstrates.
-  Read the source directly alongside `docs/architecture/Sample Module
-  Architecture.md`.
+- **`src/Samples/Tempest.Samples/`** — the real reference modules:
+  `ClockModule`/`ClockLifecycleObserverModule` (the original pair every
+  later Work Package validated against), the navigation, command and
+  diagnostics samples from `v0.5.0`, and the six Engineering Discipline
+  sample modules. The Module Register that listed them is archived at
+  `archive/docs-2026-09/governance/Engineering/Module Register.md`; read
+  the source directly alongside `archive/docs-2026-09/architecture/Sample
+  Module Architecture.md`.
 - **Don't hand-copy a sample module to start your own.** As of `WP 5.3`,
   `dotnet new tempest-module` scaffolds a correctly-shaped module
   directly — see `src/Templates/README.md`.
 - **`src/Tempest.Core/BackgroundServices/`** — `HostedServiceDiscoveryService`
-  and `HostedServiceManager`, alongside `docs/architecture/Background
-  Services Architecture.md` and the WP 4.5 implementation retrospective.
-  No real hosted service ships yet (`docs/governance/Engineering/Hosted
-  Services Register.md`) — the test fixtures under
+  and `HostedServiceManager`, alongside the archived `Background Services
+  Architecture.md` and the `WP 4.5` implementation retrospective (both
+  under `archive/docs-2026-09/`). The test fixtures under
   `tests/Tempest.Core.Tests/BackgroundServices/HostedServiceFixtures.cs`
-  are the closest worked examples available today.
+  are the closest worked examples available.
 
 ### 6a. What `v0.5.0` added on top of the Platform Foundation
 
@@ -142,16 +173,41 @@ guide, in this order, once steps 1–6 above make sense:
   the v0.5.0 Security Baseline every Work Package's Definition of Done is
   now checked against.
 
+### 6b. The product as it stands at `v0.18.0`
+
+Steps 4–6a describe the platform. The product built on it — a client
+project system of record for an engineering consultancy, in which
+calculations done elsewhere are recorded as cited, checked, issued
+evidence — is chapters `33`–`64` of `02 Runtime Architecture`. Read in
+this order if your Work Package touches the product rather than the
+runtime:
+
+- **`53-sqlite-persistence.md`**, **`54-one-transaction-per-engineering-change.md`**,
+  **`61-the-screen-follows-the-store.md`** — how anything is saved and
+  how the screen learns about it. Everything else assumes these.
+- **`51-engineering-reference-data.md`**, **`60-source-citations-and-supersession.md`**,
+  **`52-units-as-a-runtime-dimension-vector.md`** — the governed data
+  evidence cites, and the quantities it declares.
+- **`59-evidence.md`**, **`63-the-evidence-workspace.md`**,
+  **`64-independent-check-and-the-issue-sheet.md`** — the product's own
+  record, its screen, and its check-and-issue workflow.
+- **`43-one-way-to-run-a-command.md`**, **`44-invariants-that-fail-the-build.md`**,
+  **`57-workspace-and-harness.md`** — the rules a change must respect,
+  and the tests that enforce them.
+- **`56-frozen-layers.md`** and **`05 Case Studies/07-the-design-freeze-review.md`**
+  — what is deliberately out of the build, and why.
+
 ### 7. How to actually contribute
 
-- **Contribution workflow.** Every Work Package follows the Engineering
-  Lifecycle (step 3, above): investigate against the real repository
-  before assuming a premise (see `WP 4.4C`'s own retrospective for what
-  happens when this is skipped), design before implementing anything
-  non-trivial, record a genuine alternative as an ADR or Rejected Design
-  entry, implement, test, update the Academy and governance registers as
-  part of the same change — never a follow-up pass — and only then is
-  the Work Package considered done (Engineering Governance §3).
+- **Contribution workflow.** Every Work Package is a branch and a pull
+  request (`CONTRIBUTING.md`): investigate against the real repository
+  before assuming a premise (see `WP 4.4C`'s archived retrospective for
+  what happens when this is skipped), design before implementing
+  anything non-trivial, record a decision that constrains future code
+  as an ADR, implement, test, and write the pull request description as
+  the retrospective — what changed, why, and the evidence. The Definition
+  of Done is the list in `CONTRIBUTING.md`; `06 Engineering Standards/09-the-governance-reset-and-how-a-release-is-now-run.md`
+  explains how this replaced the older process.
 - **Testing philosophy.** `docs/academy/06 Engineering Standards/
   02-testing-strategy.md` — prefer real implementations over mocks; the
   one recurring exception is a level-recording `ILogger`, used only to
@@ -160,12 +216,14 @@ guide, in this order, once steps 1–6 above make sense:
   ambient-scanning one) is used consistently for Module Discovery, Plugin
   Discovery, and Hosted Service Discovery alike — see
   `docs/academy/04 Design Patterns/04-reflection-based-discovery.md`.
-- **Documentation expectations.** Every Work Package updates the Academy
-  and any architecture document it touches as part of its own Definition
-  of Done (Engineering Governance §6) — not a separate, later pass. A
-  Work Package that changes what a governance register tracks updates
-  that register too (`docs/governance/Governance Philosophy.md`, "How
-  Contributors Maintain Governance").
+- **Documentation expectations.** A pull request may not add more
+  Markdown lines than code lines (`CONTRIBUTING.md`; enforced by
+  `scripts/governance-healthcheck.ps1`). Update an ADR or architecture
+  document your change makes untrue in the same pull request; file
+  anything you find but do not fix as a row in `BACKLOG.md`. The Academy
+  is no longer updated per Work Package — see the September 2026 note in
+  `00 Introduction/00-welcome-to-the-academy.md` for how it is maintained
+  now.
 - **Engineering governance.** Re-read
   `docs/academy/06 Engineering Standards/Engineering Governance.md` once
   you have the platform context from steps 4–6 — its Review Gates,
@@ -174,27 +232,21 @@ guide, in this order, once steps 1–6 above make sense:
 
 ## After This Path
 
-You should now be able to open `docs/releases/v0.16.0/WorkPackages.md`
-(the current release plan — every prior release's own `WorkPackages.md`
-is its own, now-shipped predecessor, retained for history, not where new
-work is scoped), find the Work Package you are about to change, read its
-own retrospective (if one already exists) or its own scope entry (if
-it's still ahead), and proceed — following the Engineering Lifecycle,
-checking `docs/governance/Future Work Package Guidelines.md` for the
-standing expectations every future Work Package must meet. **Correction,
-`WP 5.4`**: this section previously pointed to `v0.4.0/WorkPackages.md`
-even after `v0.5.0`'s own plan superseded it — a real, previously
-unnoticed onboarding drift, corrected here as part of that Work Package's
-own Developer Experience review. **Correction, `WP 16.2B`**: this
-section still pointed to `v0.5.0/WorkPackages.md` — eleven releases
-stale, the identical class of drift `WP 5.4` corrected once already.
-First disclosed, not fixed, by `WP 11.9.0`'s own Workflow Engineer
-review (`v0.11.0`); left uncorrected across five further releases until
-now.
+You should now be able to open `docs/releases/v1.0.0/WorkPackages.md`
+(the current programme — every earlier release's own `WorkPackages.md`
+is archived under `archive/docs-2026-09/releases/`, retained for
+history, not where new work is scoped), find the Work Package you are
+about to work on, read the Academy chapters that cover its ground, read
+its Execution Plan if the release has one (`docs/releases/v0.18.0/Execution
+Plan.md` is the model), and proceed under `CONTRIBUTING.md`. **A note on
+drift:** this section has pointed at the wrong release plan twice before
+(`WP 5.4` and `WP 16.2B` each corrected it). If the programme document
+moves again, this is the line to fix.
 
 ## Related Documents
 
-`docs/academy/Academy Index.md` (the Academy's own, narrower internal
-navigation); `docs/releases/FOUNDATION.md`; `docs/governance/Governance
-Index.md`; `docs/governance/Future Work Package Guidelines.md`;
-`docs/academy/06 Engineering Standards/Engineering Lifecycle.md`.
+`docs/academy/Academy Index.md` (the Academy's own table of contents);
+`docs/releases/FOUNDATION.md`; `CONTRIBUTING.md`; `BACKLOG.md`;
+`docs/releases/v1.0.0/WorkPackages.md`; `docs/academy/06 Engineering
+Standards/Engineering Lifecycle.md`; the archived
+`archive/docs-2026-09/governance/Future Work Package Guidelines.md`.

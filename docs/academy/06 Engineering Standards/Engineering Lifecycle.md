@@ -1,5 +1,15 @@
 # Engineering Lifecycle
 
+> **Status note, September 2026.** The pipeline below is still the shape
+> of a Work Package, but three of its stages changed at `WP 17.0B`
+> (2026-09-08): the *Academy* stage is no longer a per-Work-Package
+> retrospective (the pull request description carries that record), the
+> *Governance* stage no longer updates a register suite (it files rows in
+> `BACKLOG.md`), and *Release* is the gate described in
+> `08-the-physical-review-and-the-release-gate.md`. `CONTRIBUTING.md`
+> states the current Definition of Done; `00 Introduction/01-how-tempestos-gets-built.md`
+> walks the stages as they are run today.
+
 ## What This Document Is
 
 The canonical, stage-by-stage engineering process for TempestOS —

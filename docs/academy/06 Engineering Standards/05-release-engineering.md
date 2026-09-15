@@ -1,5 +1,13 @@
 # Engineering Standard: Release Engineering
 
+> **Status note, September 2026.** The release mechanics below still hold
+> (`new-release.ps1`, `release.yml`, the tag), with the tightening `WP
+> 16.1A-R1` added and the gate figures now recorded in the Release Notes
+> and `PROJECT_STATUS.md` rather than a Release Register. The `v0.17.0`
+> and `v0.18.0` releases were run from an Execution Plan on a single
+> release branch — see `09-the-governance-reset-and-how-a-release-is-now-run.md`
+> and `08-the-physical-review-and-the-release-gate.md`.
+
 ## Purpose
 
 `WP 11.1A` gave TempestOS a machine-verified Build Gate and Test Gate.
