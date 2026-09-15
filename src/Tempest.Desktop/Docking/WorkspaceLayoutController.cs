@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
@@ -8,17 +9,19 @@ using Tempest.Workspace.Layout;
 namespace Tempest.Desktop.Docking;
 
 /// <summary>
-/// Owns the workspace arrangement (`TD-72`): the one tree, the main
-/// window's host, every floating window, drag-to-dock, and persistence.
+/// Owns the workspace arrangement (`TD-72`, generalised to many windows by
+/// `ADR-0153`): the one forest, the primary window's own host, every
+/// secondary window, cross-window drag-to-dock, focus, and persistence.
 /// </summary>
 /// <remarks>
 /// <para>
-/// One owner, so there is one answer to "what is the layout". The host
-/// renders, the floating windows render, the drag gesture proposes — but
-/// only this class holds the tree and only this class applies an operation
-/// to it. Everything else is derived and can be rebuilt from it at any
-/// time, which is what makes the arrangement restorable, testable, and
-/// impossible to get into a state the model cannot describe.
+/// One owner, so there is one answer to "what is the layout" — restated for
+/// N windows rather than one-plus-floating (`ADR-0153` decision 1). The
+/// hosts render, the secondary windows render, the drag gesture proposes —
+/// but only this class holds the tree and only this class applies an
+/// operation to it. Everything else is derived and can be rebuilt from it
+/// at any time, which is what makes the arrangement restorable, testable,
+/// and impossible to get into a state the model cannot describe.
 /// </para>
 /// <para>
 /// Persistence is debounced to the shutdown save the shell already
@@ -36,6 +39,7 @@ public sealed class WorkspaceLayoutController
     private readonly IWorkspaceLayoutStore _store;
     private readonly Dictionary<Guid, FloatingPanelWindow> _floatingWindows = [];
     private readonly Func<FloatingLayoutWindow, FloatingPanelWindow>? _floatingWindowFactory;
+    private readonly Func<IScreenList>? _screenListProvider;
 
     /// <summary>
     /// Where each panel was docked immediately before it last floated —
@@ -47,6 +51,7 @@ public sealed class WorkspaceLayoutController
 
     private WorkspaceLayoutTree _tree = WorkspaceLayoutTree.Empty;
     private Guid? _draggingPanelId;
+    private WorkspaceLayoutHost? _dragOriginHost;
     private Point _dragOrigin;
     private bool _dragActive;
 
@@ -64,14 +69,26 @@ public sealed class WorkspaceLayoutController
     /// <param name="registry">The panels that can participate.</param>
     /// <param name="store">Where the arrangement is persisted.</param>
     /// <param name="floatingWindowFactory">
-    /// Creates the window for a floating panel. Injected so a headless test
-    /// can observe undocking without opening a real top-level window;
-    /// production passes <see langword="null"/> and gets real windows.
+    /// Creates the window for a secondary window entry. Injected so a
+    /// headless test can observe undocking without opening a real top-level
+    /// window; production passes <see langword="null"/> and gets real
+    /// windows.
+    /// </param>
+    /// <param name="screenListProvider">
+    /// Supplies the screens persistence resolves a window's own monitor
+    /// against (`ADR-0153` decision 5). Injected so a test can prove
+    /// monitor-fallback and per-monitor DPI conversion without a real
+    /// multi-monitor rig — Avalonia's own headless platform reports exactly
+    /// one screen (the ADR's own risk 3). Production passes
+    /// <see langword="null"/> and gets the real screens of whichever window
+    /// is available (<see cref="OwnerWindow"/>, or else <see cref="Host"/>'s
+    /// own top level) at the moment persistence runs.
     /// </param>
     public WorkspaceLayoutController(
         WorkspacePanelRegistry registry,
         IWorkspaceLayoutStore store,
-        Func<FloatingLayoutWindow, FloatingPanelWindow>? floatingWindowFactory = null)
+        Func<FloatingLayoutWindow, FloatingPanelWindow>? floatingWindowFactory = null,
+        Func<IScreenList>? screenListProvider = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(store);
@@ -79,69 +96,83 @@ public sealed class WorkspaceLayoutController
         _registry = registry;
         _store = store;
         _floatingWindowFactory = floatingWindowFactory;
+        _screenListProvider = screenListProvider;
 
         Host = new WorkspaceLayoutHost(registry);
         Host.LayoutChanged += tree => Adopt(tree, render: false);
-        Host.PanelDragStarted += BeginDrag;
+        WireHost(Host);
+    }
+
+    /// <summary>
+    /// Wires one window's own host into the shared drag machinery — the
+    /// primary <see cref="Host"/>, in the constructor, and every secondary
+    /// window's own host as it is created by <see cref="SyncFloatingWindows"/>
+    /// — so a drag can start from, and a drop can resolve against, any
+    /// window (`ADR-0153` decision 4).
+    /// </summary>
+    private void WireHost(WorkspaceLayoutHost host)
+    {
+        host.PanelDragStarted += (panelId, e) => BeginDrag(panelId, host, e);
 
         // The drag is tracked on the host rather than on each tab, so
         // moving off the tab it started on — which is the whole point of
         // dragging — does not end the gesture.
-        Host.AddHandler(InputElement.PointerMovedEvent, OnHostPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        Host.AddHandler(InputElement.PointerReleasedEvent, OnHostPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        Host.AddHandler(InputElement.PointerCaptureLostEvent, (_, _) => CancelDrag(), Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        host.AddHandler(InputElement.PointerMovedEvent, (object? _, PointerEventArgs e) => OnPointerMoved(host, e), RoutingStrategies.Tunnel);
+        host.AddHandler(InputElement.PointerReleasedEvent, (object? _, PointerReleasedEventArgs e) => OnPointerReleased(host, e), RoutingStrategies.Tunnel);
+
+        // `ADR-0153` decision 9: `PointerCaptureLostEvent` is declared
+        // `RoutingStrategies.Direct` by Avalonia 11.3.20 (confirmed by
+        // reflection, and by `WorkspaceLayoutHost`'s own neighbouring,
+        // already-correct handler) — a handler registered for a routing
+        // strategy the event never uses is never invoked, so registering
+        // `Tunnel` here (as this class did before this package) meant
+        // `CancelDrag()` likely never ran on a real OS-forced capture loss.
+        host.AddHandler(InputElement.PointerCaptureLostEvent, (object? _, RoutedEventArgs _) => CancelDrag(), RoutingStrategies.Direct);
     }
 
-    private void OnHostPointerMoved(object? sender, PointerEventArgs e)
+    private void OnPointerMoved(WorkspaceLayoutHost host, PointerEventArgs e)
     {
-        if (_draggingPanelId is null)
+        // `ADR-0153` decision 4's own resolved risk: pointer capture is per
+        // top-level window, so once a drag starts, only the window that
+        // holds capture is trusted to report the drag's own position —
+        // never a different window's independently-raised pointer event.
+        if (_draggingPanelId is null || !ReferenceEquals(host, _dragOriginHost))
             return;
 
-        CurrentDropTarget = UpdateDrag(e.GetPosition(Host));
+        CurrentDropTarget = UpdateDrag(e.GetPosition(host));
         DropTargetChanged?.Invoke(CurrentDropTarget);
     }
 
-    private void OnHostPointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnPointerReleased(WorkspaceLayoutHost host, PointerReleasedEventArgs e)
     {
-        if (_draggingPanelId is null)
+        if (_draggingPanelId is null || !ReferenceEquals(host, _dragOriginHost))
             return;
 
-        var position = e.GetPosition(Host);
-        CompleteDrag(position, ToScreenPoint(position));
+        var position = e.GetPosition(host);
+        CompleteDrag(position, ToScreenPoint(host, position));
         CurrentDropTarget = null;
         DropTargetChanged?.Invoke(null);
     }
 
     /// <summary>
-    /// <paramref name="hostPosition"/> (in <see cref="Host"/>'s own
-    /// coordinates) as a real screen point, or <see langword="null"/> when
-    /// <see cref="Host"/> is not attached to a real window — so a torn-out
-    /// panel opens where the user actually dropped it (`WP 20.10D`, PO
-    /// finding T4: the caller's own fallback previously used
-    /// <see cref="Host"/>-local coordinates directly as screen pixels
-    /// whenever this returned <see langword="null"/>, which was every time
-    /// — nothing ever passed a real screen point in).
+    /// <paramref name="localPoint"/>, in <paramref name="control"/>'s own
+    /// coordinates, as a real screen point, or <see langword="null"/> when
+    /// <paramref name="control"/> is not attached to a real window.
     /// </summary>
     /// <remarks>
-    /// No public <c>PointToScreen</c> exists on <see cref="Visual"/> or
-    /// <see cref="TopLevel"/> in this Avalonia version; this is the
-    /// window's own screen <see cref="Window.Position"/> plus the point
-    /// translated into the window and scaled by
-    /// <see cref="TopLevel.RenderScaling"/> — exact for a borderless
-    /// window, and close enough for placement purposes otherwise.
+    /// `ADR-0153` decision 4 names <see cref="Visual.PointToScreen"/>
+    /// directly: contrary to this class's own previous doc comment here (a
+    /// hand-rolled <c>Position</c>-plus-<c>RenderScaling</c> workaround,
+    /// dated `WP 20.10D`), the method already exists as public API on the
+    /// Avalonia 11.3.20 this solution references — confirmed directly
+    /// against the referenced package during this Work Package, not
+    /// assumed. It gives every candidate, in every window, a common
+    /// coordinate space to compare a drag's current position against,
+    /// with no per-window scaling arithmetic of this class's own to get
+    /// wrong.
     /// </remarks>
-    private PixelPoint? ToScreenPoint(Point hostPosition)
-    {
-        if (TopLevel.GetTopLevel(Host) is not Window window)
-            return null;
-
-        var pointInWindow = Host.TranslatePoint(hostPosition, window) ?? hostPosition;
-        var scaling = window.RenderScaling;
-
-        return new PixelPoint(
-            window.Position.X + (int)Math.Round(pointInWindow.X * scaling),
-            window.Position.Y + (int)Math.Round(pointInWindow.Y * scaling));
-    }
+    private static PixelPoint? ToScreenPoint(Visual control, Point localPoint) =>
+        TopLevel.GetTopLevel(control) is Window ? control.PointToScreen(localPoint) : null;
 
     /// <summary>The drop target currently under the pointer during a drag, or <see langword="null"/>.</summary>
     public DockTarget? CurrentDropTarget { get; private set; }
@@ -149,23 +180,26 @@ public sealed class WorkspaceLayoutController
     /// <summary>Raised as the drop target changes during a drag, so an overlay can highlight it.</summary>
     public event Action<DockTarget?>? DropTargetChanged;
 
-    /// <summary>The main window's own layout surface.</summary>
+    /// <summary>The primary window's own layout surface.</summary>
     public WorkspaceLayoutHost Host { get; }
 
     /// <summary>
-    /// The real shell window every floating window is owned by (`WP
+    /// The real shell window every secondary window is owned by (`WP
     /// 20.10D`, PO finding T4) — so a floating window can never end up
     /// behind the main window with no way back, the way an un-owned
-    /// top-level can on some window managers. Set once, by the composition
-    /// root, once that window exists; <see langword="null"/> in a test that
-    /// never sets it opens floating windows un-owned, exactly as before.
+    /// top-level can on some window managers, and the window whose own
+    /// <see cref="Avalonia.Controls.Screens"/> persistence resolves a
+    /// monitor against when no test has injected one (`ADR-0153` decision
+    /// 5). Set once, by the composition root, once that window exists;
+    /// <see langword="null"/> in a test that never sets it opens floating
+    /// windows un-owned, exactly as before.
     /// </summary>
     public Window? OwnerWindow { get; set; }
 
     /// <summary>The current arrangement.</summary>
     public WorkspaceLayoutTree Tree => _tree;
 
-    /// <summary>Every floating window currently open, by its own layout id.</summary>
+    /// <summary>Every secondary window currently open, by its own layout id.</summary>
     public IReadOnlyDictionary<Guid, FloatingPanelWindow> FloatingWindows => _floatingWindows;
 
     /// <summary>Whether a panel drag is currently in progress.</summary>
@@ -188,8 +222,25 @@ public sealed class WorkspaceLayoutController
         ArgumentNullException.ThrowIfNull(operation);
 
         var updated = operation(_tree);
-        if (updated != _tree)
-            Adopt(updated, render: true);
+        if (updated == _tree)
+            return;
+
+        // `ADR-0153` decision 7, closing `TD-90`: which panel held keyboard
+        // focus is captured before the operation runs, and restored to
+        // that panel's own new tab header afterwards — by panel id, not by
+        // control identity, since every `LayoutTabGroupView` is rebuilt by
+        // this same re-render and cannot be matched by reference.
+        var focusedPanelId = CaptureFocusedPanelId();
+        Adopt(updated, render: true);
+
+        // Posted rather than called inline: the re-render just rebuilt the
+        // panel's own new tab header as a brand-new control, and Avalonia
+        // has not yet run the layout pass that attaches it to a real input
+        // root — `Control.Focus()` called before that pass silently
+        // returns `false`. `DispatcherPriority.Loaded` is the standard
+        // "after layout, rendering and data binding have settled" point.
+        if (focusedPanelId is { } id)
+            Dispatcher.UIThread.Post(() => RestoreFocus(id), DispatcherPriority.Loaded);
     }
 
     private void Adopt(WorkspaceLayoutTree tree, bool render)
@@ -203,7 +254,7 @@ public sealed class WorkspaceLayoutController
         LayoutChanged?.Invoke(tree);
     }
 
-    /// <summary>Opens, updates and closes floating windows so they match the model exactly.</summary>
+    /// <summary>Opens, updates and closes secondary windows so they match the model exactly.</summary>
     private void SyncFloatingWindows()
     {
         foreach (var model in _tree.Floating)
@@ -228,6 +279,11 @@ public sealed class WorkspaceLayoutController
 
             window.GeometryChanged += (id, x, y, w, h) => Apply(t => t.MoveFloating(id, x, y, w, h));
             window.Host.LayoutChanged += tree => Adopt(tree, render: false);
+
+            // `ADR-0153` decision 4: every window's own host joins the same
+            // drag machinery the primary one already has, so a drag can
+            // both start from, and be dropped onto, a secondary window.
+            WireHost(window.Host);
 
             // Closing the OS window (the title bar's own close button) is
             // not "discard this panel" — its content goes back to where it
@@ -302,7 +358,7 @@ public sealed class WorkspaceLayoutController
     }
 
     /// <summary>
-    /// Returns to <paramref name="defaultTree"/>: every floating window
+    /// Returns to <paramref name="defaultTree"/>: every secondary window
     /// closes, and any panel <paramref name="defaultTree"/> does not itself
     /// place — one registered after the default was fixed, a floating
     /// attachment viewer, say — is folded back into the docked tree instead
@@ -346,7 +402,10 @@ public sealed class WorkspaceLayoutController
         if (group.PanelIds.Count > 1)
             return new DockAnchor(group.Id, DockRelation.Into);
 
-        if (FindParentSplit(tree.Root, group.Id) is not { } parentInfo)
+        if (tree.FindWindowContaining(group.Id) is not { Root: { } windowRoot })
+            return null;
+
+        if (FindParentSplit(windowRoot, group.Id) is not { } parentInfo)
             return null;
 
         var (parent, index) = parentInfo;
@@ -416,32 +475,122 @@ public sealed class WorkspaceLayoutController
     public bool IsPanelVisible(Guid panelId) => _tree.Contains(panelId);
 
     // ----------------------------------------------------------------
+    // Focus restore (`ADR-0153` decision 7, `TD-90`)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// The panel whose tab header, or whose selected content, currently
+    /// holds keyboard focus in any known window — captured before an
+    /// operation runs so it can be restored to that panel's own new home
+    /// afterwards.
+    /// </summary>
+    private Guid? CaptureFocusedPanelId()
+    {
+        foreach (var host in AllHosts())
+        {
+            if (TopLevel.GetTopLevel(host)?.FocusManager?.GetFocusedElement() is not Control focused)
+                continue;
+
+            foreach (var group in host.TabGroups)
+            {
+                foreach (var panelId in group.PanelIds)
+                {
+                    if (OwnsFocus(group, panelId, focused))
+                        return panelId;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private bool OwnsFocus(LayoutTabGroupView group, Guid panelId, Control focused)
+    {
+        if (group.FindHeader(panelId) is { } header && ReferenceEquals(header, focused))
+            return true;
+
+        // Only the selected tab's own content is actually reachable, so
+        // only it is worth checking — an unselected tab's content is
+        // detached and cannot itself hold focus.
+        if (panelId != group.SelectedPanelId || _registry.Find(panelId) is not { } descriptor)
+            return false;
+
+        return ReferenceEquals(descriptor.Content, focused) || focused.GetVisualAncestors().Contains(descriptor.Content);
+    }
+
+    /// <summary>
+    /// Focuses <paramref name="id"/>'s own tab header, in whichever window
+    /// it now lives — activating that window first when it is not already
+    /// the one with input focus, since a focused control in a background
+    /// window is invisible to the keyboard until the window is
+    /// (`ADR-0153` decision 7). A no-op when <paramref name="id"/> is no
+    /// longer anywhere in the arrangement by the time this runs.
+    /// </summary>
+    private void RestoreFocus(Guid id)
+    {
+        foreach (var host in AllHosts())
+        {
+            if (host.FindPanelHeader(id) is not { } header)
+                continue;
+
+            if (TopLevel.GetTopLevel(host) is Window { IsActive: false } window)
+                window.Activate();
+
+            header.Focus();
+            return;
+        }
+    }
+
+    /// <summary>Every window's own host currently known to this controller — the primary one first, then every secondary window, in no particular further order.</summary>
+    private IEnumerable<WorkspaceLayoutHost> AllHosts()
+    {
+        yield return Host;
+
+        foreach (var window in _floatingWindows.Values)
+            yield return window.Host;
+    }
+
+    // ----------------------------------------------------------------
     // Drag to dock
     // ----------------------------------------------------------------
 
-    private void BeginDrag(Guid panelId, PointerPressedEventArgs e)
+    private void BeginDrag(Guid panelId, WorkspaceLayoutHost originHost, PointerPressedEventArgs e)
     {
-        if (!e.GetCurrentPoint(Host).Properties.IsLeftButtonPressed)
+        if (!e.GetCurrentPoint(originHost).Properties.IsLeftButtonPressed)
             return;
 
         _draggingPanelId = panelId;
-        _dragOrigin = e.GetPosition(Host);
+        _dragOriginHost = originHost;
+        _dragOrigin = e.GetPosition(originHost);
         _dragActive = false;
     }
 
     /// <summary>
-    /// Starts a drag of <paramref name="panelId"/> as an already-past-the-
-    /// threshold gesture — the model-level counterpart of a real mouse
-    /// press followed by enough travel, needed because <see cref="UpdateDrag"/>
-    /// and <see cref="CompleteDrag"/> are already public "the gesture, as an
-    /// operation" seams (`WorkspaceLayoutControllerTests`'s own established
-    /// convention of driving a gesture through the controller's public
-    /// surface rather than synthesising raw pointer input) but nothing let a
-    /// test start one from nothing (`WP 20.10D`).
+    /// Starts a drag of <paramref name="panelId"/>, from the primary
+    /// window, as an already-past-the-threshold gesture — the model-level
+    /// counterpart of a real mouse press followed by enough travel, needed
+    /// because <see cref="UpdateDrag"/> and <see cref="CompleteDrag"/> are
+    /// already public "the gesture, as an operation" seams
+    /// (`WorkspaceLayoutControllerTests`'s own established convention of
+    /// driving a gesture through the controller's public surface rather
+    /// than synthesising raw pointer input) but nothing let a test start
+    /// one from nothing (`WP 20.10D`).
     /// </summary>
-    public void BeginDrag(Guid panelId)
+    public void BeginDrag(Guid panelId) => BeginDrag(panelId, Host);
+
+    /// <summary>
+    /// <see cref="BeginDrag(Guid)"/>, naming which window's own host the
+    /// drag originates from — the test seam a cross-window drag needs
+    /// (`ADR-0153` decision 4): production always starts a drag from
+    /// whichever host the pointer was actually pressed in, via the real
+    /// gesture wired by <see cref="WireHost"/>.
+    /// </summary>
+    public void BeginDrag(Guid panelId, WorkspaceLayoutHost originHost)
     {
+        ArgumentNullException.ThrowIfNull(originHost);
+
         _draggingPanelId = panelId;
+        _dragOriginHost = originHost;
         _dragOrigin = default;
         _dragActive = true;
     }
@@ -450,6 +599,7 @@ public sealed class WorkspaceLayoutController
     /// Advances an in-progress drag. Returns the drop target the pointer is
     /// currently over, so an overlay can highlight it.
     /// </summary>
+    /// <param name="position">The pointer's current position, in the drag's own origin window's coordinates (see <see cref="BeginDrag(Guid,WorkspaceLayoutHost)"/>).</param>
     public DockTarget? UpdateDrag(Point position)
     {
         if (_draggingPanelId is null)
@@ -466,20 +616,37 @@ public sealed class WorkspaceLayoutController
             _dragActive = true;
         }
 
-        return DockTargetResolver.Resolve(CurrentCandidates(), position.X, position.Y);
+        var originHost = _dragOriginHost ?? Host;
+
+        var local = DockTargetResolver.Resolve(CandidatesOf(originHost), position.X, position.Y);
+        if (local is not null)
+            return local;
+
+        // `ADR-0153` decision 4: past the origin window's own candidates,
+        // a screen-space search against every other known window's own
+        // candidates gets first refusal before this falls back to
+        // "outside every window entirely" (`CompleteDrag`'s own float
+        // gesture).
+        return ToScreenPoint(originHost, position) is { } screenPoint
+            ? ResolveCrossWindow(screenPoint, originHost)
+            : null;
     }
 
     /// <summary>
     /// Completes a drag at <paramref name="position"/>: docks onto the
-    /// target under the pointer; tears the panel out into its own window
-    /// when the pointer has left the workspace's own bounds entirely (the
-    /// one deliberate "give this its own window" gesture); or, dropped
-    /// over no target but still inside the workspace, changes nothing — an
-    /// accidental miss is not a gesture (`WP 20.10D`, PO finding T4: every
-    /// release outside every candidate used to float the panel, so a
-    /// one-pixel miss in the gutter between two panes was
-    /// indistinguishable from someone actually tearing it out).
+    /// target under the pointer — in the origin window, or, past its own
+    /// candidates, in any other known window (`ADR-0153` decision 4);
+    /// tears the panel out into its own new window when the pointer has
+    /// left every known window's own bounds entirely (the one deliberate
+    /// "give this its own window" gesture); or, dropped over no target but
+    /// still inside the origin window, changes nothing — an accidental
+    /// miss is not a gesture (`WP 20.10D`, PO finding T4: every release
+    /// outside every candidate used to float the panel, so a one-pixel
+    /// miss in the gutter between two panes was indistinguishable from
+    /// someone actually tearing it out).
     /// </summary>
+    /// <param name="position">Where the pointer was released, in the drag's own origin window's coordinates.</param>
+    /// <param name="screenPosition">The same release point in real screen coordinates, when known — used only for a fresh tear-out's own placement.</param>
     public void CompleteDrag(Point position, PixelPoint? screenPosition = null)
     {
         if (_draggingPanelId is not { } panelId || !_dragActive)
@@ -488,25 +655,31 @@ public sealed class WorkspaceLayoutController
             return;
         }
 
-        var target = DockTargetResolver.Resolve(CurrentCandidates(), position.X, position.Y);
+        var originHost = _dragOriginHost ?? Host;
         var title = _registry.Find(panelId)?.Title ?? "Panel";
+
+        var target = DockTargetResolver.Resolve(CandidatesOf(originHost), position.X, position.Y);
+        var screenPoint = screenPosition ?? ToScreenPoint(originHost, position);
+
+        if (target is null && screenPoint is { } sp)
+            target = ResolveCrossWindow(sp, originHost);
 
         if (target is { } dock)
         {
             Apply(t => t.Dock(panelId, dock.NodeId, dock.Relation));
         }
-        else if (IsOutsideWorkspace(position))
+        else if (IsOutsideEveryWindow(originHost, position, screenPoint))
         {
-            // Torn out past the edge of the workspace itself: undock into
-            // its own window, at the point it was released.
+            // Torn out past the edge of every known window: undock into
+            // its own new window, at the point it was released.
             RememberDockAnchor(panelId);
-            var origin = screenPosition ?? new PixelPoint((int)position.X, (int)position.Y);
+            var origin = screenPoint ?? new PixelPoint((int)position.X, (int)position.Y);
             Apply(t => t.Float(panelId, origin.X, origin.Y, 420, 320));
             Announced?.Invoke($"{title} undocked into its own window.");
         }
         else
         {
-            // Released inside the workspace but over no target: nothing
+            // Released inside a known window but over no target: nothing
             // was ever mutated mid-drag, so the panel is already exactly
             // where it was — this just says so.
             Announced?.Invoke($"{title} stays where it was — drop it on a highlighted target to move it.");
@@ -515,32 +688,109 @@ public sealed class WorkspaceLayoutController
         CancelDrag();
     }
 
-    /// <summary>Whether <paramref name="position"/> — in <see cref="Host"/>'s own coordinates — has left the workspace's own rendered bounds: the one deliberate tear-out gesture <see cref="CompleteDrag"/> honours.</summary>
-    private bool IsOutsideWorkspace(Point position) =>
-        position.X < 0 || position.Y < 0 || position.X > Host.Bounds.Width || position.Y > Host.Bounds.Height;
+    /// <summary>
+    /// Whether <paramref name="position"/> — in <paramref name="originHost"/>'s
+    /// own coordinates — has left every known window's own rendered bounds
+    /// entirely: the one deliberate tear-out gesture <see cref="CompleteDrag"/>
+    /// honours. A release outside the origin window's own bounds but still
+    /// inside a <em>different</em> known window's own screen rectangle is
+    /// not a tear-out — it is a cross-window release over no candidate,
+    /// which <see cref="CompleteDrag"/> already reads as "stays where it
+    /// was".
+    /// </summary>
+    private bool IsOutsideEveryWindow(WorkspaceLayoutHost originHost, Point position, PixelPoint? screenPoint)
+    {
+        if (position.X >= 0 && position.Y >= 0 && position.X <= originHost.Bounds.Width && position.Y <= originHost.Bounds.Height)
+            return false;
+
+        if (screenPoint is not { } point)
+            return true;
+
+        foreach (var host in AllHosts())
+        {
+            if (ReferenceEquals(host, originHost))
+                continue;
+
+            if (ToScreenPoint(host, default) is not { } topLeft)
+                continue;
+
+            var bounds = new PixelRect(topLeft.X, topLeft.Y, (int)Math.Max(0, host.Bounds.Width), (int)Math.Max(0, host.Bounds.Height));
+            if (bounds.Contains(point))
+                return false;
+        }
+
+        return true;
+    }
 
     /// <summary>Abandons any in-progress drag without changing the arrangement.</summary>
     public void CancelDrag()
     {
         _draggingPanelId = null;
+        _dragOriginHost = null;
         _dragActive = false;
     }
 
-    /// <summary>The drop candidates currently on screen, in the host's own coordinates.</summary>
-    public IReadOnlyList<DockTargetCandidate> CurrentCandidates()
+    /// <summary>The drop candidates currently on screen in the primary window, in that window's own coordinates.</summary>
+    public IReadOnlyList<DockTargetCandidate> CurrentCandidates() => CandidatesOf(Host);
+
+    private static IReadOnlyList<DockTargetCandidate> CandidatesOf(WorkspaceLayoutHost host)
     {
         var candidates = new List<DockTargetCandidate>();
 
-        foreach (var group in Host.TabGroups)
+        foreach (var group in host.TabGroups)
         {
             if (group.GetVisualRoot() is null)
                 continue;
 
-            var origin = group.TranslatePoint(default, Host);
+            var origin = group.TranslatePoint(default, host);
             if (origin is not { } point)
                 continue;
 
             candidates.Add(new DockTargetCandidate(group.NodeId, point.X, point.Y, group.Bounds.Width, group.Bounds.Height));
+        }
+
+        return candidates;
+    }
+
+    /// <summary>
+    /// The drop target under <paramref name="screenPosition"/>, in any
+    /// known window other than <paramref name="originHost"/>'s own —
+    /// `ADR-0153` decision 4's cross-window resolution, entirely in screen
+    /// coordinates (via <see cref="Visual.PointToScreen"/>) so a candidate
+    /// in a different top-level window compares against the drag's own
+    /// current position on equal terms.
+    /// </summary>
+    private DockTarget? ResolveCrossWindow(PixelPoint screenPosition, WorkspaceLayoutHost originHost)
+    {
+        foreach (var host in AllHosts())
+        {
+            if (ReferenceEquals(host, originHost))
+                continue;
+
+            if (DockTargetResolver.Resolve(ScreenCandidatesOf(host), screenPosition.X, screenPosition.Y) is { } target)
+                return target;
+        }
+
+        return null;
+    }
+
+    /// <summary>Every candidate pane <paramref name="host"/> currently renders, translated into screen coordinates.</summary>
+    private static IReadOnlyList<DockTargetCandidate> ScreenCandidatesOf(WorkspaceLayoutHost host)
+    {
+        var candidates = new List<DockTargetCandidate>();
+
+        foreach (var group in host.TabGroups)
+        {
+            if (group.GetVisualRoot() is null)
+                continue;
+
+            if (ToScreenPoint(group, default) is not { } topLeft)
+                continue;
+
+            if (ToScreenPoint(group, new Point(group.Bounds.Width, group.Bounds.Height)) is not { } bottomRight)
+                continue;
+
+            candidates.Add(new DockTargetCandidate(group.NodeId, topLeft.X, topLeft.Y, bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y));
         }
 
         return candidates;
@@ -552,7 +802,7 @@ public sealed class WorkspaceLayoutController
 
     /// <summary>Writes the arrangement for the next session.</summary>
     public Task SaveAsync(CancellationToken cancellationToken = default) =>
-        _store.SaveAsync(_tree, cancellationToken);
+        _store.SaveAsync(ToPersistedShape(_tree), cancellationToken);
 
     /// <summary>
     /// Restores the saved arrangement, falling back to
@@ -584,8 +834,8 @@ public sealed class WorkspaceLayoutController
     /// <c>CheckAccess</c>/<c>Invoke</c> shape
     /// <see cref="Tempest.Desktop.Theming.ThemeService"/> already established
     /// for this identical Core-async/UI-thread boundary. Tree construction
-    /// (<see cref="DropUnknownPanels"/>) touches no UI state and stays off
-    /// the UI thread.
+    /// (<see cref="DropUnknownPanels"/>, <see cref="FromPersistedShape"/>)
+    /// touches no UI state and stays off the UI thread.
     /// </para>
     /// </remarks>
     public async Task RestoreAsync(WorkspaceLayoutTree fallback, CancellationToken cancellationToken = default)
@@ -594,6 +844,7 @@ public sealed class WorkspaceLayoutController
 
         var saved = await _store.LoadAsync(cancellationToken).ConfigureAwait(false);
         var tree = saved is null ? fallback : DropUnknownPanels(saved, fallback);
+        tree = FromPersistedShape(tree);
 
         if (Dispatcher.UIThread.CheckAccess())
             Load(tree);
@@ -612,5 +863,84 @@ public sealed class WorkspaceLayoutController
 
         // A layout that pruned down to nothing is not a layout.
         return pruned.Root is null && pruned.Floating.Count == 0 ? fallback : pruned;
+    }
+
+    /// <summary>
+    /// <paramref name="tree"/>, with every secondary window's own geometry
+    /// converted from this session's live, absolute terms into the
+    /// monitor-relative, DPI-normalised terms `ADR-0153` decision 5
+    /// persists — resolved against whichever screen that window's own
+    /// current position actually overlaps, not merely copied from the
+    /// model, so a drag still settling when the shell shuts down is saved
+    /// against where the window really is.
+    /// </summary>
+    private WorkspaceLayoutTree ToPersistedShape(WorkspaceLayoutTree tree)
+    {
+        var screens = ResolveScreenList();
+
+        var windows = tree.Windows.Select(window =>
+        {
+            if (window.IsPrimary)
+                return window;
+
+            var (position, widthDip, heightDip) = _floatingWindows.TryGetValue(window.Id, out var live)
+                ? (live.Position, live.Width, live.Height)
+                : (new PixelPoint((int)window.X, (int)window.Y), window.Width, window.Height);
+
+            var bounds = new PixelRect(position.X, position.Y, (int)Math.Max(0, widthDip), (int)Math.Max(0, heightDip));
+            var screen = MonitorRelativePlacement.ResolveCurrentScreen(bounds, screens);
+            var (key, x, y, width, height) = MonitorRelativePlacement.ToRelative(position, widthDip, heightDip, screen);
+
+            return window with { MonitorKey = key, X = x, Y = y, Width = width, Height = height };
+        }).ToList();
+
+        return tree with { Windows = windows };
+    }
+
+    /// <summary>
+    /// The reverse of <see cref="ToPersistedShape"/>: <paramref name="tree"/>,
+    /// with every secondary window's own saved, monitor-relative geometry
+    /// resolved back into this session's live, absolute terms — against
+    /// the screen its own saved <c>MonitorKey</c> names, or the primary
+    /// screen when that monitor is not currently attached (`ADR-0153`
+    /// decision 5's own named fallback). A window with no
+    /// <c>MonitorKey</c> at all (a version-1 document, migrated by
+    /// <see cref="Tempest.Workspace.Layout.WorkspaceLayoutSerializer"/>
+    /// into a forest that never recorded one) is left exactly as read —
+    /// already in absolute terms, on the pre-`ADR-0153` convention.
+    /// </summary>
+    private WorkspaceLayoutTree FromPersistedShape(WorkspaceLayoutTree tree)
+    {
+        var screens = ResolveScreenList();
+
+        var windows = tree.Windows.Select(window =>
+        {
+            if (window.IsPrimary || window.MonitorKey is null)
+                return window;
+
+            var screen = MonitorRelativePlacement.ResolveSavedScreen(window.MonitorKey, screens);
+            var (position, widthDip, heightDip) = MonitorRelativePlacement.ToAbsolute(window.X, window.Y, window.Width, window.Height, screen);
+
+            return window with { MonitorKey = null, X = position.X, Y = position.Y, Width = widthDip, Height = heightDip };
+        }).ToList();
+
+        return tree with { Windows = windows };
+    }
+
+    private IScreenList ResolveScreenList()
+    {
+        if (_screenListProvider is not null)
+            return _screenListProvider();
+
+        var window = OwnerWindow ?? TopLevel.GetTopLevel(Host) as Window;
+        return window is not null ? new AvaloniaScreenList(window) : NoScreens.Instance;
+    }
+
+    /// <summary>Used only when no real window is available to ask (never yet shown, and no test injected a screen list) — geometry math elsewhere still has a sensible default to divide by rather than needing its own null path.</summary>
+    private sealed class NoScreens : IScreenList
+    {
+        public static readonly NoScreens Instance = new();
+        public IReadOnlyList<ScreenSnapshot> All => [];
+        public ScreenSnapshot Primary { get; } = new("(no window)", new PixelRect(0, 0, 1920, 1080), 1.0);
     }
 }

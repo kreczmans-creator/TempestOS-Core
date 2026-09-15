@@ -134,6 +134,16 @@ public sealed class WorkspaceLayoutHost : UserControl
     /// <summary>Every tab group currently rendered — the candidate drop targets.</summary>
     public IReadOnlyList<LayoutTabGroupView> TabGroups { get; private set; } = [];
 
+    /// <summary>
+    /// The tab header for <paramref name="panelId"/>, across every group
+    /// this host currently renders, or <see langword="null"/> when it is
+    /// not shown here — the anchor <see cref="Docking.WorkspaceLayoutController"/>
+    /// restores focus to after a re-render moves a panel (`ADR-0153`
+    /// decision 7, `TD-90`).
+    /// </summary>
+    public Control? FindPanelHeader(Guid panelId) =>
+        TabGroups.Select(g => g.FindHeader(panelId)).FirstOrDefault(h => h is not null);
+
     /// <summary>Renders <paramref name="tree"/>, replacing whatever was shown.</summary>
     public void Update(WorkspaceLayoutTree tree)
     {
