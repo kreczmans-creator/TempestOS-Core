@@ -1,14 +1,14 @@
 # TempestOS — Project Status
 
-**Branch:** `release/v0.20.0` (the debt tranche, cut from the `v0.19.1` candidate at `4f5ee83a` on 2026-09-15 at the Product Owner's instruction to close the P1–P3 technical debt before the release; it contains all of `release/v0.19.1`, whose final head `94998b9e` stays pushed, gated three times on CI, as the fallback candidate). `release/v0.19.0` (`947c50d`) is superseded and stays unreleased.
-**VERSION:** `0.20.0` (bumped when the branch opened on 2026-09-15; `v0.18.0` was merged to `main`, tagged and published on 2026-09-14 after the Product Owner's acceptance; `v0.17.0` on 2026-09-09)
+**Branch:** `release/v0.21.0` (the recovery tranche, cut from the `v0.20.0` candidate at `88311649` on 2026-09-15 at the Product Owner's instruction to close every technical weakness in the lead's assessment of that afternoon; it contains all of `release/v0.20.0` including the seven `WP 20.10` fixes from the Product Owner's test). Candidate: `904b0f81` plus the release documents committed on top.
+**VERSION:** `0.21.0` (bumped when the branch opened on 2026-09-15; `v0.18.0` was merged to `main`, tagged and published on 2026-09-14 after the Product Owner's acceptance; `v0.17.0` on 2026-09-09; `v0.19.1` and `v0.20.0` remain candidates under manual test, both contained in this branch)
 
 ## What a user can do today
 
 Measured against `docs/releases/v1.0.0/WorkPackages.md` ("What v1.0.0
 is"), the five things v1.0.0 must let an engineer do, plus the one the
-Product Owner added on 2026-09-14. Two are released; the rest are on
-the `v0.19.1` candidate under the Product Owner's manual test:
+Product Owner added on 2026-09-14. Two are released; the rest are on the `v0.21.0` candidate (all of
+`v0.19.1` and `v0.20.0` merged in) for the Product Owner's manual test:
 
 1. ● Open a project for a client, with a PO reference, a budget and a
    pinned rate card — and a quotation opened with the project that
@@ -41,32 +41,42 @@ the `v0.19.1` candidate under the Product Owner's manual test:
 
 ## Work in flight
 
-`v0.20.0` on `release/v0.20.0`, executed overnight on 2026-09-15 per
-`docs/releases/v0.20.0/Execution Plan.md` as lead in the Product
-Owner's absence, against the technical-debt rationalisation of
-2026-09-14 (`docs/releases/v0.19.1/Technical Debt Rationalisation —
-Part 1.md` and `Part 2.md`) and the Product Owner's seven decisions of
-2026-09-15 (`docs/releases/v0.19.1/Product Owner Decisions
-2026-09-15.md`). Twelve packages merged and gated, in order: `WP 20.3D`
-(CI in shards), `20.0A` (`ADR-0153`, tear-out and dock everywhere —
-*Proposed*, about 20 developer-days, for review), `20.1A1` (every
-Requirements write reaches the change bus), `20.3A` (issue in one
-transaction, export schema migrations, BOM units), `20.3B` (seven small
-P3 closures), `20.2B` (DWG opens externally, rotation; SVG stopped
-honestly), `20.1A2` (a business identifier is unique within its
-project), `20.2C` (macros over real commands), `20.1C2` (index-first
-rehydration; the lazy half's kill switch invoked, `TD-88` stays open),
-`20.1B` (payment terms per client; a calculation is a task from
-creation), `20.1C1` (attachments stored once by content hash, streamed
-reads), `20.2A` (the object picker: Move and Copy for twelve commands,
-`TD-115`'s three bindings, the contextual Palette); then `WP 20.9.0`
-(the two CI defects on `94cbb5ba` — `ADR-0153`'s register row and a
-bounded wait in `ProjectAreaAcceptanceTests` — the release notes,
-`PHYSICAL_REVIEW.md` §7d, this file). The live backlog stands at 13 of
-its cap of 30. It is a release candidate under the Product Owner's
-manual test (§7c then §7d); its PR to `main`, tag and GitHub Release
-follow acceptance, the way `v0.18.0` went. `v0.19.1` is the fallback
-if this candidate is refused.
+`v0.21.0` on `release/v0.21.0`, the recovery tranche, executed on
+2026-09-15 from the afternoon into the night per
+`docs/releases/v0.21.0/Execution Plan.md` as lead, from the Product
+Owner's instruction to close every technical weakness in the lead's
+assessment of that afternoon and the security rule stated the same day
+(findings are fixed, never filed; the scope is the full live codebase).
+Seventeen of twenty-two packages merged and gated, in order: the seven
+`WP 20.10` fixes from the Product Owner's own test of `v0.20.0`; `21.5E`
+(security posture, the dependency-scan job), `21.5A` (installer, backup,
+restore), `21.3A` (typed intermediates, re-run, compare), `21.5F` (the
+offensive audit: ten findings fixed with a proof-of-concept test each),
+`21.5B` (lazy rehydration, the index idiom), `21.4A` (the viewer's
+remaining formats and markup), `21.2B` (the Engineering Assets surfaces),
+`21.7A` (eleven calculation modules), `21.2A` (documents from the
+templates), `21.1A` (Undo across commands), `21.7B` (the Engineering
+Calculators), `21.3B` (the commercial edges), `21.1B` (the editor split),
+`21.0A` (docking steps 1–2 of `ADR-0153`), `21.7C` (the calculators
+completed from the reference libraries), `21.6A` (the four audit
+residuals fixed, Requirements undo), `21.5D` (the mutation threshold met,
+scoped 89.5 %); then `WP 21.9.0` (the release notes with thirteen
+warnings, `PHYSICAL_REVIEW.md` §7j, the OAuth tests off the dynamic port
+range, this file). The live backlog stands at 10 of its cap of 30. It is
+a release candidate for the Product Owner's manual test (§7e–§7j on top
+of §7c–§7d); its PR to `main`, tag and GitHub Release follow acceptance.
+`v0.20.0` at `ec20a535` is the fallback. Owed and gated on the Product
+Owner: `WP 21.0B`/`21.0C` (docking steps 3–4, after the `ADR-0153`
+review), `WP 21.5C` (the real-shell CI run), `WP 21.6` (the first live
+Xero authorisation) — 16.5 of the 94.5 planned days.
+
+## Gate (the `v0.21.0` candidate: `904b0f81` plus the release documents, re-derived by `WP 21.9.0` on 2026-09-15)
+
+- Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`
+- Core tests: 5,308 passed, 0 failed, Debug (`904b0f81`) and Release (`904b0f81`)
+- Desktop tests: 884 passed, 0 failed, Debug (6 m 14 s at `b664fea6`, the last commit touching the Desktop suite; `904b0f81` changed a Core test only) and Release (6 m 30 s, `904b0f81`)
+- Governance health check: 5 of 5 (`b664fea6`)
+- CI: the sharded workflow ran on every merge head tonight; on `76b90c77` (the 21.7C merge) fully green, on `4c393842` the one Debug core failure was the dynamic-port collision `904b0f81` fixed (Release core green on re-run); the three runs on this candidate head — the push run plus two dispatched — are recorded on the candidate page and in `PROJECT_STATUS.md` at acceptance, with the CI Gate job as the criterion
 
 ## Gate (the candidate head, re-derived by `WP 20.9.0` on 2026-09-15)
 

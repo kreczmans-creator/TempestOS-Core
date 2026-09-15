@@ -59,3 +59,40 @@ console test line, one full gate at the tranche head, three green CI
 Gate runs, the candidate page. `release/v0.20.0` stays the candidate
 under the Product Owner's test until this branch is green; each `20.10`
 merge there is merged here the same hour.
+
+## 5. Outcome (`WP 21.9.0`, 2026-09-15 late evening)
+
+Seventeen of the twenty-two packages merged in one day, 77 of the 94.5
+planned days (81 %), every one behind its own gate and the lead's
+reconciliation at merge; `WP 21.9.0` (1 day) is this release package.
+The four not started are all gated on the Product Owner — `WP 21.0B`
+and `WP 21.0C` (13 days, docking steps 3–4) on the `ADR-0153` review,
+`WP 21.5C` (3 days) on `21.0C`, `WP 21.6` (0.5 day) on the Product Owner
+at the keyboard for the first live Xero authorisation — 16.5 days (17 %).
+
+| Merged, in order | Commit |
+|---|---|
+| the seven `WP 20.10` fixes from `release/v0.20.0` | `122a34d0` … `51641133` |
+| `WP 21.5E` security posture, dependency scan | `728556e3` |
+| `WP 21.5A` installer, backup and restore | `3a88de8c` |
+| `WP 21.3A` typed intermediates, re-run, compare | `81e1cdfa` |
+| `WP 21.5F` the offensive audit, ten findings fixed | `967eb536` |
+| `WP 21.5B` lazy rehydration, the index idiom | `581496ac` |
+| `WP 21.4A` the viewer's remaining formats and markup | `a431eb5a` |
+| `WP 21.2B` the Engineering Assets surfaces | `124d601b` |
+| `WP 21.7A` eleven calculation modules | `876ca187` |
+| `WP 21.2A` documents from the templates | `977610ab` |
+| `WP 21.1A` Undo across commands | `714f86bf` |
+| `WP 21.7B` the Engineering Calculators surface | `62c6cbb8` |
+| `WP 21.3B` the commercial edges | `8370381d` |
+| `WP 21.1B` the object editor split | `60824923` (+ `4268c21c`, the lead's compile fix) |
+| `WP 21.0A` docking steps 1–2 | `2bfaa036` |
+| `WP 21.7C` the Engineering Calculators completed | `76b90c77` |
+| `WP 21.6A` the audit residuals fixed, Requirements undo | `4c393842` |
+| `WP 21.5D` the mutation threshold met | `b664fea6` |
+
+Two lead-only commits on the way: `16dbabd6` (the dependency-scan
+script's wrapped `Write-Error`, the one cause of every red core leg
+between the `21.5E` merge and it) and `904b0f81` (the OAuth round-trip
+tests off the default port). Everything the packages and the merges
+disclosed is in the Release Notes' Warnings.

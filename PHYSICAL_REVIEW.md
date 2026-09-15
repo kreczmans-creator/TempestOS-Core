@@ -594,6 +594,36 @@ the same pins, the same fills, the identical record. The refusals it
 returns are the ones C3, C5 and C11 show.
 
 
+### 7j. Docking steps 1–2 in `v0.21.0` (about 10 minutes, a second monitor for K4–K5)
+
+What `WP 21.0A` changed is the model and the controller under the docking
+you already use (`ADR-0153` steps 1–2: one window forest, one controller);
+the visible checks are focus after a move, a floating window holding more
+than one panel, and the layout coming back per monitor. K1, K4 and K5 are
+exactly the proofs the headless tests could not give (the headless
+platform ignores a window's own position), so record their outcomes in
+words.
+
+- **K1.** Open a project. Float the Property Inspector (its tab's Float).
+  A floating window appears. Drag the Explorer's tab onto that floating
+  window's tab strip. **Expect:** the Explorer docks *into the floating
+  window* as a second tab — not back into the main window, not a third
+  window.
+- **K2.** Close the Explorer tab in the floating window, then float-close
+  the Inspector. **Expect:** the floating window disappears the moment its
+  last panel leaves; nothing is lost from the main window.
+- **K3.** Keyboard only: focus a docked panel's tab and move it with the
+  existing move commands. **Expect:** after the re-render the same tab
+  header has keyboard focus and shows the focus ring (`TD-90`).
+- **K4.** With a second monitor attached, drag a floating window onto it.
+  Close TempestOS. Reopen. **Expect:** the floating window restores on the
+  second monitor at the same place and size.
+- **K5.** Repeat K4 but unplug (or disable) the second monitor before
+  reopening. **Expect:** the floating window restores on the primary
+  monitor, fully visible, never off-screen.
+- **K6.** Reset the layout (the existing command). **Expect:** every panel
+  back in its default place, one window.
+
 ---
 
 ## 8. Known limitations that affect a physical review

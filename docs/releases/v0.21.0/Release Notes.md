@@ -1,6 +1,7 @@
 # TempestOS v0.21.0 — Release Notes
 
-**Status: in preparation on `release/v0.21.0`, cut from the `v0.20.0`
+**Status: candidate — `release/v0.21.0` at `904b0f81` (the last code
+commit; this document is committed on top of it), cut from the `v0.20.0`
 candidate (`88311649`) on 2026-09-15 at the Product Owner's instruction
 to close every technical weakness named in the lead's assessment of that
 afternoon.** Nothing in this document is certification. `v0.20.0` stays
@@ -9,12 +10,14 @@ under the Product Owner's manual test as the candidate, receiving the
 
 ## Summary
 
-**v0.21.0 is the recovery tranche** — the docking rewrite to `ADR-0153`,
+**v0.21.0 is the recovery tranche** — docking steps 1–2 of `ADR-0153` (the layout forest and the one
+controller),
 Undo across commands, the editor split, documents from every template,
 the Engineering Assets surfaces, typed calculation results with retained
 inputs, the commercial edges, the viewer's remaining formats and markup,
-the installer with upgrade, backup and restore, lazy rehydration, a
-real-shell run in CI, and the mutation threshold met. See
+the installer with upgrade, backup and restore, lazy rehydration and the mutation threshold met. Docking steps 3–4, the
+real-shell run in CI and the first live Xero authorisation are owed, not
+shipped — each waits on the Product Owner (Warnings, last item). See
 `Execution Plan.md` for the packages and their waves.
 
 ## What shipped, by Work Package
@@ -28,6 +31,7 @@ real-shell run in CI, and the mutation threshold met. See
 | `WP 21.5B` `TD-88` — lazy, project-scoped materialisation over the index, closed | `EngineeringObjectRehydrationService.RehydrateAsync` no longer reconstructs the estate unconditionally: for every state with a known Kind and an existing document (the one document read that stays eager — a lightweight existence check, no revision content, needed for orphan detection), it registers the object lazily (`IEngineeringObjectRepository.RegisterLazy`), deferring revision-content reads and the rehydrator's own type-specific parsing to first access. `FindAsync` is the single-flight materialising loader — an id materialises once no matter how many callers ask concurrently, and joins the identity map permanently (no eviction shipped). `ListAllAsync`/`ListByKindAsync`/`ListChildrenAsync` answer `EngineeringObjectIndexEntry` rows from the index alone, computed live for a materialised object so a rename or delete is never stale. Every one of `WP 20.1C2`'s own named ~seventy/eighty callers across `Tempest.Core`/`Tempest.Workspace`/`Tempest.Desktop`/`Tempest.Samples` now either reads the index type directly (the compiler proves it needs nothing else) or materialises explicitly through the new `EngineeringObjectRepositoryExtensions.MaterialiseAsync<T>` seam before touching a type-specific field — no caller keeps an untyped "list then cast". Opening a project materialises its own subtree eagerly (`IEngineeringObjectRepository.MaterialiseSubtreeAsync`, wired at `ProjectContext.OpenAsync`/`LoadAsync`); closing one releases nothing. **Kill switch** (named, bounded): `WP 20.1A2`'s business-identifier index rebuild still materialises every enforced-Kind object eagerly inside `RehydrateAsync` — `BusinessIdentifier` is a computed projection absent from the index row, and `BusinessIdentifierScope.ResolveProjectId`'s own synchronous repository read (outside this Work Package's files, the business-identifier index's contract not to be touched) depends on an already-materialised ancestor chain — bounded to the enforced-Kind set, never the unenforced majority a large estate is mostly made of. See the `TD-88` row (`BACKLOG.md`, "Closed") for the full measured figures and their own disclosed caveat: `IndexBuilt`/project-open/first-read all improved (a 10,000-object estate: ~387 ms/~55 ms (300-object subtree)/~1.4 ms respectively); `RehydrateAsync` returning as a whole measured slower in raw total than `WP 20.1C2`'s own ~190 ms/1000 figure, dominated by relationship rebuilding this Work Package left unchanged and did not benchmark past 1,000 objects before. Three new tests (single-flight, identity-map preservation, a rehydrated revision chain read from its newest end) plus a benchmark; `tests/Tempest.Core.Tests` (4,673) and `tests/Tempest.Desktop.Tests` (660) green in Debug; both configurations build clean, warnings as errors; governance 5/5. | *(pending merge)* |
 | `WP 21.3A` Typed calculation results with retained inputs — `TD-22`, `TD-29`, `TD-30` | `TD-22`: `CalculationIntermediateResult` carries its own declared `ValueTypeName`; a typed read-back (`As<TValue>()`) returns the declared type or throws `CalculationReadbackException` (naming the key and both types) — never an `InvalidCastException` — whether the value is still the in-process CLR object or a `JsonElement` read back after persistence. `CalculationContext` takes a configured count/total-size bound (defaults 200 intermediates / 1 MiB, disclosed as guesses); exceeding either throws `CalculationBoundExceededException` naming the definition, refusing the record rather than recording without limit. `TD-29`: `CalculationRecord<TResult>` retains the input it ran with (`Input`/`InputTypeName`, the same informal nullable-trailing-field precedent `ResultTypeName` already set — no export-schema migration needed, confirmed against `WP 20.3A`'s own, separate export/import scope). `ICalculationEngine` gains `ReRunAsync` (identical retained input, or a supplied changed input) and `CompareAsync`, producing a typed `CalculationComparison` — which input and result fields changed, old and new, with units; a record with no retained input is reported in the diff rather than thrown for. Surfaced as two new commands, `calculations.rerun` (`Mutates = true`) and `calculations.compare-with-previous` (read-only), invocable through the Command Palette and the Ribbon's own data-driven Calculations tab — no new view. `TD-30`: `ICalculationResult`/`IVerificationResult`/`IApprovalGate` stay declared (still referenced structurally by `EvidenceComposer`/`IEvidence`/`ISimulation`) but are retired — each interface's own remark now says plainly why no implementation exists or is planned: the first two would require turning an immutable evidentiary snapshot into a live, addressable `IEngineeringObject` with its own revision/relationship service dependencies (`FCR-0051`, "a real Domain design question, not a mechanical add"); the third is a workflow-gate concept the product's own "no workflow engine" guard and `ADR-0087`/`ADR-0090` already rule out. The six built-in calculation definitions and their unit-invariance property proofs are unchanged. |
 | `WP 21.5E` | Security review of every surface added since the `v0.5.0` baseline, widened mid-review (Product Owner) to the whole live `src/` tree: **1 RED, 1 AMBER, 11 GREEN** findings (`docs/security/Security Posture.md`; RED filed as `TD-184`, owned by `WP 21.4A`'s own files and applied at its merge; AMBER filed as `TD-185`). `docs/security/Security Posture.md` (`WP RC.0C`, brought forward) replaces `Threat Model.md`/`Security Roadmap.md` for `v1.0` (both kept, pointer added). Dependency vulnerability scanning is now a required `ci.yml` check (`dependency-scan`, parsed by `scripts/check-vulnerable-packages.ps1`); `.github/dependabot.yml` added; `THIRD-PARTY-NOTICES.md` added (20 direct packages, all MIT or Apache-2.0). Proved, with a test, that the frozen REST API/plugin-loading/licensing layers (`src/Frozen/`) are unreachable in a default build and configuration. | *(pending)* |
+| `WP 21.5F` | The offensive security audit of the full live codebase (`docs/security/Offensive Security Audit.md`): ten findings fixed with a proof-of-concept test each — OSA-02 Open externally on a directly-executable attachment (High; reconciled with `WP 21.4A`'s launcher, six more blocked extensions), OSA-01 unbounded decoded size in the file parsers, OSA-04/04b `FileSecretStore` permissions and token redaction, OSA-05 import/export depth, size and count caps (`TD-185`), OSA-06 the persistence root refusing a system path and the lock file no longer following a symlink, OSA-09 the harness principal, OSA-10/10b Actions pinned to commit SHAs and `SHA256SUMS.txt` on release assets, OSA-11 `THIRD-PARTY-NOTICES.md`; OSA-12/13/14/15 handed to `WP 21.6A` and fixed there; the OAuth loopback listener, macros, SQL/store and `src/Frozen/` reachability reviewed with no finding | — |
 | `WP 21.1A` | Undo across Create, Delete, Move, Copy, a status change and a field edit (Revise) — closing "Undo covers Rename and Favourite only." `CommandResult` gains an optional `Compensation` (`ADR-0099` addendum): the handler that made a change now also says how to reverse it, dispatched as a real command through `ICommandDispatcher`, never a direct repository write, checked against the archived-project guard explicitly since a compensation is never itself Ribbon- or Palette-visible. `IDeletable.UndeleteAsync` closes `ADR-0098`'s own disclosed "no restore operation" gap. Recorded onto the existing Undo/Redo stack wherever the real `CommandResult` is still held (the Ribbon's own two dispatch paths, the Command Palette's `CommandInvoked`, drag-and-drop reparenting) — no compensation is invented in a view. A status transition the platform-wide lifecycle table will not permit reversing (Approved → Released) carries none, and Command History says so rather than offering a silent no-op. A macro's own run now undoes and redoes as one compound action. The Undo/Redo stack itself now puts a refused Undo/Redo back where it came from rather than swapping it to the other stack (a real stack-consistency bug this Work Package's own scope surfaced), gains `Clear()`, and clears itself — reporting once — on every project switch. Delivered for Documents, Manufacturing, Calculations, Verification and Mechanical (`SetStatus` aside — Mechanical registers none); **Requirements is a disclosed exception**, unchanged, named in `BACKLOG.md`'s own entry (a different persistence path, `IRequirementsService`/`IEngineeringDocumentStore`, needing its own investigation before the identical guard-safety guarantee could be given). `PHYSICAL_REVIEW.md` §7e. | *(pending)* |
 | `WP 21.5A` (`WP RC.0A`, brought forward) | Velopack-packaged Windows installer (`TempestOS-<tag>-Setup.exe`) with in-place update, off by default until enabled in Settings → Updates; an installed run's default persistence root (`%LOCALAPPDATA%\TempestOS\persistence-data`), a first-run location dialog, and `--persistence-root`/`Persistence:RootPath` overrides, closing `TD-36` for the installed case; a pre-migration backup (`BackupService`, the online SQLite backup API) fired automatically when a launch finds an older schema version, and Settings → Data's own "Back up now…"/"Restore from backup…"; the support matrix in `PHYSICAL_REVIEW.md` §2a. Adds **Velopack 1.2.0 (MIT)** — see `THIRD-PARTY-NOTICES.md` — referenced only by `Tempest.Desktop`. | *(pending)* |
 | `WP 21.1B` The object editor split | `ObjectEditorView` — 3,007 lines, twenty-three sections in one constructor and one class, the file every package touching any Kind's own editor conflicted in — is now the shell alone: 1,001 lines (header, the change subscription, Identity and Content, the one pair the split's own Kill Switch keeps here for a hidden coupling through the shell's Save/Cancel/read-only state). Every other section (Lifecycle, Relationships, Validation, Bill of Materials, Owner/Priority, Execute/the Calculation pointer/Due, Record Result, Attachments, Description, Where used, Evidence's own five, Commercial, Invoice Lines/Connector, Quotation Lines) moved verbatim into its own file under `src/Tempest.Desktop/Editors/Sections/` behind one contract, `IEditorSection` (`Title`/`AppliesTo`/`Build`/`LoadAsync`/`React`) and one context record; the shell takes its ordered list from a single factory, `EditorSections.All(context)` — a future Kind's own new section adds one file and one line there, and two packages touching two different Kinds' own sections no longer touch the same file. Proved behaviour-identical by a golden automation-name tree per Kind (`tests/Tempest.Desktop.Tests/Editors/Golden/*.txt`, nine Kinds — Part, Assembly, Project, Calculation, Requirement, Verification Activity, Evidence, Invoice Request, Quotation — captured before the split, asserted byte-identical after every section moved) alongside the full existing editor test suite, untouched. | *(pending)* |
@@ -40,7 +44,30 @@ real-shell run in CI, and the mutation threshold met. See
 
 ## Figures
 
-*(re-derived at `WP 21.9.0`)*
+Re-derived at `WP 21.9.0` on `904b0f81`, the last code commit of the
+candidate (`git grep -c '' -- 'src/*.cs'` excluding `Frozen/`; the test
+counts from the gate; the effort from `Execution Plan.md` §5).
+
+| Figure | v0.20.0 (`88311649`, the cut) | v0.21.0 (`904b0f81`) |
+|---|---|---|
+| Live source lines (`src/`, excluding `Frozen/`) | 145,377 | 171,715 |
+| Live test lines (`tests/`) | 147,379 | 167,358 |
+| `Tempest.Core` source lines | 65,926 | 75,257 |
+| Core tests | 4,695 (at `ec20a535`, with the seven fixes) | 5,308 |
+| Desktop tests | 705 (at `ec20a535`) | 884 |
+| ADRs | 153 | 153 (`ADR-0153` steps 1–2 delivered; its status line updated by `WP 21.0A`) |
+| Live backlog | 10 of 30 (after `WP 21.4A` closed `TD-184`/`TD-185`) | 10 of 30 (`TD-90` closed by `WP 21.0A`; `TD-183` kept open with the dynamic-port cause added) |
+| Smoke-test sections | §7a–§7d | §7e–§7j added: Engineering Assets, Documents, Undo, Commercial edges, Calculators, Docking |
+| Commits on the branch | — | 159 since `88311649`, 33 of them merges |
+| Effort | — | 94.5 days planned across twenty-two packages; 77 merged (81 %), 1 in this package, 16.5 gated on the Product Owner |
+
+## Gate on the candidate head
+
+- Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`
+- Core tests: 5,308 passed, 0 failed, Debug (`904b0f81`) and Release (`904b0f81`)
+- Desktop tests: 884 passed, 0 failed, Debug (6 m 14 s at `b664fea6`, the last commit touching the Desktop suite; `904b0f81` changed a Core test only) and Release (6 m 30 s, `904b0f81`)
+- Governance health check: 5 of 5 (`b664fea6`)
+- CI: the sharded workflow ran on every merge head tonight; on `76b90c77` (the 21.7C merge) fully green, on `4c393842` the one Debug core failure was the dynamic-port collision `904b0f81` fixed (Release core green on re-run); the three runs on this candidate head — the push run plus two dispatched — are recorded on the candidate page and in `PROJECT_STATUS.md` at acceptance, with the CI Gate job as the criterion
 
 ## Warnings
 
@@ -67,6 +94,115 @@ real-shell run in CI, and the mutation threshold met. See
   this Work Package left fully eager and unchanged (id-keyed, not
   materialisation), and which was never benchmarked past a 1,000-object
   estate before now.
+
+- **Docking steps 1–2 are proven headless, not on hardware (`WP 21.0A`,
+  `ADR-0153` risks 1–3).** The two-window test proves the resolution
+  mechanism — every window's candidates gathered through `PointToScreen`
+  into one coordinate space — but Avalonia's headless platform ignores
+  `Window.Position` in `PointToScreen`, so a real per-monitor offset round
+  trip is self-consistent, not physically proven. Still owed on real
+  Windows hardware, and written into `PHYSICAL_REVIEW.md` §7j as K1–K6:
+  pointer capture continuing across a window boundary; a real per-monitor
+  DPI difference through `MonitorRelativePlacement` (nine pure unit tests
+  with synthetic screens today); the monitor-unplugged fallback against
+  Avalonia's own `Screens`. `ReorderTab` exists as a model operation and
+  is not yet on a key (`WP 21.0B`). Steps 3–4 (`WP 21.0B`, `WP 21.0C`)
+  wait on the Product Owner's `ADR-0153` review.
+- **The mutation score is scoped, not full (`WP 21.5D`).** 89.51 %
+  (435 of 486 killed) is a local run with `--mutate` limited to the seven
+  files behind the 67.58 % CI score; the full figure is re-measured by the
+  next dispatched CI run (about three hours, advisory). From the CI
+  report's own per-file table those seven files held 486 of the 842
+  mutants and 267 of the 273 open ones (122 survived + 151 uncovered);
+  with 51 now open there and the 6 elsewhere unchanged the whole would
+  score about 93 % if the mutant sets matched — they do not exactly (the
+  scoped run is local, and code from `WP 21.3A`/`21.7A` is mutated too),
+  so treat 75 % as the floor until the dispatched run reports. Named
+  equivalents and unobservables, left as they are: `separatorIndex <= 0`
+  in both `TryParse` methods (`Trim()` makes index 0 unreachable); every
+  `ConfigureAwait(false→true)` literal (about eleven across
+  `GovernedBracketCheckService`/`CalculationEngine`) and
+  `CalculationEngine`'s `_logger?.Information` call (no captured
+  `SynchronizationContext`, no logger double under xUnit);
+  `ListRecordsAsync`'s malformed-Guid `continue` (absorbed by the next
+  guard); the `revisions.Count == 0` branch (unreachable through the
+  public API). `BracketEngineeringRecordService.cs` keeps 31 survivors
+  (descriptive string literals in the record builders; bit-exact `<`/`<=`
+  boundaries in `Agrees()` at the 1e-12 scale) and `CalculationEngine.cs`
+  its wrong-type-readback text — a deliberate cutoff once the score
+  cleared 75 % with margin. No product code was touched; every kill came
+  from tests.
+- **The principal seam is narrowed, not removed from the container
+  (`WP 21.6A`, OSA-12/14).** `CurrentPrincipalAccessor.SetCurrent` is
+  internal and `PrincipalSession` has one public `Establish`, but
+  `PrincipalSession` stays registered in DI because a dozen
+  `Tempest.Samples` demo modules (never shipped, exercised by real
+  `TempestHostBuilder` tests) constructor-inject it. The exploited surface
+  went from "any resolver of the mutable accessor" to "any resolver of one
+  named `Establish` call"; the "no live untrusted actor" disposition is
+  unchanged. The audit-store guard (OSA-13) authorises both
+  `AuditRecorder.RecordAsync` and `AuditTransactionWriter.WriteAsync` —
+  refusing the former would have stopped ordinary audit recording
+  everywhere. `EngineeringCockpit.RecentlyChanged` now excludes a row it
+  cannot resolve to a title (the new Requirements/Verification/ReferenceData
+  audit rows are not `EngineeringObjectBase` documents) rather than
+  showing a raw Guid. `ReferenceDataCatalog.SetValidationStateAsync` is
+  deliberately not audited a second time — `ReferenceReviewService`
+  already writes that row.
+- **The OAuth default loopback port sits inside Windows' dynamic port
+  range.** `OAuthAuthoriser.DefaultLoopbackPort` is 49301; Windows hands
+  out 49152–65535 to outbound connections, so another process's socket
+  can hold that port for longer than `OAuthLoopbackListener`'s same-port
+  retry budget. Six round-trip tests failed together on the hosted Debug
+  core leg of run 35026262148 (each after about half a second, each with
+  the honest "Port 49301 is already in use" refusal), green on re-run.
+  `WP 21.9.0` moved every round-trip test onto a free port and let the
+  one test that proves the default port accept either the bound redirect
+  URI or that refusal. The product question is the Product Owner's: the
+  registered redirect URI in `ADR-0151`'s addendum names 49301, and a port
+  below 49152 would remove the collision for real users too — cheapest
+  to change before the first live authorisation (`WP 21.6`). `TD-183`
+  stays open with this cause added.
+- **Two load races, seen once each in tonight's full-suite runs, green
+  alone and on rerun:**
+  `EngineeringAssetsHostRegistrationTests.TheTraceService_ReadsTheSameLibraryTheContainerHandsOut`
+  (a null under load at the `WP 21.5B` merge) and
+  `OAuthAuthoriserTests.AuthoriseAsync_UsesRealmIdFromTheCallback_NeverCallsTheTenantResolutionEndpoint`
+  (the callback listener reset the fake browser's connection with four
+  test hosts on the machine — the same family as above).
+- **The golden automation trees compare line-ending-neutral
+  (`WP 21.1B`).** The nine goldens under
+  `tests/Tempest.Desktop.Tests/Editors/Golden/` are LF in the index; a
+  checkout under `core.autocrlf=true` (this machine, the hosted Windows
+  runners) reads them back CRLF while the walker emits LF. The comparison
+  normalises both sides; the first-capture path still writes LF.
+- **One merge was pushed with the Desktop test project not compiling.**
+  `60824923` (the `WP 21.1B` merge) ran its chain with `;` after the
+  build, so a stale test binary passed while
+  `ObjectEditorGoldenAutomationTreeTests` did not compile; `4268c21c`
+  repaired it minutes later. Recorded because the branch history shows it.
+- **Every CI run between the `WP 21.5E` merge and `16dbabd6` failed on
+  the core legs for one reason:** `check-vulnerable-packages.ps1` wrote
+  its refusal through `Write-Error`, which Windows PowerShell wraps at the
+  console width when stderr is redirected; the runner's long checkout path
+  pushed the sentence over the wrap and `CheckVulnerablePackagesScriptTests`
+  could not find it. It never failed locally. The script now writes
+  through `[Console]::Error.WriteLine`.
+- **Two descriptor counts, by design.** `CommandDescriptorBindingTests`
+  counts every production descriptor (123 / 3 unavailable / 120 bindable,
+  the new categories included); `CommandInvocationContractTests`'s
+  production set excludes the new categories (111 / 3 / 108). A package
+  adding a category updates the first, not the second.
+- **Seeded fasteners are geometry-only (`WP 21.7C`).** A bolted-joint run
+  on a seeded fastener record refuses as `RecordIncomplete` naming the
+  missing property (proof strength, stress area) — honest, and the smoke
+  test's C-steps will show that refusal until the Fasteners library
+  carries mechanical properties.
+- **Not in this release, all gated on the Product Owner:** `WP 21.0B` and
+  `WP 21.0C` (docking steps 3–4, after the `ADR-0153` review), `WP 21.5C`
+  (the real-shell CI run, after `21.0C`), `WP 21.6` (the first live Xero
+  authorisation, with the Product Owner at the keyboard). The Summary
+  above names them as owed, not shipped.
 
 ## Related
 
