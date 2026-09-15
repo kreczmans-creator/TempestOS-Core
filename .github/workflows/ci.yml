@@ -134,7 +134,7 @@ jobs:
         shard: [core, desktop-1, desktop-2, desktop-3]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Reads the SDK version and rollForward policy directly from
       # global.json — the same single source of truth every local build
@@ -143,7 +143,7 @@ jobs:
       # A second, hand-typed SDK version here would be exactly the kind
       # of drift this pipeline exists to prevent.
       - name: Set up .NET SDK (from global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
 
@@ -418,7 +418,7 @@ jobs:
       # single producer, so the name carries no shard suffix.
       - name: Upload layout verification screenshots (Release)
         if: always() && matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         # Not advisory: a walk that wrote no screenshots is a broken walk.
         with:
           name: layout-screenshots
@@ -581,7 +581,7 @@ jobs:
       # collide, not merely duplicate.
       - name: Upload build log (${{ matrix.configuration }} / ${{ matrix.shard }})
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         continue-on-error: true
         with:
           name: build-log-${{ matrix.configuration }}-${{ matrix.shard }}
@@ -591,7 +591,7 @@ jobs:
 
       - name: Upload test results (${{ matrix.configuration }} / ${{ matrix.shard }})
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         continue-on-error: true
         with:
           name: test-results-${{ matrix.configuration }}-${{ matrix.shard }}
@@ -618,7 +618,7 @@ jobs:
       # suffix.
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         continue-on-error: true
         with:
           name: tempestos-desktop-release
@@ -628,7 +628,7 @@ jobs:
 
       - name: Upload Tempest.Harness build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         continue-on-error: true
         with:
           name: tempestos-engineering-harness
@@ -654,7 +654,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # fetch-tags: true gets real tags (the Release Notes check needs
           # them to know which release folders are actually shipped).
@@ -732,10 +732,10 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up .NET SDK (from global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
 
@@ -833,10 +833,10 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up .NET SDK (from global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
 
@@ -862,7 +862,7 @@ jobs:
       # nobody can diagnose.
       - name: Upload mutation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         continue-on-error: true
         with:
           name: stryker-mutation-report

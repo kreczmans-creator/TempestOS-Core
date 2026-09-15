@@ -50,10 +50,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up .NET SDK (from global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
 
@@ -157,6 +157,29 @@ jobs:
             "path=$placeholder" | Add-Content -Path $env:GITHUB_OUTPUT
           }
 
+      # `WP 21.5F` Offensive Security Audit, OSA-10: no code-signing
+      # infrastructure exists yet (no Authenticode certificate - acquiring
+      # one is an organisational decision outside this Work Package's own
+      # remit, named in the audit report as a candidate future `WP 21.x`).
+      # Until it does, a published SHA-256 is the only integrity check
+      # available to anyone who downloads these assets over the GitHub
+      # Release page rather than building from source - without it,
+      # nothing here lets a user notice a corrupted or substituted
+      # download before running it. Computed after packaging and before
+      # publishing, so the checksums describe exactly the bytes attached
+      # to the release, not a separately-fetched copy.
+      - name: Compute release asset checksums
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $files = @("TempestOS-$tag.zip", "TempestOS-$tag-engineering-harness.zip")
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $file"
+          }
+          $lines | Set-Content -Path "SHA256SUMS.txt" -Encoding ascii
+          Get-Content "SHA256SUMS.txt"
+
       # `gh` is preinstalled on GitHub-hosted runners - no third-party
       # release-publishing action is used, consistent with WP 11.1A's own
       # minimal-supply-chain-surface precedent for this pipeline.
@@ -172,7 +195,8 @@ jobs:
             "--title", "TempestOS $tag",
             "--notes-file", "${{ steps.notes.outputs.path }}",
             "TempestOS-$tag.zip",
-            "TempestOS-$tag-engineering-harness.zip"
+            "TempestOS-$tag-engineering-harness.zip",
+            "SHA256SUMS.txt"
           )
           if ($isPrerelease) {
             $args += "--prerelease"
