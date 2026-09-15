@@ -106,8 +106,9 @@ public sealed class ObjectEditorGoldenAutomationTreeTests
                     Tempest.Workspace.Calculations.CalculationObjectFactoryRegistry.CalculationKind, "Golden Tree Calculation", "GT-CALC-1"),
                 CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
+            // `WP 21.5B`: list results are index rows, which carry Identifier and Kind themselves.
             var calculation = (await ctx.DomainContext.Repository.ListByKindAsync(Tempest.Workspace.Calculations.CalculationObjectFactoryRegistry.CalculationKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "GT-CALC-1");
+                .Single(entry => entry.Identifier == "GT-CALC-1");
 
             var editor = ObjectEditorView.TryCreate(calculation.Id, calculation.Kind!, ctx.DomainContext, ctx.Host.Manager!, (_, _) => { }, ctx.CommandDispatcher)!;
             await SettleAsync(() => editor.GetLogicalDescendants().OfType<Expander>().Any(e => Equals(e.Header, "Due") && e.IsVisible));
@@ -290,9 +291,13 @@ public sealed class ObjectEditorGoldenAutomationTreeTests
             return; // First capture — recorded to source for the developer to review and commit; every subsequent run asserts against it.
         }
 
-        var expected = File.ReadAllText(path);
-        Assert.Equal(expected, tree);
+        // Line endings are not part of the contract: the walker emits LF, the goldens are committed LF, and a
+        // checkout under core.autocrlf=true (this machine, the hosted Windows runners) reads them back CRLF.
+        var expected = NormaliseLineEndings(File.ReadAllText(path));
+        Assert.Equal(expected, NormaliseLineEndings(tree));
     }
+
+    private static string NormaliseLineEndings(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal);
 
     private static string GoldenPath(string kind) =>
         Path.Combine(DesktopTestHelpers.RepositoryRoot, "tests", "Tempest.Desktop.Tests", "Editors", "Golden", $"{kind}.txt");
