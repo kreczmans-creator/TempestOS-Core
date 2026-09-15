@@ -20,9 +20,13 @@ newest release). Chapters `65`–`76`, case study `08` and standards `10`–`11`
 describe the `v0.19.0`, `v0.19.1` and `v0.20.0` **release candidates** —
 branches `release/v0.19.0`, `release/v0.19.1` and `release/v0.20.0`, cut
 2026-09-10 to 2026-09-15 and still under the Product Owner's manual test
-when this index was written — and the `v0.21.0` plan, which had no code at
-all. Each of those chapters says so in its header. Nothing they describe is
-released until its Release Notes say it is.
+when this index was written — and, at the time chapter `76` was written,
+the `v0.21.0` plan, which then had no code at all. **By the end of
+2026-09-15, `release/v0.21.0` was itself a release candidate with real,
+merged code** — seventeen of the plan's twenty-two Work Packages, per
+`docs/releases/v0.21.0/Release Notes.md` — not covered by a chapter of
+its own yet. Each of chapters `65`–`76` says so in its own header.
+Nothing they describe is released until its Release Notes say it is.
 
 **A note on paths.** A chapter written before 2026-09-08 may cite a
 `docs/architecture/…` or `docs/governance/…` document that has since moved

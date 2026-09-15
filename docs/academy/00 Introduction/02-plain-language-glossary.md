@@ -170,8 +170,10 @@ matters, the entry says so rather than implying it has shipped.
   out of every mutant planted. A low score means tests exist without really
   checking the behaviour they claim to. In TempestOS, Stryker.NET runs against
   `Tempest.Core`'s Calculations and Units-and-Quantities code against a 70%
-  break threshold; the unreleased `v0.21.0` plan records 67.58%, below that
-  line, with a Work Package to raise it.
+  break threshold; the one completed CI run on `release/v0.21.0` scored
+  67.58%, below that line, and `WP 21.5D` (2026-09-15) raised a local,
+  seven-file-scoped run to 89.51% — the full-scope CI figure is still
+  advisory. See: `docs/releases/v0.21.0/Release Notes.md`.
 - **mutation test.** Deliberately planting small bugs in working code and
   checking the test suite notices each one; a mutation that survives means a
   test is missing. In TempestOS, one such mutation found that a task's status
@@ -578,7 +580,8 @@ matters, the entry says so rather than implying it has shipped.
   TempestOS: the unreleased `v0.21.0` Execution Plan is titled "the recovery
   tranche," answering the lead's own written assessment of `v0.20.0`
   (docking, undo coverage, the calculation engine, security, testing depth)
-  across eighteen Work Packages.
+  across twenty-two Work Packages — seventeen merged the same day it
+  started, per `docs/releases/v0.21.0/Execution Plan.md` §5.
 - **reference data / library / record.** Reference data is a fact an engineer
   relies on but did not measure personally. A library is one subject's worth
   of it (Materials, Fasteners, Bearings, Standards, Constants, and more); a
@@ -643,10 +646,14 @@ matters, the entry says so rather than implying it has shipped.
   of its current window to make it its own floating window; docking is
   placing it back into a layout, attached to an edge or grouped into a tab
   strip with others. In TempestOS: `ADR-0095` already let the four
-  engineering panels do this; the unreleased `ADR-0153` (Proposed) widens it
-  to every document tab, every project tab and every rail area pane, across
-  monitors, at an estimated cost of about twenty developer-days. See:
-  `76-tear-out-and-dock-everywhere.md`.
+  engineering panels do this; `ADR-0153` (**Proposed**, design cost about
+  twenty developer-days) widens it to every document tab, every project tab
+  and every rail area pane, across monitors. Steps 1–2 (the layout forest
+  generalised to a window forest, one controller reasoning across it) shipped
+  on `release/v0.21.0` (`WP 21.0A`, 2026-09-15), proven headless; steps 3–4
+  (torn-out windows, cross-window drag, monitor-aware restore) wait on the
+  Product Owner's review of the ADR. See: `76-tear-out-and-dock-everywhere.md`
+  and `docs/releases/v0.21.0/Release Notes.md`.
 - **technical debt row (`TD-`).** One numbered, honestly recorded shortcoming
   in `BACKLOG.md`, mapped to the Work Package expected to close it, or marked
   unowned.

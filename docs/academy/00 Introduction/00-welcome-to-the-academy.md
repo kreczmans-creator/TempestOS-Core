@@ -180,7 +180,12 @@ added on 2026-09-15, the same week the work they describe was done. They
 describe **release candidates, not releases**: `release/v0.19.0`,
 `release/v0.19.1` and `release/v0.20.0` were cut between 2026-09-10 and
 2026-09-15 and were still under the Product Owner's manual test when the
-chapters were written, and `release/v0.21.0` held a plan and no code.
+chapters were written, and `release/v0.21.0` held a plan and no code
+**when chapter `76` was written, earlier the same day.** By the end of
+2026-09-15 `release/v0.21.0` was itself a release candidate with real,
+merged code — seventeen of the plan's twenty-two Work Packages, per
+`docs/releases/v0.21.0/Release Notes.md` — an honest correction added
+here per this section's own rule, not a rewrite of chapter `76`.
 Each chapter's header names the branch and the commit it was read at.
 When a candidate is tagged, or is superseded, the honest correction is a
 line in that chapter's header, not a rewrite; the chapters already record
