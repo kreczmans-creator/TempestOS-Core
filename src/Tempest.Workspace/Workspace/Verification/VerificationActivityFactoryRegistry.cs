@@ -46,11 +46,14 @@ public sealed class VerificationActivityFactoryRegistry
         ArgumentNullException.ThrowIfNull(initialContent);
         ArgumentException.ThrowIfNullOrWhiteSpace(method);
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         var factory = new EngineeringObjectFactory<VerificationActivity>(
             SupportedKind, _context, (doc, rev) => new VerificationActivity(
                 doc, rev, _context, displayName, EngineeringObjectMetadata.Empty, subjectId, method));
 
-        var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
+        var created = await factory.CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)
             await hasParent.MoveAsync(pid, cancellationToken).ConfigureAwait(false);

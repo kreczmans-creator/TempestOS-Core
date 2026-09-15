@@ -122,13 +122,18 @@ public sealed class EvidenceService : IEvidenceService
 
         var authorId = _context.ResolveCurrentPrincipalId();
 
+        // `TD-38`: the project this evidence is about to be placed under,
+        // resolved from the parent it is about to be moved to — mirrors
+        // every factory registry's own identical remark (`EngineeringObjectFactory{T}.CreateAsync`).
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         var created = await new EngineeringObjectFactory<Evidence>(
             Evidence.CanonicalKind,
             _context,
             (doc, rev) => new Evidence(
                 doc, rev, _context, identifier: null, title, EngineeringObjectMetadata.Empty,
                 classification, subjectId, authorId))
-            .CreateAsync($"{title} — evidence recorded in Tempest.", cancellationToken)
+            .CreateAsync($"{title} — evidence recorded in Tempest.", projectScopeId, cancellationToken)
             .ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)

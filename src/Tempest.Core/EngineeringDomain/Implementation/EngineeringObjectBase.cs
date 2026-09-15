@@ -315,6 +315,24 @@ public abstract partial class EngineeringObjectBase :
     /// <inheritdoc />
     public string? Identifier { get; }
 
+    /// <inheritdoc cref="IEngineeringObject.BusinessIdentifier" />
+    public string BusinessIdentifier => ResolveBusinessIdentifier(DisplayName);
+
+    /// <summary>
+    /// <see cref="BusinessIdentifier"/> if <see cref="DisplayName"/> were
+    /// <paramref name="candidateDisplayName"/> instead — the projection
+    /// <see cref="RenameAsync"/> checks against
+    /// <see cref="EngineeringDomainContext.BusinessIdentifierIndex"/>
+    /// before <see cref="DisplayName"/> itself has actually changed
+    /// (`ADR-0145`'s project-before-commit rule; `TD-38`). The default
+    /// simply is the candidate name, matching <see cref="BusinessIdentifier"/>'s
+    /// own default; a Kind whose business identifier is not its display
+    /// name (<see cref="Document"/>) overrides this instead of
+    /// <see cref="BusinessIdentifier"/>, so a rename is always checked
+    /// against the identifier the rename will actually produce.
+    /// </summary>
+    protected internal virtual string ResolveBusinessIdentifier(string candidateDisplayName) => candidateDisplayName;
+
     /// <inheritdoc />
     public string DisplayName
     {
@@ -633,16 +651,44 @@ public abstract partial class EngineeringObjectBase :
         string.Join(' ', new[] { DisplayName, Identifier, Category, Content }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Checked against `TD-38`'s index before the rename commits, when
+    /// this Kind is one <see cref="BusinessIdentifierScope.EnforcedKinds"/>
+    /// names.</b> The candidate identifier is projected from
+    /// <paramref name="newDisplayName"/> via
+    /// <see cref="ResolveBusinessIdentifier"/> — not read back from
+    /// <see cref="BusinessIdentifier"/>, which still answers for the
+    /// pre-rename name at this point — checked, and the winning claim
+    /// applied only after the rename itself has committed, mirroring
+    /// <see cref="EngineeringObjectFactory{T}.CreateAsync"/>'s own
+    /// identical project/commit/apply shape.
+    /// </remarks>
     public async Task RenameAsync(string newDisplayName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
 
+        var enforced = BusinessIdentifierScope.EnforcedKinds.Contains(Kind);
+        var candidateBusinessIdentifier = ResolveBusinessIdentifier(newDisplayName);
+        var projectScopeId = enforced ? BusinessIdentifierScope.ResolveProjectId(ParentId, _context.Repository) : null;
+
         await MutateAndPersistAsync(
-            current => current with { DisplayName = newDisplayName },
+            current =>
+            {
+                if (enforced)
+                {
+                    BusinessIdentifierScope.EnsureAvailable(
+                        _context.BusinessIdentifierIndex, _context.Repository, Kind, projectScopeId, candidateBusinessIdentifier, Id);
+                }
+
+                return current with { DisplayName = newDisplayName };
+            },
             EngineeringAuditActions.Renamed,
             $"Renamed to '{newDisplayName}'.",
             WorkspaceChangeType.Updated,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            alsoApply: enforced
+                ? _ => _context.BusinessIdentifierIndex.Claim(Kind, projectScopeId, candidateBusinessIdentifier, Id)
+                : null).ConfigureAwait(false);
 
     }
 

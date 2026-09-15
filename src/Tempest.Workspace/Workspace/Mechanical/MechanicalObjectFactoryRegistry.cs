@@ -86,39 +86,46 @@ public sealed class MechanicalObjectFactoryRegistry
         if (kind == SubAssembly && parentId is null)
             throw new ArgumentException("A Sub-Assembly requires a parent Assembly Id — it is, by definition, nested within one.", nameof(parentId));
 
+        // `TD-38`: the project this object is about to be placed under,
+        // resolved from the parent it is about to be moved to — the new
+        // object itself has no `IHasParent.ParentId` yet at this point
+        // (that is set by the explicit `MoveAsync` below), so its own
+        // ancestry cannot be walked; the caller's intended parent stands in.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         IEngineeringObject created = kind switch
         {
             Project => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Project>(
                 Project, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Project(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Assembly => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Assembly>(
                 Assembly, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Assembly(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             SubAssembly => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.SubAssembly>(
                 SubAssembly, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.SubAssembly(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, parentId!.Value))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Part => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Part>(
                 Part, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Part(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Component => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Component>(
                 Component, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Component(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Configuration => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Configuration>(
                 Configuration, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Configuration(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, memberRevisions))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Baseline => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Baseline>(
                 Baseline, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Baseline(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, memberRevisions))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Release => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Release>(
                 Release, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Release(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, memberRevisions))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             _ => throw new ArgumentException($"'{kind}' is not a supported Mechanical Product Structure Kind — expected one of: {string.Join(", ", SupportedKinds)}.", nameof(kind)),
         };

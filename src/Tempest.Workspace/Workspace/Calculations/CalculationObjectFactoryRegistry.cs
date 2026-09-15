@@ -60,15 +60,18 @@ public sealed class CalculationObjectFactoryRegistry
         if (parentId is { } requestedParentId && await _context.Repository.FindAsync(requestedParentId, cancellationToken).ConfigureAwait(false) is null)
             throw new ArgumentException($"The selected parent '{requestedParentId}' no longer exists; select where the new object should go and try again.", nameof(parentId));
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         IEngineeringObject created = kind switch
         {
             CalculationKind => await new EngineeringObjectFactory<Calculation>(
                 CalculationKind, _context, (doc, rev) => new Calculation(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             CalculationSetKind => await new EngineeringObjectFactory<CalculationSet>(
                 CalculationSetKind, _context, (doc, rev) => new CalculationSet(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, memberCalculationIds))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             _ => throw new ArgumentException($"'{kind}' is not a supported Calculation Kind — expected one of: {string.Join(", ", SupportedKinds)}.", nameof(kind)),
         };

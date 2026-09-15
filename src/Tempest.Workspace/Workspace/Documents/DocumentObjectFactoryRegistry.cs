@@ -96,19 +96,22 @@ public sealed class DocumentObjectFactoryRegistry
 
         var metadata = classification is null ? EngineeringObjectMetadata.Empty : new EngineeringObjectMetadata(Classification: classification);
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         IEngineeringObject created = kind switch
         {
             Document => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Document>(
                 Document, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Document(doc, rev, _context, identifier, displayName, metadata))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             Drawing => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.Drawing>(
                 Drawing, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.Drawing(doc, rev, _context, identifier, displayName, metadata, drawingNumber))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             CadModel => await new EngineeringObjectFactory<Tempest.Core.EngineeringDomain.CadModel>(
                 CadModel, _context, (doc, rev) => new Tempest.Core.EngineeringDomain.CadModel(doc, rev, _context, identifier, displayName, metadata, modelFormat))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             _ => throw new ArgumentException($"'{kind}' is not a supported Document Kind — expected one of: {string.Join(", ", SupportedKinds)}.", nameof(kind)),
         };

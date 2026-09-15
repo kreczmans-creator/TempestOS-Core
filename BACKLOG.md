@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (15 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (14 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-05` — module discovery outside `[ModuleMetadata]` requires a public
 parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
@@ -87,11 +87,25 @@ same `IWorkspaceChangePublisher` `EngineeringDomainContext` already
 used — a test per mutator proves the publish, and one proves a refused
 write publishes nothing.
 
+`TD-38` — `EngineeringObjectFactory<T>.CreateAsync` enforced no
+business-identifier uniqueness, so two Parts, Calculations or Documents
+could share an identifier with no warning; `BACKLOG.md`'s own `WP 18.2B`
+owner did not hold (that Work Package never touched this factory — Evidence's
+own creation passed `identifier: null` and had nothing for `WP 18.2B` to
+have made unique, per the `WP 20.1A` audit). **Closed by `WP 20.1A2`**:
+`IEngineeringObject.BusinessIdentifier` — a Part's or Calculation's name, a
+Document's number if it has one else its name, unchanged for Requirement,
+which already has its own correct index — is unique among live objects of
+the same Kind within the same project (`IBusinessIdentifierIndex`,
+maintained by the factory at creation and by `RenameAsync` at rename, both
+under the domain write lock; rebuilt at rehydration), refused with the
+clash named, for the five factory registries' own Kinds and Evidence. It no
+longer appears below.
+
 | ID | Title | Owner |
 |---|---|---|
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | `WP 18.2B` |
-| `TD-38` | `EngineeringObjectFactory` enforces no business-identifier uniqueness | `WP 18.2B` |
 | `TD-42` | `new-release.ps1`'s `git tag`/`git push` calls never check `$LASTEXITCODE` | unowned |
 | `TD-78` | Brand design system (colours, fonts) is absent from the Desktop | unowned |
 | `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | unowned |

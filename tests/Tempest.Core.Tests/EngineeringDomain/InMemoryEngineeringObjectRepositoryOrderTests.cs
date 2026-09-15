@@ -20,6 +20,7 @@ public class InMemoryEngineeringObjectRepositoryOrderTests
         public string Kind { get; } = kind;
         public int CurrentRevisionNumber => 1;
         public DateTimeOffset CreatedAt => DateTimeOffset.UnixEpoch;
+        public string BusinessIdentifier => Id.ToString();
         public Guid? ParentId { get; private set; } = parentId;
 
         public Task MoveAsync(Guid? newParentId, CancellationToken cancellationToken = default)

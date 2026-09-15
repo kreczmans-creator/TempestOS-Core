@@ -313,6 +313,7 @@ public sealed class AttachmentsSectionTests
         public string Kind => "WP194BNotAttachable";
         public int CurrentRevisionNumber => 1;
         public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
+        public string BusinessIdentifier => Id.ToString();
     }
 
     private static EngineeringDomainContext DomainOf(WorkspaceHost host) =>
