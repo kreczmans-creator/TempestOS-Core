@@ -38,12 +38,58 @@ namespace Tempest.Core.EngineeringDomain;
 /// user every other object they own (`TD-60`'s established discipline for
 /// read paths, applied to startup).
 /// </para>
+/// <para>
+/// <b>`TD-88`/`WP 20.1C2` — index-first, not (yet) lazy.</b> Every call
+/// still builds <see cref="EngineeringObjectIndexEntry"/> rows for the
+/// whole persisted estate as its own first step, straight from
+/// <see cref="EngineeringObjectState"/> (no document read, no rehydrator),
+/// deterministically sorted by <see cref="EngineeringObjectState.Id"/>, and
+/// raises <see cref="IndexBuilt"/> with them before touching a single
+/// document. That is the seam `WP 20.1A2`'s business-identifier index
+/// rebuild runs from — it needs exactly <see cref="EngineeringObjectState.Id"/>,
+/// <see cref="EngineeringObjectState.Kind"/> and
+/// <see cref="EngineeringObjectState.Identifier"/>, all present on the
+/// index row, before a single object is fully materialised. <b>Full
+/// materialisation stays eager</b> — every object below is still
+/// reconstructed unconditionally in the same call, not deferred to
+/// <c>FindAsync</c> or to <c>ProjectContext</c> opening a project. The
+/// brief's own kill switch was invoked here: dozens of existing callers
+/// (`EngineeringCockpit.PrimeAsync`'s `.OfType&lt;IRisk&gt;()`/`IDecision&gt;()`/etc.
+/// projections, `InvoicingService.ListCarriedSourcesAsync`'s
+/// `.OfType&lt;InvoiceRequest&gt;()` then `request.Lines`,
+/// `MechanicalPropertyFacetProvider.GetBaselineDisplayAsync`'s
+/// `.OfType&lt;IConfiguration&gt;()` then `c.MemberRevisions`, and roughly
+/// sixty more sites across `Tempest.Core`/`Tempest.Workspace`/`Tempest.Desktop`)
+/// read full, type-specific object state directly off
+/// <c>IEngineeringObjectRepository.ListAllAsync</c>/<c>ListByKindAsync</c>/
+/// <c>ListChildrenAsync</c> results with no intervening <c>FindAsync</c>,
+/// and every one of those files sits outside this Work Package's "files you
+/// own" list. Deferring materialisation behind those three methods without
+/// touching those callers could not be proven behaviourally equivalent in
+/// the time available, so `TD-88` (eager, unconditional full-estate
+/// materialisation) remains open; this change ships only the index-first
+/// structure, the hook, and the measurement the brief allows as the
+/// reduced deliverable.
+/// </para>
 /// </remarks>
 public sealed class EngineeringObjectRehydrationService
 {
     private readonly EngineeringDomainContext _context;
     private readonly IEngineeringObjectRehydratorRegistry _rehydrators;
     private readonly ILogger? _logger;
+
+    /// <summary>
+    /// Raised once per <see cref="RehydrateAsync"/> call, immediately after
+    /// the whole estate's <see cref="EngineeringObjectIndexEntry"/> rows
+    /// have been built and deterministically sorted, and before any
+    /// document is read or any object is reconstructed (`TD-88`,
+    /// `WP 20.1C2`). <c>WP 20.1A2</c>'s business-identifier index rebuild
+    /// subscribes here so it can run from id/Kind/Identifier alone, without
+    /// waiting for full materialisation of an estate it does not need.
+    /// Never raised with a live subscriber count assumption — a call with
+    /// nothing subscribed pays only the cost of building the list.
+    /// </summary>
+    public event Action<IReadOnlyList<EngineeringObjectIndexEntry>>? IndexBuilt;
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringObjectRehydrationService"/> class.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="context"/> or <paramref name="rehydrators"/> is <see langword="null"/>.</exception>
@@ -83,6 +129,16 @@ public sealed class EngineeringObjectRehydrationService
         var states = (await stateStore.ListAsync(cancellationToken).ConfigureAwait(false))
             .OrderBy(state => state.Id)
             .ToList();
+
+        // `TD-88`/`WP 20.1C2` — the index stage: every row the whole
+        // estate can offer without a single document read, in the same
+        // id order the rest of this method already commits to (`TD-27`).
+        // Raised before materialisation starts, so a subscriber never
+        // waits on the cost this class exists to eventually avoid paying
+        // eagerly.
+        var index = states.ConvertAll(BuildIndexEntry);
+        IndexBuilt?.Invoke(index);
+
         var rehydrated = new List<IEngineeringObject>(states.Count);
         var unknownKinds = new SortedSet<string>(StringComparer.Ordinal);
         var orphanedStateIds = new List<Guid>();
@@ -232,7 +288,42 @@ public sealed class EngineeringObjectRehydrationService
 
         return count;
     }
+
+    /// <summary>
+    /// Projects one persisted <see cref="EngineeringObjectState"/> to its
+    /// index row — every field it carries with no document read (`TD-88`,
+    /// `WP 20.1C2`). <see cref="EngineeringObjectIndexEntry.ParentId"/> is
+    /// the raw structural edge, not a resolved project id: resolving "which
+    /// project" from it is a Workspace-layer concern (a Project is a Kind
+    /// string this Core-layer class does not know), so a consumer that
+    /// needs project membership walks the edge itself.
+    /// </summary>
+    private static EngineeringObjectIndexEntry BuildIndexEntry(EngineeringObjectState state) => new(
+        state.Id, state.Kind, state.Identifier, state.DisplayName, state.ParentId, state.Status, state.IsDeleted);
 }
+
+/// <summary>
+/// One object's index-stage row (`TD-88`, `WP 20.1C2`) — everything
+/// <see cref="EngineeringObjectRehydrationService.RehydrateAsync"/> can read
+/// about a persisted object without opening its document: the fields the
+/// brief names as what a tree, a lookup or a business-identifier index
+/// needs before — or instead of — full materialisation.
+/// </summary>
+/// <param name="Id">The object's own identity.</param>
+/// <param name="Kind">The object's own Kind.</param>
+/// <param name="Identifier">The business identifier, or <see langword="null"/> if the object never had one.</param>
+/// <param name="DisplayName">The current display name.</param>
+/// <param name="ParentId">The raw structural parent edge — not a resolved project id; see the remarks on <see cref="EngineeringObjectRehydrationService.BuildIndexEntry"/>.</param>
+/// <param name="Status">The current lifecycle state.</param>
+/// <param name="IsDeleted">Whether the object has been soft-deleted.</param>
+public sealed record EngineeringObjectIndexEntry(
+    Guid Id,
+    string Kind,
+    string? Identifier,
+    string DisplayName,
+    Guid? ParentId,
+    LifecycleState Status,
+    bool IsDeleted);
 
 /// <summary>
 /// What one startup rehydration actually recovered — and, just as

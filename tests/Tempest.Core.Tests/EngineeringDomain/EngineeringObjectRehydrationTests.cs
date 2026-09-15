@@ -745,6 +745,112 @@ public class EngineeringObjectRehydrationTests
         var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
 
         Assert.Equal("XYZ", recovered.UnitOfMeasure);
+    // `TD-88`/`WP 20.1C2`: the index stage — raised before any document
+    // is read, complete for the whole estate even where full
+    // materialisation cannot proceed, and deterministic across restarts.
+    // Full materialisation itself stays eager (the brief's kill switch:
+    // see `EngineeringObjectRehydrationService`'s own remarks for the
+    // callers that made deferring it unsafe to prove in this Work
+    // Package's scope) — these tests pin the index-first structure and
+    // its hook, not a laziness claim this change does not make.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RehydrateAsync_RaisesIndexBuilt_WithEveryIndexFieldPopulated_BeforeMaterialisation()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var parent = await CreateAsync(first.Domain, MechanicalObjectFactoryRegistry.Assembly,
+            (doc, rev) => new Assembly(doc, rev, first.Domain, "ASM-100", "Pump Head", EngineeringObjectMetadata.Empty));
+        var part = await CreatePartAsync(first.Domain);
+        await part.MoveAsync(parent.Id);
+        await part.TransitionAsync(LifecycleState.InReview);
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? captured = null;
+        second.Service.IndexBuilt += entries => captured = entries;
+
+        await second.Service.RehydrateAsync();
+
+        Assert.NotNull(captured);
+        var entry = Assert.Single(captured!, e => e.Id == part.Id);
+        Assert.Equal(MechanicalObjectFactoryRegistry.Part, entry.Kind);
+        Assert.Equal("PN-1001", entry.Identifier);
+        Assert.Equal("Impeller", entry.DisplayName);
+        Assert.Equal(parent.Id, entry.ParentId);
+        Assert.Equal(LifecycleState.InReview, entry.Status);
+        Assert.False(entry.IsDeleted);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_StillNamesAnObject_WhoseKindHasNoRehydrator()
+    {
+        // The information a business-identifier index needs (id, Kind,
+        // Identifier) is available from `EngineeringObjectState` alone —
+        // it survives even for a row full materialisation must skip.
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var exotic = await CreateAsync(first.Domain, "SomeFutureKind",
+            (d, r) => new Part(d, r, first.Domain, "X-1", "Exotic", EngineeringObjectMetadata.Empty));
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? captured = null;
+        second.Service.IndexBuilt += entries => captured = entries;
+
+        var result = await second.Service.RehydrateAsync();
+
+        Assert.NotNull(captured);
+        var entry = Assert.Single(captured!, e => e.Id == exotic.Id);
+        Assert.Equal("SomeFutureKind", entry.Kind);
+        Assert.Equal("X-1", entry.Identifier);
+        Assert.Equal(["SomeFutureKind"], result.UnknownKinds);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_ProducesTheSameIdOrder_EveryTimeItRunsOverTheSameDiskState()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+
+        var created = new List<Part>();
+        for (var i = 0; i < 6; i++)
+            created.Add(await CreatePartAsync(first.Domain, $"PN-{i:D4}", $"Part {i}"));
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? firstIndex = null;
+        second.Service.IndexBuilt += entries => firstIndex = entries;
+        await second.Service.RehydrateAsync();
+
+        var third = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? secondIndex = null;
+        third.Service.IndexBuilt += entries => secondIndex = entries;
+        await third.Service.RehydrateAsync();
+
+        Assert.NotNull(firstIndex);
+        Assert.NotNull(secondIndex);
+        var firstOrder = firstIndex!.Select(e => e.Id).ToList();
+        var secondOrder = secondIndex!.Select(e => e.Id).ToList();
+
+        Assert.Equal(created.Count, firstOrder.Count);
+        Assert.Equal(firstOrder, secondOrder);
+        Assert.Equal(created.Select(p => p.Id).Order().ToList(), firstOrder);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_WithNoSubscriber_RehydrationBehavesExactlyAsBefore()
+    {
+        // The hook must never be load-bearing for the (still eager)
+        // materialisation loop it precedes.
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        var second = NewLifetime(persistence);
+        var result = await second.Service.RehydrateAsync();
+
+        Assert.Equal(1, result.ObjectCount);
+        Assert.True(result.IsComplete);
+        Assert.NotNull(await second.Domain.Repository.FindAsync(part.Id));
     }
 
     // ----------------------------------------------------------------
