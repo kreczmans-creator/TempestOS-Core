@@ -857,6 +857,42 @@ suite's combined time; `timeout-minutes` returns to 45 from the 90 `WP
 19.9.1` raised it to. See `docs/releases/v0.20.0/Release Notes.md`'s own
 `WP 20.3D` row for the shard split and counts.
 
+**Closed by `WP 21.1A` (2026-09-15), narrowed rather than fully closed —
+not a `TD-` row, never a row here to move:** the `v0.21.0` Execution
+Plan's own weakness "Undo covers Rename and Favourite only" (`ADR-0098`'s
+own disclosed `v0.10.0` scope boundary: "Not wired: Create/Delete/
+Duplicate/Move, and every Set-Status/Set-Priority/Set-Owner command
+across every discipline"). `CommandResult` gains an optional
+`Compensation` (`ADR-0099`'s own addendum, this Work Package); Create,
+Delete, Move, Copy and a status change are now genuinely undoable/
+redoable, and a content revision (`Revise`) joins Rename as a third
+undoable field edit, for **Documents, Manufacturing, Calculations,
+Verification, and Mechanical** (`SetStatus` aside — no discipline
+registers one for Mechanical Product Structure, so there is no such
+family to close there). `IDeletable.UndeleteAsync` (`EngineeringObjectBase`)
+closes the other half of that same disclosed gap ("Delete is already a
+soft delete ... with no 'restore' operation anywhere in this platform to
+invert into") for the same five disciplines. A status transition the
+platform-wide `LifecycleTransitionTable` will not permit reversing
+(Approved → Released, and any other one-way move) carries no
+compensation and says so in Command History ("cannot be undone:
+..."), never a silent no-op. A macro's own run records one compound
+action for the whole run, not one per step.
+**Requirements is deliberately excluded — kill switch, named here
+rather than silently shipped incomplete:** it runs on
+`IRequirementsService`/`IEngineeringDocumentStore`, not
+`EngineeringDomainContext.Repository`/`EngineeringObjectBase` the
+compensation mechanism (and the archived-project guard it must never
+cross) is built against — extending it safely needs its own
+investigation into whether that guard even resolves a Requirement at
+all, plus a new `IRequirementsService` restore capability, neither of
+which this Work Package's own night reached. Create/Delete/Move/
+Set-Status for Requirement/RequirementGroup/RequirementCollection stay
+exactly as undoable as they were before this Work Package: not at all,
+with nothing recorded either way — the same behaviour every other
+command outside this Work Package's scope (Timesheets, Invoicing,
+Quotations) already has, not a new gap this Work Package introduced.
+
 ## Archived with the Layer
 
 Not debt in a product that does not ship the layer:

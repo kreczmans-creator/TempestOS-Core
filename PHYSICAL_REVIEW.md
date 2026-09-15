@@ -432,6 +432,28 @@ claim names the file it comes from.
 | T9 | Attach the same file to two objects; open both editors' **Attachments** sections; delete one attachment | Each row reads "… , sha256 {hash}" with the identical hash — the bytes are stored once; deleting one leaves the other opening normally (`src/Tempest.Desktop/Editors/ObjectEditorView.cs`, `src/Tempest.Core/Attachments/AttachmentContentStore.cs`; `TD-95`, `TD-96`, `WP 20.1C1`). A persistence root from `v0.19.1` opens, and its existing attachments open on first read. | Different hashes for identical bytes; the surviving attachment fails to open; an older root's attachments cannot be read. |
 | T10 | **Ctrl+B**, then the tree column's own chevron; relaunch | The rail folds to its icons and the tree column to its edge, the work area takes the space, and both states survive the relaunch (`src/Tempest.Desktop/Views/GlobalNavigationRail.cs`; `WP 19.10O`). | The rail reopens on relaunch; the work area does not grow. |
 
+### 7e. Undo across commands, in `v0.21.0` (about 10 minutes)
+
+Walk §7d first. Then these — `WP 21.1A`, closing the weakness "Undo
+covers Rename and Favourite only." Every claim names the file it comes
+from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| U1 | Documents → create a Document; Ctrl+Z; Ctrl+Y | The Undo/Redo toolbar buttons enable the moment the create completes, naming it in their own tooltip ("Undo: Create 'Name'"); Ctrl+Z removes it from the Project Explorer and Command History records "Undo completed."; Ctrl+Y brings back the same object — the same Id, not a second one created alongside a permanently-orphaned first (`src/Tempest.Core/Commands/CommandCompensation.cs`, the discipline `Create*Command.cs` handlers, `IDeletable.UndeleteAsync`). | The object stays listed after Ctrl+Z; Ctrl+Y creates a visibly different object; the toolbar never enables. |
+| U2 | Select an object with no children → **Delete** → Ctrl+Z → Ctrl+Y | Delete removes it from the tree as always; Ctrl+Z brings it straight back, in the same place, with its own name and content intact; Ctrl+Y deletes it again (`DeleteDocumentObjectCommand.cs`/`UndeleteDocumentObjectCommand.cs` and the mirrored pair in the other four disciplines). | Undo restores it with a blank name or content; Redo leaves it visible. |
+| U3 | Drag an object to a new parent in the Explorer (or Ctrl+Shift+M) → Ctrl+Z → Ctrl+Y | The object moves as always; Ctrl+Z moves it back to its own prior parent; Ctrl+Y moves it forward again (`WorkspaceCommandBindings.MoveCompensation`). Deleting the *old* parent before pressing Ctrl+Z (an edge case, not required for the walkthrough) refuses the undo, naming the missing parent, and leaves the object exactly where it was. | Ctrl+Z leaves the object under the new parent; the Explorer does not reflect either move. |
+| U4 | Ctrl+Shift+C to copy an object → Ctrl+Z → Ctrl+Y | The copy appears as always; Ctrl+Z removes only the copy — the original stays untouched; Ctrl+Y restores the same copy (`WorkspaceCommandBindings.CreationCompensation`). | Undo removes or alters the original; Redo produces a second, different copy. |
+| U5 | Select an object → **Request Review** (Draft → InReview) → Ctrl+Z → Ctrl+Y | Status changes as always; Ctrl+Z reverses it to Draft; Ctrl+Y reapplies InReview (`WorkspaceCommandBindings.StatusCompensation`, the platform-wide `LifecycleTransitionTable`). Then, separately: take an object all the way to **Released** — Command History reads "Cannot be undone: the lifecycle does not permit reversing 'Approved' → 'Released'." and the Undo toolbar's own tooltip does not name that action. | Undo/Redo do not change the status; a Released object is offered as undoable, or Undo silently does nothing with no explanation anywhere. |
+| U6 | Open any object → change its content in the editor → **Save** → Ctrl+Z → Ctrl+Y | Rename already worked this way; a content edit now does too — Ctrl+Z restores the prior content, Ctrl+Y reapplies the new content (`src/Tempest.Desktop/Editors/ObjectEditorView.cs`, `OnSaveAsync`). | Only a Rename in the same Save is undoable; the content half is not. |
+| U7 | Run any two-step macro (Palette → **Macro Manager**) → Ctrl+Z → Ctrl+Y | The whole run undoes as one action — both steps reversed, in reverse order — not two separate Undo presses; Ctrl+Y reapplies both, forward (`RunMacroCommandHandler`, the compound `CommandCompensation`). | Ctrl+Z undoes only the macro's own last step; two presses are needed to fully reverse a two-step run. |
+| U8 | With unsaved Undo history recorded (U1–U7, any one), switch to a different project (or close the open one) | The status bar and Command History both say "Undo history cleared." once, and Ctrl+Z/Ctrl+Y do nothing until a new action is recorded in the newly-open project (`UndoRedoCoordinator`, subscribed to `ProjectContextChangedEvent`). Opening a project with no Undo history yet recorded says nothing — no false "cleared" notice. | The stack survives a project switch (a stale Undo reaches into the wrong project's own objects); the notice appears on every project open regardless of whether anything was actually cleared. |
+
+**Requirements is a disclosed exception**, not a bug: Create/Delete/Move/
+status changes on a Requirement, a Requirement Group or a Requirement
+Collection are not undoable in `v0.21.0` — unchanged from `v0.20.0` and
+every earlier release. See `BACKLOG.md`'s own `WP 21.1A` entry for why.
+
 
 ---
 
