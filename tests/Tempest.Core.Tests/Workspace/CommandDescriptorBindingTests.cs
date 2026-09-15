@@ -80,15 +80,20 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>,
-    /// <c>task.complete</c> (`WP 19.5C`) and <c>calculations.complete</c>
+    /// <c>task.complete</c> (`WP 19.5C`), <c>calculations.complete</c>
     /// (`WP 20.1B`, `TD-181` — no parameters, no confirmation, a low-stakes
-    /// status move exactly like the others here) — every command that can
-    /// run unattended in a macro, and no other (ADR-0098).
+    /// status move exactly like the others here) and <c>calculations.rerun</c>/
+    /// <c>calculations.compare-with-previous</c> (`WP 21.3A`, `TD-29` — Re-run
+    /// needs no value collected, since it replays the selected object's own
+    /// most recent record's retained input rather than asking for one, and
+    /// Compare needs none either) — every command that can run unattended in
+    /// a macro, and no other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
         "calculations.lock", "calculations.unlock", "calculations.request-review",
         "calculations.approve", "calculations.archive", "calculations.complete",
+        "calculations.rerun", "calculations.compare-with-previous",
         "documents.request-review", "documents.approve", "documents.release",
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
@@ -255,12 +260,13 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // becomes 105.
         //
         // `WP 20.10B` (T2) adds one more, not unavailable
-        // (calculations.set-due-date — sets/clears a Calculation's own
-        // Due date, dispatched from the generic editor's own Due row). So
-        // 108 becomes 109 and 105 becomes 106; 3 is unchanged.
-        Assert.Equal(109, ProductionDescriptors.Count);
+        // (calculations.set-due-date); `WP 21.3A` (`TD-29`) adds two more,
+        // neither unavailable (calculations.rerun replays a record's own
+        // retained input, calculations.compare-with-previous needs no input).
+        // So 108 becomes 111 and 105 becomes 108; 3 is unchanged.
+        Assert.Equal(111, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(106, bindable.Count);
+        Assert.Equal(108, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -825,6 +831,8 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     [InlineData("calculations.request-review")]
     [InlineData("calculations.approve")]
     [InlineData("calculations.archive")]
+    [InlineData("calculations.rerun")]
+    [InlineData("calculations.compare-with-previous")]
     public void CalculationBindings_ApplyToTheTwoRealCalculationKinds(string id) =>
         Assert.Equal(CalculationKinds, Binding(id).AppliesToKinds);
 

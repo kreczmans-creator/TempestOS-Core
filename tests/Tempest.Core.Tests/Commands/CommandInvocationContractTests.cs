@@ -212,8 +212,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`CommandDescriptorBindingTests.ObjectPickerBound`) — the twelve
         // S2-2 Move/Copy commands and TD-115's own three — so 90 becomes 105.
         // `WP 20.10B` (T2) adds one more invocable Calculations descriptor
-        // (`calculations.set-due-date`), so 105 becomes 106.
-        Assert.Equal(106, built);
+        // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
+        // (`calculations.rerun`, `calculations.compare-with-previous`), so
+        // 105 becomes 108.
+        Assert.Equal(108, built);
     }
 
     [Fact]
@@ -285,9 +287,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `EveryInvocableBinding_BuildsACommand_WithoutThrowing`'s own
         // identical comment), all reaching their own already-registered
         // handler, so 90 becomes 105.
-        // `WP 20.10B`: `calculations.set-due-date` joins, reaching its own
-        // registered handler too, so 105 becomes 106.
-        Assert.Equal(106, executed);
+        // `WP 20.10B`: `calculations.set-due-date` joins; `WP 21.3A`:
+        // `calculations.rerun`/`calculations.compare-with-previous` join —
+        // each reaching its own registered handler too, so 105 becomes 108.
+        Assert.Equal(108, executed);
     }
 
     [Fact]
@@ -428,9 +431,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // production descriptors, so 98 becomes 107.
         // `WP 20.1B` (`TD-181`) adds one more production descriptor
         // (`calculations.complete`), so 107 becomes 108.
-        // `WP 20.10B` (T2) adds one more production descriptor
-        // (`calculations.set-due-date`), so 108 becomes 109.
-        Assert.Equal(109 * 4, compared);
+        // `WP 20.10B` (T2) adds one production descriptor
+        // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
+        // (`calculations.rerun`, `calculations.compare-with-previous`), so
+        // 108 becomes 111.
+        Assert.Equal(111 * 4, compared);
     }
 
     // ==================================================================
@@ -706,7 +711,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // no declared parameter, no confirmation — so 14 becomes 15.
         // `WP 20.1B` (`TD-181`) adds `calculations.complete`, the identical
         // shape, so 15 becomes 16.
-        Assert.Equal(16, ran);
+        // `WP 21.3A` (`TD-29`) adds two more, the identical shape —
+        // `calculations.rerun` and `calculations.compare-with-previous`,
+        // each `CommandContextRequirement.SelectedObject`, no declared
+        // parameter, no confirmation — so 16 becomes 18.
+        Assert.Equal(18, ran);
     }
 
     [Fact]
@@ -805,9 +814,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // so 98 becomes 107.
         // `WP 20.1B` (`TD-181`) adds one more (`calculations.complete`), so
         // 107 becomes 108.
-        // `WP 20.10B` (T2) adds one more (`calculations.set-due-date`), so
-        // 108 becomes 109.
-        Assert.Equal(109, Production.Count);
+        // `WP 20.10B` (T2) adds one more (`calculations.set-due-date`) and
+        // `WP 21.3A` (`TD-29`) two more (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 108 becomes 111.
+        Assert.Equal(111, Production.Count);
     }
 
     [Fact]
@@ -844,11 +854,13 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // unchanged (no descriptor added or removed), and 18 becomes 3 (the
         // three U2 descriptors alone).
         // `WP 20.10B` (T2) adds one more, invocable, production
-        // Calculations descriptor (`calculations.set-due-date`), so 105
-        // becomes 106 and 108 becomes 109; 3 is unchanged.
-        Assert.Equal(106, Invocable.Count());
+        // Calculations descriptor (`calculations.set-due-date`) and `WP 21.3A`
+        // (`TD-29`) two more (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 105 becomes 108 and 108
+        // becomes 111; 3 is unchanged.
+        Assert.Equal(108, Invocable.Count());
         Assert.Equal(3, Unavailable.Count());
-        Assert.Equal(109, Production.Count);
+        Assert.Equal(111, Production.Count);
     }
 
     [Fact]
