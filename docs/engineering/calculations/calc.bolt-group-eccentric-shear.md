@@ -84,7 +84,7 @@ middle 11 180.34 N. Utilisation **0.73154**. Meets criteria.
 **Example 4 — load through the centroid.** Example 1's group with the load
 at (0, 0): M = 0, every bolt carries exactly **5 000 N**.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

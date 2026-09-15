@@ -76,7 +76,7 @@ F = **−48 000 N** (the restraint pulls), σ = **+96.000 MPa** tensile,
 **Example 5 — +10 K against a 0.5 mm gap.** δ_free = 0.24 mm < gap:
 F = **0**, σ = **0**, δ = **0.24000 mm**.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

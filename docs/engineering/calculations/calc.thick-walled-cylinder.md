@@ -78,7 +78,7 @@ Tresca **72.000 MPa**. Outer: σ_r = **−20.000**, σ_θ = **−52.000 MPa**;
 **Example 3 — Example 1 with open ends.** σ_z = 0: bore
 σ' = √(½·[133.33² + 50² + 83.333²]) = **116.67 MPa**; utilisation **0.58333**.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

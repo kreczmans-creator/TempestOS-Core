@@ -80,7 +80,7 @@ has separated: P_0 = 10 000 / 0.7 = **14 285.7 N**, n_0 = **0.71429**.
 Reported: F_b = P = **20 000 N**, F_m = **0**, σ_b = 20 000 / 84.3 =
 **237.25 MPa**, `IsSeparated` = true. Does not meet criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

@@ -75,7 +75,7 @@ P = 300 kN. λ = **31.623**; p_E = **2 023.3 MPa**; η = 0.0055 × 14.468 =
 **0.079573**; φ = **1 229.6**; p_c = **252.09 MPa**; P_c = **504.17 kN**;
 utilisation **0.59504**. Meets criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

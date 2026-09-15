@@ -67,7 +67,7 @@ criteria (2.8584 < 3).
 n_req = 1.5. σ = **125.16 MPa**; τ = **25.424 MPa**; τ_max = **67.549 MPa**;
 σ' = **132.69 MPa**; n_T = **1.8505**; n_VM = **1.8842**. Meets criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

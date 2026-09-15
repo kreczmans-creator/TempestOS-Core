@@ -98,7 +98,7 @@ M = 2 000 × 0.5 = **1 000 N·m**. σ = 1 000 × 0.0125 / 5 × 10⁻⁸ =
 (3 × 200 × 10⁹ × 5 × 10⁻⁸) = 250 / 30 000 = **8.3333 mm**. Meets criteria.
 
 Precision: every expected figure above is stated to five significant
-figures; the vectors compare to a relative tolerance of 1 × 10⁻⁵.
+figures; the vectors compare to a relative tolerance of 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

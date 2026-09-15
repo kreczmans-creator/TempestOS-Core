@@ -47,8 +47,8 @@ public static class LiftingLugPinJointVectors
         Expected? ExpectedResult = null,
         string? ExpectedReasonFragment = null)
     {
-        /// <summary>Relative tolerance the expected figures are stated to (five significant figures).</summary>
-        public double RelativeTolerance => 1e-5;
+        /// <summary>Relative tolerance the expected figures are stated to (five significant figures: half a unit in the fifth).</summary>
+        public double RelativeTolerance => 5e-5;
 
         /// <inheritdoc />
         public override string ToString() => Name;

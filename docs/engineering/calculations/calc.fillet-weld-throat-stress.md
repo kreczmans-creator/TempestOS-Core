@@ -72,7 +72,7 @@ L = 100 mm, F_n = 120 kN. τ_w = 120 000 / 400 = **300.00 MPa**; utilisation
 300 / 251.47 = **1.1930**; a_req = 1 200 / 251.47 = **4.7719 mm**.
 Does not meet criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

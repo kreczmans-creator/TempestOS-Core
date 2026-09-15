@@ -66,7 +66,7 @@ N(90) = 10⁶ × (5/3)⁵ = **12 860 082**; d = **0.77760**.
 50 MPa is below the limit: unbounded, d = 0.
 D = **1.4330**; repetitions **0.69786**. Does not meet criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

@@ -78,7 +78,7 @@ same allowables.
 - Pin bending M = 60 000 × (3.75 + 1 + 5) = 585 000 N·mm; Z = 1 533.98 mm³
   → **381.36 MPa**, 1.5254. Governing: bearing, 1.6000. Does not meet criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 

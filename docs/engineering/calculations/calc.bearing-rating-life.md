@@ -71,7 +71,7 @@ P/C = **0.15720**. L₁₀ = (25 000 / 3 930)³ = **257.42** million rev;
 L₁₀h = **4 290.3 h**. L₅ = **164.75** million rev; L₅h = **2 745.8 h**.
 Meets criteria.
 
-Precision: five significant figures; relative tolerance 1 × 10⁻⁵.
+Precision: five significant figures; relative tolerance 5 × 10⁻⁵ (half a unit in the fifth significant figure).
 
 ## Edge cases
 
