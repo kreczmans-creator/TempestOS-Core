@@ -1,7 +1,10 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
@@ -660,6 +663,101 @@ public sealed class WorkspaceLayoutControllerTests
         await second.Controller.RestoreAsync(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
 
         Assert.Equal(reordered, second.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds);
+    }
+
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K3 asks for the focus <em>ring</em>, not only
+    /// focus: found missing on the real application by `WP 21.0K` (the
+    /// panel moved, the keyboard kept working, and a keyboard-only user
+    /// could no longer see where they were). Avalonia draws the ring from
+    /// <c>:focus-visible</c>, which a bare <c>Focus()</c> does not set.
+    /// </summary>
+    [AvaloniaFact]
+    public void AKeyboardGesture_RestoresFocusVisibly_AndAMouseLevelOperationDoesNot()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        header.Focus(NavigationMethod.Tab);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(":focus-visible", header.Classes);
+
+        RaiseKeyboardGesture(header, Key.Right);
+
+        var moved = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        Assert.True(moved.IsFocused);
+        Assert.Contains(":focus-visible", moved.Classes);
+
+        // The same restore, reached from an operation the user did not
+        // type, leaves the ring alone — a drag should not light one up.
+        rig.Controller.Apply(t => t.Dock(Explorer, t.FindGroupContaining(Inspector)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var docked = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        Assert.True(docked.IsFocused);
+        Assert.DoesNotContain(":focus-visible", docked.Classes);
+    }
+
+    /// <summary>
+    /// `WP 21.0K`, found on the real application while recording
+    /// `PHYSICAL_REVIEW` §7j K2: closing one tab inside a floating window
+    /// took every panel in every other window with it.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClosingOneTabInsideAFloatingWindow_LeavesEveryOtherWindowsPanelsExactlyWhereTheyWere()
+    {
+        var rig = BuildRig();
+        var secondary = FloatIntoASecondRealWindow(rig, Output);
+
+        rig.Controller.Apply(t => t.Dock(Inspector, secondary.Host.TabGroups.Single().NodeId, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        secondary.Host.Measure(new Size(420, 320));
+        secondary.Host.Arrange(new Rect(0, 0, 420, 320));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains(Explorer, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Document, rig.Controller.Tree.AllPanels);
+
+        // The floating window's own close chrome, clicked — the gesture a
+        // user has, not an operation only a test can reach.
+        var close = secondary.Host.GetLogicalDescendants().OfType<Button>()
+            .Single(b => AutomationProperties.GetName(b) == "Close Inspector");
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        // The tab that was closed is gone. Nothing else is.
+        Assert.DoesNotContain(Inspector, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Explorer, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Document, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Output, rig.Controller.Tree.AllPanels);
+        Assert.NotNull(rig.Controller.Tree.FindGroupContaining(Document));
+    }
+
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K2, headless: the floating window disappears
+    /// the moment its last panel leaves, and the main window still holds
+    /// everything it held.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClosingTheLastTabInAFloatingWindow_ClosesThatWindowOnly()
+    {
+        var rig = BuildRig();
+        var secondary = FloatIntoASecondRealWindow(rig, Output);
+        Assert.Single(rig.Controller.FloatingWindows);
+
+        var close = secondary.Host.GetLogicalDescendants().OfType<Button>()
+            .Single(b => AutomationProperties.GetName(b) == "Close Output");
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(rig.Controller.FloatingWindows);
+        Assert.DoesNotContain(rig.Controller.Tree.Windows, w => !w.IsPrimary);
+        Assert.Contains(Explorer, rig.Controller.Tree.DockedPanels);
+        Assert.Contains(Document, rig.Controller.Tree.DockedPanels);
+        Assert.Contains(Inspector, rig.Controller.Tree.DockedPanels);
     }
 
     /// <summary>A real <c>Ctrl+Shift+</c><paramref name="key"/> press on <paramref name="header"/>, settled the way a real re-render settles.</summary>
