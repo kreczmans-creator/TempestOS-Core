@@ -288,40 +288,13 @@ public sealed class ObjectEditorView : UserControl
     private readonly WhereUsedSection _whereUsedSection = new();
 
     // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
-    private readonly StackPanel _evidenceSubjectPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly Button _changeSubjectButton = new() { Content = "Change Subject", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly TextBlock _evidenceSubjectStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _evidenceSubjectSection = null!;
-
-    private readonly StackPanel _evidenceCitationsPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly Button _citeButton = new() { Content = "Cite", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly TextBlock _evidenceCitationsStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _evidenceCitationsSection = null!;
-
-    private readonly StackPanel _evidenceFiguresPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly Button _declareFigureButton = new() { Content = "Declare Figure", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly TextBlock _evidenceFiguresStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _evidenceFiguresSection = null!;
-
-    // Status + Check + Issue (`WP 18.2B` builds the Check, Issue and
-    // Revise actions themselves) — Evidence's own specialised replacement
-    // for the generic Lifecycle section, suppressed for this Kind so a
-    // reader is never shown the eight-value canonical vocabulary this
-    // Kind's own four-value one specialises (`Evidence.Status`'s own
-    // remarks). Each action button is visible only when
-    // `EvidenceStatusTransitions` actually permits it from the record's
-    // own current status (`Check` from Draft, `Issue` from Checked,
-    // `Revise` from Issued) — never a disabled button offering a move the
-    // service would refuse anyway.
-    private readonly StackPanel _evidenceLifecyclePanel = new() { Spacing = DesignTokens.SpaceXs };
-    private readonly Button _checkButton = new() { Content = "Check", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly Button _issueButton = new() { Content = "Issue", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly Button _reviseButton = new() { Content = "Revise", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
-    private readonly TextBlock _evidenceLifecycleStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
-    private Expander _evidenceLifecycleSection = null!;
-
-    private readonly StackPanel _evidenceAuditPanel = new() { Spacing = DesignTokens.SpaceXs };
-    private Expander _evidenceAuditSection = null!;
+    // `WP 21.1B`: all five now live in their own file under
+    // Editors/Sections/.
+    private readonly EvidenceSubjectSection _evidenceSubjectSection = new();
+    private readonly EvidenceCitationsSection _evidenceCitationsSection = new();
+    private readonly EvidenceDeclaredFiguresSection _evidenceFiguresSection = new();
+    private readonly EvidenceLifecycleSection _evidenceLifecycleSection = new();
+    private readonly EvidenceAuditSection _evidenceAuditSection = new();
 
     // `WP 21.1B`: the project Commercial section now lives in its own file
     // under Editors/Sections/.
@@ -503,12 +476,6 @@ public sealed class ObjectEditorView : UserControl
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
         _attachmentAddButton.Classes.Add(ChromeStyles.Primary);
         _addFileViaPickerButton.Classes.Add(ChromeStyles.Primary);
-        _citeButton.Classes.Add(ChromeStyles.Primary);
-        _declareFigureButton.Classes.Add(ChromeStyles.Primary);
-        _changeSubjectButton.Classes.Add(ChromeStyles.Subtle);
-        _checkButton.Classes.Add(ChromeStyles.Primary);
-        _issueButton.Classes.Add(ChromeStyles.Primary);
-        _reviseButton.Classes.Add(ChromeStyles.Subtle);
 
         // PropertyChanged, not the TextChanged routed event — fires
         // reliably for every Text value change regardless of source (real
@@ -543,15 +510,9 @@ public sealed class ObjectEditorView : UserControl
         _attachmentsDropZone.AddHandler(DragDrop.DragOverEvent, OnAttachmentsDragOver);
         _attachmentsDropZone.AddHandler(DragDrop.DragLeaveEvent, OnAttachmentsDragLeave);
         _attachmentsDropZone.AddHandler(DragDrop.DropEvent, OnAttachmentsDrop);
-        _citeButton.Click += async (_, _) => await OnCiteAsync().ConfigureAwait(true);
-        _declareFigureButton.Click += async (_, _) => await OnDeclareFigureAsync().ConfigureAwait(true);
-        _changeSubjectButton.Click += async (_, _) => await OnChangeSubjectAsync().ConfigureAwait(true);
-        _checkButton.Click += async (_, _) => await OnCheckAsync().ConfigureAwait(true);
-        _issueButton.Click += async (_, _) => await OnIssueAsync().ConfigureAwait(true);
-        _reviseButton.Click += async (_, _) => await OnReviseAsync().ConfigureAwait(true);
 
-        // `WP 21.1B`: the project Commercial section now wires its own six
-        // actions inside its own Build().
+        // `WP 21.1B`: the project Commercial section and all five Evidence
+        // sections now wire their own actions inside their own Build().
     }
 
     /// <summary>Gets whether this editor holds local, buffered edits (Name and/or Content) not yet committed via Save — this Work Package's own genuine, buffered dirty-state (distinct from and unrelated to <see cref="IWorkspaceView.IsDirty"/>, which remains permanently <see langword="false"/>, by design, unchanged — see class remarks).</summary>
@@ -825,43 +786,13 @@ public sealed class ObjectEditorView : UserControl
         var whereUsedExpander = _whereUsedSection.Build(_sectionContext);
 
         // `WP 18.2A` — Evidence's own declared sections (`ADR-0148`, §4).
-        var subjectBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        subjectBody.Children.Add(_evidenceSubjectPanel);
-        subjectBody.Children.Add(_changeSubjectButton);
-        subjectBody.Children.Add(_evidenceSubjectStatus);
-        _evidenceSubjectSection = BuildSection("Subject", subjectBody);
-        _evidenceSubjectSection.IsVisible = false;
-
-        var citationsBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        citationsBody.Children.Add(_citeButton);
-        citationsBody.Children.Add(_evidenceCitationsPanel);
-        citationsBody.Children.Add(_evidenceCitationsStatus);
-        _evidenceCitationsSection = BuildSection("Citations", citationsBody);
-        _evidenceCitationsSection.IsVisible = false;
-
-        var figuresBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        figuresBody.Children.Add(_declareFigureButton);
-        figuresBody.Children.Add(_evidenceFiguresPanel);
-        figuresBody.Children.Add(_evidenceFiguresStatus);
-        _evidenceFiguresSection = BuildSection("Declared figures", figuresBody);
-        _evidenceFiguresSection.IsVisible = false;
-
-        // `WP 18.2B`, §1/§2/§3: the Check/Issue/Revise actions themselves,
-        // each visible only when the record's own current status permits
-        // it (`PopulateEvidenceSectionsAsync`'s own gate).
-        var lifecycleActions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
-        lifecycleActions.Children.Add(_checkButton);
-        lifecycleActions.Children.Add(_issueButton);
-        lifecycleActions.Children.Add(_reviseButton);
-        var lifecycleBody = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        lifecycleBody.Children.Add(_evidenceLifecyclePanel);
-        lifecycleBody.Children.Add(lifecycleActions);
-        lifecycleBody.Children.Add(_evidenceLifecycleStatus);
-        _evidenceLifecycleSection = BuildSection("Lifecycle", lifecycleBody);
-        _evidenceLifecycleSection.IsVisible = false;
-
-        _evidenceAuditSection = BuildSection("Audit", _evidenceAuditPanel);
-        _evidenceAuditSection.IsVisible = false;
+        // `WP 21.1B`: all five now live in their own file under
+        // Editors/Sections/.
+        var evidenceSubjectExpander = _evidenceSubjectSection.Build(_sectionContext);
+        var evidenceCitationsExpander = _evidenceCitationsSection.Build(_sectionContext);
+        var evidenceFiguresExpander = _evidenceFiguresSection.Build(_sectionContext);
+        var evidenceLifecycleExpander = _evidenceLifecycleSection.Build(_sectionContext);
+        var evidenceAuditExpander = _evidenceAuditSection.Build(_sectionContext);
 
         // `WP 21.1B`: the project Commercial section now lives in its own
         // file under Editors/Sections/.
@@ -889,23 +820,23 @@ public sealed class ObjectEditorView : UserControl
         body.Children.Add(invoiceLinesExpander);
         body.Children.Add(quotationLinesExpander);
         body.Children.Add(_contentSection);
-        body.Children.Add(_evidenceSubjectSection);
+        body.Children.Add(evidenceSubjectExpander);
         body.Children.Add(bomExpander);
         body.Children.Add(requirementExpander);
         body.Children.Add(calculationExpander);
         body.Children.Add(calculationPointerExpander);
         body.Children.Add(calculationDueExpander);
         body.Children.Add(verificationResultExpander);
-        body.Children.Add(_evidenceCitationsSection);
-        body.Children.Add(_evidenceFiguresSection);
+        body.Children.Add(evidenceCitationsExpander);
+        body.Children.Add(evidenceFiguresExpander);
         body.Children.Add(_attachmentsSection);
         body.Children.Add(whereUsedExpander);
         body.Children.Add(lifecycleExpander);
         body.Children.Add(invoiceExternalExpander);
-        body.Children.Add(_evidenceLifecycleSection);
+        body.Children.Add(evidenceLifecycleExpander);
         body.Children.Add(relationshipsExpander);
         body.Children.Add(validationExpander);
-        body.Children.Add(_evidenceAuditSection);
+        body.Children.Add(evidenceAuditExpander);
 
         return new ScrollViewer { Content = body };
     }
@@ -973,22 +904,17 @@ public sealed class ObjectEditorView : UserControl
         // `WP 18.2A`: Evidence renders from its own declaration — Subject,
         // Citations, Declared figures, its own Status/Check/Issue
         // (replacing the generic Lifecycle section, which speaks the
-        // wrong vocabulary for this Kind), and Audit. `WP 21.1B`:
-        // LifecycleSection.AppliesTo already returns false for a real
-        // Evidence object — the explicit override this comment used to
-        // describe is no longer needed here.
-        if (target is Core.Evidence.Evidence evidence)
-        {
-            await PopulateEvidenceSectionsAsync(evidence).ConfigureAwait(true);
-        }
-        else
-        {
-            _evidenceSubjectSection.IsVisible = false;
-            _evidenceCitationsSection.IsVisible = false;
-            _evidenceFiguresSection.IsVisible = false;
-            _evidenceLifecycleSection.IsVisible = false;
-            _evidenceAuditSection.IsVisible = false;
-        }
+        // wrong vocabulary for this Kind), and Audit. `WP 21.1B`: every
+        // Evidence section's own AppliesTo already returns false for
+        // anything but a real Evidence object, so calling each
+        // unconditionally — the same discipline every other section here
+        // already follows — needs no target type-check or explicit "hide
+        // the other four" branch any more.
+        await _evidenceSubjectSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _evidenceCitationsSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _evidenceFiguresSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _evidenceLifecycleSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
+        await _evidenceAuditSection.LoadAsync(target, CancellationToken.None).ConfigureAwait(true);
 
         _isDirty = false;
         _statusMessage.Text = string.Empty;
@@ -1153,317 +1079,6 @@ public sealed class ObjectEditorView : UserControl
         }
 
         return row;
-    }
-
-    /// <summary>
-    /// Evidence's own declared sections (`WP 18.2A`, `ADR-0148`, §4):
-    /// Subject; Citations (Cite/Remove); Declared figures (Declare);
-    /// Lifecycle (status, and the check and issue records read-only — the
-    /// Check and Issue actions themselves are `WP 18.2B`); Audit.
-    /// </summary>
-    private async Task PopulateEvidenceSectionsAsync(Core.Evidence.Evidence evidence)
-    {
-        // Subject.
-        _evidenceSubjectSection.IsVisible = true;
-        _evidenceSubjectPanel.Children.Clear();
-        _evidenceSubjectPanel.Children.Add(evidence.SubjectId is { } subjectId
-            ? await BuildObjectReferenceRowAsync(subjectId).ConfigureAwait(true)
-            : new TextBlock { Text = "(no subject tagged)", Opacity = 0.7 });
-        _changeSubjectButton.IsVisible = _evidenceSupport is not null;
-        _evidenceSubjectStatus.Text = string.Empty;
-
-        // Citations.
-        _evidenceCitationsSection.IsVisible = true;
-        _evidenceCitationsPanel.Children.Clear();
-        _citeButton.IsVisible = _evidenceSupport is not null;
-        if (evidence.Citations.Count == 0)
-        {
-            _evidenceCitationsPanel.Children.Add(new TextBlock { Text = "No citations recorded.", Opacity = 0.7 });
-        }
-        else
-        {
-            foreach (var citation in evidence.Citations)
-                _evidenceCitationsPanel.Children.Add(BuildCitationRow(citation));
-        }
-        _evidenceCitationsStatus.Text = string.Empty;
-
-        // Declared figures.
-        _evidenceFiguresSection.IsVisible = true;
-        _evidenceFiguresPanel.Children.Clear();
-        _declareFigureButton.IsVisible = _evidenceSupport is not null;
-        if (evidence.DeclaredFigures.Count == 0)
-        {
-            _evidenceFiguresPanel.Children.Add(new TextBlock { Text = "No figures declared.", Opacity = 0.7 });
-        }
-        else
-        {
-            foreach (var figure in evidence.DeclaredFigures)
-            {
-                _evidenceFiguresPanel.Children.Add(new TextBlock
-                {
-                    Text = $"{figure.Name} ({figure.Role}) = {figure.Quantity}",
-                    FontSize = DesignTokens.FontSizeBody,
-                    TextWrapping = TextWrapping.Wrap,
-                });
-            }
-        }
-        _evidenceFiguresStatus.Text = string.Empty;
-
-        // Lifecycle: status, and the check and issue records, read-only.
-        _evidenceLifecycleSection.IsVisible = true;
-        _evidenceLifecyclePanel.Children.Clear();
-        _evidenceLifecyclePanel.Children.Add(new TextBlock { Text = $"Status: {evidence.Status}", FontWeight = FontWeight.SemiBold, FontSize = DesignTokens.FontSizeBody });
-        _evidenceLifecyclePanel.Children.Add(new TextBlock
-        {
-            Text = evidence.Check is { } check
-                ? $"Check: {check.Outcome} by {check.CheckerName} ({check.CheckerOrganisation}) on {check.DateUtc:u} — \"{check.Statement}\""
-                : "Check: (not yet checked)",
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = DesignTokens.FontSizeBody,
-        });
-        _evidenceLifecyclePanel.Children.Add(new TextBlock
-        {
-            Text = evidence.Issue is { } issue
-                ? $"Issue: '{issue.IssueReference}' rev '{issue.Revision}' to '{issue.Client}' on {issue.DateUtc:u}"
-                : "Issue: (not yet issued)",
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = DesignTokens.FontSizeBody,
-        });
-
-        // `WP 18.2B`: each action visible only when
-        // `EvidenceStatusTransitions` actually permits it from here —
-        // Check from Draft, Issue from Checked, Revise from Issued.
-        _checkButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Draft;
-        _issueButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Checked;
-        _reviseButton.IsVisible = _evidenceSupport is not null && evidence.Status == Core.Evidence.EvidenceStatus.Issued;
-        _evidenceLifecycleStatus.Text = string.Empty;
-
-        // Audit.
-        _evidenceAuditSection.IsVisible = true;
-        _evidenceAuditPanel.Children.Clear();
-        if (_auditQuery is null)
-        {
-            _evidenceAuditPanel.Children.Add(new TextBlock { Text = "Audit is unavailable.", Opacity = 0.7 });
-        }
-        else
-        {
-            var records = await _auditQuery.QueryAsync(new AuditQueryCriteria(objectId: evidence.Id)).ConfigureAwait(true);
-            if (records.Count == 0)
-            {
-                _evidenceAuditPanel.Children.Add(new TextBlock { Text = "No audit rows recorded yet.", Opacity = 0.7 });
-            }
-            else
-            {
-                foreach (var record in records.OrderByDescending(r => r.OccurredAt).Take(25))
-                {
-                    var detail = record.Detail.Count == 0 ? string.Empty : " — " + string.Join("; ", record.Detail.Select(kv => $"{kv.Key}: {kv.Value}"));
-                    _evidenceAuditPanel.Children.Add(new TextBlock
-                    {
-                        Text = $"{record.OccurredAt:u}  {record.Action}  by {record.ActorId}{detail}",
-                        FontSize = DesignTokens.FontSizeCaption,
-                        Opacity = 0.85,
-                        TextWrapping = TextWrapping.Wrap,
-                    });
-                }
-            }
-        }
-    }
-
-    private Control BuildCitationRow(EvidenceCitation citation)
-    {
-        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
-
-        var text = new TextBlock
-        {
-            Text = $"{citation.Pin} — {citation.RecordDisplayName}" + (citation.SourceCitationSnapshot is null ? string.Empty : $" — {citation.SourceCitationSnapshot}"),
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = DesignTokens.FontSizeBody,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        Grid.SetColumn(text, 0);
-        row.Children.Add(text);
-
-        var remove = new Button { Content = "Remove", Padding = new Thickness(10, 1), FontSize = DesignTokens.FontSizeBody };
-        remove.Classes.Add(ChromeStyles.Subtle);
-        remove.Click += async (_, _) => await OnRemoveCitationAsync(citation.Pin).ConfigureAwait(true);
-        Grid.SetColumn(remove, 1);
-        row.Children.Add(remove);
-
-        return row;
-    }
-
-    private async Task OnRemoveCitationAsync(ReferencePin pin)
-    {
-        var result = await _commandDispatcher.DispatchAsync(new RemoveEvidenceCitationCommand(_objectId, _objectKind, pin), CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Citation removed." : result.Message ?? "Remove failed.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceCitationsStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    /// <summary>
-    /// Cite: collects a released record via <see cref="EvidenceEditorSupport.PickCitationAsync"/>
-    /// and dispatches <see cref="CiteEvidenceCommand"/>. A refusal (an
-    /// unreleased record — never offered by the real picker, but reachable
-    /// through the command directly, `WP 18.2A` acceptance 2) shows here
-    /// and, via <see cref="ActionCompleted"/>, in the shell's own status
-    /// bar, naming the record and its state — exactly as
-    /// <see cref="EvidenceCitationResult.Reason"/> already says it.
-    /// </summary>
-    private async Task OnCiteAsync()
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var picked = await _evidenceSupport.PickCitationAsync(CancellationToken.None).ConfigureAwait(true);
-        if (picked is null)
-        {
-            _evidenceCitationsStatus.Text = "Cite was cancelled.";
-            return;
-        }
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new CiteEvidenceCommand(_objectId, _objectKind, picked.Library, picked.RecordId), CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Cited." : result.Message ?? "The citation was refused.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceCitationsStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    private async Task OnDeclareFigureAsync()
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var input = await _evidenceSupport.PickDeclaredFigureAsync(CancellationToken.None).ConfigureAwait(true);
-        if (input is null)
-        {
-            _evidenceFiguresStatus.Text = "Declare was cancelled.";
-            return;
-        }
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new DeclareEvidenceFigureCommand(_objectId, _objectKind, input.Name, input.Role, input.Quantity), CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Declared." : result.Message ?? "Declare failed.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceFiguresStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    /// <summary>
-    /// Change Subject: collects a Part, Assembly, Requirement or
-    /// Deliverable via the real Subject picker
-    /// (<see cref="EvidenceEditorSupport.PickSubjectAsync"/>, the identical
-    /// <see cref="Views.SubjectPicker"/> `18.2A`'s own Create form uses)
-    /// and dispatches <see cref="SetEvidenceSubjectCommand"/>. A refusal —
-    /// the record is Issued — shows here and, via
-    /// <see cref="ActionCompleted"/>, in the shell's own status bar
-    /// (`WP 18.2B`, closing a gap `WP 18.2A` disclosed).
-    /// </summary>
-    private async Task OnChangeSubjectAsync()
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var picked = await _evidenceSupport.PickSubjectAsync(CancellationToken.None).ConfigureAwait(true);
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new SetEvidenceSubjectCommand(_objectId, _objectKind, picked), CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Subject changed." : result.Message ?? "The subject change was refused.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceSubjectStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    /// <summary>
-    /// Check: collects the checker's name, organisation, statement and
-    /// outcome via <see cref="EvidenceEditorSupport.PickCheckAsync"/> and
-    /// dispatches <see cref="RecordEvidenceCheckCommand"/> — the client's
-    /// own review, entered by hand, unless <c>Evidence:IndependentCheck</c>
-    /// is on, in which case the acting principal (resolved server-side, never
-    /// asked here) stands as the checker and the same principal as the
-    /// author is refused (`WP 18.2B`, §1).
-    /// </summary>
-    private async Task OnCheckAsync()
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var input = await _evidenceSupport.PickCheckAsync(CancellationToken.None).ConfigureAwait(true);
-        if (input is null)
-        {
-            _evidenceLifecycleStatus.Text = "Check was cancelled.";
-            return;
-        }
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new RecordEvidenceCheckCommand(_objectId, _objectKind, input.CheckerName, input.CheckerOrganisation, input.Statement, input.Outcome),
-            CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Checked." : result.Message ?? "The check was refused.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceLifecycleStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    /// <summary>
-    /// Issue: collects the issue reference, revision and client via
-    /// <see cref="EvidenceEditorSupport.PickIssueAsync"/> and dispatches
-    /// <see cref="IssueEvidenceCommand"/>, which — where a renderer is
-    /// available — also renders and attaches the issue sheet
-    /// (`WP 18.2B`, §2). The attached sheet appears in the Files section's
-    /// own generic Attachments list (unchanged from `WP 18.2A`), openable
-    /// there through the existing document viewer and exportable through
-    /// the existing file picker; nothing new is built here for either.
-    /// </summary>
-    private async Task OnIssueAsync()
-    {
-        if (_evidenceSupport is null)
-            return;
-
-        var input = await _evidenceSupport.PickIssueAsync(CancellationToken.None).ConfigureAwait(true);
-        if (input is null)
-        {
-            _evidenceLifecycleStatus.Text = "Issue was cancelled.";
-            return;
-        }
-
-        var result = await _commandDispatcher.DispatchAsync(
-            new IssueEvidenceCommand(_objectId, _objectKind, input.IssueReference, input.Revision, input.Client),
-            CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Issued." : result.Message ?? "The issue was refused.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceLifecycleStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
-    }
-
-    /// <summary>
-    /// Revise: reopens the selected, issued evidence as a new Draft
-    /// revision (<see cref="ReviseEvidenceCommand"/>); the issued revision
-    /// stays readable, unchanged, via its own revision history
-    /// (`WP 18.2B`, §3). No form of its own — nothing needs collecting.
-    /// </summary>
-    private async Task OnReviseAsync()
-    {
-        var result = await _commandDispatcher.DispatchAsync(
-            new ReviseEvidenceCommand(_objectId, _objectKind), CancellationToken.None).ConfigureAwait(true);
-
-        var message = result.Succeeded ? result.Message ?? "Revised." : result.Message ?? "The revision was refused.";
-        if (result.Succeeded)
-            await RefreshAsync().ConfigureAwait(true);
-        _evidenceLifecycleStatus.Text = message;
-        ActionCompleted?.Invoke(message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>Files' own "add via picker" affordance (`WP 18.2A`, §4) — reads real bytes through <see cref="IFilePicker"/> and attaches them directly (<see cref="IHasAttachments.AttachContentAsync"/>), never the metadata-only mini-form below it.</summary>
