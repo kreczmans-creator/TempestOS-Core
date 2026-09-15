@@ -19,6 +19,7 @@ using Tempest.Desktop.Tasks;
 using Tempest.Desktop.Theming;
 using Tempest.Desktop.Views;
 using Tempest.Desktop.Views.Dashboards;
+using Tempest.Desktop.Views.EngineeringAssets;
 
 namespace Tempest.Desktop.Composition;
 
@@ -649,9 +650,21 @@ internal sealed partial class MainWindowComposer
         var engineeringDashboardView = new EngineeringDashboardView(tasksReadModel, composition.CommandDispatcher, openObjectRightUp);
         engineeringDashboardView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering
+        // capability's own area — every collaborator here is already a
+        // Platform Service `WorkspaceHost` resolved at start-up, composed
+        // the identical `ADR-0103` way every other Engineering module
+        // collaborator on this method already is.
+        var engineeringAssetsView = new EngineeringAssetsView(
+            host.CalculationPacks!, host.CalculationPackValidation!, host.EngineeringTemplates!, host.EngineeringTemplateValidation!,
+            host.VerificationArtefacts!, host.VerificationArtefactValidation!, host.EngineeringTrace!, host.Materials!,
+            host.BracketCheck!, host.BracketEngineeringRecords!, evidenceFilePicker, () => host.SessionPrincipal?.IdentityId);
+        engineeringAssetsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var engineeringAreaView = new EngineeringAreaView(
             host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
-            engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp)
+            engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
+            engineeringAssetsView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };

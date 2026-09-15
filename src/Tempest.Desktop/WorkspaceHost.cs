@@ -318,6 +318,19 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
+        // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
+        // own three governed libraries and their validation services, so the
+        // Engineering Assets area can list every calculation pack, template
+        // and verification artefact and show each one's own applicability
+        // and validation — all already-registered Platform Services,
+        // resolved the same `ADR-0103` way as every collaborator above.
+        CalculationPacks = (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog));
+        EngineeringTemplates = (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog));
+        VerificationArtefacts = (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog));
+        CalculationPackValidation = (ICalculationPackValidationService)host.Services!.GetService(typeof(ICalculationPackValidationService));
+        EngineeringTemplateValidation = (ITemplateValidationService)host.Services!.GetService(typeof(ITemplateValidationService));
+        VerificationArtefactValidation = (IVerificationArtefactValidationService)host.Services!.GetService(typeof(IVerificationArtefactValidationService));
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -436,6 +449,29 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>Gets the Constants Library (`WP 18.2A`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IConstantCatalog? Constants { get; private set; }
+
+    /// <summary>
+    /// Gets the calculation pack library (`E2`, `WP 21.2B`) — the merged
+    /// engineering capability's own records, surfaced by the Engineering
+    /// Assets area. <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public ICalculationPackCatalog? CalculationPacks { get; private set; }
+
+    /// <summary>Gets the engineering template library (`E1`, `WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ITemplateCatalog? EngineeringTemplates { get; private set; }
+
+    /// <summary>Gets the verification artefact library (`E3`, `WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IVerificationArtefactCatalog? VerificationArtefacts { get; private set; }
+
+    /// <summary>Gets the calculation pack library's own governance/completeness validation (`WP 21.2B`, TD-160 scope item 4). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ICalculationPackValidationService? CalculationPackValidation { get; private set; }
+
+    /// <summary>Gets the template library's own governance/completeness validation (`WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ITemplateValidationService? EngineeringTemplateValidation { get; private set; }
+
+    /// <summary>Gets the verification artefact library's own governance/completeness validation (`WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IVerificationArtefactValidationService? VerificationArtefactValidation { get; private set; }
 
     /// <summary>
     /// Gets the Engineering Calculation surface's own read model -
