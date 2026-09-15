@@ -14,15 +14,17 @@ public sealed class Calculation : EngineeringObjectBase, ICalculation, IRehydrat
 {
     private bool _completed;
     private DateOnly? _completedOn;
+    private DateOnly? _dueOn;
 
     public Calculation(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
-        bool completed = false, DateOnly? completedOn = null)
+        bool completed = false, DateOnly? completedOn = null, DateOnly? dueOn = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         _completed = completed;
         _completedOn = completedOn;
+        _dueOn = dueOn;
     }
 
     /// <summary>Whether <c>calculations.complete</c> has been run against this calculation (`TD-181`) — leaves it out of the Tasks read model's own Calculations bucket.</summary>
@@ -30,6 +32,18 @@ public sealed class Calculation : EngineeringObjectBase, ICalculation, IRehydrat
 
     /// <summary>When this calculation was marked complete. <see langword="null"/> while <see cref="Completed"/> is <see langword="false"/>.</summary>
     public DateOnly? CompletedOn => _completedOn;
+
+    /// <summary>
+    /// When this calculation is due (`WP 20.10B`, T2). Set at creation for
+    /// every calculation created under a project — the create prompt's own
+    /// date field, default today + 14 days, offered editable, never blank
+    /// (<c>Tempest.Workspace.Calculations.CalculationObjectFactoryRegistry.CreateAsync</c>);
+    /// a calculation created outside any project (standalone Engineering)
+    /// carries none. Editable afterwards through <see cref="SetDueOnAsync"/>,
+    /// mirroring the generic editor's own row pattern for a Kind-specific
+    /// field.
+    /// </summary>
+    public DateOnly? DueOn => _dueOn;
 
     /// <summary>
     /// Marks this calculation complete — public, unlike
@@ -55,11 +69,33 @@ public sealed class Calculation : EngineeringObjectBase, ICalculation, IRehydrat
             cancellationToken,
             WorkspaceChangeType.StatusChanged);
 
+    /// <summary>
+    /// Sets, or clears, <see cref="DueOn"/> (`WP 20.10B`, T2) — public, for
+    /// the identical reason <see cref="MarkCompletedAsync"/> is:
+    /// <c>Tempest.Workspace.Calculations.SetCalculationDueDateCommandHandler</c>
+    /// is the one place whether the value is acceptable is decided, before
+    /// this mutator ever runs. An ordinary field change
+    /// (<see cref="WorkspaceChangeType.Updated"/>, this method's own
+    /// default), never a status move.
+    /// </summary>
+    public Task SetDueOnAsync(DateOnly? dueOn, CancellationToken cancellationToken = default) =>
+        MutateTypeStateAndPersistAsync(
+            () =>
+            {
+                var state = new Dictionary<string, string?>(StringComparer.Ordinal);
+                WriteJson(state, nameof(DueOn), dueOn);
+                return state;
+            },
+            () => { _dueOn = dueOn; },
+            dueOn is { } d ? $"Due date set to {d:O}." : "Due date cleared.",
+            cancellationToken);
+
     /// <inheritdoc />
     protected override void CaptureTypeState(IDictionary<string, string?> state)
     {
         state[nameof(Completed)] = _completed.ToString();
         WriteJson(state, nameof(CompletedOn), _completedOn);
+        WriteJson(state, nameof(DueOn), _dueOn);
     }
 
     /// <inheritdoc />
@@ -67,12 +103,14 @@ public sealed class Calculation : EngineeringObjectBase, ICalculation, IRehydrat
     {
         _completed = bool.TryParse(state.Type(nameof(Completed)), out var completed) && completed;
         _completedOn = state.TypeJson<DateOnly?>(nameof(CompletedOn));
+        _dueOn = state.TypeJson<DateOnly?>(nameof(DueOn));
     }
 
     static Calculation IRehydratable<Calculation>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
         new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
             bool.TryParse(state.Type(nameof(Completed)), out var completed) && completed,
-            state.TypeJson<DateOnly?>(nameof(CompletedOn)));
+            state.TypeJson<DateOnly?>(nameof(CompletedOn)),
+            state.TypeJson<DateOnly?>(nameof(DueOn)));
 }
 
 public sealed class CalculationSet : EngineeringObjectBase, ICalculationSet, IRehydratable<CalculationSet>

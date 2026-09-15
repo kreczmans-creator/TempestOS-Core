@@ -58,7 +58,7 @@ public sealed class TasksReadModelService : ITasksReadModel
                 var invoiceRequests = new List<InvoiceChaseFact>();
                 var quotations = new List<QuotationChaseFact>();
                 var manualTasks = new List<ManualTaskFact>();
-                var calculationCandidates = new List<(Guid CalculationId, string Title, Guid? ParentId, bool Completed)>();
+                var calculationCandidates = new List<(Guid CalculationId, string Title, Guid? ParentId, bool Completed, DateOnly? DueOn)>();
                 var completedDeliverableIds = new HashSet<Guid>();
                 var closedProjectIds = new HashSet<Guid>();
 
@@ -152,7 +152,8 @@ public sealed class TasksReadModelService : ITasksReadModel
                         case "Calculation":
                             calculationCandidates.Add((
                                 objectId, state.DisplayName ?? string.Empty, state.ParentId,
-                                bool.TryParse(TypeString(typeState, "Completed"), out var calcDone) && calcDone));
+                                bool.TryParse(TypeString(typeState, "Completed"), out var calcDone) && calcDone,
+                                TypeJson<DateOnly?>(typeState, "DueOn")));
                             break;
 
                         case Quotation.CanonicalKind:
@@ -213,13 +214,22 @@ public sealed class TasksReadModelService : ITasksReadModel
                 // never reaches a live "Project" is left off entirely,
                 // rather than shown with no project to open it from.
                 var calculations = calculationCandidates
-                    .Select(c => (c.CalculationId, c.Title, ProjectId: ResolveProjectId(c.ParentId, kindByObjectId, parentByObjectId), c.Completed))
+                    .Select(c => (c.CalculationId, c.Title, ProjectId: ResolveProjectId(c.ParentId, kindByObjectId, parentByObjectId), c.Completed, c.DueOn))
                     .Where(c => c.ProjectId is not null && !closedProjectIds.Contains(c.ProjectId.Value))
                     .Select(c => new CalculationChaseFact(
-                        c.CalculationId, c.Title, c.ProjectId!.Value, c.Completed || issuedSubjectIds.Contains(c.CalculationId)))
+                        c.CalculationId, c.Title, c.ProjectId!.Value, c.Completed || issuedSubjectIds.Contains(c.CalculationId), c.DueOn))
                     .ToList();
 
                 var calculationItems = TaskEquations.CalculationItems(calculations);
+
+                // `WP 20.10B` (T2): a dated calculation also joins the
+                // Overdue/Due today/Due this week/Later buckets, exactly as
+                // a manual task does — `TaskEquations.CalculationDueItems`'s
+                // own remarks. Added after `openTasks`'s own three sources
+                // above only because `calculations` itself needs the
+                // project-resolution pass just above; `counts`, right
+                // below, reads the completed list either way.
+                openTasks.AddRange(TaskEquations.CalculationDueItems(calculations, today));
 
                 var counts = new Dictionary<TaskBucket, int>
                 {

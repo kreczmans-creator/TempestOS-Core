@@ -130,6 +130,32 @@ public static class TaskEquations
             .Select(c => new TaskItem("Calculation", c.Title, c.ProjectId, null, c.CalculationId, TaskBucket.Calculations))
             .ToList();
 
+    /// <summary>
+    /// Every live, incomplete Calculation that carries a due date —
+    /// due-bucketed exactly as <see cref="ManualTaskItems"/>'s own dated
+    /// tasks are (`WP 20.10B`, T2) — so it also counts and lists in
+    /// Overdue/Due today/Due this week/Later, and (Overdue) in Home's own
+    /// tile, alongside every other item there. Additive to
+    /// <see cref="CalculationItems"/>, never a replacement for it: a
+    /// calculation stays in the dedicated Calculations bucket until
+    /// complete regardless of its own date, or of having none at all
+    /// (`TD-181`'s own "no date condition", unchanged) — this is the
+    /// second, separate place the identical fact also appears, mirroring
+    /// how a Deliverable/Milestone/manual task already appears in
+    /// <see cref="TasksReadModelService"/>'s own <c>openTasks</c> list.
+    /// Unlike <see cref="ManualTaskItems"/>, a calculation with no due date
+    /// is not forced into <see cref="TaskBucket.Later"/> here — every
+    /// calculation created before this due date existed, or created
+    /// standalone and only later moved under a project, simply does not
+    /// appear on this particular list, exactly as it did not before this
+    /// Work Package.
+    /// </summary>
+    public static IReadOnlyList<TaskItem> CalculationDueItems(IReadOnlyList<CalculationChaseFact> calculations, DateOnly today) =>
+        calculations
+            .Where(c => !c.Completed && c.DueOn is not null)
+            .Select(c => new TaskItem("Calculation", c.Title, c.ProjectId, c.DueOn, c.CalculationId, BucketForDueDate(c.DueOn!.Value, today)))
+            .ToList();
+
     /// <summary>Sent, unpaid invoice requests past their own due date (`TD-180`) — the Finance bucket lists a request only after its own <see cref="InvoiceChaseFact.DueOn"/>, replacing the thirty-day heuristic `WP 20.1B` closes out.</summary>
     public static IReadOnlyList<TaskItem> InvoiceFinanceItems(IReadOnlyList<InvoiceChaseFact> requests, DateOnly today) =>
         requests
