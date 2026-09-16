@@ -117,7 +117,7 @@ the installer run stay with the Product Owner.
 | `WP 21.9.1` quality | the release-quality evidence in one place; backup/restore and restart persistence driven in the real application | `2a2d1a33` |
 | `WP 21.9.1` docs | permanent documentation aligned with the product, provenance kept | `aa91273c` |
 | `WP 21.0K` | `ADR-0153` decision 8 on keys, keyboard gestures through the controller with visible focus, the floating-window close defect fixed; K1/K2/K3/K6 on a real screen | `5c170f34` |
-| `WP 21.5C` (Linux) | the real-shell acceptance journey on Linux/Xvfb — a non-shipped runner drives the real application with genuine X11 input through 35 steps and an 8-step relaunch verify; one major defect fixed (a picker under its prompt), four reported, three of those fixed by the lead the same night | `3ba0709f`, fixes `37264671` |
+| `WP 21.5C` (Linux) | the real-shell acceptance journey on Linux/Xvfb — a non-shipped runner drives the real application with genuine X11 input through 35 steps and an 8-step relaunch verify; one major defect fixed (a picker under its prompt), four reported, three of those fixed by the lead the same night; on the final head the journey passes 37 of 37 and the relaunch verify 8 of 8, the runner now creating the rate card through the new form | `3ba0709f`, fixes `37264671` |
 | release documents (lead) | backlog audit (7 of 30), `PHYSICAL_REVIEW.md` §7j corrected and §7k added, `D-028` addendum, release notes, this section, `PROJECT_STATUS.md` | the final commits |
 
 Owed after tonight, all on the Product Owner: `WP 21.0B`/`21.0C` after the
