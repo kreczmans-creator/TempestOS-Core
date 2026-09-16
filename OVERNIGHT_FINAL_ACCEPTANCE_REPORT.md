@@ -1,12 +1,12 @@
 # TempestOS — Overnight Final Acceptance Report (v0.21.0 → v1.0.0 release candidate)
 
 **Campaign:** 2026-09-15 23:11 UTC → 2026-09-16 «END_UTC» UTC, on `claude/tempestos-v1-final-acceptance-19hka8`, by the lead engineering agent with four package agents (docking, real shell, documentation, quality) in their own worktrees.
-**Last code commit:** `37264671`. **Head:** the commit carrying this report (`git log -1`).
+**Last product-code commit:** `37264671` (the gate below ran on it); the real-shell runner's own rate-card step followed at `943e6f2e` (test-side code, build 0/0). **Head:** the commit carrying this report (`git log -1`).
 **Companion for the Product Owner:** `PRODUCT_OWNER_ACCEPTANCE.md` (the morning test pack). This report is the engineering record behind it.
 
 ## 1. Executive summary
 
-The candidate `release/v0.21.0` @ `a4ab1915` was taken through every remaining technically actionable item and left as a **v1.0 release candidate ready for Product Owner acceptance**. Eight packages of work landed behind their own gates: the two unmerged branches, a Linux secrets-mode fix, the Xero authorisation path (`WP 21.6P`, three defects that made the owed live authorisation impossible from the product), docking's keyboard closure and real-screen checks (`WP 21.0K`, one critical pre-existing defect fixed), a real-process real-input acceptance journey on Linux/Xvfb (`WP 21.5C`, one major defect fixed, four reported, three of those fixed the same night), documentation alignment and release-quality evidence (`WP 21.9.1`), and the release documents with the backlog audited row by row. Nothing deliberately deferred was reopened: docking steps 3–4 stay gated on the Product Owner's `ADR-0153` review; the live Xero sign-in, the first `Setup.exe` and the two-monitor checks stay with the Product Owner. The gate on the last code commit: both builds 0/0 with warnings as errors, Core 5,314 of 5,324 in both configurations (the ten failures Windows-only tests, green on the Windows runners), Desktop «DESKTOP_SHORT», governance 5/5, dependencies clean, CI green on every pushed head up to `f7e2af66` and «CI_FINAL» on the final head. **This is a technical readiness statement. Acceptance is the Product Owner's.**
+The candidate `release/v0.21.0` @ `a4ab1915` was taken through every remaining technically actionable item and left as a **v1.0 release candidate ready for Product Owner acceptance**. Eight packages of work landed behind their own gates: the two unmerged branches, a Linux secrets-mode fix, the Xero authorisation path (`WP 21.6P`, three defects that made the owed live authorisation impossible from the product), docking's keyboard closure and real-screen checks (`WP 21.0K`, one critical pre-existing defect fixed), a real-process real-input acceptance journey on Linux/Xvfb (`WP 21.5C`, one major defect fixed, four reported, three of those fixed the same night), documentation alignment and release-quality evidence (`WP 21.9.1`), and the release documents with the backlog audited row by row. Nothing deliberately deferred was reopened: docking steps 3–4 stay gated on the Product Owner's `ADR-0153` review; the live Xero sign-in, the first `Setup.exe` and the two-monitor checks stay with the Product Owner. The gate on the last code commit: both builds 0/0 with warnings as errors, Core 5,314 of 5,324 in both configurations (the ten failures Windows-only tests, green on the Windows runners), Desktop 901 of 902 in both configurations (the one failure the Linux-only status-bar divergence, green on Windows), governance 5/5, dependencies clean, CI green on every pushed head up to `f7e2af66` and «CI_FINAL» on the final head. **This is a technical readiness statement. Acceptance is the Product Owner's.**
 
 ## 2. Starting state (2026-09-15 23:11 UTC, before any change)
 
@@ -94,12 +94,12 @@ Eleven of eleven that were fixable tonight (rows 1–11 above), each with a regr
 |---|---|---|
 | Build, `TreatWarningsAsErrors` | 0 warnings / 0 errors | 0 warnings / 0 errors |
 | Core tests | 5,314 passed, 10 failed (Windows-only), 5,324 total | 5,314 passed, 10 failed (Windows-only), 5,324 total |
-| Desktop tests | «DESKTOP_DEBUG» | «DESKTOP_RELEASE» |
+| Desktop tests | 901 passed of 902, 1 failed (the Linux-only status-bar test), 6 m 0 s | 901 passed of 902, 1 failed (the same Linux-only test), 5 m 55 s |
 | Governance health check | 5 of 5 | — |
 | Dependency scan | 9 projects, none vulnerable | — |
 | CI (Windows, sharded, both configurations) | 435 green on `7fdc33df`; 436 green on `f7e2af66`; final head «CI_FINAL` | |
 
-Interim runs on earlier heads tonight agreed with these figures at every step (Core 5,306 → 5,314 passed as tests were added; Desktop 883 → 898 → «DESKTOP_PASSED» passed with the one Linux-only failure constant).
+Interim runs on earlier heads tonight agreed with these figures at every step (Core 5,306 → 5,314 passed as tests were added; Desktop 883 → 898 → 901 passed with the one Linux-only failure constant).
 
 ## 9. Real-shell evidence
 

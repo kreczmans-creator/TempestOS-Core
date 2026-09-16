@@ -1,7 +1,7 @@
 # TempestOS — Product Owner Acceptance Pack (v1.0.0 release candidate, from v0.21.0)
 
 **For:** Steven, Product Owner. **Prepared:** overnight, 2026-09-15 23:11 UTC → 2026-09-16 «END_UTC» UTC, by the lead engineering agent with four package agents.
-**Branch:** `claude/tempestos-v1-final-acceptance-19hka8` (`release/v0.21.0` @ `a4ab1915` plus tonight's work). **Last code commit:** `37264671`. **Documents commit (this file):** the branch head — `git log -1`.
+**Branch:** `claude/tempestos-v1-final-acceptance-19hka8` (`release/v0.21.0` @ `a4ab1915` plus tonight's work). **Last product-code commit:** `37264671` (the gate below ran on it); the real-shell runner's own rate-card step followed at `943e6f2e` (test-side code, build 0/0). **Documents commit (this file):** the branch head — `git log -1`.
 **What this pack asks of you:** the last checkbox in §8. Everything before it is evidence, and none of it is acceptance.
 
 ---
@@ -32,7 +32,7 @@ The overnight campaign produced a **credible v1.0 release candidate, ready for P
 | Branch / head | `claude/tempestos-v1-final-acceptance-19hka8`; last code commit `37264671`; documents on top (this file's commit is the head). | `git log` |
 | Build | Debug **0 warnings / 0 errors**; Release **0 / 0**; `-p:TreatWarningsAsErrors=true`; 9 projects (the real-shell runner added). | `dotnet build` on `37264671` |
 | Core tests | **5,314 passed of 5,324** in Debug and Release. The 10 failures are the known Windows-only tests (6 spawn `powershell`, 4 DPAPI) — green on the Windows runners. 7 tests added tonight. | `dotnet test` on `37264671`; CI runs 435/436 |
-| Desktop tests | Debug: **«DESKTOP_DEBUG»**. Release: **«DESKTOP_RELEASE»**. The one Linux-only failure is `StatusBarCollapseTests…` (font fallback, green on Windows). 24 tests added tonight (7 Settings, 8 docking, 1 overlay, 3 rate card, 1 dashboard extension, and assertions inside the quotation journey). | `dotnet test` on `37264671` |
+| Desktop tests | Debug: **901 passed of 902, 1 failed (the Linux-only status-bar test), 6 m 0 s**. Release: **901 passed of 902, 1 failed (the same Linux-only test), 5 m 55 s**. The one Linux-only failure is `StatusBarCollapseTests…` (font fallback, green on Windows). 24 tests added tonight (7 Settings, 8 docking, 1 overlay, 3 rate card, 1 dashboard extension, and assertions inside the quotation journey). | `dotnet test` on `37264671` |
 | Architecture invariants | `DependencyDirectionTests` (6), `SampleSeparationTests`, `ModuleMetadataCoverageTests`, `FrozenLayersUnreachableTests` — green (inside the Core figure; run separately by `WP 21.5C`: 51 passed). | Core suite |
 | Governance health check | **5 of 5** on the final head. | `pwsh scripts/governance-healthcheck.ps1` |
 | Security / dependencies | `dotnet list package --vulnerable --include-transitive`: **all 9 projects clean**; every workflow `uses:` SHA-pinned; Dependabot weekly; `Security Posture.md` current. | scan on the final head; `WP21.9.1 Release Quality Evidence.md` |

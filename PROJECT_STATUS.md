@@ -1,6 +1,6 @@
 # TempestOS — Project Status
 
-**Branch:** `claude/tempestos-v1-final-acceptance-19hka8` — the overnight acceptance campaign's branch (2026-09-15 23:11 UTC → 2026-09-16), built on `release/v0.21.0` @ `a4ab1915` (the recovery tranche's candidate: `b033651d`, its last code commit, plus its release documents). **Last code commit tonight: `37264671`**; the release documents (`PRODUCT_OWNER_ACCEPTANCE.md`, `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md`, this file) are committed on top — `git log -1` is the head.
+**Branch:** `claude/tempestos-v1-final-acceptance-19hka8` — the overnight acceptance campaign's branch (2026-09-15 23:11 UTC → 2026-09-16), built on `release/v0.21.0` @ `a4ab1915` (the recovery tranche's candidate: `b033651d`, its last code commit, plus its release documents). **Last product-code commit tonight: `37264671`** (the gate ran on it; the real-shell runner's rate-card step followed at `943e6f2e`, test-side code only); the release documents (`PRODUCT_OWNER_ACCEPTANCE.md`, `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md`, this file) are committed on top — `git log -1` is the head.
 **VERSION:** `0.21.0`. `v0.18.0` is the last release merged to `main`, tagged and published (2026-09-14); `v0.19.1`, `v0.20.0` and `v0.21.0` are all contained in this branch. **Status: v1.0 release candidate, ready for Product Owner acceptance — not accepted.** The PR to `main`, the tag and the GitHub Release follow the Product Owner's decision.
 
 ## What a user can do today
@@ -50,7 +50,7 @@ Owed, all on the Product Owner: `WP 21.0B`/`21.0C` (docking steps 3–4) after t
 
 - Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors` (9 projects — the real-shell runner is the ninth, never shipped)
 - Core tests: 5,314 passed of 5,324, Debug and Release — the 10 failures are Windows-only tests (6 spawn `powershell`, 4 DPAPI), green on the Windows runners
-- Desktop tests: Debug «DESKTOP_DEBUG»; Release «DESKTOP_RELEASE» — the one Linux-only failure (`StatusBarCollapseTests…`, font fallback) is green on the Windows runners
+- Desktop tests: Debug 901 passed of 902, 1 failed (the Linux-only status-bar test), 6 m 0 s; Release 901 passed of 902, 1 failed (the same Linux-only test), 5 m 55 s — the one Linux-only failure (`StatusBarCollapseTests…`, font fallback) is green on the Windows runners
 - Governance health check: 5 of 5
 - Dependency scan: 9 projects, none vulnerable; every workflow action SHA-pinned
 - Real shell: the `WP 21.5C` runner on this head — «REALSHELL_GATE»; hand-driven evidence under `docs/releases/v0.21.0/evidence/{xero,docking,fixes,quality}/`
