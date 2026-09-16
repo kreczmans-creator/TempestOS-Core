@@ -247,11 +247,26 @@ internal sealed partial class MainWindowComposer
         root.Children.Add(views.ProjectPicker);
         root.Children.Add(views.ToastHost);
 
+        // `WP 21.5C` (real-shell journey, Linux): Grid Z-order follows the
+        // `Children` order alone, so an overlay opened *from* another
+        // overlay drew - and hit-tested - underneath the one that opened
+        // it. `NewProjectPrompt` ("Client -> Add organisation…", the
+        // documented §7c D2 path) opens `OrganisationPicker`, which is
+        // added above; the picker was therefore completely obscured and
+        // unreachable in the real renderer, while every headless test
+        // passed because it raises the picker's own events directly and
+        // never composites. `TrackModal` below now raises whichever
+        // overlay opens last, so nesting depth decides what is on top
+        // rather than construction order. Toasts stay above every overlay,
+        // which the `ToastHost`-added-last order gave them before.
+        views.ToastHost.ZIndex = int.MaxValue;
+
         // `WP 16.5A` — `TD-83`: while any dialog/the palette is open, Tab
         // must never reach the shell content behind it. Each of the six
         // overlays already flips its own `IsVisible` as its open/close
         // signal.
         var modalCount = 0;
+        var topmostModalZIndex = 0;
         var dockTabNavigationBeforeModal = default(KeyboardNavigationMode);
 
         void TrackModal(Border modal)
@@ -263,6 +278,9 @@ internal sealed partial class MainWindowComposer
 
                 if (modal.IsVisible)
                 {
+                    // `WP 21.5C`: last opened, topmost - see the remark above.
+                    modal.ZIndex = ++topmostModalZIndex;
+
                     if (modalCount == 0)
                     {
                         dockTabNavigationBeforeModal = KeyboardNavigation.GetTabNavigation(dock);

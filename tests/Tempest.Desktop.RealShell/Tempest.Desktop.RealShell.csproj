@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    WP 21.5C (Linux variant) - the real-shell acceptance runner.
+
+    Not a shipped project and not a test project: a plain console executable
+    that starts the *real* Tempest.Desktop application in-process, on the
+    real platform backend (X11 + Skia on Linux), and then drives it through
+    a scripted acceptance journey using genuine operating-system input -
+    `xdotool` mouse moves, clicks, typing and key presses against the X
+    server - rather than synthesised Avalonia events. It reads the live
+    visual tree only to locate controls and to assert what is on screen;
+    it never calls a service to make something happen.
+
+    It is listed in src/TempestOS.slnx so that the ordinary warning-free
+    build gate compiles it on every platform CI builds on. Everything
+    Linux-only in it is guarded at *runtime* (OperatingSystem.IsLinux(),
+    and the presence of the external tools), never with #if, so the
+    Windows build sees the identical source.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Desktop.RealShell</RootNamespace>
+    <!-- Never packed, never shipped, never published. -->
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      The shipped application itself, referenced so the runner can call its
+      own `Program.BuildAvaloniaApp()` - the identical start-up path a user
+      gets. Avalonia, Skia and the SQLite provider all arrive transitively
+      through it, exactly as they do for the application.
+    -->
+    <ProjectReference Include="..\..\src\Tempest.Desktop\Tempest.Desktop.csproj" />
+  </ItemGroup>
+
+</Project>
