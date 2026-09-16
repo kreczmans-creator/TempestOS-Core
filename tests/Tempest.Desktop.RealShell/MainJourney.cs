@@ -147,6 +147,37 @@ internal static class MainJourney
                     ? Act.Verified($"status \"{Act.Status()}\"")
                     : Act.Failed($"the status bar reads \"{Act.Status()}\"");
             });
+
+        // The consultancy's own rates. Until 2026-09-16 nothing in the shipped
+        // application could create a rate card, so on a clean root the
+        // New Project prompt offered none, no timesheet entry could be
+        // priced and no invoice request raised (this journey's own
+        // raise-invoice step pinned that defect). The Libraries area's
+        // "Add a rate card" form closes it; this step drives it the way a
+        // user would and releases the card from its own row.
+        journal.Step(
+            "add-rate-card", "Add the consultancy's rate card to the Rate cards library and release it", "keyboard + mouse",
+            "One graded hourly rate is registered from the library's own form, opens right up, and releases",
+            () =>
+            {
+                if (!Act.TypeInto("Rate card name", "Consultancy standard rates")
+                    || !Act.TypeInto("Rate card grade", "Engineer")
+                    || !Act.TypeInto("Rate card hourly rate", "95"))
+                    return Act.Failed(Act.LastProblem);
+
+                if (!Act.Click("Add Rate Card", settleMs: 2_500))
+                    return Act.Failed(Act.LastProblem);
+
+                if (!Ui.WaitUntil(() => Ui.ShowsText("Added rate card 'Consultancy standard rates'"), 20_000))
+                    return Act.Failed($"nothing reported the rate card; the status bar reads \"{Act.Status()}\"");
+
+                if (!Act.Click("Release ratecard-consultancy-standard-rates", settleMs: 2_500))
+                    return Act.Failed($"the new rate card's own Release button was not reachable ({Act.LastProblem})");
+
+                return Ui.WaitUntil(() => Ui.ShowsText("Released 'ratecard-consultancy-standard-rates'"), 20_000)
+                    ? Act.Verified($"status \"{Act.Status()}\"")
+                    : Act.Failed($"the status bar reads \"{Act.Status()}\"");
+            });
     }
 
     // ==================================================================
@@ -689,12 +720,11 @@ internal static class MainJourney
                 return newGroup.Contains("New (1)", StringComparison.Ordinal)
                     ? Act.Verified($"\"{newGroup}\"")
                     : Act.Unknown($"\"{newGroup}\"; status \"{Act.Status()}\"");
-            },
-            required: false);
+            });
 
         journal.Step(
-            "timesheet-refusal", "Business → Timesheets → Record", "mouse",
-            "The form leads with the project, and states in place why time cannot be recorded without a pinned rate card",
+            "timesheet-grade-from-card", "Business → Timesheets → Record", "mouse",
+            "The form leads with the project and offers the grade priced on its pinned rate card (until 2026-09-16 no card could exist, and the form said so in place)",
             () =>
             {
                 if (!Act.ClickRow("Timesheets", settleMs: 3_000))
@@ -713,15 +743,15 @@ internal static class MainJourney
 
                 var project = Ui.ByName("Project")?.Text ?? "(none)";
                 var grade = Ui.ByName("Grade");
-                var reason = Ui.FirstTextContaining("No rate card is pinned") ?? "(no reason given)";
-                var openDetails = Ui.ByName("Open Details") is not null;
+                var gradeText = grade?.Text ?? "(none)";
+                var reason = Ui.FirstTextContaining("No rate card is pinned");
 
                 if (!Act.Click("Cancel", settleMs: 1_200))
                     return Act.Failed(Act.LastProblem);
 
-                return grade is { Enabled: false } && reason.Contains(ProjectName, StringComparison.Ordinal) && openDetails
-                    ? Act.Verified($"week reads \"{week}\"; Project pre-selects '{project}'; Grade is disabled; \"{reason}\" with its own Open Details button")
-                    : Act.Failed($"Project '{project}'; Grade enabled={grade?.Enabled}; reason \"{reason}\"; Open Details present={openDetails}");
+                return grade is { Enabled: true } && gradeText.Contains("Engineer", StringComparison.Ordinal) && reason is null
+                    ? Act.Verified($"week reads \"{week}\"; Project pre-selects '{project}'; Grade is enabled and reads '{gradeText}' from the pinned card")
+                    : Act.Failed($"Project '{project}'; Grade enabled={grade?.Enabled} text '{gradeText}'; reason \"{reason ?? "(none)"}\"");
             });
 
         journal.Step(
