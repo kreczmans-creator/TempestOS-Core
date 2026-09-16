@@ -1,7 +1,10 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
@@ -543,6 +546,232 @@ public sealed class WorkspaceLayoutControllerTests
         var newHeader = secondaryWindow.Host.FindPanelHeader(Explorer);
         Assert.NotNull(newHeader);
         Assert.True(newHeader!.IsFocused);
+    }
+
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K3, proven headless: `WP 21.0K` found the
+    /// keyboard move gesture applying itself in
+    /// <see cref="WorkspaceLayoutHost"/> rather than through the
+    /// controller, so the re-render it causes destroyed the very header the
+    /// user was operating and left the strip with nothing focused —
+    /// decision 7's focus restore was never reached from the one path that
+    /// most needs it. The gesture now raises intent the controller applies.
+    /// </summary>
+    [AvaloniaFact]
+    public void AKeyboardMove_FromAFocusedTabHeader_LeavesFocusOnThatPanelsNewHeader()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+        var explorerHeader = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(explorerHeader);
+        Assert.True(explorerHeader.IsFocused);
+
+        RaiseKeyboardGesture(explorerHeader, Key.Right);
+
+        var newHeader = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(newHeader);
+        Assert.True(newHeader!.IsFocused);
+    }
+
+    // ----------------------------------------------------------------
+    // ADR-0153 decision 8: keyboard tab reordering (`TD-133`'s residual)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// The whole gesture, end to end through the real controller: a real
+    /// <c>KeyDown</c> on a real tab header reorders the model, re-renders,
+    /// and leaves the same header focused so the next keypress continues
+    /// the move rather than going nowhere.
+    /// </summary>
+    [AvaloniaFact]
+    public void CtrlShiftComma_AndCtrlShiftPeriod_MoveATabWithinItsOwnGroup_AndKeepItFocused()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+
+        // Three tabs in one group, so "one position later" and "one
+        // position earlier" are both genuinely observable.
+        rig.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        rig.Controller.Apply(t => t.Dock(Output, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var groupId = rig.Controller.Tree.FindGroupContaining(Explorer)!.Id;
+        Assert.Equal([Explorer, Inspector, Output], rig.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds);
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+        Assert.True(header.IsFocused);
+
+        RaiseKeyboardGesture(header, Key.OemPeriod);
+
+        Assert.Equal([Inspector, Explorer, Output], rig.Controller.Tree.FindNode(groupId) is LayoutTabGroupNode later ? later.PanelIds : []);
+        var afterLater = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(afterLater);
+        Assert.True(afterLater!.IsFocused);
+
+        RaiseKeyboardGesture(afterLater, Key.OemComma);
+
+        Assert.Equal([Explorer, Inspector, Output], rig.Controller.Tree.FindNode(groupId) is LayoutTabGroupNode earlier ? earlier.PanelIds : []);
+        var afterEarlier = rig.Controller.Host.FindPanelHeader(Explorer);
+        Assert.NotNull(afterEarlier);
+        Assert.True(afterEarlier!.IsFocused);
+    }
+
+    /// <summary>Off either end the gesture changes nothing at all — and, in particular, does not throw away the focus it was holding.</summary>
+    [AvaloniaFact]
+    public void CtrlShiftComma_OnTheFirstTab_ChangesNothing_AndKeepsFocus()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+        rig.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var groupId = rig.Controller.Tree.FindGroupContaining(Explorer)!.Id;
+        var before = ((LayoutTabGroupNode)rig.Controller.Tree.FindNode(groupId)!).PanelIds.ToList();
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+
+        RaiseKeyboardGesture(header, Key.OemComma);
+
+        Assert.Equal(before, ((LayoutTabGroupNode)rig.Controller.Tree.FindNode(groupId)!).PanelIds);
+        Assert.True(rig.Controller.Host.FindPanelHeader(Explorer)!.IsFocused);
+    }
+
+    /// <summary>A reorder is part of the arrangement, not a per-session accident: it survives the shutdown save and the next start's restore.</summary>
+    [AvaloniaFact]
+    public async Task AKeyboardReorderedTabStrip_SurvivesASaveAndRestore()
+    {
+        var settings = NewSettings();
+        var first = BuildRig(settings);
+        first.Window.Activate();
+
+        first.Controller.Apply(t => t.Dock(Inspector, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        first.Controller.Apply(t => t.Dock(Output, t.FindGroupContaining(Explorer)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+
+        var header = first.Controller.Host.FindPanelHeader(Explorer)!;
+        FocusAndSettle(header);
+        RaiseKeyboardGesture(header, Key.OemPeriod);
+        RaiseKeyboardGesture(first.Controller.Host.FindPanelHeader(Explorer)!, Key.OemPeriod);
+
+        var reordered = first.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds.ToList();
+        Assert.Equal([Inspector, Output, Explorer], reordered);
+        await first.Controller.SaveAsync();
+
+        var second = BuildRig(settings);
+        await second.Controller.RestoreAsync(WorkspaceLayoutPresets.Default(Explorer, Document, Inspector, Output));
+
+        Assert.Equal(reordered, second.Controller.Tree.FindGroupContaining(Explorer)!.PanelIds);
+    }
+
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K3 asks for the focus <em>ring</em>, not only
+    /// focus: found missing on the real application by `WP 21.0K` (the
+    /// panel moved, the keyboard kept working, and a keyboard-only user
+    /// could no longer see where they were). Avalonia draws the ring from
+    /// <c>:focus-visible</c>, which a bare <c>Focus()</c> does not set.
+    /// </summary>
+    [AvaloniaFact]
+    public void AKeyboardGesture_RestoresFocusVisibly_AndAMouseLevelOperationDoesNot()
+    {
+        var rig = BuildRig();
+        rig.Window.Activate();
+
+        var header = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        header.Focus(NavigationMethod.Tab);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(":focus-visible", header.Classes);
+
+        RaiseKeyboardGesture(header, Key.Right);
+
+        var moved = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        Assert.True(moved.IsFocused);
+        Assert.Contains(":focus-visible", moved.Classes);
+
+        // The same restore, reached from an operation the user did not
+        // type, leaves the ring alone — a drag should not light one up.
+        rig.Controller.Apply(t => t.Dock(Explorer, t.FindGroupContaining(Inspector)!.Id, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        var docked = rig.Controller.Host.FindPanelHeader(Explorer)!;
+        Assert.True(docked.IsFocused);
+        Assert.DoesNotContain(":focus-visible", docked.Classes);
+    }
+
+    /// <summary>
+    /// `WP 21.0K`, found on the real application while recording
+    /// `PHYSICAL_REVIEW` §7j K2: closing one tab inside a floating window
+    /// took every panel in every other window with it.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClosingOneTabInsideAFloatingWindow_LeavesEveryOtherWindowsPanelsExactlyWhereTheyWere()
+    {
+        var rig = BuildRig();
+        var secondary = FloatIntoASecondRealWindow(rig, Output);
+
+        rig.Controller.Apply(t => t.Dock(Inspector, secondary.Host.TabGroups.Single().NodeId, DockRelation.Into));
+        Dispatcher.UIThread.RunJobs();
+        secondary.Host.Measure(new Size(420, 320));
+        secondary.Host.Arrange(new Rect(0, 0, 420, 320));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains(Explorer, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Document, rig.Controller.Tree.AllPanels);
+
+        // The floating window's own close chrome, clicked — the gesture a
+        // user has, not an operation only a test can reach.
+        var close = secondary.Host.GetLogicalDescendants().OfType<Button>()
+            .Single(b => AutomationProperties.GetName(b) == "Close Inspector");
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        // The tab that was closed is gone. Nothing else is.
+        Assert.DoesNotContain(Inspector, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Explorer, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Document, rig.Controller.Tree.AllPanels);
+        Assert.Contains(Output, rig.Controller.Tree.AllPanels);
+        Assert.NotNull(rig.Controller.Tree.FindGroupContaining(Document));
+    }
+
+    /// <summary>
+    /// `PHYSICAL_REVIEW` §7j K2, headless: the floating window disappears
+    /// the moment its last panel leaves, and the main window still holds
+    /// everything it held.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClosingTheLastTabInAFloatingWindow_ClosesThatWindowOnly()
+    {
+        var rig = BuildRig();
+        var secondary = FloatIntoASecondRealWindow(rig, Output);
+        Assert.Single(rig.Controller.FloatingWindows);
+
+        var close = secondary.Host.GetLogicalDescendants().OfType<Button>()
+            .Single(b => AutomationProperties.GetName(b) == "Close Output");
+        close.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(rig.Controller.FloatingWindows);
+        Assert.DoesNotContain(rig.Controller.Tree.Windows, w => !w.IsPrimary);
+        Assert.Contains(Explorer, rig.Controller.Tree.DockedPanels);
+        Assert.Contains(Document, rig.Controller.Tree.DockedPanels);
+        Assert.Contains(Inspector, rig.Controller.Tree.DockedPanels);
+    }
+
+    /// <summary>A real <c>Ctrl+Shift+</c><paramref name="key"/> press on <paramref name="header"/>, settled the way a real re-render settles.</summary>
+    private static void RaiseKeyboardGesture(Control header, Key key)
+    {
+        header.RaiseEvent(new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = key,
+            KeyModifiers = KeyModifiers.Control | KeyModifiers.Shift,
+        });
+
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
     }
 
     // ----------------------------------------------------------------

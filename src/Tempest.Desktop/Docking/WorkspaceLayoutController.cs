@@ -55,6 +55,13 @@ public sealed class WorkspaceLayoutController
     private Point _dragOrigin;
     private bool _dragActive;
 
+    /// <summary>
+    /// Non-zero while an <see cref="Apply(Func{WorkspaceLayoutTree, WorkspaceLayoutTree})"/>
+    /// is running on behalf of a key pressed on a focused tab header — a
+    /// depth rather than a flag so a nested apply can never clear it early.
+    /// </summary>
+    private int _keyboardGestureDepth;
+
     /// <summary>Raised after any change to the arrangement.</summary>
     public event Action<WorkspaceLayoutTree>? LayoutChanged;
 
@@ -113,6 +120,15 @@ public sealed class WorkspaceLayoutController
     private void WireHost(WorkspaceLayoutHost host)
     {
         host.PanelDragStarted += (panelId, e) => BeginDrag(panelId, host, e);
+
+        // `WP 19.2B` (`TD-133`) and `ADR-0153` decision 8: the three
+        // keyboard gestures a focused tab header raises, applied here —
+        // the one canonical `Apply`, so each one also gets decision 7's
+        // focus restore, which the header that was operated needs more
+        // than any mouse gesture does (the re-render destroys it).
+        host.PanelMoveRequested += (panelId, edge) => ApplyKeyboardGesture(t => t.DockToEdge(panelId, edge));
+        host.PanelResizeRequested += (panelId, delta) => ApplyKeyboardGesture(t => t.ResizeSplit(panelId, delta));
+        host.PanelReorderRequested += (groupId, panelId, direction) => ApplyKeyboardGesture(t => t.ReorderTab(groupId, panelId, direction));
 
         // The drag is tracked on the host rather than on each tab, so
         // moving off the tab it started on — which is the whole point of
@@ -231,6 +247,18 @@ public sealed class WorkspaceLayoutController
         // control identity, since every `LayoutTabGroupView` is rebuilt by
         // this same re-render and cannot be matched by reference.
         var focusedPanelId = CaptureFocusedPanelId();
+
+        // `PHYSICAL_REVIEW` §7j K3 expects the restored header to *show*
+        // its focus ring, not merely hold focus. Avalonia draws the ring
+        // from the `:focus-visible` pseudo-class, which a bare `Focus()`
+        // (`NavigationMethod.Unspecified`) deliberately does not set — a
+        // mouse gesture should not light one up. So the method is recorded
+        // per operation: a gesture that arrived from the keyboard restores
+        // focus as keyboard focus, and every other operation restores it
+        // silently, exactly as before. Read into a local here because the
+        // restore itself runs later, off the dispatcher.
+        var focusMethod = _keyboardGestureDepth > 0 ? NavigationMethod.Tab : NavigationMethod.Unspecified;
+
         Adopt(updated, render: true);
 
         // Posted rather than called inline: the re-render just rebuilt the
@@ -240,7 +268,27 @@ public sealed class WorkspaceLayoutController
         // returns `false`. `DispatcherPriority.Loaded` is the standard
         // "after layout, rendering and data binding have settled" point.
         if (focusedPanelId is { } id)
-            Dispatcher.UIThread.Post(() => RestoreFocus(id), DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(() => RestoreFocus(id, focusMethod), DispatcherPriority.Loaded);
+    }
+
+    /// <summary>
+    /// <see cref="Apply(Func{WorkspaceLayoutTree, WorkspaceLayoutTree})"/>,
+    /// marked as having come from a key the user pressed on a focused tab
+    /// header — the one thing the restore afterwards cannot work out for
+    /// itself, and the difference between a focus ring the keyboard user
+    /// can see and an invisible one (`PHYSICAL_REVIEW` §7j K3).
+    /// </summary>
+    private void ApplyKeyboardGesture(Func<WorkspaceLayoutTree, WorkspaceLayoutTree> operation)
+    {
+        _keyboardGestureDepth++;
+        try
+        {
+            Apply(operation);
+        }
+        finally
+        {
+            _keyboardGestureDepth--;
+        }
     }
 
     private void Adopt(WorkspaceLayoutTree tree, bool render)
@@ -252,6 +300,54 @@ public sealed class WorkspaceLayoutController
 
         SyncFloatingWindows();
         LayoutChanged?.Invoke(tree);
+    }
+
+    /// <summary>
+    /// Folds a secondary window's own host's new arrangement back into the
+    /// forest as that one window's content, leaving every other window
+    /// exactly as it was.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// `WP 21.0K`, found on the real application while recording
+    /// `PHYSICAL_REVIEW` §7j K2 and then reproduced headlessly: a
+    /// secondary window's host renders a <em>synthetic single-window</em>
+    /// tree — <see cref="FloatingPanelWindow.Update"/> hands it
+    /// <c>new WorkspaceLayoutTree(model.Content, [], LayoutPanels)</c>, one
+    /// root and no other windows, because that is all it needs to draw.
+    /// Every gesture that host applies for itself (closing a tab,
+    /// selecting one, collapsing, pinning, dragging a splitter, the
+    /// responsive rule) therefore produces another single-window tree, and
+    /// this controller previously adopted it as the <em>whole</em>
+    /// arrangement. Closing one tab in a floating window silently
+    /// discarded every panel in every other window — including
+    /// <c>Documents</c>, which cannot be closed at all — and left the main
+    /// window drawing a layout the model no longer held.
+    /// </para>
+    /// <para>
+    /// The subtree is spliced in rather than adopted, so exactly one
+    /// window's own content changes. Panel presentations come from the
+    /// subtree because the host carries the whole dictionary
+    /// (<see cref="FloatingPanelWindow.LayoutPanels"/>) and a pin or
+    /// collapse it applied is a real change to it. No re-render of the
+    /// primary window is asked for: nothing in it moved, and rebuilding it
+    /// would throw away whatever focus it holds.
+    /// </para>
+    /// </remarks>
+    private void AdoptSecondaryWindowSubtree(Guid windowId, WorkspaceLayoutTree subtree)
+    {
+        ArgumentNullException.ThrowIfNull(subtree);
+
+        if (!_tree.Windows.Any(w => w.Id == windowId))
+            return;
+
+        var spliced = _tree with
+        {
+            Windows = [.. _tree.Windows.Select(w => w.Id == windowId ? w with { Root = subtree.Root } : w)],
+            Panels = subtree.Panels,
+        };
+
+        Adopt(spliced.Normalised(), render: false);
     }
 
     /// <summary>Opens, updates and closes secondary windows so they match the model exactly.</summary>
@@ -278,7 +374,7 @@ public sealed class WorkspaceLayoutController
             window.ClampToScreen();
 
             window.GeometryChanged += (id, x, y, w, h) => Apply(t => t.MoveFloating(id, x, y, w, h));
-            window.Host.LayoutChanged += tree => Adopt(tree, render: false);
+            window.Host.LayoutChanged += subtree => AdoptSecondaryWindowSubtree(window.WindowId, subtree);
 
             // `ADR-0153` decision 4: every window's own host joins the same
             // drag machinery the primary one already has, so a drag can
@@ -526,7 +622,13 @@ public sealed class WorkspaceLayoutController
     /// (`ADR-0153` decision 7). A no-op when <paramref name="id"/> is no
     /// longer anywhere in the arrangement by the time this runs.
     /// </summary>
-    private void RestoreFocus(Guid id)
+    /// <param name="id">The panel whose tab header should regain focus.</param>
+    /// <param name="method">
+    /// How the focus should be presented: <see cref="NavigationMethod.Tab"/>
+    /// for a gesture the user typed, so the focus ring is drawn, and
+    /// <see cref="NavigationMethod.Unspecified"/> for everything else.
+    /// </param>
+    private void RestoreFocus(Guid id, NavigationMethod method)
     {
         foreach (var host in AllHosts())
         {
@@ -536,7 +638,7 @@ public sealed class WorkspaceLayoutController
             if (TopLevel.GetTopLevel(host) is Window { IsActive: false } window)
                 window.Activate();
 
-            header.Focus();
+            header.Focus(method);
             return;
         }
     }
