@@ -700,10 +700,17 @@ internal static class MainJourney
             });
 
         journal.Step(
-            "raise-invoice", "Raise invoice from the completion (confirmed)", "mouse",
-            "A Draft invoice request is raised and lands under New",
+            "raise-invoice", "The completion's Draft invoice request lands under New (raised on completion, or by hand)", "mouse",
+            "A Draft invoice request exists under New — completing a deliverable on a project with a pinned rate card raises it by itself (PHYSICAL_REVIEW §7c D10); without one, Raise invoice does it by hand",
             () =>
             {
+                // With the rate card pinned since add-rate-card, the completion
+                // step already raised the request best-effort (§7c D10), so the
+                // row offers no Raise invoice action and New already reads 1.
+                var alreadyNew = Ui.FirstTextContaining("New (") ?? "(no New group)";
+                if (alreadyNew.Contains("New (1)", StringComparison.Ordinal) && Ui.ByName("Raise invoice for Detailed calculation pack") is null)
+                    return Act.Verified($"raised on completion — \"{alreadyNew}\"; no Raise invoice action left on the row");
+
                 if (!Act.Click("Raise invoice for Detailed calculation pack", settleMs: 1_500))
                     return Act.Failed(Act.LastProblem);
 
