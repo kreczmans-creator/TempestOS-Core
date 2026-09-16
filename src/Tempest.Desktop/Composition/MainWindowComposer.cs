@@ -721,7 +721,7 @@ internal sealed partial class MainWindowComposer
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp)
+            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
@@ -749,7 +749,7 @@ internal sealed partial class MainWindowComposer
         var referenceDataLibrariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp)
+            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };

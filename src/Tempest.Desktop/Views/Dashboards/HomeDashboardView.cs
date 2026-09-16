@@ -244,11 +244,18 @@ public sealed class HomeDashboardView : UserControl
     {
         _statusChartHost.Children.Clear();
 
+        // Every one of the six `ProjectHealthStatus` buckets, so the total
+        // below counts every open project. Until the overnight real-shell
+        // journey of 2026-09-16 (`WP 21.5C`, DEFECT-4) Blocked and Ready to
+        // invoice were left out, and Home read "0 open project(s) in total."
+        // with one open, ready-to-invoice project on the Projects dashboard.
         DashboardChart.Bar[] bars =
         [
             new("On track", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.OnTrack), BrandPalette.SuccessBrushKey),
+            new("Ready to invoice", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.ReadyToInvoice), BrandPalette.SuccessBrushKey),
             new("At risk", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.AtRisk), BrandPalette.WarningBrushKey),
             new("Overdue", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.Overdue), BrandPalette.DangerBrushKey),
+            new("Blocked", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.Blocked), BrandPalette.DangerBrushKey),
             new("On hold", snapshot.Counts.GetValueOrDefault(ProjectHealthStatus.OnHold), BrandPalette.MutedTextBrushKey),
         ];
 

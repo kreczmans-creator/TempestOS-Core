@@ -257,6 +257,24 @@ public sealed class ProjectWorkspaceView : UserControl
         _milestones = milestones;
         _deliverablesView = deliverablesView;
         _quoteView = quoteView;
+
+        // DEFECT-2 of the overnight real-shell journey (2026-09-16, `WP 21.5C`
+        // Linux): Accept created the Deliverables and Requirements but the
+        // sibling tabs kept their empty state until the project was closed
+        // and reopened — `ProjectQuoteView` refreshes only itself and
+        // `QuotationService` publishes nothing on the change bus. The
+        // workspace owns every area view, so it refreshes the ones an
+        // accepted (or declined) quotation changes, the moment the quote
+        // view reports a successful action.
+        quoteView.ActionCompleted += async (_, outcome) =>
+        {
+            if (outcome != ActionOutcome.Changed || projectContext.Current is not { } current)
+                return;
+
+            _requirementsView.Show(await requirements.ListAsync(current.Id).ConfigureAwait(true), current.Label);
+            await deliverablesView.RefreshAsync().ConfigureAwait(true);
+            await detailsView.RefreshAsync().ConfigureAwait(true);
+        };
         _evidenceView = evidenceView;
         _signOffView = signOffView;
         _detailsView = detailsView;

@@ -198,6 +198,24 @@ public sealed class QuotationJourneyTests
             Assert.All(acceptedQuote.Lines, l => Assert.NotNull(l.DeliverableId));
             Assert.All(acceptedQuote.Lines, l => Assert.NotNull(l.RequirementId));
 
+            // DEFECT-2 of the overnight real-shell journey (2026-09-16,
+            // `WP 21.5C` Linux): the sibling tabs refresh from the Accept
+            // itself — before the project is left or re-entered — so a user
+            // switching straight to Deliverables or Requirements sees what
+            // Accept created rather than the empty state.
+            var deliverableTitlesInPlace = acceptedQuote.Lines.Select(l => l.Description).ToHashSet(StringComparer.Ordinal);
+            await RenderUntilAsync(window, () =>
+                deliverableTitlesInPlace.All(title => projectWorkspace.DeliverablesView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(title, StringComparison.Ordinal))));
+            Assert.True(
+                deliverableTitlesInPlace.All(title => projectWorkspace.DeliverablesView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(title, StringComparison.Ordinal))),
+                "Accepting a quotation must refresh the Deliverables tab in place, without leaving the project.");
+            var requirementsViewInPlace = GetPrivateField<ProjectRequirementsView>(projectWorkspace, "_requirementsView");
+            await RenderUntilAsync(window, () =>
+                acceptedQuote.Lines.All(l => requirementsViewInPlace.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(l.Description, StringComparison.Ordinal))));
+            Assert.True(
+                acceptedQuote.Lines.All(l => requirementsViewInPlace.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(l.Description, StringComparison.Ordinal))),
+                "Accepting a quotation must refresh the Requirements tab in place, without leaving the project.");
+
             // The two deliverables show on the Deliverables tab.
             var deliverableTitles = acceptedQuote.Lines.Select(l => l.Description).ToHashSet(StringComparer.Ordinal);
             await navigator.OpenProjectAsync(projectId, ProjectArea.Deliverables).ConfigureAwait(true);

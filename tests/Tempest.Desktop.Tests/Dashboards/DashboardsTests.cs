@@ -81,10 +81,17 @@ public sealed class DashboardsTests
             Assert.Contains("Invoices: 1 sent", homeText, StringComparison.Ordinal);
             Assert.DoesNotContain("Invoices: unavailable", homeText, StringComparison.Ordinal);
 
-            // 6: DASH-F, DASH-D, DASH-A, DASH-B — plus the two projects the
-            // host's own sample data seeds (both On track, uncomplicated;
-            // see the Projects-dashboard tile's own identical remark).
-            Assert.Contains("6 open project(s) in total.", homeText, StringComparison.Ordinal);
+            // 8: every open project — DASH-F, DASH-D, DASH-A, DASH-B, the
+            // two projects the host's own sample data seeds (both On track,
+            // uncomplicated; see the Projects-dashboard tile's own identical
+            // remark), and DASH-C (Blocked) and DASH-E (Ready to invoice).
+            // Until the overnight real-shell journey of 2026-09-16 (`WP 21.5C`
+            // Linux, DEFECT-4) Home summed only four of the six health
+            // buckets and this line read 6, leaving a blocked or
+            // ready-to-invoice project uncounted as "open".
+            Assert.Contains("8 open project(s) in total.", homeText, StringComparison.Ordinal);
+            Assert.Contains("Blocked", homeText, StringComparison.Ordinal);
+            Assert.Contains("Ready to invoice", homeText, StringComparison.Ordinal);
 
             // Every open project's own milestone appears in "Upcoming
             // milestones" (four: DASH-A, DASH-D and DASH-E's own default
