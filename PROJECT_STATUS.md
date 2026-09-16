@@ -54,7 +54,7 @@ Owed, all on the Product Owner: `WP 21.0B`/`21.0C` (docking steps 3–4) after t
 - Governance health check: 5 of 5
 - Dependency scan: 9 projects, none vulnerable; every workflow action SHA-pinned
 - Real shell: the `WP 21.5C` runner on this head — the `WP 21.5C` runner on the final head, display :105, 2026-09-16 01:38–01:42 UTC: **journey 37 steps — 37 Verified, 0 Failed; relaunch verify 8 of 8 — PASSED**, now including the rate card created and released through the new form, the New Project prompt offering it, the timesheet prompt offering its grade, and the invoice request raised on completion (`evidence/realshell/gate-run-*-on-the-final-head.md`). Two earlier runs tonight on the same product code: 34/35 (before the runner learned the rate-card form) and 35/36 (the stale Raise-invoice expectation); hand-driven evidence under `docs/releases/v0.21.0/evidence/{xero,docking,fixes,quality}/`
-- CI: green on `a4ab1915` (runs 430, 433), `7fdc33df` (435) and `f7e2af66` (436); the final head: the Windows run on this head is recorded by the campaign's last commit (every push cancels the previous run on a non-release branch, so only the final head's run completes)
+- CI: green on `a4ab1915` (runs 430, 433), `7fdc33df` (435) and `f7e2af66` (436); the final head: **run 442 on `e825065b` — green in every gate job** (Build & Test Debug and Release, Core and the three Desktop shards each, Governance Health Check, Dependency Scan, Linux Launch Smoke with the advisory real-shell step, CI Gate), started 01:43:58 UTC, completed 01:57:23 UTC; `e825065b` carries exactly tonight's code, this commit adds only the verdict
 - Live backlog: 10 of 30, every row classified (`BACKLOG.md`)
 
 ## Released
