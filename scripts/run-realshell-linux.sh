@@ -73,10 +73,18 @@ if ! DISPLAY="$DISPLAY_NUMBER" xdotool getdisplaygeometry >/dev/null 2>&1; then
   Xvfb "$DISPLAY_NUMBER" -screen 0 1600x1000x24 -nolisten tcp >"$OUT_DIR/xvfb.log" 2>&1 &
   XVFB_PID=$!
   STARTED_XVFB=1
-  for _ in $(seq 1 40); do
+  # Up to 30 s: on a loaded machine (the full Desktop suites running
+  # beside this script on 2026-09-16) Xvfb took longer than the original
+  # ten seconds, the loop fell through silently, and both passes aborted
+  # with "XOpenDisplay failed" - a failure of this script, not the product.
+  for _ in $(seq 1 120); do
     DISPLAY="$DISPLAY_NUMBER" xdotool getdisplaygeometry >/dev/null 2>&1 && break
     sleep 0.25
   done
+  if ! DISPLAY="$DISPLAY_NUMBER" xdotool getdisplaygeometry >/dev/null 2>&1; then
+    echo "Xvfb did not come up on $DISPLAY_NUMBER within 30 s - see $OUT_DIR/xvfb.log" >&2
+    exit 2
+  fi
 fi
 
 cleanup() {
