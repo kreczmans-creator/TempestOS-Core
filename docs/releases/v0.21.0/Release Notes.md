@@ -39,6 +39,7 @@ itself and the Windows installer run stay with the Product Owner.
 
 | Work Package | Delivered | Merged |
 |---|---|---|
+| `WP 21.0K` Docking: keyboard closure and real-shell verification of steps 1–2 (overnight campaign) | `ADR-0153` decision 8 as written: `Ctrl+Shift+,`/`Ctrl+Shift+.` reorder a tab within its own group through the one canonical `Apply` (`WorkspaceLayoutTree.ReorderTab`, already pure-tested), no-op at either end, the help text naming the keys, the order surviving save and restore. The keyboard move/resize gestures now reach the controller (they were applied by the host, so decision 7's focus restore never ran for them) and a typed gesture restores *keyboard* focus so the ring is drawn. **A critical defect fixed, not introduced:** closing one tab inside a floating window discarded every panel in every other window — `FloatingPanelWindow.Update` gave its host a synthetic single-window tree, and every gesture that host applied became the whole forest (`WP 20.10D`, carried through `WP 21.0A`); now spliced into its one window entry (`AdoptSecondaryWindowSubtree`), reproduced headlessly first. 8 tests added, 1 rebuilt on a real controller. K1/K2/K3/K6 and the new keys driven in the real application; K4/K5 owed to hardware (`WP21.0K Docking Keyboard Closure and Real-Shell Verification.md`, `evidence/docking/`). | `5c170f34` |
 | `WP 21.6P` The Xero authorisation path a user can actually take (overnight campaign) | Three defects found by reading the morning's `WP 21.6` path against the code, each **Verified** before the fix: **Authorise** only re-read the stored state (`OAuthAuthoriser.AuthoriseAsync` had no caller in the product); Settings stored the client id under `Invoicing:ClientId` while the authoriser reads `Invoicing:<Provider>:ClientId` (`ADR-0151`); the connector chosen in Settings was saved to the settings store but the host chose from configuration only, so it never took effect. Fixed: `IAuthorisableConnector` (Xero and QuickBooks implement it; the Fake deliberately not); Settings stores credentials under the provider's own key, shows and migrates the legacy value; the host honours the persisted choice when configuration is silent; **Authorise** saves, then runs the interactive sign-in for an unauthorised real provider with a five-minute wait and every outcome in words, and says *restart* when the chosen connector is not the running one (the Fake's own "Authorised." had been shown for a never-signed-in Xero — caught only in the real application); a browser that cannot open is a result, not an exception. 13 tests. Driven in the real application under Xvfb up to the token exchange (`WP21.6P Xero Authorisation Path Report.md`, `evidence/xero/`). | `709d01a4` |
 | `FileSecretStore` on Linux/macOS: the `0700`/`0600` promise holds for an existing directory or file | `Directory.CreateDirectory(path, mode)` and `UnixCreateMode` apply only on creation; a pre-existing secrets directory stayed `0755`. `SetUnixFileMode` after both. Found by the store's own test (`SetAsync_OnNonWindows_RestrictsTheSecretsDirectoryAndFile_ToTheCurrentUserOnly`) running on Linux for the first time; the shipped Windows build uses DPAPI and is unaffected. | `69668268` |
 | `WP 21.9.1` Documentation alignment | `VISION.md` provenance-dated with a "Where the product stands at the v1.0 release candidate" section (the "zero Engineering Modules" present tense corrected, history kept); `README.md` what-the-product-does-today; `Product Roadmap.md` and `Future Capability Register.md` dated review notes (`FCR-0032`/`0051`/`0052`/`0053` delivered-by notes); Academy landing corrections; 166 links checked, 0 broken. 21 drift rows in `WP21.9.1 Documentation Alignment Report.md`. | `aa91273c` |
@@ -118,19 +119,19 @@ counts from the gate; the effort from `Execution Plan.md` §5).
   materialisation), and which was never benchmarked past a 1,000-object
   estate before now.
 
-- **Docking steps 1–2 are proven headless, not on hardware (`WP 21.0A`,
-  `ADR-0153` risks 1–3).** The two-window test proves the resolution
-  mechanism — every window's candidates gathered through `PointToScreen`
-  into one coordinate space — but Avalonia's headless platform ignores
-  `Window.Position` in `PointToScreen`, so a real per-monitor offset round
-  trip is self-consistent, not physically proven. Still owed on real
-  Windows hardware, and written into `PHYSICAL_REVIEW.md` §7j as K1–K6:
-  pointer capture continuing across a window boundary; a real per-monitor
-  DPI difference through `MonitorRelativePlacement` (nine pure unit tests
-  with synthetic screens today); the monitor-unplugged fallback against
-  Avalonia's own `Screens`. `ReorderTab` exists as a model operation and
-  is not yet on a key (`WP 21.0B`). Steps 3–4 (`WP 21.0B`, `WP 21.0C`)
-  wait on the Product Owner's `ADR-0153` review.
+- **Docking: what is verified on a real screen and what is still owed to
+  hardware (`WP 21.0A`, `WP 21.0K`).** K1 (a tab dropped onto a floating
+  window docks into it), K2 (a floating window closes with its last panel,
+  the main window untouched), K3 (a keyboard move keeps a visible focus
+  ring), K6 (Reset Layout) and the new `Ctrl+Shift+,`/`.` reorder keys are
+  verified in the real application on a Linux/X11 screen
+  (`evidence/docking/`); a saved floating window restores to its exact
+  position and size on one monitor. Still owed to real Windows hardware:
+  K4/K5 (a second monitor, and the monitor-unplugged fallback through
+  Avalonia's own `Screens`) and the save-on-close half of persistence
+  (under Xvfb no window manager delivers `WM_DELETE_WINDOW`, so
+  `MainWindow.Closing` could not be driven). Steps 3–4 (`WP 21.0B`,
+  `WP 21.0C`) wait on the Product Owner's `ADR-0153` review.
 - **The mutation score is scoped, not full (`WP 21.5D`).** 89.51 %
   (435 of 486 killed) is a local run with `--mutate` limited to the seven
   files behind the 67.58 % CI score; the full figure is re-measured by the

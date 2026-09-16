@@ -4,6 +4,12 @@
 
 Proposed — `WP 20.0A` (design), for the Product Owner's review, 2026-09-15.
 Steps 1–2 delivered by `WP 21.0A`.
+Decision 8 (keyboard tab reorder, `Ctrl+Shift+,`/`.`) and the
+visible-focus refinement of decision 7 (a typed gesture restores focus as
+*keyboard* focus, so the ring is drawn) delivered by `WP 21.0K`
+(2026-09-16), which also fixed a floating-window close defect carried
+since `WP 20.10D`. Steps 3–4 await the Product Owner's review of this
+ADR.
 
 ## Context
 

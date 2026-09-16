@@ -604,25 +604,57 @@ exactly the proofs the headless tests could not give (the headless
 platform ignores a window's own position), so record their outcomes in
 words.
 
-- **K1.** Open a project. Float the Property Inspector (its tab's Float).
-  A floating window appears. Drag the Explorer's tab onto that floating
-  window's tab strip. **Expect:** the Explorer docks *into the floating
-  window* as a second tab — not back into the main window, not a third
-  window.
-- **K2.** Close the Explorer tab in the floating window, then float-close
-  the Inspector. **Expect:** the floating window disappears the moment its
-  last panel leaves; nothing is lost from the main window.
-- **K3.** Keyboard only: focus a docked panel's tab and move it with the
-  existing move commands. **Expect:** after the re-render the same tab
-  header has keyboard focus and shows the focus ring (`TD-90`).
+- **K1.** Open a project → **Structure** tab. Float the Property
+  Inspector by **dragging its tab header past the edge of the workspace
+  area** and releasing (there is no Float button — the tab chrome offers
+  Collapse, Pin/Auto-hide and Close only; `WP 21.0K` corrected this
+  wording). A floating window appears. Drag the Explorer's tab onto that
+  floating window's tab strip. **Expect:** the Explorer docks *into the
+  floating window* as a second tab — not back into the main window, not a
+  third window. *Verified on a real X11 screen by `WP 21.0K`
+  (`docs/releases/v0.21.0/evidence/docking/k1-…png`).*
+- **K2.** Close the Explorer tab in the floating window, then close the
+  Inspector's tab too. **Expect:** after the first close the floating
+  window stays with the Inspector and the main window's Documents area is
+  untouched; after the second the floating window disappears the moment
+  its last panel leaves; nothing is lost from the main window. *Until
+  `WP 21.0K` the first close discarded every panel in every other window
+  (a `WP 20.10D`-era defect carried through `WP 21.0A`, found and fixed in
+  the real application on 2026-09-16); verified after the fix
+  (`k2-…png`).*
+- **K3.** Keyboard only: reach a docked panel's tab header with **`Tab`**
+  (clicking a header selects the panel without focusing it, so the
+  gestures would look dead) and move it with `Ctrl+Shift+Arrow`.
+  **Expect:** after the re-render the same tab header has keyboard focus
+  and shows the focus ring (`TD-90`); `Ctrl+Shift+←` then moves it back,
+  which only works if the header kept the keyboard. *Both halves failed
+  before `WP 21.0K` (the gestures were applied by the host, never reaching
+  the controller's focus restore, and the restore was not `:focus-visible`);
+  verified after (`k3-…png`).*
+- **K7.** Keyboard only: focus a tab header in a group holding two or more
+  tabs (reach it with `Tab`) and press **`Ctrl+Shift+,`** then
+  **`Ctrl+Shift+.`**. **Expect:** the tab moves one position earlier and
+  later along its own strip, stops at either end without complaint, and
+  keeps the focus ring throughout (`ADR-0153` decision 8, `TD-133`'s
+  residual; `WP 21.0K`, `reorder-ctrl-shift-comma.png`). The new order
+  survives a relaunch.
 - **K4.** With a second monitor attached, drag a floating window onto it.
   Close TempestOS. Reopen. **Expect:** the floating window restores on the
   second monitor at the same place and size.
 - **K5.** Repeat K4 but unplug (or disable) the second monitor before
   reopening. **Expect:** the floating window restores on the primary
   monitor, fully visible, never off-screen.
-- **K6.** Reset the layout (the existing command). **Expect:** every panel
-  back in its default place, one window.
+- **K6.** Reset the layout (Command Palette → **Reset Layout**). **Expect:**
+  every panel back in its default place, one window. *Verified by
+  `WP 21.0K` (`k6-reset-layout.png`).*
+- **K8 (Windows only).** With a floating panel window open, close the main
+  window from its title bar. **Expect:** the floating window closes with
+  it, the process exits, and on relaunch the layout (including the floating
+  window's place and size) comes back. Under Xvfb tonight the main
+  window's own `Closing` handler could not be driven (no window manager
+  delivers `WM_DELETE_WINDOW`), so the save-on-close half is **owed to a
+  real desktop session**; the restore half is verified
+  (`persistence-floating-window-restored.png`).
 
 ### 7k. The first live Xero authorisation (`WP 21.6`, with `WP 21.6P`'s fixes; about 10 minutes, the Product Owner's own Xero app)
 
