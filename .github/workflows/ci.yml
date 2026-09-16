@@ -796,7 +796,10 @@ jobs:
   linux-launch-smoke:
     name: Linux Launch Smoke (advisory)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25 rather than 15 since `WP 21.5C` added the real-shell journey step
+    # below, which builds the solution and then drives the application for
+    # a few minutes. Still advisory, still not in `gate`.
+    timeout-minutes: 25
     # Advisory means advisory: this job is not in the gate's needs list
     # (see below), and it must not turn the workflow run red either, because
     # scripts/new-release.ps1 reads the run's own conclusion before it
@@ -885,6 +888,46 @@ jobs:
           fi
           echo "::error::Tempest.Desktop exited on its own (code $code) - see the logs above."
           exit 1
+
+      # `WP 21.5C` (Linux variant) - the real-shell acceptance journey.
+      # The step above proves the application *launches*; this one drives
+      # the built application through the product's own value chain
+      # (reference data -> project and client -> quotation -> acceptance ->
+      # engineering calculation -> evidence -> deliverable completion ->
+      # invoicing) with genuine X11 input, screenshotting every step, then
+      # closes it through the window's own close message and relaunches it
+      # to prove what was created is still there. See
+      # `docs/releases/v0.21.0/WP21.5C Real-Shell Journey (Linux) Report.md`
+      # for the step table, the defects it found and how to run it locally.
+      #
+      # Advisory inside an already-advisory job: `continue-on-error` on the
+      # job and on each step below, and this job is not in `gate`'s own
+      # `needs:` list. It is evidence, not a merge gate, and `D-025`'s
+      # support boundary is unchanged by it.
+      - name: Install the journey's own tools (xdotool, ImageMagick)
+        continue-on-error: true
+        run: sudo apt-get install -y xdotool imagemagick
+
+      - name: Real-shell acceptance journey (advisory)
+        continue-on-error: true
+        run: |
+          chmod +x scripts/run-realshell-linux.sh
+          scripts/run-realshell-linux.sh \
+            --display :99 \
+            --configuration Release \
+            --out "$RUNNER_TEMP/realshell"
+
+      - name: Upload the journey's own step tables and screenshots
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: realshell-journey
+          path: |
+            ${{ runner.temp }}/realshell/journey
+            ${{ runner.temp }}/realshell/verify
+          if-no-files-found: warn
+          retention-days: 14
 
   # WP 17.0C — Mutation testing (Stryker.NET), scoped to
   # src/Tempest.Core/Calculations/** and src/Tempest.Core/UnitsAndQuantities/**
