@@ -96,3 +96,32 @@ script's wrapped `Write-Error`, the one cause of every red core leg
 between the `21.5E` merge and it) and `904b0f81` (the OAuth round-trip
 tests off the default port). Everything the packages and the merges
 disclosed is in the Release Notes' Warnings.
+
+## 6. The overnight acceptance campaign (2026-09-15 23:11 → 2026-09-16, on `claude/tempestos-v1-final-acceptance-19hka8`)
+
+Not a new tranche: the candidate at `a4ab1915` taken through the remaining
+technically actionable work, as lead with four package agents in their
+own worktrees (`wp/21.0K`, `wp/21.5C-linux`, `wp/21.9.1-docs`,
+`wp/21.9.1-quality`), each merged `--no-ff` after its own gate, the full
+gate re-run on the final head, and the morning package written
+(`PRODUCT_OWNER_ACCEPTANCE.md`, `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md`).
+Scope discipline: nothing deliberately deferred was reopened — docking
+steps 3–4 stay gated on the `ADR-0153` review, the live Xero sign-in and
+the installer run stay with the Product Owner.
+
+| Package | What | Merge |
+|---|---|---|
+| the two unmerged branches | `cancel-in-progress` off for `release/*`; the Academy chapters | `3d256792`, `fb0c8f8a` |
+| `FileSecretStore` (lead) | the `0700`/`0600` promise for an existing directory or file, found by the store's own test on Linux | `69668268` |
+| `WP 21.6P` (lead) | the Xero authorisation path a user can actually take — three defects found by reading the `WP 21.6` path against the code; the `WP 21.6` script is `PHYSICAL_REVIEW.md` §7k | `709d01a4` |
+| `WP 21.9.1` quality | the release-quality evidence in one place; backup/restore and restart persistence driven in the real application | `2a2d1a33` |
+| `WP 21.9.1` docs | permanent documentation aligned with the product, provenance kept | `aa91273c` |
+| `WP 21.0K` | `ADR-0153` decision 8 on keys, keyboard gestures through the controller with visible focus, the floating-window close defect fixed; K1/K2/K3/K6 on a real screen | `5c170f34` |
+| `WP 21.5C` (Linux) | the real-shell acceptance journey on Linux/Xvfb — a non-shipped runner drives the real application with genuine X11 input through 35 steps and an 8-step relaunch verify; one major defect fixed (a picker under its prompt), four reported, three of those fixed by the lead the same night | `3ba0709f`, fixes `37264671` |
+| release documents (lead) | backlog audit (7 of 30), `PHYSICAL_REVIEW.md` §7j corrected and §7k added, `D-028` addendum, release notes, this section, `PROJECT_STATUS.md` | the final commits |
+
+Owed after tonight, all on the Product Owner: `WP 21.0B`/`21.0C` after the
+`ADR-0153` review; the live Xero sign-in (`WP 21.6`, §7k); the first
+`Setup.exe` from the pipeline (a tag, or `package-installer.ps1` on
+Windows); K4/K5 on two monitors and the save-on-close half of docking
+persistence on Windows; the Windows UI-Automation form of `WP 21.5C`.
