@@ -1,0 +1,1 @@
+{"nodes": [{"id": "docs_adr_adr_0119_ui_thread_marshalling", "label": "UI Thread Marshalling Is Desktop's Job Tempest.App Stays Dispatcher-Free", "file_type": "document", "source_file": "docs/adr/ADR-0119-ui-thread-marshalling-is-the-desktops-job-tempest-app-stays-dispatcher-free.md"}], "edges": [], "hyperedges": []}

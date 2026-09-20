@@ -69,3 +69,10 @@ build-*.log
 # tool install it falls back to - all run artefacts, never source.
 /artifacts/
 /.tools/
+
+# graphify knowledge graph (see CLAUDE.md): raw graph ships as graph.json.zip,
+# the AST cache is regenerable, and the interpreter/root sidecars are machine-specific
+/graphify-out/graph.json
+/graphify-out/cache/ast/
+/graphify-out/.graphify_python
+/graphify-out/.graphify_root
