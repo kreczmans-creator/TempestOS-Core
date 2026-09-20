@@ -47,8 +47,14 @@ out/
 .idea/
 
 # Claude Code local tooling state (worktrees created for isolated background
-# agents, session-local config) - ephemeral, machine-local, never source
-.claude/
+# agents, session-local config) - ephemeral, machine-local, never source.
+# The shared project defaults are versioned: settings.json (hooks), the
+# SessionStart hook and the graphify project skill.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/skills/
+.claude/settings.local.json
 
 # MSBuild / test results
 TestResults/
