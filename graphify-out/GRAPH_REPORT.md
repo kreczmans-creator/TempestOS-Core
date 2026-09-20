@@ -288,17 +288,17 @@
 - Requirements Lifecycle
 - Manual Task Management
 - KPI Period Configuration
-- Community 279
+- Undo Compensation Journeys
 - Command Macro Management
 - Engineering Rule Engine
 - Engineering Rule Engine
-- Community 283
+- Clock Sample Module
 - Project Task Board
-- Community 285
+- Invoicing Journey Tests
 - Engineering Calculation UI
 - Runtime Platform
 - Financial Period Validation
-- Community 289
+- Material Selection Scenarios
 - Evidence Record Lifecycle
 - Invoicing Core
 - Project Explorer Workspace
@@ -315,7 +315,7 @@
 - Document Page Rendering
 - Pricing Rate Validation
 - Deliverable Service
-- Community 306
+- Issue Sheet Renderer
 - Import Export Service
 - Evidence Editor Sections
 - Calculation Trace Register
@@ -328,7 +328,7 @@
 - Workspace Navigation
 - Seed Dataset Validation
 - Desktop UI
-- Community 319
+- Desktop Layout Walk Tests
 - Engineering Domain Sample
 - Requirements Lifecycle
 - Desktop UI
@@ -342,12 +342,12 @@
 - Workspace Operations
 - Design System React
 - Project Milestone Register
-- Community 333
+- Engineering Asset Seeding
 - Project View
 - Project View
 - Evidence Record Lifecycle
 - Workspace Layout Serialization
-- Community 338
+- Engineering Domain Sample Module
 - Physical Constants Reference
 - Session Principal Identity
 - Accounts Reading Store
@@ -357,7 +357,7 @@
 - Material Family Definition
 - Project Organization Setup
 - Calculation Record Execution
-- Community 348
+- Material Catalog Reconciliation
 - Desktop UI
 - Project Governance Risks
 - Workspace State Management
@@ -2218,7 +2218,7 @@ Nodes (32): CancellationToken, DateOnly, Guid, Task, ITaskService, IDictionary, 
 Cohesion: 0.08
 Nodes (24): DateOnly, KpiPeriod, From, Preset, To, TotalDays, KpiPeriodPreset, Custom (+16 more)
 
-### Community 279 - "Community 279"
+### Undo Compensation Journeys - "Undo Compensation Journeys"
 Cohesion: 0.09
 Nodes (29): CancellationToken, Task, IUndoRedoStack, CanRedo, CanUndo, NextRedoDescription, NextUndoDescription, CancellationToken (+21 more)
 
@@ -2234,7 +2234,7 @@ Nodes (19): QuantityComparisonExpression, PropertyName, Threshold, RuleThreshold
 Cohesion: 0.14
 Nodes (20): DateTimeOffset, IReadOnlyDictionary, IReadOnlyList, ConsiderationOverride, AuthorisedByPrincipalId, ConsiderationCode, Reason, TradeStudyDecision (+12 more)
 
-### Community 283 - "Community 283"
+### Clock Sample Module - "Clock Sample Module"
 Cohesion: 0.08
 Nodes (33): CancellationToken, IReadOnlyList, List, Task, ClockLifecycleObserverModule, ObservedEvents, CancellationToken, DateTimeOffset (+25 more)
 
@@ -2242,7 +2242,7 @@ Nodes (33): CancellationToken, IReadOnlyList, List, Task, ClockLifecycleObserver
 Cohesion: 0.12
 Nodes (24): CancellationToken, DateOnly, Guid, IReadOnlyList, ManualTask, Task, TimeProvider, IProjectLifecycleService (+16 more)
 
-### Community 285 - "Community 285"
+### Invoicing Journey Tests - "Invoicing Journey Tests"
 Cohesion: 0.08
 Nodes (34): Button, CancellationToken, DateOnly, DatePicker, Evidence, Guid, IReadOnlyList, ListBox (+26 more)
 
@@ -2258,7 +2258,7 @@ Nodes (13): AssemblyBuilder, ConditionalWeakTable, DllPath, PersistedAssemblyBui
 Cohesion: 0.13
 Nodes (14): DateOnly, EffectivePeriod, FinancialPeriod, Label, Period, ArgumentException, Catalog, DateOnly (+6 more)
 
-### Community 289 - "Community 289"
+### Material Selection Scenarios - "Material Selection Scenarios"
 Cohesion: 0.13
 Nodes (21): QuantityComparator, QuantityComparisonExpression, MaterialCriterion, Expression, PropertyName, RequiredValue, IRuleCatalog, TimeProvider (+13 more)
 
@@ -2326,7 +2326,7 @@ Nodes (25): DateOnly, PricingBasis, Day, Expenses, FixedPrice, HalfDay, Hourly, 
 Cohesion: 0.09
 Nodes (30): DeliverableCompletionRefusal, AlreadyCompleted, CompletionInvoiced, CompletionNotFound, EvidenceNotIssued, None, ProjectArchived, DeliverableCompletionResult (+22 more)
 
-### Community 306 - "Community 306"
+### Issue Sheet Renderer - "Issue Sheet Renderer"
 Cohesion: 0.08
 Nodes (26): DeclaredFigure, DeclaredFigureRole, Input, Result, DateTimeOffset, Func, LayoutState, List (+18 more)
 
@@ -2378,7 +2378,7 @@ Nodes (23): Fact, Task, CrossDomainReferenceTests, Fact, Task, ScenarioReadiness
 Cohesion: 0.11
 Nodes (23): AvaloniaFact, CancellationToken, ComboBox, ComboBoxItem, Dictionary, Func, Host, InMemorySecretStore (+15 more)
 
-### Community 319 - "Community 319"
+### Desktop Layout Walk Tests - "Desktop Layout Walk Tests"
 Cohesion: 0.08
 Nodes (23): Frame, ILogical, Method, Control, Func, HashSet, ItemsPresenter, List (+15 more)
 
@@ -2434,7 +2434,7 @@ Nodes (12): TONES, SIZES, VARIANTS, PADS, Icon(), BOX, GLYPH, IconButton() (+4 m
 Cohesion: 0.14
 Nodes (16): MilestoneFixture, DateTimeOffset, Fact, Func, InvalidOperationException, List, Task, MilestoneFixture (+8 more)
 
-### Community 333 - "Community 333"
+### Engineering Asset Seeding - "Engineering Asset Seeding"
 Cohesion: 0.08
 Nodes (32): CancellationToken, IReadOnlyList, IReferenceDataCatalog, IReferenceRecord, IReferenceSeed, ReferencePin, ReferenceSeedRecord, Task (+24 more)
 
@@ -2454,7 +2454,7 @@ Nodes (41): ADR-0041: One shared persistence abstraction (IPersistenceStore), AD
 Cohesion: 0.11
 Nodes (21): FloatingDto, LayoutDocumentDto, LegacyLayoutDocumentDto, NodeDto, PanelStateDto, Guid, IReadOnlyDictionary, IReadOnlyList (+13 more)
 
-### Community 338 - "Community 338"
+### Engineering Domain Sample Module - "Engineering Domain Sample Module"
 Cohesion: 0.09
 Nodes (29): Guid, IReadOnlyList, EngineeringDomainSampleModule, AllSampleObjectIds, HasRegistered, SampleAssemblyId, SamplePartId, SampleProjectId (+21 more)
 
@@ -2494,7 +2494,7 @@ Nodes (23): Name, Button, CheckBox, ComboBox, ContentControl, Task, TaskCompleti
 Cohesion: 0.14
 Nodes (10): BracketCheckOutcome, DoesNotMeetCriteria, MeetsCriteria, BracketSectionCheckCalculationDefinition, CalculationId, ArgumentNullException, Fact, InlineData (+2 more)
 
-### Community 348 - "Community 348"
+### Material Catalog Reconciliation - "Material Catalog Reconciliation"
 Cohesion: 0.10
 Nodes (21): CancellationToken, Task, IMaterialCatalogReconciliationService, Guid, IReadOnlyList, MaterialCatalogReconciliationFinding, MaterialCatalogReconciliationReport, CancellationToken (+13 more)
 
@@ -4530,9 +4530,9 @@ Nodes (3): IReadOnlyList, MaterialComparisonProperties, All
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `EngineeringDomainContext` connect `Engineering Document Revisions` to `Engineering Requirements Workspace`, `Desktop Host Test Infrastructure`, `Command Dispatch Pipeline`, `Domain Object Rehydration`, `Workspace Calculation Execution`, `Purchase Order Commands`, `Expense Entry Prompt`, `Manufacturing Cockpit Dashboard`, `Invoice Grouping Logic`, `Project Deliverables UI`, `Workspace Command Registration`, `Object State Persistence`, `Business Dashboard Views`, `Quotation Invoicing Commands`, `Timesheet Node Provider`, `Ribbon Feature Commands`, `Document Attachment UI`, `Document Lifecycle Commands`, `Engineering Object Factories`, `Mechanical BOM Factory`, `Requirements Event Publishing`, `Engineering Assets Dashboard`, `Verification Activity Lifecycle`, `Engineering Scope`, `Engineering Object Attachment`, `Manufacturing Operation Factory`, `Evidence File Creation`, `Command History Undo Redo`, `Quotation Simulation Host`, `Cockpit KPI Journey Tests`, `Main Window Workspace`, `Digital Thread Graph`, `Rate Card Pricing`, `Object Editor Sections`, `Schema Migration Framework`, `In-Memory Object Index`, `Commercial Document Views`, `Deliverable Commands`, `Structural Fastener Design`, `Verification Approval Trail`, `Project Commercial Analysis`, `Requirements Service Audit`, `Evidence Invoice Integration`, `Adversarial Mutation Tests`, `Project Dashboard Views`, `Bill of Materials Validation`, `Evidence Record Service`, `Evidence File Attachment`, `Quotation Node Provider`, `Workspace Command Processing`, `Workspace Platform Tests`, `Project Commercial Commands`, `Bolt Shear Calculation`, `Documents Tree Navigation`, `Principal Boundary Resolution`, `Invoicing Workflow`, `Desktop Command Palette`, `Quotation Object View`, `Requirements Hostile Data`, `Attachment Content Storage`, `Project Dependency Registry`, `Calculations Tree Navigation`, `Mechanical Product Structure`, `Workspace Object Views`, `Calculation Module Workbench`, `Due Date Editor Testing`, `Workspace Sample Modules`, `Desktop Composition Root`, `Deliverable Completion View`, `Object Editor Automation`, `Invoice Request View`, `Task Object View`, `Verification Record History`, `Engineering Cockpit`, `Property Inspector UI`, `Calculations Workspace View`, `Project Documents Reports`, `Evidence Check UI Journey`, `Engineering Object Rehydration`, `Expense Management Service`, `Workspace Persistence Testing`, `Documents Workspace View`, `Manufacturing Workspace View`, `Verification Activity Workspace`, `Document Store Testing`, `Engineering Governance Restart`, `Manufacturing Workspace Provider`, `Project Governance Acceptance`, `Engineering Cockpit KPIs`, `Project Governance Service`, `Verification Activity Workspace`, `Quotation Service`, `Business Identifier Uniqueness`, `Invoicing UI View`, `Project Area Register Tests`, `Mechanical Cockpit View`, `Calculations Workspace View`, `Requirements Lifecycle`, `Manual Task Management`, `Community 279`, `Project Task Board`, `Community 285`, `Evidence Record Lifecycle`, `Workspace Operations`, `Deliverable Service`, `Project View`, `Workspace Operations`, `Engineering Domain Sample`, `Workspace Operations`, `Purchase Order Service`, `Workspace Operations`, `Workspace Operations`, `Project Milestone Register`, `Project View`, `Project View`, `Community 338`, `Accounts Reading Store`, `Desktop UI`, `Project Task Service`, `Domain Object Versioning`, `Calculation Lifecycle Management`, `Timesheets Deliverables Journey`, `Calculations Cockpit Display`, `Expenses Invoicing Explorer`, `Object Rehydration Registry`, `Invoicing Service`, `Domain Hierarchy Indexing`, `Calculation Registration Persistence`, `Durability Regression Tests`, `Product Navigation Shell`, `Project Tasks Surface`, `Deliverables Tracking`, `Timesheet Recording`, `Project File Directory`, `Document Attachments UI`, `Timesheet Weekly View`, `Product Bootstrap Tests`, `Home Dashboard`, `Evidence Command Handler`, `Purchase Order Node Provider`, `Timesheet Entry Prompt`, `Evidence Workspace Explorer`, `Attachment Revision Atomicity`, `Project Milestone Service`, `Structural Mutation Tests`, `Engineering Calculation Register`?**
+- **Why does `EngineeringDomainContext` connect `Engineering Document Revisions` to `Engineering Requirements Workspace`, `Desktop Host Test Infrastructure`, `Command Dispatch Pipeline`, `Domain Object Rehydration`, `Workspace Calculation Execution`, `Purchase Order Commands`, `Expense Entry Prompt`, `Manufacturing Cockpit Dashboard`, `Invoice Grouping Logic`, `Project Deliverables UI`, `Workspace Command Registration`, `Object State Persistence`, `Business Dashboard Views`, `Quotation Invoicing Commands`, `Timesheet Node Provider`, `Ribbon Feature Commands`, `Document Attachment UI`, `Document Lifecycle Commands`, `Engineering Object Factories`, `Mechanical BOM Factory`, `Requirements Event Publishing`, `Engineering Assets Dashboard`, `Verification Activity Lifecycle`, `Engineering Scope`, `Engineering Object Attachment`, `Manufacturing Operation Factory`, `Evidence File Creation`, `Command History Undo Redo`, `Quotation Simulation Host`, `Cockpit KPI Journey Tests`, `Main Window Workspace`, `Digital Thread Graph`, `Rate Card Pricing`, `Object Editor Sections`, `Schema Migration Framework`, `In-Memory Object Index`, `Commercial Document Views`, `Deliverable Commands`, `Structural Fastener Design`, `Verification Approval Trail`, `Project Commercial Analysis`, `Requirements Service Audit`, `Evidence Invoice Integration`, `Adversarial Mutation Tests`, `Project Dashboard Views`, `Bill of Materials Validation`, `Evidence Record Service`, `Evidence File Attachment`, `Quotation Node Provider`, `Workspace Command Processing`, `Workspace Platform Tests`, `Project Commercial Commands`, `Bolt Shear Calculation`, `Documents Tree Navigation`, `Principal Boundary Resolution`, `Invoicing Workflow`, `Desktop Command Palette`, `Quotation Object View`, `Requirements Hostile Data`, `Attachment Content Storage`, `Project Dependency Registry`, `Calculations Tree Navigation`, `Mechanical Product Structure`, `Workspace Object Views`, `Calculation Module Workbench`, `Due Date Editor Testing`, `Workspace Sample Modules`, `Desktop Composition Root`, `Deliverable Completion View`, `Object Editor Automation`, `Invoice Request View`, `Task Object View`, `Verification Record History`, `Engineering Cockpit`, `Property Inspector UI`, `Calculations Workspace View`, `Project Documents Reports`, `Evidence Check UI Journey`, `Engineering Object Rehydration`, `Expense Management Service`, `Workspace Persistence Testing`, `Documents Workspace View`, `Manufacturing Workspace View`, `Verification Activity Workspace`, `Document Store Testing`, `Engineering Governance Restart`, `Manufacturing Workspace Provider`, `Project Governance Acceptance`, `Engineering Cockpit KPIs`, `Project Governance Service`, `Verification Activity Workspace`, `Quotation Service`, `Business Identifier Uniqueness`, `Invoicing UI View`, `Project Area Register Tests`, `Mechanical Cockpit View`, `Calculations Workspace View`, `Requirements Lifecycle`, `Manual Task Management`, `Undo Compensation Journeys`, `Project Task Board`, `Invoicing Journey Tests`, `Evidence Record Lifecycle`, `Workspace Operations`, `Deliverable Service`, `Project View`, `Workspace Operations`, `Engineering Domain Sample`, `Workspace Operations`, `Purchase Order Service`, `Workspace Operations`, `Workspace Operations`, `Project Milestone Register`, `Project View`, `Project View`, `Engineering Domain Sample Module`, `Accounts Reading Store`, `Desktop UI`, `Project Task Service`, `Domain Object Versioning`, `Calculation Lifecycle Management`, `Timesheets Deliverables Journey`, `Calculations Cockpit Display`, `Expenses Invoicing Explorer`, `Object Rehydration Registry`, `Invoicing Service`, `Domain Hierarchy Indexing`, `Calculation Registration Persistence`, `Durability Regression Tests`, `Product Navigation Shell`, `Project Tasks Surface`, `Deliverables Tracking`, `Timesheet Recording`, `Project File Directory`, `Document Attachments UI`, `Timesheet Weekly View`, `Product Bootstrap Tests`, `Home Dashboard`, `Evidence Command Handler`, `Purchase Order Node Provider`, `Timesheet Entry Prompt`, `Evidence Workspace Explorer`, `Attachment Revision Atomicity`, `Project Milestone Service`, `Structural Mutation Tests`, `Engineering Calculation Register`?**
   _High betweenness centrality (0.073) - this node is a cross-community bridge._
-- **Why does `Money` connect `Rate Card Pricing` to `Invoicing Workflow`, `Desktop Host Test Infrastructure`, `Customer Quotation Catalog`, `KPI Financial Snapshot`, `Invoicing Business Operations`, `Cost Estimation Procurement`, `Purchase Order Commands`, `Expense Entry Prompt`, `Commercial Cost Estimating`, `Project KPI Calculations`, `Process Cost Catalog`, `Engineering Domain Contracts`, `QuickBooks Online Integration`, `Workspace Operations`, `Workspace Command Registration`, `Object State Persistence`, `Deliverables Tracking`, `Editor Section Helpers`, `Quotation Invoicing Commands`, `QuickBooks Invoicing Connector`, `Business Area Dashboards`, `Reference Library Viewer`, `Project Task Board`, `Engineering Document Revisions`, `Budget Operations`, `Procurement Selection Criteria`, `Community 285`, `Project File Directory`, `Financial Period Validation`, `Business Operations Validation`, `Pipeline Operating Assessment`, `Business Governance Authority`, `Project Sign Off Process`, `Xero Accounting Connector`, `Object Editor Automation`, `Purchasing Catalog Fulfillment`, `Quotation Simulation Host`, `Pricing Rate Validation`, `Deliverable Service`, `Reference Data Acquisition`, `Home Dashboard`, `Cockpit KPI Journey Tests`, `Quotation Pricing Service`, `Accounts Receivable Snapshot`, `KPI Snapshot Reader Tests`, `Timesheet Entries`, `Deliverable Commands`, `Commercial Document Views`, `Xero Accounts Connector Tests`, `Business Contract Governance`, `Invoicing Connector Testing`, `Project Commercial Analysis`, `Purchase Order Service`, `Expense Recording Commands`, `Xero Invoice Connector Tests`, `Expense Management Service`, `Project View`, `Accounts Reading Store`, `Settings Backup and Restore`, `Evidence File Attachment`, `Commercial Intelligence`, `Invoice Grouping Logic`, `Supplier Capabilities`, `Risk Insurance Testing`, `Engineering Cockpit KPIs`, `Project Milestone Service`, `Invoice VAT Mapping`, `Quotation Service`, `Accounts Refresh Service`, `Timesheets Deliverables Journey`, `QuickBooks Online Connector`, `Invoicing Service`, `Invoice Request Lifecycle`, `Financial Planning`?**
+- **Why does `Money` connect `Rate Card Pricing` to `Invoicing Workflow`, `Desktop Host Test Infrastructure`, `Customer Quotation Catalog`, `KPI Financial Snapshot`, `Invoicing Business Operations`, `Cost Estimation Procurement`, `Purchase Order Commands`, `Expense Entry Prompt`, `Commercial Cost Estimating`, `Project KPI Calculations`, `Process Cost Catalog`, `Engineering Domain Contracts`, `QuickBooks Online Integration`, `Workspace Operations`, `Workspace Command Registration`, `Object State Persistence`, `Deliverables Tracking`, `Editor Section Helpers`, `Quotation Invoicing Commands`, `QuickBooks Invoicing Connector`, `Business Area Dashboards`, `Reference Library Viewer`, `Project Task Board`, `Engineering Document Revisions`, `Budget Operations`, `Procurement Selection Criteria`, `Invoicing Journey Tests`, `Project File Directory`, `Financial Period Validation`, `Business Operations Validation`, `Pipeline Operating Assessment`, `Business Governance Authority`, `Project Sign Off Process`, `Xero Accounting Connector`, `Object Editor Automation`, `Purchasing Catalog Fulfillment`, `Quotation Simulation Host`, `Pricing Rate Validation`, `Deliverable Service`, `Reference Data Acquisition`, `Home Dashboard`, `Cockpit KPI Journey Tests`, `Quotation Pricing Service`, `Accounts Receivable Snapshot`, `KPI Snapshot Reader Tests`, `Timesheet Entries`, `Deliverable Commands`, `Commercial Document Views`, `Xero Accounts Connector Tests`, `Business Contract Governance`, `Invoicing Connector Testing`, `Project Commercial Analysis`, `Purchase Order Service`, `Expense Recording Commands`, `Xero Invoice Connector Tests`, `Expense Management Service`, `Project View`, `Accounts Reading Store`, `Settings Backup and Restore`, `Evidence File Attachment`, `Commercial Intelligence`, `Invoice Grouping Logic`, `Supplier Capabilities`, `Risk Insurance Testing`, `Engineering Cockpit KPIs`, `Project Milestone Service`, `Invoice VAT Mapping`, `Quotation Service`, `Accounts Refresh Service`, `Timesheets Deliverables Journey`, `QuickBooks Online Connector`, `Invoicing Service`, `Invoice Request Lifecycle`, `Financial Planning`?**
   _High betweenness centrality (0.060) - this node is a cross-community bridge._
 - **Why does `ReferencePin` connect `Commercial Cost Estimating` to `Bearing Rating Life Calculation`, `Customer Quotation Catalog`, `Calculation Packs`, `Contract Commercial Terms`, `Fillet Weld Throat Stress`, `Cost Estimation Procurement`, `Material Selection Assessment`, `Engineering Asset Governance`, `Bolt Shear Calculations`, `Worked Examples`, `Contract Management Catalogs`, `Engineering Domain Contracts`, `Trade Study Analysis`, `Object State Persistence`, `Miscellaneous`, `Manufacturing Decision Screening`, `Intellectual Property Assets`, `Quotation Invoicing Commands`, `Engineering Rule Engine`, `Calculation Module Workbench`, `Project File Directory`, `Engineering Document Revisions`, `Engineering Rule Engine`, `Procurement Selection Criteria`, `Business Governance Authority`, `Operational Facts`, `Risk Management Service`, `Column Buckling Calculation`, `Business Operations Validation`, `Engineering Reference Subjects`, `Purchasing Catalog Fulfillment`, `Decision Tree Evaluation`, `Academy Knowledge`, `Bracket Calculation Workbench`, `Persistence And Traceability`, `Pricing Rate Validation`, `Evidence Editor Sections`, `Calculation Trace Register`, `Quotation Pricing Service`, `Fastener Standard Catalog`, `Reference Data Validation`, `Calculation Modules Display`, `Lifting Lug Pin Joint Calculation`, `Thick Walled Cylinder Calculation`, `Verification Artefact Catalog`, `Object Editor Sections`, `Structural Fastener Design`, `Business Contract Governance`, `Beam Deflection Calculation`, `Project Commercial Analysis`, `Sales Pipeline Opportunity`, `Bolted Joint Preload Calc`, `Quality Nonconformance Handling`, `Timesheet Entry Prompt`, `Bolt Group Eccentric Shear`, `Fatigue Miner Calculation`, `Calculation Module Service`, `Engineering Template Registry`, `Evidence Record Service`, `Conditional Rule Engine`, `Knowledge Provenance Tracking`, `Worked Examples Catalog`, `Business Risk Management`, `Material Family Definition`, `Design Review Management`, `Calculation Record Execution`, `Engineering Review Service`, `Governed Bracket Check`, `Commercial Project Editor`, `Calculation Pack Testing`, `Design Rule Assessment`, `Financial Planning`?**
   _High betweenness centrality (0.059) - this node is a cross-community bridge._
