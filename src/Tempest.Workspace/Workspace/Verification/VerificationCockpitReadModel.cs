@@ -82,16 +82,24 @@ internal sealed class VerificationCockpitReadModel
     private IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)> LiveVerificationSnapshots =>
         _snapshots;
 
-    /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Fail"/> — the Cockpit's own "Failed" signal.</summary>
-    private int FailedVerificationCount =>
+    /// <summary>
+    /// Gets the number of live Verification Activities whose own most
+    /// recent recorded result has <see cref="VerificationOutcome.Fail"/> —
+    /// the Cockpit's own "Failed" signal. Public (`WP 18.3A` Dashboard
+    /// Export) so an external consumer reads the identical, already-computed
+    /// bucket the Cockpit's own <see cref="KpiCards"/> shows, rather than
+    /// re-deriving its own "Failed" count from <see cref="LiveVerificationActivities"/>
+    /// and risking the two disagreeing.
+    /// </summary>
+    public int FailedVerificationCount =>
         LiveVerificationSnapshots.Count(s => s.LatestRecord?.Outcome == VerificationOutcome.Fail);
 
-    /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Conditional"/> — the Cockpit's own "Conditional" signal.</summary>
-    private int ConditionalVerificationCount =>
+    /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Conditional"/> — the Cockpit's own "Conditional" signal. Public — see <see cref="FailedVerificationCount"/>'s own remarks.</summary>
+    public int ConditionalVerificationCount =>
         LiveVerificationSnapshots.Count(s => s.LatestRecord?.Outcome == VerificationOutcome.Conditional);
 
-    /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Pass"/> — the Cockpit's own "Passed" signal.</summary>
-    private int PassedVerificationCount =>
+    /// <summary>Gets the number of live Verification Activities whose own most recent recorded result has <see cref="VerificationOutcome.Pass"/> — the Cockpit's own "Passed" signal. Public — see <see cref="FailedVerificationCount"/>'s own remarks.</summary>
+    public int PassedVerificationCount =>
         LiveVerificationSnapshots.Count(s => s.LatestRecord?.Outcome == VerificationOutcome.Pass);
 
     /// <summary>Gets the number of live Verification Activities with no recorded result yet and <see cref="LifecycleState.Draft"/> status — the Cockpit's own "Planned" signal (`ADR-0090`: a Draft Activity with no result is a Verification Plan).</summary>
@@ -114,8 +122,8 @@ internal sealed class VerificationCockpitReadModel
         }
     }
 
-    /// <summary>Gets the total number of real <see cref="IVerificationRecord"/>s recorded across every live Verification Activity — the Cockpit's own "Total Verification Records" KPI, distinct from the Activity count itself.</summary>
-    private int TotalVerificationRecordsCount => _totalRecords;
+    /// <summary>Gets the total number of real <see cref="IVerificationRecord"/>s recorded across every live Verification Activity — the Cockpit's own "Total Verification Records" KPI, distinct from the Activity count itself. Public — see <see cref="FailedVerificationCount"/>'s own remarks.</summary>
+    public int TotalVerificationRecordsCount => _totalRecords;
 
     /// <summary>
     /// Gets the Verification discipline's own status:

@@ -187,6 +187,20 @@ internal sealed class RequirementsCockpitReadModel
     }
 
     /// <summary>
+    /// Gets every live requirement's own count, grouped by
+    /// <see cref="RequirementStatus"/> — the exact grouping
+    /// <see cref="KpiCards"/> already computes internally, exposed here so
+    /// a consumer that needs every bucket (not just the four
+    /// <see cref="KpiCards"/> names as its own dedicated card) reads the
+    /// identical figures the Cockpit itself shows, rather than
+    /// recomputing its own count from <see cref="LiveRequirements"/> and
+    /// risking the two silently drifting apart (`WP 18.3A` Dashboard
+    /// Export).
+    /// </summary>
+    public IReadOnlyDictionary<RequirementStatus, int> StatusCounts =>
+        LiveRequirements.GroupBy(r => r.Status).ToDictionary(g => g.Key, g => g.Count());
+
+    /// <summary>
     /// Gets the Requirements discipline's own dedicated KPI card set:
     /// Total, Draft, Review, Approved, Released, Verification Coverage,
     /// Allocation Coverage, Requirement Health, and Outstanding Actions.
@@ -204,7 +218,7 @@ internal sealed class RequirementsCockpitReadModel
         {
             var live = LiveRequirements;
             var total = live.Count;
-            var counts = live.GroupBy(r => r.Status).ToDictionary(g => g.Key, g => g.Count());
+            var counts = StatusCounts;
 
             int CountOf(RequirementStatus status) => counts.TryGetValue(status, out var count) ? count : 0;
 
