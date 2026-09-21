@@ -1,10 +1,12 @@
 using Tempest.Core.BackgroundServices;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Quotations;
+using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Logging;
+using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
 
 namespace Tempest.Workspace.Integration.DashboardExport;
@@ -79,6 +81,8 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="domainContext">The Engineering Domain's own shared repository — passed straight through to both freshly-constructed adapters.</param>
     /// <param name="requirementsService">The Requirements Framework's own service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
     /// <param name="requirementValidationService">The Requirements Framework's own validation service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
+    /// <param name="navigationProvider">The Platform's own navigation provider — passed straight through to <see cref="EngineeringStatusExportAdapter"/>, whose headless <c>EngineeringCockpit</c> (schema v2) needs one to construct; never consulted by anything exported.</param>
+    /// <param name="commandRegistry">The Platform's own command registry — likewise passed straight through to <see cref="EngineeringStatusExportAdapter"/> for its <c>EngineeringCockpit</c>.</param>
     /// <param name="contractCatalog">The issued-contract library — passed straight through to <see cref="ContractsExportAdapter"/> (`ADR-0150`).</param>
     /// <param name="quotationCatalog">The quotation library — passed straight through to <see cref="QuotesExportAdapter"/> (`ADR-0150`).</param>
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
@@ -87,6 +91,8 @@ public sealed class DashboardExportHostedService : IHostedService
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
         IRequirementValidationService requirementValidationService,
+        INavigationProvider navigationProvider,
+        ICommandRegistry commandRegistry,
         IIssuedContractCatalog contractCatalog,
         IQuotationCatalog quotationCatalog,
         IConfigurationProvider configuration,
@@ -95,11 +101,13 @@ public sealed class DashboardExportHostedService : IHostedService
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(requirementValidationService);
+        ArgumentNullException.ThrowIfNull(navigationProvider);
+        ArgumentNullException.ThrowIfNull(commandRegistry);
         ArgumentNullException.ThrowIfNull(contractCatalog);
         ArgumentNullException.ThrowIfNull(quotationCatalog);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        _engineeringStatus = new EngineeringStatusExportAdapter(domainContext, requirementsService, requirementValidationService);
+        _engineeringStatus = new EngineeringStatusExportAdapter(domainContext, requirementsService, requirementValidationService, navigationProvider, commandRegistry);
         _programme = new ProgrammeHierarchyExportAdapter(domainContext);
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);

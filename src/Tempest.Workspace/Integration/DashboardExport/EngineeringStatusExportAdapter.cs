@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
+using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.ExportImport;
+using Tempest.Core.Navigation;
 using Tempest.Core.Requirements;
 using Tempest.Workspace.Requirements;
 using Tempest.Workspace.Verification;
@@ -13,7 +15,9 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// Exports a plain, dashboard-facing summary of Evidence, Requirements,
 /// Verification, BOM and Digital Thread status — <c>engineering-status.json</c>,
 /// consumed by Tempest-Dashboard's own push agent (the Core→Dashboard
-/// integration contract, §2.1). Implements <see cref="IExportable"/>/
+/// integration contract, §2.1) — and, from schema v2, the Engineering
+/// Cockpit's own health, KPI cards, attention items, blocked items and
+/// overdue actions, verbatim. Implements <see cref="IExportable"/>/
 /// <see cref="IExportableKind"/> exactly as
 /// <c>Tempest.Samples.RequirementExportAdapter</c> does, so it remains
 /// fully compatible with <see cref="IExportService"/>/<see cref="IImportService"/>
@@ -39,7 +43,46 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// <list type="bullet">
 /// <item><description><c>requirements.byStatus</c> — <see cref="RequirementsCockpitReadModel.StatusCounts"/>.</description></item>
 /// <item><description><c>verification.recorded</c>/<c>byOutcome</c> — <see cref="VerificationCockpitReadModel.TotalVerificationRecordsCount"/>/<see cref="VerificationCockpitReadModel.PassedVerificationCount"/>/<see cref="VerificationCockpitReadModel.FailedVerificationCount"/>/<see cref="VerificationCockpitReadModel.ConditionalVerificationCount"/> — see this class's own <see cref="BuildVerificationSection"/> remarks for a disclosed definitional deviation from the contract document's own assumption.</description></item>
+/// <item><description><c>health</c>/<c>kpis</c>/<c>attention</c>/<c>blockedItems</c>/<c>overdueActions</c> (schema v2) — <see cref="EngineeringCockpit.Health"/>, the five per-discipline <c>*Status</c> reads, <see cref="EngineeringCockpit.KpiCards"/> plus the five per-discipline <c>*KpiCards</c> sets, <see cref="EngineeringCockpit.AttentionItemsByDiscipline"/>, <see cref="EngineeringCockpit.BlockedItems"/> and <see cref="EngineeringCockpit.OverdueActions"/> — see <see cref="BuildHealthSection"/> and its siblings.</description></item>
 /// </list>
+/// <para>
+/// <b>Schema v2 — "the Pi renders what the desktop cockpit computes"
+/// (Product Owner direction, 2026-09-21).</b> The dashboard is to show one
+/// "what needs attention" feed across every discipline, in the Cockpit's
+/// own health words, not a second set of counters — so this adapter now
+/// holds a real <see cref="EngineeringCockpit"/> (the identical composition
+/// root <c>WorkspaceManager.StartAsync</c> builds for the desktop, reached
+/// through this assembly's own internal constructor), calls
+/// <see cref="EngineeringCockpit.PrimeAsync"/> once per export exactly as
+/// <c>CockpitView.RefreshAsync</c> does once per render, and copies its
+/// already-computed attention/health/KPI/blocked/overdue surface out
+/// verbatim. None of that logic is reimplemented here. The Cockpit's two
+/// session-bound dependencies (<c>NavigationService</c>, <see cref="ICommandRegistry"/>)
+/// are satisfied with an empty, headless session — a
+/// <c>NavigationService</c> over a real <see cref="INavigationProvider"/>
+/// but with no view factories and no open views — because nothing this
+/// export reads (<c>Health</c>, the discipline statuses, the KPI sets,
+/// <c>AttentionItems</c>, <c>BlockedItems</c>, <c>OverdueActions</c>)
+/// touches navigation or command state; the members that do
+/// (<c>ContinueWhereILeftOff</c>, <c>RecentActivity</c>, <c>QuickActions</c>,
+/// <c>AvailableCommands</c>) are deliberately not exported. No
+/// <see cref="Tempest.Core.Audit.IAuditQuery"/> is supplied, so
+/// <c>RecentlyChanged</c> is honestly empty and no audit permission is
+/// needed for a background export.
+/// </para>
+/// <para>
+/// <b>Two reads of the same store, disclosed.</b> The v1 sections still
+/// read their own freshly-constructed <see cref="RequirementsCockpitReadModel"/>/
+/// <see cref="VerificationCockpitReadModel"/> (they need
+/// <see cref="RequirementsCockpitReadModel.StatusCounts"/>/<see cref="RequirementsCockpitReadModel.LiveRequirements"/>,
+/// which <see cref="EngineeringCockpit"/> does not expose), while the v2
+/// sections read the Cockpit's own private collaborators. Both load
+/// within the one <see cref="ExportAsync"/> call over the same live store,
+/// so they agree in every case but a write landing between the two loads
+/// — the same window a desktop render already has between one card and
+/// the next before `WP-E`, and one a sixty-second export cadence makes
+/// immaterial.
+/// </para>
 /// <para>
 /// <b>No Cockpit equivalent exists</b> for Evidence (no discipline Cockpit
 /// read-model covers the <c>"Evidence"</c> Kind at all), BOM-line
@@ -48,19 +91,21 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// Instructions/Inspections, never Part/Assembly/SubAssembly/Component),
 /// or a per-<see cref="RelationshipCategory"/> Digital Thread breakdown
 /// (<c>EngineeringCockpit.DigitalThreadSummary</c> is a single scalar link
-/// count, and constructing a full <c>EngineeringCockpit</c> here — which
-/// needs a live Workspace session's own <c>NavigationService</c>/
-/// <c>ICommandRegistry</c> — would be the wrong shape for a headless
-/// background export). Each of those three sections is therefore
-/// implemented fresh, directly against <see cref="EngineeringDomainContext"/>,
-/// exactly as the integration contract document's own §3.1 originally
-/// planned.
+/// count). Each of those three sections is therefore implemented fresh,
+/// directly against <see cref="EngineeringDomainContext"/>, exactly as the
+/// integration contract document's own §3.1 originally planned.
 /// </para>
 /// </remarks>
 public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKind
 {
-    /// <summary>The schema version this adapter's own payload shape uses — the integration contract document's §2.1.</summary>
-    public const int CurrentSchemaVersion = 1;
+    /// <summary>
+    /// The schema version this adapter's own payload shape uses — the
+    /// integration contract document's §2.1 (v1), plus the additive
+    /// Cockpit sections (<c>health</c>/<c>kpis</c>/<c>attention</c>/
+    /// <c>blockedItems</c>/<c>overdueActions</c>) that make it v2. Every
+    /// v1 key is unchanged in name, shape and meaning.
+    /// </summary>
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>The most attention-worthy individual records <see cref="BuildItems"/> reports, capped.</summary>
     public const int MaxItems = 25;
@@ -71,26 +116,41 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     private readonly IRequirementsService _requirementsService;
     private readonly IRequirementValidationService _requirementValidationService;
     private readonly TimeProvider _time;
+    private readonly EngineeringCockpit _cockpit;
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringStatusExportAdapter"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this adapter — and the read models it constructs — queries directly.</param>
-    /// <param name="requirementsService">The Requirements Framework's own service, passed straight through to a freshly-constructed <see cref="RequirementsCockpitReadModel"/>.</param>
-    /// <param name="requirementValidationService">The Requirements Framework's own validation service, passed straight through to a freshly-constructed <see cref="RequirementsCockpitReadModel"/>.</param>
-    /// <param name="timeProvider"><see langword="null"/> — the default — uses <see cref="TimeProvider.System"/>, mirroring <c>Tempest.Core.Evidence.EvidenceService</c>'s own identical convention.</param>
+    /// <param name="requirementsService">The Requirements Framework's own service, passed straight through to a freshly-constructed <see cref="RequirementsCockpitReadModel"/> and to the <see cref="EngineeringCockpit"/>.</param>
+    /// <param name="requirementValidationService">The Requirements Framework's own validation service, passed straight through to a freshly-constructed <see cref="RequirementsCockpitReadModel"/> and to the <see cref="EngineeringCockpit"/>.</param>
+    /// <param name="navigationProvider">The Platform's own navigation provider — the one session-bound dependency the <see cref="EngineeringCockpit"/>'s <c>NavigationService</c> needs; nothing this export reads ever consults it (see this class's remarks).</param>
+    /// <param name="commandRegistry">The Platform's own command registry — the <see cref="EngineeringCockpit"/>'s other session-bound dependency; likewise never consulted by anything exported.</param>
+    /// <param name="timeProvider"><see langword="null"/> — the default — uses <see cref="TimeProvider.System"/>, mirroring <c>Tempest.Core.Evidence.EvidenceService</c>'s own identical convention. Also the clock the Cockpit's own <see cref="EngineeringCockpit.OverdueActions"/> measures "overdue" against, so <c>generatedAt</c> and every <c>daysOverdue</c> agree.</param>
     public EngineeringStatusExportAdapter(
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
         IRequirementValidationService requirementValidationService,
+        INavigationProvider navigationProvider,
+        ICommandRegistry commandRegistry,
         TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(requirementValidationService);
+        ArgumentNullException.ThrowIfNull(navigationProvider);
+        ArgumentNullException.ThrowIfNull(commandRegistry);
 
         _domainContext = domainContext;
         _requirementsService = requirementsService;
         _requirementValidationService = requirementValidationService;
         _time = timeProvider ?? TimeProvider.System;
+
+        // The identical composition root WorkspaceManager.StartAsync builds
+        // for the desktop, over a headless (empty) navigation session — see
+        // this class's own "Schema v2" remarks for why that is sound.
+        var navigationService = new NavigationService(navigationProvider, [], new WorkspaceContext());
+        _cockpit = new EngineeringCockpit(
+            navigationService, commandRegistry, domainContext, requirementsService, requirementValidationService,
+            now: () => _time.GetUtcNow());
     }
 
     /// <inheritdoc />
@@ -112,6 +172,10 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         var verification = new VerificationCockpitReadModel(_domainContext);
         await verification.LoadAsync(cancellationToken).ConfigureAwait(false);
 
+        // One coherent Cockpit pass per export — exactly what
+        // CockpitView.RefreshAsync does once per desktop render.
+        await _cockpit.PrimeAsync(cancellationToken).ConfigureAwait(false);
+
         var export = new EngineeringStatusExport(
             SchemaVersion,
             FormatUtc(_time.GetUtcNow()),
@@ -120,7 +184,12 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
             BuildVerificationSection(verification, requirements),
             await BuildBomSectionAsync(cancellationToken).ConfigureAwait(false),
             await BuildDigitalThreadSectionAsync(cancellationToken).ConfigureAwait(false),
-            BuildItems(liveEvidence));
+            BuildItems(liveEvidence),
+            BuildHealthSection(_cockpit),
+            BuildKpiSection(_cockpit),
+            BuildAttentionSection(_cockpit),
+            _cockpit.BlockedItems,
+            BuildOverdueActionsSection(_cockpit));
 
         await JsonSerializer.SerializeAsync(destination, export, SerializerOptions, cancellationToken).ConfigureAwait(false);
     }
@@ -329,6 +398,66 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         return items.Take(MaxItems).ToList();
     }
 
+    /// <summary>
+    /// <c>health</c> (schema v2): <see cref="EngineeringCockpit.Health"/>
+    /// as <c>overall</c>, and each discipline's own <c>*Status</c> under
+    /// <c>byDiscipline</c>, every value the Cockpit's own
+    /// <see cref="EngineeringHealthStatus"/> word, lower-cased. Mechanical
+    /// carries no status of its own (<c>MechanicalCockpitReadModel</c> has
+    /// no <c>Status</c> member) and is omitted; <c>ReviewStatus</c> is a
+    /// hard-coded <see cref="EngineeringHealthStatus.Unknown"/> that
+    /// <see cref="EngineeringCockpit.Health"/> itself deliberately
+    /// excludes, so it is omitted too rather than exported as a signal.
+    /// </summary>
+    private static HealthSection BuildHealthSection(EngineeringCockpit cockpit) =>
+        new(
+            FormatHealth(cockpit.Health),
+            new Dictionary<string, string>
+            {
+                [CockpitDisciplines.Requirements] = FormatHealth(cockpit.RequirementsStatus),
+                [CockpitDisciplines.Verification] = FormatHealth(cockpit.VerificationStatus),
+                [CockpitDisciplines.Calculations] = FormatHealth(cockpit.CalculationStatus),
+                [CockpitDisciplines.Documents] = FormatHealth(cockpit.DocumentationStatus),
+                [CockpitDisciplines.Manufacturing] = FormatHealth(cockpit.ManufacturingStatus),
+            });
+
+    /// <summary>
+    /// <c>kpis</c> (schema v2): every <see cref="CockpitKpiCard"/> the
+    /// desktop Cockpit renders, verbatim — the cross-discipline
+    /// <see cref="EngineeringCockpit.KpiCards"/> under <c>overview</c>
+    /// (the "Engineering Overview" card), then each discipline's own set
+    /// under its <see cref="CockpitDisciplines"/> key.
+    /// </summary>
+    private static Dictionary<string, IReadOnlyList<KpiCardExport>> BuildKpiSection(EngineeringCockpit cockpit) =>
+        new()
+        {
+            ["overview"] = ToKpiCards(cockpit.KpiCards),
+            [CockpitDisciplines.Requirements] = ToKpiCards(cockpit.RequirementsKpiCards),
+            [CockpitDisciplines.Verification] = ToKpiCards(cockpit.VerificationKpiCards),
+            [CockpitDisciplines.Calculations] = ToKpiCards(cockpit.CalculationsKpiCards),
+            [CockpitDisciplines.Documents] = ToKpiCards(cockpit.DocumentsKpiCards),
+            [CockpitDisciplines.Manufacturing] = ToKpiCards(cockpit.ManufacturingKpiCards),
+        };
+
+    /// <summary><c>attention</c> (schema v2): <see cref="EngineeringCockpit.AttentionItemsByDiscipline"/>, verbatim and in the Cockpit's own order, each tagged with the discipline that contributed it.</summary>
+    private static IReadOnlyList<AttentionExport> BuildAttentionSection(EngineeringCockpit cockpit) =>
+        cockpit.AttentionItemsByDiscipline
+            .Select(entry => new AttentionExport(entry.Discipline, entry.Item.Title, entry.Item.Detail))
+            .ToList();
+
+    /// <summary><c>overdueActions</c> (schema v2): <see cref="EngineeringCockpit.OverdueActions"/>, verbatim — each <see cref="CockpitActionItem"/>'s own title, owner, due date and whole days overdue.</summary>
+    private static IReadOnlyList<OverdueActionExport> BuildOverdueActionsSection(EngineeringCockpit cockpit) =>
+        cockpit.OverdueActions
+            .Select(action => new OverdueActionExport(action.Title, action.Owner, action.DueDate, action.DaysOverdue))
+            .ToList();
+
+    private static IReadOnlyList<KpiCardExport> ToKpiCards(IReadOnlyList<CockpitKpiCard> cards) =>
+        cards.Select(card => new KpiCardExport(card.Label, card.Value, card.IsPlaceholder, card.PercentValue)).ToList();
+
+    /// <summary>The Cockpit's own <see cref="EngineeringHealthStatus"/> word, lower-cased — the same closed vocabulary the desktop shows, never a dashboard-specific translation.</summary>
+    internal static string FormatHealth(EngineeringHealthStatus status) =>
+        JsonNamingPolicy.CamelCase.ConvertName(status.ToString());
+
     private static string Truncate(string value, int maxLength) =>
         value.Length <= maxLength ? value : string.Concat(value.AsSpan(0, maxLength), "…");
 
@@ -366,7 +495,12 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         VerificationSection Verification,
         BomSection Bom,
         DigitalThreadSection DigitalThread,
-        IReadOnlyList<ExportItem> Items);
+        IReadOnlyList<ExportItem> Items,
+        HealthSection Health,
+        Dictionary<string, IReadOnlyList<KpiCardExport>> Kpis,
+        IReadOnlyList<AttentionExport> Attention,
+        IReadOnlyList<string> BlockedItems,
+        IReadOnlyList<OverdueActionExport> OverdueActions);
 
     private sealed record EvidenceSection(int Total, Dictionary<string, int> ByStatus, Dictionary<string, int> ByClassification, ChecksSection Checks, int OpenIssuesSheetsPending);
 
@@ -383,4 +517,12 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     private sealed record DigitalThreadSection(Dictionary<string, int> RelationshipsByCategory, int ObjectsWithNoRelationships);
 
     private sealed record ExportItem(string Id, string Type, string Title, string Status, string? Detail);
+
+    private sealed record HealthSection(string Overall, Dictionary<string, string> ByDiscipline);
+
+    private sealed record KpiCardExport(string Label, string Value, bool IsPlaceholder, int? PercentValue);
+
+    private sealed record AttentionExport(string Discipline, string Title, string Detail);
+
+    private sealed record OverdueActionExport(string Title, string Owner, DateTimeOffset? DueDate, int DaysOverdue);
 }

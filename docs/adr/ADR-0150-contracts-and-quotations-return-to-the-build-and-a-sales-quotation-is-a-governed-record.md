@@ -27,6 +27,15 @@ already reads a local JSON export. `WP 18.3` gave Core a Dashboard
 Export (`engineering-status.json`, `programme.json`) with nothing on the
 business side to export. The owner wants real figures.
 
+> *Later note (2026-09-21).* `engineering-status.json` is now schema v2:
+> additive `health`, `kpis`, `attention`, `blockedItems` and
+> `overdueActions` sections, copied verbatim from the Engineering
+> Cockpit's own `EngineeringCockpit` (`Health`, the per-discipline
+> `*Status`/`*KpiCards`, `AttentionItemsByDiscipline`, `BlockedItems`,
+> `OverdueActions`) so the Pi renders what the desktop cockpit computes.
+> Every v1 key is unchanged. See `EngineeringStatusExportAdapter`'s own
+> remarks for the shape.
+
 Three facts shaped what returns:
 
 1. **Contracts is one unit.** The intent was to thaw `IssuedContract`

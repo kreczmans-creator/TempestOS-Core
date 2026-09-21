@@ -326,20 +326,35 @@ public sealed class EngineeringCockpit
     /// its own contribution's content; only the concatenation order lives
     /// here.
     /// </summary>
-    public IReadOnlyList<CockpitAttentionItem> AttentionItems
+    public IReadOnlyList<CockpitAttentionItem> AttentionItems =>
+        AttentionItemsByDiscipline.Select(entry => entry.Item).ToList();
+
+    /// <summary>
+    /// Gets <see cref="AttentionItems"/> with each entry attributed to the
+    /// <see cref="CockpitDisciplines"/> collaborator that contributed it —
+    /// the same items, in the same fixed order; the trailing fixed entry
+    /// this composition root adds itself is attributed to
+    /// <see cref="CockpitDisciplines.Cockpit"/>. <see cref="AttentionItems"/>
+    /// is a projection of this list, never a second computation, so the
+    /// Dashboard Export (which needs the attribution) and the desktop
+    /// Cockpit's own tile (which does not) always show the identical set.
+    /// </summary>
+    public IReadOnlyList<CockpitDisciplineAttentionItem> AttentionItemsByDiscipline
     {
         get
         {
-            var items = new List<CockpitAttentionItem>();
+            var items = new List<CockpitDisciplineAttentionItem>();
 
-            items.AddRange(_mechanical.GetAttentionItems());
-            items.AddRange(_requirements.GetAttentionItems());
-            items.AddRange(_calculations.GetAttentionItems());
-            items.AddRange(_documents.GetAttentionItems());
-            items.AddRange(_verification.GetAttentionItems());
-            items.AddRange(_manufacturing.GetAttentionItems());
+            items.AddRange(_mechanical.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Mechanical, item)));
+            items.AddRange(_requirements.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Requirements, item)));
+            items.AddRange(_calculations.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Calculations, item)));
+            items.AddRange(_documents.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Documents, item)));
+            items.AddRange(_verification.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Verification, item)));
+            items.AddRange(_manufacturing.GetAttentionItems().Select(item => new CockpitDisciplineAttentionItem(CockpitDisciplines.Manufacturing, item)));
 
-            items.Add(new("Other disciplines still placeholder", "Materials remain out of the Workspace's own scope until their own Work Package integrates them."));
+            items.Add(new(
+                CockpitDisciplines.Cockpit,
+                new("Other disciplines still placeholder", "Materials remain out of the Workspace's own scope until their own Work Package integrates them.")));
 
             return items;
         }

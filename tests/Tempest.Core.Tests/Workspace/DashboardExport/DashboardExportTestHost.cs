@@ -1,10 +1,12 @@
 using Tempest.Workspace;
 using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Quotations;
+using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Core.Identity;
+using Tempest.Core.Navigation;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
@@ -20,7 +22,10 @@ namespace Tempest.Core.Tests.Workspace.DashboardExport;
 /// and <see cref="IQuotationCatalog"/> directly, never through a
 /// Workspace discipline registration, so none is needed here. Mirrors
 /// <c>Tempest.Core.Tests.Evidence.EvidenceTestHost</c>'s own identical
-/// shape and reasoning.
+/// shape and reasoning. The <see cref="WorkspaceManager"/> is started too,
+/// so <see cref="Cockpit"/> can hand a test the desktop's own
+/// <see cref="EngineeringCockpit"/> as the oracle the schema-v2 sections
+/// are checked against.
 /// </summary>
 internal static class DashboardExportTestHost
 {
@@ -67,6 +72,26 @@ internal static class DashboardExportTestHost
     public static ICurrentPrincipalAccessor Principals(ITempestHost host) =>
         (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
 
+    public static INavigationProvider NavigationProvider(ITempestHost host) =>
+        (INavigationProvider)host.Services!.GetService(typeof(INavigationProvider));
+
+    public static ICommandRegistry CommandRegistry(ITempestHost host) =>
+        (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+
+    /// <summary>
+    /// The desktop's own <see cref="EngineeringCockpit"/> — the one
+    /// <see cref="WorkspaceManager.StartAsync"/> built for this session,
+    /// reached exactly as <c>EngineeringCockpitTests</c> reaches it and
+    /// primed exactly as <c>CockpitView.RefreshAsync</c> primes it — the
+    /// oracle every schema-v2 assertion compares the export against.
+    /// </summary>
+    public static async Task<EngineeringCockpit> Cockpit(WorkspaceManager manager)
+    {
+        var cockpit = ((Tempest.Workspace.Workspace)manager.Current!).Cockpit;
+        await cockpit.PrimeAsync();
+        return cockpit;
+    }
+
     /// <summary>Signs in <paramref name="id"/> with a local session's own broad permission set — mirrors <c>EvidenceTestHost.SignIn</c>.</summary>
     public static void SignIn(ITempestHost host, string id = PrincipalId)
     {
@@ -112,5 +137,14 @@ internal static class DashboardExportTestHost
         var factory = new EngineeringObjectFactory<Assembly>(
             "Assembly", domain, (doc, rev) => new Assembly(doc, rev, domain, identifier, name, EngineeringObjectMetadata.Empty));
         return (Assembly)await factory.CreateAsync($"{name} — test assembly.");
+    }
+
+    /// <summary>A standalone <c>"Task"</c> — the Kind <c>EngineeringCockpit.OverdueActions</c> reads — mirroring <c>ProjectTaskTests.CreateStandaloneTaskAsync</c>.</summary>
+    public static async Task<EngineeringTask> CreateTaskAsync(ITempestHost host, string identifier, string name)
+    {
+        var domain = Domain(host);
+        var factory = new EngineeringObjectFactory<EngineeringTask>(
+            CanonicalObjectKinds.Task, domain, (doc, rev) => new EngineeringTask(doc, rev, domain, identifier, name, EngineeringObjectMetadata.Empty));
+        return (EngineeringTask)await factory.CreateAsync($"{name} — test task.");
     }
 }
