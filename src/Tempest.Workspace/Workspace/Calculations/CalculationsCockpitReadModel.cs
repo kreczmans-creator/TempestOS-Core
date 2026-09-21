@@ -70,6 +70,25 @@ internal sealed class CalculationsCockpitReadModel
         _latestRevisedAt = revisedAt;
     }
 
+    /// <summary>
+    /// A view of this read-model over only the Calculations
+    /// <paramref name="includes"/> admits (`ADR-0151`, project health) —
+    /// the same class over a filtered copy of what <see cref="LoadAsync"/>
+    /// last loaded, so every property below answers for the subset by the
+    /// identical code path, with no second load and no second rule.
+    /// </summary>
+    public CalculationsCockpitReadModel ScopedTo(Func<Guid, bool> includes)
+    {
+        ArgumentNullException.ThrowIfNull(includes);
+
+        return new CalculationsCockpitReadModel(_domainContext)
+        {
+            _liveCalculations = _liveCalculations.Where(c => includes(c.Id)).ToList(),
+            _snapshots = _snapshots.Where(s => includes(s.Calculation.Id)).ToList(),
+            _latestRevisedAt = _latestRevisedAt.Where(kv => includes(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value),
+        };
+    }
+
     /// <summary>Gets every live (non-deleted) Calculation — loaded by <see cref="LoadAsync"/>.</summary>
     public IReadOnlyList<ICalculation> LiveCalculations => _liveCalculations;
 

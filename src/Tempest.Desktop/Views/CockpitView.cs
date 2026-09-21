@@ -227,7 +227,7 @@ internal sealed class CockpitView : UserControl
         AddKpiCard(IconGeometry.Document, "Documentation KPIs", _cockpit.DocumentsKpiCards);
         AddKpiCard(IconGeometry.Factory, "Manufacturing KPIs", _cockpit.ManufacturingKpiCards);
         AddFavouriteProjectsCard();
-        AddRecentProjectsCard();
+        AddProjectHealthCard();
         AddUpcomingMilestonesCard();
         AddRiskSummaryCard();
         AddDigitalThreadCard();
@@ -461,17 +461,60 @@ internal sealed class CockpitView : UserControl
     // Detail cards.
     // ------------------------------------------------------------
 
-    private void AddRecentProjectsCard()
+    /// <summary>
+    /// The "Project Health" card (`ADR-0151`) — the card that was "Recent
+    /// Projects": the same card component over the same live Project set
+    /// (<see cref="EngineeringCockpit.ProjectHealth"/> lists exactly the
+    /// Projects <see cref="EngineeringCockpit.RecentProjects"/> names),
+    /// each row now carrying that Project's own health in the platform's
+    /// one health colour language (<see cref="HealthColors"/>): the dot,
+    /// the word, and the same score text the hero readout uses — never
+    /// colour alone.
+    /// </summary>
+    private void AddProjectHealthCard()
     {
-        var card = new CockpitCardControl(IconGeometry.Folder, "Recent Projects");
+        var card = new CockpitCardControl(IconGeometry.Folder, "Project Health");
+        var projects = _cockpit.ProjectHealth;
 
-        if (_cockpit.RecentProjects.Count == 0)
+        if (projects.Count == 0)
             card.AddLine("No projects yet.", 0.7);
         else
-            foreach (var name in _cockpit.RecentProjects)
-                card.AddLine(name);
+            foreach (var project in projects)
+                card.AddContent(ProjectHealthRow(project));
 
         _cards.Children.Add(card);
+    }
+
+    /// <summary>One Project's own row on the Project Health card — the same dot/word/colour shape <see cref="BuildDisciplineStrip"/> already renders per discipline, plus the Project's own score text in the meta face.</summary>
+    private static Control ProjectHealthRow(CockpitProjectHealth project)
+    {
+        var brush = HealthColors.Resolve(project.Health);
+        var word = HealthColors.Label(project.Health);
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        row.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Background = brush, VerticalAlignment = VerticalAlignment.Center });
+
+        var name = new TextBlock { Text = project.Label, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        ThemeReactiveBrush.Bind(name, TextBlock.ForegroundProperty, BrandPalette.BodyTextBrushKey);
+        row.Children.Add(name);
+
+        row.Children.Add(new TextBlock
+        {
+            Text = word.ToUpperInvariant(),
+            FontFamily = DesignTokens.TitleFont,
+            FontSize = DesignTokens.FontSizeLabel,
+            FontWeight = DesignTokens.WeightLabel,
+            LetterSpacing = DesignTokens.LabelTracking,
+            Foreground = brush,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var score = new TextBlock { Text = project.HealthScoreDisplay, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        ThemeReactiveBrush.Bind(score, TextBlock.ForegroundProperty, BrandPalette.FaintTextBrushKey);
+        row.Children.Add(score);
+
+        AutomationProperties.SetName(row, $"{project.Label}: {word} — {project.HealthScoreDisplay}");
+        return row;
     }
 
     /// <summary>

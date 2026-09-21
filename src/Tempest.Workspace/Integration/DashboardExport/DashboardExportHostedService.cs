@@ -108,7 +108,7 @@ public sealed class DashboardExportHostedService : IHostedService
         ArgumentNullException.ThrowIfNull(configuration);
 
         _engineeringStatus = new EngineeringStatusExportAdapter(domainContext, requirementsService, requirementValidationService, navigationProvider, commandRegistry);
-        _programme = new ProgrammeHierarchyExportAdapter(domainContext);
+        _programme = new ProgrammeHierarchyExportAdapter(domainContext, requirementsService, requirementValidationService, navigationProvider, commandRegistry);
         _contracts = new ContractsExportAdapter(contractCatalog);
         _quotes = new QuotesExportAdapter(quotationCatalog);
         _configuration = configuration;

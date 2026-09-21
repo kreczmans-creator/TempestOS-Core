@@ -43,6 +43,14 @@ now also writes `contracts.json`/`quotes.json` in Tempest-Dashboard's own
 shapes. Risk, Assets, Finance, Development, Operating and
 `CommercialIntelligence` stay frozen. The gate figures below predate it.
 
+2026-09-21, `ADR-0151`: project health is a Core concept — the Engineering
+Cockpit's own health rollup scoped to each Project
+(`EngineeringCockpit.ProjectHealth`), shown on the Cockpit's Project Health
+card (formerly Recent Projects) and exported in `programme.json` schema v2
+(`projects[].health`/`blockedCount`/`overdueActionCount`, `summary.byHealth`).
+RAG is `EngineeringHealthStatus`; no second vocabulary. The gate figures
+below predate it too.
+
 ## Gate (the release-candidate head `2f4486c`, re-derived by `WP 18.9.0` on 2026-09-09)
 
 - Core tests: 3,991 passed, 0 failed, 0 skipped, Debug and Release (981 archived with P02–P07 by `WP 18.0C`, file-backend-only tests deleted by `WP 18.1A`; Evidence, citation, seeding, search, sequence and snapshot tests added)

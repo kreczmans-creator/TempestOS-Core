@@ -33,7 +33,7 @@ internal sealed class DocumentsCockpitReadModel
 {
     private readonly EngineeringDomainContext _domainContext;
     private IReadOnlyList<IEngineeringObject> _liveDocuments = [];
-    private int _missingEvidenceCount;
+    private IReadOnlySet<Guid> _missingEvidence = new HashSet<Guid>();
 
     /// <summary>Initialises a new instance of the <see cref="DocumentsCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
@@ -57,14 +57,32 @@ internal sealed class DocumentsCockpitReadModel
 
         _liveDocuments = documents;
 
-        var missingEvidenceCount = 0;
+        var missingEvidence = new HashSet<Guid>();
         foreach (var document in documents)
         {
             if (await HasMissingEvidenceAsync(document, cancellationToken).ConfigureAwait(false))
-                missingEvidenceCount++;
+                missingEvidence.Add(document.Id);
         }
 
-        _missingEvidenceCount = missingEvidenceCount;
+        _missingEvidence = missingEvidence;
+    }
+
+    /// <summary>
+    /// A view of this read-model over only the Documents
+    /// <paramref name="includes"/> admits (`ADR-0151`, project health) —
+    /// the same class over a filtered copy of what <see cref="LoadAsync"/>
+    /// last loaded, so every property below answers for the subset by the
+    /// identical code path, with no second load and no second rule.
+    /// </summary>
+    public DocumentsCockpitReadModel ScopedTo(Func<Guid, bool> includes)
+    {
+        ArgumentNullException.ThrowIfNull(includes);
+
+        return new DocumentsCockpitReadModel(_domainContext)
+        {
+            _liveDocuments = _liveDocuments.Where(d => includes(d.Id)).ToList(),
+            _missingEvidence = _missingEvidence.Where(includes).ToHashSet(),
+        };
     }
 
     /// <summary>Gets every live (non-deleted) Document Domain object — <c>"Document"</c>, <c>"Drawing"</c>, or <c>"CadModel"</c> — loaded by <see cref="LoadAsync"/>.</summary>
@@ -98,7 +116,7 @@ internal sealed class DocumentsCockpitReadModel
     }
 
     /// <summary>Gets the number of live Documents with missing evidence (<see cref="HasMissingEvidenceAsync"/>) — the Cockpit's own "Missing Evidence" KPI.</summary>
-    private int MissingEvidenceCount => _missingEvidenceCount;
+    private int MissingEvidenceCount => _missingEvidence.Count;
 
     /// <summary>Gets the number of live Documents that are <see cref="LifecycleState.InReview"/> — the Cockpit's own "Outstanding Reviews" KPI/"Outstanding Actions" signal.</summary>
     public int OutstandingReviews =>

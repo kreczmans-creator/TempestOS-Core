@@ -34,7 +34,7 @@ internal sealed class ManufacturingCockpitReadModel
     private readonly EngineeringDomainContext _domainContext;
     private IReadOnlyList<IEngineeringObject> _liveObjects = [];
     private IReadOnlyList<(IEngineeringObject Inspection, VerificationRecordSnapshot? LatestRecord)> _inspectionSnapshots = [];
-    private int _unfulfilledSupplierOperations;
+    private IReadOnlySet<Guid> _unfulfilledSupplierOperations = new HashSet<Guid>();
 
     /// <summary>Initialises a new instance of the <see cref="ManufacturingCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
@@ -72,15 +72,34 @@ internal sealed class ManufacturingCockpitReadModel
                 && o is IHasMetadata { Classification: ManufacturingObjectFactoryRegistry.SupplierOperation })
             .ToList();
 
-        var unfulfilled = 0;
+        var unfulfilled = new HashSet<Guid>();
         foreach (var operation in supplierOperations)
         {
             var outgoing = await _domainContext.RelationshipRepository.GetOutgoingAsync(operation.Id, cancellationToken).ConfigureAwait(false);
             if (!outgoing.Any(r => string.Equals(r.RelationshipKind, "manufacturedBy", StringComparison.Ordinal)))
-                unfulfilled++;
+                unfulfilled.Add(operation.Id);
         }
 
         _unfulfilledSupplierOperations = unfulfilled;
+    }
+
+    /// <summary>
+    /// A view of this read-model over only the Manufacturing objects
+    /// <paramref name="includes"/> admits (`ADR-0151`, project health) —
+    /// the same class over a filtered copy of what <see cref="LoadAsync"/>
+    /// last loaded, so every property below answers for the subset by the
+    /// identical code path, with no second load and no second rule.
+    /// </summary>
+    public ManufacturingCockpitReadModel ScopedTo(Func<Guid, bool> includes)
+    {
+        ArgumentNullException.ThrowIfNull(includes);
+
+        return new ManufacturingCockpitReadModel(_domainContext)
+        {
+            _liveObjects = _liveObjects.Where(o => includes(o.Id)).ToList(),
+            _inspectionSnapshots = _inspectionSnapshots.Where(s => includes(s.Inspection.Id)).ToList(),
+            _unfulfilledSupplierOperations = _unfulfilledSupplierOperations.Where(includes).ToHashSet(),
+        };
     }
 
     /// <summary>Gets every live (non-deleted) Manufacturing object across all three Manufacturing Kinds (<c>ManufacturingOperation</c>/<c>WorkInstruction</c>/<c>Inspection</c>) — loaded by <see cref="LoadAsync"/>.</summary>
@@ -116,7 +135,7 @@ internal sealed class ManufacturingCockpitReadModel
         LiveManufacturingOperationSteps.Count(o => o is IHasLifecycle { Status: not (LifecycleState.Released or LifecycleState.Archived or LifecycleState.Cancelled) });
 
     /// <summary>Gets the number of live Supplier Operations (<see cref="LiveSupplierOperations"/>) with no outgoing <c>"manufacturedBy"</c> relationship to a real Supplier recorded yet — the Cockpit's own "unfulfilled Supplier Operation" signal.</summary>
-    private int UnfulfilledSupplierOperationCount => _unfulfilledSupplierOperations;
+    private int UnfulfilledSupplierOperationCount => _unfulfilledSupplierOperations.Count;
 
     /// <summary>Gets the number of live Inspections whose own most recent recorded result has <see cref="VerificationOutcome.Fail"/> — the Cockpit's own "Failed Inspection" signal.</summary>
     private int FailedInspectionCount =>

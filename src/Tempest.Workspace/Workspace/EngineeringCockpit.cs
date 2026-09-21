@@ -97,6 +97,7 @@ public sealed class EngineeringCockpit
     private readonly DocumentsCockpitReadModel _documents;
     private readonly VerificationCockpitReadModel _verification;
     private readonly ManufacturingCockpitReadModel _manufacturing;
+    private readonly ProjectHealthReadModel _projectHealth;
     private readonly IAuditQuery? _auditQuery;
 
     // `WP 18.1A-R1` — every cross-cutting read this composition root itself
@@ -160,6 +161,12 @@ public sealed class EngineeringCockpit
         _documents = new DocumentsCockpitReadModel(domainContext);
         _verification = new VerificationCockpitReadModel(domainContext);
         _manufacturing = new ManufacturingCockpitReadModel(domainContext);
+
+        // `ADR-0151` — project health is this Cockpit's own rollup scoped
+        // to a Project, so the collaborator reads the five collaborators
+        // above (already loaded) rather than loading anything of its own.
+        _projectHealth = new ProjectHealthReadModel(
+            domainContext, _mechanical, _requirements, _calculations, _documents, _verification, _manufacturing, _now);
     }
 
     /// <summary>
@@ -246,6 +253,9 @@ public sealed class EngineeringCockpit
         }
 
         _recentlyChanged = await LoadRecentlyChangedAsync(cancellationToken).ConfigureAwait(false);
+
+        // Last, deliberately: it reads what every collaborator above loaded.
+        await _projectHealth.LoadAsync(_liveTasks, cancellationToken).ConfigureAwait(false);
     }
 
     // ------------------------------------------------------------
@@ -424,27 +434,7 @@ public sealed class EngineeringCockpit
     /// tell".
     /// </para>
     /// </remarks>
-    public IReadOnlyList<CockpitActionItem> OverdueActions
-    {
-        get
-        {
-            var asOf = _now();
-
-            return
-            [
-                .. LiveTasks
-                    .OfType<EngineeringTask>()
-                    .Where(t => t.IsOverdue(asOf))
-                    .OrderBy(t => t.DueDate)
-                    .ThenBy(t => t.DisplayName, StringComparer.OrdinalIgnoreCase)
-                    .Select(t => new CockpitActionItem(
-                        t.DisplayName,
-                        t.AssignedToPrincipalId ?? CockpitActionItem.NobodyAssigned,
-                        t.DueDate!.Value,
-                        (int)Math.Floor((asOf - t.DueDate!.Value).TotalDays))),
-            ];
-        }
-    }
+    public IReadOnlyList<CockpitActionItem> OverdueActions => EngineeringHealthRollup.OverdueActions(LiveTasks, _now());
 
     /// <summary>
     /// Gets the Overdue Actions card's own lines, ready to render.
@@ -498,23 +488,7 @@ public sealed class EngineeringCockpit
     /// <see cref="EngineeringHealthStatus.Unknown"/> if every included
     /// discipline itself reports Unknown; else <see cref="EngineeringHealthStatus.Healthy"/>.
     /// </summary>
-    public EngineeringHealthStatus Health
-    {
-        get
-        {
-            var statuses = new[] { RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus };
-
-            if (statuses.Any(s => s == EngineeringHealthStatus.Blocked))
-                return EngineeringHealthStatus.Blocked;
-
-            if (statuses.Any(s => s == EngineeringHealthStatus.Attention))
-                return EngineeringHealthStatus.Attention;
-
-            return statuses.All(s => s == EngineeringHealthStatus.Unknown)
-                ? EngineeringHealthStatus.Unknown
-                : EngineeringHealthStatus.Healthy;
-        }
-    }
+    public EngineeringHealthStatus Health => EngineeringHealthRollup.RollUp(RolledUpStatuses);
 
     /// <summary>
     /// Gets the Engineering Health Score's own display text - a real,
@@ -522,18 +496,27 @@ public sealed class EngineeringCockpit
     /// rolls up currently report real data at all, and how many of those
     /// are <see cref="EngineeringHealthStatus.Healthy"/>.
     /// </summary>
-    public string HealthScoreDisplay
-    {
-        get
-        {
-            var statuses = new[] { RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus };
-            var withData = statuses.Count(s => s != EngineeringHealthStatus.Unknown);
+    public string HealthScoreDisplay => EngineeringHealthRollup.ScoreDisplay(RolledUpStatuses);
 
-            return withData == 0
-                ? "— (no Engineering data yet)"
-                : $"{statuses.Count(s => s == EngineeringHealthStatus.Healthy)}/{withData} healthy ({withData}/5 disciplines reporting)";
-        }
-    }
+    /// <summary>The five discipline statuses <see cref="Health"/> and <see cref="HealthScoreDisplay"/> roll up, in their fixed order — the one list both read, and the one <see cref="ProjectHealthReadModel"/> mirrors per Project (`ADR-0151`).</summary>
+    private EngineeringHealthStatus[] RolledUpStatuses =>
+        [RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus];
+
+    /// <summary>
+    /// Gets every live Project's own health (`ADR-0151`) — this Cockpit's
+    /// own <see cref="Health"/> rollup, <see cref="HealthScoreDisplay"/>
+    /// wording, <see cref="BlockedItems"/> and <see cref="OverdueActions"/>
+    /// definitions, each applied to only the objects that Project owns
+    /// (<see cref="Projects.ProjectMembership"/>), computed by
+    /// <see cref="PrimeAsync"/> from the identical collaborator data the
+    /// workspace-wide figures read. Honestly empty before the first
+    /// <see cref="PrimeAsync"/>, and when no live Project exists.
+    /// </summary>
+    public IReadOnlyList<CockpitProjectHealth> ProjectHealth => _projectHealth.Projects;
+
+    /// <summary>Gets one Project's own <see cref="ProjectHealth"/> entry, or <see langword="null"/> if <paramref name="projectId"/> is not a live Project as of the last <see cref="PrimeAsync"/>.</summary>
+    public CockpitProjectHealth? GetProjectHealth(Guid projectId) =>
+        _projectHealth.Projects.FirstOrDefault(p => p.ProjectId == projectId);
 
     /// <summary>Gets the Requirements discipline's own dedicated KPI card set — see <see cref="RequirementsCockpitReadModel.KpiCards"/>.</summary>
     public IReadOnlyList<CockpitKpiCard> RequirementsKpiCards => _requirements.KpiCards;

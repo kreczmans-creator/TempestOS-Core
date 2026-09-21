@@ -1,9 +1,12 @@
 using System.Text.Json.Nodes;
+using Tempest.Workspace;
 using Tempest.Workspace.Integration.DashboardExport;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Verification;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.Plugins;
+using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Workspace.DashboardExport;
 
@@ -20,7 +23,12 @@ public class ProgrammeHierarchyExportAdapterTests
 {
     private static async Task<JsonNode> ExportAsync(ITempestHost host)
     {
-        var adapter = new ProgrammeHierarchyExportAdapter(DashboardExportTestHost.Domain(host));
+        var adapter = new ProgrammeHierarchyExportAdapter(
+            DashboardExportTestHost.Domain(host),
+            DashboardExportTestHost.Requirements(host),
+            DashboardExportTestHost.RequirementValidation(host),
+            DashboardExportTestHost.NavigationProvider(host),
+            DashboardExportTestHost.CommandRegistry(host));
 
         using var stream = new MemoryStream();
         await adapter.ExportAsync(stream);
@@ -37,12 +45,14 @@ public class ProgrammeHierarchyExportAdapterTests
 
         var json = await ExportAsync(host);
 
-        Assert.Equal(1, json["schemaVersion"]!.GetValue<int>());
+        Assert.Equal(2, json["schemaVersion"]!.GetValue<int>());
         Assert.Empty(json["portfolios"]!.AsArray());
         Assert.Empty(json["programmes"]!.AsArray());
         Assert.Empty(json["projects"]!.AsArray());
         Assert.Equal(0, json["summary"]!["portfolioCount"]!.GetValue<int>());
         Assert.Equal(0, json["summary"]!["deletedCount"]!.GetValue<int>());
+        foreach (var word in new[] { "healthy", "attention", "blocked", "unknown" })
+            Assert.Equal(0, json["summary"]!["byHealth"]![word]!.GetValue<int>());
 
         await manager.ShutdownAsync();
     }
@@ -113,6 +123,68 @@ public class ProgrammeHierarchyExportAdapterTests
         Assert.Equal(1, json["summary"]!["byStatus"]!["inReview"]!.GetValue<int>());
         Assert.Equal(1, json["summary"]!["deletedCount"]!.GetValue<int>());
         Assert.Equal(2, json["summary"]!["projectCount"]!.GetValue<int>());
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>Schema v2 (`ADR-0151`): each Project's own health, blocked and overdue figures are <see cref="EngineeringCockpit.ProjectHealth"/>'s own, word for word, and <c>summary.byHealth</c> counts them.</summary>
+    [Fact]
+    public async Task ExportAsync_ProjectHealth_MatchesEngineeringCockpitProjectHealthWordForWord()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
+
+        var blocked = await DashboardExportTestHost.CreateProjectAsync(host, "PROJ-BLOCKED", "Blocked Project");
+        var empty = await DashboardExportTestHost.CreateProjectAsync(host, "PROJ-EMPTY", "Empty Project");
+
+        var registry = new VerificationActivityFactoryRegistry(DashboardExportTestHost.Domain(host));
+        var failed = await registry.CreateAsync("Failed Activity", "Verifies something.", Guid.NewGuid(), "Test", parentId: blocked.Id);
+        await DashboardExportTestHost.Verification(host).RecordAsync(failed.Id, VerificationOutcome.Fail, "Test", new VerificationContext());
+
+        var overdue = await DashboardExportTestHost.CreateTaskAsync(host, "TASK-1", "Overdue task");
+        await ((IHasParent)overdue).MoveAsync(blocked.Id);
+        await overdue.SetDueDateAsync(DateTimeOffset.UtcNow.AddDays(-3));
+
+        var cockpit = await DashboardExportTestHost.Cockpit(manager);
+        var json = await ExportAsync(host);
+
+        Assert.Equal(ProgrammeHierarchyExportAdapter.CurrentSchemaVersion, json["schemaVersion"]!.GetValue<int>());
+
+        var blockedEntry = json["projects"]!.AsArray().Single(p => p!["id"]!.GetValue<string>() == blocked.Id.ToString())!;
+        Assert.Equal("blocked", blockedEntry["health"]!["overall"]!.GetValue<string>());
+        Assert.Equal("blocked", blockedEntry["health"]!["byDiscipline"]!["verification"]!.GetValue<string>());
+        Assert.Equal("unknown", blockedEntry["health"]!["byDiscipline"]!["requirements"]!.GetValue<string>());
+        Assert.Equal("unknown", blockedEntry["health"]!["byDiscipline"]!["calculations"]!.GetValue<string>());
+        Assert.Equal("unknown", blockedEntry["health"]!["byDiscipline"]!["documents"]!.GetValue<string>());
+        Assert.Equal("unknown", blockedEntry["health"]!["byDiscipline"]!["manufacturing"]!.GetValue<string>());
+        Assert.Equal("0/1 healthy (1/5 disciplines reporting)", blockedEntry["health"]!["score"]!.GetValue<string>());
+        Assert.Equal(1, blockedEntry["blockedCount"]!.GetValue<int>());
+        Assert.Equal(1, blockedEntry["overdueActionCount"]!.GetValue<int>());
+
+        var emptyEntry = json["projects"]!.AsArray().Single(p => p!["id"]!.GetValue<string>() == empty.Id.ToString())!;
+        Assert.Equal("unknown", emptyEntry["health"]!["overall"]!.GetValue<string>());
+        Assert.Equal("— (no Engineering data yet)", emptyEntry["health"]!["score"]!.GetValue<string>());
+        Assert.Equal(0, emptyEntry["blockedCount"]!.GetValue<int>());
+        Assert.Equal(0, emptyEntry["overdueActionCount"]!.GetValue<int>());
+
+        // Word for word against the desktop's own Cockpit — the oracle.
+        foreach (var expected in cockpit.ProjectHealth)
+        {
+            var exported = json["projects"]!.AsArray().Single(p => p!["id"]!.GetValue<string>() == expected.ProjectId.ToString())!;
+            Assert.Equal(expected.Health.ToString().ToLowerInvariant(), exported["health"]!["overall"]!.GetValue<string>());
+            Assert.Equal(expected.HealthScoreDisplay, exported["health"]!["score"]!.GetValue<string>());
+            Assert.Equal(expected.BlockedItemCount, exported["blockedCount"]!.GetValue<int>());
+            Assert.Equal(expected.OverdueActionCount, exported["overdueActionCount"]!.GetValue<int>());
+        }
+
+        // Every v1 key is still present on the entry, untouched.
+        foreach (var key in new[] { "id", "identifier", "name", "status", "owner", "discipline", "programmeId", "parentId", "isDeleted", "lastUpdate" })
+            Assert.True(blockedEntry.AsObject().ContainsKey(key), $"v1 key '{key}' missing");
+
+        Assert.Equal(1, json["summary"]!["byHealth"]!["blocked"]!.GetValue<int>());
+        Assert.Equal(1, json["summary"]!["byHealth"]!["unknown"]!.GetValue<int>());
+        Assert.Equal(0, json["summary"]!["byHealth"]!["healthy"]!.GetValue<int>());
+        Assert.Equal(0, json["summary"]!["byHealth"]!["attention"]!.GetValue<int>());
 
         await manager.ShutdownAsync();
     }

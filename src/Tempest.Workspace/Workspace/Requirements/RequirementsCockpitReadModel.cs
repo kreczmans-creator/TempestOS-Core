@@ -63,8 +63,40 @@ internal sealed class RequirementsCockpitReadModel
         _relationshipsByRequirement = await ReadRelationshipsAsync(live, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// A view of this read-model over only the requirements that belong
+    /// to the engineering objects <paramref name="includesObject"/> admits
+    /// (`ADR-0151`, project health). A requirement is not itself a
+    /// parented engineering object, so its membership is the rule
+    /// <see cref="Projects.ProjectRequirementRegister"/> already states:
+    /// it is in a project when at least one of its own recorded
+    /// relationships targets an object that is. Applied here to the
+    /// relationships <see cref="LoadAsync"/> already read — the same
+    /// class over a filtered copy, no second load, no second rule.
+    /// </summary>
+    public RequirementsCockpitReadModel ScopedTo(Func<Guid, bool> includesObject)
+    {
+        ArgumentNullException.ThrowIfNull(includesObject);
+
+        var included = _liveRequirements
+            .Where(r => _relationshipsByRequirement.TryGetValue(r.Id, out var references) && references.Any(reference => includesObject(reference.TargetDocumentId)))
+            .Select(r => r.Id)
+            .ToHashSet();
+
+        return new RequirementsCockpitReadModel(_requirementsService, _requirementValidationService)
+        {
+            _liveRequirements = _liveRequirements.Where(r => included.Contains(r.Id)).ToList(),
+            _validationByRequirement = _validationByRequirement.Where(v => included.Contains(v.RequirementId)).ToList(),
+            _relationshipsByRequirement = _relationshipsByRequirement.Where(kv => included.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value),
+        };
+    }
+
     /// <summary>Gets every live (non-deleted) Requirement — loaded by <see cref="LoadAsync"/>.</summary>
     public IReadOnlyList<IRequirement> LiveRequirements => _liveRequirements;
+
+    /// <summary>Gets every distinct engineering object any live requirement's own recorded relationships target — the ids a project-scoping caller resolves membership for before calling <see cref="ScopedTo"/>.</summary>
+    public IReadOnlyCollection<Guid> RelatedObjectIds =>
+        _relationshipsByRequirement.Values.SelectMany(references => references.Select(reference => reference.TargetDocumentId)).ToHashSet();
 
     /// <summary>Gets the number of live Requirements — the Cockpit's own cross-discipline KPI summary reads this directly.</summary>
     public int Count => LiveRequirements.Count;

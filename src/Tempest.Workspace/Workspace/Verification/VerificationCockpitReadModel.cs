@@ -32,7 +32,7 @@ internal sealed class VerificationCockpitReadModel
     private readonly EngineeringDomainContext _domainContext;
     private IReadOnlyList<IEngineeringObject> _liveActivities = [];
     private IReadOnlyList<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)> _snapshots = [];
-    private int _totalRecords;
+    private IReadOnlyDictionary<Guid, int> _recordCountByActivity = new Dictionary<Guid, int>();
 
     /// <summary>Initialises a new instance of the <see cref="VerificationCockpitReadModel"/> class.</summary>
     /// <param name="domainContext">The Engineering Domain's own shared repository this read-model queries directly.</param>
@@ -51,18 +51,37 @@ internal sealed class VerificationCockpitReadModel
         _liveActivities = liveActivities;
 
         var snapshots = new List<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>(liveActivities.Count);
-        var totalRecords = 0;
+        var recordCounts = new Dictionary<Guid, int>(liveActivities.Count);
 
         foreach (var activity in liveActivities)
         {
             var latest = await VerificationRecordReader.GetLatestAsync(_domainContext, activity.Id, cancellationToken).ConfigureAwait(false);
             snapshots.Add((activity, latest));
 
-            totalRecords += (await VerificationRecordReader.GetResultHistoryAsync(_domainContext, activity.Id, cancellationToken).ConfigureAwait(false)).Count;
+            recordCounts[activity.Id] = (await VerificationRecordReader.GetResultHistoryAsync(_domainContext, activity.Id, cancellationToken).ConfigureAwait(false)).Count;
         }
 
         _snapshots = snapshots;
-        _totalRecords = totalRecords;
+        _recordCountByActivity = recordCounts;
+    }
+
+    /// <summary>
+    /// A view of this read-model over only the Activities
+    /// <paramref name="includes"/> admits (`ADR-0151`, project health) —
+    /// the same class over a filtered copy of what <see cref="LoadAsync"/>
+    /// last loaded, so every property below answers for the subset by the
+    /// identical code path, with no second load and no second rule.
+    /// </summary>
+    public VerificationCockpitReadModel ScopedTo(Func<Guid, bool> includes)
+    {
+        ArgumentNullException.ThrowIfNull(includes);
+
+        return new VerificationCockpitReadModel(_domainContext)
+        {
+            _liveActivities = _liveActivities.Where(a => includes(a.Id)).ToList(),
+            _snapshots = _snapshots.Where(s => includes(s.Activity.Id)).ToList(),
+            _recordCountByActivity = _recordCountByActivity.Where(kv => includes(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value),
+        };
     }
 
     /// <summary>Gets every live (non-deleted) Verification Activity — loaded by <see cref="LoadAsync"/>.</summary>
@@ -123,7 +142,7 @@ internal sealed class VerificationCockpitReadModel
     }
 
     /// <summary>Gets the total number of real <see cref="IVerificationRecord"/>s recorded across every live Verification Activity — the Cockpit's own "Total Verification Records" KPI, distinct from the Activity count itself. Public — see <see cref="FailedVerificationCount"/>'s own remarks.</summary>
-    public int TotalVerificationRecordsCount => _totalRecords;
+    public int TotalVerificationRecordsCount => _recordCountByActivity.Values.Sum();
 
     /// <summary>
     /// Gets the Verification discipline's own status:
