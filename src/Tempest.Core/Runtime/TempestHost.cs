@@ -16,7 +16,9 @@ using Tempest.Core.BusinessOperations.Finance;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
 using Tempest.Core.EngineeringAssets.Templates;
 using Tempest.Core.EngineeringAssets.Verification;
+using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessGovernance.Quotations;
 using Tempest.Core.Events;
 using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
@@ -645,18 +647,38 @@ public sealed class TempestHost : ITempestHost
         // (`D-028`): unreachable from any shipped surface. See
         // `src/Frozen/README.md`.
 
-        // `Group C` (P07): business governance. Rate cards are authored,
-        // evidenced, approved, revisioned and superseded records, so they
-        // sit on the same shared ReferenceDataCatalog<T> base as `P01`
-        // rather than growing a third lifecycle (`ADR-0129`).
+        // `Group C` (P07): business governance. Contract templates and
+        // contracts, rate cards and sales quotations are authored,
+        // evidenced, approved, revisioned and superseded records, so each
+        // library sits on the same shared ReferenceDataCatalog<T> base as
+        // `P01` rather than growing a third lifecycle (`ADR-0129`).
         //
-        // WP 18.0C (D-028): Contracts, Risk, Assets (IP/data), Finance
-        // (Assumption/Scenario/Control), Development (Opportunity/
-        // Pipeline), Operating and Pricing.PricingService were frozen to
-        // `src/Frozen/Tempest.Core.BusinessGovernance` — unreachable from
-        // any shipped surface. See `src/Frozen/README.md`.
+        // Registered last, and depending on nothing above it: `P07` reads
+        // the platform's own document store, persistence and identity, and
+        // does not read `P01`.
+        //
+        // WP 18.0C (D-028): Risk, Assets (IP/data), Finance (Assumption/
+        // Scenario/Control), Development (Opportunity/Pipeline) and
+        // Operating were frozen to `src/Frozen/Tempest.Core.BusinessGovernance`
+        // — unreachable from any shipped surface. Contracts and
+        // Pricing.PricingService were frozen with them and returned on
+        // 2026-09-21 (`ADR-0150`) so the dashboard export below can carry
+        // real contract and quotation figures. See `src/Frozen/README.md`.
+        services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
+        services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
+        services.Singleton<IIssuedContractCatalog, IssuedContractCatalog>();
+        services.Singleton<IIssuedContractValidationService, IssuedContractValidationService>();
+        services.Singleton<IContractService, ContractService>();
+
         services.Singleton<IRateCardCatalog, RateCardCatalog>();
         services.Singleton<IRateCardValidationService, RateCardValidationService>();
+        services.Singleton<IPricingService, PricingService>();
+
+        // `ADR-0150`: a sales quotation — a price sent to a client — is
+        // the one `P07` record the freeze never held, added alongside the
+        // returning Contracts so the dashboard reads both from the host.
+        services.Singleton<IQuotationCatalog, QuotationCatalog>();
+        services.Singleton<IQuotationValidationService, QuotationValidationService>();
 
         // `Group D` (P03, CommercialIntelligence) was frozen to
         // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`

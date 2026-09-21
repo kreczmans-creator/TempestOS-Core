@@ -1,5 +1,7 @@
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessGovernance.Quotations;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.ReferenceData;
@@ -86,6 +88,65 @@ internal static class BusinessGovernanceFixtures
         string principalId = "director-1",
         DateOnly? on = null) =>
         new(kind, principalId, "Director", on ?? Today, "Fixture basis, not a real authorisation.");
+
+    // ---- C1 -----------------------------------------------------------
+
+    public static ContractTemplateCatalog BuildTemplateCatalog() => Build((d, p) => new ContractTemplateCatalog(d, p));
+
+    public static IssuedContractCatalog BuildContractCatalog() => Build((d, p) => new IssuedContractCatalog(d, p));
+
+    public static ContractTemplate Template(string code = "CT-CONSULT-1") => new()
+    {
+        Code = code,
+        Name = "Fixture consultancy agreement",
+        Purpose = "A fictional standard form for fixture engagements. Not a real contract template.",
+        Governance = Governance(ConfidentialityClassification.Internal),
+        LegalReviewState = DeterminationState.Recorded,
+        Clauses =
+        [
+            new ContractClause("1", "Parties", ClauseCategory.Parties, IsMandatory: true, IsNegotiable: false),
+            new ContractClause("2", "Scope of services", ClauseCategory.Scope),
+            new ContractClause("3", "Charges", ClauseCategory.Price),
+            new ContractClause("4", "Payment", ClauseCategory.Payment),
+            new ContractClause("5", "Intellectual property", ClauseCategory.IntellectualProperty, IsMandatory: true, RequiresLegalReview: true),
+            new ContractClause("6", "Confidentiality", ClauseCategory.Confidentiality, IsMandatory: true),
+            new ContractClause("7", "Liability", ClauseCategory.Liability, IsMandatory: true, RequiresLegalReview: true),
+            new ContractClause("8", "Termination", ClauseCategory.Termination),
+        ],
+        DefaultCommercialTerms = Terms(),
+    };
+
+    public static CommercialTerms Terms() => new()
+    {
+        Basis = ChargingBasis.TimeAndMaterials,
+        LiabilityCap = Gbp_(250_000m),
+        ChangeControlMechanism = "Written variation signed by both parties.",
+        PaymentTerms = [new PaymentTerm(PaymentTrigger.OnInvoice, "Payment 30 days from invoice.", DaysToPay: 30)],
+    };
+
+    public static IReadOnlyList<ContractParty> Parties() =>
+    [
+        new ContractParty("TestFixture Engineering Ltd", "Consultant", "00000000"),
+        new ContractParty("Fictional Client Ltd", "Client", "00000001"),
+    ];
+
+    // ---- Quotations (ADR-0150) ------------------------------------------
+
+    public static QuotationCatalog BuildQuotationCatalog() => Build((d, p) => new QuotationCatalog(d, p));
+
+    /// <summary>A quotation in the state asked for, carrying the dates that state needs and no others.</summary>
+    public static Quotation Quote(string reference = "QUO-1", QuotationStatus status = QuotationStatus.Draft) => new()
+    {
+        Reference = reference,
+        Client = new ContractParty("Fictional Client Ltd", "Client", "00000001"),
+        Title = "Fixture engagement quotation",
+        Amount = Gbp_(8_500m),
+        Governance = Governance(),
+        Status = status,
+        SubmittedOn = status == QuotationStatus.Draft ? null : Today.AddDays(-14),
+        FollowUpOn = status == QuotationStatus.Submitted ? Today.AddDays(-1) : null,
+        DecidedOn = status is QuotationStatus.Accepted or QuotationStatus.Declined ? Today.AddDays(-2) : null,
+    };
 
     // ---- C4 -------------------------------------------------------------
 
