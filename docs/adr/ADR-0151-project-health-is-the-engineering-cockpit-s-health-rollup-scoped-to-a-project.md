@@ -62,7 +62,12 @@ persistence I/O, no projectId column, no index).
 row). `programme.json` becomes schema v2: `projects[].health`
 (`overall`, `byDiscipline`, `score`), `projects[].blockedCount`,
 `projects[].overdueActionCount` and `summary.byHealth`, every v1 key
-unchanged.
+unchanged. *Later note (2026-09-21):* still within v2, additively,
+`projects[].tasks[]` (the Project's open tasks, from the Project
+Workspace's own `ProjectTaskRegister`; `overdueActionCount` and the
+tasks' `isOverdue` count agree by construction) and `summary.tasks`
+(`open`, `overdue`, `blocked`) — see `ProgrammeHierarchyExportAdapter`'s
+remarks.
 
 ## Consequences
 

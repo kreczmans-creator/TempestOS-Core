@@ -455,8 +455,12 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         cards.Select(card => new KpiCardExport(card.Label, card.Value, card.IsPlaceholder, card.PercentValue)).ToList();
 
     /// <summary>The Cockpit's own <see cref="EngineeringHealthStatus"/> word, lower-cased — the same closed vocabulary the desktop shows, never a dashboard-specific translation.</summary>
-    internal static string FormatHealth(EngineeringHealthStatus status) =>
-        JsonNamingPolicy.CamelCase.ConvertName(status.ToString());
+    internal static string FormatHealth(EngineeringHealthStatus status) => FormatEnum(status);
+
+    /// <summary>The one camelCase enum-word formatter the Dashboard Export adapters share — <see cref="FormatHealth"/> here, and <c>programme.json</c>'s own <c>workState</c>/<c>priority</c> words — so no adapter can spell a closed vocabulary two ways.</summary>
+    internal static string FormatEnum<TEnum>(TEnum value)
+        where TEnum : struct, Enum =>
+        JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
 
     private static string Truncate(string value, int maxLength) =>
         value.Length <= maxLength ? value : string.Concat(value.AsSpan(0, maxLength), "…");

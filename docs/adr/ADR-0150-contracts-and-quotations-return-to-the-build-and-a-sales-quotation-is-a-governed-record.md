@@ -41,6 +41,10 @@ business side to export. The owner wants real figures.
 > `byDiscipline`, `score`), `blockedCount` and `overdueActionCount`, and
 > `summary` carries `byHealth` — the Cockpit's own health rollup scoped
 > to that Project, in the same lower-cased words. Every v1 key is unchanged.
+> Later the same day, still v2 (additive, unconsumed): `projects[].tasks[]`
+> (that Project's open tasks — `id`, `identifier`, `name`, `workState`,
+> `priority`, `assignedTo`, `dueDate`, `isOverdue`, `contributesTo`, from
+> `ProjectTaskRegister`) and `summary.tasks` (`open`, `overdue`, `blocked`).
 
 Three facts shaped what returns:
 

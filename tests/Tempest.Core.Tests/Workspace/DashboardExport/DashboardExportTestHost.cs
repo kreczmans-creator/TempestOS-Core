@@ -147,4 +147,15 @@ internal static class DashboardExportTestHost
             CanonicalObjectKinds.Task, domain, (doc, rev) => new EngineeringTask(doc, rev, domain, identifier, name, EngineeringObjectMetadata.Empty));
         return (EngineeringTask)await factory.CreateAsync($"{name} — test task.");
     }
+
+    /// <summary>A <c>"Milestone"</c> under <paramref name="parentId"/> — the target a task's <c>contributesTo</c> names — mirroring <c>ProjectTaskTests.CreateMilestoneAsync</c>.</summary>
+    public static async Task<Milestone> CreateMilestoneAsync(ITempestHost host, string identifier, string name, Guid parentId, DateTimeOffset targetDate)
+    {
+        var domain = Domain(host);
+        var factory = new EngineeringObjectFactory<Milestone>(
+            CanonicalObjectKinds.Milestone, domain, (doc, rev) => new Milestone(doc, rev, domain, identifier, name, EngineeringObjectMetadata.Empty, targetDate));
+        var milestone = (Milestone)await factory.CreateAsync($"{name} — test milestone.");
+        await ((IHasParent)milestone).MoveAsync(parentId);
+        return milestone;
+    }
 }

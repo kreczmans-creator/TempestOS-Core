@@ -53,6 +53,8 @@ public class ProgrammeHierarchyExportAdapterTests
         Assert.Equal(0, json["summary"]!["deletedCount"]!.GetValue<int>());
         foreach (var word in new[] { "healthy", "attention", "blocked", "unknown" })
             Assert.Equal(0, json["summary"]!["byHealth"]![word]!.GetValue<int>());
+        foreach (var word in new[] { "open", "overdue", "blocked" })
+            Assert.Equal(0, json["summary"]!["tasks"]![word]!.GetValue<int>());
 
         await manager.ShutdownAsync();
     }
@@ -185,6 +187,77 @@ public class ProgrammeHierarchyExportAdapterTests
         Assert.Equal(1, json["summary"]!["byHealth"]!["unknown"]!.GetValue<int>());
         Assert.Equal(0, json["summary"]!["byHealth"]!["healthy"]!.GetValue<int>());
         Assert.Equal(0, json["summary"]!["byHealth"]!["attention"]!.GetValue<int>());
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>Schema v2 (additive): each Project's own open tasks, from the Project Workspace's own <see cref="Tempest.Workspace.Projects.ProjectTaskRegister"/>, in dashboard order, with the desktop's own words; <c>summary.tasks</c> totals them; and the Cockpit's <c>overdueActionCount</c> agrees with the exported task list.</summary>
+    [Fact]
+    public async Task ExportAsync_ProjectTasks_ExportsOpenTasksInDashboardOrderAndAgreesWithOverdueActionCount()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
+
+        var project = await DashboardExportTestHost.CreateProjectAsync(host, "PROJ-TASKS", "Tasked Project");
+        var milestone = await DashboardExportTestHost.CreateMilestoneAsync(host, "MS-1", "Design freeze", project.Id, DateTimeOffset.UtcNow.AddMonths(2));
+
+        var overdue = await DashboardExportTestHost.CreateTaskAsync(host, "T-1", "Overdue work");
+        await ((IHasParent)overdue).MoveAsync(project.Id);
+        await overdue.SetDueDateAsync(DateTimeOffset.UtcNow.AddDays(-3));
+        await overdue.AssignAsync("ada");
+        await overdue.ContributeToAsync(milestone.Id);
+
+        var blocked = await DashboardExportTestHost.CreateTaskAsync(host, "T-2", "Blocked work");
+        await ((IHasParent)blocked).MoveAsync(project.Id);
+        await blocked.ChangeWorkStateAsync(TaskWorkState.Blocked);
+        await blocked.SetPriorityAsync(WorkPriority.Critical);
+
+        var done = await DashboardExportTestHost.CreateTaskAsync(host, "T-3", "Finished work");
+        await ((IHasParent)done).MoveAsync(project.Id);
+        await done.SetDueDateAsync(DateTimeOffset.UtcNow.AddDays(-10));
+        await done.ChangeWorkStateAsync(TaskWorkState.Done);
+
+        var json = await ExportAsync(host);
+
+        Assert.Equal(ProgrammeHierarchyExportAdapter.CurrentSchemaVersion, json["schemaVersion"]!.GetValue<int>());
+
+        var entry = json["projects"]!.AsArray().Single(p => p!["id"]!.GetValue<string>() == project.Id.ToString())!;
+        var tasks = entry["tasks"]!.AsArray();
+
+        // Open only, overdue first, then Blocked — the Done task is not exported.
+        Assert.Equal(2, tasks.Count);
+        Assert.Equal([overdue.Id.ToString(), blocked.Id.ToString()], tasks.Select(t => t!["id"]!.GetValue<string>()).ToList());
+
+        var first = tasks[0]!;
+        Assert.Equal("T-1", first["identifier"]!.GetValue<string>());
+        Assert.Equal("Overdue work", first["name"]!.GetValue<string>());
+        Assert.Equal("todo", first["workState"]!.GetValue<string>());
+        Assert.Equal("normal", first["priority"]!.GetValue<string>());
+        Assert.Equal("ada", first["assignedTo"]!.GetValue<string>());
+        Assert.Equal(DateTimeOffset.UtcNow.AddDays(-3).ToString("yyyy-MM-dd"), first["dueDate"]!.GetValue<string>());
+        Assert.True(first["isOverdue"]!.GetValue<bool>());
+        Assert.Equal("Milestone “Design freeze”", first["contributesTo"]!.GetValue<string>());
+
+        var second = tasks[1]!;
+        Assert.Equal("T-2", second["identifier"]!.GetValue<string>());
+        Assert.Equal("blocked", second["workState"]!.GetValue<string>());
+        Assert.Equal("critical", second["priority"]!.GetValue<string>());
+        Assert.Null(second["assignedTo"]);
+        Assert.Null(second["dueDate"]);
+        Assert.False(second["isOverdue"]!.GetValue<bool>());
+        Assert.Null(second["contributesTo"]);
+
+        // Every task key is present on every entry, null or not.
+        foreach (var task in tasks)
+            foreach (var key in new[] { "id", "identifier", "name", "workState", "priority", "assignedTo", "dueDate", "isOverdue", "contributesTo" })
+                Assert.True(task!.AsObject().ContainsKey(key), $"task key '{key}' missing");
+
+        // The Cockpit's own overdueActionCount and the exported task list agree.
+        Assert.Equal(tasks.Count(t => t!["isOverdue"]!.GetValue<bool>()), entry["overdueActionCount"]!.GetValue<int>());
+
+        Assert.Equal(2, json["summary"]!["tasks"]!["open"]!.GetValue<int>());
+        Assert.Equal(1, json["summary"]!["tasks"]!["overdue"]!.GetValue<int>());
+        Assert.Equal(1, json["summary"]!["tasks"]!["blocked"]!.GetValue<int>());
 
         await manager.ShutdownAsync();
     }
