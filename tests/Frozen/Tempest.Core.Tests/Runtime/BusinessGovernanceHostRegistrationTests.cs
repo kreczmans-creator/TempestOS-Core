@@ -1,9 +1,7 @@
 using Tempest.Core.BusinessGovernance.Assets;
-using Tempest.Core.BusinessGovernance.Contracts;
 using Tempest.Core.BusinessGovernance.Development;
 using Tempest.Core.BusinessGovernance.Finance;
 using Tempest.Core.BusinessGovernance.Operating;
-using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessGovernance.Risk;
 using Tempest.Core.Configuration;
 using Tempest.Core.Persistence;
@@ -15,9 +13,10 @@ namespace Tempest.Core.Tests.Runtime;
 // WP 18.0C (D-028): the archived half of the live
 // tests/Tempest.Core.Tests/Runtime/BusinessGovernanceHostRegistrationTests.cs,
 // split out the same day RateCard/RateCardCatalog stayed live and
-// registered. Contracts, Risk, Assets (IP/data), Finance (Assumption/
-// Scenario/Control), Development (Opportunity/Pipeline), Operating,
-// Pricing.PricingService.
+// registered. Risk, Assets (IP/data), Finance (Assumption/Scenario/
+// Control), Development (Opportunity/Pipeline), Operating. The Contracts
+// and Pricing.PricingService rows, and the contract-service reasoning
+// test, returned to the live file with ADR-0150 (2026-09-21).
 public class BusinessGovernanceArchivedHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
@@ -40,11 +39,6 @@ public class BusinessGovernanceArchivedHostRegistrationTests
     }
 
     [Theory]
-    [InlineData(typeof(IContractTemplateCatalog), typeof(ContractTemplateCatalog))]
-    [InlineData(typeof(IContractTemplateValidationService), typeof(ContractTemplateValidationService))]
-    [InlineData(typeof(IIssuedContractCatalog), typeof(IssuedContractCatalog))]
-    [InlineData(typeof(IIssuedContractValidationService), typeof(IssuedContractValidationService))]
-    [InlineData(typeof(IContractService), typeof(ContractService))]
     [InlineData(typeof(IBusinessRiskCatalog), typeof(BusinessRiskCatalog))]
     [InlineData(typeof(IBusinessRiskValidationService), typeof(BusinessRiskValidationService))]
     [InlineData(typeof(IInsurancePolicyCatalog), typeof(InsurancePolicyCatalog))]
@@ -54,7 +48,6 @@ public class BusinessGovernanceArchivedHostRegistrationTests
     [InlineData(typeof(IIPAssetValidationService), typeof(IPAssetValidationService))]
     [InlineData(typeof(IDataAssetCatalog), typeof(DataAssetCatalog))]
     [InlineData(typeof(IDataAssetValidationService), typeof(DataAssetValidationService))]
-    [InlineData(typeof(IPricingService), typeof(PricingService))]
     [InlineData(typeof(IFinancialAssumptionCatalog), typeof(FinancialAssumptionCatalog))]
     [InlineData(typeof(IFinancialAssumptionValidationService), typeof(FinancialAssumptionValidationService))]
     [InlineData(typeof(IFinancialScenarioCatalog), typeof(FinancialScenarioCatalog))]
@@ -89,7 +82,7 @@ public class BusinessGovernanceArchivedHostRegistrationTests
         {
             foreach (var serviceType in new[]
                      {
-                         typeof(IContractTemplateCatalog), typeof(IIssuedContractCatalog), typeof(IBusinessRiskCatalog),
+                         typeof(IBusinessRiskCatalog),
                          typeof(IInsurancePolicyCatalog), typeof(IIPAssetCatalog), typeof(IDataAssetCatalog),
                          typeof(IFinancialAssumptionCatalog), typeof(IFinancialScenarioCatalog),
                          typeof(IOpportunityCatalog), typeof(IOperatingScenarioCatalog),
@@ -99,41 +92,6 @@ public class BusinessGovernanceArchivedHostRegistrationTests
             }
 
             return Task.CompletedTask;
-        });
-    }
-
-    [Fact]
-    public async Task AReasoningService_ReadsTheSameLibraryTheContainerHandsOut()
-    {
-        using var temp = new TempDirectory();
-
-        await RunAgainstRunningHostAsync(temp.Path, async host =>
-        {
-            var contracts = (IIssuedContractCatalog)host.Services!.GetService(typeof(IIssuedContractCatalog))!;
-            var service = (IContractService)host.Services!.GetService(typeof(IContractService))!;
-
-            await contracts.RegisterAsync(
-                "con-host-probe",
-                new IssuedContract
-                {
-                    Reference = "CON-HOST-PROBE",
-                    Title = "Host registration probe",
-                    Parties = Tempest.Core.Tests.BusinessGovernance.BusinessGovernanceFixtures.Parties(),
-                    Governance = Tempest.Core.Tests.BusinessGovernance.BusinessGovernanceFixtures.Governance(),
-                    Obligations =
-                    [
-                        new ContractObligation("OB-1", "A probe obligation.", "A", "B",
-                            DueBy: Tempest.Core.Tests.BusinessGovernance.BusinessGovernanceFixtures.Today.AddDays(-1)),
-                    ],
-                },
-                Tempest.Core.Tests.BusinessGovernance.BusinessGovernanceFixtures.Verified());
-
-            // The service sees what the catalogue wrote, which it could
-            // only do if both are the same instance.
-            var position = await service.ReportObligationsAsync(
-                Tempest.Core.Tests.BusinessGovernance.BusinessGovernanceFixtures.Today);
-
-            Assert.Single(position.OverdueObligations);
         });
     }
 }
