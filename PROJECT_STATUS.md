@@ -36,6 +36,13 @@ supersession, subject retag, Libraries Revise), then `WP 18.9.0` (this
 file's figures, the release notes, the physical review, the tag).
 `v0.17.0` is released: merged to `main`, tagged, published 2026-09-09.
 
+2026-09-21, `ADR-0150`: Contracts and `Pricing.PricingService` returned
+from `src/Frozen/` to the build at the Product Owner's request, a sales
+`Quotation` kind was added on the same pattern, and the Dashboard Export
+now also writes `contracts.json`/`quotes.json` in Tempest-Dashboard's own
+shapes. Risk, Assets, Finance, Development, Operating and
+`CommercialIntelligence` stay frozen. The gate figures below predate it.
+
 ## Gate (the release-candidate head `2f4486c`, re-derived by `WP 18.9.0` on 2026-09-09)
 
 - Core tests: 3,991 passed, 0 failed, 0 skipped, Debug and Release (981 archived with P02–P07 by `WP 18.0C`, file-backend-only tests deleted by `WP 18.1A`; Evidence, citation, seeding, search, sequence and snapshot tests added)

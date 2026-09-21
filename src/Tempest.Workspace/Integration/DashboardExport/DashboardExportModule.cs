@@ -49,7 +49,7 @@ public sealed class DashboardExportModule : ModuleLifecycleBase
             id: ExportNowCommandId,
             displayName: "Export Dashboard Data Now",
             category: "Integration",
-            description: "Writes engineering-status.json and programme.json for Tempest-Dashboard immediately, rather than waiting for the next scheduled export.",
+            description: "Writes engineering-status.json, programme.json, contracts.json and quotes.json for Tempest-Dashboard immediately, rather than waiting for the next scheduled export.",
             createDefault: () => new ExportDashboardDataNowCommand()));
 
         return Task.CompletedTask;

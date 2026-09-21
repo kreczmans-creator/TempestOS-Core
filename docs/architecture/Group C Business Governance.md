@@ -163,6 +163,7 @@ lifecycle `Group A` and `Group B` use, and no third one.
 | `BusinessFinancialScenarios` | `BusinessFinancialScenario` | scenario reference |
 | `BusinessOpportunities` | `BusinessOpportunity` | opportunity reference |
 | `BusinessOperatingModels` | `BusinessOperatingModel` | model reference |
+| `BusinessQuotations` | `BusinessQuotation` | quotation reference (`ADR-0150`, 2026-09-21) |
 
 Inherited without a line of new infrastructure: provenance on every
 record; a released record that cannot be edited in place, only
@@ -180,6 +181,7 @@ contract is still in negotiation.
 |---|---|
 | Governance | `ReferenceValidationState` on the record |
 | Contract | `ContractStatus` |
+| Quotation | `QuotationStatus` (`Draft → Submitted → Accepted | Declined`, one way) |
 | Insurance | `PolicyStatus` |
 | Pipeline | `PipelineStage`, `RevenueReality` |
 | Risk | treatment, acceptance, closure |
@@ -196,8 +198,9 @@ contract is still in negotiation.
 | `TEMPEST-BGF-001..017` | Finance | 17 |
 | `TEMPEST-BGD-001..011` | Business development | 11 |
 | `TEMPEST-BGO-001..018` | Operating model | 18 |
+| `TEMPEST-BGQ-001..011` | Sales quotations (`ADR-0150`) | 11 |
 
-130 rules, all on `ReferenceValidationService<TDefinition>`, with the
+141 rules, all on `ReferenceValidationService<TDefinition>`, with the
 shared ten run once by `BusinessGovernanceValidator` rather than eleven
 times.
 

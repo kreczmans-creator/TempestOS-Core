@@ -67,7 +67,7 @@ public class DashboardExportHostedServiceTests
     }
 
     [Fact]
-    public async Task ExportOnceAsync_WritesBothFiles_ValidJson_NoTempFilesLeftBehind()
+    public async Task ExportOnceAsync_WritesEveryFile_ValidJson_NoTempFilesLeftBehind()
     {
         using var temp = new TempDirectory();
         using var exportDir = new TempDirectory();
@@ -83,14 +83,18 @@ public class DashboardExportHostedServiceTests
 
         var statusPath = Path.Combine(exportDir.Path, "engineering-status.json");
         var programmePath = Path.Combine(exportDir.Path, "programme.json");
+        var contractsPath = Path.Combine(exportDir.Path, "contracts.json");
+        var quotesPath = Path.Combine(exportDir.Path, "quotes.json");
 
-        Assert.True(File.Exists(statusPath));
-        Assert.True(File.Exists(programmePath));
-        Assert.False(File.Exists(statusPath + ".tmp"));
-        Assert.False(File.Exists(programmePath + ".tmp"));
+        foreach (var path in new[] { statusPath, programmePath, contractsPath, quotesPath })
+        {
+            Assert.True(File.Exists(path), path);
+            Assert.False(File.Exists(path + ".tmp"), path);
+            Assert.NotNull(JsonNode.Parse(await File.ReadAllTextAsync(path)));
+        }
 
-        Assert.NotNull(JsonNode.Parse(await File.ReadAllTextAsync(statusPath)));
-        Assert.NotNull(JsonNode.Parse(await File.ReadAllTextAsync(programmePath)));
+        Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(contractsPath))!["contracts"]!.AsArray());
+        Assert.Empty(JsonNode.Parse(await File.ReadAllTextAsync(quotesPath))!["quotes"]!.AsArray());
 
         Assert.NotNull(service.LastExportAttemptedAt);
 

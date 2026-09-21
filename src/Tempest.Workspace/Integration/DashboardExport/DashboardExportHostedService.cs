@@ -1,4 +1,6 @@
 using Tempest.Core.BackgroundServices;
+using Tempest.Core.BusinessGovernance.Contracts;
+using Tempest.Core.BusinessGovernance.Quotations;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ExportImport;
@@ -8,8 +10,9 @@ using Tempest.Core.Requirements;
 namespace Tempest.Workspace.Integration.DashboardExport;
 
 /// <summary>
-/// Periodically writes <c>engineering-status.json</c>/<c>programme.json</c>
-/// to <see cref="DashboardExportOptions.ExportDirectory"/>, on
+/// Periodically writes <c>engineering-status.json</c>/<c>programme.json</c>/
+/// <c>contracts.json</c>/<c>quotes.json</c> to
+/// <see cref="DashboardExportOptions.ExportDirectory"/>, on
 /// <see cref="DashboardExportOptions.IntervalSeconds"/> — the Core-side half
 /// of the Core→Dashboard integration contract (§3.4): Core has no outbound
 /// network integration of its own, so this only ever writes a local file; a
@@ -41,7 +44,8 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// registration, with no implicit auto-wiring for an unregistered concrete
 /// type), so this constructor deliberately takes only ordinary,
 /// already-platform-registered services and constructs
-/// <see cref="EngineeringStatusExportAdapter"/>/<see cref="ProgrammeHierarchyExportAdapter"/>
+/// <see cref="EngineeringStatusExportAdapter"/>/<see cref="ProgrammeHierarchyExportAdapter"/>/
+/// <see cref="ContractsExportAdapter"/>/<see cref="QuotesExportAdapter"/>
 /// itself, composition-root style (`new`), exactly as it constructs the
 /// Cockpit read models it reuses — rather than declaring them as
 /// constructor parameters, which would need a registration this Work
@@ -60,6 +64,8 @@ public sealed class DashboardExportHostedService : IHostedService
 {
     private readonly EngineeringStatusExportAdapter _engineeringStatus;
     private readonly ProgrammeHierarchyExportAdapter _programme;
+    private readonly ContractsExportAdapter _contracts;
+    private readonly QuotesExportAdapter _quotes;
     private readonly IConfigurationProvider _configuration;
     private readonly ILogger? _logger;
 
@@ -73,22 +79,30 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="domainContext">The Engineering Domain's own shared repository — passed straight through to both freshly-constructed adapters.</param>
     /// <param name="requirementsService">The Requirements Framework's own service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
     /// <param name="requirementValidationService">The Requirements Framework's own validation service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
+    /// <param name="contractCatalog">The issued-contract library — passed straight through to <see cref="ContractsExportAdapter"/> (`ADR-0150`).</param>
+    /// <param name="quotationCatalog">The quotation library — passed straight through to <see cref="QuotesExportAdapter"/> (`ADR-0150`).</param>
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     public DashboardExportHostedService(
         EngineeringDomainContext domainContext,
         IRequirementsService requirementsService,
         IRequirementValidationService requirementValidationService,
+        IIssuedContractCatalog contractCatalog,
+        IQuotationCatalog quotationCatalog,
         IConfigurationProvider configuration,
         ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(requirementsService);
         ArgumentNullException.ThrowIfNull(requirementValidationService);
+        ArgumentNullException.ThrowIfNull(contractCatalog);
+        ArgumentNullException.ThrowIfNull(quotationCatalog);
         ArgumentNullException.ThrowIfNull(configuration);
 
         _engineeringStatus = new EngineeringStatusExportAdapter(domainContext, requirementsService, requirementValidationService);
         _programme = new ProgrammeHierarchyExportAdapter(domainContext);
+        _contracts = new ContractsExportAdapter(contractCatalog);
+        _quotes = new QuotesExportAdapter(quotationCatalog);
         _configuration = configuration;
         _logger = logger;
     }
@@ -137,7 +151,7 @@ public sealed class DashboardExportHostedService : IHostedService
     }
 
     /// <summary>
-    /// Writes both export files once, immediately — the manual "export now"
+    /// Writes every export file once, immediately — the manual "export now"
     /// path (<see cref="ExportDashboardDataNowCommandHandler"/>) and the
     /// timer loop's own per-tick body both call this, so there is exactly
     /// one place that decides what an export attempt does.
@@ -176,6 +190,8 @@ public sealed class DashboardExportHostedService : IHostedService
 
             await WriteAsync(_engineeringStatus, Path.Combine(directory, "engineering-status.json"), cancellationToken).ConfigureAwait(false);
             await WriteAsync(_programme, Path.Combine(directory, "programme.json"), cancellationToken).ConfigureAwait(false);
+            await WriteAsync(_contracts, Path.Combine(directory, "contracts.json"), cancellationToken).ConfigureAwait(false);
+            await WriteAsync(_quotes, Path.Combine(directory, "quotes.json"), cancellationToken).ConfigureAwait(false);
 
             LastExportSucceeded = true;
             LastExportException = null;

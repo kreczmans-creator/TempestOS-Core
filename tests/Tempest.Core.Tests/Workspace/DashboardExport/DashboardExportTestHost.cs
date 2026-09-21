@@ -1,4 +1,6 @@
 using Tempest.Workspace;
+using Tempest.Core.BusinessGovernance.Contracts;
+using Tempest.Core.BusinessGovernance.Quotations;
 using Tempest.Core.Configuration;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
@@ -13,8 +15,9 @@ namespace Tempest.Core.Tests.Workspace.DashboardExport;
 /// <summary>
 /// Builds a real host/manager pair with no discipline modules registered —
 /// the Dashboard Export adapters query <see cref="EngineeringDomainContext"/>,
-/// <see cref="IRequirementsService"/>, <see cref="IRequirementValidationService"/>
-/// and <see cref="IVerificationService"/> directly, never through a
+/// <see cref="IRequirementsService"/>, <see cref="IRequirementValidationService"/>,
+/// <see cref="IVerificationService"/>, <see cref="IIssuedContractCatalog"/>
+/// and <see cref="IQuotationCatalog"/> directly, never through a
 /// Workspace discipline registration, so none is needed here. Mirrors
 /// <c>Tempest.Core.Tests.Evidence.EvidenceTestHost</c>'s own identical
 /// shape and reasoning.
@@ -54,6 +57,12 @@ internal static class DashboardExportTestHost
 
     public static IVerificationService Verification(ITempestHost host) =>
         (IVerificationService)host.Services!.GetService(typeof(IVerificationService));
+
+    public static IIssuedContractCatalog Contracts(ITempestHost host) =>
+        (IIssuedContractCatalog)host.Services!.GetService(typeof(IIssuedContractCatalog));
+
+    public static IQuotationCatalog Quotations(ITempestHost host) =>
+        (IQuotationCatalog)host.Services!.GetService(typeof(IQuotationCatalog));
 
     public static ICurrentPrincipalAccessor Principals(ITempestHost host) =>
         (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
