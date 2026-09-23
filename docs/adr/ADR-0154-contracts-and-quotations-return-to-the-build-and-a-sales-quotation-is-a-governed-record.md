@@ -1,4 +1,4 @@
-# ADR-0150: Contracts and Quotations Return to the Build, and a Sales Quotation Is a Governed Record
+# ADR-0154: Contracts and Quotations Return to the Build, and a Sales Quotation Is a Governed Record
 
 ## Status
 
@@ -36,7 +36,7 @@ business side to export. The owner wants real figures.
 > Every v1 key is unchanged. See `EngineeringStatusExportAdapter`'s own
 > remarks for the shape.
 
-> *Later note (2026-09-21, `ADR-0151`).* `programme.json` is now schema
+> *Later note (2026-09-21, `ADR-0155`).* `programme.json` is now schema
 > v2 too: each `projects[]` entry additively carries `health` (`overall`,
 > `byDiscipline`, `score`), `blockedCount` and `overdueActionCount`, and
 > `summary` carries `byHealth` — the Cockpit's own health rollup scoped

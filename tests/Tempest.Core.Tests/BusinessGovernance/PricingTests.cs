@@ -10,7 +10,7 @@ namespace Tempest.Core.Tests.BusinessGovernance;
 // stay four separate facts.
 //
 // WP 18.0C (D-028) split the PricingService tests out to tests/Frozen/
-// alongside PricingService itself; ADR-0150 (2026-09-21) brought both
+// alongside PricingService itself; ADR-0154 (2026-09-21) brought both
 // back, and PricingServiceTests below is that returned half.
 public class PricingTests
 {

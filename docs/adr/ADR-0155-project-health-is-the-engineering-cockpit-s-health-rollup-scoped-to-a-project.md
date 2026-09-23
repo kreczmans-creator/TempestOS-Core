@@ -1,4 +1,4 @@
-# ADR-0151: Project Health Is the Engineering Cockpit's Health Rollup Scoped to a Project
+# ADR-0155: Project Health Is the Engineering Cockpit's Health Rollup Scoped to a Project
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted — Product Owner request ("RAG built into the Core system visuals
 giving us the 'project health' view"), 2026-09-21.
 
 Builds on `ADR-0069` (the Cockpit) and `ADR-0103` (its collaborators);
-amends `ADR-0150`'s export schema note (`programme.json` is now v2).
+amends `ADR-0154`'s export schema note (`programme.json` is now v2).
 
 ## Context
 
@@ -91,10 +91,10 @@ that would drift from the objects it summarises.
 per-object I/O per prime, and two loads that can disagree.
 
 **Deriving health on the dashboard.** Rejected: the owner asked for Core
-to compute it, and the Pi renders what the desktop computes (`ADR-0150`).
+to compute it, and the Pi renders what the desktop computes (`ADR-0154`).
 
 ## Related Documents
 
-`ADR-0069`; `ADR-0103`; `ADR-0150`; `WP 8.1C`; `WP 19.0A`;
+`ADR-0069`; `ADR-0103`; `ADR-0154`; `WP 8.1C`; `WP 19.0A`;
 `src/Tempest.Workspace/Workspace/ProjectHealthReadModel.cs`;
 `src/Tempest.Workspace/Projects/ProjectMembership.cs`.

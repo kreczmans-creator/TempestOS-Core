@@ -311,9 +311,9 @@ Effort is developer-days "for one developer working with agents" (line 70). Depe
 | `WP 18.2B` | Independent check and issue | Surface | 4 | **Critical path**, after `18.2A` | `TD-25`,`31`,`38`(for sheets) |
 | `WP 18.3A` | Calc-sheet PDF report | Surface | 4 | **Critical path**, after `18.2B` | `TD-98` partial, `TD-160`(documents) |
 | `WP 18.9.0` | `v0.18.0` release | Release | 2 | after all `v0.18.0` WPs | — |
-| `WP 19.0A` | Project commercial core (ADR-0150) | Model + Surface | 6 | **Critical path**, after `18.3A`; "Sequencing rule": business seam sits on the sheet model because an invoice line cites an issued sheet | `TD-76` residual, `TD-81`(Commercial) |
+| `WP 19.0A` | Project commercial core (ADR-0154) | Model + Surface | 6 | **Critical path**, after `18.3A`; "Sequencing rule": business seam sits on the sheet model because an invoice line cites an issued sheet | `TD-76` residual, `TD-81`(Commercial) |
 | `WP 19.0B` | Archive P02–P07 | Refactor | 2 | none stated | `TD-161`,`162` |
-| `WP 19.1A` | Outbound invoicing connector (ADR-0151) | Integration | 9 | **Critical path**, after `19.0A` | `FCR-0018` (outbound direction) |
+| `WP 19.1A` | Outbound invoicing connector (ADR-0155) | Integration | 9 | **Critical path**, after `19.0A` | `FCR-0018` (outbound direction) |
 | `WP 19.1B` | KPI read models and Home cockpit | Surface | 4 | none stated (reads `19.0A`/`19.1A`/`Project` data per its own equations) | `TD-33`, `TD-118` residual |
 | `WP 19.2A` | Desktop composition | Refactor | 4 | none stated ("Sequencing rule": Desktop rework waits for the async read surface, `18.1A`) | `TD-105`–`107`,`109`,`112`,`113`,`115` |
 | `WP 19.2B` | An honest rail and the remaining surfaces | Surface | 6 | none stated | `TD-65` residual,`73`,`74`,`77` residual,`81`,`128`,`132`,`133` |

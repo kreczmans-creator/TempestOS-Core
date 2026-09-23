@@ -129,7 +129,7 @@ public class ProgrammeHierarchyExportAdapterTests
         await manager.ShutdownAsync();
     }
 
-    /// <summary>Schema v2 (`ADR-0151`): each Project's own health, blocked and overdue figures are <see cref="EngineeringCockpit.ProjectHealth"/>'s own, word for word, and <c>summary.byHealth</c> counts them.</summary>
+    /// <summary>Schema v2 (`ADR-0155`): each Project's own health, blocked and overdue figures are <see cref="EngineeringCockpit.ProjectHealth"/>'s own, word for word, and <c>summary.byHealth</c> counts them.</summary>
     [Fact]
     public async Task ExportAsync_ProjectHealth_MatchesEngineeringCockpitProjectHealthWordForWord()
     {

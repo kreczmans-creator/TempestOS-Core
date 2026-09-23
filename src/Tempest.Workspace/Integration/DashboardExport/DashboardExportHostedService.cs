@@ -83,8 +83,8 @@ public sealed class DashboardExportHostedService : IHostedService
     /// <param name="requirementValidationService">The Requirements Framework's own validation service — passed straight through to <see cref="EngineeringStatusExportAdapter"/>.</param>
     /// <param name="navigationProvider">The Platform's own navigation provider — passed straight through to <see cref="EngineeringStatusExportAdapter"/>, whose headless <c>EngineeringCockpit</c> (schema v2) needs one to construct; never consulted by anything exported.</param>
     /// <param name="commandRegistry">The Platform's own command registry — likewise passed straight through to <see cref="EngineeringStatusExportAdapter"/> for its <c>EngineeringCockpit</c>.</param>
-    /// <param name="contractCatalog">The issued-contract library — passed straight through to <see cref="ContractsExportAdapter"/> (`ADR-0150`).</param>
-    /// <param name="quotationCatalog">The quotation library — passed straight through to <see cref="QuotesExportAdapter"/> (`ADR-0150`).</param>
+    /// <param name="contractCatalog">The issued-contract library — passed straight through to <see cref="ContractsExportAdapter"/> (`ADR-0154`).</param>
+    /// <param name="quotationCatalog">The quotation library — passed straight through to <see cref="QuotesExportAdapter"/> (`ADR-0154`).</param>
     /// <param name="configuration">Read once per tick for <see cref="DashboardExportOptions.ExportDirectory"/> — a directory change takes effect on the very next export, no restart required.</param>
     /// <param name="logger">An optional logger for diagnostic output.</param>
     public DashboardExportHostedService(

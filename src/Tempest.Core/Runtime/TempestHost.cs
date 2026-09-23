@@ -662,7 +662,7 @@ public sealed class TempestHost : ITempestHost
         // Operating were frozen to `src/Frozen/Tempest.Core.BusinessGovernance`
         // — unreachable from any shipped surface. Contracts and
         // Pricing.PricingService were frozen with them and returned on
-        // 2026-09-21 (`ADR-0150`) so the dashboard export below can carry
+        // 2026-09-21 (`ADR-0154`) so the dashboard export below can carry
         // real contract and quotation figures. See `src/Frozen/README.md`.
         services.Singleton<IContractTemplateCatalog, ContractTemplateCatalog>();
         services.Singleton<IContractTemplateValidationService, ContractTemplateValidationService>();
@@ -674,7 +674,7 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IRateCardValidationService, RateCardValidationService>();
         services.Singleton<IPricingService, PricingService>();
 
-        // `ADR-0150`: a sales quotation — a price sent to a client — is
+        // `ADR-0154`: a sales quotation — a price sent to a client — is
         // the one `P07` record the freeze never held, added alongside the
         // returning Contracts so the dashboard reads both from the host.
         services.Singleton<IQuotationCatalog, QuotationCatalog>();

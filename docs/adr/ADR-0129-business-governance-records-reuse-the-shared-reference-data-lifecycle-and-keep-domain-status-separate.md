@@ -16,9 +16,9 @@ kinds depend on directly (`BusinessAuthorisation`, `ConfidentialityClassificatio
 accepted. See `src/Frozen/README.md`.
 
 **Contracts and `Pricing.PricingService` returned to the build by
-`ADR-0150`** (2026-09-21), at the Product Owner's request, so the
+`ADR-0154`** (2026-09-21), at the Product Owner's request, so the
 Tempest-Dashboard export carries real contract and quotation figures;
-`ADR-0150` also adds a twelfth kind on this decision's own pattern, the
+`ADR-0154` also adds a twelfth kind on this decision's own pattern, the
 sales `Quotation` (`BusinessQuotations`/`BusinessQuotation`). Risk,
 Assets, Finance, Development and Operating remain frozen.
 

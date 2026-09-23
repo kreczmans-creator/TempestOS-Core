@@ -66,7 +66,7 @@ internal sealed class RequirementsCockpitReadModel
     /// <summary>
     /// A view of this read-model over only the requirements that belong
     /// to the engineering objects <paramref name="includesObject"/> admits
-    /// (`ADR-0151`, project health). A requirement is not itself a
+    /// (`ADR-0155`, project health). A requirement is not itself a
     /// parented engineering object, so its membership is the rule
     /// <see cref="Projects.ProjectRequirementRegister"/> already states:
     /// it is in a project when at least one of its own recorded

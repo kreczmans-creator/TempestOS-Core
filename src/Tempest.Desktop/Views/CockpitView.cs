@@ -462,7 +462,7 @@ internal sealed class CockpitView : UserControl
     // ------------------------------------------------------------
 
     /// <summary>
-    /// The "Project Health" card (`ADR-0151`) — the card that was "Recent
+    /// The "Project Health" card (`ADR-0155`) — the card that was "Recent
     /// Projects": the same card component over the same live Project set
     /// (<see cref="EngineeringCockpit.ProjectHealth"/> lists exactly the
     /// Projects <see cref="EngineeringCockpit.RecentProjects"/> names),

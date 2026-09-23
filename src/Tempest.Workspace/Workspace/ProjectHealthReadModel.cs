@@ -11,7 +11,7 @@ namespace Tempest.Workspace;
 
 /// <summary>
 /// The Engineering Cockpit's own per-Project health read-model
-/// (`ADR-0151`): for every live Project, the same five discipline
+/// (`ADR-0155`): for every live Project, the same five discipline
 /// statuses, the same rollup, the same score wording, and the same
 /// blocked-item and overdue-action definitions the Cockpit reports
 /// workspace-wide — computed over only the objects that Project owns.

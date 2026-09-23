@@ -6,7 +6,7 @@ using Tempest.Desktop.Views;
 namespace Tempest.Desktop.Tests;
 
 /// <summary>
-/// `ADR-0151`: the Engineering Cockpit's "Recent Projects" card is now the
+/// `ADR-0155`: the Engineering Cockpit's "Recent Projects" card is now the
 /// "Project Health" card — the same card, each Project row carrying its
 /// own <see cref="CockpitProjectHealth"/> word and score text exactly as
 /// <see cref="EngineeringCockpit.ProjectHealth"/> reports them (never

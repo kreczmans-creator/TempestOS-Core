@@ -16,7 +16,7 @@ namespace Tempest.Core.Tests.Runtime;
 // registered. Risk, Assets (IP/data), Finance (Assumption/Scenario/
 // Control), Development (Opportunity/Pipeline), Operating. The Contracts
 // and Pricing.PricingService rows, and the contract-service reasoning
-// test, returned to the live file with ADR-0150 (2026-09-21).
+// test, returned to the live file with ADR-0154 (2026-09-21).
 public class BusinessGovernanceArchivedHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)

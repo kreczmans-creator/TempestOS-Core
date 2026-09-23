@@ -4,7 +4,7 @@ namespace Tempest.Workspace;
 
 /// <summary>
 /// One live Project's own health, as the Engineering Cockpit computes it
-/// (`ADR-0151`): the Cockpit's own five-discipline rollup
+/// (`ADR-0155`): the Cockpit's own five-discipline rollup
 /// (<see cref="EngineeringCockpit.Health"/>) applied to only the objects
 /// that Project owns, plus the Project's own blocked-item and
 /// overdue-action counts under the same definitions

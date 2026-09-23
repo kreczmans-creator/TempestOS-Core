@@ -4,7 +4,7 @@ namespace Tempest.Workspace;
 
 /// <summary>
 /// The Engineering Cockpit's own health rollup and score wording
-/// (`WP 8.1C`), stated once (`ADR-0151`) so the workspace-wide
+/// (`WP 8.1C`), stated once (`ADR-0155`) so the workspace-wide
 /// <see cref="EngineeringCockpit.Health"/> and every per-project
 /// <see cref="CockpitProjectHealth.Health"/> are the same rule over a
 /// different set of discipline statuses — never two computations that

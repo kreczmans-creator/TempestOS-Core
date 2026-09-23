@@ -45,7 +45,7 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// own Project set can never silently disagree.
 /// </para>
 /// <para>
-/// <b>Schema v2 — project health (`ADR-0151`).</b> Each <c>projects[]</c>
+/// <b>Schema v2 — project health (`ADR-0155`).</b> Each <c>projects[]</c>
 /// entry additionally carries <c>health</c> (<c>overall</c>,
 /// <c>byDiscipline</c>, <c>score</c>), <c>blockedCount</c> and
 /// <c>overdueActionCount</c>, and <c>summary</c> carries <c>byHealth</c>
@@ -81,7 +81,7 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// chasing". <c>summary.tasks</c> (<c>open</c>, <c>overdue</c>,
 /// <c>blocked</c>) totals them across every live Project. The schema
 /// version stays 2: this is additive within the version introduced by
-/// `ADR-0151` on the same day, which no consumer has yet read, so no
+/// `ADR-0155` on the same day, which no consumer has yet read, so no
 /// consumer can be broken by it. Each Project's own <c>overdueActionCount</c>
 /// (the Cockpit's figure) and the count of its <c>tasks[]</c> with
 /// <c>isOverdue</c> agree by construction — both apply
@@ -104,7 +104,7 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// </remarks>
 public sealed class ProgrammeHierarchyExportAdapter : IExportable, IExportableKind
 {
-    /// <summary>The schema version this adapter's own payload shape uses — the integration contract document's §2.2 (v1), plus the additive per-project <c>health</c>/<c>blockedCount</c>/<c>overdueActionCount</c>/<c>tasks</c> and <c>summary.byHealth</c>/<c>summary.tasks</c> keys (`ADR-0151`) that make it v2.</summary>
+    /// <summary>The schema version this adapter's own payload shape uses — the integration contract document's §2.2 (v1), plus the additive per-project <c>health</c>/<c>blockedCount</c>/<c>overdueActionCount</c>/<c>tasks</c> and <c>summary.byHealth</c>/<c>summary.tasks</c> keys (`ADR-0155`) that make it v2.</summary>
     public const int CurrentSchemaVersion = 2;
 
     private readonly EngineeringDomainContext _domainContext;

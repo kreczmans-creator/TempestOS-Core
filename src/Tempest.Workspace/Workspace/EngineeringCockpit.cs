@@ -162,7 +162,7 @@ public sealed class EngineeringCockpit
         _verification = new VerificationCockpitReadModel(domainContext);
         _manufacturing = new ManufacturingCockpitReadModel(domainContext);
 
-        // `ADR-0151` — project health is this Cockpit's own rollup scoped
+        // `ADR-0155` — project health is this Cockpit's own rollup scoped
         // to a Project, so the collaborator reads the five collaborators
         // above (already loaded) rather than loading anything of its own.
         _projectHealth = new ProjectHealthReadModel(
@@ -498,12 +498,12 @@ public sealed class EngineeringCockpit
     /// </summary>
     public string HealthScoreDisplay => EngineeringHealthRollup.ScoreDisplay(RolledUpStatuses);
 
-    /// <summary>The five discipline statuses <see cref="Health"/> and <see cref="HealthScoreDisplay"/> roll up, in their fixed order — the one list both read, and the one <see cref="ProjectHealthReadModel"/> mirrors per Project (`ADR-0151`).</summary>
+    /// <summary>The five discipline statuses <see cref="Health"/> and <see cref="HealthScoreDisplay"/> roll up, in their fixed order — the one list both read, and the one <see cref="ProjectHealthReadModel"/> mirrors per Project (`ADR-0155`).</summary>
     private EngineeringHealthStatus[] RolledUpStatuses =>
         [RequirementsStatus, CalculationStatus, VerificationStatus, DocumentationStatus, ManufacturingStatus];
 
     /// <summary>
-    /// Gets every live Project's own health (`ADR-0151`) — this Cockpit's
+    /// Gets every live Project's own health (`ADR-0155`) — this Cockpit's
     /// own <see cref="Health"/> rollup, <see cref="HealthScoreDisplay"/>
     /// wording, <see cref="BlockedItems"/> and <see cref="OverdueActions"/>
     /// definitions, each applied to only the objects that Project owns

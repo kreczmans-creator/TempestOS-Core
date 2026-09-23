@@ -36,14 +36,14 @@ supersession, subject retag, Libraries Revise), then `WP 18.9.0` (this
 file's figures, the release notes, the physical review, the tag).
 `v0.17.0` is released: merged to `main`, tagged, published 2026-09-09.
 
-2026-09-21, `ADR-0150`: Contracts and `Pricing.PricingService` returned
+2026-09-21, `ADR-0154`: Contracts and `Pricing.PricingService` returned
 from `src/Frozen/` to the build at the Product Owner's request, a sales
 `Quotation` kind was added on the same pattern, and the Dashboard Export
 now also writes `contracts.json`/`quotes.json` in Tempest-Dashboard's own
 shapes. Risk, Assets, Finance, Development, Operating and
 `CommercialIntelligence` stay frozen. The gate figures below predate it.
 
-2026-09-21, `ADR-0151`: project health is a Core concept — the Engineering
+2026-09-21, `ADR-0155`: project health is a Core concept — the Engineering
 Cockpit's own health rollup scoped to each Project
 (`EngineeringCockpit.ProjectHealth`), shown on the Cockpit's Project Health
 card (formerly Recent Projects) and exported in `programme.json` schema v2

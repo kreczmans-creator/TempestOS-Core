@@ -9,7 +9,7 @@ using Tempest.Core.Verification;
 namespace Tempest.Core.Tests.Workspace;
 
 /// <summary>
-/// Proves `ADR-0151`: project health is <see cref="EngineeringCockpit"/>'s
+/// Proves `ADR-0155`: project health is <see cref="EngineeringCockpit"/>'s
 /// own health rollup scoped to a Project, computed by the same discipline
 /// read-models over only the objects that Project owns
 /// (<see cref="Tempest.Workspace.Projects.ProjectMembership"/>), reported

@@ -69,7 +69,7 @@ internal sealed class DocumentsCockpitReadModel
 
     /// <summary>
     /// A view of this read-model over only the Documents
-    /// <paramref name="includes"/> admits (`ADR-0151`, project health) —
+    /// <paramref name="includes"/> admits (`ADR-0155`, project health) —
     /// the same class over a filtered copy of what <see cref="LoadAsync"/>
     /// last loaded, so every property below answers for the subset by the
     /// identical code path, with no second load and no second rule.

@@ -130,7 +130,7 @@ internal static class BusinessGovernanceFixtures
         new ContractParty("Fictional Client Ltd", "Client", "00000001"),
     ];
 
-    // ---- Quotations (ADR-0150) ------------------------------------------
+    // ---- Quotations (ADR-0154) ------------------------------------------
 
     public static QuotationCatalog BuildQuotationCatalog() => Build((d, p) => new QuotationCatalog(d, p));
 

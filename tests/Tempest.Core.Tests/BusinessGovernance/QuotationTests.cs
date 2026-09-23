@@ -7,7 +7,7 @@ namespace Tempest.Core.Tests.BusinessGovernance;
 
 // A quotation's whole claim is that its status says what the client said
 // and moves one way only: Draft, Submitted, then Accepted or Declined.
-// Most of these tests exist to hold that (ADR-0150).
+// Most of these tests exist to hold that (ADR-0154).
 public class QuotationTests
 {
     private static DateOnly Today => BusinessGovernanceFixtures.Today;

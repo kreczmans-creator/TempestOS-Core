@@ -16,7 +16,7 @@ namespace Tempest.Core.Tests.Runtime;
 // BusinessGovernanceHostRegistrationTests.cs the same day those libraries
 // were frozen. The Contracts and PricingService rows, and the
 // contract-service reasoning test, moved with them and returned with
-// ADR-0150 (2026-09-21); the Quotation rows are new with the same ADR.
+// ADR-0154 (2026-09-21); the Quotation rows are new with the same ADR.
 public class BusinessGovernanceHostRegistrationTests
 {
     private static async Task RunAgainstRunningHostAsync(string rootPath, Func<ITempestHost, Task> body)
