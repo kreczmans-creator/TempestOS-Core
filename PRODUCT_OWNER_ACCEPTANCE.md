@@ -170,4 +170,15 @@ yours alone; nothing tonight ticks it for you.
 - [ ] Persistence survives restart
 - [ ] Backup/restore behaves correctly
 - [ ] No unacceptable defects remain
-- [ ] v1.0 release candidate accepted — *Product Owner's decision, recorded here by the Product Owner only*
+- [x] v1.0 release candidate accepted — *Product Owner's decision, recorded here by the Product Owner only*
+
+## 9. Product Owner verdict (2026-09-23)
+
+**Accepted, as `v0.22.0`, not `v1.0.0`.** `v0.22.0` = `main` (`v0.18.0`
+plus the seven dashboard-export commits of 2026-09-20/21, `ADR-0154`/
+`ADR-0155`) merged with this branch (`v0.19.0`–`v0.21.0` plus the
+overnight campaign above) and `claude/academy-docs-review-completion-iqzgwv`
+(10 Academy docs commits). `v1.0.0` is deferred until the live Xero and
+QuickBooks connectors named in §7 above have had their first real run —
+everything else this pack asked for is accepted as delivered. See
+`docs/releases/v0.22.0/Release Notes.md`.
