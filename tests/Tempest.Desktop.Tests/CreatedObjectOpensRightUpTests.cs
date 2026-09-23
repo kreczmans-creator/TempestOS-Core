@@ -48,7 +48,7 @@ public sealed class CreatedObjectOpensRightUpTests
             // The situation the smoke test was in: the Explorer is showing a
             // different discipline, so the mechanical tree is not on screen.
             await workspace.Navigation.SwitchAreaAsync(DocumentsWorkspaceExplorerModule.NavigationItemId);
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
             await explorer.LoadAsync();
             await workspace.Selection.ClearAsync();
 
@@ -60,19 +60,19 @@ public sealed class CreatedObjectOpensRightUpTests
             Click(ribbon, registry, "mechanical.create");
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            IEngineeringObject? created = null;
+            EngineeringObjectIndexEntry? created = null;
             await RenderUntilAsync(window, () =>
             {
                 created = domain.Repository.ListByKindAsync("Part").GetAwaiter().GetResult()
-                    .FirstOrDefault(o => ((IHasBusinessIdentifier)o).DisplayName == "Smoke Test Bracket");
+                    .FirstOrDefault(entry => entry.DisplayName == "Smoke Test Bracket");
                 return created is not null && explorer.IsRevealed(created.Id) && EditorFor(window, "Smoke Test Bracket") is not null;
             });
 
             Assert.NotNull(created);
-            Assert.Equal(project.Id, ((IHasParent)created!).ParentId);
+            Assert.Equal(project.Id, created!.ParentId);
 
             // The build is in the title bar, so a stale executable can never pass as the current one again.
-            Assert.StartsWith("TempestOS 0.18.0 (", window.Title, StringComparison.Ordinal);
+            Assert.StartsWith("TempestOS 0.21.0 (", window.Title, StringComparison.Ordinal);
 
             // Revealed: selected, with every ancestor expanded, in the tree
             // that lists it, which is the mechanical one, not the one that
@@ -114,7 +114,7 @@ public sealed class CreatedObjectOpensRightUpTests
             LayOut(window);
 
             await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
             await explorer.LoadAsync();
 
             var palette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");
@@ -133,27 +133,22 @@ public sealed class CreatedObjectOpensRightUpTests
             Assert.True(explorer.IsRevealed(invocation.Result.SubjectId.Value), "The new Requirement is not selected with its path expanded.");
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
             Assert.Contains(roots, r => r.Id == RequirementsNodeProvider.UngroupedNodeId);
-            // A Requirement opens in its own discipline view (the generic editor
-            // cannot resolve a Requirement yet, `TD-41`); what matters here is
-            // that a tab for it is open in front of the user.
-            Assert.True(TabOpenedFor(window, "REQ-SMOKE-1"), "No document tab shows the new Requirement.");
+
+            // The Requirement now opens on its own real Object Editor body
+            // (`TD-41`) — its statement is visible, and so is the real
+            // Owner control (`WP 10.7A`'s Owner/Priority section, made
+            // reachable for a Requirement for the first time).
+            var editor = EditorFor(window, "REQ-SMOKE-1");
+            Assert.NotNull(editor);
+            Assert.Contains(editor!.GetLogicalDescendants().OfType<TextBox>(), t => t.Text == "The bracket shall not drop out of sight.");
+            var ownerExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            Assert.True(ownerExpander.IsVisible);
         }
         finally
         {
             await host.ShutdownAsync();
             await host.DisposeAsync();
         }
-    }
-
-    private static bool TabOpenedFor(MainWindow window, string text)
-    {
-        var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
-        var tabs = GetPrivateField<TabControl>(documentArea, "_tabs");
-        return tabs.Items.OfType<TabItem>().Any(tab =>
-            (tab.Header?.ToString() ?? string.Empty).Contains(text, StringComparison.Ordinal)
-            || (tab.Content as Control)?.GetLogicalDescendants().Any(c =>
-                c is TextBlock { Text: { } t } && t.Contains(text, StringComparison.Ordinal)
-                || c is TextBox { Text: { } b } && b.Contains(text, StringComparison.Ordinal)) == true);
     }
 
     private static ObjectEditorView? EditorFor(MainWindow window, string nameOrIdentifier) =>

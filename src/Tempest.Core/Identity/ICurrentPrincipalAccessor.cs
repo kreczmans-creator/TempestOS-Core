@@ -8,8 +8,10 @@ namespace Tempest.Core.Identity;
 /// <see cref="Events.IEventBus"/> by any service or module needing to know
 /// who is acting. Read-only by design — establishing a principal as
 /// current is the presentation layer's own responsibility (`WP 17.2A`'s
-/// <c>WorkspaceHost</c>, via the concrete <see cref="CurrentPrincipalAccessor"/>), not
-/// something an arbitrary consumer of this interface can do.
+/// <c>WorkspaceHost</c>, through <see cref="PrincipalSession"/> — the one
+/// seam that can, `WP 21.6A`, OSA-12), not something an arbitrary
+/// consumer of this interface can do: this interface itself declares
+/// nothing but the getter below.
 /// </remarks>
 public interface ICurrentPrincipalAccessor
 {

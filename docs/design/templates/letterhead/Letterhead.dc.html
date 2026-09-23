@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Letterhead" description="A4 letterhead for general correspondence — running header and footer on every page" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">LETTER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">[TDE-0000-000] &middot; REV [00]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10.5pt;line-height:1.65;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;gap:32px;margin-bottom:12mm">
+<div style="font-size:10pt;line-height:1.55">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.16em;color:var(--slate-600);margin-bottom:2mm">ADDRESSEE</div>
+<div style="font-weight:600;color:var(--ink-900)">[Recipient name]</div>
+<div>[Job title]</div>
+<div>[Company name]</div>
+<div>[Street address]</div>
+<div>[Town, postcode]</div>
+</div>
+<div style="text-align:right;font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.04em;color:var(--slate-700);line-height:1.9;white-space:nowrap">
+<div><span style="color:var(--slate-600)">DATE &nbsp;</span>[DD Month YYYY]</div>
+<div><span style="color:var(--slate-600)">OUR REF &nbsp;</span>[TDE-0000-000]</div>
+<div><span style="color:var(--slate-600)">YOUR REF &nbsp;</span>[Client ref]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:13pt;letter-spacing:-.01em;color:var(--ink-900);margin-bottom:6mm">[Subject line — project name and matter]</div>
+<p style="margin:0 0 5mm">Dear [Name],</p>
+<p style="margin:0 0 5mm;text-wrap:pretty">[Opening paragraph. State the purpose of the letter in one or two sentences — what this correspondence relates to, and the reference or event that prompted it.]</p>
+<p style="margin:0 0 5mm;text-wrap:pretty">[Body paragraph. Set out the substance: findings, position, or information being conveyed. Keep one topic per paragraph so the letter can be read and actioned quickly.]</p>
+<p style="margin:0 0 5mm;text-wrap:pretty">[Closing paragraph. State the action required, who owns it, and by when. Offer a point of contact for follow-up.]</p>
+<p style="margin:0 0 16mm">Yours sincerely,</p>
+<div style="border-top:1px solid var(--ink-a08);padding-top:3mm;display:inline-block;min-width:70mm">
+<div style="font-family:var(--font-display);font-weight:600;font-size:11pt;color:var(--ink-900)">[Name]</div>
+<div style="font-size:9.5pt;color:var(--cyan-600)">[Job title]</div>
+<div style="font-family:var(--font-mono);font-size:7.5pt;color:var(--slate-700);margin-top:1.5mm">[email] &middot; [phone]</div>
+</div>
+<div style="font-family:var(--font-mono);font-size:7.5pt;letter-spacing:.04em;color:var(--slate-600);margin-top:10mm">Enc. [list of enclosures] &nbsp;&middot;&nbsp; cc. [copy recipients]</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

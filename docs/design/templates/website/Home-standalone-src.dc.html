@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../tokens/fonts.css">
+  <link rel="stylesheet" href="../../tokens/colors.css">
+  <link rel="stylesheet" href="../../tokens/typography.css">
+  <link rel="stylesheet" href="../../tokens/spacing.css">
+  <link rel="stylesheet" href="../../tokens/radius.css">
+  <link rel="stylesheet" href="../../tokens/elevation.css">
+  <link rel="stylesheet" href="../../tokens/motion.css">
+  <link rel="stylesheet" href="../../tokens/semantic.css">
+  <link rel="stylesheet" href="../../tokens/base.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="../../_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:var(--navy-800)}
+    a{color:var(--cyan-500)} a:hover{color:var(--cyan-400)}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--navy-800);color:var(--text-body);font-family:var(--font-body)" data-screen-label="Home">
+  <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:40px;height:72px;padding:0 32px;background:rgba(11,14,30,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border-subtle)">
+    <a href="#" style="border-bottom:0;display:flex"><img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:38px;display:block"></a>
+    <nav style="display:flex;align-items:center;gap:28px">
+      <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-050);border-bottom:0">Home</a>
+      <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">About</a>
+      <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Capabilities</a>
+      <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Work</a>
+      <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Contact</a>
+    </nav>
+    <div style="flex:1"></div>
+    <a href="mailto:StevenK@Tempest-Engineering.com" style="font-family:var(--font-mono);font-size:12px;color:var(--cyan-500);border-bottom:0">StevenK@Tempest-Engineering.com</a>
+  </header>
+
+  <section style="position:relative;padding:120px 32px 96px;background-color:var(--navy-800);background-image:var(--bg-grid);border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <h1 style="margin:0;max-width:20ch;font-family:var(--font-display);font-size:var(--text-5xl);font-weight:600;line-height:var(--leading-tight);letter-spacing:var(--tracking-tightest);color:var(--text-heading);text-wrap:pretty">Mechanical design engineering, from concept to release-ready drawings.</h1>
+      <p style="margin:28px 0 0;max-width:58ch;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--text-body)">Tempest Engineering is the design practice of Steven Kreczman — ten years of mechanical design across defence electronics, MoD equipment support, and industrial hydraulics.</p>
+      <div style="display:flex;align-items:center;gap:20px;margin-top:44px;flex-wrap:wrap">
+        <a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">Get in touch</x-import></a>
+        <span style="font-family: chakra petch; font-size: 13px; color: var(--text-muted)">StevenK@Tempest-Engineering.com</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start">
+      <div>
+        <div class="t-eyebrow">Positioning</div>
+        <h2 style="margin:14px 0 0;font-family:var(--font-display);font-size:var(--text-3xl);font-weight:600;letter-spacing:var(--tracking-tightest);line-height:var(--leading-tight);color:var(--text-heading);max-width:20ch;text-wrap:pretty">Discrete packages, not open-ended resource.</h2>
+      </div>
+      <p style="margin:0;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--text-body);max-width:56ch">I take on a small number of design packages at a time, working directly with the engineering team rather than through account managers. Scope is defined up front, delivery is to your standards and your title block, and drawings go out checked.</p>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div style="display:flex;align-items:baseline;gap:24px">
+        <div class="t-eyebrow">Capabilities</div>
+        <div style="flex:1"></div>
+        <a href="#" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan-500);border-bottom:0">Full capabilities →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:36px">
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,220px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Design &amp; development</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Concept through detailed design in PTC Creo, Siemens NX and SolidWorks. Sheet metal, machined components, enclosures and assemblies.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,220px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Analysis</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">FEA and CFD to support design decisions — and to justify them at design review.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,220px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Drawings &amp; data packs</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Fully dimensioned, GD&amp;T-toleranced drawings to BS8888 or ASME Y14.5, released to your standard.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,220px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Reverse engineering &amp; metrology</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Scan-to-CAD reconstruction and inspection fixture design where no model exists.</p>
+        </x-import>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div class="t-eyebrow">How it works</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-top:36px">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">01</div>
+          <h3 style="margin:14px 0 10px;font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--text-heading)">Brief</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">A call and a written scope. If it isn't a fit, I'll say so at this stage.</p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">02</div>
+          <h3 style="margin:14px 0 10px;font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--text-heading)">Design</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Regular check-ins against agreed milestones. No surprises at delivery.</p>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500)">03</div>
+          <h3 style="margin:14px 0 10px;font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--text-heading)">Release</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Native and neutral CAD, drawings checked and issued to your numbering.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div style="padding:28px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;font-family:var(--font-mono);font-size:12px;color:var(--text-faint);text-align:center">BEng (Hons) Mechanical Engineering · AMIMechE · UK SC Clearance · ISO 9001 Internal Auditor · CETOP Level 3 Mobile Hydraulics</div>
+  </div>
+
+  <section style="padding:110px 32px;background-color:var(--navy-800);background-image:var(--bg-grid)">
+    <div style="max-width:1240px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0">
+      <h2 style="margin:0;font-family:var(--font-display);font-size:var(--text-3xl);font-weight:600;letter-spacing:var(--tracking-tightest);color:var(--text-heading)">Current availability is limited.</h2>
+      <p style="margin:20px 0 0;max-width:52ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">If you have a package in mind, get in touch and I'll tell you honestly whether the timing works.</p>
+      <div style="margin-top:36px"><a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">StevenK@Tempest-Engineering.com</x-import></a></div>
+    </div>
+  </section>
+
+  <footer class="t-light" style="background:var(--bg-page);color:var(--text-body);padding:40px 32px;border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Tempest Design Engineering Ltd, trading as Tempest Engineering. Registered in England and Wales, company no. {{ companyNumber }}.</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint)"><a href="#" style="color:var(--text-faint)">Privacy Notice</a><span>·</span><span>© 2026</span></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;companyNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;17349874&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Footer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      companyNumber: this.props.companyNumber ?? '17349874',
+    };
+  }
+}
+</script>
+<div id="site-intro" aria-hidden="true">
+<style>
+#site-intro{position:fixed;inset:0;z-index:100;background:#0b0e1e;display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity 380ms cubic-bezier(.2,0,.2,1)}
+#site-intro.out{opacity:0;pointer-events:none}
+#site-intro .in-mark{position:relative;width:clamp(150px,24vmin,240px);aspect-ratio:1}
+#site-intro .in-l{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition-property:opacity;transition-timing-function:cubic-bezier(.2,0,.2,1)}
+#site-intro.go .in-l{opacity:1}
+#site-intro .in-rp{position:absolute;inset:0;width:100%;height:100%}
+#site-intro .rp{fill:none;opacity:0}
+@keyframes in-ripple{0%{r:0.4vmax;opacity:0}5%{opacity:1}45%{opacity:.7}100%{r:78vmax;opacity:0}}
+@keyframes in-glow{0%{r:0.6vmax;opacity:.55}100%{r:62vmax;opacity:0}}
+@media(prefers-reduced-motion:reduce){#site-intro{display:none}}
+</style>
+<svg class="in-rp" aria-hidden="true"><defs><radialGradient id="in-g"><stop offset="0%" stop-color="#1c2d97" stop-opacity=".8"></stop><stop offset="65%" stop-color="#1c2d97" stop-opacity=".22"></stop><stop offset="100%" stop-color="#1c2d97" stop-opacity="0"></stop></radialGradient></defs><circle cx="50%" cy="50%" fill="url(#in-g)" style="opacity:0;animation:in-glow 1400ms cubic-bezier(.2,.45,.55,1) 120ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#40a2ce" stroke-width="3" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 120ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#1c2d97" stroke-width="2.25" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 300ms 1 forwards"></circle><circle class="rp" cx="50%" cy="50%" stroke="#40a2ce" stroke-width="1.25" style="animation:in-ripple 1450ms cubic-bezier(.2,.45,.55,1) 480ms 1 forwards"></circle></svg>
+<div class="in-mark"><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:900ms;transition-duration:680ms" xmlns="http://www.w3.org/2000/svg"><polygon points="546.5,512 529.25,541.88 494.75,541.88 477.5,512 494.75,482.12 529.25,482.12" fill="#F5F6FA" stroke="#F5F6FA" stroke-width="20" stroke-linejoin="round"></polygon></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:1500ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#1c2d97"><line x1="558.5" y1="569.5" x2="885.5" y2="569.5"></line><line x1="485.45" y1="581.02" x2="648.95" y2="864.21"></line><line x1="438.95" y1="523.52" x2="275.45" y2="806.71"></line><line x1="465.5" y1="454.5" x2="138.5" y2="454.5"></line><line x1="538.55" y1="442.98" x2="375.05" y2="159.79"></line><line x1="585.05" y1="500.48" x2="748.55" y2="217.29"></line></g></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:1950ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#40a2ce"><line x1="580.5" y1="634.5" x2="830" y2="634.5"></line><line x1="440.16" y1="632.57" x2="564.91" y2="848.65"></line><line x1="371.66" y1="510.07" x2="246.91" y2="726.15"></line><line x1="443.5" y1="389.5" x2="194" y2="389.5"></line><line x1="583.84" y1="391.43" x2="459.09" y2="175.35"></line><line x1="652.34" y1="513.93" x2="777.09" y2="297.85"></line></g></svg><svg class="in-l" viewBox="0 0 1024 1024" style="transition-delay:2400ms;transition-duration:750ms" xmlns="http://www.w3.org/2000/svg"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#6c29d9"><line x1="624" y1="698" x2="781" y2="698"></line><line x1="406.92" y1="701.99" x2="485.42" y2="837.96"></line><line x1="294.92" y1="515.99" x2="216.42" y2="651.96"></line><line x1="400" y1="326" x2="243" y2="326"></line><line x1="617.08" y1="322.01" x2="538.58" y2="186.04"></line><line x1="729.08" y1="508.01" x2="807.58" y2="372.04"></line></g></svg></div>
+<script>(function(){var el=document.getElementById('site-intro');var seen=false;try{seen=sessionStorage.getItem('tmpst-intro')==='1'}catch(e){}var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;if(seen||rm){el.parentNode.removeChild(el);return}try{sessionStorage.setItem('tmpst-intro','1')}catch(e){}requestAnimationFrame(function(){requestAnimationFrame(function(){el.classList.add('go')})});setTimeout(function(){el.classList.add('out')},3550);setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},4100)})()</script>
+</div>
+<template id="__bundler_thumbnail" data-bg-color="#0b0e1e"><svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg"><g transform="translate(600,400) scale(0.44) translate(-512,-512)"><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#1c2d97"><line x1="558.5" y1="569.5" x2="885.5" y2="569.5"></line><line x1="485.45" y1="581.02" x2="648.95" y2="864.21"></line><line x1="438.95" y1="523.52" x2="275.45" y2="806.71"></line><line x1="465.5" y1="454.5" x2="138.5" y2="454.5"></line><line x1="538.55" y1="442.98" x2="375.05" y2="159.79"></line><line x1="585.05" y1="500.48" x2="748.55" y2="217.29"></line></g><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#40a2ce"><line x1="580.5" y1="634.5" x2="830" y2="634.5"></line><line x1="440.16" y1="632.57" x2="564.91" y2="848.65"></line><line x1="371.66" y1="510.07" x2="246.91" y2="726.15"></line><line x1="443.5" y1="389.5" x2="194" y2="389.5"></line><line x1="583.84" y1="391.43" x2="459.09" y2="175.35"></line><line x1="652.34" y1="513.93" x2="777.09" y2="297.85"></line></g><g stroke-width="24" stroke-linecap="round" fill="none" stroke="#6c29d9"><line x1="624" y1="698" x2="781" y2="698"></line><line x1="406.92" y1="701.99" x2="485.42" y2="837.96"></line><line x1="294.92" y1="515.99" x2="216.42" y2="651.96"></line><line x1="400" y1="326" x2="243" y2="326"></line><line x1="617.08" y1="322.01" x2="538.58" y2="186.04"></line><line x1="729.08" y1="508.01" x2="807.58" y2="372.04"></line></g><polygon points="546.5,512 529.25,541.88 494.75,541.88 477.5,512 494.75,482.12 529.25,482.12" fill="#F5F6FA" stroke="#F5F6FA" stroke-width="20" stroke-linejoin="round"></polygon></g></svg></template>
+</body>
+</html>

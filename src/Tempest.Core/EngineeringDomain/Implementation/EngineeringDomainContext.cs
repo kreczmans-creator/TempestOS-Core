@@ -114,7 +114,8 @@ public sealed class EngineeringDomainContext
         IEngineeringObjectStateStore? objectStateStore = null,
         IAttachmentContentStore? attachmentContentStore = null,
         ILogger? logger = null,
-        IWorkspaceChangePublisher? workspaceChanges = null)
+        IWorkspaceChangePublisher? workspaceChanges = null,
+        IBusinessIdentifierIndex? businessIdentifierIndex = null)
     {
         ArgumentNullException.ThrowIfNull(persistenceStore);
         ArgumentNullException.ThrowIfNull(store);
@@ -146,6 +147,7 @@ public sealed class EngineeringDomainContext
         AttachmentWriter = Require<ITransactionalAttachmentWriter>(AttachmentContentStore, nameof(attachmentContentStore));
         StateWriter = Require<ITransactionalStateWriter>(ObjectStateStore, nameof(objectStateStore));
         WorkspaceChanges = workspaceChanges;
+        BusinessIdentifierIndex = businessIdentifierIndex ?? new BusinessIdentifierIndex();
     }
 
     /// <summary>The single durable store every engineering write commits through (`ADR-0145`).</summary>
@@ -177,6 +179,9 @@ public sealed class EngineeringDomainContext
 
     /// <summary>The durable attachment-content store (`TD-31`) — the read surface for attachment bytes.</summary>
     public IAttachmentContentStore AttachmentContentStore { get; }
+
+    /// <summary>The in-memory `TD-38` business-identifier claim table. Populated from committed state only; never a co-equal writer, exactly like <see cref="Repository"/>.</summary>
+    public IBusinessIdentifierIndex BusinessIdentifierIndex { get; }
 
     internal ITransactionalDocumentWriter DocumentWriter { get; }
 
@@ -233,6 +238,22 @@ public sealed class EngineeringDomainContext
     /// "apply after commit" stopped meaning "apply before releasing".
     /// Commit and apply are therefore one critical section, and no mutator
     /// may apply its own change outside this call.
+    /// </para>
+    /// <para>
+    /// <b>The <see langword="await"/> above only ever throws for a
+    /// transaction that did not commit (`TD-150`).</b>
+    /// <see cref="PersistenceStore"/>'s own <c>ExecuteInTransactionAsync</c>
+    /// guarantees this: once its own <c>COMMIT;</c> has returned, nothing
+    /// afterwards — including a failure while closing the connection — can
+    /// surface as an exception here. Without that guarantee, a close
+    /// failure landing between "durably committed" and "back from
+    /// <see langword="await"/>" would skip <paramref name="afterCommit"/>
+    /// exactly as a real commit failure does, and this method could not
+    /// tell the two apart: a write that is in fact on disk would be
+    /// reported to the caller as failed, and never registered in memory
+    /// either. See `SqlitePersistenceStore.ExecuteInTransactionAsync`'s own
+    /// remarks for the boundary, and its test double
+    /// <c>PostCommitFailingPersistenceStore</c> for the proof.
     /// </para>
     /// <para>
     /// <paramref name="afterCommit"/> is synchronous and must not block,

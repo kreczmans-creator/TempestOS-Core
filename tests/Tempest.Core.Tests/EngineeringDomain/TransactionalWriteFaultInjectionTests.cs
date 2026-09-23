@@ -128,10 +128,12 @@ public sealed class TransactionalWriteFaultInjectionTests
         Assert.Contains(state.Attachments, a => a.Id == attachment.Id);
 
         // The bytes, byte for byte, through the store and through the
-        // content store's own verified read.
+        // content store's own verified read. Keyed by content hash, not
+        // by the attachment's own Id (`TD-95`) — that is where SaveAsync
+        // actually put them.
         Assert.Equal(
             Bytes,
-            store.CommittedBytes(AttachmentContentStore.ContentCollectionName, attachment.Id.ToString("N")));
+            store.CommittedBytes(AttachmentContentStore.ContentCollectionName, attachment.ContentHash!));
 
         var read = await context.AttachmentContentStore.ReadAsync(
             attachment.Id, attachment.ContentHash, attachment.SizeInBytes);

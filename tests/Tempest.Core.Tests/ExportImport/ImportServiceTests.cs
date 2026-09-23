@@ -145,6 +145,115 @@ public class ImportServiceTests
     }
 
     // ------------------------------------------------------------------
+    // Schema migration (`ADR-0051` addendum, `WP 20.3A`)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void RegisterMigration_NullMigration_ThrowsArgumentNullException() =>
+        Assert.Throws<ArgumentNullException>(() => new ImportService(new JsonExportFormat()).RegisterMigration(null!));
+
+    [Fact]
+    public void RegisterMigration_DuplicateKindAndFromVersion_ThrowsDuplicateExportSchemaMigrationException()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        service.RegisterMigration(new RecordingMigration("kind.a", 1));
+
+        var exception = Assert.Throws<DuplicateExportSchemaMigrationException>(() =>
+            service.RegisterMigration(new RecordingMigration("kind.a", 1)));
+
+        Assert.Equal("kind.a", exception.Kind);
+        Assert.Equal(1, exception.FromSchemaVersion);
+    }
+
+    [Fact]
+    public async Task ImportAsync_SectionOneVersionBehind_MigratesThroughARegisteredMigration_AndImports()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        var importable = new RecordingImportable("kind.a", 2);
+        var migration = new RecordingMigration("kind.a", 1, _ => "migrated"u8.ToArray());
+        service.RegisterImportable(importable);
+        service.RegisterMigration(migration);
+        var artifact = await BuildArtifactAsync(new ExportSection("kind.a", 1, "original"u8.ToArray()));
+
+        await service.ImportAsync(new MemoryStream(artifact));
+
+        Assert.Equal("original", System.Text.Encoding.UTF8.GetString(Assert.Single(migration.ReceivedPayloads)));
+        Assert.Equal("migrated", System.Text.Encoding.UTF8.GetString(Assert.Single(importable.ReceivedPayloads)));
+    }
+
+    [Fact]
+    public async Task ImportAsync_SectionTwoVersionsBehind_WalksBothRegisteredMigrationsInOrder()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        var importable = new RecordingImportable("kind.a", 3);
+        var firstStep = new RecordingMigration("kind.a", 1, _ => "v2"u8.ToArray());
+        var secondStep = new RecordingMigration("kind.a", 2, _ => "v3"u8.ToArray());
+        service.RegisterImportable(importable);
+        service.RegisterMigration(firstStep);
+        service.RegisterMigration(secondStep);
+        var artifact = await BuildArtifactAsync(new ExportSection("kind.a", 1, "v1"u8.ToArray()));
+
+        await service.ImportAsync(new MemoryStream(artifact));
+
+        Assert.Equal("v1", System.Text.Encoding.UTF8.GetString(Assert.Single(firstStep.ReceivedPayloads)));
+        Assert.Equal("v2", System.Text.Encoding.UTF8.GetString(Assert.Single(secondStep.ReceivedPayloads)));
+        Assert.Equal("v3", System.Text.Encoding.UTF8.GetString(Assert.Single(importable.ReceivedPayloads)));
+    }
+
+    [Fact]
+    public async Task ImportAsync_SectionWithNoMigrationPathAtAll_StillRefuses_NamingTheOriginalVersionAndReason()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        service.RegisterImportable(new RecordingImportable("kind.a", 2));
+        var artifact = await BuildArtifactAsync(new ExportSection("kind.a", 1, []));
+
+        var exception = await Assert.ThrowsAsync<IncompatibleExportSchemaException>(() =>
+            service.ImportAsync(new MemoryStream(artifact)));
+
+        Assert.Equal("kind.a", exception.Kind);
+        Assert.Equal(1, exception.ArtifactSchemaVersion);
+        Assert.Equal(2, exception.SupportedSchemaVersion);
+    }
+
+    [Fact]
+    public async Task ImportAsync_SectionWithAPartialMigrationChain_StillRefuses_NamingTheOriginalVersion()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        var importable = new RecordingImportable("kind.a", 3);
+        service.RegisterImportable(importable);
+        // Only the first step is registered; v2 -> v3 is missing, so the
+        // chain cannot reach the importable's own supported version.
+        service.RegisterMigration(new RecordingMigration("kind.a", 1));
+        var artifact = await BuildArtifactAsync(new ExportSection("kind.a", 1, "original"u8.ToArray()));
+
+        var exception = await Assert.ThrowsAsync<IncompatibleExportSchemaException>(() =>
+            service.ImportAsync(new MemoryStream(artifact)));
+
+        Assert.Equal("kind.a", exception.Kind);
+        Assert.Equal(1, exception.ArtifactSchemaVersion); // the artifact's own original version, not v2
+        Assert.Equal(3, exception.SupportedSchemaVersion);
+        Assert.Empty(importable.ReceivedPayloads);
+    }
+
+    [Fact]
+    public async Task ImportAsync_SectionNewerThanTheRegisteredImportable_StillRefuses_NoMigrationAttempted()
+    {
+        var service = new ImportService(new JsonExportFormat());
+        var importable = new RecordingImportable("kind.a", 1);
+        var migration = new RecordingMigration("kind.a", 1);
+        service.RegisterImportable(importable);
+        service.RegisterMigration(migration);
+        var artifact = await BuildArtifactAsync(new ExportSection("kind.a", 2, []));
+
+        var exception = await Assert.ThrowsAsync<IncompatibleExportSchemaException>(() =>
+            service.ImportAsync(new MemoryStream(artifact)));
+
+        Assert.Equal(2, exception.ArtifactSchemaVersion);
+        Assert.Equal(1, exception.SupportedSchemaVersion);
+        Assert.Empty(migration.ReceivedPayloads); // a migration only ever walks forward
+    }
+
+    // ------------------------------------------------------------------
     // Failure propagation
     // ------------------------------------------------------------------
 

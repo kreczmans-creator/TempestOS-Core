@@ -55,6 +55,17 @@ public sealed class StatusBarView : UserControl
     private readonly Border _hostDot = Dot();
     private readonly Border _diagnosticsDot = Dot();
 
+    /// <summary>
+    /// `WP 19.3A-R1` — every segment this bar will hide before the message
+    /// area, each paired with its own leading separator so the two always
+    /// go together, ordered lowest priority (hidden first) to highest
+    /// (hidden last). See <see cref="MeasureOverride"/>.
+    /// </summary>
+    private readonly (Control Segment, Control Separator)[] _collapsibleSegments;
+
+    /// <summary>The "SELECTED" message/toast segment's own root control — never hidden; see <see cref="MeasureOverride"/>.</summary>
+    private readonly Control _selectedSegment;
+
     /// <summary>Initialises a new instance of the <see cref="StatusBarView"/> class.</summary>
     public StatusBarView()
     {
@@ -80,25 +91,64 @@ public sealed class StatusBarView : UserControl
         var bar = new DockPanel { Margin = new Thickness(DesignTokens.SpaceLg, 0, DesignTokens.SpaceLg, 0), LastChildFill = true };
 
         // Left: where the user is and what they are working on.
-        AddLeft(bar, Segment("PROJECT", _project));
-        AddLeft(bar, Separator());
-        AddLeft(bar, Segment("LOCATION", _location));
-        AddLeft(bar, Separator());
-        AddLeft(bar, Segment("AREA", _area));
-        AddLeft(bar, Separator());
+        var projectSegment = Segment("PROJECT", _project);
+        var projectSeparator = Separator();
+        AddLeft(bar, projectSegment);
+        AddLeft(bar, projectSeparator);
+        var locationSegment = Segment("LOCATION", _location);
+        var locationSeparator = Separator();
+        AddLeft(bar, locationSegment);
+        AddLeft(bar, locationSeparator);
+        var areaSegment = Segment("AREA", _area);
+        var areaSeparator = Separator();
+        AddLeft(bar, areaSegment);
+        AddLeft(bar, areaSeparator);
 
         // Right: machine state, read live from the platform.
-        AddRight(bar, Segment("HINT", _hint));
-        AddRight(bar, Separator());
-        AddRight(bar, Segment(null, _notifications, IconGeometry.Build(IconGeometry.Bell, 12)));
-        AddRight(bar, Separator());
-        AddRight(bar, Segment(null, _diagnostics, _diagnosticsDot));
-        AddRight(bar, Separator());
-        AddRight(bar, Segment("HOST", _hostState, _hostDot));
-        AddRight(bar, Separator());
+        var hintSegment = Segment("HINT", _hint);
+        var hintSeparator = Separator();
+        AddRight(bar, hintSegment);
+        AddRight(bar, hintSeparator);
+        var notificationsSegment = Segment(null, _notifications, IconGeometry.Build(IconGeometry.Bell, 12));
+        var notificationsSeparator = Separator();
+        AddRight(bar, notificationsSegment);
+        AddRight(bar, notificationsSeparator);
+        var diagnosticsSegment = Segment(null, _diagnostics, _diagnosticsDot);
+        var diagnosticsSeparator = Separator();
+        AddRight(bar, diagnosticsSegment);
+        AddRight(bar, diagnosticsSeparator);
+        var hostSegment = Segment("HOST", _hostState, _hostDot);
+        var hostSeparator = Separator();
+        AddRight(bar, hostSegment);
+        AddRight(bar, hostSeparator);
 
-        // Middle, filling: the selected object / last action.
-        bar.Children.Add(Segment("SELECTED", _selection));
+        // Middle, filling: the selected object / last action — the status
+        // bar's own message/toast area (`ActionOutcomeReporter`,
+        // `QuickAccessToolbarFactory`'s honest-failure messages), never
+        // included in `_collapsibleSegments` below, so it is the one
+        // segment that always yields last.
+        _selectedSegment = Segment("SELECTED", _selection);
+        bar.Children.Add(_selectedSegment);
+
+        // `WP 19.3A-R1`: below `DesignTokens.CompactShellWidth` the docked
+        // segments' own combined natural width can exceed what the bar
+        // actually has (`MeasureOverride` below) — a squeezed-to-zero
+        // segment does not shrink its own content with it, so its text
+        // overflowed the bar rather than being cropped or hidden (found by
+        // the layout walk at 1180×760). Priority order, lowest first: a
+        // transient hover hint and machine-state trivia give way well
+        // before where the user actually is (area, location, project), and
+        // the message area above never gives way at all.
+        _collapsibleSegments =
+        [
+            (hintSegment, hintSeparator),
+            (notificationsSegment, notificationsSeparator),
+            (diagnosticsSegment, diagnosticsSeparator),
+            (hostSegment, hostSeparator),
+            (areaSegment, areaSeparator),
+            (locationSegment, locationSeparator),
+            (projectSegment, projectSeparator),
+        ];
 
         var frame = new Border { Child = bar, BorderThickness = new Thickness(0, 1, 0, 0) };
         ThemeReactiveBrush.Bind(frame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
@@ -113,6 +163,111 @@ public sealed class StatusBarView : UserControl
     }
 
     /// <summary>
+    /// `WP 19.3A-R1` — resets every collapsible segment to visible, then,
+    /// only if the bar does not actually have room for all of them plus the
+    /// message/toast area's own natural width, hides segments one at a time
+    /// in <see cref="_collapsibleSegments"/>'s own priority order until the
+    /// budget fits or every collapsible segment is gone.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Each segment's own natural width, not the <see cref="DockPanel"/>'s
+    /// aggregate <c>DesiredSize</c>.</b> A first version compared
+    /// <c>base.MeasureOverride(availableSize).Width</c> against
+    /// <paramref name="availableSize"/> and hid nothing: a
+    /// <see cref="DockPanel"/> gives its fill child (`SELECTED`) only
+    /// whatever is left after every docked sibling, so at measure time the
+    /// whole bar's own reported size already, correctly, fits — the fill
+    /// child is squeezed toward zero instead, and *its* content, with no
+    /// <see cref="TextBlock.TextTrimming"/> on the "SELECTED" caption to
+    /// shrink it, is what actually overflowed (found by the layout walk at
+    /// 1180×760). Measuring each segment against
+    /// <see cref="Avalonia.Size.Infinity"/> directly asks the question that
+    /// matters instead: does everything's own natural width actually add up
+    /// within what this bar has, budgeting the message area's own natural
+    /// width in from the start rather than treating it as whatever is left.
+    /// </para>
+    /// <para>
+    /// Resetting to all-visible before every measure, rather than only ever
+    /// hiding more, is what makes this correct on a widen as well as a
+    /// narrow: the same real measure pass a resize already runs is what
+    /// decides visibility, so there is no stale "was hidden at 1180px,
+    /// stayed hidden at 1600px" state to track by hand.
+    /// <paramref name="availableSize"/>'s width is infinite only when
+    /// nothing has constrained this control yet (an isolated
+    /// <c>new StatusBarView()</c> in a unit test, never the running shell,
+    /// where it is always docked to the window's own bottom edge) — nothing
+    /// is hidden in that case, since there is no real width to be short of.
+    /// </para>
+    /// </remarks>
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        foreach (var (segment, separator) in _collapsibleSegments)
+        {
+            segment.IsVisible = true;
+            separator.IsVisible = true;
+        }
+
+        LastMeasuredWidth = availableSize.Width;
+        MeasurePasses++;
+
+        if (!double.IsInfinity(availableSize.Width))
+        {
+            var budget = availableSize.Width - DesignTokens.SpaceLg * 2 - NaturalWidth(_selectedSegment);
+
+            foreach (var (segment, separator) in _collapsibleSegments)
+                budget -= NaturalWidth(segment) + NaturalWidth(separator);
+
+            foreach (var (segment, separator) in _collapsibleSegments)
+            {
+                if (budget >= 0)
+                    break;
+
+                budget += NaturalWidth(segment) + NaturalWidth(separator);
+                segment.IsVisible = false;
+                separator.IsVisible = false;
+            }
+        }
+
+        return base.MeasureOverride(availableSize);
+    }
+
+    /// <summary>
+    /// Every text setter ends here. A longer text re-measures its own
+    /// segment and the bar's <see cref="DockPanel"/>, but the panel's
+    /// desired size is clamped to what it was given, so the change never
+    /// reaches this control's own <see cref="MeasureOverride"/> — the
+    /// budget stayed as it was when the text was shorter, and the message
+    /// area was squeezed 11 px short at 1180×760 once the first Explorer
+    /// area's long title landed in AREA (the layout walk, `WP 19.9.0`).
+    /// Invalidating this control's own measure makes every text change
+    /// re-run the budget.
+    /// </summary>
+    private void TextChanged() => InvalidateMeasure();
+
+    /// <summary>The width the last <see cref="MeasureOverride"/> was given — read by the layout tests when the collapse did not do what the bar's own contents required.</summary>
+    internal double LastMeasuredWidth { get; private set; } = double.NaN;
+
+    /// <summary>How many times <see cref="MeasureOverride"/> has run — the same diagnostic.</summary>
+    internal int MeasurePasses { get; private set; }
+
+    private static double NaturalWidth(Control control)
+    {
+        // A segment whose text grew since it was last measured against
+        // infinity still reports the old width: Avalonia re-measures the
+        // grown TextBlock on its own, its StackPanel and the DockPanel
+        // follow, but the DockPanel's desired size is clamped to what it
+        // was given, so the change stops there and never reaches this
+        // bar's own measure — and a valid measure against the same
+        // infinity is not repeated. The layout walk at 1180×760 found the
+        // message area budgeted at 81 px when its text needed 92 (`WP
+        // 19.9.0`). Invalidating first makes the answer current.
+        control.InvalidateMeasure();
+        control.Measure(Size.Infinity);
+        return control.DesiredSize.Width;
+    }
+
+    /// <summary>
     /// Sets the "Hint" segment (`WP 10.3B`) — a transient, real reflection
     /// of whatever Ribbon command the pointer is currently hovering over
     /// (<see cref="RibbonView"/>'s own <c>PointerEntered</c>/<c>PointerExited</c>
@@ -120,20 +275,36 @@ public sealed class StatusBarView : UserControl
     /// <see langword="null"/>/empty renders an honest "Ready." rather
     /// than a blank segment.
     /// </summary>
-    public void SetHint(string? text) => _hint.Text = string.IsNullOrWhiteSpace(text) ? "Ready." : text;
+    public void SetHint(string? text)
+    {
+        _hint.Text = string.IsNullOrWhiteSpace(text) ? "Ready." : text;
+        TextChanged();
+    }
 
     /// <summary>Sets the "Selected Object" segment's own text — retained, unchanged signature (`WP 10.0B`), every existing caller unaffected.</summary>
-    public void SetText(string text) => _selection.Text = text;
+    public void SetText(string text)
+    {
+        _selection.Text = text;
+        TextChanged();
+    }
 
     /// <summary>
     /// Sets the "Current Project" segment from the one real
     /// <c>IProjectContext</c> (`TD-84`) — <see langword="null"/> renders an
     /// honest "No project" rather than guessing.
     /// </summary>
-    public void SetProject(string? projectName) => _project.Text = projectName ?? "No project";
+    public void SetProject(string? projectName)
+    {
+        _project.Text = projectName ?? "No project";
+        TextChanged();
+    }
 
     /// <summary>Sets the "Active Workspace" segment to the current Navigation area's own title.</summary>
-    public void SetArea(string? areaTitle) => _area.Text = areaTitle ?? "No area";
+    public void SetArea(string? areaTitle)
+    {
+        _area.Text = areaTitle ?? "No area";
+        TextChanged();
+    }
 
     /// <summary>
     /// Sets the shell-location segment (`TD-89`) — which global module the
@@ -149,7 +320,11 @@ public sealed class StatusBarView : UserControl
     /// at once — and the product rule is that they must always be able to
     /// tell where they are <em>and</em> what they are working in.
     /// </remarks>
-    public void SetLocation(string? location) => _location.Text = location ?? "—";
+    public void SetLocation(string? location)
+    {
+        _location.Text = location ?? "—";
+        TextChanged();
+    }
 
     /// <summary>Sets the "Host State"/"Diagnostics" segments from a real <see cref="IDiagnosticsProvider"/> read — never a cached or assumed value.</summary>
     public void SetDiagnostics(IDiagnosticsProvider diagnostics)
@@ -166,6 +341,7 @@ public sealed class StatusBarView : UserControl
             : $"{failed} module(s) failed";
         ThemeReactiveBrush.Bind(_diagnosticsDot, Border.BackgroundProperty,
             failed == 0 ? BrandPalette.SuccessBrushKey : BrandPalette.DangerBrushKey);
+        TextChanged();
     }
 
     /// <summary>
@@ -175,7 +351,11 @@ public sealed class StatusBarView : UserControl
     /// per-session notification count yet — this always reads 0 today,
     /// disclosed rather than fabricating activity.
     /// </summary>
-    public void SetNotifications(int count) => _notifications.Text = count == 0 ? "No notifications" : $"{count}";
+    public void SetNotifications(int count)
+    {
+        _notifications.Text = count == 0 ? "No notifications" : $"{count}";
+        TextChanged();
+    }
 
     // ----------------------------------------------------------------
 

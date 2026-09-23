@@ -139,3 +139,29 @@ public sealed class EngineeringObjectHasChildrenException : EngineeringDomainExc
         LiveChildCount = liveChildCount;
     }
 }
+
+/// <summary>`WP 21.1A`: <see cref="IDeletable.UndeleteAsync"/> was asked to restore an object that is not currently deleted.</summary>
+public sealed class EngineeringObjectNotDeletedException : EngineeringDomainException
+{
+    public Guid ObjectId { get; }
+
+    public EngineeringObjectNotDeletedException(Guid objectId)
+        : base($"'{objectId}' cannot be restored — it is not deleted.")
+    {
+        ObjectId = objectId;
+    }
+}
+
+/// <summary>`WP 21.1A`: <see cref="IDeletable.UndeleteAsync"/> was asked to restore an object whose own current parent is itself deleted.</summary>
+public sealed class EngineeringObjectParentDeletedException : EngineeringDomainException
+{
+    public Guid ObjectId { get; }
+    public Guid ParentId { get; }
+
+    public EngineeringObjectParentDeletedException(Guid objectId, Guid parentId)
+        : base($"'{objectId}' cannot be restored — its own parent '{parentId}' is itself deleted.")
+    {
+        ObjectId = objectId;
+        ParentId = parentId;
+    }
+}

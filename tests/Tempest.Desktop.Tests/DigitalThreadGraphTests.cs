@@ -349,11 +349,19 @@ public sealed class DigitalThreadGraphModelTests
     }
 
     /// <summary>
-    /// The `TD-32` closure this Work Package's own doc explicitly called
-    /// for: a Verification Activity's own <c>"verifiedBy"</c> link — real,
-    /// durable, but invisible to <see cref="EngineeringDomainContext.RelationshipRepository"/>
-    /// entirely — becomes a visible, real synthetic leaf node here, for
-    /// the first time anywhere in the Workspace/Desktop layer.
+    /// The recorded result renders as a visible, non-expandable leaf node
+    /// off its Verification Activity, whether the "verifiedBy" edge that
+    /// connects them was discovered through this class's own dedicated
+    /// Verification-first merge (this class's own remarks) or — since
+    /// `WP 19.10L`'s own closure of `TD-32` — through the ordinary
+    /// <see cref="EngineeringDomainContext.RelationshipRepository"/> walk
+    /// every other discipline's edges already go through:
+    /// <see cref="VerificationService.RecordAsync"/> now records that edge
+    /// there itself, in the same session, rather than only after a
+    /// restart's rehydration walk finds the durable reference. `AddNode`/
+    /// `AddEdge`'s own first-wins de-duplication (this class's own
+    /// remarks) makes which of the two paths gets there first immaterial
+    /// to what renders.
     /// </summary>
     [Fact]
     public async Task Recentre_VerificationActivityWithARecordedResult_AddsTheResultAsAVisibleLeafNode()
@@ -365,7 +373,7 @@ public sealed class DigitalThreadGraphModelTests
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
             var activities = await domainContext.Repository.ListByKindAsync("VerificationActivity");
-            IEngineeringObject? verifiedActivity = null;
+            EngineeringObjectIndexEntry? verifiedActivity = null;
             IReadOnlyList<VerificationRecordSnapshot>? expectedRecords = null;
             foreach (var activity in activities)
             {
@@ -384,23 +392,32 @@ public sealed class DigitalThreadGraphModelTests
             var model = new DigitalThreadGraphModel(domainContext);
             await model.RecentreAsync(verifiedActivity.Id, verifiedActivity.Kind!);
 
-            // Never visible via the plain RelationshipRepository read alone
-            // (`TD-32`) — confirmed absent from a direct RelationshipRepository
-            // read for this *specific* Activity->Record edge, proving this
-            // node came from the dedicated Verification merge, not a
-            // coincidental relationship. Deliberately not a blanket
-            // "no verifiedBy edge at all" assertion: a real, unrelated
-            // Subject->Activity edge also legitimately uses the identical
-            // "verifiedBy" RelationshipKind (`WP10.0A Digital Thread &
-            // Relationship Visualisation.md`'s own EngineeringVerificationWorkspaceSampleModule
-            // remarks) — a genuine, disclosed test-precision defect found
-            // and fixed here, `WP 10.5A` (the original, broader assertion
-            // intermittently failed depending on `InMemoryEngineeringObjectRepository`'s
-            // own unspecified iteration order, `TD-27`'s own identical class
-            // of risk).
+            // Now also visible via the plain RelationshipRepository read
+            // alone (`TD-32`, closed by `WP 19.10L`) — inverted from this
+            // fact's own original assertion, which pinned the pre-closure
+            // defect this same read used to confirm: `VerificationService.RecordAsync`
+            // recorded the durable "verifiedBy" reference but never told
+            // `IEngineeringRelationshipRepository` about it, so a session
+            // that recorded the result itself saw the edge nowhere this
+            // read could find it — only `DigitalThreadGraphModel`'s own
+            // dedicated Verification-first merge, above, rendered it at
+            // all. Deliberately not a blanket "some verifiedBy edge exists"
+            // assertion: a real, unrelated Subject->Activity edge also
+            // legitimately uses the identical "verifiedBy" RelationshipKind
+            // (`WP10.0A Digital Thread & Relationship Visualisation.md`'s
+            // own EngineeringVerificationWorkspaceSampleModule remarks) —
+            // this reads the *specific* Activity->Record edge, exactly as
+            // the original, narrowed-for-precision fact did (`WP 10.5A`).
+            // `TD-27` (closed by `WP 19.10N`): the original, broader assertion
+            // intermittently failed depending on the repository's then-unspecified
+            // iteration order; `ListByKindAsync` now guarantees a stable
+            // registration order, asserted directly here.
+            var repeatRead = await domainContext.Repository.ListByKindAsync("VerificationActivity");
+            Assert.Equal(activities.Select(a => a.Id), repeatRead.Select(a => a.Id));
+
             var recordId = expectedRecords![0].RecordId;
             var directlyLinked = await domainContext.RelationshipRepository.GetIncomingAsync(recordId);
-            Assert.DoesNotContain(directlyLinked, r => r.SourceId == verifiedActivity.Id && r.RelationshipKind == "verifiedBy");
+            Assert.Contains(directlyLinked, r => r.SourceId == verifiedActivity.Id && r.RelationshipKind == "verifiedBy");
 
             var recordNode = model.Nodes.SingleOrDefault(n => n.IsRecord && n.ObjectId == expectedRecords![0].RecordId);
             Assert.NotEqual(default, recordNode.ObjectId);
@@ -427,7 +444,7 @@ public sealed class DigitalThreadGraphModelTests
             var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
 
             var activities = await domainContext.Repository.ListByKindAsync("VerificationActivity");
-            IEngineeringObject? verifiedActivity = null;
+            EngineeringObjectIndexEntry? verifiedActivity = null;
             foreach (var activity in activities)
             {
                 var records = await VerificationRecordReader.GetResultHistoryAsync(domainContext, activity.Id);
@@ -849,7 +866,17 @@ public sealed class DigitalThreadGraphViewTests
             var view = (await DigitalThreadGraphView.TryCreateAsync(target.Id, target.Kind!, domainContext, (_, _) => { }))!;
 
             var nodes = view.Model.Nodes;
-            var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n));
+
+            // `WP 19.2B` (`TD-133`): a node's own `TabIndex` is no longer
+            // its bare render-order position — each node now reserves a
+            // 100-index block (`nodeIndexById[id] * 100`) so its own edges
+            // can sit immediately after it in tab order
+            // (`DigitalThreadGraphView.RebuildGraphCanvas`). Render order is
+            // still exactly what determines the ordering — the block size
+            // just leaves room for the edges — so the deterministic
+            // property this test names is unchanged; only the multiplier is
+            // new.
+            var expectedTabIndex = nodes.ToDictionary(n => n.ObjectId, n => nodes.ToList().IndexOf(n) * 100);
 
             foreach (var node in nodes)
             {

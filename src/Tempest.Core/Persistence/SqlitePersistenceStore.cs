@@ -1,6 +1,7 @@
 using System.Data;
 using System.Globalization;
 using Microsoft.Data.Sqlite;
+using Tempest.Core.Audit;
 using Tempest.Core.Configuration;
 using Tempest.Core.Logging;
 
@@ -90,7 +91,7 @@ namespace Tempest.Core.Persistence;
 /// </para>
 /// </remarks>
 public sealed class SqlitePersistenceStore
-    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAsyncDisposable, IDisposable
+    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAuditCollectionWriter, IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// The configuration key the storage root path is read from.
@@ -179,6 +180,8 @@ public sealed class SqlitePersistenceStore
             ? configuredPath
             : DefaultRootPath;
 
+        ValidateRootPath(_rootPath);
+
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
         _logger = logger;
@@ -248,12 +251,18 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — write through <see cref="IAuditCollectionWriter.WriteAuditRowAsync"/>
+    /// instead (<see cref="Audit.AuditRecorder"/>'s own only route in).
+    /// </exception>
     public async Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
         ThrowIfDisposed();
+        ThrowIfAuditCollection(collection);
 
         await ExecuteAsync(
             $"write collection '{collection}', key '{key}'",
@@ -268,11 +277,19 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — nothing ever legitimately deletes an audit
+    /// row (<see cref="Audit.IAuditRecorder"/>/<see cref="Audit.IAuditQuery"/>
+    /// expose no deletion at all), so this path is refused unconditionally,
+    /// with no bypass.
+    /// </exception>
     public async Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(collection);
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ThrowIfDisposed();
+        ThrowIfAuditCollection(collection);
 
         await ExecuteAsync(
             $"delete collection '{collection}', key '{key}'",
@@ -284,6 +301,44 @@ public sealed class SqlitePersistenceStore
                 return 0;
             },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The one route <see cref="Audit.AuditRecorder.RecordAsync"/> writes
+    /// through — bypasses <see cref="ThrowIfAuditCollection"/>, the guard
+    /// <see cref="WriteAsync"/> applies to every other caller (`WP 21.6A`,
+    /// OSA-13).
+    /// </summary>
+    async Task IAuditCollectionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(value);
+        ThrowIfDisposed();
+
+        await ExecuteAsync(
+            $"write audit row, key '{key}'",
+            async (connection, token) =>
+            {
+                await using var command = connection.CreateCommand();
+                PrepareTextUpsert(command, AuditRecorder.AuditCollectionName, key, value);
+                await command.ExecuteNonQueryAsync(token).ConfigureAwait(false);
+                return 0;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Refuses <see cref="AuditRecorder.AuditCollectionName"/> for every
+    /// caller reaching this store through the ordinary
+    /// <see cref="IPersistenceStore"/>/<see cref="IPersistenceTransaction"/>
+    /// surface (`WP 21.6A`, OSA-13) — a collection-level write guard,
+    /// consulted before the write it would otherwise perform, not a
+    /// permission check against who is calling.
+    /// </summary>
+    private static void ThrowIfAuditCollection(string collection)
+    {
+        if (string.Equals(collection, AuditRecorder.AuditCollectionName, StringComparison.Ordinal))
+            throw new AuditCollectionProtectedException(collection);
     }
 
     /// <inheritdoc />
@@ -341,6 +396,84 @@ public sealed class SqlitePersistenceStore
                 return 0;
             },
             cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// <b>Zero-length is handed back as an already-exhausted stream, never
+    /// opened as a blob.</b> <c>sqlite3_blob_open</c> exists to read a
+    /// value incrementally; a zero-length value has nothing to read
+    /// incrementally, and <see cref="Stream.Null"/> says exactly that
+    /// without exercising the native handle for a case it was never meant
+    /// to serve.
+    /// </remarks>
+    public async Task<Stream?> OpenReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collection);
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ThrowIfDisposed();
+
+        SqliteConnection connection;
+        try
+        {
+            connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open '{_databasePath}' to stream bytes for collection '{collection}', key '{key}'.", ex);
+        }
+
+        var handedOff = false;
+        try
+        {
+            long rowId;
+            long length;
+            await using (var command = connection.CreateCommand())
+            {
+                // `blob_value IS NOT NULL` rather than a plain equality
+                // read: a key written as text has a NULL blob_value, and
+                // that must report as "no bytes here" — the same rule
+                // ReadBytesAsync applies via IsDBNullAsync.
+                command.CommandText =
+                    "SELECT rowid, length(blob_value) FROM records " +
+                    "WHERE collection = $collection AND key = $key AND blob_value IS NOT NULL;";
+                command.Parameters.AddWithValue("$collection", collection);
+                command.Parameters.AddWithValue("$key", key);
+
+                await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken).ConfigureAwait(false);
+                if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    return null;
+
+                rowId = reader.GetInt64(0);
+                length = reader.GetInt64(1);
+            }
+
+            if (length == 0)
+                return Stream.Null;
+
+            // Read-only incremental blob I/O over this exact row: reading
+            // from the returned stream issues sqlite3_blob_read calls for
+            // only the bytes requested, never the whole column.
+            var blob = new SqliteBlob(connection, "records", "blob_value", rowId, readOnly: true);
+            handedOff = true;
+            return new SqliteBlobStream(connection, blob);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not PersistenceStoreUnavailableException)
+        {
+            _logger?.Warning($"Persistence could not open a stream for collection '{collection}', key '{key}'.", ex);
+            throw new PersistenceStoreUnavailableException(
+                $"Failed to open a stream for collection '{collection}', key '{key}'.", ex);
+        }
+        finally
+        {
+            // The connection outlives this method only once a
+            // SqliteBlobStream has taken it over; every other exit path —
+            // missing row, zero length, or a thrown exception — closes it
+            // here rather than leaking it back to the pool still open.
+            if (!handedOff)
+                await connection.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     // ----------------------------------------------------------------
@@ -447,6 +580,21 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>The post-commit window (`TD-150`).</b> Once <c>COMMIT;</c> below
+    /// has returned, the write is durable — <c>synchronous=FULL</c> means
+    /// it is already fsynced (see the class remarks, "Durability"). From
+    /// that instant on, closing the connection is cleanup, not part of the
+    /// unit of work: an exception from it is caught, logged through this
+    /// store's own logger naming this transaction's committed sequence,
+    /// and does not propagate — this method returns normally. Before
+    /// <c>COMMIT;</c> returns, the boundary is exactly what it always was:
+    /// a throw rolls the transaction back and propagates. <c>committed</c>,
+    /// below, marks that boundary explicitly, so a caller — in particular
+    /// <see cref="EngineeringDomainContext.ExecuteWriteAsync"/> — can keep
+    /// relying on "this method threw" meaning "nothing committed" (see that
+    /// method's own remarks).
+    /// </remarks>
     public async Task ExecuteInTransactionAsync(
         Func<IPersistenceTransaction, CancellationToken, Task> work,
         CancellationToken cancellationToken = default)
@@ -465,7 +613,17 @@ public sealed class SqlitePersistenceStore
                 $"Failed to open '{_databasePath}' to begin a transaction.", ex);
         }
 
-        await using (connection.ConfigureAwait(false))
+        // `committed` becomes true only once `COMMIT;` has returned
+        // (`TD-150`). Everything after that point — the `finally` below —
+        // treats a connection-close failure as this call's own problem to
+        // absorb, never the caller's: the caller already has a durable
+        // write. `committedSequence` is captured at the same instant,
+        // rather than re-read from `_currentSequence` inside the `finally`,
+        // so the log line below cannot race a second transaction's own
+        // commit landing in between.
+        var committed = false;
+        var committedSequence = 0L;
+        try
         {
             // BEGIN IMMEDIATE, not the default deferred BEGIN: the write
             // lock is taken up front, so a transaction that is going to
@@ -487,6 +645,8 @@ public sealed class SqlitePersistenceStore
                 // observe ahead of the data that earned it.
                 var sequence = await IncrementSequenceAsync(connection, cancellationToken).ConfigureAwait(false);
                 await ExecuteNonQueryAsync(connection, "COMMIT;", cancellationToken).ConfigureAwait(false);
+                committed = true;
+                committedSequence = sequence;
 
                 // SQLite's own write lock (taken by BEGIN IMMEDIATE, above)
                 // serialises every transaction on this store end to end, so
@@ -505,6 +665,32 @@ public sealed class SqlitePersistenceStore
             finally
             {
                 transaction.Invalidate();
+            }
+        }
+        finally
+        {
+            try
+            {
+                await CloseConnectionAsync(connection).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (committed)
+            {
+                // The write already landed (`committed`, above); only
+                // closing the connection afterwards failed, with nothing
+                // left for this call to do about it. Swallowing this
+                // (rather than letting it propagate) is `TD-150`'s fix:
+                // unswallowed, it would reach
+                // `EngineeringDomainContext.ExecuteWriteAsync` as an
+                // ordinary exception, which runs `afterCommit` only when
+                // nothing threw — so an object durably on disk would never
+                // be registered in memory, and the caller would be told a
+                // write failed that in fact succeeded. `when (committed)`
+                // is deliberately the whole story: a close failure before
+                // `COMMIT;` ever ran still propagates, exactly as before.
+                _logger?.Warning(
+                    $"Persistence committed a transaction (sequence {committedSequence}) on '{_databasePath}' " +
+                    "but could not close its connection afterwards. The write is durable; only the close failed.",
+                    ex);
             }
         }
     }
@@ -701,8 +887,95 @@ public sealed class SqlitePersistenceStore
     // Internals
     // ----------------------------------------------------------------
 
+    /// <summary>
+    /// Windows locations <see cref="ValidateRootPath"/> refuses to let
+    /// <see cref="RootPathConfigurationKey"/> resolve inside — populated
+    /// once, statically, since <see cref="Environment.GetFolderPath(Environment.SpecialFolder)"/>
+    /// does not change within a process. An entry is the empty string on a
+    /// system where that special folder does not exist (any non-Windows
+    /// OS) and is skipped rather than matching everything.
+    /// </summary>
+    private static readonly string[] WindowsDisallowedRoots =
+    [
+        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        Environment.GetFolderPath(Environment.SpecialFolder.System),
+        Environment.GetFolderPath(Environment.SpecialFolder.SystemX86),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+    ];
+
+    /// <summary>The non-Windows equivalent of <see cref="WindowsDisallowedRoots"/> — the handful of directories no ordinary application's own data belongs inside.</summary>
+    private static readonly string[] UnixDisallowedRoots =
+        ["/etc", "/usr", "/bin", "/sbin", "/boot", "/sys", "/proc", "/root", "/lib", "/lib64"];
+
+    /// <summary>
+    /// Refuses a persistence root that resolves to a drive root or inside a
+    /// protected system directory (`WP 21.5F` Offensive Security Audit,
+    /// item 6 — "whether `--persistence-root`/`Persistence:RootPath` can
+    /// point at a system path and be written to"). <see cref="RootPathConfigurationKey"/>
+    /// is operator/command-line-controlled input (the brief's own actor
+    /// (e): "can supply command-line arguments and environment") — nothing
+    /// previously stopped it naming <c>C:\Windows</c> or <c>C:\</c> itself,
+    /// which this store would then have created a <c>tempest.db</c> and
+    /// instance lock file directly inside.
+    /// </summary>
+    /// <exception cref="PersistenceStoreUnavailableException">
+    /// <paramref name="rootPath"/> resolves to a drive root, or inside a
+    /// protected system directory.
+    /// </exception>
+    private static void ValidateRootPath(string rootPath)
+    {
+        var fullRoot = Path.GetFullPath(rootPath)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        var driveRoot = Path.GetPathRoot(fullRoot)?
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (!string.IsNullOrEmpty(driveRoot) && string.Equals(fullRoot, driveRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"The persistence root '{rootPath}' resolves to a drive root ('{fullRoot}'); " +
+                $"configure a real subdirectory under '{RootPathConfigurationKey}'.");
+        }
+
+        var disallowed = OperatingSystem.IsWindows() ? WindowsDisallowedRoots : UnixDisallowedRoots;
+
+        foreach (var candidate in disallowed)
+        {
+            if (string.IsNullOrEmpty(candidate))
+                continue;
+
+            var normalised = candidate.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var isSameOrDescendant =
+                string.Equals(fullRoot, normalised, StringComparison.OrdinalIgnoreCase) ||
+                fullRoot.StartsWith(normalised + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+            if (isSameOrDescendant)
+            {
+                throw new PersistenceStoreUnavailableException(
+                    $"The persistence root '{rootPath}' resolves inside a protected system directory " +
+                    $"('{normalised}') and was refused; configure a real, ordinary data location under " +
+                    $"'{RootPathConfigurationKey}'.");
+            }
+        }
+    }
+
     private FileStream AcquireInstanceLock()
     {
+        // `WP 21.5F` Offensive Security Audit, OSA-06: a symlink/junction
+        // planted at the lock file's own path (by anything that already
+        // has write access to the persistence root — the same prerequisite
+        // every other threat this audit modelled against this actor
+        // assumes) would otherwise have every subsequent open of this path
+        // (this one, and TryDeleteLockFile's own delete) silently follow it
+        // to wherever it points. Refused outright rather than followed.
+        if (File.Exists(_lockFilePath) && File.GetAttributes(_lockFilePath).HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new PersistenceStoreUnavailableException(
+                $"The persistence root's own instance lock file '{_lockFilePath}' is a symlink or junction, " +
+                "not a plain file, and was refused rather than followed.");
+        }
+
         try
         {
             return new FileStream(
@@ -745,6 +1018,27 @@ public sealed class SqlitePersistenceStore
     {
         try
         {
+            // `WP 21.5A` (`WP RC.0A`'s own scope item 3): if a database
+            // already exists at this path and its recorded
+            // `schema_info.version` is behind this build's own
+            // `SchemaVersion`, back it up — through the online backup API,
+            // never a plain file copy of a database that may still be in
+            // WAL mode — before the migration DDL below runs. Checked
+            // ahead of opening `connection` (below), whose own
+            // `ReadWriteCreate` mode would otherwise create an empty file
+            // here and make `File.Exists` below always true.
+            if (File.Exists(_databasePath) && TryReadExistingSchemaVersion(_databasePath) is int existingVersion && existingVersion < SchemaVersion)
+            {
+                var backupsFolder = Path.Combine(_rootPath, BackupService.BackupsFolderName);
+                var backupFileName = BackupService.BuildPreMigrationBackupFileName(existingVersion, DateTimeOffset.UtcNow);
+                var backupPath = Path.Combine(backupsFolder, backupFileName);
+
+                var outcome = BackupService.CreateBackup(_databasePath, backupPath, _logger);
+
+                _logger?.Information(
+                    $"Pre-migration backup '{outcome.BackupPath}' created ({outcome.TableCount} table(s)) before upgrading '{_databasePath}' from schema version {existingVersion} to {SchemaVersion}.");
+            }
+
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
             ApplyPragmas(connection);
@@ -813,6 +1107,55 @@ public sealed class SqlitePersistenceStore
     }
 
     /// <summary>
+    /// Reads the schema version an existing database file at
+    /// <paramref name="databasePath"/> already recorded, or
+    /// <see langword="null"/> when the file has no readable
+    /// <c>schema_info</c> row — a database this build has never opened
+    /// before `ADR-0144` existed, or one from a build old enough to predate
+    /// <c>schema_info</c> entirely. Opened read-only, and independently of
+    /// <see cref="_connectionString"/>'s own <c>ReadWriteCreate</c> mode, so
+    /// this read can never itself be what creates the file it is checking
+    /// for (`WP 21.5A`).
+    /// </summary>
+    private static int? TryReadExistingSchemaVersion(string databasePath)
+    {
+        try
+        {
+            // `Pooling = false`, deliberately, unlike every other
+            // connection this class opens: `Microsoft.Data.Sqlite` pools
+            // connections per exact connection string, and this one — a
+            // one-off, read-only pre-check, never reused — is a different
+            // string from `_connectionString` (below), the only one
+            // `DisposeAsync` clears the pool for. A pooled connection here
+            // would survive this method's own `using` disposal at the
+            // native-handle level, leaving `databasePath` still locked
+            // after the owning `SqlitePersistenceStore` is disposed — found
+            // by a real test failure ("the process cannot access the file
+            // 'tempest.db'") when a second store reopened the same root a
+            // "restart" test had just closed.
+            using var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false,
+            }.ToString());
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT version FROM schema_info LIMIT 1;";
+            var result = command.ExecuteScalar();
+
+            return result is null or DBNull ? null : Convert.ToInt32(result, CultureInfo.InvariantCulture);
+        }
+        catch (SqliteException)
+        {
+            // No `schema_info` table (or no readable database at all) —
+            // nothing to back up ahead of.
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Advances <c>store_sequence</c> by one and returns its new value,
     /// inside the caller's already-open transaction.
     /// </summary>
@@ -848,6 +1191,33 @@ public sealed class SqlitePersistenceStore
             throw;
         }
     }
+
+    /// <summary>
+    /// Closes <paramref name="connection"/> at the end of
+    /// <see cref="ExecuteInTransactionAsync"/>: <see cref="TestOnlyConnectionCloser"/>
+    /// when a test has set one (`TD-150`), otherwise the connection's own
+    /// <see cref="SqliteConnection.DisposeAsync"/>.
+    /// </summary>
+    private ValueTask CloseConnectionAsync(SqliteConnection connection) =>
+        TestOnlyConnectionCloser is { } closer ? closer(connection) : connection.DisposeAsync();
+
+    /// <summary>
+    /// Test-only seam behind <see cref="CloseConnectionAsync"/> (`TD-150`).
+    /// When set, replaces the normal <see cref="SqliteConnection.DisposeAsync"/>
+    /// call at the end of <see cref="ExecuteInTransactionAsync"/>, letting a
+    /// test make that step itself throw — after performing real cleanup, if
+    /// the delegate chooses to — so the post-commit boundary this Work
+    /// Package adds can be proven against the real store rather than only a
+    /// double. <c>internal</c>, reachable only from <c>Tempest.Core.Tests</c>
+    /// (<c>InternalsVisibleTo</c>, <c>AssemblyInfo.cs</c>); never set outside
+    /// a test. Nothing else reaches this point to seam: a decorator over
+    /// <see cref="IQueryablePersistenceStore"/> — <c>CommitFailingPersistenceStore</c>
+    /// included — only ever sees this method's already-awaited result, since
+    /// the connection this closes is opened and disposed entirely inside
+    /// this sealed class's own method, beneath every interface such a
+    /// decorator implements.
+    /// </summary>
+    internal Func<SqliteConnection, ValueTask>? TestOnlyConnectionCloser { get; set; }
 
     /// <summary>
     /// Applies this store's four pragmas to <paramref name="connection"/>.
@@ -1004,7 +1374,7 @@ public sealed class SqlitePersistenceStore
     /// transaction's own writes and no second connection is ever waiting
     /// on a lock this one holds.
     /// </summary>
-    private sealed class SqliteTransactionScope : IPersistenceTransaction
+    private sealed class SqliteTransactionScope : IPersistenceTransaction, IAuditCollectionTransactionWriter
     {
         private readonly SqliteConnection _connection;
         private bool _finished;
@@ -1028,26 +1398,57 @@ public sealed class SqlitePersistenceStore
             return value is null or DBNull ? null : (string)value;
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — write through
+        /// <see cref="IAuditCollectionTransactionWriter.WriteAuditRowAsync"/>
+        /// instead (<see cref="Audit.AuditTransactionWriter"/>'s own only route in).
+        /// </exception>
         public async Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(collection);
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             ArgumentNullException.ThrowIfNull(value);
             ThrowIfFinished();
+            ThrowIfAuditCollection(collection);
 
             await using var command = _connection.CreateCommand();
             PrepareTextUpsert(command, collection, key, value);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — refused unconditionally, with no bypass;
+        /// see the non-transactional <see cref="SqlitePersistenceStore.DeleteAsync"/>'s
+        /// own identical remark.
+        /// </exception>
         public async Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(collection);
             ArgumentException.ThrowIfNullOrWhiteSpace(key);
             ThrowIfFinished();
+            ThrowIfAuditCollection(collection);
 
             await using var command = _connection.CreateCommand();
             PrepareDelete(command, collection, key);
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// The one route <see cref="Audit.AuditTransactionWriter.WriteAsync"/>
+        /// writes through — bypasses <see cref="ThrowIfAuditCollection"/>,
+        /// the guard <see cref="WriteAsync"/> applies to every other caller
+        /// (`WP 21.6A`, OSA-13).
+        /// </summary>
+        async Task IAuditCollectionTransactionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            ArgumentNullException.ThrowIfNull(value);
+            ThrowIfFinished();
+
+            await using var command = _connection.CreateCommand();
+            PrepareTextUpsert(command, AuditRecorder.AuditCollectionName, key, value);
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -1216,6 +1617,72 @@ public sealed class SqlitePersistenceStore
                 throw new InvalidOperationException(
                     "This IPersistenceReadTransaction has already ended. A read transaction handle is valid only " +
                     "for the duration of the ExecuteInReadTransactionAsync call that produced it.");
+        }
+    }
+
+    /// <summary>
+    /// The <see cref="Stream"/> <see cref="OpenReadAsync"/> hands back
+    /// (`TD-96`): a read-only, seekable view over one BLOB, backed by
+    /// <see cref="SqliteBlob"/>'s incremental I/O rather than a query that
+    /// materialises the value.
+    /// </summary>
+    /// <remarks>
+    /// Owns both <paramref name="connection"/> and <paramref name="blob"/>:
+    /// nothing else holds a reference to either, so disposing this stream
+    /// is what closes the blob handle and returns the connection to the
+    /// pool. A caller that never disposes the stream leaks exactly one
+    /// pooled connection, the same failure mode as never disposing any
+    /// other reader this store hands out.
+    /// </remarks>
+    private sealed class SqliteBlobStream(SqliteConnection connection, SqliteBlob blob) : Stream
+    {
+        private bool _disposed;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => false;
+
+        public override long Length => blob.Length;
+
+        public override long Position
+        {
+            get => blob.Position;
+            set => blob.Position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => blob.Read(buffer, offset, count);
+
+        public override int Read(Span<byte> buffer) => blob.Read(buffer);
+
+        public override long Seek(long offset, SeekOrigin origin) => blob.Seek(offset, origin);
+
+        public override void Flush()
+        {
+            // Read-only: nothing is ever buffered for writing.
+        }
+
+        public override void SetLength(long value) =>
+            throw new NotSupportedException("This stream is a read-only view over stored persistence content.");
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException("This stream is a read-only view over stored persistence content.");
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
+            if (disposing)
+            {
+                blob.Dispose();
+                connection.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
     }
 }

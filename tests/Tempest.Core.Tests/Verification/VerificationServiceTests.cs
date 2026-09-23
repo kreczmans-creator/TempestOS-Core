@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Verification;
@@ -10,8 +12,10 @@ public class VerificationServiceTests
     private static VerificationService BuildService(out EngineeringDocumentStore documentStore, out CurrentPrincipalAccessor accessor)
     {
         accessor = new CurrentPrincipalAccessor();
-        documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), accessor);
-        return new VerificationService(documentStore, accessor, new PermissionEvaluator());
+        var store = new InMemoryQueryablePersistenceStore();
+        documentStore = new EngineeringDocumentStore(store, accessor);
+        return new VerificationService(
+            documentStore, accessor, new PermissionEvaluator(), store, new InMemoryEngineeringRelationshipRepository());
     }
 
     private static IPrincipal BuildPrincipal(string id, params Permission[] permissions) =>
@@ -353,6 +357,105 @@ public class VerificationServiceTests
     }
 
     // ----------------------------------------------------------------
+    // TD-23 — the record and its links are one transaction
+    // TD-32 — the "verifiedBy" link is visible to the relationship
+    // repository / RelationshipDiscoveryService (the Digital Thread)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// A fault injected after the whole transaction body has run — the
+    /// document, the "verifiedBy" link, and every additional link all
+    /// staged — but before the commit lands, leaves nothing durable: no
+    /// verification record, no "verifiedBy" reference from the subject,
+    /// and nothing recorded with the relationship repository (`TD-23`).
+    /// The strongest form of the fact, mirroring
+    /// <c>CommitFailingPersistenceStore</c>'s own established convention
+    /// elsewhere in this suite (`R7RegressionProofTests`).
+    /// </summary>
+    [Fact]
+    public async Task RecordAsync_CommitFails_LeavesNothingDurable_NotEvenTheDocument()
+    {
+        var backing = new InMemoryQueryablePersistenceStore();
+        var accessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(backing, accessor);
+        var failing = new CommitFailingPersistenceStore(backing) { FailNextCommit = true };
+        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
+        var service = new VerificationService(documentStore, accessor, new PermissionEvaluator(), failing, relationshipRepository);
+
+        var subject = await documentStore.CreateAsync("Requirement", "content");
+        var standard = await documentStore.CreateAsync("Standard", "governing standard content");
+        var context = new VerificationContext();
+        context.LinkDocument(standard.Id);
+
+        await Assert.ThrowsAsync<Tempest.Core.Persistence.PersistenceStoreUnavailableException>(
+            () => service.RecordAsync(subject.Id, VerificationOutcome.Pass, "inspection", context));
+
+        Assert.Equal(1, failing.BodiesCompleted);
+
+        // Nothing durable: no "verifiedBy" reference from the subject...
+        var references = await documentStore.GetReferencesAsync(subject.Id);
+        Assert.DoesNotContain(references, r => r.RelationshipKind == VerificationService.VerifiedByRelationshipKind);
+
+        // ...and nothing recorded with the relationship repository either.
+        Assert.Empty(await relationshipRepository.GetOutgoingAsync(subject.Id));
+    }
+
+    /// <summary>
+    /// A missing linked document used to leave the verification record
+    /// itself durably created, with the failed link the only thing that
+    /// did not land — a durably committed, partly linked record (`TD-23`).
+    /// Now the whole write is one transaction, so the failure leaves the
+    /// subject showing no "verifiedBy" reference at all.
+    /// </summary>
+    [Fact]
+    public async Task RecordAsync_NonExistentLinkedDocument_LeavesNoVerifiedByReference_NotEvenTheRecord()
+    {
+        var service = BuildService(out var documentStore, out _);
+        var subject = await documentStore.CreateAsync("Requirement", "content");
+        var missingLinkedId = Guid.NewGuid();
+
+        var context = new VerificationContext();
+        context.LinkDocument(missingLinkedId);
+
+        await Assert.ThrowsAsync<EngineeringDocumentNotFoundException>(
+            () => service.RecordAsync(subject.Id, VerificationOutcome.Pass, "analysis", context));
+
+        var references = await documentStore.GetReferencesAsync(subject.Id);
+        Assert.DoesNotContain(references, r => r.RelationshipKind == VerificationService.VerifiedByRelationshipKind);
+    }
+
+    /// <summary>
+    /// After a successful <see cref="VerificationService.RecordAsync"/>,
+    /// the "verifiedBy" link is discoverable through
+    /// <see cref="IEngineeringRelationshipRepository"/> — and therefore
+    /// <see cref="RelationshipDiscoveryService"/>, the Digital Thread and
+    /// impact analysis — from both ends, in this same session, without
+    /// any restart or rehydration (`TD-32`).
+    /// </summary>
+    [Fact]
+    public async Task RecordAsync_RegistersVerifiedByLink_DiscoverableFromBothEnds_InThisSameSession()
+    {
+        var store = new InMemoryQueryablePersistenceStore();
+        var accessor = new CurrentPrincipalAccessor();
+        var documentStore = new EngineeringDocumentStore(store, accessor);
+        var relationshipRepository = new InMemoryEngineeringRelationshipRepository();
+        var objectRepository = new InMemoryEngineeringObjectRepository();
+        var discovery = new RelationshipDiscoveryService(relationshipRepository, objectRepository);
+        var service = new VerificationService(documentStore, accessor, new PermissionEvaluator(), store, relationshipRepository);
+
+        var subject = await documentStore.CreateAsync("Requirement", "content");
+        var record = await service.RecordAsync(subject.Id, VerificationOutcome.Pass, "inspection", new VerificationContext());
+
+        var outgoing = await discovery.GetOutgoingAsync(subject.Id);
+        Assert.Contains(outgoing, r =>
+            r.TargetId == record.Id && r.RelationshipKind == VerificationService.VerifiedByRelationshipKind
+            && r.Category == RelationshipCategory.Verification);
+
+        var incoming = await discovery.GetIncomingAsync(record.Id);
+        Assert.Contains(incoming, r => r.SourceId == subject.Id && r.RelationshipKind == VerificationService.VerifiedByRelationshipKind);
+    }
+
+    // ----------------------------------------------------------------
     // Constructor validation / failure injection
     // ----------------------------------------------------------------
 
@@ -360,7 +463,9 @@ public class VerificationServiceTests
     public void Constructor_NullDocumentStore_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(null!, new CurrentPrincipalAccessor(), new PermissionEvaluator()));
+            () => new VerificationService(
+                null!, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -369,7 +474,9 @@ public class VerificationServiceTests
         var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
 
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(documentStore, null!, new PermissionEvaluator()));
+            () => new VerificationService(
+                documentStore, null!, new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -378,7 +485,42 @@ public class VerificationServiceTests
         var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
 
         Assert.Throws<ArgumentNullException>(
-            () => new VerificationService(documentStore, new CurrentPrincipalAccessor(), null!));
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), null!,
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
+    }
+
+    [Fact]
+    public void Constructor_NullPersistenceStore_ThrowsArgumentNullException()
+    {
+        var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
+
+        Assert.Throws<ArgumentNullException>(
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                null!, new InMemoryEngineeringRelationshipRepository()));
+    }
+
+    [Fact]
+    public void Constructor_NullRelationshipRepository_ThrowsArgumentNullException()
+    {
+        var documentStore = new EngineeringDocumentStore(new InMemoryPersistenceStore(), new CurrentPrincipalAccessor());
+
+        Assert.Throws<ArgumentNullException>(
+            () => new VerificationService(
+                documentStore, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), null!));
+    }
+
+    [Fact]
+    public void Constructor_DocumentStoreNotTransactional_ThrowsArgumentException()
+    {
+        var nonTransactional = new NonTransactionalDocumentStore();
+
+        Assert.Throws<ArgumentException>(
+            () => new VerificationService(
+                nonTransactional, new CurrentPrincipalAccessor(), new PermissionEvaluator(),
+                new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository()));
     }
 
     [Fact]
@@ -386,7 +528,9 @@ public class VerificationServiceTests
     {
         var accessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(new FailingPersistenceStore(), accessor);
-        var service = new VerificationService(documentStore, accessor, new PermissionEvaluator());
+        var service = new VerificationService(
+            documentStore, accessor, new PermissionEvaluator(),
+            new InMemoryQueryablePersistenceStore(), new InMemoryEngineeringRelationshipRepository());
 
         await Assert.ThrowsAsync<Tempest.Core.Persistence.PersistenceStoreUnavailableException>(
             () => service.RecordAsync(Guid.NewGuid(), VerificationOutcome.Pass, "inspection", new VerificationContext()));

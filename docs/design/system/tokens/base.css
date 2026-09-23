@@ -1,0 +1,18 @@
+/* Minimal element defaults. Components carry their own styling. */
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{margin:0;background:var(--bg-page);color:var(--text-body);font-family:var(--font-body);font-size:var(--text-base);line-height:var(--leading-normal)}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-heading);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-tight);line-height:var(--leading-snug);margin:0 0 var(--space-4)}
+h1{font-size:var(--text-4xl);letter-spacing:var(--tracking-tightest)}
+h2{font-size:var(--text-2xl)}
+h3{font-size:var(--text-xl)}
+h4{font-size:var(--text-lg)}
+p{margin:0 0 var(--space-5);text-wrap:pretty}
+a{color:var(--text-link);text-decoration:none;border-bottom:1px solid var(--cyan-a40);transition:var(--transition-control)}
+a:hover{color:var(--text-link-hover);border-bottom-color:currentColor}
+code,kbd,pre,samp{font-family:var(--font-mono);font-size:.92em}
+::selection{background:var(--cyan-a40);color:var(--paper-050)}
+:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+hr{border:0;border-top:1px solid var(--border-subtle);margin:var(--space-8) 0}
+.t-grid-bg{background-color:var(--navy-800);background-image:var(--bg-grid)}
+.t-eyebrow{font-family:var(--font-display);font-size:var(--text-2xs);font-weight:var(--weight-semibold);letter-spacing:var(--tracking-widest);text-transform:uppercase;color:var(--text-accent)}
+.t-notch{clip-path:var(--notch-clip)}

@@ -136,6 +136,32 @@ public class DocumentViewSessionTests
     }
 
     [Fact]
+    public void AnUnsupportedSession_CarriesTheMaterialisedPath_ForOpenExternally()
+    {
+        var session = DocumentViewSession.Unavailable(
+            Guid.NewGuid(), "part.dwg", "application/acad", DocumentViewStatus.Unsupported,
+            ViewableDocumentFormat.ExternalOnly, materialisedPath: @"C:\temp\part.dwg");
+
+        Assert.Equal(@"C:\temp\part.dwg", session.MaterialisedPath);
+    }
+
+    [Theory]
+    [InlineData(DocumentViewStatus.Missing)]
+    [InlineData(DocumentViewStatus.Corrupt)]
+    public void AMissingOrCorruptSession_NeverCarriesAMaterialisedPath_EvenIfOneWasPassed(DocumentViewStatus status)
+    {
+        // There are no bytes to materialise for either status — nothing was
+        // ever stored, or what was stored failed its own integrity check —
+        // so a path passed in regardless (a caller's mistake) is dropped
+        // rather than handed to a button that would open the wrong thing.
+        var session = DocumentViewSession.Unavailable(
+            Guid.NewGuid(), "x.pdf", "application/pdf", status,
+            materialisedPath: @"C:\temp\should-not-appear.pdf");
+
+        Assert.Null(session.MaterialisedPath);
+    }
+
+    [Fact]
     public void APageCountBelowOne_IsTreatedAsASinglePage()
     {
         var session = DocumentViewSession.Ready(
@@ -203,15 +229,17 @@ public class DocumentFormatDetectorTests
         Assert.Equal(ViewableDocumentFormat.Text, DocumentFormatDetector.Detect(contentType, "Property,Value\n"u8));
     }
 
-    [Theory]
-    [InlineData("image/svg+xml")]
-    [InlineData("image/tiff")]
-    public void AnImageTypeThisPlatformCannotDecode_IsUnsupported_NotOptimisticallyImage(string contentType)
+    [Fact]
+    public void AnImageTypeThisPlatformCannotDecode_IsUnsupported_NotOptimisticallyImage()
     {
         // Claiming Image for a format the decoder will reject promises a
         // render that cannot happen, and turns "we have no viewer for
-        // this" into "this file is broken".
-        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect(contentType, "<svg/>"u8));
+        // this" into "this file is broken". SVG used to be exactly this
+        // case; `WP 21.4A` gave it its own real renderer and its own
+        // format instead (see `AnSvgIsRecognisedByItsContentTypeAndItsBytes`
+        // below), so TIFF — genuinely undecodable, with no plans otherwise
+        // — is what remains of this theory.
+        Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect("image/tiff", [0x49, 0x49, 0x2A, 0x00]));
     }
 
     [Theory]
@@ -229,5 +257,102 @@ public class DocumentFormatDetectorTests
     {
         Assert.Equal(ViewableDocumentFormat.Unsupported, DocumentFormatDetector.Detect(null, []));
         Assert.Equal(ViewableDocumentFormat.Text, DocumentFormatDetector.Detect("text/plain", []));
+    }
+
+    [Theory]
+    [InlineData("drawing.dwg")]
+    [InlineData("drawing.dxf")]
+    [InlineData("DRAWING.DWG")]
+    [InlineData("Pump Housing.Dxf")]
+    public void ADwgOrDxfFileName_IsExternalOnly_EvenWithNoUsefulContentType(string fileName)
+    {
+        // Neither format has an IANA-registered content type, so a real
+        // upload commonly arrives as "application/octet-stream" or with no
+        // content type claimed at all. The extension has to be enough on
+        // its own, and case must not matter — a Windows-authored file name
+        // is exactly as likely to be "DRAWING.DWG" as "drawing.dwg".
+        Assert.Equal(
+            ViewableDocumentFormat.ExternalOnly,
+            DocumentFormatDetector.Detect("application/octet-stream", [0x00, 0x01, 0x02], fileName));
+        Assert.Equal(
+            ViewableDocumentFormat.ExternalOnly,
+            DocumentFormatDetector.FromContentType(null, fileName));
+    }
+
+    [Theory]
+    [InlineData("application/acad")]
+    [InlineData("image/vnd.dwg")]
+    [InlineData("application/dxf")]
+    public void ADwgOrDxfContentType_IsExternalOnly_WithNoFileNameToGoBy(string contentType)
+    {
+        // The extension is the primary signal (above); this is the
+        // fallback for a correctly labelled upload whose name was typed
+        // without one.
+        Assert.Equal(ViewableDocumentFormat.ExternalOnly, DocumentFormatDetector.FromContentType(contentType));
+    }
+
+    [Fact]
+    public void ADwgFileName_BeatsAContentTypeThatWouldOtherwiseSayText()
+    {
+        // The extension is checked before content type is even parsed, so
+        // a DWG mislabelled as text/plain — which happens, since many
+        // upload paths default to it for anything with no better guess —
+        // still opens externally rather than trying (and failing) to lay
+        // it out as a datasheet.
+        Assert.Equal(ViewableDocumentFormat.ExternalOnly, DocumentFormatDetector.FromContentType("text/plain", "part.dwg"));
+    }
+
+    [Fact]
+    public void AnSvgIsRecognisedByItsContentTypeAndItsBytes()
+    {
+        // TD-99's SVG half, closed by WP 21.4A: Svg.Skia (MIT) is now
+        // referenced, so an SVG is a real, renderable format rather than
+        // the Unsupported one it used to report.
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.Detect("image/svg+xml", "<svg/>"u8, "icon.svg"));
+    }
+
+    [Fact]
+    public void AnSvgFileName_IsRecognisedByExtensionAlone_EvenWithAGenericContentType()
+    {
+        // The same "extension is the primary signal, content type is the
+        // fallback" convention DWG/DXF already established.
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.FromContentType("application/octet-stream", "diagram.svg"));
+    }
+
+    [Fact]
+    public void AnSvgContentType_IsRecognisedWithNoFileNameToGoBy()
+    {
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.FromContentType("image/svg+xml"));
+    }
+
+    [Theory]
+    [InlineData("<svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>")]
+    [InlineData("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a comment -->\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>")]
+    [InlineData("   \n\t<svg><circle/></svg>")]
+    public void SvgBytes_AreRecognisedByContent_EvenWithNoContentTypeOrFileName(string markup)
+    {
+        // "Magic bytes are consulted first and the declared content type
+        // second" (this type's own remarks) — a mislabelled or
+        // generically-named SVG, exactly as a renamed PNG already is,
+        // reached only through this file's own real read path
+        // (AttachmentViewerLauncher.TryOpenStreamedAsync sniffs the first
+        // 32 bytes; the theory data above is short enough to fit).
+        var bytes = System.Text.Encoding.UTF8.GetBytes(markup);
+        Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.Detect(contentType: null, bytes));
+    }
+
+    [Fact]
+    public void TextThatIsNotSvg_IsNotMisdetected()
+    {
+        Assert.Equal(
+            ViewableDocumentFormat.Text,
+            DocumentFormatDetector.Detect("text/plain", "Not markup at all."u8));
+
+        // An XML document with no `<svg` element anywhere in the sniff
+        // window is not SVG merely for starting with an `<?xml` declaration
+        // — the sniff requires the element itself, not just the prolog.
+        Assert.Equal(
+            ViewableDocumentFormat.Text,
+            DocumentFormatDetector.Detect("application/xml", "<?xml version=\"1.0\"?><root><child/></root>"u8, "data.xml"));
     }
 }

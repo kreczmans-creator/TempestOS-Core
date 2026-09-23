@@ -1,7 +1,9 @@
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
 using Tempest.Core.Requirements;
+using Tempest.Core.Tests.Persistence;
 using Tempest.Core.Verification;
 
 namespace Tempest.Core.Tests.Requirements;
@@ -16,11 +18,12 @@ public class RequirementsLifecycleExtensionsTests
 {
     private static (IRequirementsService Requirements, EngineeringDocumentStore Documents) BuildServices()
     {
-        var store = new InMemoryPersistenceStore();
+        var store = new InMemoryQueryablePersistenceStore();
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(store, principalAccessor);
         var permissionEvaluator = new PermissionEvaluator();
-        var verificationService = new VerificationService(documentStore, principalAccessor, permissionEvaluator);
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, permissionEvaluator, store, new InMemoryEngineeringRelationshipRepository());
         var requirementsService = new RequirementsService(documentStore, store, principalAccessor, verificationService);
 
         return (requirementsService, documentStore);

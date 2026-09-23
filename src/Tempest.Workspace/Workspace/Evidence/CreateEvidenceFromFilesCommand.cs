@@ -1,4 +1,5 @@
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
 using Tempest.Workspace.Files;
 
@@ -86,6 +87,10 @@ public sealed class CreateEvidenceFromFilesCommandHandler : ICommandHandler<Crea
                 .ConfigureAwait(false);
         }
         catch (ArgumentException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
+        catch (DuplicateBusinessIdentifierException ex)
         {
             return CommandResult.Failure(ex.Message);
         }

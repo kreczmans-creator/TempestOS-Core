@@ -10,12 +10,15 @@ namespace Tempest.Core.ExportImport;
 /// </summary>
 public sealed class JsonExportPayloadSerializer : IExportPayloadSerializer
 {
+    /// <summary>Explicit rather than implicit (`WP 21.5F` Offensive Security Audit, OSA-05) — see <see cref="JsonExportFormat"/>'s own identical remark.</summary>
+    private static readonly JsonSerializerOptions Options = new() { MaxDepth = 64 };
+
     /// <inheritdoc />
     public byte[] Serialize(IReadOnlyDictionary<string, string> data)
     {
         ArgumentNullException.ThrowIfNull(data);
 
-        return JsonSerializer.SerializeToUtf8Bytes(data);
+        return JsonSerializer.SerializeToUtf8Bytes(data, Options);
     }
 
     /// <inheritdoc />
@@ -25,7 +28,7 @@ public sealed class JsonExportPayloadSerializer : IExportPayloadSerializer
 
         try
         {
-            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(payload);
+            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(payload, Options);
 
             if (data is null)
                 throw new CorruptedExportArtifactException("the payload deserialized to no content.");

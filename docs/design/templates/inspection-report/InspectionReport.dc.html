@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Test / inspection report" description="A4 test and inspection record — instrument list, itemised results with pass/fail, defect notes and sign-off" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">INSPECTION REPORT</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">[TDE-0000-ITR-000] &middot; REV [00]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:20pt;letter-spacing:-.02em;line-height:1.15;color:var(--ink-900);text-wrap:pretty">[Item under test — tag no. and description]</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin:7mm 0 8mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">PROJECT</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Project name]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">LOCATION</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Site / works]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">DATE OF TEST</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[DD/MM/YYYY]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">PROCEDURE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Test procedure ref]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:3mm">INSTRUMENTS USED</div>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">INSTRUMENT</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:22%">SERIAL NO.</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:22%">CAL. DUE</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Instrument type and range]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Instrument type and range]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[S/N]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM/YY]</td></tr>
+</tbody>
+</table>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:3mm">RESULTS</div>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:9%">ITEM</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">CHECK / MEASUREMENT</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:17%">ACCEPTANCE</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:15%">RESULT</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">P / F</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">1</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Visual inspection — condition, identification, completeness]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Criterion]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[Value]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[P]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Dimensional check]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Criterion ± tol]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[Value]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[P]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">3</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Functional test]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Criterion]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[Value]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[P]</td></tr>
+<tr><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">4</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Performance / load test]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08)">[Criterion]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[Value]</td><td style="padding:2.5mm 3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[P]</td></tr>
+</tbody>
+</table>
+<div style="border-left:2px solid var(--cyan-500);padding-left:5mm;margin-bottom:8mm">
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2mm">DEFECTS / OBSERVATIONS</div>
+<p style="margin:0;text-wrap:pretty">[Record any defect, non-conformance raised (with NCR number), or observation affecting acceptance. Write "None" if clear.]</p>
+</div>
+<div style="display:flex;align-items:center;gap:5mm;background:var(--paper-100);border:1px solid var(--ink-a14);padding:4mm 5mm;margin-bottom:8mm">
+<span style="font-family:var(--font-display);font-weight:600;font-size:9pt;letter-spacing:.14em;color:var(--ink-900)">OVERALL RESULT</span>
+<span style="font-family:var(--font-mono);font-size:9pt;color:var(--slate-700)">[ &nbsp;] ACCEPTED &nbsp;&nbsp;[ &nbsp;] ACCEPTED WITH COMMENTS &nbsp;&nbsp;[ &nbsp;] REJECTED</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8mm;border-top:1px solid var(--ink-a14);padding-top:5mm">
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">TESTED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">WITNESSED BY</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600);margin-bottom:8mm">CLIENT / TPI</div>
+<div style="border-top:1px solid var(--paper-300);padding-top:2mm;font-size:9pt;color:var(--ink-900)">[Name] &middot; [Date]</div>
+</div>
+</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

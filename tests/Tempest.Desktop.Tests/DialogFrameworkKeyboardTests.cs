@@ -3,6 +3,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Macros;
 using Tempest.Desktop.Composition;
 using Tempest.Desktop.Theming;
@@ -155,6 +156,84 @@ public sealed class DialogFrameworkKeyboardTests
     }
 
     // ------------------------------------------------------------
+    // InputDialog — allowBlank (`WP 19.5D`, Defect 1): CommandParameter's
+    // own contract ("an empty string is a value, and a binding that will
+    // not accept one says so through Validate") reaches the dialog only
+    // when the caller opts in; every other caller (allowBlank's own
+    // default, false) keeps today's unconditional "A value is required."
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankFalse_StillRequiresAValue()
+    {
+        var dialog = new InputDialog();
+        var promptTask = dialog.PromptAsync("Create Part", "Name:", validate: _ => null, allowBlank: false);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // The dialog's own unconditional rejection, never reaching
+        // `validate` at all — `validate` here always accepts, so a value
+        // of "" completing would prove the opposite of what this asserts.
+        Assert.Contains(
+            dialog.GetLogicalDescendants().OfType<TextBlock>(),
+            t => t.Text == "A value is required.");
+        Assert.True(dialog.IsVisible);
+
+        textBox.Text = "New Part";
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("New Part", await promptTask);
+    }
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankTrue_AndAValidateAcceptingBlank_CompletesWithTheEmptyString()
+    {
+        var dialog = new InputDialog();
+        // `quotation.create`'s own "reference" parameter has no Validate
+        // at all (Check returns null unconditionally), the real production
+        // shape a blank-accepting parameter takes.
+        var promptTask = dialog.PromptAsync("Create Quotation", "Reference:", validate: null, allowBlank: true);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        Assert.Equal(string.Empty, await promptTask);
+        Assert.False(dialog.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public async Task InputDialog_Blank_WithAllowBlankTrue_AndAValidateRejectingBlank_ShowsThatValidatesOwnMessage()
+    {
+        var dialog = new InputDialog();
+        // Mirrors `deliverable.complete`'s own "completedOn" Validate
+        // shape: blank is rejected, a real value is not.
+        var promptTask = dialog.PromptAsync(
+            "Complete Deliverable", "Completed on (yyyy-MM-dd):",
+            validate: v => string.IsNullOrWhiteSpace(v) ? "must be a valid date (yyyy-MM-dd)." : null,
+            allowBlank: true);
+
+        var textBox = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
+        var okButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK"));
+        textBox.Text = string.Empty;
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // Reaches the parameter's own Validate — the dialog itself never
+        // second-guesses what it says, blank included.
+        Assert.Contains(
+            dialog.GetLogicalDescendants().OfType<TextBlock>(),
+            t => t.Text == "must be a valid date (yyyy-MM-dd).");
+        Assert.True(dialog.IsVisible);
+
+        textBox.Text = "2026-01-01";
+        okButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal("2026-01-01", await promptTask);
+    }
+
+    // ------------------------------------------------------------
     // CommandPaletteOverlay — live filtering, keyboard nav, real dispatch
     // ------------------------------------------------------------
 
@@ -210,14 +289,32 @@ public sealed class DialogFrameworkKeyboardTests
             var panel = (StackPanel)palette.Child!;
             var queryBox = (TextBox)panel.Children[0];
             var results = (ListBox)panel.Children[1];
-            Assert.Equal(0, results.SelectedIndex);
+
+            // `WP 20.2A` (TD-77): an empty query is grouped by category, so
+            // the first row is always a header and the row layout no longer
+            // has a fixed shape this test can hardcode (it now depends on
+            // how many categories have exactly one available command under
+            // an empty context). The initial selection is real behaviour
+            // pinned elsewhere (`Publish` skips to the first non-header);
+            // what this test proves is Down/Up moving among selectable rows
+            // only, never landing on a header — the specific gap a
+            // header-first render newly makes reachable.
+            var initial = results.SelectedIndex;
+            Assert.True(initial >= 0, "Expected a real initial selection.");
+            Assert.False(IsHeaderRow(results, initial), "The initial selection must never be a header.");
 
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down });
+            var afterOneDown = results.SelectedIndex;
+            Assert.True(afterOneDown > initial, "Down must move the selection forward.");
+            Assert.False(IsHeaderRow(results, afterOneDown), "Down must never land on a header.");
+
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Down });
-            Assert.Equal(2, results.SelectedIndex);
+            var afterTwoDowns = results.SelectedIndex;
+            Assert.True(afterTwoDowns > afterOneDown, "A second Down must move further forward.");
+            Assert.False(IsHeaderRow(results, afterTwoDowns), "Down must never land on a header.");
 
             queryBox.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Up });
-            Assert.Equal(1, results.SelectedIndex);
+            Assert.Equal(afterOneDown, results.SelectedIndex);
         }
         finally
         {
@@ -225,6 +322,10 @@ public sealed class DialogFrameworkKeyboardTests
             await host.DisposeAsync();
         }
     }
+
+    /// <summary>A header row is disabled and this empty-query listing shows no other disabled row (every command it lists is available) — the identical proxy `CommandPaletteOverlay.Publish`'s own rendering already relies on.</summary>
+    private static bool IsHeaderRow(ListBox results, int index) =>
+        !((System.Collections.IEnumerable)results.ItemsSource!).Cast<ListBoxItem>().ElementAt(index).IsEnabled;
 
     [AvaloniaFact]
     public async Task CommandPaletteOverlay_EnterOnARealCommand_CollectsItsValues_DispatchesAndCreatesTheRealObject()
@@ -243,8 +344,10 @@ public sealed class DialogFrameworkKeyboardTests
             var descriptor = registry.Items.Single(d => d.Id == "mechanical.create");
 
             var inputDialog = new InputDialog();
+            var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
+            var objectPicker = new ObjectPickerDialog(domainContext);
             var confirmationDialog = new ConfirmationDialog();
-            var commandPrompt = new DesktopCommandPrompt(inputDialog, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
+            var commandPrompt = new DesktopCommandPrompt(inputDialog, objectPicker, confirm: (_, message) => confirmationDialog.ConfirmAsync("Confirm", message, "Continue"));
 
             var palette = new CommandPaletteOverlay(registry)
             {
@@ -293,9 +396,8 @@ public sealed class DialogFrameworkKeyboardTests
             Assert.NotNull(result);
             Assert.True(result!.Succeeded);
 
-            var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Palette Test Part");
+            Assert.Contains(created, entry => entry.DisplayName == "Palette Test Part");
         }
         finally
         {
@@ -308,63 +410,18 @@ public sealed class DialogFrameworkKeyboardTests
     // `WP 16.5A` — real modal behaviour (`TD-65`): SettingsDialog and
     // MacroManagerDialog gain Escape/initial-focus; every one of the six
     // dialogs gains focus capture-on-open/restore-on-close.
+    //
+    // `WP 19.2B`: SettingsDialog is retired — Settings is a rail area now
+    // (`SettingsView`), not a dialog, so there is nothing modal left to
+    // exercise "focuses the Cancel button" or "Escape discards" against.
+    // Its own two tests (`SettingsDialog_Show_FocusesTheCancelButton_TheSafeDefault`,
+    // `SettingsDialog_Escape_ResolvesFalse_AndHidesTheDialog_LeavingSettingsUnchanged`)
+    // are deleted rather than kept passing against a type that no longer
+    // exists — the identical Save/Cancel-pair modal behaviour they proved
+    // remains covered by `ConfirmationDialog_Show_FocusesTheCancelButton_TheSafeDefault`
+    // and `ConfirmationDialog_Escape_ResolvesFalse_AndHidesTheDialog` above,
+    // the dialog `SettingsDialog`'s own remarks always said it mirrored.
     // ------------------------------------------------------------
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Show_FocusesTheCancelButton_TheSafeDefault()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
-            var window = new Window { Content = dialog };
-            window.Show();
-
-            _ = dialog.ShowAsync();
-
-            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            Assert.True(cancelButton.IsFocused);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Escape_ResolvesFalse_AndHidesTheDialog_LeavingSettingsUnchanged()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), settings, settingsProvider);
-            var window = new Window { Content = dialog };
-            window.Show();
-
-            var showTask = dialog.ShowAsync();
-            Assert.True(dialog.IsVisible);
-
-            var checkbox = dialog.GetLogicalDescendants().OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
-            checkbox.IsChecked = false; // a pending, unsaved change
-
-            dialog.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
-
-            Assert.False(await showTask);
-            Assert.False(dialog.IsVisible);
-            Assert.True(settings.ConfirmBeforeDelete); // unchanged — Escape discarded, never saved
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
 
     [AvaloniaFact]
     public async Task MacroManagerDialog_Show_FocusesTheMacroList_NeverAButton()
@@ -375,7 +432,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -400,7 +458,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -427,7 +486,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var window = new Window { Content = dialog };
             window.Show();
 
@@ -516,7 +576,7 @@ public sealed class DialogFrameworkKeyboardTests
         Assert.False(sibling.IsFocused);
 
         // InputDialog's own Escape handling lives on `_input` itself
-        // (unlike the other five, which handle it on the dialog root) —
+        // (unlike the other four, which handle it on the dialog root) —
         // raised there, exactly where a real user's keystroke would land
         // (`PromptAsync`'s own initial focus).
         var input = dialog.GetLogicalDescendants().OfType<TextBox>().Single();
@@ -526,38 +586,11 @@ public sealed class DialogFrameworkKeyboardTests
         Assert.True(sibling.IsFocused);
     }
 
-    [AvaloniaFact]
-    public async Task SettingsDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var dialog = new SettingsDialog(new ThemeService(settingsProvider), new UserSettings(settingsProvider), settingsProvider);
-            var sibling = new Button { Content = "Sibling" };
-            var panel = new Panel();
-            panel.Children.Add(sibling);
-            panel.Children.Add(dialog);
-            var window = new Window { Content = panel };
-            window.Show();
-            sibling.Focus();
-
-            var showTask = dialog.ShowAsync();
-            Assert.False(sibling.IsFocused);
-
-            var cancelButton = dialog.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            cancelButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            Assert.False(await showTask);
-            Assert.True(sibling.IsFocused);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
+    // `SettingsDialog_Close_RestoresFocusToThePreviouslyFocusedControl` is
+    // deleted (`WP 19.2B`) — `SettingsDialog` is retired, and the
+    // identical close-restores-focus behaviour for a Save/Cancel dialog
+    // pair remains covered by `ConfirmationDialog_Close_RestoresFocusToThePreviouslyFocusedControl`
+    // above.
 
     [AvaloniaFact]
     public async Task MacroManagerDialog_Close_RestoresFocusToThePreviouslyFocusedControl()
@@ -568,7 +601,8 @@ public sealed class DialogFrameworkKeyboardTests
             await host.StartAsync();
             var macroManager = (IMacroManager)host.Services!.GetService(typeof(IMacroManager));
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: _ => Task.FromResult(CommandResult.Success()));
+            var dialog = new MacroManagerDialog(
+                macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: _ => Task.FromResult(CommandResult.Success()));
             var sibling = new Button { Content = "Sibling" };
             var panel = new Panel();
             panel.Children.Add(sibling);

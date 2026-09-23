@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -66,6 +67,12 @@ public sealed class CitationPicker : Border
 
         _citeButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_filter, "Filter…");
+        AutomationProperties.SetName(_list, "Released reference records");
+        AutomationProperties.SetName(_citeButton, "Cite");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_citeButton, "Cite");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _filter.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) ApplyFilter(); };
         _list.DoubleTapped += (_, _) => TryComplete();

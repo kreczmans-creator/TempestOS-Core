@@ -272,3 +272,53 @@ ADR's notification design honours); `WP6.7 Implementation Report.md`;
 `WP6.7 Engineering Review Report.md`; `WP6.7 Platform Integration
 Demonstration.md`; `docs/academy/03 Work
 Packages/WP6.7-export-import-implementation.md`.
+
+## Addendum (`WP 20.3A`) — a per-section migration chain, schema version by schema version
+
+The Negative consequence above named the gap directly: strict equality
+only, with a genuine upgrade path left as "its own ADR-worthy decision."
+This closes it, additively, exactly as this ADR's own established
+convention requires. `IExportSchemaMigration` (`Kind`, `FromSchemaVersion`,
+`MigrateAsync(byte[] payload, CancellationToken)`) upgrades one section's
+payload by exactly one schema version; `ImportService.RegisterMigration`
+registers one under the same `IImportable.Kind` its own `IImportable` is
+registered under, refusing (`DuplicateExportSchemaMigrationException`,
+never a silent override) a second registration for the same kind and
+`FromSchemaVersion` pair — the identical discipline
+`DuplicateImportableKindException` already holds for `IImportable` itself.
+
+`ImportService.ImportAsync` walks a section whose own schema version is
+behind the registered `IImportable.SchemaVersion` forward through this
+chain one registered step at a time — version `n` to `n + 1`, then
+`n + 1` to `n + 2`, never a single jump from an old version straight to
+the current one — before the pre-existing exact-equality check ever runs.
+A schema that has moved through several versions needs a migration
+registered for every intervening step; the walk simply stops, unresolved,
+the first time a step is missing, and the pre-existing equality check
+then reports the mismatch exactly as it always did — `IncompatibleExportSchemaException`
+naming the artifact section's own *original* schema version (never an
+intermediate one reached partway through an incomplete chain) and the
+schema version the registered importable actually supports. A section
+whose own version is *ahead* of what is registered is refused the same
+way, with no migration ever attempted — this mechanism only ever walks
+forward, and there is no such thing as a downgrade step. `RegisterImportable`'s
+own "never a best-effort partial import" discipline is unchanged: every
+section is resolved and, where behind, migrated and re-checked before any
+section's `ImportAsync` is invoked.
+
+Compression and encryption remain exactly as disclosed above — still
+absent, unchanged by this addendum. A migration only ever transforms the
+same opaque, uncompressed, unencrypted bytes `IExportable.ExportAsync`
+already writes and `IImportable.ImportAsync` already reads; nothing about
+how those bytes reach or leave the artifact is a concern this mechanism
+takes on.
+
+No production `IExportSchemaMigration` exists yet, for the same reason
+the original decision gave for not building this speculatively: there is
+still no real prior schema version any shipped `IExportable` has moved
+away from. `ImportServiceTests` proves the mechanism itself directly —
+one step, a two-step chain walked in order, a partial chain still
+refusing and naming the artifact's own original version rather than an
+intermediate one, and a too-new section refused with no migration
+attempted — against `RecordingMigration`, the same configurable-fixture
+convention `RecordingImportable` already established for this test class.

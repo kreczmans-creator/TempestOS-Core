@@ -64,7 +64,7 @@ public class MacroManagerTests
 
     [Fact]
     public async Task CreateAsync_EmptySteps_ThrowsArgumentException() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => CreateHarness().MacroManager.CreateAsync("Empty", []));
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateHarness().MacroManager.CreateAsync("Empty", Array.Empty<string>()));
 
     [Fact]
     public async Task CreateAsync_BlankName_ThrowsArgumentException() =>
@@ -95,19 +95,38 @@ public class MacroManagerTests
     }
 
     [Fact]
-    public async Task DeleteAsync_RemovesFromListAsync_ButLeavesTheStaleDescriptorFailingGracefully()
+    public async Task DeleteAsync_RemovesFromListAsync_AndUnregistersItsDescriptor()
     {
         var (registry, _, macroManager, _) = CreateHarness();
         var macro = await macroManager.CreateAsync("Deleted Soon", ["sample.increment"]);
+        var descriptorId = $"macro:{macro.Id}";
 
         await macroManager.DeleteAsync(macro.Id);
 
         Assert.DoesNotContain(await macroManager.ListAsync(), m => m.Id == macro.Id);
 
-        // ICommandRegistry exposes no removal method (confirmed, frozen) —
-        // the stale descriptor still resolves; RunMacroCommandHandler's
-        // own disclosed, graceful failure replaces a throw.
-        var result = await registry.InvokeAsync($"macro:{macro.Id}");
+        // `WP 20.2C`: ICommandRegistry.Unregister exists now, and
+        // DeleteAsync calls it — the descriptor is genuinely gone from
+        // Items (what the Palette lists), and invoking its Id throws
+        // exactly as any other Id nothing ever registered does.
+        Assert.DoesNotContain(registry.Items, d => d.Id == descriptorId);
+        await Assert.ThrowsAsync<CommandNotFoundException>(() => registry.InvokeAsync(descriptorId));
+    }
+
+    [Fact]
+    public async Task RunMacroCommandHandler_UnknownMacroId_FailsGracefully_WithoutThrowing()
+    {
+        // `WP 20.2C`: the "stale descriptor" path DeleteAsync used to leave
+        // behind is gone (a deleted macro's own descriptor is unregistered
+        // now), but RunMacroCommandHandler's own graceful "no longer
+        // exists" failure still guards the one path that can still reach
+        // FindAsync returning null — RunMacroCommand dispatched directly,
+        // bypassing the registry's Id lookup entirely, for a macro Id
+        // nothing ever created.
+        var (_, dispatcher, _, _) = CreateHarness();
+
+        var result = await dispatcher.DispatchAsync(new RunMacroCommand(Guid.NewGuid()), CancellationToken.None);
+
         Assert.False(result.Succeeded);
         Assert.Contains("no longer exists", result.Message);
     }

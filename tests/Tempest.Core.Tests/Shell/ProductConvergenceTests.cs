@@ -85,68 +85,132 @@ public class ProductConvergenceTests
     // Navigation model — every destination is real or declared
     // ================================================================
 
+    /// <summary>
+    /// `WP 19.2B` (`TD-81`): "removed, not dimmed" — an undelivered rail
+    /// module no longer has a descriptor at all, so this walks the
+    /// descriptor table itself (what the rail can actually offer) rather
+    /// than every <see cref="ShellArea"/> ordinal, several of which
+    /// (Tasks, Commercial, Resources, Knowledge, Administration) now name
+    /// no descriptor on purpose — their ordinals stay, unused, because
+    /// <c>ShellLocation</c> is persisted by them (see that enum's own
+    /// remarks).
+    /// </summary>
     [Fact]
-    public void EveryDeclaredGlobalModule_HasADescriptor_AndEveryUnimplementedOneNamesWhatTracksIt()
+    public void EveryGlobalModule_HasADescriptor_AndIsGenuinelyImplemented()
     {
-        foreach (var area in Enum.GetValues<ShellArea>())
+        foreach (var descriptor in ShellAreas.All)
         {
-            var descriptor = ShellAreas.For(area);
-
             Assert.False(string.IsNullOrWhiteSpace(descriptor.Title));
             Assert.False(string.IsNullOrWhiteSpace(descriptor.Note));
-
-            if (descriptor.Availability == NavigationAvailability.Declared)
-                Assert.False(string.IsNullOrWhiteSpace(descriptor.TrackedBy),
-                    $"Module '{area}' is declared but not implemented, and must name the debt item that tracks it.");
+            Assert.Equal(NavigationAvailability.Implemented, descriptor.Availability);
+            Assert.Null(descriptor.TrackedBy);
         }
     }
 
-    [Fact]
-    public void EveryDeclaredProjectArea_HasADescriptor_AndEveryUnimplementedOneNamesWhatTracksIt()
+    /// <summary>
+    /// The other half of "removed, not dimmed": these ordinals have no
+    /// descriptor and throw exactly like any other undeclared area, rather
+    /// than being silently tolerated. `WP 19.7A`: Tasks re-joins the
+    /// declared set (see <see cref="TheProductsDesignedModuleAndAreaSets_AreBothPresent"/>);
+    /// Evidence, Timesheets, Invoicing, Reports, EngineeringCalculation and
+    /// Quotes join this list instead — each one's own real capability is
+    /// reached from inside Projects/Tasks/Engineering/Business now (see
+    /// each area view's own remarks), never lost, only no longer a
+    /// standalone declared module of its own.
+    /// </summary>
+    [Theory]
+    [InlineData(ShellArea.Commercial)]
+    [InlineData(ShellArea.Resources)]
+    [InlineData(ShellArea.Knowledge)]
+    [InlineData(ShellArea.Administration)]
+    [InlineData(ShellArea.Evidence)]
+    [InlineData(ShellArea.Timesheets)]
+    [InlineData(ShellArea.Invoicing)]
+    [InlineData(ShellArea.Reports)]
+    [InlineData(ShellArea.EngineeringCalculation)]
+    [InlineData(ShellArea.Quotes)]
+    public void ARemovedGlobalModule_HasNoDescriptor(ShellArea area)
     {
-        foreach (var area in Enum.GetValues<ProjectArea>())
-        {
-            var descriptor = ProjectAreas.For(area);
+        Assert.Throws<ArgumentOutOfRangeException>(() => ShellAreas.For(area));
+        Assert.DoesNotContain(area, ShellAreas.All.Select(m => m.Area));
+    }
 
+    /// <summary>The project-area counterpart of <see cref="EveryGlobalModule_HasADescriptor_AndIsGenuinelyImplemented"/> — `WP 19.2B` removed Reports and Settings from the tab strip the same way.</summary>
+    [Fact]
+    public void EveryProjectArea_HasADescriptor_AndIsGenuinelyImplemented()
+    {
+        foreach (var descriptor in ProjectAreas.All)
+        {
             Assert.False(string.IsNullOrWhiteSpace(descriptor.Title));
             Assert.False(string.IsNullOrWhiteSpace(descriptor.Note));
-
-            if (descriptor.Availability == NavigationAvailability.Declared)
-                Assert.False(string.IsNullOrWhiteSpace(descriptor.TrackedBy),
-                    $"Project area '{area}' is declared but not implemented, and must name the debt item that tracks it.");
+            Assert.Equal(NavigationAvailability.Implemented, descriptor.Availability);
+            Assert.Null(descriptor.TrackedBy);
         }
+    }
+
+    [Theory]
+    [InlineData(ProjectArea.Reports)]
+    [InlineData(ProjectArea.Settings)]
+    public void ARemovedProjectArea_HasNoDescriptor(ProjectArea area)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => ProjectAreas.For(area));
+        Assert.DoesNotContain(area, ProjectAreas.All.Select(a => a.Area));
     }
 
     [Fact]
     public void TheProductsDesignedModuleAndAreaSets_AreBothPresent()
     {
         // The shell shows the product TempestOS is, not only the part that
-        // is finished — with everything unfinished marked, never faked.
+        // is finished — with everything unfinished removed rather than
+        // faked (`WP 19.2B`, `TD-81`). `WP 19.7A`: the rail's own five
+        // areas replace the ten-entry rail `WP 19.2B` left behind.
+        Assert.Contains(ShellArea.Home, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.Projects, ShellAreas.All.Select(m => m.Area));
         Assert.Contains(ShellArea.Tasks, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Commercial, ShellAreas.All.Select(m => m.Area));
-        Assert.Contains(ShellArea.Administration, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.EngineeringDepartment, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.Business, ShellAreas.All.Select(m => m.Area));
+        Assert.Contains(ShellArea.Settings, ShellAreas.All.Select(m => m.Area));
 
         Assert.Contains(ProjectArea.Tasks, ProjectAreas.All.Select(a => a.Area));
         Assert.Contains(ProjectArea.Risks, ProjectAreas.All.Select(a => a.Area));
         Assert.Contains(ProjectArea.Timeline, ProjectAreas.All.Select(a => a.Area));
-        Assert.Contains(ProjectArea.Reports, ProjectAreas.All.Select(a => a.Area));
-        Assert.Contains(ProjectArea.Settings, ProjectAreas.All.Select(a => a.Area));
+        Assert.Contains(ProjectArea.Deliverables, ProjectAreas.All.Select(a => a.Area));
+        Assert.Contains(ProjectArea.Evidence, ProjectAreas.All.Select(a => a.Area));
+        Assert.Contains(ProjectArea.SignOff, ProjectAreas.All.Select(a => a.Area));
 
-        // The rail never offers the project workspace: it is reached by
-        // opening a project.
+        // The rail is exactly Home, Projects, Tasks, Engineering, Business
+        // — never the project workspace (reached by opening a project),
+        // the engineering surface itself (reached from Engineering's own
+        // Modules → Mechanical node), or Settings (reached from the
+        // header).
         Assert.DoesNotContain(ShellArea.ProjectWorkspace, ShellAreas.RailModules.Select(m => m.Area));
+        Assert.DoesNotContain(ShellArea.Engineering, ShellAreas.RailModules.Select(m => m.Area));
+        Assert.DoesNotContain(ShellArea.Settings, ShellAreas.RailModules.Select(m => m.Area));
+        Assert.Equal(
+            new[] { ShellArea.Home, ShellArea.Projects, ShellArea.Tasks, ShellArea.EngineeringDepartment, ShellArea.Business },
+            ShellAreas.RailModules.Select(m => m.Area));
     }
 
+    /// <summary>
+    /// `WP 19.2B`: the navigator itself validates nothing against
+    /// <see cref="ShellAreas"/> — it accepts a removed module's own
+    /// ordinal exactly as it always did (only <c>ProjectWorkspace</c>/
+    /// <c>Engineering</c> refuse <c>GoToModuleAsync</c>, for their own,
+    /// unrelated reason). What changed is one level up: the module has
+    /// no descriptor left to be a real destination with. `WP 19.7A`:
+    /// Tasks re-joins the declared set, so <c>Commercial</c> is this
+    /// test's own example now.
+    /// </summary>
     [Fact]
-    public async Task ADeclaredModule_IsARealNavigationDestination_NotADeadButton()
+    public async Task ARemovedModule_StillMoves_ButHasNoDescriptorLeftToBeARealDestinationWith()
     {
         var spine = await BuildAsync();
 
-        await spine.Navigator.GoToModuleAsync(ShellArea.Tasks);
+        await spine.Navigator.GoToModuleAsync(ShellArea.Commercial);
 
-        Assert.Equal(ShellArea.Tasks, spine.Navigator.Current.Area);
+        Assert.Equal(ShellArea.Commercial, spine.Navigator.Current.Area);
         Assert.False(spine.Navigator.Current.IsProjectScoped);
-        Assert.Equal(NavigationAvailability.Declared, ShellAreas.For(ShellArea.Tasks).Availability);
+        Assert.Throws<ArgumentOutOfRangeException>(() => ShellAreas.For(ShellArea.Commercial));
     }
 
     [Fact]
@@ -156,7 +220,7 @@ public class ProductConvergenceTests
         var project = await spine.Directory.CreateAsync("P-0001", "Apollo");
         await spine.Navigator.OpenProjectAsync(project.Id);
 
-        await spine.Navigator.GoToModuleAsync(ShellArea.Knowledge);
+        await spine.Navigator.GoToModuleAsync(ShellArea.Timesheets);
 
         Assert.True(spine.Context.HasProject);
         Assert.Equal(project.Id, spine.Context.Current!.Id);

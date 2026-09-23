@@ -145,10 +145,13 @@ public sealed class MechanicalPropertyFacetProvider : IPropertyFacetProvider
 
         foreach (var kind in new[] { "Configuration", "Baseline", "Release" })
         {
-            var objects = await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            // `TD-88`/`WP 21.5B`: `MemberRevisions` is an `IConfiguration`-own
+            // field, not on the index row, so every object of this Kind is
+            // materialised before it can be checked.
+            var entries = await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            var objects = await _context.Repository.MaterialiseAsync<IConfiguration>(entries, cancellationToken).ConfigureAwait(false);
 
             memberOf.AddRange(objects
-                .OfType<IConfiguration>()
                 .Where(c => c.MemberRevisions.Any(m => m.ObjectId == objectId))
                 .Select(c => (c as IHasBusinessIdentifier)?.DisplayName ?? c.Id.ToString()));
         }

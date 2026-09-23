@@ -1,0 +1,11 @@
+/* Tempest Engineering webfonts. Sources: uploads/ (brand pack). */
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-Light.ttf") format("truetype");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-Italic.ttf") format("truetype");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-Medium.ttf") format("truetype");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-SemiBold.ttf") format("truetype");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url("../assets/fonts/ChakraPetch-Bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter";src:url("../assets/fonts/Inter-Variable.ttf") format("truetype-variations");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Space Mono";src:url("../assets/fonts/SpaceMono-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Space Mono";src:url("../assets/fonts/SpaceMono-Italic.ttf") format("truetype");font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:"Space Mono";src:url("../assets/fonts/SpaceMono-Bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}

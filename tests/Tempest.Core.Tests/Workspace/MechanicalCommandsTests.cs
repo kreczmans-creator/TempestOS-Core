@@ -123,7 +123,7 @@ public class MechanicalCommandsTests
         await handler.HandleAsync(new CreateMechanicalObjectCommand("Part", "New Part", parentId: parent.Id), default);
 
         var created = (await context.Repository.ListByKindAsync("Part")).Single();
-        Assert.Equal(parent.Id, ((IHasParent)created).ParentId);
+        Assert.Equal(parent.Id, created.ParentId);
     }
 
     // ---- RenameMechanicalObjectCommand ----
@@ -249,9 +249,9 @@ public class MechanicalCommandsTests
         Assert.True(result.Succeeded);
         var parts = await context.Repository.ListByKindAsync("Part");
         Assert.Equal(2, parts.Count);
-        var copy = parts.Single(p => p.Id != source.Id);
-        Assert.Equal(targetParent.Id, ((IHasParent)copy).ParentId);
-        Assert.Equal("Original Part (Copy)", ((IHasBusinessIdentifier)copy).DisplayName);
+        var copy = parts.Single(entry => entry.Id != source.Id);
+        Assert.Equal(targetParent.Id, copy.ParentId);
+        Assert.Equal("Original Part (Copy)", copy.DisplayName);
     }
 
     [Fact]
@@ -278,9 +278,9 @@ public class MechanicalCommandsTests
             new CopyMechanicalObjectCommand(source.Id, "Part", null, "PART-2", "Renamed Copy"), default);
 
         Assert.True(result.Succeeded);
-        var copy = (await context.Repository.ListByKindAsync("Part")).Single(p => p.Id != source.Id);
-        Assert.Equal("Renamed Copy", ((IHasBusinessIdentifier)copy).DisplayName);
-        Assert.Equal("PART-2", ((IHasBusinessIdentifier)copy).Identifier);
+        var copy = (await context.Repository.ListByKindAsync("Part")).Single(entry => entry.Id != source.Id);
+        Assert.Equal("Renamed Copy", copy.DisplayName);
+        Assert.Equal("PART-2", copy.Identifier);
     }
 
     // ---- DuplicateMechanicalObjectCommand ----
@@ -302,8 +302,8 @@ public class MechanicalCommandsTests
         Assert.True(result.Succeeded);
         var parts = await context.Repository.ListByKindAsync("Part");
         Assert.Equal(2, parts.Count);
-        var duplicate = parts.Single(p => p.Id != source.Id);
-        Assert.Equal(parent.Id, ((IHasParent)duplicate).ParentId);
+        var duplicate = parts.Single(entry => entry.Id != source.Id);
+        Assert.Equal(parent.Id, duplicate.ParentId);
     }
 
     [Fact]
@@ -357,6 +357,37 @@ public class MechanicalCommandsTests
         var result = await handler.HandleAsync(new SetBomLineCommand(Guid.NewGuid(), "Part", 1m), default);
 
         Assert.False(result.Succeeded);
+    }
+
+    [Theory]
+    [InlineData("ea")]
+    [InlineData("Each")]
+    public async Task SetBomLine_AliasOfAKnownUnit_CanonicalisesToOne(string alias)
+    {
+        // ADR-0083 addendum (WP 20.3A): "ea", "EA" and "Each" are one unit.
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+        var handler = new SetBomLineCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetBomLineCommand(part.Id, "Part", 1m, alias), default);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal("EA", part.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task SetBomLine_UnknownUnitOfMeasure_FailsNamingTheKnownList()
+    {
+        var context = BuildContext();
+        var part = await CreatePartAsync(context);
+        var handler = new SetBomLineCommandHandler(context);
+
+        var result = await handler.HandleAsync(new SetBomLineCommand(part.Id, "Part", 1m, "furlongs"), default);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("furlongs", result.Message, StringComparison.Ordinal);
+        Assert.Contains("EA", result.Message, StringComparison.Ordinal);
+        Assert.Equal(1m, part.Quantity); // unchanged: refused before any write
     }
 
     // ---- CompareBaselinesCommand (WP 9.0B) ----

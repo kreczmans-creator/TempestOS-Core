@@ -146,6 +146,18 @@ public sealed class RecordVerificationResultCommandHandler : ICommandHandler<Rec
             // id (`RequirementsPropertyFacetProvider`), so the record is linked
             // from the subject as well as from the Activity that produced it.
             await _domainContext.Store.LinkAsync(subjectId, record.Id, VerificationService.VerifiedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+
+            // TD-32: also recorded with the relationship repository, exactly as
+            // VerificationService.RecordAsync now records its own "verifiedBy"
+            // edge - otherwise RelationshipDiscoveryService (the Digital Thread
+            // and impact analysis) never sees this one, which bypassed it the
+            // same way through the same raw IEngineeringDocumentStore.LinkAsync
+            // call.
+            _domainContext.RelationshipRepository.Record(new EngineeringRelationship(
+                subjectId, record.Id, VerificationService.VerifiedByRelationshipKind,
+                RelationshipKindCategoryMap.InferCategory(VerificationService.VerifiedByRelationshipKind),
+                _domainContext.ResolveCurrentPrincipalId(), DateTimeOffset.UtcNow));
+
             subjectNote = " The subject it verifies now shows this record in its coverage.";
         }
 

@@ -26,4 +26,8 @@ internal sealed record RequirementDto(
     string? Owner = null,
     RequirementPriority? Priority = null,
     bool IsDeleted = false,
-    Guid? GroupId = null);
+    Guid? GroupId = null,
+    // `WP 20.10F`: appended last, default null, for the identical reason
+    // every prior WP 9.1A addition was — every existing call site
+    // constructing this record positionally is unaffected.
+    string? OwnerPersonId = null);

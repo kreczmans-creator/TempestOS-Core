@@ -148,7 +148,8 @@ public class ProjectEngineeringIntegrationTests
         rig.Principal.SetCurrent(new PlatformPrincipal(
             new PlatformIdentity("engineer", "Engineer"), [VerificationService.ReadPermission]));
 
-        var verification = new VerificationService(rig.DocumentStore, rig.Principal, new PermissionEvaluator());
+        var verification = new VerificationService(
+            rig.DocumentStore, rig.Principal, new PermissionEvaluator(), rig.Persistence, new InMemoryEngineeringRelationshipRepository());
         var requirements = new RequirementsService(rig.DocumentStore, rig.Persistence, rig.Principal, verification);
 
         var project = await rig.Directory.CreateAsync("P-0027", "Apollo Pump Redesign");

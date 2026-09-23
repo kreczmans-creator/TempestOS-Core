@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -80,6 +81,15 @@ public sealed class ReviseReferenceRecordEntry : Border
 
         _reviseButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_definitionJson, "Definition (JSON)");
+        AutomationProperties.SetName(_publisher, "Source publisher");
+        AutomationProperties.SetName(_work, "Source work");
+        AutomationProperties.SetName(_page, "Page");
+        AutomationProperties.SetName(_changeSummary, "Change summary");
+        AutomationProperties.SetName(_reviseButton, "Revise");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_reviseButton, "Revise");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _reviseButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);

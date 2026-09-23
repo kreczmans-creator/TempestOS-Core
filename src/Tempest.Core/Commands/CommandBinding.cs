@@ -57,6 +57,12 @@ public sealed class CommandBinding
     /// A message to confirm before the command runs, or
     /// <see langword="null"/> for an action needing no confirmation.
     /// </param>
+    /// <param name="mutates">
+    /// Whether invoking this command writes to the domain (`WP 19.10R`,
+    /// `TD-179`'s residual) — see <see cref="Mutates"/>. Defaults to
+    /// <see langword="false"/> so no existing call site's behaviour
+    /// changes by omission; a mutating binding sets this explicitly.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="build"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="parameters"/> contains a <see langword="null"/> entry
@@ -69,7 +75,8 @@ public sealed class CommandBinding
         Func<CommandContext, IReadOnlyDictionary<string, string>, ICommand> build,
         IReadOnlyList<CommandParameter>? parameters = null,
         IReadOnlyList<string>? appliesToKinds = null,
-        string? confirmationMessage = null)
+        string? confirmationMessage = null,
+        bool mutates = false)
     {
         ArgumentNullException.ThrowIfNull(build);
 
@@ -81,6 +88,7 @@ public sealed class CommandBinding
         Parameters = Validated(parameters);
         AppliesToKinds = Validated(appliesToKinds);
         ConfirmationMessage = confirmationMessage;
+        Mutates = mutates;
     }
 
     private CommandBinding(string unavailableReason)
@@ -139,6 +147,23 @@ public sealed class CommandBinding
 
     /// <summary>Gets whether this binding can actually construct a command.</summary>
     public bool IsInvocable => UnavailableReason is null;
+
+    /// <summary>
+    /// Gets whether invoking this command writes to the domain — the
+    /// narrow marker <see cref="ArchivedProjectCommandGuard"/> consults so
+    /// that only a write is ever checked against an archived project
+    /// (`WP 19.10R`, `TD-179`'s residual): a command that only reads
+    /// (<c>mechanical.validate-configuration</c>, the one production
+    /// exception) stays available regardless. Defaults to
+    /// <see langword="false"/> — an <see cref="Unavailable"/> binding never
+    /// sets it, since it can never construct a command to begin with, and
+    /// nor does any binding outside this Work Package's own scope (every
+    /// existing test fixture, and the Calculations/Invoicing/Timesheets/
+    /// Projects registrations, none of which this Work Package's brief
+    /// scopes in) — so a binding this property is never set on keeps
+    /// exactly its prior behaviour.
+    /// </summary>
+    public bool Mutates { get; }
 
     /// <summary>
     /// Gets whether invoking this command needs a

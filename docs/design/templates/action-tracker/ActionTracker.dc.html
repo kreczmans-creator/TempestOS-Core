@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Action tracker" description="A4 landscape action log — owner, due date, status and notes per action" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" orientation="landscape" margin="14mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:6mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:3mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:10mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">ACTION TRACKER</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1mm">[TDE-0000-ACT-000] &middot; UPDATED [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>[Project name] &middot; www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:8.5pt;line-height:1.5;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5mm">
+<div style="font-family:var(--font-display);font-weight:700;font-size:15pt;letter-spacing:-.01em;color:var(--ink-900)">[Project name — action tracker]</div>
+<div style="font-family:var(--font-mono);font-size:7pt;color:var(--slate-700)">STATUS: OPEN &middot; IN PROGRESS &middot; OVERDUE &middot; CLOSED</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:8pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:6%">ID</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:34%">ACTION</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">RAISED</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">OWNER</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:10%">DUE</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">STATUS</th>
+<th style="text-align:left;padding:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">NOTES</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A01</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Action — one clear deliverable with a definition of done]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:var(--indigo-600);border:1px solid var(--indigo-600);padding:.8mm 2mm">IN PROGRESS</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Latest position]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A02</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Action]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:#fff;background:var(--red-500);padding:.8mm 2mm">OVERDUE</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Latest position]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A03</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Action]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:var(--slate-600);border:1px solid var(--paper-300);padding:.8mm 2mm">OPEN</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Latest position]</td></tr>
+<tr><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A04</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900);text-wrap:pretty">[Action]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.08em;color:#fff;background:var(--cyan-600);padding:.8mm 2mm">CLOSED</span></td><td style="padding:2mm;border-bottom:1px solid var(--ink-a08)">[Closure evidence and date]</td></tr>
+</tbody>
+</table>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

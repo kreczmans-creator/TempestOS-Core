@@ -1,9 +1,14 @@
 using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Requirements;
 
@@ -52,6 +57,19 @@ public static class DisciplineAreas
             map[kind] = ManufacturingWorkspaceExplorerModule.NavigationItemId;
 
         map[Tempest.Core.Evidence.Evidence.CanonicalKind] = EvidenceWorkspaceRegistration.ExplorerAreaId;
+
+        // `ADR-0150` (`WP 19.0A`).
+        map[Tempest.Core.Timesheets.TimesheetEntry.CanonicalKind] = TimesheetsWorkspaceRegistration.ExplorerAreaId;
+        map[Tempest.Core.Deliverables.DeliverableCompletion.CanonicalKind] = DeliverableCompletionWorkspaceRegistration.ExplorerAreaId;
+
+        // `ADR-0151` (`WP 19.1A`).
+        map[Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind] = InvoicingWorkspaceRegistration.ExplorerAreaId;
+
+        // `ADR-0152` (`WP 19.5A`).
+        map[Tempest.Core.Quotations.Quotation.CanonicalKind] = QuotationWorkspaceRegistration.ExplorerAreaId;
+
+        // `WP 19.5C`.
+        map[Tempest.Core.Tasks.ManualTask.CanonicalKind] = TaskWorkspaceRegistration.ExplorerAreaId;
 
         return map;
     }

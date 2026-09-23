@@ -45,6 +45,61 @@ public sealed class RibbonViewTests
     }
 
     /// <summary>
+    /// `WP 19.4A` acceptance: "inside the engineering surface the category
+    /// row has no Deliverables, Invoicing or Timesheets tab" —
+    /// <c>po-comments.md</c> #3's own complaint ("Deliverables, Invoicing,
+    /// Projects and Timesheets categories appear inside the engineering
+    /// ribbon although those commands belong to other rail areas"), fixed
+    /// by a category filter on <see cref="RibbonView"/> itself, driven by
+    /// the host (<c>MainWindowComposer.Layout</c>'s own
+    /// <c>EngineeringRibbonCategories</c> allow-list) — never by
+    /// unregistering the commands: <see cref="ICommandRegistry.Items"/>
+    /// still carries every one, filtered here or not, so the Command
+    /// Palette is unaffected.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task SetCategoryFilter_HidesNonEngineeringCategories_ButLeavesThemRegistered()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var registry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
+            var ribbon = new RibbonView(registry, host.Manager!, host.Workspace!, _ => { }, _ => { });
+
+            // The real, unfiltered registry carries business-scoped
+            // categories too, confirming this test would fail honestly if
+            // the filter below did nothing.
+            Assert.Contains(registry.Items, d => d.Category == "Deliverables");
+            Assert.Contains(registry.Items, d => d.Category == "Invoicing");
+            Assert.Contains(registry.Items, d => d.Category == "Timesheets");
+            Assert.Contains(registry.Items, d => d.Category == "Projects");
+
+            ribbon.SetCategoryFilter(new HashSet<string>(StringComparer.Ordinal)
+            {
+                "Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification",
+            });
+
+            var categories = ((TabControl)ribbon.Content!).Items.OfType<TabItem>().Select(t => (string)t.Tag!).ToList();
+
+            Assert.DoesNotContain("Deliverables", categories);
+            Assert.DoesNotContain("Invoicing", categories);
+            Assert.DoesNotContain("Timesheets", categories);
+            Assert.DoesNotContain("Projects", categories);
+            Assert.Contains("Mechanical", categories);
+
+            // Filtering the ribbon's own tabs never touches the registry —
+            // the Command Palette still lists every command.
+            Assert.Contains(registry.Items, d => d.Category == "Deliverables");
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
     /// `WP 10.5C` — "engineering colour language" — every real discipline
     /// tab's own header now carries a real, distinctly-coloured accent dot
     /// (<c>DisciplineColors</c>), and every one of the six real
@@ -391,9 +446,12 @@ public sealed class RibbonViewTests
             ribbon.ActionCompleted += (message, outcome) => { messages.Add(message); outcomes.Add(outcome); };
 
             // TD-77 Stage 5 replaced one catch-all sentence with each
-            // command's own reason. A Move declares that it needs a
-            // destination chosen from the object tree, and says so by name.
-            FindButtonById(ribbon, registry, "mechanical.move")
+            // command's own reason. `calculations.execute` declares exactly
+            // what it cannot collect, and says so by name — `mechanical.move`,
+            // this test's own former example, is invocable now that the
+            // object picker exists (`WP 20.2A`, FCR-0073), so it no longer
+            // demonstrates an uninvocable command.
+            FindButtonById(ribbon, registry, "calculations.execute")
                 .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`/Class B: no wait. An unavailable command is refused
@@ -401,8 +459,8 @@ public sealed class RibbonViewTests
             // availability and raises `ActionCompleted` before its first
             // `await`, so the message is already recorded when `RaiseEvent`
             // returns.
-            Assert.Contains(messages, m => m.Contains("Moving a Mechanical object", StringComparison.Ordinal));
-            Assert.Contains(messages, m => m.Contains("object picker", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(messages, m => m.Contains("Executing a Calculation", StringComparison.Ordinal));
+            Assert.Contains(messages, m => m.Contains("single-line text only", StringComparison.OrdinalIgnoreCase));
 
             // A Create needs values, and this view was constructed with no
             // prompt wired - so it says that, rather than running without

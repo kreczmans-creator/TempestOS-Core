@@ -167,6 +167,16 @@ public sealed record Organisation
     /// <summary>The currency it is normally invoiced in. <see langword="null"/> where unrecorded.</summary>
     public CurrencyCode? TradingCurrency { get; init; }
 
+    /// <summary>
+    /// Its standing payment terms (`TD-180`, Product Owner decision
+    /// 2026-09-15 §1) — defaults to <see cref="PaymentTerms.UpFront"/>, so
+    /// a pre-`WP 20.1B` organisation reads exactly as it always billed:
+    /// on receipt. Copied onto a new <see cref="Tempest.Core.Invoicing.InvoiceRequest"/>
+    /// at the moment it is raised, then frozen there — changing it here
+    /// never moves an already-raised request's own due date.
+    /// </summary>
+    public PaymentTerms PaymentTerms { get; init; } = PaymentTerms.UpFront;
+
     /// <summary>Who owns the relationship, and where it stands operationally.</summary>
     public OperationalFacts Facts { get; init; } = new();
 

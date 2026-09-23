@@ -11,6 +11,18 @@ public class Document : EngineeringObjectBase, IDocument, IRehydratable<Document
     {
     }
 
+    /// <summary>
+    /// A Document's own business identifier is its number — the raw
+    /// <see cref="EngineeringObjectBase.Identifier"/> field a caller
+    /// supplied at creation — if it has one, else its name (`TD-38`).
+    /// <see cref="EngineeringObjectBase.Identifier"/> never changes after
+    /// construction, so a rename cannot change a numbered Document's own
+    /// business identifier at all; only an un-numbered Document's does,
+    /// exactly as <see cref="ResolveBusinessIdentifier"/>'s own contract
+    /// with <see cref="EngineeringObjectBase.RenameAsync"/> requires.
+    /// </summary>
+    protected internal override string ResolveBusinessIdentifier(string candidateDisplayName) => Identifier ?? candidateDisplayName;
+
     static Document IRehydratable<Document>.Rehydrate(IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context, EngineeringObjectState state) =>
         new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata);
 }

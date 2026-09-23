@@ -39,12 +39,21 @@ public sealed class CreateRequirementCommand : ICommand
 public sealed class CreateRequirementCommandHandler : ICommandHandler<CreateRequirementCommand>
 {
     private readonly IRequirementsService _requirementsService;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateRequirementCommandHandler(IRequirementsService requirementsService)
+    /// <param name="requirementsService">Where the requirement is created.</param>
+    /// <param name="dispatcher">
+    /// Dispatches this create's own compensation (`WP 21.6A`, mirrors
+    /// <c>EngineeringDomain</c>'s own <c>Create*ObjectCommandHandler</c>
+    /// shape) — optional; <see langword="null"/> means no
+    /// <see cref="CommandResult.Compensation"/> is attached.
+    /// </param>
+    public CreateRequirementCommandHandler(IRequirementsService requirementsService, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
 
         _requirementsService = requirementsService;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateRequirementCommand command, CancellationToken cancellationToken)
@@ -54,14 +63,27 @@ public sealed class CreateRequirementCommandHandler : ICommandHandler<CreateRequ
             var created = await _requirementsService.CreateAsync(command.Identifier, command.Statement, command.Category, cancellationToken)
                 .ConfigureAwait(false);
 
+            // Undo soft-deletes the requirement this call created; redo
+            // restores it — the same make-a-new-object inversion
+            // `WorkspaceCommandBindings.CreationCompensation` already uses
+            // for an engineering object's own Create/Copy (`WP 21.1A`).
+            var compensation = _dispatcher is null ? null : new CommandCompensation(
+                $"Create '{created.Identifier}'",
+                undo: ct => _dispatcher.DispatchAsync(new DeleteRequirementCommand(created.Id), ct),
+                redo: ct => _dispatcher.DispatchAsync(new UndeleteRequirementCommand(created.Id), ct));
+
             if (command.GroupId is { } groupId)
             {
                 var group = await _requirementsService.FindGroupAsync(groupId, cancellationToken).ConfigureAwait(false);
                 await _requirementsService.MoveToGroupAsync(created.Id, groupId, cancellationToken).ConfigureAwait(false);
-                return CommandResult.Success($"Created Requirement '{created.Identifier}' in group '{group?.Name ?? groupId.ToString()}'.", created.Id, RequirementsService.RequirementDocumentKind);
+                return CommandResult.Success(
+                    $"Created Requirement '{created.Identifier}' in group '{group?.Name ?? groupId.ToString()}'.",
+                    created.Id, RequirementsService.RequirementDocumentKind, compensation);
             }
 
-            return CommandResult.Success($"Created Requirement '{created.Identifier}'. It is not in any group; the Project Explorer lists it under \"Ungrouped\".", created.Id, RequirementsService.RequirementDocumentKind);
+            return CommandResult.Success(
+                $"Created Requirement '{created.Identifier}'. It is not in any group; the Project Explorer lists it under \"Ungrouped\".",
+                created.Id, RequirementsService.RequirementDocumentKind, compensation);
         }
         catch (DuplicateRequirementIdentifierException ex)
         {

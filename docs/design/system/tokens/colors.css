@@ -1,0 +1,50 @@
+/* Base palette. Values sampled from the brand pack logo files. */
+:root{
+  /* Ink / navy — the brand's primary ground */
+  --navy-900:#070915;
+  --navy-800:#0b0e1e;
+  --navy-700:#111527;
+  --navy-600:#181d33;
+  --navy-500:#222842;
+  --navy-400:#2e3552;
+
+  /* Paper / neutrals */
+  --paper-000:#ffffff;
+  --paper-050:#f5f6fa;
+  --paper-100:#eff0f5;
+  --paper-200:#dfe0e4;
+  --paper-300:#bec1c9;
+  --slate-400:#a2a5af;
+  --slate-500:#82848e;
+  --slate-600:#4b5160;
+  --slate-700:#31343f;
+  --ink-900:#16181d;
+
+  /* Brand triad — read off the mark, in stroke order */
+  --indigo-600:#1c2d97;
+  --indigo-500:#2a3fbe;
+  --indigo-400:#4055d8;
+  --cyan-500:#40a2ce;
+  --cyan-400:#68bde2;
+  --cyan-600:#2b7fa5;
+  --violet-500:#6c29d9;
+  --violet-400:#8b53e6;
+  --violet-600:#5620ad;
+
+  /* Semantic hues */
+  --green-500:#12b981;
+  --amber-500:#f5a524;
+  --red-500:#e5484d;
+
+  /* Alphas for hairlines, tints, glows */
+  --cyan-a12:rgba(64,162,206,.12);
+  --cyan-a24:rgba(64,162,206,.24);
+  --cyan-a40:rgba(64,162,206,.4);
+  --violet-a16:rgba(108,41,217,.16);
+  --indigo-a20:rgba(28,45,151,.2);
+  --paper-a08:rgba(245,246,250,.08);
+  --paper-a14:rgba(245,246,250,.14);
+  --paper-a60:rgba(245,246,250,.6);
+  --ink-a08:rgba(22,24,29,.08);
+  --ink-a14:rgba(22,24,29,.14);
+}

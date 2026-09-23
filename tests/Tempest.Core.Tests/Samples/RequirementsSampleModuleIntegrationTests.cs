@@ -3,6 +3,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
@@ -60,7 +61,7 @@ public class RequirementsSampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         // One store instance under all three shapes, as `TempestHost`
@@ -73,6 +74,7 @@ public class RequirementsSampleModuleIntegrationTests
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
         services.Singleton<IVerificationService, VerificationService>();
         services.Singleton<IRequirementsService, RequirementsService>();
         services.Singleton<IReportingService, ReportingService>();
@@ -178,8 +180,8 @@ public class RequirementsSampleModuleIntegrationTests
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
         var module = Assert.IsType<RequirementsSampleModule>(serviceProvider.GetService(typeof(RequirementsSampleModule)));
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var verificationService = (IVerificationService)serviceProvider.GetService(typeof(IVerificationService));
         var history = await verificationService.GetVerificationHistoryAsync(module.SampleRequirementId!.Value);
@@ -230,8 +232,8 @@ public class RequirementsSampleModuleIntegrationTests
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(
             new PlatformIdentity("reader", "Reader"),
             [new Permission(RequirementsSampleModule.ReadPermissionKey), VerificationService.ReadPermission]));
 

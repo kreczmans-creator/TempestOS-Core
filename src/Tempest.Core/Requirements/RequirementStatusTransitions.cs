@@ -8,7 +8,16 @@ namespace Tempest.Core.Requirements;
 /// automation: nothing here decides *when* a transition should happen,
 /// only whether a requested one is permitted.
 /// </summary>
-internal static class RequirementStatusTransitions
+/// <remarks>
+/// Public since `WP 21.6A`: <c>Tempest.Workspace.Requirements</c>'
+/// <c>SetRequirementStatusCommandHandler</c> now builds a status-change
+/// compensation (`ADR-0099` addendum) and must consult this identical
+/// table — never a second, independently-maintained copy — to decide
+/// whether reversing a transition is itself permitted, exactly as
+/// <c>WorkspaceCommandBindings.StatusCompensation</c> already consults
+/// <c>ILifecycleTransitionTable</c> for an engineering object.
+/// </remarks>
+public static class RequirementStatusTransitions
 {
     private static readonly IReadOnlyDictionary<RequirementStatus, IReadOnlySet<RequirementStatus>> Permitted =
         new Dictionary<RequirementStatus, IReadOnlySet<RequirementStatus>>

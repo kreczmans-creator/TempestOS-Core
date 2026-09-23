@@ -37,9 +37,40 @@ public interface IUndoRedoStack
     /// </summary>
     void Record(UndoableAction action);
 
-    /// <summary>Reverses the most recently recorded (or redone) action, if any, by invoking its own <see cref="UndoableAction.Undo"/> and moving it to the Redo stack. Returns <see langword="null"/> if <see cref="CanUndo"/> is <see langword="false"/>.</summary>
+    /// <summary>
+    /// Reverses the most recently recorded (or redone) action, if any, by
+    /// invoking its own <see cref="UndoableAction.Undo"/>. On success, moves
+    /// the action to the Redo stack; on a refused or failed undo (`WP 21.1A`
+    /// — a compensation whose own <see cref="CommandResult.Succeeded"/> came
+    /// back <see langword="false"/>, the parent since deleted, the archived-
+    /// project guard), the action is put back on the Undo stack unchanged,
+    /// exactly as if this call had never been made — never moved to Redo,
+    /// which would let a person "redo" an action that was never actually
+    /// reversed. Returns <see langword="null"/> if <see cref="CanUndo"/> is
+    /// <see langword="false"/>.
+    /// </summary>
     Task<CommandResult?> UndoAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Re-applies the most recently undone action, if any, by invoking its own <see cref="UndoableAction.Redo"/> and moving it back to the Undo stack. Returns <see langword="null"/> if <see cref="CanRedo"/> is <see langword="false"/>.</summary>
+    /// <summary>
+    /// Re-applies the most recently undone action, if any, by invoking its
+    /// own <see cref="UndoableAction.Redo"/>. On success, moves the action
+    /// back to the Undo stack; on a refused or failed redo (`WP 21.1A`), the
+    /// action is put back on the Redo stack unchanged, for the identical
+    /// consistency reason <see cref="UndoAsync"/>'s own remarks give.
+    /// Returns <see langword="null"/> if <see cref="CanRedo"/> is
+    /// <see langword="false"/>.
+    /// </summary>
     Task<CommandResult?> RedoAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clears both stacks (`WP 21.1A`) — every recorded action is discarded,
+    /// with no attempt to undo or redo any of them. The one call site is a
+    /// project switch: an action recorded against the project that was open
+    /// no longer has anywhere safe to replay against once a different
+    /// project (or none) is open, so the session's own Undo/Redo history
+    /// starts over, exactly like most desktop applications' own established
+    /// convention for switching documents. A no-op, not an error, when both
+    /// stacks are already empty.
+    /// </summary>
+    void Clear();
 }

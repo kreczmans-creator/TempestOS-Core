@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -69,6 +70,14 @@ public sealed class CheckEntry : Border
 
         _checkButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_checkerName, "Checker name");
+        AutomationProperties.SetName(_checkerOrganisation, "Checker organisation");
+        AutomationProperties.SetName(_statement, "Statement");
+        AutomationProperties.SetName(_outcome, "Outcome");
+        AutomationProperties.SetName(_checkButton, "Check");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_checkButton, "Check");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _checkButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);

@@ -1,3 +1,4 @@
+using Tempest.Core.Audit;
 using Tempest.Core.Persistence;
 
 namespace Tempest.Core.Tests.Persistence;
@@ -51,7 +52,7 @@ namespace Tempest.Core.Tests.Persistence;
 /// </para>
 /// </remarks>
 public sealed class InMemoryQueryablePersistenceStore
-    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore
+    : IPersistenceStore, IBinaryPersistenceStore, IQueryablePersistenceStore, IAuditCollectionWriter
 {
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly object _publishLock = new();
@@ -110,10 +111,17 @@ public sealed class InMemoryQueryablePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — mirrors <c>SqlitePersistenceStore</c>'s own
+    /// identical guard, so a fact proving the store refuses a direct audit
+    /// write runs identically against either.
+    /// </exception>
     public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
     {
         Validate(collection, key);
         ArgumentNullException.ThrowIfNull(value);
+        ThrowIfAuditCollection(collection);
 
         lock (_publishLock)
         {
@@ -125,9 +133,14 @@ public sealed class InMemoryQueryablePersistenceStore
     }
 
     /// <inheritdoc />
+    /// <exception cref="AuditCollectionProtectedException">
+    /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+    /// (`WP 21.6A`, OSA-13) — refused unconditionally, with no bypass.
+    /// </exception>
     public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
     {
         Validate(collection, key);
+        ThrowIfAuditCollection(collection);
 
         lock (_publishLock)
         {
@@ -137,6 +150,27 @@ public sealed class InMemoryQueryablePersistenceStore
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>The one route <see cref="Audit.AuditRecorder.RecordAsync"/> writes through — see <see cref="WriteAsync"/>'s own remark (`WP 21.6A`, OSA-13).</summary>
+    Task IAuditCollectionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        lock (_publishLock)
+        {
+            var next = new Dictionary<(string, string), Entry>(_committed) { [(AuditRecorder.AuditCollectionName, key)] = Entry.OfText(value) };
+            _committed = next;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Refuses <see cref="AuditRecorder.AuditCollectionName"/> for every caller reaching this store through the ordinary surface (`WP 21.6A`, OSA-13).</summary>
+    private static void ThrowIfAuditCollection(string collection)
+    {
+        if (string.Equals(collection, AuditRecorder.AuditCollectionName, StringComparison.Ordinal))
+            throw new AuditCollectionProtectedException(collection);
     }
 
     /// <inheritdoc />
@@ -172,6 +206,21 @@ public sealed class InMemoryQueryablePersistenceStore
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A <see cref="MemoryStream"/> over a snapshot copy of the committed
+    /// bytes: this double models the real store's "missing" and "found"
+    /// answers faithfully, but not its `TD-96` incremental-I/O mechanism —
+    /// nothing in this suite asserts allocation behaviour against the
+    /// double, only against the real <c>SqlitePersistenceStore</c>.
+    /// </remarks>
+    public Task<Stream?> OpenReadAsync(string collection, string key, CancellationToken cancellationToken = default)
+    {
+        Validate(collection, key);
+        var bytes = CommittedBytes(collection, key);
+        return Task.FromResult<Stream?>(bytes is null ? null : new MemoryStream(bytes, writable: false));
     }
 
     // ================================================================
@@ -371,7 +420,8 @@ public sealed class InMemoryQueryablePersistenceStore
     /// The handle handed to a transaction body. Reads and writes the
     /// working copy only; unusable once the transaction has closed.
     /// </summary>
-    private sealed class Transaction(Dictionary<(string Collection, string Key), Entry> working, Dictionary<Guid, IndexEntry> indexWorking) : IPersistenceTransaction
+    private sealed class Transaction(Dictionary<(string Collection, string Key), Entry> working, Dictionary<Guid, IndexEntry> indexWorking)
+        : IPersistenceTransaction, IAuditCollectionTransactionWriter
     {
         private bool _closed;
 
@@ -384,22 +434,43 @@ public sealed class InMemoryQueryablePersistenceStore
             return Task.FromResult(working.TryGetValue((collection, key), out var entry) ? entry.Text : null);
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — mirrors <c>SqlitePersistenceStore</c>'s
+        /// own transactional guard.
+        /// </exception>
         public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();
             Validate(collection, key);
             ArgumentNullException.ThrowIfNull(value);
+            ThrowIfAuditCollection(collection);
 
             working[(collection, key)] = Entry.OfText(value);
             return Task.CompletedTask;
         }
 
+        /// <exception cref="AuditCollectionProtectedException">
+        /// <paramref name="collection"/> is <see cref="AuditRecorder.AuditCollectionName"/>
+        /// (`WP 21.6A`, OSA-13) — refused unconditionally, with no bypass.
+        /// </exception>
         public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();
             Validate(collection, key);
+            ThrowIfAuditCollection(collection);
 
             working.Remove((collection, key));
+            return Task.CompletedTask;
+        }
+
+        /// <summary>The one route <see cref="Audit.AuditTransactionWriter.WriteAsync"/> writes through (`WP 21.6A`, OSA-13).</summary>
+        Task IAuditCollectionTransactionWriter.WriteAuditRowAsync(string key, string value, CancellationToken cancellationToken)
+        {
+            ThrowIfClosed();
+            ArgumentNullException.ThrowIfNull(value);
+
+            working[(AuditRecorder.AuditCollectionName, key)] = Entry.OfText(value);
             return Task.CompletedTask;
         }
 

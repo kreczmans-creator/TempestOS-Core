@@ -128,6 +128,61 @@ public sealed class CalculationTemplateRegistry
         return summary;
     }
 
+    /// <summary>
+    /// Re-executes the Template that produced the target Domain object's own
+    /// most recent record, with its exact original input (`TD-29`), then
+    /// links the target to the new record via <see cref="CalculatedByRelationshipKind"/>
+    /// exactly as <see cref="ExecuteAsync"/> already does.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="targetObjectId"/> does not identify a known Domain object.</exception>
+    /// <exception cref="CalculationException"><paramref name="targetObjectId"/> has never been executed.</exception>
+    /// <exception cref="CalculationDefinitionNotFoundException">The Template that produced the latest record is no longer registered here.</exception>
+    /// <exception cref="CalculationRecordHasNoInputException">The latest record predates input retention (`TD-29`) and carries none.</exception>
+    public async Task<CalculationExecutionSummary> RerunAsync(Guid targetObjectId, CancellationToken cancellationToken = default)
+    {
+        var target = await _context.Repository.FindAsync(targetObjectId, cancellationToken).ConfigureAwait(false)
+            ?? throw new ArgumentException($"'{targetObjectId}' is not a known Domain object.", nameof(targetObjectId));
+
+        var latest = await CalculationRecordReader.GetLatestAsync(_context, targetObjectId, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculationException($"'{targetObjectId}' has never been executed; nothing to re-run.");
+
+        if (!_adaptersByCalculationId.TryGetValue(latest.CalculationId, out var adapter))
+            throw new CalculationDefinitionNotFoundException(latest.CalculationId);
+
+        var summary = await adapter.ReRunAsync(_calculationEngine, latest.RecordId, cancellationToken).ConfigureAwait(false);
+
+        if (target is IHasRelationships hasRelationships)
+            await hasRelationships.LinkAsync(summary.RecordId, CalculatedByRelationshipKind, cancellationToken).ConfigureAwait(false);
+
+        return summary;
+    }
+
+    /// <summary>
+    /// Compares the target Domain object's own two most recent records —
+    /// which input and result fields changed, old and new (`TD-29`). Never
+    /// mutates: no new record, no new relationship.
+    /// </summary>
+    /// <exception cref="CalculationException"><paramref name="targetObjectId"/> has fewer than two recorded executions.</exception>
+    /// <exception cref="CalculationDefinitionNotFoundException">The Template that produced the latest record is no longer registered here.</exception>
+    public async Task<CalculationComparison> CompareWithPreviousAsync(Guid targetObjectId, CancellationToken cancellationToken = default)
+    {
+        var history = await CalculationRecordReader.GetResultHistoryAsync(_context, targetObjectId, cancellationToken).ConfigureAwait(false);
+
+        if (history.Count < 2)
+        {
+            throw new CalculationException(
+                $"'{targetObjectId}' has fewer than two recorded executions; nothing to compare.");
+        }
+
+        var previous = history[^2];
+        var latest = history[^1];
+
+        if (!_adaptersByCalculationId.TryGetValue(latest.CalculationId, out var adapter))
+            throw new CalculationDefinitionNotFoundException(latest.CalculationId);
+
+        return await adapter.CompareAsync(_calculationEngine, previous.RecordId, latest.RecordId, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Type-erased execution surface one <see cref="CalculationTemplateAdapter{TInput, TResult}"/> per registered Template implements.</summary>
     private interface ICalculationTemplateAdapter
     {
@@ -135,6 +190,8 @@ public sealed class CalculationTemplateRegistry
         string CalculationId { get; }
         CalculationMetadata Metadata { get; }
         Task<CalculationExecutionSummary> ExecuteAsync(ICalculationEngine engine, string inputJson, CancellationToken cancellationToken);
+        Task<CalculationExecutionSummary> ReRunAsync(ICalculationEngine engine, Guid recordId, CancellationToken cancellationToken);
+        Task<CalculationComparison> CompareAsync(ICalculationEngine engine, Guid recordIdA, Guid recordIdB, CancellationToken cancellationToken);
     }
 
     /// <summary>The one, per-Template concrete adapter — the sole place <c>TInput</c>/<c>TResult</c> are statically known.</summary>
@@ -165,10 +222,22 @@ public sealed class CalculationTemplateRegistry
 
             var record = await engine.ExecuteAsync<TInput, TResult>(CalculationId, input, cancellationToken).ConfigureAwait(false);
 
-            return new CalculationExecutionSummary(
-                record.Id, CalculationId, JsonSerializer.Serialize(record.Result), record.Validation.Outcome,
-                record.ExecutedAt, record.ExecutedByPrincipalId);
+            return ToSummary(record);
         }
+
+        public async Task<CalculationExecutionSummary> ReRunAsync(ICalculationEngine engine, Guid recordId, CancellationToken cancellationToken)
+        {
+            var record = await engine.ReRunAsync<TInput, TResult>(recordId, cancellationToken).ConfigureAwait(false);
+
+            return ToSummary(record);
+        }
+
+        public Task<CalculationComparison> CompareAsync(ICalculationEngine engine, Guid recordIdA, Guid recordIdB, CancellationToken cancellationToken) =>
+            engine.CompareAsync<TInput, TResult>(recordIdA, recordIdB, cancellationToken);
+
+        private CalculationExecutionSummary ToSummary(CalculationRecord<TResult> record) =>
+            new(record.Id, CalculationId, JsonSerializer.Serialize(record.Result), record.Validation.Outcome,
+                record.ExecutedAt, record.ExecutedByPrincipalId);
     }
 }
 

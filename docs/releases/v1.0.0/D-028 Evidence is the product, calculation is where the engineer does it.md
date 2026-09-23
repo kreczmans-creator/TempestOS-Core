@@ -2,6 +2,8 @@
 
 **Decided by:** the Product Owner, 2026-09-09, in conversation with the chief engineer of record for the `v0.17.0` line.
 **Status:** Decided. Applied to `docs/releases/v1.0.0/WorkPackages.md` the same day.
+
+**Addendum, 2026-09-15 (recorded by the overnight acceptance campaign, 2026-09-16):** point 2's "stay in the software as shipped in `v0.17.0`, unextended" was amended once, in writing, by the Product Owner on 2026-09-15 — "like RoyMech's online calculators … no code" — and executed as `WP 21.7A`/`21.7B`/`21.7C` in `v0.21.0` (`docs/releases/v0.21.0/Execution Plan.md` §2): eleven catalogue-driven engineering calculation modules with a generated calculator surface, re-run and compare, drawing materials, fasteners and bearings from the reference libraries. Points 1 and 3 are unchanged: the calculators record their runs as Calculations on the project, evidence stays the product, and nothing here is an ERP or a PLM. The expression grammar, the cell-grid editor and the run-by-run diff remain not built.
 **Amended the same day:** the in-app calculation surfaces are **not** retired. The Product Owner: "Keep the calculation capability within the software for now. I'd rather have it in place and we can pivot and strip out later than have to build it later." `WP 18.3A` is withdrawn, decision 2 reads accordingly, `v0.18.0` is 37 developer-days and 85 remain.
 **Supersedes in part:** the `v0.18.0` scope of `WorkPackages.md` as proposed on 2026-09-08 ("Calculation as Document"), and `ADR-0148`/`ADR-0149` as reserved there.
 

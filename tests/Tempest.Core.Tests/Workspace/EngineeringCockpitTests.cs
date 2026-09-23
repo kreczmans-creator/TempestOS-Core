@@ -97,18 +97,11 @@ public class EngineeringCockpitTests
         await manager.ShutdownAsync();
     }
 
-    [Fact]
-    public async Task KpiCards_AreAllMarkedPlaceholder()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        Assert.NotEmpty(cockpit.KpiCards);
-        Assert.All(cockpit.KpiCards, kpi => Assert.True(kpi.IsPlaceholder));
-
-        await manager.ShutdownAsync();
-    }
+    // `WP 19.1B`: `KpiCards_AreAllMarkedPlaceholder` used to stand here,
+    // proving `EngineeringCockpit.KpiCards` — the cross-discipline
+    // "Engineering Overview" aggregate — which this Work Package's own
+    // row removes outright, superseded by the Home cockpit's five KPI
+    // cards (see `tests/Tempest.Core.Tests/Workspace/EngineeringCockpitKpiTests.cs`).
 
     // ----------------------------------------------------------------
     // Real Workspace service consumption (no placeholder)
@@ -592,34 +585,13 @@ public class EngineeringCockpitTests
     // placeholder cards.
     // ----------------------------------------------------------------
 
-    [Fact]
-    public async Task KpiCards_NoLiveRequirement_RequirementsEntryIsStillPlaceholder()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
-        Assert.True(requirementsCard.IsPlaceholder);
-
-        await manager.ShutdownAsync();
-    }
-
-    [Fact]
-    public async Task KpiCards_WithALiveRequirement_RequirementsEntryIsReal()
-    {
-        using var temp = new TempDirectory();
-        var (workspace, manager, host) = await StartAsync(temp.Path, Type.EmptyTypes);
-        var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
-        await requirementsService.CreateAsync("REQ-1", "The system shall do X.");
-        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
-        await cockpit.PrimeAsync();
-        var requirementsCard = Assert.Single(cockpit.KpiCards, c => c.Label == "Requirements");
-        Assert.False(requirementsCard.IsPlaceholder);
-        Assert.Equal("1 total", requirementsCard.Value);
-
-        await manager.ShutdownAsync();
-    }
+    // `WP 19.1B`: `KpiCards_NoLiveRequirement_RequirementsEntryIsStillPlaceholder`
+    // and `KpiCards_WithALiveRequirement_RequirementsEntryIsReal` used to
+    // stand here, both proving the removed `EngineeringCockpit.KpiCards`
+    // aggregate's own "Requirements" entry — see this file's own remarks
+    // above `KpiCards_AreAllMarkedPlaceholder`'s old position.
+    // `RequirementsKpiCards` (the per-discipline set, below) is unaffected
+    // and still real.
 
     [Fact]
     public async Task RequirementsKpiCards_NoLiveRequirement_ReportsZeroesHonestly()
@@ -635,6 +607,66 @@ public class EngineeringCockpitTests
         Assert.Equal("0", cards["Outstanding Actions"]);
         Assert.Equal(EngineeringHealthStatus.Unknown.ToString(), cards["Requirement Health"]);
         Assert.All(cockpit.RequirementsKpiCards, c => Assert.False(c.IsPlaceholder));
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — <c>CockpitFormatting.FormatCoverage</c>'s
+    /// zero-denominator text names the noun each caller actually owns.
+    /// Requirements is the discipline the pre-fix fixed string already
+    /// matched; this pins it explicitly rather than only by omission.
+    /// </summary>
+    [Fact]
+    public async Task RequirementsKpiCards_NoLiveRequirement_CoverageCardsNameRequirementsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.RequirementsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no requirements yet)", cards["Verification Coverage"]);
+        Assert.Equal("— (no requirements yet)", cards["Allocation Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — before the fix, <c>CockpitFormatting.FormatCoverage</c>
+    /// took no noun and this card showed the fixed string <c>"— (no
+    /// requirements yet)"</c>, even though this is the Calculations
+    /// discipline's own card.
+    /// </summary>
+    [Fact]
+    public async Task CalculationsKpiCards_NoLiveCalculation_VerificationCoverageNamesCalculationsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.CalculationsKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no calculations yet)", cards["Verification Coverage"]);
+
+        await manager.ShutdownAsync();
+    }
+
+    /// <summary>
+    /// `TD-33` (closed `WP 19.10E`) — same wrong-discipline defect as
+    /// <see cref="CalculationsKpiCards_NoLiveCalculation_VerificationCoverageNamesCalculationsInTheEmptyState"/>,
+    /// for the Verification discipline's own card.
+    /// </summary>
+    [Fact]
+    public async Task VerificationKpiCards_NoLiveVerification_VerificationCoverageNamesVerificationResultsInTheEmptyState()
+    {
+        using var temp = new TempDirectory();
+        var (workspace, manager, _) = await StartAsync(temp.Path, Type.EmptyTypes);
+        var cockpit = ((Tempest.Workspace.Workspace)workspace).Cockpit;
+        await cockpit.PrimeAsync();
+        var cards = cockpit.VerificationKpiCards.ToDictionary(c => c.Label, c => c.Value);
+
+        Assert.Equal("— (no verification results yet)", cards["Verification Coverage"]);
 
         await manager.ShutdownAsync();
     }

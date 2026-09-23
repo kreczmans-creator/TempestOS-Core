@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Tempest.Workspace.Layout;
 using Tempest.Desktop.Theming;
@@ -33,6 +34,9 @@ public sealed class LayoutTabGroupView : UserControl
     /// <summary>The width, or height, a collapsed or auto-hidden group's own strip occupies.</summary>
     public const double StripSize = 32;
 
+    /// <summary>How much one <c>Ctrl+Shift+[</c>/<c>]</c> keypress shrinks or grows a panel's own proportional share (`WP 19.2B`, `TD-133`).</summary>
+    public const double ResizeStep = 0.05;
+
     private readonly LayoutTabGroupNode _node;
     private readonly WorkspacePanelRegistry _registry;
     private readonly WorkspaceLayoutTree _tree;
@@ -54,6 +58,33 @@ public sealed class LayoutTabGroupView : UserControl
 
     /// <summary>Raised when the user clicks an auto-hidden group's own strip, asking for its flyout.</summary>
     public event Action<Guid>? FlyoutRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+Arrow</c> with a panel
+    /// header focused (`WP 19.2B`, `TD-133`) — moves the panel to the
+    /// edge of the workspace in that direction.
+    /// </summary>
+    public event Action<Guid, DockRelation>? MoveRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+[</c> or
+    /// <c>Ctrl+Shift+]</c> with a panel header focused (`WP 19.2B`,
+    /// `TD-133`) — shrinks or grows the panel's own proportional share by
+    /// <see cref="ResizeStep"/>.
+    /// </summary>
+    public event Action<Guid, double>? ResizeRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+,</c> or
+    /// <c>Ctrl+Shift+.</c> with a panel header focused (`ADR-0153`
+    /// decision 8, closing `TD-133`'s own named reordering residual) —
+    /// moves that tab one position earlier (<c>-1</c>) or later
+    /// (<c>+1</c>) within this same group. Deliberately reordering
+    /// <em>within</em> one group only: moving a tab to a different group,
+    /// or to another window, stays a mouse gesture for this package, as
+    /// decision 8 itself discloses.
+    /// </summary>
+    public event Action<Guid, int>? ReorderRequested;
 
     /// <summary>Initialises a new instance of the <see cref="LayoutTabGroupView"/> class.</summary>
     public LayoutTabGroupView(LayoutTabGroupNode node, WorkspacePanelRegistry registry, WorkspaceLayoutTree tree)
@@ -204,9 +235,62 @@ public sealed class LayoutTabGroupView : UserControl
 
             AutomationProperties.SetName(tab, descriptor?.Title ?? "Panel");
 
+            // `WP 19.2B` (`TD-133`): docking-panel repositioning and
+            // resizing were mouse-only (drag a tab to move, drag a
+            // splitter to resize). Documented on the header itself, the
+            // one place a keyboard/screen-reader user would look for it.
+            AutomationProperties.SetHelpText(
+                tab,
+                "Ctrl+Shift+Arrow moves this panel to the workspace edge in that direction. Ctrl+Shift+[ shrinks it, Ctrl+Shift+] grows it. Ctrl+Shift+, moves this tab one position earlier in its group, Ctrl+Shift+. one position later.");
+
             var captured = panelId;
             tab.Click += (_, _) => PanelSelected?.Invoke(captured);
             tab.AddHandler(PointerPressedEvent, (_, e) => TabDragStarted?.Invoke(captured, e), Avalonia.Interactivity.RoutingStrategies.Tunnel);
+            tab.KeyDown += (_, e) =>
+            {
+                if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Shift)) != (KeyModifiers.Control | KeyModifiers.Shift))
+                    return;
+
+                switch (e.Key)
+                {
+                    case Key.Left:
+                        MoveRequested?.Invoke(captured, DockRelation.Left);
+                        e.Handled = true;
+                        break;
+                    case Key.Right:
+                        MoveRequested?.Invoke(captured, DockRelation.Right);
+                        e.Handled = true;
+                        break;
+                    case Key.Up:
+                        MoveRequested?.Invoke(captured, DockRelation.Above);
+                        e.Handled = true;
+                        break;
+                    case Key.Down:
+                        MoveRequested?.Invoke(captured, DockRelation.Below);
+                        e.Handled = true;
+                        break;
+                    case Key.OemOpenBrackets:
+                        ResizeRequested?.Invoke(captured, -ResizeStep);
+                        e.Handled = true;
+                        break;
+                    case Key.OemCloseBrackets:
+                        ResizeRequested?.Invoke(captured, ResizeStep);
+                        e.Handled = true;
+                        break;
+
+                    // `ADR-0153` decision 8: the same focused-header
+                    // gesture vocabulary, one step along the tab strip
+                    // rather than one step across the workspace.
+                    case Key.OemComma:
+                        ReorderRequested?.Invoke(captured, -1);
+                        e.Handled = true;
+                        break;
+                    case Key.OemPeriod:
+                        ReorderRequested?.Invoke(captured, 1);
+                        e.Handled = true;
+                        break;
+                }
+            };
 
             var rule = new Border { Height = DesignTokens.RuleThickness, VerticalAlignment = VerticalAlignment.Bottom, IsVisible = isSelected, IsHitTestVisible = false };
             ThemeReactiveBrush.Bind(rule, Border.BackgroundProperty, BrandPalette.AccentBrushKey);
@@ -232,10 +316,29 @@ public sealed class LayoutTabGroupView : UserControl
 
         actions.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0);
 
+        // `WP 19.3A-R1`: `tabs` is a horizontal StackPanel, measured (like
+        // every StackPanel) at its own natural sum-of-children width
+        // regardless of what the strip actually has — a narrow docking
+        // column, or several tabs in one group, can ask for more than the
+        // strip has and, with only `tabs.ClipToBounds` catching it, a tab
+        // near the end was silently, invisibly cut off rather than reachable
+        // (the layout walk's own "lies outside its parent" finding). A
+        // horizontally scrolling strip is the same fix shape the tab strips
+        // in every comparable shell use: nothing is ever cropped away
+        // un-reachably, and the content genuinely may be wider than its
+        // viewport, so this is the walk's own already-recognised ScrollViewer
+        // exemption, not a new one.
+        var tabsScroll = new ScrollViewer
+        {
+            Content = tabs,
+            HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden,
+            VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+        };
+
         var strip = new DockPanel { Height = DesignTokens.ControlSizeSmall + DesignTokens.SpaceSm };
         DockPanel.SetDock(actions, Dock.Right);
         strip.Children.Add(actions);
-        strip.Children.Add(tabs);
+        strip.Children.Add(tabsScroll);
 
         // The strip is a sunken instrument surface with a hairline beneath
         // it, so a panel's own title row reads as chrome and its content
@@ -265,6 +368,16 @@ public sealed class LayoutTabGroupView : UserControl
         button.Click += (_, _) => onClick();
         return button;
     }
+
+    /// <summary>
+    /// This group's own tab header for <paramref name="panelId"/>, or
+    /// <see langword="null"/> when it does not hold that panel — how a
+    /// re-render's own focus restore (`ADR-0153` decision 7, `TD-90`) finds
+    /// the control to focus, since <see cref="LayoutTabGroupView"/>
+    /// instances are rebuilt per render and cannot be matched by identity.
+    /// </summary>
+    public Control? FindHeader(Guid panelId) =>
+        this.GetLogicalDescendants().OfType<Button>().FirstOrDefault(b => Equals(b.Tag, panelId));
 
     /// <summary>Detaches <paramref name="content"/> from whatever currently holds it, so it can be reparented.</summary>
     internal static void Detach(Control content)

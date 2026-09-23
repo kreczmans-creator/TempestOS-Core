@@ -6,6 +6,7 @@ using Tempest.Core.Materials;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Tests.Materials;
 using Tempest.Core.UnitsAndQuantities;
+using ReferenceDataTransactionalFacts = Tempest.Core.Tests.ReferenceData.ReferenceDataTransactionalFacts;
 
 namespace Tempest.Core.Tests.Fasteners;
 
@@ -791,5 +792,38 @@ public class FastenerLibraryTests
         Assert.Equal(ReferenceValidationState.Superseded, superseded!.ValidationState);
         Assert.Equal("fst-0002", superseded.SupersededByRecordId);
         Assert.Equal(FastenerFixtures.Millimetres(50), (await catalog.GetRevisionAsync("fst-0001", 1)).Definition.Dimensions.NominalLength!.Value);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158` through the shared ReferenceDataTransactionalFacts helper
+    // (`WP 19.10K`) — FastenerCatalog runs the same transactional path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = FastenerFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("fst-fault", FastenerFixtures.HexBolt("FX-FAULT"), FastenerFixtures.SourcedProvenance()),
+            async () => await catalog.FindAsync("fst-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = FastenerFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("fst-a", FastenerFixtures.HexBolt("FX-A"), FastenerFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("fst-b", FastenerFixtures.HexBolt("FX-B"), FastenerFixtures.VerifiedProvenance());
+        await FastenerFixtures.ReleaseAsync(catalog, "fst-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<FastenerDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("fst-a", "fst-b", "Replaced."),
+            () => catalog.FindAsync("fst-a"),
+            ReferenceValidationState.Released);
     }
 }

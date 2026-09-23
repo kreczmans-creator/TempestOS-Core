@@ -1,0 +1,599 @@
+using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessGovernance.Pricing;
+using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Deliverables;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Expenses;
+using Tempest.Core.Projects;
+using Tempest.Core.Timesheets;
+
+namespace Tempest.Core.Invoicing;
+
+/// <summary>The concrete <see cref="IInvoicingService"/> implementation (`WP 19.1A`, `ADR-0151`).</summary>
+/// <remarks>
+/// <para>
+/// <b>The request and its line links do not commit in one transaction.</b>
+/// <see cref="SendAsync"/> is, at minimum, two: one that moves
+/// <see cref="InvoiceRequest"/> to <see cref="InvoiceRequestStatus.Sending"/>,
+/// then — after the connector call, which is not itself a transaction —
+/// one that records the outcome, and, only on a successful send, one
+/// further transaction per line for <see cref="ITimesheetService.MarkInvoicedAsync"/>
+/// or <see cref="IDeliverableService.MarkInvoicedAsync"/>.
+/// <c>EngineeringDomainContext.ExecuteWriteAsync</c> is internal to
+/// <c>Tempest.Core.EngineeringDomain</c> and folds one object's own state
+/// write and its audit row into one transaction (`ADR-0145`); it is not a
+/// multi-object transaction primitive, and widening it to one would be a
+/// substrate change outside this Work Package's own files. The order is
+/// therefore the request first, its lines second, exactly as
+/// <c>WP 19.1A</c>'s own row permits — disclosed here and in
+/// <c>ADR-0151</c> rather than left for a reader to discover.
+/// </para>
+/// <para>
+/// <b>Currency is resolved from the project's own pinned rate card, not
+/// from the client organisation.</b> <c>Tempest.Core.EngineeringDomain.Project</c>
+/// carries no currency of its own; its pinned <c>RateCard</c> does
+/// (<c>RateCard.Currency</c>), and every line on a request is already
+/// priced from that same card — a timesheet entry's own frozen
+/// <c>BillingRate</c> was resolved from it at record time
+/// (`WP 19.0A`, `ADR-0150`), and a fixed-price deliverable completion's own
+/// value is written by hand against the same project. Using the pinned
+/// card's own currency, rather than <c>Organisation.TradingCurrency</c>
+/// (which may be unset, or differ from what the card actually prices in),
+/// is what keeps <see cref="Money.Sum(IEnumerable{Money}, CurrencyCode)"/>
+/// safe to call unconditionally when totalling a request's own lines.
+/// </para>
+/// </remarks>
+public sealed class InvoicingService : IInvoicingService
+{
+    /// <summary>The <see cref="Tempest.Core.Configuration.IConfigurationProvider"/> key naming which connector binds to <see cref="IInvoicingConnector"/> — <c>"Fake"</c> (default), <c>"Xero"</c>, <c>"QuickBooksOnline"</c>. Read by <see cref="Tempest.Core.Runtime.TempestHost"/>'s own composition, not by this class: parts 2 and 3 of this Work Package replace the binding the key selects, never this seam.</summary>
+    public const string ConnectorConfigurationKey = "Invoicing:Connector";
+
+    private readonly EngineeringDomainContext _context;
+    private readonly IRateCardCatalog _rateCards;
+    private readonly ITimesheetService _timesheets;
+    private readonly IDeliverableService _deliverables;
+    private readonly IInvoicingConnector _connector;
+    private readonly IOrganisationCatalog _organisations;
+    private readonly IExpenseService? _expenses;
+    private readonly TimeProvider _time;
+
+    /// <summary>Initialises a new instance of the <see cref="InvoicingService"/> class.</summary>
+    /// <param name="expenses">
+    /// Where a billable, unbilled <c>ProjectExpense</c> is read from so it
+    /// can join the timesheet lines a raised request already carries (`WP
+    /// 21.3B`). <see langword="null"/> — honoured, not required — leaves
+    /// expenses out of every raised request, for a caller (an older test
+    /// host) that has not composed the Expenses discipline; every
+    /// production composition root supplies it.
+    /// </param>
+    public InvoicingService(
+        EngineeringDomainContext context, IRateCardCatalog rateCards, ITimesheetService timesheets, IDeliverableService deliverables,
+        IInvoicingConnector connector, IOrganisationCatalog organisations, TimeProvider? timeProvider = null,
+        IExpenseService? expenses = null)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(rateCards);
+        ArgumentNullException.ThrowIfNull(timesheets);
+        ArgumentNullException.ThrowIfNull(deliverables);
+        ArgumentNullException.ThrowIfNull(connector);
+        ArgumentNullException.ThrowIfNull(organisations);
+
+        _context = context;
+        _rateCards = rateCards;
+        _timesheets = timesheets;
+        _deliverables = deliverables;
+        _connector = connector;
+        _organisations = organisations;
+        _time = timeProvider ?? TimeProvider.System;
+        _expenses = expenses;
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> RaiseFromCompletionAsync(Guid deliverableCompletionId, CancellationToken cancellationToken = default)
+    {
+        var completion = await FindCompletionAsync(deliverableCompletionId, cancellationToken).ConfigureAwait(false);
+        if (completion is null)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.CompletionNotFound, $"No deliverable completion '{deliverableCompletionId}' is registered.", null);
+        }
+
+        if (completion.InvoicedBy is { } existingRequestId)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Deliverable completion '{deliverableCompletionId}' is already invoiced (request '{existingRequestId:N}').",
+                await FindRequestAsync(existingRequestId, cancellationToken).ConfigureAwait(false));
+        }
+
+        // A source is billed on at most one live request. `InvoicedBy` is
+        // written only once a request reaches Sent (`ADR-0151` §5), so
+        // before that the completion hook's own request (§7) and a Raise
+        // invoice on the same completion from the Deliverables tab used to
+        // raise two Drafts carrying the same lines — the v0.19.0 Desktop
+        // journey found the second one, one run in two. A completion a
+        // live request already carries is refused naming that request, as
+        // an already-sent one is above; a timesheet entry a live request
+        // already carries is left off, and a Rejected or Voided request
+        // frees its lines.
+        var carriedBy = await ListCarriedSourcesAsync(cancellationToken).ConfigureAwait(false);
+        if (carriedBy.TryGetValue(completion.Id, out var carrier))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Deliverable completion '{deliverableCompletionId}' is already invoiced by request '{carrier.Id:N}' ({carrier.Status}); send or void that request rather than raising a second.",
+                carrier);
+        }
+
+        if (completion.ParentId is not { } projectId)
+        {
+            throw new InvalidOperationException(
+                $"Deliverable completion '{deliverableCompletionId}' has no live project — every completion is parented to the project it was completed under, so this should be unreachable.");
+        }
+
+        return await RaiseAsync(
+            projectId, completion, carriedBy, $"deliverable completion '{deliverableCompletionId}'",
+            $"Project '{projectId}' has no unbilled time and completion '{deliverableCompletionId}' carries no fixed price; there is nothing to bill.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> RaiseFromExpenseAsync(Guid expenseId, CancellationToken cancellationToken = default)
+    {
+        if (_expenses is null || await _context.Repository.FindAsync(expenseId, cancellationToken).ConfigureAwait(false) is not ProjectExpense expense || !IsLive(expense))
+            return new InvoiceRequestResult(InvoiceRequestRefusal.ExpenseNotFound, $"No expense '{expenseId}' is registered.", null);
+
+        if (expense.InvoicedBy is { } existingRequestId)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Expense '{expenseId}' is already invoiced (request '{existingRequestId:N}').",
+                await FindRequestAsync(existingRequestId, cancellationToken).ConfigureAwait(false));
+        }
+
+        // `WP 21.3B`: the identical "a source is billed on at most one live
+        // request" carried-by check `RaiseFromCompletionAsync` applies —
+        // this is the entry point for a project whose only unbilled work,
+        // right now, is an expense (no completion to raise from at all).
+        var carriedBy = await ListCarriedSourcesAsync(cancellationToken).ConfigureAwait(false);
+        if (carriedBy.TryGetValue(expense.Id, out var carrier))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.AlreadyInvoiced,
+                $"Expense '{expenseId}' is already invoiced by request '{carrier.Id:N}' ({carrier.Status}); send or void that request rather than raising a second.",
+                carrier);
+        }
+
+        return await RaiseAsync(
+            expense.ProjectId, completion: null, carriedBy, $"expense '{expenseId}'",
+            $"Project '{expense.ProjectId}' has no unbilled time or expenses; there is nothing to bill.",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The shared body of <see cref="RaiseFromCompletionAsync"/> and
+    /// <see cref="RaiseFromExpenseAsync"/> (`WP 21.3B`): resolve the
+    /// project's own client, rate card and payment terms; gather every
+    /// unbilled, uncarried timesheet entry and billable expense for the
+    /// project; add <paramref name="completion"/>'s own fixed-price line
+    /// when one is given; and raise the request, or refuse
+    /// <see cref="InvoiceRequestRefusal.NothingToBill"/> with
+    /// <paramref name="nothingToBillReason"/> when no line resulted.
+    /// </summary>
+    private async Task<InvoiceRequestResult> RaiseAsync(
+        Guid projectId, DeliverableCompletion? completion, Dictionary<Guid, InvoiceRequest> carriedBy, string raisedFromDescription,
+        string nothingToBillReason, CancellationToken cancellationToken)
+    {
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is not a live project — every completion and expense is parented to the project it belongs to, so this should be unreachable.");
+        }
+
+        if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new invoice request can be raised against it.", null);
+        }
+
+        if (string.IsNullOrWhiteSpace(project.ClientOrganisationId))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.NoClient, $"Project '{projectId}' has no client recorded; an invoice cannot be raised.", null);
+        }
+
+        if (project.RateCardPin is not { } pin)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.NoRateCardPinned,
+                $"Project '{projectId}' has no Released rate-card pin; an invoice request cannot be priced or currencied without one.",
+                null);
+        }
+
+        var card = await _rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, cancellationToken).ConfigureAwait(false);
+        var currency = card.Definition.Currency;
+
+        // `TD-180`: the client's own standing terms, copied onto the
+        // request at the moment it is raised and frozen there from then on
+        // (`InvoiceRequest.PaymentTerms`'s own remarks) — an unresolved
+        // client id (never validated as a real record, this class's own
+        // remarks) reads as `PaymentTerms.UpFront`, same as a client that
+        // has simply never set anything else.
+        var client = await _organisations.FindAsync(project.ClientOrganisationId!, cancellationToken).ConfigureAwait(false);
+        var paymentTerms = client?.Definition.PaymentTerms ?? PaymentTerms.UpFront;
+
+        var unbilled = await _timesheets.ListUnbilledForProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+        var lines = new List<InvoiceRequestLine>(unbilled.Count + 1);
+
+        InvoiceRequest? carrierOfOther = null;
+        foreach (var entry in unbilled)
+        {
+            if (carriedBy.TryGetValue(entry.Id, out var carrierOfEntry))
+            {
+                carrierOfOther ??= carrierOfEntry;
+                continue;
+            }
+
+            var amount = entry.BillingRate * entry.Hours;
+            lines.Add(new InvoiceRequestLine(TimesheetEntry.CanonicalKind, entry.Id, entry.TaskDescription, entry.Hours, entry.BillingRate, amount));
+        }
+
+        if (completion?.FixedPriceValue is { } fixedPrice)
+        {
+            lines.Add(new InvoiceRequestLine(
+                DeliverableCompletion.CanonicalKind, completion.Id, $"Deliverable completed {completion.CompletedOn:yyyy-MM-dd}",
+                1m, fixedPrice, fixedPrice));
+        }
+
+        // `WP 21.3B`: a billable, unbilled expense joins the request
+        // exactly as an unbilled timesheet entry does above — the same
+        // "a source is billed on at most one live request" carried-by
+        // check, and the same `InvoicedBy` link once the request reaches
+        // Sent (`LinkLinesAsync`, below).
+        if (_expenses is not null)
+        {
+            var unbilledExpenses = await _expenses.ListUnbilledForProjectAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+            foreach (var expense in unbilledExpenses)
+            {
+                if (carriedBy.TryGetValue(expense.Id, out var carrierOfExpense))
+                {
+                    carrierOfOther ??= carrierOfExpense;
+                    continue;
+                }
+
+                lines.Add(new InvoiceRequestLine(
+                    ProjectExpense.CanonicalKind, expense.Id, expense.Description, 1m, expense.NetAmount, expense.NetAmount,
+                    InferVatRate(expense.NetAmount, expense.VatAmount)));
+            }
+        }
+
+        if (lines.Count == 0)
+        {
+            if (carrierOfOther is not null)
+            {
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.NothingToBill,
+                    $"Everything billable for {raisedFromDescription} is already on request '{carrierOfOther.Id:N}' ({carrierOfOther.Status}); send or void that request rather than raising a second.",
+                    carrierOfOther);
+            }
+
+            return new InvoiceRequestResult(InvoiceRequestRefusal.NothingToBill, nothingToBillReason, null);
+        }
+
+        var total = Money.Sum(lines.Select(l => l.Amount), currency);
+
+        var created = await new EngineeringObjectFactory<InvoiceRequest>(
+            InvoiceRequest.CanonicalKind,
+            _context,
+            (doc, rev) => new InvoiceRequest(
+                doc, rev, _context, identifier: null, $"Invoice request — {project.DisplayName} — {_time.GetUtcNow():yyyy-MM-dd}",
+                EngineeringObjectMetadata.Empty, project.ClientOrganisationId!, project.PurchaseOrderReference, currency, lines, total,
+                paymentTerms: paymentTerms))
+            .CreateAsync($"Invoice request raised from {raisedFromDescription}.", cancellationToken)
+            .ConfigureAwait(false);
+
+        if (created is IHasParent hasParent)
+            await hasParent.MoveAsync(projectId, cancellationToken).ConfigureAwait(false);
+
+        return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, (InvoiceRequest)created);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> SendAsync(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
+        if (request is null)
+            return NotFound(requestId);
+
+        if (!InvoiceRequestStatusTransitions.IsPermitted(request.Status, InvoiceRequestStatus.Sending))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.TransitionNotPermitted,
+                $"Invoice request '{requestId}' is {request.Status}; it must be Draft to send.",
+                request);
+        }
+
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+
+        var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
+
+        var result = await _connector
+            .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
+            .ConfigureAwait(false);
+
+        switch (result.Outcome)
+        {
+            case ConnectorOutcome.Ok:
+                var invoice = result.Value!;
+                await request.MarkSentAsync(invoice.ExternalId, invoice.ExternalInvoiceNumber, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                break;
+
+            case ConnectorOutcome.Rejected:
+                await request.MarkRejectedAsync(result.Reason ?? "Rejected by the connector.", cancellationToken).ConfigureAwait(false);
+                break;
+
+            case ConnectorOutcome.Reauthorise:
+                await request.MarkReauthoriseAsync(result.Reason, cancellationToken).ConfigureAwait(false);
+                break;
+
+            case ConnectorOutcome.Unavailable:
+                // Stays Draft, deliberately never a stored `Unavailable`
+                // status — InvoiceRequestStatus.Unavailable's own remarks,
+                // and not retried automatically (the row's own words).
+                await request.RevertToDraftAsync(result.Reason ?? "The connector could not be reached.", cancellationToken).ConfigureAwait(false);
+                break;
+
+            case ConnectorOutcome.Unknown:
+            default:
+                await request.MarkUnknownAsync(result.Reason ?? "The connector's own response was lost.", cancellationToken).ConfigureAwait(false);
+                break;
+        }
+
+        return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> ReconcileAsync(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
+        if (request is null)
+            return NotFound(requestId);
+
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        switch (request.Status)
+        {
+            case InvoiceRequestStatus.Unknown:
+                await ReconcileUnknownAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                break;
+
+            case InvoiceRequestStatus.Sent:
+            case InvoiceRequestStatus.Accepted:
+                await ReconcileSentOrAcceptedAsync(request, cancellationToken).ConfigureAwait(false);
+                break;
+
+            default:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{requestId}' is {request.Status}; there is nothing to reconcile.",
+                    request);
+        }
+
+        return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+    }
+
+    /// <inheritdoc />
+    public async Task<InvoiceRequestResult> VoidAsync(Guid requestId, CancellationToken cancellationToken = default)
+    {
+        var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
+        if (request is null)
+            return NotFound(requestId);
+
+        if (request.Status is not (InvoiceRequestStatus.Draft or InvoiceRequestStatus.Rejected))
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.TransitionNotPermitted,
+                $"Invoice request '{requestId}' is {request.Status}; only a Draft or Rejected request can be voided locally. "
+                + "A request that reached the provider is voided there, and read back through reconciliation.",
+                request);
+        }
+
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await request.VoidLocallyAsync(cancellationToken).ConfigureAwait(false);
+
+        return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+    }
+
+    private async Task ReconcileUnknownAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
+    {
+        var found = await _connector.FindByReferenceAsync(requestId.ToString(), cancellationToken).ConfigureAwait(false);
+
+        if (found.Outcome != ConnectorOutcome.Ok)
+            return; // Connector still unreachable or the call itself was refused; nothing to report — the poller tries again next tick.
+
+        if (found.Value is { } invoice)
+        {
+            await request.ReconcileFoundAsync(invoice.ExternalId, invoice.ExternalInvoiceNumber, cancellationToken).ConfigureAwait(false);
+            await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await request.RevertToDraftAsync("Not found by reference on reconciliation.", cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task ReconcileSentOrAcceptedAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ExternalId is not { } externalId)
+            return; // Defensive: a Sent/Accepted request always carries one; nothing to read without it.
+
+        var reading = await _connector.ReadStatusAsync(externalId, cancellationToken).ConfigureAwait(false);
+
+        if (reading.Outcome != ConnectorOutcome.Ok || reading.Value is not { } statusReading)
+            return; // Connector unreachable, or the call was refused; nothing to report — the poller tries again next tick.
+
+        var interpreted = InterpretStatus(statusReading.ExternalStatus, request.Status);
+
+        // Interpretation only ever proposes a move the table itself
+        // permits (Sent -> Accepted/Voided, Accepted -> Voided) or no move
+        // at all; this guard is defence in depth, not a codepath any
+        // fixture reaches.
+        var newStatus = interpreted == request.Status || InvoiceRequestStatusTransitions.IsPermitted(request.Status, interpreted)
+            ? interpreted
+            : request.Status;
+
+        await request.RecordStatusReadingAsync(
+            newStatus, statusReading.ExternalStatus, statusReading.ExternalInvoiceNumber, statusReading.IssuedDate, statusReading.PaidDate,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task LinkLinesAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
+    {
+        foreach (var line in request.Lines)
+        {
+            if (string.Equals(line.SourceKind, TimesheetEntry.CanonicalKind, StringComparison.Ordinal))
+                await _timesheets.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
+            else if (string.Equals(line.SourceKind, DeliverableCompletion.CanonicalKind, StringComparison.Ordinal))
+                await _deliverables.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
+            else if (string.Equals(line.SourceKind, ProjectExpense.CanonicalKind, StringComparison.Ordinal) && _expenses is not null)
+                await _expenses.MarkInvoicedAsync(line.SourceId, requestId, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Infers the closest declared <see cref="VatRate"/> from an expense's
+    /// own directly-entered <paramref name="net"/>/<paramref name="vat"/>
+    /// amounts (`WP 21.3B`) — <see cref="ProjectExpense"/> carries the
+    /// figures a receipt actually states, never a rate; <see cref="InvoiceRequestLine.VatAmount"/>
+    /// is always <see cref="VatRate"/>-derived, so this line's own rate is
+    /// the closest of the standard (20%), reduced (5%) or zero/exempt/out-
+    /// of-scope (0%) percentages to what the receipt actually recorded.
+    /// <b>Disclosed, not hidden:</b> an expense whose own VAT is not a
+    /// clean 20%, 5% or 0% split of its net (an unusual supplier VAT
+    /// treatment) rounds to the nearest of the three on the raised
+    /// request — the exact entered figures remain readable on the expense
+    /// itself, unchanged, for what the consultant later matches in Xero.
+    /// </summary>
+    private static VatRate InferVatRate(Money net, Money vat)
+    {
+        if (net.Amount <= 0m || vat.Amount <= 0m)
+            return VatRate.OutOfScope;
+
+        var effective = vat.Amount / net.Amount;
+
+        (VatRate Rate, decimal Percentage)[] candidates =
+        [
+            (VatRate.Standard, VatRate.Standard.Percentage()),
+            (VatRate.Reduced, VatRate.Reduced.Percentage()),
+            (VatRate.OutOfScope, VatRate.OutOfScope.Percentage()),
+        ];
+
+        return candidates.OrderBy(c => Math.Abs(c.Percentage - effective)).First().Rate;
+    }
+
+    private async Task<DeliverableCompletion?> FindCompletionAsync(Guid completionId, CancellationToken cancellationToken)
+    {
+        var candidate = await _context.Repository.FindAsync(completionId, cancellationToken).ConfigureAwait(false);
+        return candidate is DeliverableCompletion { } completion && IsLive(completion) ? completion : null;
+    }
+
+    private async Task<InvoiceRequest?> FindRequestAsync(Guid requestId, CancellationToken cancellationToken)
+    {
+        var candidate = await _context.Repository.FindAsync(requestId, cancellationToken).ConfigureAwait(false);
+        return candidate is InvoiceRequest { } request && IsLive(request) ? request : null;
+    }
+
+    /// <summary>Every source (a timesheet entry or a deliverable completion) a live request carries, keyed by source id — a Rejected or Voided request frees its lines.</summary>
+    private async Task<Dictionary<Guid, InvoiceRequest>> ListCarriedSourcesAsync(CancellationToken cancellationToken)
+    {
+        var carried = new Dictionary<Guid, InvoiceRequest>();
+        // `TD-88`/`WP 21.5B`: `Status`/`Lines` are `InvoiceRequest`-own
+        // fields, not on the index row.
+        var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var requests = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
+
+        foreach (var request in requests)
+        {
+            if (!IsLive(request) || request.Status is InvoiceRequestStatus.Rejected or InvoiceRequestStatus.Voided)
+                continue;
+
+            foreach (var line in request.Lines)
+                carried.TryAdd(line.SourceId, request);
+        }
+
+        return carried;
+    }
+
+    private static InvoiceRequestResult NotFound(Guid requestId) =>
+        new(InvoiceRequestRefusal.RequestNotFound, $"No invoice request '{requestId}' is registered.", null);
+
+    /// <summary>The archived-project guard (`WP 19.5C`): every mutating command on an archived project's objects is refused, here, before its own mutator ever runs.</summary>
+    private async Task<InvoiceRequestResult?> ArchivedAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        if (request.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
+        {
+            return null;
+        }
+
+        return ProjectArchival.IsArchived(project, _time.GetUtcNow())
+            ? new InvoiceRequestResult(InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this request is read-only.", request)
+            : null;
+    }
+
+    /// <summary>
+    /// Builds the plain-data projection a connector is actually handed —
+    /// resolving <see cref="InvoiceRequestSnapshot.ClientName"/> from the
+    /// Organisation catalogue by <see cref="InvoiceRequest.ClientOrganisationId"/>
+    /// here, the one place in this seam that reads the catalogue at all
+    /// (`WP 19.1A-R1` disclosure #3). <see langword="null"/> when the id
+    /// does not resolve to any registered organisation — every connector
+    /// implementation rejects outright rather than matching or creating a
+    /// contact named after a raw, meaningless id.
+    /// </summary>
+    private async Task<InvoiceRequestSnapshot> ToSnapshotAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        var organisation = await _organisations.FindAsync(request.ClientOrganisationId, cancellationToken).ConfigureAwait(false);
+
+        return new InvoiceRequestSnapshot(
+            request.Id, request.ClientOrganisationId, organisation?.Definition.Name, request.PurchaseOrderReference,
+            request.Currency, request.Lines, request.Total);
+    }
+
+    /// <summary>
+    /// Maps a connector's own free-form status word to what it means for
+    /// this Kind's own lifecycle — the one place that decision is made
+    /// (<see cref="IInvoicingConnector.ReadStatusAsync"/>'s own remarks:
+    /// a connector never maps its own words itself). Matches the
+    /// vocabulary real accounting systems actually use (Xero: <c>DRAFT</c>,
+    /// <c>SUBMITTED</c>, <c>AUTHORISED</c>, <c>PAID</c>, <c>VOIDED</c>) case-
+    /// insensitively and by substring, so a provider-specific decoration
+    /// around the same word still matches. Anything unrecognised leaves
+    /// <paramref name="current"/> unchanged rather than guessing.
+    /// </summary>
+    private static InvoiceRequestStatus InterpretStatus(string externalStatus, InvoiceRequestStatus current)
+    {
+        if (externalStatus.Contains("VOID", StringComparison.OrdinalIgnoreCase))
+            return InvoiceRequestStatus.Voided;
+
+        if (externalStatus.Contains("AUTHORIS", StringComparison.OrdinalIgnoreCase)
+            || externalStatus.Contains("APPROV", StringComparison.OrdinalIgnoreCase)
+            || externalStatus.Contains("PAID", StringComparison.OrdinalIgnoreCase))
+        {
+            return InvoiceRequestStatus.Accepted;
+        }
+
+        return current;
+    }
+
+    private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
+}

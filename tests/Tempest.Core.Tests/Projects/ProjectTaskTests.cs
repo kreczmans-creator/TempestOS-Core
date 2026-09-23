@@ -6,6 +6,7 @@ using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Persistence;
+using Tempest.Core.Projects;
 
 namespace Tempest.Core.Tests.Projects;
 
@@ -462,6 +463,151 @@ public sealed class ProjectTaskTests : IDisposable
         await Assert.ThrowsAsync<TaskNotFoundException>(() => fixture.Workflow.AssignAsync(part.Id, "ada"));
         await Assert.ThrowsAsync<TaskNotFoundException>(() => fixture.Workflow.ChangeWorkStateAsync(part.Id, TaskWorkState.Done));
         await Assert.ThrowsAsync<ProjectNotFoundException>(() => fixture.Workflow.CreateAsync(Guid.NewGuid(), "TSK-001", "Nowhere"));
+    }
+
+    // ================================================================
+    // The archived-project guard (`WP 19.10H`, `TD-179`)
+    // ================================================================
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesANewTask_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.CreateAsync(project.Id, "TSK-999", "Too late"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Empty(await fixture.Register.ListAsync(project.Id));
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesAssigningATask_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => workflow.AssignAsync(task.Id, "ada"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Null(task.AssignedToPrincipalId);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesMovingATasksWorkState_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.ChangeWorkStateAsync(task.Id, TaskWorkState.Done));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(TaskWorkState.Todo, task.WorkState);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesChangingATasksDueDate_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.SetDueDateAsync(task.Id, Today.AddDays(9)));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Null(task.DueDate);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesChangingATasksPriority_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.SetPriorityAsync(task.Id, WorkPriority.Critical));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal(WorkPriority.Normal, task.Priority);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesEditingATask_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.EditAsync(task.Id, "Renamed"));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        Assert.Equal("Balance the impeller", task.DisplayName);
+    }
+
+    [Fact]
+    public async Task AnArchivedProject_RefusesLinkingATaskToAMilestone_AndTheStoreStaysUnchanged()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        var milestone = await fixture.CreateMilestoneAsync("MS-1", "Design freeze", project.Id, Today.AddMonths(2));
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Balance the impeller");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed for the archive test.");
+
+        var later = new FakeTimeProvider(DateTimeOffset.UtcNow.AddDays(91));
+        var workflow = new ProjectTaskService(fixture.Domain, later);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => workflow.ContributeToAsync(task.Id, milestone.Id));
+        Assert.Contains("archived", error.Message, StringComparison.OrdinalIgnoreCase);
+
+        var entry = Assert.Single(await fixture.Register.ListAsync(project.Id), e => e.ObjectId == task.Id);
+        Assert.Null(entry.ContributesTo);
+    }
+
+    [Fact]
+    public async Task AProjectClosedTodayButNotYetArchived_StillAcceptsAWrite()
+    {
+        var fixture = await CreateFixtureAsync();
+        var project = await fixture.CreateProjectAsync("P-1", "Apollo");
+        await new ProjectLifecycleService(fixture.Domain).SignOffAsync(project.Id, "Closed today.");
+
+        // Not backdated at all: closed today is Closed, not yet Archive
+        // (`ProjectArchival.ArchiveAfterDays` = 90) — the write still goes
+        // through.
+        var task = await fixture.Workflow.CreateAsync(project.Id, "TSK-001", "Still open for writes");
+
+        Assert.Equal(task.Id, Assert.Single(await fixture.Register.ListAsync(project.Id)).ObjectId);
     }
 
     // ================================================================

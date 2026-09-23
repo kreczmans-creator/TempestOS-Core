@@ -57,6 +57,40 @@ public interface IBinaryPersistenceStore
     Task<byte[]?> ReadBytesAsync(string collection, string key, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Opens a readable, seekable stream over the bytes stored under
+    /// <paramref name="key"/> within <paramref name="collection"/>, or
+    /// <see langword="null"/> if no record exists — the same "missing"
+    /// answer as <see cref="ReadBytesAsync"/>, without ever materialising
+    /// the whole value in memory (`TD-96`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Backed by SQLite's own incremental BLOB I/O
+    /// (<c>Microsoft.Data.Sqlite.SqliteBlob</c>, <c>sqlite3_blob_read</c>
+    /// under it): a read against this stream costs the bytes actually
+    /// requested, not the record's whole length, and the stream supports
+    /// <see cref="Stream.Seek(long, SeekOrigin)"/> because the native API
+    /// does. A caller that only needs a handful of bytes, or that will
+    /// hold the whole value in memory anyway, still wants
+    /// <see cref="ReadBytesAsync"/> — this exists for the caller that will
+    /// not: a page renderer or a "save this attachment to disk" copy that
+    /// would otherwise pull a 200 MB drawing into one array just to move
+    /// it somewhere else one buffer at a time.
+    /// </para>
+    /// <para>
+    /// The returned stream owns a dedicated connection to the store; it
+    /// must be disposed once read, and disposing it never affects the
+    /// stored value, only this read's own resources. A record whose value
+    /// is text rather than bytes (<c>blob_value IS NULL</c>) is reported
+    /// exactly as an absent record — the same rule <see cref="ReadBytesAsync"/>
+    /// already applies.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="collection"/> or <paramref name="key"/> is <see langword="null"/>, empty, or whitespace.</exception>
+    /// <exception cref="PersistenceStoreUnavailableException">The record exists but could not be opened.</exception>
+    Task<Stream?> OpenReadAsync(string collection, string key, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Writes <paramref name="value"/> under <paramref name="key"/> within
     /// <paramref name="collection"/>, creating or overwriting as needed.
     /// </summary>

@@ -11,9 +11,11 @@ namespace Tempest.Desktop.Tests;
 /// <summary>
 /// `TD-83` — real, end-to-end proof (over a real <see cref="MainWindow"/>
 /// on a real, started <see cref="WorkspaceHost"/>) that opening any of
-/// this shell's six modal overlays actually traps keyboard Tab
+/// this shell's five modal overlays actually traps keyboard Tab
 /// navigation inside it, and that closing one actually restores both the
-/// caller's own prior focus and the shell's own Tab navigation.
+/// caller's own prior focus and the shell's own Tab navigation. (`WP
+/// 19.2B`: the Preferences dialog, one of an original six, is retired —
+/// Settings is a rail area now, with nothing modal to trap Tab inside.)
 /// </summary>
 /// <remarks>
 /// <para>
@@ -34,10 +36,10 @@ namespace Tempest.Desktop.Tests;
 /// exhausts every reachable stop, not just the first.
 /// </para>
 /// <para>
-/// <b>Escape closes every one of the six</b> (`WP 16.5A` — Settings and
-/// MacroManager gained it this Work Package; every other dialog already
-/// had it), so one uniform open/verify/close shape covers all six without
-/// six different close gestures.
+/// <b>Escape closes every one of the five</b> (`WP 16.5A` — MacroManager
+/// gained it that Work Package; every other dialog already had it), so
+/// one uniform open/verify/close shape covers all five without five
+/// different close gestures.
 /// </para>
 /// </remarks>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
@@ -63,7 +65,6 @@ public sealed class MainWindowKeyboardModalityTests
             var confirmationDialog = GetPrivateField<ConfirmationDialog>(window, "_confirmationDialog");
             var inputDialog = GetPrivateField<InputDialog>(window, "_inputDialog");
             var messageDialog = GetPrivateField<MessageDialog>(window, "_messageDialog");
-            var settingsDialog = GetPrivateField<SettingsDialog>(window, "_settingsDialog");
             var macroManagerDialog = GetPrivateField<MacroManagerDialog>(window, "_macroManagerDialog");
             var commandPalette = GetPrivateField<CommandPaletteOverlay>(window, "_commandPalette");
 
@@ -75,9 +76,6 @@ public sealed class MainWindowKeyboardModalityTests
 
             await VerifyModalTrapAsync(window, dock, original, messageDialog,
                 () => { _ = messageDialog.ShowAsync(FeedbackSeverity.Info, "Saved", "Your changes were saved."); return Task.CompletedTask; });
-
-            await VerifyModalTrapAsync(window, dock, original, settingsDialog,
-                () => { _ = settingsDialog.ShowAsync(); return Task.CompletedTask; });
 
             await VerifyModalTrapAsync(window, dock, original, macroManagerDialog,
                 () => macroManagerDialog.ShowAsync());
@@ -136,10 +134,10 @@ public sealed class MainWindowKeyboardModalityTests
 
         // Escape raised on whatever actually holds focus — exactly what a
         // real keypress bubbles from. Every dialog's own Escape handling
-        // lives at a different depth (the dialog root for five of the six;
-        // `InputDialog`'s own lives on its inner `TextBox` instead), so
-        // this is the one raise target correct for all six, without special
-        // casing any of them here.
+        // lives at a different depth (the dialog root for four of the
+        // five; `InputDialog`'s own lives on its inner `TextBox` instead),
+        // so this is the one raise target correct for all five, without
+        // special casing any of them here.
         ((InputElement)initialFocus!).RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
 
         Assert.False(dialog.IsVisible, $"{dialog.GetType().Name} did not close on Escape.");

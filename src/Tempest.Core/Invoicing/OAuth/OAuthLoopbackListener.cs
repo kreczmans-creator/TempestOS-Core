@@ -1,0 +1,182 @@
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+
+namespace Tempest.Core.Invoicing.OAuth;
+
+/// <summary>
+/// What the provider's own redirect back to the loopback carried: the
+/// authorisation code and the state this run started with (RFC 6749 §4.1.2),
+/// or an <see cref="Error"/> instead when the operator denied consent —
+/// plus, for QuickBooks Online specifically, the <c>realmId</c> query
+/// parameter Intuit's own redirect adds (the company/tenant id, named
+/// generically here since <see cref="OAuthAuthoriser"/> treats it exactly
+/// as Xero's own tenant id — <c>WP 19.1A</c> part 2).
+/// </summary>
+internal sealed record OAuthCallback(string? Code, string? State, string? Error, string? RealmId);
+
+/// <summary>
+/// The loopback half of the authorisation-code flow: an
+/// <see cref="HttpListener"/> on <c>127.0.0.1</c>, under the fixed
+/// <c>/callback/</c> path every provider's own redirect URI is registered
+/// against (`WP 19.1A` part 2, brief §1(a)/(d)). The port itself is fixed
+/// too, as of `WP 19.1A-R1` disclosure #1: Xero's and Intuit's own app
+/// consoles require an exact redirect URI to be registered ahead of time,
+/// which an ephemeral port — a fresh one every run — can never satisfy.
+/// <see cref="OAuthAuthoriser"/> resolves the configured port
+/// (<c>Invoicing:OAuth:LoopbackPort</c>, default <c>49301</c>) and passes
+/// it to <paramref name="port"/> here; <c>0</c> (only ever a test's own
+/// choice) keeps the original ephemeral behaviour, so a suite running many
+/// authorisation round trips in parallel never fights itself over one
+/// fixed port.
+/// </summary>
+/// <remarks>
+/// <see cref="HttpListener"/> binds a specific loopback address/port
+/// (rather than the wildcard <c>+</c>/<c>*</c> host Windows reserves for
+/// administrators only) without needing a URL ACL reservation or an
+/// elevated process — confirmed empirically against this platform's own
+/// build machine before this class was written the way it is.
+/// </remarks>
+internal sealed class OAuthLoopbackListener : IDisposable
+{
+    private readonly HttpListener _listener;
+
+    /// <summary>
+    /// Starts listening immediately, on <paramref name="port"/> — or a
+    /// freshly chosen free port when <paramref name="port"/> is <c>0</c>.
+    /// </summary>
+    /// <param name="port">The exact loopback port to bind, or <c>0</c> to pick a free one.</param>
+    /// <exception cref="HttpListenerException"><paramref name="port"/> is already in use.</exception>
+    public OAuthLoopbackListener(int port = 0)
+    {
+        var resolvedPort = port > 0 ? port : FindFreePort();
+        RedirectUri = new Uri($"http://127.0.0.1:{resolvedPort}/callback/");
+
+        _listener = StartWithRetry(RedirectUri);
+    }
+
+    /// <summary>
+    /// Builds and starts an <see cref="HttpListener"/> on
+    /// <paramref name="redirectUri"/>, retrying a handful of times on
+    /// <see cref="HttpListenerException"/> before giving up (`TD-183`).
+    /// </summary>
+    /// <remarks>
+    /// Folded in from `TD-183`: several suites binding the same fixed port
+    /// in quick succession (this class's own default, or a test's own
+    /// choice) can collide with a just-closed prior listener still
+    /// settling — a transient condition, not a genuinely occupied port.
+    /// Retrying the *same* port a few times absorbs that without ever
+    /// falling back to a different one: <see cref="OAuthAuthoriser"/>'s own
+    /// security property — the redirect URI a sandbox app registered ahead
+    /// of time is the one this run actually binds, or the run fails
+    /// outright and never opens the browser — must not be weakened by a
+    /// robustness fix. A port genuinely held by another long-lived process
+    /// still fails, exactly as before, after every attempt is exhausted.
+    /// A fresh <see cref="HttpListener"/> every attempt, not one reused
+    /// across retries: a listener whose own <see cref="HttpListener.Start"/>
+    /// throws leaves its underlying request queue unusable for a later
+    /// <c>Start()</c> call on that same instance (observed directly —
+    /// reusing the instance turned a retry into an immediate
+    /// <see cref="ObjectDisposedException"/> rather than a second real
+    /// attempt).
+    /// </remarks>
+    private static HttpListener StartWithRetry(Uri redirectUri)
+    {
+        const int maxAttempts = 5;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var listener = new HttpListener();
+            listener.Prefixes.Add(redirectUri.ToString());
+
+            try
+            {
+                listener.Start();
+                return listener;
+            }
+            catch (HttpListenerException)
+            {
+                ((IDisposable)listener).Dispose();
+
+                if (attempt >= maxAttempts)
+                    throw;
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(50 * attempt));
+            }
+        }
+    }
+
+    /// <summary>The redirect URI this run's own authorisation URL carries, and the sandbox app must register — <c>http://127.0.0.1:&lt;port&gt;/callback/</c>, a fresh port every run.</summary>
+    public Uri RedirectUri { get; }
+
+    /// <summary>Waits for the provider's own single redirect, answers it with a plain confirmation page, and returns what it carried.</summary>
+    public async Task<OAuthCallback> WaitForCallbackAsync(CancellationToken cancellationToken)
+    {
+        using var registration = cancellationToken.Register(static state => ((HttpListener)state!).Stop(), _listener);
+
+        HttpListenerContext context;
+        try
+        {
+            context = await _listener.GetContextAsync().ConfigureAwait(false);
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(cancellationToken);
+        }
+
+        var query = context.Request.QueryString;
+        var callback = new OAuthCallback(query["code"], query["state"], query["error"], query["realmId"]);
+
+        await RespondAsync(context, callback, cancellationToken).ConfigureAwait(false);
+
+        return callback;
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        if (_listener.IsListening)
+            _listener.Stop();
+
+        ((IDisposable)_listener).Dispose();
+    }
+
+    private static async Task RespondAsync(HttpListenerContext context, OAuthCallback callback, CancellationToken cancellationToken)
+    {
+        var html = callback.Error is null
+            ? "<html><body>Authorisation complete. You can close this window and return to TempestOS.</body></html>"
+            : $"<html><body>Authorisation failed: {WebUtility.HtmlEncode(callback.Error)}</body></html>";
+
+        var buffer = Encoding.UTF8.GetBytes(html);
+        context.Response.ContentType = "text/html; charset=utf-8";
+        context.Response.ContentLength64 = buffer.Length;
+
+        try
+        {
+            await context.Response.OutputStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            context.Response.OutputStream.Close();
+        }
+    }
+
+    private static int FindFreePort()
+    {
+        // The standard "ask the OS for a free port, then rebind" trick:
+        // TcpListener(..., 0) has the OS allocate an ephemeral port, which
+        // is released the instant it stops so HttpListener can claim it
+        // immediately after — a small, accepted race no different from
+        // every other loopback-redirect OAuth client's own approach.
+        var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        try
+        {
+            return ((IPEndPoint)probe.LocalEndpoint).Port;
+        }
+        finally
+        {
+            probe.Stop();
+        }
+    }
+}

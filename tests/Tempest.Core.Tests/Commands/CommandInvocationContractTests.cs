@@ -25,9 +25,11 @@ namespace Tempest.Core.Tests.Commands;
 /// <c>CommandDescriptorBindingTests</c> proves what the production
 /// descriptors <i>declare</i>. Neither answers the question this file
 /// exists for: does <see cref="ICommandRegistry"/> actually carry all
-/// eighty-two real bindings (`WP 18.0A` added the Evidence discipline's
-/// own eight) from an Id and a context through to a registered handler —
-/// every one of them, not the handful a hand-picked example covers.
+/// ninety-three real bindings (`WP 18.0A` added the Evidence discipline's
+/// own eight; `WP 19.0A` added the project commercial core, Timesheets and
+/// Deliverables' own ten) from an Id and a context through to a registered
+/// handler — every one of them, not the handful a hand-picked example
+/// covers.
 /// </para>
 /// <para>
 /// So nothing here is hand-picked. Every assertion below enumerates the
@@ -39,7 +41,10 @@ namespace Tempest.Core.Tests.Commands;
 public sealed class CommandInvocationContractTests : IAsyncLifetime
 {
     private static readonly IReadOnlyList<string> Disciplines =
-        ["Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification"];
+        [
+            "Calculations", "Deliverables", "Documents", "Evidence", "Invoicing", "Manufacturing", "Mechanical",
+            "Projects", "Quotations", "Requirements", "Tasks", "Timesheets", "Verification",
+        ];
 
     private TempDirectory _temp = null!;
     private ITempestHost _host = null!;
@@ -185,7 +190,32 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(failures);
         // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
-        Assert.Equal(65, built);
+        // `WP 19.0A` adds ten invocable descriptors (six `project.set-*`/
+        // `pin-rate-card`, three `timesheet.*`, one `deliverable.complete`),
+        // none of them unavailable, so 65 becomes 75.
+        // `WP 19.1A` adds four invocable descriptors (`invoicing.raise`/
+        // `send`/`reconcile`/`void`), none of them unavailable, so 75
+        // becomes 79.
+        // `WP 19.5B` adds one invocable Deliverables descriptor
+        // (`deliverable.add`), so 79 becomes 80.
+        // `WP 19.5D`: `Disciplines` (above) finally names "Quotations" and
+        // "Tasks" — a predates-both-Work-Packages gap, not a deliberate
+        // exclusion (see this file's own former comments on both
+        // categories, now removed as no longer accurate). That brings in
+        // seven Quotations descriptors (`create`, `add-line`, `update-line`,
+        // `remove-line`, `send`, `accept`, `decline`) and two Tasks
+        // descriptors (`create`, `complete`), none of them unavailable, so
+        // 80 becomes 89.
+        // `WP 20.1B` (`TD-181`) adds one more invocable Calculations
+        // descriptor (`calculations.complete`), so 89 becomes 90; `WP 20.2A`
+        // (FCR-0073): the object picker turns fifteen U1 descriptors invocable
+        // (`CommandDescriptorBindingTests.ObjectPickerBound`) — the twelve
+        // S2-2 Move/Copy commands and TD-115's own three — so 90 becomes 105.
+        // `WP 20.10B` (T2) adds one more invocable Calculations descriptor
+        // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
+        // (`calculations.rerun`, `calculations.compare-with-previous`), so
+        // 105 becomes 108.
+        Assert.Equal(108, built);
     }
 
     [Fact]
@@ -242,7 +272,25 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(failures);
         // `WP 18.2B`: `evidence.set-subject` adds one more invocable descriptor, 64 becomes 65.
-        Assert.Equal(65, executed);
+        // `WP 19.0A` adds ten invocable descriptors, none unavailable, so 65 becomes 75.
+        // `WP 19.1A` adds four invocable descriptors, none unavailable, so 75 becomes 79.
+        // `WP 19.5B` adds one invocable Deliverables descriptor
+        // (`deliverable.add`), so 79 becomes 80.
+        // `WP 19.5D`: `Disciplines` now names "Quotations" and "Tasks" (see
+        // `EveryInvocableBinding_BuildsACommand_WithoutThrowing`'s own
+        // identical comment) — seven Quotations descriptors and two Tasks
+        // descriptors join, all reaching a registered handler, so 80
+        // becomes 89.
+        // `WP 20.1B`: `calculations.complete` joins, reaching its own
+        // registered handler too, so 89 becomes 90; `WP 20.2A`: the same
+        // fifteen FCR-0073 descriptors join (see
+        // `EveryInvocableBinding_BuildsACommand_WithoutThrowing`'s own
+        // identical comment), all reaching their own already-registered
+        // handler, so 90 becomes 105.
+        // `WP 20.10B`: `calculations.set-due-date` joins; `WP 21.3A`:
+        // `calculations.rerun`/`calculations.compare-with-previous` join —
+        // each reaching its own registered handler too, so 105 becomes 108.
+        Assert.Equal(108, executed);
     }
 
     [Fact]
@@ -291,7 +339,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             checkedCount++;
         }
 
-        Assert.Equal(18, checkedCount);
+        // `WP 20.2A` (FCR-0073): fifteen of the eighteen U1/U2 descriptors
+        // this file used to find here were U1 (object-picker unavailable);
+        // the picker now exists, so only the three U2 (structured-input)
+        // descriptors remain unavailable.
+        Assert.Equal(3, checkedCount);
     }
 
     [Fact]
@@ -370,7 +422,20 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         Assert.Empty(disagreements);
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
-        Assert.Equal(83 * 4, compared);
+        // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
+        // `WP 19.1A` adds four production descriptors, so 93 becomes 97.
+        // `WP 19.5B` adds one production Deliverables descriptor
+        // (`deliverable.add`), so 97 becomes 98.
+        // `WP 19.5D`: `Disciplines` (above) now names "Quotations" and
+        // "Tasks" too, bringing in the seven Quotations and two Tasks
+        // production descriptors, so 98 becomes 107.
+        // `WP 20.1B` (`TD-181`) adds one more production descriptor
+        // (`calculations.complete`), so 107 becomes 108.
+        // `WP 20.10B` (T2) adds one production descriptor
+        // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
+        // (`calculations.rerun`, `calculations.compare-with-previous`), so
+        // 108 becomes 111.
+        Assert.Equal(111 * 4, compared);
     }
 
     // ==================================================================
@@ -426,7 +491,42 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // eleven are genuinely free text - the five content fields, two
         // owner fields, and set-bom-line's four optional strings - and
         // have nothing to refuse.
-        Assert.Equal(46, refused);
+        // `WP 19.0A` adds thirteen more rule-having parameters: two
+        // `project.set-dates` fields, `project.set-budget.budget` and
+        // `project.pin-rate-card.rateCardId` (four), every one of
+        // `timesheet.record`'s five and `timesheet.amend`'s three (eight),
+        // and `deliverable.complete.completedOn` (one) - so 46 becomes 59.
+        // `WP 19.1A` adds four descriptors (`invoicing.raise`/`send`/
+        // `reconcile`/`void`), every one SelectedObject-bound with a
+        // confirmation and no declared parameter at all - so 59 is
+        // unchanged.
+        // `WP 19.5B` adds `deliverable.add`'s own two parameters (`title`,
+        // required non-blank; `targetDate`, a valid date or blank) — both
+        // rule-having, both refuse a bad value - so 59 becomes 61.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds twelve more rule-having parameters: `quotation.add-line`'s
+        // `description`/`hours`/`rate`/`fixedPrice` (four),
+        // `quotation.update-line`'s `lineId`/`description`/`hours`/`rate`/
+        // `fixedPrice` (five), `quotation.remove-line.lineId` (one), and
+        // `task.create`'s `title`/`dueDate` (two) — twelve in all.
+        // `quotation.create.reference` carries no rule of its own (see
+        // `TheParametersWithNoRuleOfTheirOwn...`'s own updated list) so
+        // adds none - so 61 becomes 73.
+        // `WP 20.2A` (FCR-0073) adds sixteen rule-having parameters across
+        // the fifteen newly-bound descriptors: one destination each for the
+        // ten Move/Copy commands, one each for `requirements.move`/
+        // `move-group`, `requirements.add-to-collection.collectionId`,
+        // `mechanical.compare-baselines.secondId`, and both of
+        // `requirements.link`'s own two (`targetDocumentId`,
+        // `relationshipKind`) — every one refuses a bad value (a malformed
+        // Guid, or a relationship kind outside the closed set) - so 73
+        // becomes 89.
+        // `WP 20.10B` (T2) adds two more rule-having parameters:
+        // `calculations.create.dueOn` (blank refused) and
+        // `calculations.set-due-date.dueOn` (blank accepted — it clears
+        // the due date — but a non-date, non-blank string is still
+        // refused, so it too has a rejectable value) - so 89 becomes 91.
+        Assert.Equal(91, refused);
     }
 
     [Fact]
@@ -450,6 +550,10 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "mechanical.set-bom-line.itemNumber",
                 "mechanical.set-bom-line.referenceDesignator",
                 "mechanical.set-bom-line.unitOfMeasure",
+                "project.set-client.organisationId",
+                "project.set-project-manager.identityId",
+                "project.set-purchase-order.reference",
+                "quotation.create.reference",
                 "requirements.bulk-set-owner.owner",
                 "requirements.set-owner.owner",
                 "verification.edit.newContent",
@@ -463,7 +567,38 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 18.2B` adds "evidence.set-subject" (one free-text parameter,
         // "subjectId" — a blank clears the tag, so no non-blank rule
         // applies), so 57 becomes 58.
-        Assert.Equal(58, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // `WP 19.0A` adds sixteen declared parameters across ten
+        // descriptors: three of "project.set-client"/"set-purchase-order"/
+        // "set-project-manager" are free text (blank clears the field, the
+        // same "evidence.set-subject" reasoning), the other thirteen carry
+        // a rule (see `EveryValidatedParameter_RefusesABadValue...`'s own
+        // comment) — so 58 becomes 74.
+        // `WP 19.1A` adds four descriptors, none of them declaring a
+        // parameter at all — every one is SelectedObject-bound with a
+        // confirmation only — so 74 is unchanged.
+        // `WP 19.5B` adds `deliverable.add`'s own two parameters (`title`,
+        // `targetDate`), both rule-having (neither joins the free-text list
+        // above) — so 74 becomes 76.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds thirteen declared parameters: `quotation.create.reference`
+        // (one, free text — joins the list above), `quotation.add-line`'s
+        // four, `quotation.update-line`'s five, `quotation.remove-line.lineId`
+        // (one), and `task.create`'s two — so 76 becomes 89.
+        // `WP 20.2A` (FCR-0073) adds sixteen declared parameters across the
+        // fifteen newly-bound descriptors (ten single-destination Move/Copy
+        // commands, `requirements.move`/`move-group`,
+        // `requirements.add-to-collection.collectionId`,
+        // `mechanical.compare-baselines.secondId`, and `requirements.link`'s
+        // own two) — every one rule-having (a Guid check, or a closed
+        // relationship-kind set), none joining the free-text list above —
+        // so 89 becomes 105.
+        // `WP 20.10B` (T2) adds two more declared parameters:
+        // `calculations.create` gains its own `dueOn` (rule-having, blank
+        // refused), and the new `calculations.set-due-date` descriptor
+        // declares one `dueOn` of its own (rule-having, blank accepted —
+        // see `EveryValidatedParameter_RefusesABadValue...`'s own comment)
+        // — neither joins the free-text list above — so 105 becomes 107.
+        Assert.Equal(107, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -511,7 +646,29 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // no parameter but each carries a confirmation — so 42 becomes 50.
         // `WP 18.2B` adds a ninth, "evidence.set-subject" (one field), so
         // 50 becomes 51.
-        Assert.Equal(51, refused);
+        // `WP 19.0A` adds ten prompt-requiring descriptors — every one of
+        // them declares a parameter or (`timesheet.delete`) a confirmation
+        // — so 51 becomes 61.
+        // `WP 19.1A` adds four prompt-requiring descriptors — no parameter,
+        // but every one carries a confirmation — so 61 becomes 65.
+        // `WP 19.5B` adds one prompt-requiring Deliverables descriptor
+        // (`deliverable.add`, its own two declared parameters), so 65
+        // becomes 66.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds eight more: all seven Quotations descriptors (`create`,
+        // `add-line`, `update-line`, `remove-line`, `send`, `accept`,
+        // `decline` — every one declares a parameter, a confirmation, or
+        // both) plus `task.create` (two parameters). `task.complete` needs
+        // neither, so it alone of the nine stays out — so 66 becomes 74.
+        // `WP 20.2A` adds all fifteen FCR-0073 descriptors — every one
+        // declares at least its own destination/target parameter — so 74
+        // becomes 89.
+        // `WP 20.10B` (T2) adds one more prompt-requiring descriptor
+        // (`calculations.set-due-date`, its own one declared parameter) —
+        // `calculations.create` already required a prompt before gaining
+        // its own third parameter, so it does not change this count — so
+        // 89 becomes 90.
+        Assert.Equal(90, refused);
     }
 
     [Fact]
@@ -530,7 +687,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task TheFourteenUnattendedCommands_RunWithNoPromptAtAll()
+    public async Task TheSixteenUnattendedCommands_RunWithNoPromptAtAll()
     {
         var ran = 0;
 
@@ -544,7 +701,21 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
 
         // `WP 18.0A` added no member here: every one of Evidence's own
         // eight descriptors needs at least a parameter or a confirmation.
-        Assert.Equal(14, ran);
+        // `WP 19.0A` adds no member either, for the identical reason: every
+        // one of its ten descriptors needs at least a parameter or a
+        // confirmation.
+        // `WP 19.1A` adds no member either: all four of its own descriptors
+        // carry a confirmation.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds one: `task.complete` — `CommandContextRequirement.SelectedObject`,
+        // no declared parameter, no confirmation — so 14 becomes 15.
+        // `WP 20.1B` (`TD-181`) adds `calculations.complete`, the identical
+        // shape, so 15 becomes 16.
+        // `WP 21.3A` (`TD-29`) adds two more, the identical shape —
+        // `calculations.rerun` and `calculations.compare-with-previous`,
+        // each `CommandContextRequirement.SelectedObject`, no declared
+        // parameter, no confirmation — so 16 becomes 18.
+        Assert.Equal(18, ran);
     }
 
     [Fact]
@@ -572,7 +743,17 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // Nine deletes and six duplicates (`WP 18.0A` added "evidence.delete"
         // to the deletes), plus "evidence.revise" — the one non-delete,
         // non-duplicate confirmation in the production set.
-        Assert.Equal(16, confirmed);
+        // `WP 19.0A` adds "timesheet.delete" to the deletes, so 16 becomes 17.
+        // `WP 19.1A` adds four more non-delete, non-duplicate confirmations
+        // ("invoicing.raise"/"send"/"reconcile"/"void" — none of them has a
+        // parameter to collect, so a confirmation is the only way each
+        // needs a person), so 17 becomes 21.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds four: "quotation.send"/"accept"/"decline" (no parameter, a
+        // confirmation is the only way each needs a person) and
+        // "quotation.remove-line" (one parameter, a confirmation besides)
+        // — so 21 becomes 25.
+        Assert.Equal(25, confirmed);
     }
 
     [Fact]
@@ -623,7 +804,20 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
     {
         Assert.All(Production, d => Assert.Null(d.CreateDefault));
         // `WP 18.2B`: `evidence.set-subject` adds one more production descriptor, 82 becomes 83.
-        Assert.Equal(83, Production.Count);
+        // `WP 19.0A` adds ten production descriptors, so 83 becomes 93.
+        // `WP 19.1A` adds four production descriptors, so 93 becomes 97.
+        // `WP 19.5B` adds one production Deliverables descriptor
+        // (`deliverable.add`) visible to this file's own local
+        // `Disciplines` — so 97 becomes 98.
+        // `WP 19.5D` (`Disciplines` now names "Quotations" and "Tasks")
+        // adds the seven Quotations and two Tasks production descriptors,
+        // so 98 becomes 107.
+        // `WP 20.1B` (`TD-181`) adds one more (`calculations.complete`), so
+        // 107 becomes 108.
+        // `WP 20.10B` (T2) adds one more (`calculations.set-due-date`) and
+        // `WP 21.3A` (`TD-29`) two more (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 108 becomes 111.
+        Assert.Equal(111, Production.Count);
     }
 
     [Fact]
@@ -636,9 +830,37 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // 56 becomes 64 and 74 becomes 82; 18 is unchanged.
         // `WP 18.2B` adds a ninth, invocable Evidence descriptor
         // ("evidence.set-subject"), so 64 becomes 65 and 82 becomes 83.
-        Assert.Equal(65, Invocable.Count());
-        Assert.Equal(18, Unavailable.Count());
-        Assert.Equal(83, Production.Count);
+        // `WP 19.0A` adds ten production descriptors, all invocable (none
+        // needs an object picker or structured input), so 65 becomes 75 and
+        // 83 becomes 93; 18 is unchanged.
+        // `WP 19.1A` adds four production descriptors, all invocable (each
+        // SelectedObject-bound with a confirmation, none needing an object
+        // picker or structured input), so 75 becomes 79 and 93 becomes 97;
+        // 18 is unchanged.
+        // `WP 19.5B` adds one production Deliverables descriptor
+        // (`deliverable.add`), invocable (`CommandContextRequirement.None`,
+        // needs no object picker or structured input), so 79 becomes 80
+        // and 97 becomes 98; 18 is unchanged.
+        // `WP 19.5D`: `Disciplines` (above) finally names "Quotations" and
+        // "Tasks", bringing in seven Quotations and two Tasks production
+        // descriptors, all invocable (none needs an object picker or
+        // structured input) — so 80 becomes 89 and 98 becomes 107; 18 is
+        // unchanged.
+        // `WP 20.1B` (`TD-181`) adds one more, invocable, production
+        // Calculations descriptor (`calculations.complete`), so 89 becomes
+        // 90 and 107 becomes 108; `WP 20.2A` (FCR-0073): the object picker
+        // lands, and the fifteen U1 descriptors this file used to count as
+        // unavailable are real bindings now — 90 becomes 105, 108 is
+        // unchanged (no descriptor added or removed), and 18 becomes 3 (the
+        // three U2 descriptors alone).
+        // `WP 20.10B` (T2) adds one more, invocable, production
+        // Calculations descriptor (`calculations.set-due-date`) and `WP 21.3A`
+        // (`TD-29`) two more (`calculations.rerun`,
+        // `calculations.compare-with-previous`), so 105 becomes 108 and 108
+        // becomes 111; 3 is unchanged.
+        Assert.Equal(108, Invocable.Count());
+        Assert.Equal(3, Unavailable.Count());
+        Assert.Equal(111, Production.Count);
     }
 
     [Fact]
@@ -736,10 +958,24 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToList();
 
+        // `WP 19.0A` adds a tenth: "timesheet.record" also declares
+        // CommandContextRequirement.None (its own project comes from
+        // CreationPlacement, never a selection), so the comment above is
+        // finally accurate at nine plus this one, ten.
+        // `WP 19.5B` adds an eleventh: "deliverable.add" is
+        // CommandContextRequirement.None for the identical reason
+        // (`ADR-0152` §7's own "opened with whatever project is open"
+        // shape, mirroring `quotation.create`).
+        // `WP 19.5D`: `Disciplines` (above) now names "Quotations" and
+        // "Tasks", so "quotation.create" and "task.create" — both
+        // CommandContextRequirement.None for the identical "opened with
+        // whatever project is open" reason — finally join here too,
+        // twelve in all.
         Assert.Equal(
             [
-                "calculations.create", "documents.create", "evidence.create", "manufacturing.create", "mechanical.create",
-                "requirements.create", "requirements.create-collection", "requirements.create-group",
+                "calculations.create", "deliverable.add", "documents.create", "evidence.create", "manufacturing.create",
+                "mechanical.create", "quotation.create", "requirements.create", "requirements.create-collection",
+                "requirements.create-group", "task.create", "timesheet.record",
             ],
             affected);
 

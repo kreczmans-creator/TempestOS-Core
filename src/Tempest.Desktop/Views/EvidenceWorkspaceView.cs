@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -53,8 +54,13 @@ public sealed class EvidenceWorkspaceView : UserControl
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private readonly Button _createButton = new() { Content = "Create", MinHeight = DesignTokens.MinControlSize };
 
-    private IWorkspaceChanges? _workspaceChanges;
+    private readonly WorkspaceChangesSubscription _workspaceChanges;
     private readonly Control _libraries;
+
+    private bool _isArchived;
+
+    /// <summary>Whether the open project is archived — Create is disabled, with a tooltip, while this is true (`WP 19.10H`, `TD-179`).</summary>
+    public const string ArchivedTooltip = "Archived project — read only";
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -80,20 +86,8 @@ public sealed class EvidenceWorkspaceView : UserControl
     /// <summary>The change feed this view reloads its own Evidence list from (`WP 18.1A`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
-        get => _workspaceChanges;
-        set
-        {
-            if (ReferenceEquals(_workspaceChanges, value))
-                return;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed -= OnWorkspaceChanged;
-
-            _workspaceChanges = value;
-
-            if (_workspaceChanges is not null)
-                _workspaceChanges.Changed += OnWorkspaceChanged;
-        }
+        get => _workspaceChanges.Feed;
+        set => _workspaceChanges.Feed = value;
     }
 
     /// <summary>Initialises a new instance of the <see cref="EvidenceWorkspaceView"/> class.</summary>
@@ -121,10 +115,13 @@ public sealed class EvidenceWorkspaceView : UserControl
         _currentProjectId = currentProjectId;
         _openObject = openObject;
 
-        this.DetachedFromVisualTree += (_, _) => WorkspaceChanges = null;
+        _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _createButton.Classes.Add(ChromeStyles.Primary);
         _createButton.Click += async (_, _) => await OnCreateAsync().ConfigureAwait(true);
+        AutomationProperties.SetName(_createButton, "Create");
+        AutomationProperties.SetName(_list, "Evidence");
+        ToolTip.SetTip(_createButton, "Create evidence from picked files");
 
         _list.DoubleTapped += (_, _) =>
         {
@@ -160,6 +157,12 @@ public sealed class EvidenceWorkspaceView : UserControl
         var evidenceTab = new TabItem { Header = "Evidence", Content = new ScrollViewer { Content = evidenceBody } };
         var librariesTab = new TabItem { Header = "Libraries", Content = libraries };
 
+        // `WP 19.3A`: named for the same reason as the project tabs
+        // (`ProjectWorkspaceView`) — a layout-walk failure inside either
+        // tab names it, rather than a bare "TabItem".
+        AutomationProperties.SetName(evidenceTab, "Evidence");
+        AutomationProperties.SetName(librariesTab, "Libraries");
+
         var tabs = new TabControl();
         tabs.Items.Add(evidenceTab);
         tabs.Items.Add(librariesTab);
@@ -167,9 +170,34 @@ public sealed class EvidenceWorkspaceView : UserControl
         Content = tabs;
     }
 
+    /// <summary>Test-only (`WP 19.7C`, <c>WorkspaceChangesReattachTests</c>): counts every <see cref="RefreshAsync"/> call, proving a reattached view's subscription still reaches <see cref="OnWorkspaceChanged"/>.</summary>
+    internal int RefreshCount { get; private set; }
+
+    /// <summary>
+    /// Sets whether the open project is archived — disables Create, with a
+    /// tooltip, while <paramref name="archived"/> is <see langword="true"/>.
+    /// The project workspace resolves this once per refresh and hands it to
+    /// every tab, rather than each tab re-deriving it (`WP 19.10H`, `TD-179`).
+    /// </summary>
+    /// <remarks>
+    /// Cite, Declare a figure, Check, Issue and Revise are reached through
+    /// the Object Editor's own command bar (<c>EvidenceWorkspaceRegistration</c>),
+    /// not this view — <see cref="EvidenceService"/>'s own guard (`WP 19.10H`)
+    /// refuses those writes structurally; this view has no reach into that
+    /// command bar's own enablement.
+    /// </remarks>
+    public void SetArchived(bool archived)
+    {
+        _isArchived = archived;
+        _createButton.IsEnabled = !archived;
+        ToolTip.SetTip(_createButton, archived ? ArchivedTooltip : "Create evidence from picked files");
+    }
+
     /// <summary>Reloads the Evidence list for the currently open project — empty, honestly, when no project is open or the project has no evidence yet.</summary>
     public async Task RefreshAsync()
     {
+        RefreshCount++;
+
         // The Libraries tab loads with the area, not on its own: nothing
         // else ever asks it to, and the first Windows run of v0.18.0 found
         // it empty for exactly that reason (the tests had refreshed it by
@@ -191,10 +219,12 @@ public sealed class EvidenceWorkspaceView : UserControl
         // the in-memory object graph holds right now (the same read
         // discipline `EvidenceNodeProvider` already established for the
         // Explorer's own Evidence area).
-        var everyEvidence = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
-        var mine = everyEvidence
-            .OfType<Evidence>()
-            .Where(e => e is not IDeletable { IsDeleted: true } && e.ParentId == id)
+        // `TD-88`/`WP 21.5B`: liveness and the project (parent) filter are
+        // both on the index row, so only this project's own evidence is
+        // materialised.
+        var everyEvidenceEntries = await _domainContext.Repository.ListByKindAsync(Evidence.CanonicalKind).ConfigureAwait(true);
+        var mineEntries = everyEvidenceEntries.Where(entry => !entry.IsDeleted && entry.ParentId == id).ToList();
+        var mine = (await _domainContext.Repository.MaterialiseAsync<Evidence>(mineEntries).ConfigureAwait(true))
             .OrderBy(e => e.DisplayName, StringComparer.Ordinal)
             .ToList();
 

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Progress report deck" description="Period status: RAG summary, progress vs programme, cost position, risks, look-ahead" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" data-screen-label="01" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.22em;color:var(--cyan-500);margin-bottom:36px">PROGRESS REPORT &middot; PERIOD [00] &middot; [TDE-0000]</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:100px;letter-spacing:-.02em;line-height:1.05;color:var(--paper-050);max-width:1500px">[Project name]</div>
+<div style="font-size:38px;color:var(--slate-400);margin-top:36px">Reporting period [DD MMM] – [DD MMM YYYY]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>[Project manager]</span><span>[DD Month YYYY]</span>
+</div>
+</section>
+<section data-label="RAG summary" data-screen-label="02" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">SUMMARY</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:64px">Status at a glance</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:56px;align-content:start">
+<div style="border:1px solid var(--ink-a14);padding:40px"><div style="display:flex;align-items:center;gap:16px;margin-bottom:24px"><span style="width:22px;height:22px;border-radius:50%;background:var(--green-500)"></span><span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.14em;color:var(--slate-600)">PROGRAMME</span></div><div style="font-size:26px;line-height:1.5;color:var(--slate-700)">[One line — on track / n days behind, recovery plan]</div></div>
+<div style="border:1px solid var(--ink-a14);padding:40px"><div style="display:flex;align-items:center;gap:16px;margin-bottom:24px"><span style="width:22px;height:22px;border-radius:50%;background:var(--green-500)"></span><span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.14em;color:var(--slate-600)">COST</span></div><div style="font-size:26px;line-height:1.5;color:var(--slate-700)">[One line — forecast vs budget]</div></div>
+<div style="border:1px solid var(--ink-a14);padding:40px"><div style="display:flex;align-items:center;gap:16px;margin-bottom:24px"><span style="width:22px;height:22px;border-radius:50%;background:var(--amber-500)"></span><span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.14em;color:var(--slate-600)">RISK</span></div><div style="font-size:26px;line-height:1.5;color:var(--slate-700)">[One line — movement in top risks]</div></div>
+<div style="border:1px solid var(--ink-a14);padding:40px"><div style="display:flex;align-items:center;gap:16px;margin-bottom:24px"><span style="width:22px;height:22px;border-radius:50%;background:var(--green-500)"></span><span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.14em;color:var(--slate-600)">QUALITY / HSE</span></div><div style="font-size:26px;line-height:1.5;color:var(--slate-700)">[One line — NCRs, incidents, observations]</div></div>
+</div>
+</section>
+<section data-label="Progress" data-screen-label="03" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">PROGRESS</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Done this period / planned vs actual</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1">
+<div style="border-top:4px solid var(--cyan-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:28px">Completed</div>
+<ul style="margin:0;padding-left:40px;font-size:28px;line-height:1.5;color:var(--slate-700);display:flex;flex-direction:column;gap:20px"><li>[Milestone or deliverable achieved]</li><li>[Deliverable]</li><li>[Deliverable]</li></ul>
+</div>
+<div style="border-top:4px solid var(--amber-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:28px">Slipped / carried over</div>
+<ul style="margin:0;padding-left:40px;font-size:28px;line-height:1.5;color:var(--slate-700);display:flex;flex-direction:column;gap:20px"><li>[Item — cause and recovery action]</li><li>[Item]</li></ul>
+</div>
+</div>
+</section>
+<section data-label="Cost" data-screen-label="04" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">COST</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Cost position</div>
+<table style="width:100%;border-collapse:collapse;font-size:28px">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14)">WORK PACKAGE</th>
+<th style="text-align:right;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14);width:18%">BUDGET</th>
+<th style="text-align:right;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14);width:18%">FORECAST</th>
+<th style="text-align:right;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14);width:18%">VARIANCE</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Package]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£00,000]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£00,000]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono);color:var(--green-500)">[+£0,000]</td></tr>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Package]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£00,000]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£00,000]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono);color:var(--red-500)">[−£0,000]</td></tr>
+<tr style="background:var(--paper-100)"><td style="padding:24px 28px;border-top:3px solid var(--indigo-600);font-family:var(--font-display);font-weight:600;color:var(--ink-900)">Total</td><td style="padding:24px 28px;border-top:3px solid var(--indigo-600);text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[£000,000]</td><td style="padding:24px 28px;border-top:3px solid var(--indigo-600);text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[£000,000]</td><td style="padding:24px 28px;border-top:3px solid var(--indigo-600);text-align:right;font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[+£0,000]</td></tr>
+</tbody>
+</table>
+</section>
+<section data-label="Risks" data-screen-label="05" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">RISK</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Top risks — movement this period</div>
+<div style="display:flex;flex-direction:column;gap:36px;max-width:1600px">
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:28px;color:#fff;background:var(--red-500);padding:6px 18px">[15]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[R01 — risk, movement since last period, mitigation status]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:28px;color:var(--ink-900);background:var(--amber-500);padding:6px 18px">[9]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[R02 — risk]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:28px;color:var(--ink-900);background:var(--paper-200);padding:6px 18px">[4]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[R03 — risk, downgraded following mitigation]</div></div>
+</div>
+</section>
+<section data-label="Look ahead" data-screen-label="06" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<div>
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--cyan-500);padding-bottom:28px;margin-bottom:80px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-400)">LOOK AHEAD</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:80px;letter-spacing:-.02em;color:var(--paper-050);margin-bottom:48px">Next period</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;font-size:30px;line-height:1.6;color:var(--slate-400)">
+<div><div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-500);margin-bottom:20px">PLANNED</div>[Key deliverables and milestones due next period]</div>
+<div><div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-500);margin-bottom:20px">NEEDED FROM THE CLIENT</div>[Decisions, information, or access required — with dates]</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>[Next report: DD Month YYYY]</span><span>www.tempest-engineering.co.uk</span>
+</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

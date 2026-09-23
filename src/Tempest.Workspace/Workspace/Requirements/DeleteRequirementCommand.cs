@@ -22,12 +22,16 @@ public sealed class DeleteRequirementCommand : IWorkspaceCommand
 public sealed class DeleteRequirementCommandHandler : ICommandHandler<DeleteRequirementCommand>
 {
     private readonly IRequirementsService _requirementsService;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public DeleteRequirementCommandHandler(IRequirementsService requirementsService)
+    /// <param name="requirementsService">Where the requirement is deleted.</param>
+    /// <param name="dispatcher">Dispatches this delete's own compensation (`WP 21.6A`) — optional.</param>
+    public DeleteRequirementCommandHandler(IRequirementsService requirementsService, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
 
         _requirementsService = requirementsService;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(DeleteRequirementCommand command, CancellationToken cancellationToken)
@@ -36,7 +40,14 @@ public sealed class DeleteRequirementCommandHandler : ICommandHandler<DeleteRequ
         {
             var deleted = await _requirementsService.DeleteAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false);
 
-            return CommandResult.Success($"Deleted '{deleted.Identifier}'.");
+            // Undo restores the requirement this call deleted; redo deletes
+            // it again — mirrors `WorkspaceCommandBindings.DeleteCompensation`.
+            var compensation = _dispatcher is null ? null : new CommandCompensation(
+                $"Delete '{deleted.Identifier}'",
+                undo: ct => _dispatcher.DispatchAsync(new UndeleteRequirementCommand(command.TargetObjectId), ct),
+                redo: ct => _dispatcher.DispatchAsync(new DeleteRequirementCommand(command.TargetObjectId), ct));
+
+            return CommandResult.Success($"Deleted '{deleted.Identifier}'.", compensation: compensation);
         }
         catch (RequirementNotFoundException ex)
         {

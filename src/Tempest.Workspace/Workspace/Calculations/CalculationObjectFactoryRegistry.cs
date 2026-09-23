@@ -45,10 +45,18 @@ public sealed class CalculationObjectFactoryRegistry
 
     /// <summary>Creates a new object of <paramref name="kind"/>, moving it under <paramref name="parentId"/> if one is given.</summary>
     /// <param name="memberCalculationIds">Only meaningful for <see cref="CalculationSetKind"/> — a Calculation Set's own members are frozen at construction, mirroring <c>Configuration.MemberRevisions</c>'s own identical `WP 9.0B` shape (no mutator exists there either).</param>
+    /// <param name="dueOn">
+    /// Only meaningful for <see cref="CalculationKind"/>, and only once it
+    /// resolves under a project (`WP 20.10B`, T2): a calculation created
+    /// outside any project gets none, regardless of what the create
+    /// prompt collected — mirroring this same method's own <c>TD-38</c>
+    /// "objects outside any project form their own scope" reasoning for
+    /// <paramref name="parentId"/>'s own <c>projectScopeId</c>, below.
+    /// </param>
     /// <exception cref="ArgumentException"><paramref name="kind"/> is not one of <see cref="SupportedKinds"/>, or <paramref name="displayName"/> is null/empty/whitespace.</exception>
     public async Task<IEngineeringObject> CreateAsync(
         string kind, string? identifier, string displayName, string initialContent, Guid? parentId,
-        IReadOnlyList<Guid>? memberCalculationIds = null, CancellationToken cancellationToken = default)
+        IReadOnlyList<Guid>? memberCalculationIds = null, DateOnly? dueOn = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
@@ -60,15 +68,20 @@ public sealed class CalculationObjectFactoryRegistry
         if (parentId is { } requestedParentId && await _context.Repository.FindAsync(requestedParentId, cancellationToken).ConfigureAwait(false) is null)
             throw new ArgumentException($"The selected parent '{requestedParentId}' no longer exists; select where the new object should go and try again.", nameof(parentId));
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         IEngineeringObject created = kind switch
         {
             CalculationKind => await new EngineeringObjectFactory<Calculation>(
-                CalculationKind, _context, (doc, rev) => new Calculation(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                CalculationKind, _context, (doc, rev) => new Calculation(
+                    doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty,
+                    dueOn: projectScopeId is not null ? dueOn : null))
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             CalculationSetKind => await new EngineeringObjectFactory<CalculationSet>(
                 CalculationSetKind, _context, (doc, rev) => new CalculationSet(doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, memberCalculationIds))
-                .CreateAsync(initialContent, cancellationToken).ConfigureAwait(false),
+                .CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false),
 
             _ => throw new ArgumentException($"'{kind}' is not a supported Calculation Kind — expected one of: {string.Join(", ", SupportedKinds)}.", nameof(kind)),
         };

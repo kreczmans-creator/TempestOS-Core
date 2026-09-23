@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Composition;
+using Tempest.Desktop.History;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -68,8 +69,11 @@ public sealed class RibbonView : UserControl
     private readonly List<(Button Button, CommandDescriptor Descriptor)> _selectionAwareButtons = [];
     private readonly Dictionary<string, ContentControl> _recentSectionHosts = new(StringComparer.Ordinal);
     private readonly List<Control> _tabContents = [];
+    private readonly List<TextBlock> _commandLabels = [];
     private bool _suppressTabSelection;
     private bool _isCollapsed;
+    private bool _isCompact;
+    private IReadOnlySet<string>? _categoryAllowList;
 
     /// <summary>Raised after a ribbon action completes (successfully or not), carrying a human-readable status message and its <see cref="ActionOutcome"/> — mirrors every other Desktop View's own identical <c>ActionCompleted</c> convention (`TD-58`: the outcome is what lets the subscriber refresh dependent surfaces only when the workspace actually changed).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -120,8 +124,57 @@ public sealed class RibbonView : UserControl
             content.IsVisible = !_isCollapsed;
     }
 
+    /// <summary>
+    /// Gets whether every command button is compacted to its icon alone,
+    /// its label hidden (`WP 19.2B`, `TD-73`).
+    /// </summary>
+    public bool IsCompact => _isCompact;
+
+    /// <summary>
+    /// Compacts every command button to its icon alone — the tooltip and
+    /// the button's own <see cref="AutomationProperties.NameProperty"/>
+    /// still carry the full name — or restores the label beside it. The
+    /// shell calls this from its own width, the same
+    /// <see cref="DesignTokens.CompactShellWidth"/> threshold
+    /// <see cref="GlobalNavigationRail.SetCompact"/> folds the rail at, so
+    /// every command group keeps fitting with no horizontal scrolling
+    /// (`TD-73`) rather than <see cref="SetCollapsed"/>'s own full
+    /// minimise, which would hide commands rather than shrink them.
+    /// </summary>
+    public void SetCompact(bool compact)
+    {
+        if (_isCompact == compact)
+            return;
+
+        _isCompact = compact;
+        ApplyCompactState();
+    }
+
+    private void ApplyCompactState()
+    {
+        foreach (var label in _commandLabels)
+            label.IsVisible = !_isCompact;
+    }
+
     /// <summary>An optional confirmation gate (`WP 10.5B`, Dialog Framework — "Delete Confirmation") — mirrors <see cref="ProjectExplorerView.ConfirmDeleteAsync"/> exactly, including its own identical "unwired means proceed immediately" default.</summary>
     public Func<string, Task<bool>>? ConfirmDeleteAsync { get; set; }
+
+    /// <summary>
+    /// Records a successful command's own <see cref="CommandResult.Compensation"/>
+    /// (`WP 21.1A`) — supplied by <c>MainWindow</c> after construction,
+    /// exactly as <see cref="ConfirmDeleteAsync"/> is (this view is built
+    /// before <c>UndoRedoCoordinator</c>'s own Stack exists). Left unwired
+    /// (any test constructing this view directly), nothing is ever
+    /// recorded — exactly this view's pre-`WP 21.1A` behaviour.
+    /// </summary>
+    public IUndoRedoStack? UndoRedoStack { get; set; }
+
+    /// <summary>
+    /// Records the honest "cannot be undone: {reason}" note (`WP 21.1A`)
+    /// for a result that carries <see cref="CommandResult.UndoUnavailableReason"/>
+    /// instead of a compensation — supplied the same way as <see cref="UndoRedoStack"/>, for the identical reason.
+    /// </summary>
+    public CommandHistoryLog? HistoryLog { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="RibbonView"/> class.</summary>
     public RibbonView(ICommandRegistry commandRegistry, IWorkspaceManager manager, IWorkspace workspace, Action<string?> setHint, Action<IWorkspaceView> openDocument)
@@ -159,14 +212,47 @@ public sealed class RibbonView : UserControl
 
         _tabs.SelectionChanged += (_, _) =>
         {
-            if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category })
+            // Only a change of category is a request to switch area: a
+            // re-attach or a rebuild that re-selects the tab already shown
+            // must not bounce the explorer back to that tab's area (the
+            // v0.19.0 Invoicing journey saw a raised request's area reset
+            // to Calculations, one run in three).
+            if (!_suppressTabSelection && _tabs.SelectedItem is TabItem { Tag: string category } && !string.Equals(category, _lastRaisedCategory, StringComparison.Ordinal))
+            {
+                _lastRaisedCategory = category;
                 CategorySelected?.Invoke(category);
+            }
         };
 
         Rebuild();
     }
 
-    /// <summary>Rebuilds every tab from <see cref="ICommandRegistry.Items"/>'s own current contents — called once at construction; safe to call again if a future caller ever registers commands after construction (none does today, but no assumption is baked in that none ever will).</summary>
+    /// <summary>
+    /// Restricts which <see cref="CommandDescriptor.Category"/> values this
+    /// ribbon shows a tab for — an allow-list, driven by the host
+    /// embedding this ribbon (`WP 19.4A`, `po-comments.md` #3:
+    /// "Deliverables, Invoicing, Projects and Timesheets categories appear
+    /// inside the engineering ribbon although those commands belong to
+    /// other rail areas"), never by unregistering the commands themselves
+    /// — <see cref="ICommandRegistry.Items"/> is untouched, so the Command
+    /// Palette still lists every one, filtered here or not. An allow-list
+    /// rather than a deny-list deliberately: a category this ribbon has
+    /// never heard of (a future Quotations area's own commands, `WP
+    /// 19.5A`) is excluded by simply never being named here, with no
+    /// second edit needed when one more business-scoped category joins
+    /// Deliverables/Invoicing/Timesheets/Projects. <see langword="null"/>
+    /// (the default) shows every category, exactly as before this Work
+    /// Package — <see cref="RibbonView"/> itself stays a plain view over
+    /// the registry with no opinion of its own about which categories are
+    /// "engineering"; that judgement is the host's.
+    /// </summary>
+    public void SetCategoryFilter(IReadOnlySet<string>? allowedCategories)
+    {
+        _categoryAllowList = allowedCategories;
+        Rebuild();
+    }
+
+    /// <summary>Rebuilds every tab from <see cref="ICommandRegistry.Items"/>'s own current contents (through <see cref="SetCategoryFilter"/>'s own allow-list, if one is set) — called once at construction; safe to call again if a future caller ever registers commands after construction (none does today, but no assumption is baked in that none ever will).</summary>
     public void Rebuild()
     {
         var selected = (_tabs.SelectedItem as TabItem)?.Tag as string;
@@ -174,8 +260,10 @@ public sealed class RibbonView : UserControl
         _selectionAwareButtons.Clear();
         _recentSectionHosts.Clear();
         _tabContents.Clear();
+        _commandLabels.Clear();
 
         var byCategory = _commandRegistry.Items
+            .Where(d => _categoryAllowList is null || _categoryAllowList.Contains(d.Category ?? "General"))
             .GroupBy(d => d.Category ?? "General")
             .OrderBy(g => g.Key, StringComparer.Ordinal);
 
@@ -184,6 +272,11 @@ public sealed class RibbonView : UserControl
             var content = BuildTabContent(group.Key, group.ToList());
             _tabContents.Add(content);
             var tab = new TabItem { Header = BuildTabHeader(group.Key), Tag = group.Key, Content = content };
+            // The header is a StackPanel (an accent dot + a TextBlock), not
+            // a string, so it carries no name of its own to a screen
+            // reader (`WP 19.2B`, `TD-65`) — named explicitly from the
+            // same category text the visible header already shows.
+            AutomationProperties.SetName(tab, group.Key);
             _tabs.Items.Add(tab);
         }
 
@@ -204,8 +297,10 @@ public sealed class RibbonView : UserControl
         RefreshEnablement();
 
         // A rebuild recreates every content panel — re-apply the current
-        // minimised state so it survives (`TD-70`).
+        // minimised state so it survives (`TD-70`), and the current
+        // compact state (`WP 19.2B`, `TD-73`).
         ApplyCollapsedState();
+        ApplyCompactState();
     }
 
     /// <summary>
@@ -242,7 +337,11 @@ public sealed class RibbonView : UserControl
         _suppressTabSelection = true;
         _tabs.SelectedItem = tab;
         _suppressTabSelection = false;
+        _lastRaisedCategory = category;
     }
+
+    /// <summary>The category the last raised <see cref="CategorySelected"/> named, or the one selected programmatically; a re-selection of the same tab is not a switch.</summary>
+    private string? _lastRaisedCategory;
 
     /// <summary>
     /// Recomputes every selection-aware button's own enabled state —
@@ -425,6 +524,12 @@ public sealed class RibbonView : UserControl
         // One monochrome vector icon per verb (`IconGeometry`), tinted by
         // the button's own foreground — never a colour emoji.
         var icon = IconFor(descriptor.Id);
+        var label = large
+            ? new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 68, LineHeight = 13 }
+            : new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
+        label.IsVisible = !_isCompact;
+        _commandLabels.Add(label);
+
         Control content = large
             ? new StackPanel
             {
@@ -433,7 +538,7 @@ public sealed class RibbonView : UserControl
                 Children =
                 {
                     Icons.IconGeometry.Build(icon, 22, strokeThickness: 1.5),
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, MaxWidth = 68, LineHeight = 13 },
+                    label,
                 },
             }
             : new StackPanel
@@ -443,7 +548,7 @@ public sealed class RibbonView : UserControl
                 Children =
                 {
                     Icons.IconGeometry.Build(icon, 14),
-                    new TextBlock { Text = descriptor.DisplayName, FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center },
+                    label,
                 },
             };
 
@@ -538,6 +643,7 @@ public sealed class RibbonView : UserControl
                         ? $"'{descriptor.DisplayName}' completed."
                         : result.Message ?? $"'{descriptor.DisplayName}' failed.",
                     ActionOutcome.From(result.Succeeded));
+                RecordCompensation(result);
 
                 // `WP 17.9.4`: a created object is opened right up, not
                 // announced. The shell decides where; the ribbon only says
@@ -598,6 +704,35 @@ public sealed class RibbonView : UserControl
         ActionCompleted?.Invoke(
             result.Succeeded ? $"Deleted via '{descriptor.DisplayName}'." : result.Message ?? "Delete failed.",
             ActionOutcome.From(result.Succeeded));
+        RecordCompensation(result);
+    }
+
+    /// <summary>
+    /// Records <paramref name="result"/>'s own <see cref="CommandResult.Compensation"/>
+    /// onto <see cref="_undoRedoStack"/> (`WP 21.1A`) — the one place both
+    /// of this view's own dispatch paths (the generic registry Executed
+    /// case, and Delete's own <see cref="IWorkspaceManager.DeleteObjectAsync"/>
+    /// path, `TD-58`) converge after already holding the real
+    /// <see cref="CommandResult"/>, which is why this is not, instead, a
+    /// property of the (message, outcome) pair <see cref="ActionCompleted"/>
+    /// raises: that string has already discarded it. A result carrying
+    /// neither a compensation nor an unavailable-reason (the overwhelming
+    /// majority — every command outside this Work Package's own scope)
+    /// records nothing, exactly as before this Work Package.
+    /// </summary>
+    private void RecordCompensation(CommandResult result)
+    {
+        if (!result.Succeeded)
+            return;
+
+        if (result.Compensation is { } compensation)
+        {
+            UndoRedoStack?.Record(new UndoableAction(compensation.Description, compensation.Undo, compensation.Redo));
+        }
+        else if (result.UndoUnavailableReason is { } reason)
+        {
+            HistoryLog?.Record($"Cannot be undone: {reason}", succeeded: true);
+        }
     }
 
     /// <summary>

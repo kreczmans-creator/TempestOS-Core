@@ -64,4 +64,23 @@ public interface IDeletable : IEngineeringObject
     /// <summary>Marks this object deleted.</summary>
     /// <exception cref="EngineeringObjectHasChildrenException">A live (non-deleted) <see cref="IHasParent"/> object still reports this object as its <see cref="IHasParent.ParentId"/>.</exception>
     Task DeleteAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores this object from deletion — `WP 21.1A`'s own closing of the
+    /// gap `ADR-0098` disclosed at `v0.10.0` ("Delete is already a soft
+    /// delete ... with no 'restore' operation anywhere in this platform to
+    /// invert into"). Commits through the identical state path
+    /// <see cref="DeleteAsync"/> itself uses — one transaction, one audit
+    /// row — never a second mechanism.
+    /// </summary>
+    /// <remarks>
+    /// Never restores attachment payload bytes <see cref="DeleteAsync"/>
+    /// already removed durably: this reverses the structural fact
+    /// (<see cref="IsDeleted"/>), not the purge <see cref="DeleteAsync"/>'s
+    /// own remarks already record as irreversible. A disclosed, honest
+    /// limitation, not a silent gap.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">This object is not currently deleted.</exception>
+    /// <exception cref="EngineeringObjectParentDeletedException">This object's own current <see cref="IHasParent.ParentId"/> (if it has one) is itself deleted.</exception>
+    Task UndeleteAsync(CancellationToken cancellationToken = default);
 }

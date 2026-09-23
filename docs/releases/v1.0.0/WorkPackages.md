@@ -120,7 +120,10 @@ package) and records it in Tempest as evidence: the files, what it is
 about, the governed references it cites at the revision held, its key
 figures, and its check and issue. **Everything is recorded, cited, checked and issued in Tempest; the
 calculation surfaces that ship in `v0.17.0` stay in place for now,
-unextended (Product Owner, 2026-09-09).**
+unextended (Product Owner, 2026-09-09; amended 2026-09-15 — eleven
+catalogue-driven calculation modules and the Engineering Calculators
+surface were added on the Product Owner's own instruction as `WP 21.7A`–`21.7C`
+in `v0.21.0`; see `D-028`'s addendum).**
 Decided by the Product Owner on 2026-09-09 (`D-028`), replacing
 "Calculation as Document". Deliberately not an ERP and not a PLM: the
 subject of a piece of evidence is a tag, never a managed structure.
@@ -173,9 +176,9 @@ duration: three weeks.
 
 | Work Package | Scope | Type | Closes | Effort |
 |---|---|---|---|---|
-| `WP RC.0A` | **Installer and upgrade.** Velopack-packaged Windows installer with in-place update from the GitHub Release feed; the persistence database is upgraded by the schema-version migrations on first launch and backed up beside itself before migration; a `--persistence-root` argument and a first-run dialog choose the data location; Support matrix stated to match the evidence: **Windows supported**; **macOS built and launch-validated, not production-supported unless subsequently validated**; **Linux build and test only**. `release.yml` publishes the installer. | Release engineering | `TD-116` disposition, `D-025` | 4 |
-| `WP RC.0B` | **Evidence-journey coverage.** The recorded, cited, checked, issued journey is reproduced from a clean persistence root by a journey test through the real window; a property test that a citation pin survives any supersession of its record; Stryker threshold raised for `ReferenceData` and `UnitsAndQuantities`; the six dormant calculation definitions keep their unit-invariance property tests. | Tests | `WP 17.0C` residual | 3 |
-| `WP RC.0C` | **Security posture statement.** One document: single-user, local trust, OS-user principal, DPAPI-held connector tokens, outbound HTTPS only, no listener, what an attacker with the laptop can do, what the operator must do (disk encryption, OS account), and what is deliberately not defended. Replaces `Threat Model.md` and `Security Roadmap.md` for v1.0. Dependency vulnerability scan is a required CI check. | Documentation | `FCR-0003`/`FCR-0004` disposition for v1.0 | 2 |
+| `WP RC.0A` | **Installer and upgrade** — delivered by `WP 21.5A` (brought forward into `v0.21.0`, 2026-09-15; see that Work Package's own report for the exact figures, deviations and the third-party notices row). Velopack-packaged Windows installer with in-place update from the GitHub Release feed; the persistence database is upgraded by the schema-version migrations on first launch and backed up beside itself before migration; a `--persistence-root` argument and a first-run dialog choose the data location; Support matrix stated to match the evidence: **Windows supported**; **macOS built and launch-validated, not production-supported unless subsequently validated**; **Linux build and test only**. `release.yml` publishes the installer. | Release engineering | `TD-116` disposition, `D-025` | 4 |
+| `WP RC.0B` | **Evidence-journey coverage.** The recorded, cited, checked, issued journey is reproduced from a clean persistence root by a journey test through the real window; a property test that a citation pin survives any supersession of its record; Stryker threshold raised for `ReferenceData` and `UnitsAndQuantities` — **the `Calculations`/`UnitsAndQuantities` half delivered by `WP 21.5D`** (2026-09-15, on `release/v0.21.0`): the one completed CI run's 67.58 % (against the 70 % break) concentrated in seven files answered with real assertions; a local scoped run (`--mutate` limited to those seven) went 67.58 % → 89.51 % across two passes, comfortably past both the general break and this package's own 75 % target, four of the seven files reaching 100 %; see that Work Package's own report for the per-file table, the two genuine branch-selection bugs its second pass found and fixed, and the named equivalent/unobservable mutants left standing (the lead's full CI dispatch over the whole scope is still the authoritative score). The `ReferenceData` half and the dormant-definition property tests remain open; the six dormant calculation definitions keep their unit-invariance property tests. | Tests | `WP 17.0C` residual | 3 |
+| `WP RC.0C` | **Security posture statement.** One document: single-user, local trust, OS-user principal, DPAPI-held connector tokens, outbound HTTPS only, no listener, what an attacker with the laptop can do, what the operator must do (disk encryption, OS account), and what is deliberately not defended. Replaces `Threat Model.md` and `Security Roadmap.md` for v1.0. Dependency vulnerability scan is a required CI check. **Delivered by `WP 21.5E`** (2026-09-15, brought forward onto `release/v0.21.0`): `docs/security/Security Posture.md`; `dependency-scan` required in `ci.yml`'s gate; `.github/dependabot.yml`; one RED finding (`TD-184`) and one AMBER finding (`TD-185`) from a full-codebase review, plus a proof that the frozen REST API/plugin-loading/licensing layers are unreachable in a default build and configuration. | Documentation | `FCR-0003`/`FCR-0004` disposition for v1.0 | 2 |
 | `WP RC.0D` | **Determinism and load.** Five consecutive full-suite runs on Windows CI while the layout-verification job runs concurrently; any failure is a defect to fix, not a matrix to re-run. Suite duration recorded. | Tests | `TD-119` class | 2 |
 | `WP RC.0E` | **Physical review on a clean machine, recorded.** A person who did not build it follows `PHYSICAL_REVIEW.md` from a fresh Windows install through the five sentences in "What v1.0.0 is", using the installer, in under thirty minutes; every finding is fixed or filed in `BACKLOG.md` before tagging; the recording (screenshots and the reviewer's notes) is committed under `docs/releases/v1.0.0/`. | Verification | — | 2 |
 | `WP RC.0F` | **Release.** `VERSION` → `1.0.0`; Release Notes summarising `v0.17.0` to `v1.0.0`; root `CHANGELOG.md`; tag via `new-release.ps1`; `release.yml` publishes the installer and the harness; Product Approval recorded as one line in the Release Notes by the Product Owner. | Release | — | 1 |
@@ -266,7 +269,11 @@ the outcome is predictable.
   grammar, no cell editor, no run diff. The calculation surfaces that
   ship in `v0.17.0` stay in place, unextended, on the Product Owner's
   instruction of 2026-09-09; calculations for evidence are done in the
-  engineer's own tools and recorded as evidence.
+  engineer's own tools and recorded as evidence. *Amended 2026-09-15 by
+  the Product Owner: the eleven descriptor-driven calculation modules of
+  `WP 21.7A`–`21.7C` (`v0.21.0`) are the one addition — fixed methods with
+  a teaching register and worked-example vectors, not authoring; the
+  grammar, editor and diff stay unbuilt.*
 - **Not an ERP and not a PLM** (`D-028`): no part-occurrence model, no
   multi-assembly usage, no change control on lines, no procurement,
   supplier, cost or stock field, no workflow engine. An attribute earns

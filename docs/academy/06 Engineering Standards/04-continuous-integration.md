@@ -1,5 +1,15 @@
 # Engineering Standard: Continuous Integration
 
+> **Status note, September 2026.** The pipeline has grown since this was
+> written: the CI Gate now also requires the Governance Health Check
+> (`WP 16.1A`), the release workflow runs the same check and refuses to tag
+> a commit whose CI did not succeed (`WP 16.1A-R1`), an advisory Linux
+> launch smoke job and a scheduled mutation-testing job were added, and
+> the health check itself was reduced to five source-derived checks plus a
+> Markdown budget (`WP 17.0B`). See
+> `08-the-physical-review-and-the-release-gate.md` for the gate as it is
+> run today and `.github/workflows/ci.yml` for the current job list.
+
 ## Purpose
 
 Every Work Package retrospective since `WP 2.1` has asserted a Build Gate

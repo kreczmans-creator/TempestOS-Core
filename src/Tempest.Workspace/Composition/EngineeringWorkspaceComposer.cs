@@ -1,30 +1,46 @@
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Deliverables;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Macros;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.PurchaseOrders;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Bearings;
 using Tempest.Core.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
+using Tempest.Core.Deliverables;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Expenses;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Macros;
 using Tempest.Core.Materials;
+using Tempest.Core.Projects;
+using Tempest.Core.PurchaseOrders;
+using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.ReferenceData.Seeding.Datasets;
 using Tempest.Core.Requirements;
 using Tempest.Core.Runtime;
 using Tempest.Core.Standards;
+using Tempest.Core.Tasks;
+using Tempest.Core.Timesheets;
 using Tempest.Core.Verification;
 using Tempest.Core.Versioning;
 
@@ -175,6 +191,14 @@ public static class EngineeringWorkspaceComposer
         var evidenceService = (IEvidenceService)services.GetService(typeof(IEvidenceService));
         var principalDirectory = (IPrincipalDirectory)services.GetService(typeof(IPrincipalDirectory));
         var platformVersionProvider = (IPlatformVersionProvider)services.GetService(typeof(IPlatformVersionProvider));
+        var projectCommercialService = (IProjectCommercialService)services.GetService(typeof(IProjectCommercialService));
+        var timesheetService = (ITimesheetService)services.GetService(typeof(ITimesheetService));
+        var deliverableService = (IDeliverableService)services.GetService(typeof(IDeliverableService));
+        var invoicingService = (IInvoicingService)services.GetService(typeof(IInvoicingService));
+        var quotationService = (IQuotationService)services.GetService(typeof(IQuotationService));
+        var taskService = (ITaskService)services.GetService(typeof(ITaskService));
+        var expenseService = (IExpenseService)services.GetService(typeof(IExpenseService));
+        var purchaseOrderService = (IPurchaseOrderService)services.GetService(typeof(IPurchaseOrderService));
 
         MechanicalWorkspaceRegistration.Register(manager, domainContext, commandDispatcher, commandRegistry, referenceIntegrityChecker);
         RequirementsWorkspaceRegistration.Register(manager, requirementsService, commandDispatcher, commandRegistry);
@@ -188,6 +212,65 @@ public static class EngineeringWorkspaceComposer
         EvidenceWorkspaceRegistration.Register(
             manager, domainContext, evidenceService, commandDispatcher, commandRegistry,
             issueSheetRenderer, principalDirectory, platformVersionProvider);
+
+        // `ADR-0150` (`WP 19.0A`). The project commercial core's own six
+        // commands, over the Project Kind Mechanical already owns and
+        // registers a node/facet provider for.
+        ProjectCommercialWorkspaceRegistration.Register(projectCommercialService, commandDispatcher, commandRegistry);
+
+        // `ADR-0150` (`WP 19.0A`). Time and deliverable completion — each a
+        // new canonical Kind with its own discipline registration,
+        // mirroring Evidence's own shape.
+        TimesheetsWorkspaceRegistration.Register(manager, domainContext, timesheetService, principalDirectory, commandDispatcher, commandRegistry);
+        DeliverableCompletionWorkspaceRegistration.Register(manager, domainContext, deliverableService, principalDirectory, commandDispatcher, commandRegistry);
+
+        // `WP 21.3B`. Expenses and purchase orders — each a new canonical
+        // Kind with its own discipline registration, mirroring Timesheets'/
+        // Quotation's own identical shape. Expenses first: purchase
+        // orders' own "Record as expenses" command reads `IExpenseService`
+        // (already resolved above, not through this registration call).
+        ExpenseWorkspaceRegistration.Register(manager, domainContext, expenseService, commandDispatcher, commandRegistry);
+        PurchaseOrderWorkspaceRegistration.Register(manager, domainContext, purchaseOrderService, commandDispatcher, commandRegistry);
+
+        // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the connector seam,
+        // the request Kind and its own discipline registration, mirroring
+        // Evidence's own shape — no view, no rail entry (this Work
+        // Package's own scope is the model and the substrate; parts 2/3
+        // build the real connectors and the Invoicing area). Wired here,
+        // after DeliverableCompletionWorkspaceRegistration, so completing a
+        // deliverable can raise a request the moment this registration's
+        // own hook is set, below.
+        InvoicingWorkspaceRegistration.Register(manager, domainContext, invoicingService, commandDispatcher, commandRegistry);
+
+        // The optional completion hook (`DeliverableService`'s own
+        // remarks): completing a deliverable raises an invoice request
+        // through the service, never the UI. Set here, once both services
+        // exist, rather than as a constructor dependency either way round
+        // — `InvoicingService` already depends on `IDeliverableService`
+        // (`MarkInvoicedAsync`), so the reverse dependency at construction
+        // time would be circular.
+        if (deliverableService is Tempest.Core.Deliverables.DeliverableService concreteDeliverableService)
+        {
+            concreteDeliverableService.SetCompletionHook(
+                (completionId, token) => invoicingService.RaiseFromCompletionAsync(completionId, token));
+        }
+
+        // `ADR-0152` (`WP 19.5A`). The quote a project is opened with:
+        // its own discipline registration, mirroring Evidence's/Invoicing's
+        // own shape — the generic Object Editor renders it (a
+        // `KindEditorDeclaration`, not a bespoke view), no rail entry of
+        // its own yet (`WP 19.5B`'s scope). Registered after
+        // `ProjectCommercialWorkspaceRegistration` (needs the project to
+        // exist) and after `RequirementsWorkspaceRegistration` (`AcceptAsync`
+        // needs `IRequirementsService`, already resolved above).
+        QuotationWorkspaceRegistration.Register(manager, domainContext, quotationService, commandDispatcher, commandRegistry);
+
+        // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
+        // Home dashboard's own task tiles and task list. No dependency on
+        // any other discipline registered above, so its own position here
+        // is not load-bearing; kept alongside Quotation as the other
+        // WP 19.5-wave Kind.
+        TaskWorkspaceRegistration.Register(manager, domainContext, taskService, commandDispatcher, commandRegistry);
 
         // Must run after VerificationWorkspaceRegistration — Manufacturing
         // deliberately does not re-register RecordVerificationResultCommand,
@@ -214,6 +297,30 @@ public static class EngineeringWorkspaceComposer
         VerificationActivityFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(rehydrators, domainContext);
         rehydrators.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, domainContext);
+
+        // `ADR-0150` (`WP 19.0A`) — the fortieth and forty-first Kinds with
+        // a production rehydrator from the day they shipped, the Evidence
+        // path repeated for each of the two new disciplines registered
+        // above.
+        rehydrators.Register<Tempest.Core.Timesheets.TimesheetEntry>(Tempest.Core.Timesheets.TimesheetEntry.CanonicalKind, domainContext);
+        rehydrators.Register<Tempest.Core.Deliverables.DeliverableCompletion>(Tempest.Core.Deliverables.DeliverableCompletion.CanonicalKind, domainContext);
+
+        // `ADR-0151` (`WP 19.1A`) — the same shape once more, for the
+        // request Kind this Work Package adds.
+        rehydrators.Register<Tempest.Core.Invoicing.InvoiceRequest>(Tempest.Core.Invoicing.InvoiceRequest.CanonicalKind, domainContext);
+
+        // `ADR-0152` (`WP 19.5A`) — the same shape once more, for the
+        // quotation Kind this Work Package adds.
+        rehydrators.Register<Tempest.Core.Quotations.Quotation>(Tempest.Core.Quotations.Quotation.CanonicalKind, domainContext);
+
+        // `WP 19.5C` — the same shape once more, for the manual task Kind
+        // this Work Package adds.
+        rehydrators.Register<Tempest.Core.Tasks.ManualTask>(Tempest.Core.Tasks.ManualTask.CanonicalKind, domainContext);
+
+        // `WP 21.3B` — the same shape once more, for the two Kinds this
+        // Work Package adds (expenses, purchase orders).
+        rehydrators.Register<Tempest.Core.Expenses.ProjectExpense>(Tempest.Core.Expenses.ProjectExpense.CanonicalKind, domainContext);
+        rehydrators.Register<Tempest.Core.PurchaseOrders.PurchaseOrder>(Tempest.Core.PurchaseOrders.PurchaseOrder.CanonicalKind, domainContext);
 
         // The canonical Kinds that are durable and rehydratable but have no
         // discipline workspace yet. Twelve of them were registered only by

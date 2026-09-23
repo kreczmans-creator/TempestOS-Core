@@ -64,10 +64,12 @@ public sealed class ProjectDirectory : IProjectDirectory
     /// <inheritdoc />
     public async Task<IReadOnlyList<ProjectSummary>> ListAsync(CancellationToken cancellationToken = default)
     {
-        var projects = await _context.Repository.ListByKindAsync(ProjectKind, cancellationToken).ConfigureAwait(false);
+        // `TD-88`/`WP 21.5B`: `ToSummary` needs `IProject`-own fields, not
+        // on the index row.
+        var entries = await _context.Repository.ListByKindAsync(ProjectKind, cancellationToken).ConfigureAwait(false);
+        var projects = await _context.Repository.MaterialiseAsync<IProject>(entries, cancellationToken).ConfigureAwait(false);
 
         return projects
-            .OfType<IProject>()
             .Select(ToSummary)
             .OrderBy(p => p.Identifier ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(p => p.DisplayName, StringComparer.Ordinal)
@@ -131,5 +133,8 @@ public sealed class ProjectDirectory : IProjectDirectory
     }
 
     private static ProjectSummary ToSummary(IProject project) =>
-        new(project.Id, project.Identifier, project.DisplayName, project.Status, project.ProgrammeId);
+        new(
+            project.Id, project.Identifier, project.DisplayName, project.Status, project.ProgrammeId,
+            project.ClientOrganisationId, project.PurchaseOrderReference, project.Budget, project.RateCardPin,
+            project.StartDate, project.TargetDate, project.ProjectManagerIdentityId);
 }

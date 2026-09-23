@@ -1,3 +1,5 @@
+using Tempest.Workspace.Kpi;
+
 namespace Tempest.Workspace;
 
 /// <summary>
@@ -33,7 +35,8 @@ public sealed class WorkspaceSnapshot
         IReadOnlyList<WorkspaceSnapshotNode>? explorerTree = null,
         WorkspaceSnapshotCockpitCounts? cockpit = null,
         IReadOnlyDictionary<string, string?>? objectState = null,
-        IReadOnlyDictionary<string, string?>? facets = null)
+        IReadOnlyDictionary<string, string?>? facets = null,
+        KpiFinancials? kpi = null)
     {
         Sequence = sequence;
         Kind = kind;
@@ -41,6 +44,7 @@ public sealed class WorkspaceSnapshot
         Cockpit = cockpit;
         ObjectState = objectState;
         Facets = facets;
+        Kpi = kpi;
     }
 
     /// <summary>
@@ -78,4 +82,12 @@ public sealed class WorkspaceSnapshot
     /// its Kind wrote them.
     /// </summary>
     public IReadOnlyDictionary<string, string?>? Facets { get; }
+
+    /// <summary>
+    /// Populated when <see cref="Kind"/> is <see cref="WorkspaceSnapshotKind.Kpi"/>:
+    /// every KPI financial ingredient this one coherent scan can compute —
+    /// see <see cref="KpiFinancials"/>'s own remarks for why utilisation's
+    /// own working-pattern denominator is not among them.
+    /// </summary>
+    public KpiFinancials? Kpi { get; }
 }

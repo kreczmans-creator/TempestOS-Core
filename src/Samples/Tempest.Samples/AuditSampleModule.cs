@@ -20,7 +20,7 @@ namespace Tempest.Samples;
 /// <see cref="SettingsSampleModule"/>'s own role for Settings. Carries
 /// <see cref="ModuleMetadataAttribute"/> so Discovery can read its
 /// identity without instantiating it (ADR-0027), freeing its constructor
-/// to request <see cref="Tempest.Core.Identity.CurrentPrincipalAccessor"/>, <see cref="IAuditRecorder"/>,
+/// to request <see cref="Tempest.Core.Identity.PrincipalSession"/>, <see cref="IAuditRecorder"/>,
 /// <see cref="IAuditQuery"/>, <see cref="ICommandDispatcher"/>, and
 /// <see cref="ICommandRegistry"/> — all DI-public platform services — via
 /// ordinary constructor injection.
@@ -67,7 +67,7 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// </summary>
     public const string QuerySampleAuditRecordsCommandId = "sample.audit-query";
 
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly IAuditRecorder _auditRecorder;
     private readonly IAuditQuery _auditQuery;
     private readonly ICommandDispatcher _commandDispatcher;
@@ -76,7 +76,7 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// <summary>
     /// Initialises a new instance of the <see cref="AuditSampleModule"/> class.
     /// </summary>
-    /// <param name="currentPrincipalAccessor">
+    /// <param name="principalSession">
     /// The concrete accessor this module establishes its own principal on
     /// directly (`WP 17.2A`), resolved via ordinary constructor injection.
     /// </param>
@@ -98,20 +98,20 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// injection.
     /// </param>
     public AuditSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         IAuditRecorder auditRecorder,
         IAuditQuery auditQuery,
         ICommandDispatcher commandDispatcher,
         ICommandRegistry commandRegistry)
         : base("tempest.samples.audit", "Audit Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(auditRecorder);
         ArgumentNullException.ThrowIfNull(auditQuery);
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(commandRegistry);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _auditRecorder = auditRecorder;
         _auditQuery = auditQuery;
         _commandDispatcher = commandDispatcher;
@@ -134,7 +134,7 @@ public sealed class AuditSampleModule : ModuleLifecycleBase
     /// </remarks>
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         await _auditRecorder.RecordAsync(InitialisedActionName, cancellationToken: cancellationToken).ConfigureAwait(false);
 

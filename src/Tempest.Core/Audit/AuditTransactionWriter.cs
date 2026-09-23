@@ -77,12 +77,19 @@ internal static class AuditTransactionWriter
             payload[DetailKey] = detail;
 
         var dto = new AuditRecordDto(principalId, action, occurredAt, payload);
+        var key = KeyFor(objectId, occurredAt);
+        var json = JsonSerializer.Serialize(dto);
 
-        return transaction.WriteAsync(
-            AuditRecorder.AuditCollectionName,
-            KeyFor(objectId, occurredAt),
-            JsonSerializer.Serialize(dto),
-            cancellationToken);
+        // `WP 21.6A`, OSA-13: the transaction's own ordinary WriteAsync now
+        // unconditionally refuses this collection
+        // (AuditCollectionProtectedException) - IAuditCollectionTransactionWriter
+        // is the one route in, held only by this class. A transaction
+        // double that does not implement it falls back to the ordinary
+        // path, exactly as AuditRecorder.RecordAsync's own identical
+        // fallback does.
+        return transaction is IAuditCollectionTransactionWriter auditWriter
+            ? auditWriter.WriteAuditRowAsync(key, json, cancellationToken)
+            : transaction.WriteAsync(AuditRecorder.AuditCollectionName, key, json, cancellationToken);
     }
 }
 
@@ -117,11 +124,23 @@ public static class EngineeringAuditActions
     /// <summary>Attachment metadata and its bytes were recorded against this object.</summary>
     public const string ContentAttached = "engineering.object.content-attached";
 
+    /// <summary>An attachment annotation was recorded against this object (`TD-98`).</summary>
+    public const string AnnotationAdded = "engineering.object.annotation-added";
+
+    /// <summary>An attachment annotation was removed from this object (`TD-98`).</summary>
+    public const string AnnotationDeleted = "engineering.object.annotation-deleted";
+
+    /// <summary>Every annotation on one page of one attachment was removed from this object (`TD-98`).</summary>
+    public const string AnnotationsCleared = "engineering.object.annotations-cleared";
+
     /// <summary>An object's structural parent changed.</summary>
     public const string Moved = "engineering.object.moved";
 
     /// <summary>An object was marked deleted.</summary>
     public const string Deleted = "engineering.object.deleted";
+
+    /// <summary>An object was restored from deletion (`WP 21.1A`).</summary>
+    public const string Undeleted = "engineering.object.undeleted";
 
     /// <summary>An object's bill-of-materials line changed.</summary>
     public const string BomLineSet = "engineering.object.bom-line-set";

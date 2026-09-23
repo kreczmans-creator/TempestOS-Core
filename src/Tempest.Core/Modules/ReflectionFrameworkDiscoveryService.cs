@@ -163,7 +163,7 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
             // and never a silent inclusion. Deliberately narrow - only the
             // four CLR type-load failures.
             // ModuleDiscoveryException (including the WP 5.3
-            // "no parameterless constructor and no [ModuleMetadataAttribute]"
+            // "no parameterless constructor and no [ModuleMetadata]"
             // guidance and every ValidateMetadata failure) derives from none
             // of the four and still propagates, unchanged.
             try
@@ -243,11 +243,11 @@ public class ReflectionFrameworkDiscoveryService : IFrameworkDiscoveryService
         if (type.GetConstructor(Type.EmptyTypes) is null)
         {
             throw new ModuleDiscoveryException(
-                $"Module type '{type.FullName}' has no public parameterless constructor and no " +
-                $"[ModuleMetadataAttribute]. Discovery cannot construct it to read Id/Name/Version. " +
-                "Add [ModuleMetadataAttribute(id, name, version)] to declare metadata without " +
-                "construction, freeing the constructor to take dependencies (see 'Building a " +
-                "Module.md'), or add a public parameterless constructor.");
+                $"Module type '{type.FullName}' has no public parameterless constructor and carries no " +
+                "[ModuleMetadata] attribute. Discovery cannot construct it to read Id/Name/Version. " +
+                "Add [ModuleMetadata(id, name, version)] to declare metadata without construction, " +
+                "freeing the constructor to take dependencies (see 'Building a Module.md'), or add a " +
+                "public parameterless constructor.");
         }
 
         var module = (IModule)Activator.CreateInstance(type)!;

@@ -1,5 +1,16 @@
 # Phantom-Type Dimension Safety
 
+> **Status note, September 2026.** The pattern this document teaches is
+> still real and still worth knowing, but it is no longer how TempestOS's
+> units work underneath. `WP 17.3A` (`v0.17.0`, `ADR-0147`) replaced the
+> compile-time-only design with a runtime seven-exponent dimension vector,
+> keeping `Quantity<TDimension>` as a typed facade over it, so that
+> quantities of the same dimension convert automatically and quantities
+> of different dimensions can be multiplied and divided. Read this document
+> for the original reasoning, then
+> `02 Runtime Architecture/52-units-as-a-runtime-dimension-vector.md` for
+> why it changed and what the facade still guarantees.
+
 ## 1. Introduction
 
 `Quantity<TDimension>`/`Unit<TDimension>` (`Tempest.Core.

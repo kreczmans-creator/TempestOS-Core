@@ -25,12 +25,13 @@ namespace Tempest.Desktop.Tests;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Both areas were declared <c>Implemented</c> and drew a
-/// <see cref="DeclaredCapabilityView"/> — a glyph, a title and a paragraph
-/// of prose with no content behind it. These tests exist so that cannot
-/// silently return: each one asserts the real surface is present, that it
-/// is <em>not</em> the declared-capability card, and that the action it
-/// offers actually does something.
+/// Both areas were once declared <c>Implemented</c> and drew a
+/// "not yet implemented" capability card anyway — a glyph, a title and a
+/// paragraph of prose with no content behind it. These tests exist so that
+/// cannot silently return: each one asserts the real surface is present
+/// and that the action it offers actually does something. (`WP 19.2B`:
+/// that card, <c>DeclaredCapabilityView</c>, is deleted — every rail and
+/// project area is now genuinely implemented.)
 /// </para>
 /// <para>
 /// Nothing here calls a register or the viewer launcher directly. A test
@@ -64,8 +65,9 @@ public sealed class ProjectAreaAcceptanceTests
             classification: DocumentObjectFactoryRegistry.Specification), CancellationToken.None);
         Assert.True(created.Succeeded, created.Message);
 
-        var document = (await DomainOf(host).Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
-            .Single(o => ((IHasBusinessIdentifier)o).Identifier == identifier);
+        var documentId = (await DomainOf(host).Repository.ListByKindAsync(DocumentObjectFactoryRegistry.Document))
+            .Single(entry => entry.Identifier == identifier).Id;
+        var document = (await DomainOf(host).Repository.FindAsync(documentId))!;
 
         await ((IHasParent)document).MoveAsync(parentId);
 
@@ -113,14 +115,10 @@ public sealed class ProjectAreaAcceptanceTests
 
             Assert.Equal(ProjectArea.Documents, host.ShellNavigator!.Current.ProjectArea);
 
-            // The real surface is present, and the declared-capability
-            // card is not standing in for it.
-            // The Documents area's own surface is the real register, not a
-            // declared-capability card. Other areas legitimately still show
-            // one, so the assertion is scoped to this area's own subtree.
+            // The real surface is present — the Documents area's own
+            // register, not a placeholder.
             var documents = DocumentsSurfaceOf(window);
             Assert.False(documents.IsShowingEmptyState);
-            Assert.Empty(documents.GetLogicalDescendants().OfType<DeclaredCapabilityView>());
 
             var entry = Assert.Single(documents.Entries);
             Assert.Equal("DWG-1001", entry.Identifier);
@@ -148,6 +146,13 @@ public sealed class ProjectAreaAcceptanceTests
 
             // And the row the user pressed says where the document went,
             // rather than looking as though nothing happened.
+            // The row is marked on the open's own continuation, after the
+            // viewer is already open, so a loaded machine (CI's Debug shard,
+            // 2026-09-15) can reach this line first: bounded poll on the
+            // real collection, the assertions below unchanged.
+            for (var attempt = 0; attempt < 200 && !documents.OpenedAttachmentIds.Contains(attachmentId); attempt++)
+                await Task.Delay(10);
+
             Assert.Contains(attachmentId, documents.OpenedAttachmentIds);
             Assert.Contains(
                 documents.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty),
@@ -292,7 +297,6 @@ public sealed class ProjectAreaAcceptanceTests
                 .Select(t => t.Text ?? string.Empty).ToList();
 
             Assert.Contains(text, t => t.Contains(ProjectDocumentsView.EmptyHeadline, StringComparison.Ordinal));
-            Assert.DoesNotContain(text, t => t.Contains(DeclaredCapabilityView.NotImplementedBadge, StringComparison.Ordinal));
         }
         finally
         {
@@ -392,8 +396,8 @@ public sealed class ProjectAreaAcceptanceTests
             // them initialised last. Disclosed as a finding of this Work
             // Package; the register's own denied path is covered by
             // `ProjectAreaRegisterTests`.
-            ((CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor)))
-                .SetCurrent(new PlatformPrincipal(
+            ((PrincipalSession)host.Services!.GetService(typeof(PrincipalSession)))
+                .Establish(new PlatformPrincipal(
                     new PlatformIdentity("engineer", "engineer"),
                     [Core.Verification.VerificationService.ReadPermission]));
 
@@ -487,7 +491,6 @@ public sealed class ProjectAreaAcceptanceTests
                 .Select(t => t.Text ?? string.Empty).ToList();
 
             Assert.Contains(text, t => t.Contains(ProjectRequirementsView.EmptyHeadline, StringComparison.Ordinal));
-            Assert.DoesNotContain(text, t => t.Contains(DeclaredCapabilityView.NotImplementedBadge, StringComparison.Ordinal));
         }
         finally
         {

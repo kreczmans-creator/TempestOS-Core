@@ -1,5 +1,6 @@
 using Tempest.Workspace;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 
 namespace Tempest.Workspace.Projects;
 
@@ -71,13 +72,16 @@ public interface IProjectTaskService
 public sealed class ProjectTaskService : IProjectTaskService
 {
     private readonly EngineeringDomainContext _context;
+    private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectTaskService"/> class.</summary>
-    public ProjectTaskService(EngineeringDomainContext context)
+    /// <param name="timeProvider">The clock the archived-project guard reads "now" from (`WP 19.10H`, `TD-179`). <see langword="null"/> — the default — is <see cref="TimeProvider.System"/>; a test supplies a controllable one.</param>
+    public ProjectTaskService(EngineeringDomainContext context, TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _time = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -96,6 +100,12 @@ public sealed class ProjectTaskService : IProjectTaskService
 
         var project = await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false)
             ?? throw new ProjectNotFoundException(projectId);
+
+        if (project is Project realProject && ProjectArchival.IsArchived(realProject, _time.GetUtcNow()))
+        {
+            throw new InvalidOperationException(
+                $"Project '{projectId}' is archived (closed {realProject.ClosedOn:O}); no new task can be added to it.");
+        }
 
         var factory = new EngineeringObjectFactory<EngineeringTask>(
             CanonicalObjectKinds.Task,
@@ -170,9 +180,27 @@ public sealed class ProjectTaskService : IProjectTaskService
         await task.ContributeToAsync(target.Id, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<EngineeringTask> RequireTaskAsync(Guid taskId, CancellationToken cancellationToken) =>
-        await _context.Repository.FindAsync(taskId, cancellationToken).ConfigureAwait(false) as EngineeringTask
-        ?? throw new TaskNotFoundException(taskId);
+    /// <summary>
+    /// Resolves <paramref name="taskId"/>'s own task, refusing (as an
+    /// exception) when it belongs to a project that is now archived — the
+    /// central archived-project guard (`WP 19.10H`, `TD-179`) every other
+    /// mutator in this class runs through, so a task moved deep into the
+    /// project's structure is still covered.
+    /// </summary>
+    private async Task<EngineeringTask> RequireTaskAsync(Guid taskId, CancellationToken cancellationToken)
+    {
+        var task = await _context.Repository.FindAsync(taskId, cancellationToken).ConfigureAwait(false) as EngineeringTask
+            ?? throw new TaskNotFoundException(taskId);
+
+        if (await ProjectMembership.ResolveOwningProjectAsync(_context.Repository, task.Id, cancellationToken).ConfigureAwait(false) is { } projectId
+            && await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is Project project
+            && ProjectArchival.IsArchived(project, _time.GetUtcNow()))
+        {
+            throw new InvalidOperationException($"Project '{projectId}' is archived (closed {project.ClosedOn:O}); it is read-only.");
+        }
+
+        return task;
+    }
 }
 
 /// <summary>Thrown when a task operation names an object that is not a task.</summary>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../tokens/fonts.css">
+  <link rel="stylesheet" href="../../tokens/colors.css">
+  <link rel="stylesheet" href="../../tokens/typography.css">
+  <link rel="stylesheet" href="../../tokens/spacing.css">
+  <link rel="stylesheet" href="../../tokens/radius.css">
+  <link rel="stylesheet" href="../../tokens/elevation.css">
+  <link rel="stylesheet" href="../../tokens/motion.css">
+  <link rel="stylesheet" href="../../tokens/semantic.css">
+  <link rel="stylesheet" href="../../tokens/base.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="../../_ds_bundle.js"></script>
+  <script src="image-slot.js"></script>
+  <style>
+    body{margin:0;background:var(--navy-800)}
+    a{color:var(--cyan-500)} a:hover{color:var(--cyan-400)}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--navy-800);color:var(--text-body);font-family:var(--font-body)" data-screen-label="About">
+  <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:40px;height:72px;padding:0 32px;background:rgba(11,14,30,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border-subtle)">
+    <a href="Home.dc.html" style="border-bottom:0;display:flex"><img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:38px;display:block"></img></a>
+    <nav style="display:flex;align-items:center;gap:28px">
+      <a href="Home.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Home</a>
+      <a href="About.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-050);border-bottom:0">About</a>
+      <a href="Capabilities.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Capabilities</a>
+      <a href="Work.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Work</a>
+      <a href="Contact.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Contact</a>
+    </nav>
+    <div style="flex:1"></div>
+    <a href="mailto:StevenK@Tempest-Engineering.com" style="font-family:var(--font-mono);font-size:12px;color:var(--cyan-500);border-bottom:0">StevenK@Tempest-Engineering.com</a>
+  </header>
+
+  <section style="padding:96px 32px;background-color:var(--navy-800);background-image:var(--bg-grid);border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;gap:56px;align-items:flex-start">
+      <image-slot id="headshot" shape="rounded" radius="5" placeholder="Headshot" style="width:220px;height:260px;flex:none"></image-slot>
+      <div>
+        <div class="t-eyebrow">About</div>
+        <h1 style="margin:16px 0 0;max-width:24ch;font-family:var(--font-display);font-size:var(--text-4xl);font-weight:600;line-height:var(--leading-tight);letter-spacing:var(--tracking-tightest);color:var(--text-heading);text-wrap:pretty">Tempest Engineering is the independent design practice of Steven Kreczman.</h1>
+        <p style="margin:24px 0 0;max-width:56ch;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--text-body)">I've spent ten years designing mechanical hardware, most of it in environments where getting it wrong is expensive: defence electronics, MoD equipment support, and industrial hydraulics.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div class="t-eyebrow">Background</div>
+      <div style="display:flex;flex-direction:column;margin-top:36px">
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:28px 0;border-top:1px solid var(--border-subtle)">
+          <div>
+            <h3 style="margin:0;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Northrop Grumman UK — Mission Systems</h3>
+            <div style="margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--text-faint)">2022–2026</div>
+          </div>
+          <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Principal Mechanical Engineer and team lead. Design of electronic equipment enclosures and mounting hardware for defence programmes, alongside responsibility for the technical output of a small engineering team.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:28px 0;border-top:1px solid var(--border-subtle)">
+          <h3 style="margin:0;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">KBR Government Solutions</h3>
+          <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Equipment support engineering on MoD contracts — sustaining and modifying in-service hardware, where the constraint is usually what already exists rather than what you'd choose to design.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:28px 0;border-top:1px solid var(--border-subtle)">
+          <h3 style="margin:0;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Physical Digital</h3>
+          <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Metrology fixture design and scan-to-CAD reverse engineering. Building accurate models from physical parts, and the fixtures needed to measure them repeatably.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:320px 1fr;gap:40px;padding:28px 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)">
+          <h3 style="margin:0;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">HUSCO International</h3>
+          <p style="margin:0;max-width:64ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">Hydraulic valve design. Tight tolerances, high pressures, and volume manufacture.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto">
+      <div class="t-eyebrow">How I work</div>
+      <h2 style="margin:14px 0 0;font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;letter-spacing:var(--tracking-tight);color:var(--text-heading)">Three things I'd want a client to know</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px">
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,240px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">I'd rather ask than assume</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Most design problems that go wrong are requirements problems. I'll push on the brief early, which occasionally means an awkward first conversation and almost always means a cheaper project.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,240px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">Drawings are a deliverable, not an afterthought</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">A model that can't be manufactured from its drawing isn't finished. GD&amp;T applied properly, tolerances that reflect function rather than habit.</p>
+        </x-import>
+        <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,240px">
+          <h3 style="margin:0 0 10px;font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-heading)">I'll tell you if it isn't a fit</h3>
+          <p style="margin:0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)">Some packages need a bigger team, specialist analysis, or a capability I don't have. Saying so early costs me a job and saves you a quarter.</p>
+        </x-import>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;border-bottom:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:320px 1fr;gap:40px">
+      <div class="t-eyebrow">Qualifications</div>
+      <div style="display:flex;flex-direction:column;gap:14px;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">
+        <div>BEng (Hons) Mechanical Engineering, Birmingham City University (2014)</div>
+        <div>Associate Member, Institution of Mechanical Engineers (AMIMechE)</div>
+        <div>UK SC Security Clearance</div>
+        <div>ISO 9001 Internal Auditor</div>
+        <div>CETOP Level 3, Mobile Hydraulics</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:96px 32px;background-color:var(--navy-800);background-image:var(--bg-grid)">
+    <div style="max-width:1240px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center">
+      <div class="t-eyebrow">Contact</div>
+      <div style="margin-top:24px"><a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">StevenK@Tempest-Engineering.com</x-import></a></div>
+    </div>
+  </section>
+
+  <footer class="t-light" style="background:var(--bg-page);color:var(--text-body);padding:40px 32px;border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Tempest Design Engineering Ltd, trading as Tempest Engineering. Registered in England and Wales, company no. {{ companyNumber }}.</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint)"><a href="Privacy.dc.html" style="color:var(--text-faint)">Privacy Notice</a><span>·</span><span>© 2026</span></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;companyNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;17349874&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Footer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      companyNumber: this.props.companyNumber ?? '17349874',
+    };
+  }
+}
+</script>
+</body>
+</html>

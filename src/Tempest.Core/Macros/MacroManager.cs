@@ -43,16 +43,44 @@ public sealed class MacroManager : IMacroManager
             foreach (var dto in dtos)
             {
                 // A structurally-valid list can still carry a corrupted
-                // entry (null Name/StepCommandIds after a partial write);
-                // one bad entry must not abort loading the rest.
-                if (dto.Name is null || dto.StepCommandIds is null)
+                // entry (null Name/StepCommandIds, or a null step Id,
+                // after a partial write); one bad entry must not abort
+                // loading the rest.
+                if (dto.Name is null || dto.StepCommandIds is null
+                    || dto.StepCommandIds.Any(string.IsNullOrWhiteSpace))
+                {
                     continue;
+                }
 
-                var macro = new CommandMacro(dto.Id, dto.Name, dto.StepCommandIds);
+                var macro = new CommandMacro(dto.Id, dto.Name, BuildSteps(dto));
                 _macrosById[macro.Id] = macro;
                 RegisterDescriptorIfNeeded(macro);
             }
         }
+    }
+
+    /// <summary>
+    /// Rebuilds each step's own recorded values from
+    /// <see cref="MacroDto.StepValues"/>, positionally aligned with
+    /// <see cref="MacroDto.StepCommandIds"/> — <see langword="null"/> for
+    /// a macro persisted before recorded values existed, or for one whose
+    /// list is shorter than the steps it describes (a partial write); a
+    /// step past the end, or one <see cref="MacroDto.StepValues"/> itself
+    /// records as <see langword="null"/>, records no values, exactly as
+    /// every step did before this Work Package.
+    /// </summary>
+    private static List<MacroStep> BuildSteps(MacroDto dto)
+    {
+        var steps = new List<MacroStep>(dto.StepCommandIds!.Count);
+
+        for (var i = 0; i < dto.StepCommandIds.Count; i++)
+        {
+            var id = dto.StepCommandIds[i];
+            var recorded = dto.StepValues is { } values && i < values.Count ? values[i] : null;
+            steps.Add(recorded is null ? new MacroStep(id) : new MacroStep(id, recorded));
+        }
+
+        return steps;
     }
 
     /// <inheritdoc />
@@ -78,22 +106,45 @@ public sealed class MacroManager : IMacroManager
     }
 
     /// <inheritdoc />
-    public async Task<ICommandMacro> CreateAsync(string name, IReadOnlyList<string> stepCommandIds, CancellationToken cancellationToken = default)
+    public Task<ICommandMacro> CreateAsync(string name, IReadOnlyList<string> stepCommandIds, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stepCommandIds);
+
+        return CreateAsync(name, stepCommandIds.Select(id => new MacroStep(id)).ToList(), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<ICommandMacro> CreateAsync(string name, IReadOnlyList<MacroStep> steps, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name must not be null, empty, or whitespace.", nameof(name));
 
-        ArgumentNullException.ThrowIfNull(stepCommandIds);
+        ArgumentNullException.ThrowIfNull(steps);
 
-        if (stepCommandIds.Count == 0)
-            throw new ArgumentException("A macro must have at least one step.", nameof(stepCommandIds));
+        if (steps.Count == 0)
+            throw new ArgumentException("A macro must have at least one step.", nameof(steps));
 
-        var registeredIds = _commandRegistry.Items.Select(d => d.Id).ToHashSet(StringComparer.Ordinal);
-        var unknownStep = stepCommandIds.FirstOrDefault(id => !registeredIds.Contains(id));
-        if (unknownStep is not null)
-            throw new ArgumentException($"'{unknownStep}' is not a registered command Id.", nameof(stepCommandIds));
+        var registeredById = _commandRegistry.Items.ToDictionary(d => d.Id, StringComparer.Ordinal);
 
-        var macro = new CommandMacro(Guid.NewGuid(), name, stepCommandIds);
+        foreach (var step in steps)
+        {
+            if (!registeredById.TryGetValue(step.CommandId, out var descriptor))
+                throw new ArgumentException($"'{step.CommandId}' is not a registered command Id.", nameof(steps));
+
+            // `WP 20.2C`, `ADR-0099`'s own addendum: a command this
+            // platform genuinely cannot invoke yet (today, the
+            // object-picker set — `WorkspaceCommandBindings.ObjectPickerRequired`)
+            // is refused here, with its own declared reason, rather than
+            // accepted and left to fail unexplained the first time the
+            // macro runs.
+            if (descriptor.Binding is { IsInvocable: false } binding)
+            {
+                throw new ArgumentException(
+                    $"'{step.CommandId}' cannot be a macro step: {binding.UnavailableReason}", nameof(steps));
+            }
+        }
+
+        var macro = new CommandMacro(Guid.NewGuid(), name, steps);
 
         lock (_gate)
         {
@@ -113,6 +164,14 @@ public sealed class MacroManager : IMacroManager
         {
             if (!_macrosById.Remove(id))
                 return;
+
+            // `WP 20.2C`: the descriptor comes down with the macro — see
+            // `ICommandRegistry.Unregister`'s own remarks for why this is
+            // now safe (`Items` is read fresh by every consumer, not
+            // cached).
+            var descriptorId = IMacroManager.CommandIdPrefix + id;
+            _registeredDescriptorIds.Remove(descriptorId);
+            _commandRegistry.Unregister(descriptorId);
         }
 
         await SaveAsync(cancellationToken).ConfigureAwait(false);
@@ -138,7 +197,7 @@ public sealed class MacroManager : IMacroManager
             descriptorId,
             macro.Name,
             category: "Macros",
-            description: $"Runs {macro.StepCommandIds.Count} step(s) in sequence.",
+            description: $"Runs {macro.Steps.Count} step(s) in sequence.",
             createDefault: () => new RunMacroCommand(macroId))
         {
             // TD-77 Stage 5. CreateDefault is kept exactly as it was, so
@@ -165,13 +224,34 @@ public sealed class MacroManager : IMacroManager
         lock (_gate)
         {
             dtos = _macrosById.Values
-                .Select(m => new MacroDto(m.Id, m.Name, m.StepCommandIds.ToList()))
+                .Select(m => new MacroDto(
+                    m.Id,
+                    m.Name,
+                    m.Steps.Select(s => s.CommandId).ToList(),
+                    m.Steps.Select(s => s.RecordedValues.Count > 0
+                        ? new Dictionary<string, string>(s.RecordedValues, StringComparer.Ordinal)
+                        : null)
+                        .ToList()))
                 .ToList();
         }
 
         await _document.SaveAsync(dtos, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>The plain, JSON-serializable shape one macro persists as.</summary>
-    private sealed record MacroDto(Guid Id, string Name, List<string> StepCommandIds);
+    /// <summary>
+    /// The plain, JSON-serializable shape one macro persists as.
+    /// </summary>
+    /// <param name="StepValues">
+    /// Each step's own recorded values, positionally aligned with
+    /// <paramref name="StepCommandIds"/> — <see langword="null"/> entries
+    /// where a step recorded none (`WP 20.2C`). Optional, and additive:
+    /// a macro persisted by an earlier build carries no
+    /// <c>"StepValues"</c> property at all, which deserializes to
+    /// <see langword="null"/> here — the exact shape every macro had
+    /// before this Work Package (verified: <c>System.Text.Json</c> honours
+    /// a record parameter's own default when the JSON property is
+    /// absent).
+    /// </param>
+    private sealed record MacroDto(
+        Guid Id, string Name, List<string> StepCommandIds, List<Dictionary<string, string>?>? StepValues = null);
 }

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -60,6 +61,8 @@ public sealed class MessageDialog : Border
         _okButton.Classes.Add(ChromeStyles.Primary);
         _title.FontFamily = DesignTokens.TitleFont;
         _title.FontSize = DesignTokens.FontSizeTitle;
+        AutomationProperties.SetName(_okButton, "OK");
+        ToolTip.SetTip(_okButton, "OK");
         _okButton.Click += (_, _) => Complete();
         KeyDown += OnKeyDown;
 

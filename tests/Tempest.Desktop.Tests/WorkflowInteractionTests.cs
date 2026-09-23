@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Tempest.Workspace;
 using Tempest.Workspace.Mechanical;
 using Tempest.Core.Commands;
@@ -143,60 +144,49 @@ public sealed class WorkflowInteractionTests
     }
 
     // ------------------------------------------------------------
-    // SettingsDialog
+    // SettingsView (`WP 19.2B`: a rail area, replacing the retired
+    // SettingsDialog — no pending Save/Cancel two-step, so there is no
+    // "Cancel leaves settings unchanged" gesture left to test: not
+    // pressing Save already leaves the stored values exactly as they
+    // were, which is not a behaviour this dialog-shaped test format has
+    // anything left to prove).
     // ------------------------------------------------------------
 
     [AvaloniaFact]
-    public async Task SettingsDialog_Save_PersistsToUserSettings()
+    public async Task SettingsView_Save_PersistsToUserSettings()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
         {
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            var configuration = (Tempest.Core.Configuration.IConfigurationProvider)host.Services!.GetService(typeof(Tempest.Core.Configuration.IConfigurationProvider));
             var theme = new ThemeService(settingsProvider);
             var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings, settingsProvider);
+            var view = new SettingsView(theme, settings, settingsProvider, configuration, "(test)");
+            await view.RefreshAsync();
 
-            var showTask = dialog.ShowAsync();
-            var checkbox = GetLogicalDescendants(dialog).OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
+            var checkbox = GetLogicalDescendants(view).OfType<CheckBox>().Single(c => Equals(c.Content, "Confirm before deleting an object"));
             checkbox.IsChecked = false;
 
-            var saveButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Save"));
+            var saveButton = GetLogicalDescendants(view).OfType<Button>().Single(b => Equals(b.Content, "Save"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-            Assert.True(await showTask);
+            // The field itself is set synchronously, before `SaveAsync`'s
+            // own first `await` — the durable write is not.
             Assert.False(settings.ConfirmBeforeDelete);
 
             var reloaded = new UserSettings(settingsProvider);
-            await reloaded.LoadAsync();
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            do
+            {
+                await Task.Delay(10);
+                Dispatcher.UIThread.RunJobs();
+                await reloaded.LoadAsync();
+            }
+            while (reloaded.ConfirmBeforeDelete && DateTime.UtcNow < deadline);
+
             Assert.False(reloaded.ConfirmBeforeDelete);
-        }
-        finally
-        {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
-        }
-    }
-
-    [AvaloniaFact]
-    public async Task SettingsDialog_Cancel_LeavesSettingsUnchanged()
-    {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
-        try
-        {
-            await host.StartAsync();
-            var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
-            var theme = new ThemeService(settingsProvider);
-            var settings = new UserSettings(settingsProvider);
-            var dialog = new SettingsDialog(theme, settings, settingsProvider);
-
-            var showTask = dialog.ShowAsync();
-            var cancelButton = GetLogicalDescendants(dialog).OfType<Button>().Single(b => Equals(b.Content, "Cancel"));
-            cancelButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-
-            Assert.False(await showTask);
-            Assert.True(settings.ConfirmBeforeDelete); // unchanged, still the default
         }
         finally
         {
@@ -218,7 +208,11 @@ public sealed class WorkflowInteractionTests
             await host.StartAsync();
             var settingsProvider = (Tempest.Core.Settings.ISettingsProvider)host.Services!.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
 
-            var settings = new UserSettings(settingsProvider) { ToastDurationSeconds = 9.5, ConfirmBeforeDelete = false, RecentSearchCapacity = 3 };
+            // `WP 21.5A`: CheckForUpdatesOnLaunch joins the round-trip -
+            // off by default (see the "leaves every default unchanged"
+            // test below), so this asserts it also survives a save/load
+            // cycle once turned on.
+            var settings = new UserSettings(settingsProvider) { ToastDurationSeconds = 9.5, ConfirmBeforeDelete = false, RecentSearchCapacity = 3, CheckForUpdatesOnLaunch = true };
             await settings.SaveAsync();
 
             var reloaded = new UserSettings(settingsProvider);
@@ -227,6 +221,7 @@ public sealed class WorkflowInteractionTests
             Assert.Equal(9.5, reloaded.ToastDurationSeconds);
             Assert.False(reloaded.ConfirmBeforeDelete);
             Assert.Equal(3, reloaded.RecentSearchCapacity);
+            Assert.True(reloaded.CheckForUpdatesOnLaunch);
         }
         finally
         {
@@ -491,7 +486,7 @@ public sealed class WorkflowInteractionTests
 
             Assert.True(result.Succeeded);
             var created = await domainContext.Repository.ListByKindAsync("Part");
-            Assert.Contains(created, o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "WP10.5B Test Part");
+            Assert.Contains(created, entry => entry.DisplayName == "WP10.5B Test Part");
         }
         finally
         {
@@ -619,6 +614,44 @@ public sealed class WorkflowInteractionTests
     }
 
     // ------------------------------------------------------------
+    // `TD-27`: Project Explorer node order is deterministic
+    // ------------------------------------------------------------
+
+    [AvaloniaFact]
+    public async Task ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        try
+        {
+            await host.StartAsync();
+            var workspace = host.Workspace!;
+            await workspace.Navigation.SwitchAreaAsync(MechanicalWorkspaceExplorerModule.NavigationItemId);
+
+            var firstRoots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            var secondRoots = await workspace.ProjectExplorer.GetRootNodesAsync();
+            Assert.Equal(firstRoots.Select(n => n.Id), secondRoots.Select(n => n.Id));
+
+            var parentWithChildren = firstRoots.FirstOrDefault(n => n.HasChildren);
+            if (parentWithChildren is not null)
+            {
+                var firstChildren = await workspace.ProjectExplorer.GetChildrenAsync(parentWithChildren.Id);
+                var secondChildren = await workspace.ProjectExplorer.GetChildrenAsync(parentWithChildren.Id);
+
+                // `InMemoryEngineeringObjectRepository`'s registration order
+                // guarantee (`TD-27`) reaches all the way to this surface:
+                // the same parent's children come back in the same order
+                // every time, never reshuffled between renders.
+                Assert.Equal(firstChildren.Select(n => n.Id), secondChildren.Select(n => n.Id));
+            }
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    // ------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------
 
@@ -640,12 +673,16 @@ public sealed class WorkflowInteractionTests
     /// (which genuinely has children), and <c>IDeletable.DeleteAsync</c>
     /// throws <c>EngineeringObjectHasChildrenException</c> for any object
     /// a live child still parents — a real, disclosed business rule, not
-    /// a defect. Depending on
-    /// <c>InMemoryEngineeringObjectRepository</c>'s own unspecified
-    /// iteration order (`TD-27`'s identical risk class), the plain
-    /// "first object" helper could non-deterministically pick either a
-    /// deletable leaf or the non-deletable root — found directly, by a
-    /// flaking test, before this helper existed.
+    /// a defect, so this helper stays even now that
+    /// <c>InMemoryEngineeringObjectRepository</c> guarantees a stable
+    /// registration order (`TD-27`, asserted directly by
+    /// <see cref="ProjectExplorer_RootAndChildNodes_ReturnTheSameOrderAcrossRepeatedReads"/>
+    /// above): the *first* node found is still whichever real node happens
+    /// to sit first in that order, and the root can genuinely be it. Before
+    /// this helper existed, the plain "first object" search could also
+    /// non-deterministically land on either the leaf or the root, found
+    /// directly by a flaking test — a second, now-closed risk from the
+    /// same unspecified-order class.
     /// </summary>
     private static async Task<ProjectExplorerNode> GetRealLeafMechanicalObjectNodeAsync(IWorkspace workspace)
     {

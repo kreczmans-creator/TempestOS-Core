@@ -22,6 +22,10 @@ public static class KindEditorDeclarations
         registry.Register(Part());
         registry.Register(Assembly());
         registry.Register(Component());
+        registry.Register(Project());
+        registry.Register(InvoiceRequest());
+        registry.Register(Quotation());
+        registry.Register(ManualTask());
     }
 
     /// <summary>
@@ -99,6 +103,102 @@ public static class KindEditorDeclarations
             DescriptionSection(),
             WhereUsedSection(),
             AttachmentsSection(),
+            LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// The project's own declaration (`WP 19.0A`, `ADR-0150`): Identity;
+    /// Commercial (client and rate card and project manager read-only —
+    /// each needs a picker, Desktop work of part 2 of this Work Package;
+    /// purchase order reference, dates and budget editable now, as plain
+    /// text); Lifecycle. No Description, Where-used or Bill-of-Materials
+    /// section — those facets are Mechanical's own structural product,
+    /// which a Project does not carry.
+    /// </summary>
+    public static KindEditorDeclaration Project() => new(
+        MechanicalObjectFactoryRegistry.Project,
+        [
+            IdentitySection(),
+
+            new(EditorSectionKeys.Commercial, "Commercial",
+                new EditorFieldDeclaration("Client", EditorControlKind.ObjectReference, Editable: false),
+                new EditorFieldDeclaration("Purchase Order Reference", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-purchase-order"),
+                new EditorFieldDeclaration("Budget", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-budget"),
+                new EditorFieldDeclaration("Rate Card", EditorControlKind.ObjectReference, Editable: false),
+                new EditorFieldDeclaration("Start Date", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-dates"),
+                new EditorFieldDeclaration("Target Date", EditorControlKind.Text, Editable: true, WriteCommandId: "project.set-dates"),
+                new EditorFieldDeclaration("Project Manager", EditorControlKind.ObjectReference, Editable: false)),
+
+            LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// The invoice request's own declaration (`WP 19.1A`, `ADR-0151`):
+    /// Identity (name, read-only — derived, never renamed); Lines
+    /// (read-only, built by <c>InvoicingService.RaiseFromCompletionAsync</c>)
+    /// and the total; Lifecycle (status); Connector (every external field
+    /// the connector has reported, and the last error). No Description,
+    /// Where-used or Bill-of-Materials section — those facets are
+    /// Mechanical's own structural product, which a request does not
+    /// carry.
+    /// </summary>
+    public static KindEditorDeclaration InvoiceRequest() => new(
+        Core.Invoicing.InvoiceRequest.CanonicalKind,
+        [
+            new(EditorSectionKeys.Identity, "Identity",
+                new EditorFieldDeclaration("Name", EditorControlKind.Text, Editable: false)),
+
+            new(EditorSectionKeys.InvoiceLines, "Lines",
+                new EditorFieldDeclaration("Lines", EditorControlKind.ReadOnlyList, Editable: false),
+                new EditorFieldDeclaration("Total", EditorControlKind.Text, Editable: false)),
+
+            LifecycleSection(),
+
+            new(EditorSectionKeys.InvoicingExternal, "Connector",
+                new EditorFieldDeclaration("Connector", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Id", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Invoice Number", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("External Status", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Issued Date", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Paid Date", EditorControlKind.Text, Editable: false),
+                new EditorFieldDeclaration("Last Error", EditorControlKind.Text, Editable: false)),
+        ]);
+
+    /// <summary>
+    /// The quotation's own declaration (`WP 19.5A`, `ADR-0152`): Identity
+    /// (Name, read-only — derived from the reference, never renamed);
+    /// Lines (read-only list + Total — the section renders no content yet,
+    /// this Work Package's own scope being the model, not the rendering;
+    /// `WP 19.5B`'s own <c>PopulateQuotationAsync</c> is what makes it
+    /// real, exactly as `InvoiceRequest`'s own Lines section became real
+    /// only once its own <c>Populate*</c> method existed); Lifecycle.
+    /// </summary>
+    public static KindEditorDeclaration Quotation() => new(
+        Core.Quotations.Quotation.CanonicalKind,
+        [
+            new(EditorSectionKeys.Identity, "Identity",
+                new EditorFieldDeclaration("Name", EditorControlKind.Text, Editable: false)),
+
+            new(EditorSectionKeys.QuotationLines, "Lines",
+                new EditorFieldDeclaration("Lines", EditorControlKind.ReadOnlyList, Editable: false),
+                new EditorFieldDeclaration("Total", EditorControlKind.Text, Editable: false)),
+
+            LifecycleSection(),
+        ]);
+
+    /// <summary>
+    /// A manual task's own declaration (`WP 19.5C`): Identity (Name,
+    /// editable — a task's own title is user-set, unlike a Quotation's/
+    /// InvoiceRequest's derived one) and Lifecycle only. Deliberately no
+    /// bespoke section: <c>Done</c>/<c>DueDate</c> are read from the
+    /// Property Inspector's own facets (<c>TaskPropertyFacetProvider</c>);
+    /// completing a task is a ribbon/palette act (<c>task.complete</c>),
+    /// not an editable field.
+    /// </summary>
+    public static KindEditorDeclaration ManualTask() => new(
+        Core.Tasks.ManualTask.CanonicalKind,
+        [
+            IdentitySection(),
             LifecycleSection(),
         ]);
 

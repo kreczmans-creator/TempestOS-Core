@@ -82,10 +82,13 @@ public sealed class ManufacturingObjectFactoryRegistry
 
         var metadata = classification is null ? EngineeringObjectMetadata.Empty : new EngineeringObjectMetadata(Classification: classification);
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         var factory = new EngineeringObjectFactory<ManufacturingOperation>(
             ManufacturingOperationKind, _context, (doc, rev) => new ManufacturingOperation(doc, rev, _context, identifier, displayName, metadata, partId));
 
-        var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
+        var created = await factory.CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)
             await hasParent.MoveAsync(pid, cancellationToken).ConfigureAwait(false);
@@ -102,11 +105,14 @@ public sealed class ManufacturingObjectFactoryRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         ArgumentNullException.ThrowIfNull(initialContent);
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         var factory = new EngineeringObjectFactory<WorkInstruction>(
             WorkInstructionKind, _context, (doc, rev) => new WorkInstruction(
                 doc, rev, _context, identifier, displayName, EngineeringObjectMetadata.Empty, manufacturingOperationId));
 
-        var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
+        var created = await factory.CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)
             await hasParent.MoveAsync(pid, cancellationToken).ConfigureAwait(false);
@@ -124,10 +130,13 @@ public sealed class ManufacturingObjectFactoryRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(method);
         ArgumentNullException.ThrowIfNull(initialContent);
 
+        // `TD-38`: see `MechanicalObjectFactoryRegistry.CreateAsync`'s own identical remark.
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
+
         var factory = new EngineeringObjectFactory<Inspection>(
             InspectionKind, _context, (doc, rev) => new Inspection(doc, rev, _context, displayName, EngineeringObjectMetadata.Empty, subjectId, method));
 
-        var created = await factory.CreateAsync(initialContent, cancellationToken).ConfigureAwait(false);
+        var created = await factory.CreateAsync(initialContent, projectScopeId, cancellationToken).ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)
             await hasParent.MoveAsync(pid, cancellationToken).ConfigureAwait(false);

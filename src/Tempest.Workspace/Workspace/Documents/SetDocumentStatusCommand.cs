@@ -39,12 +39,16 @@ public sealed class SetDocumentStatusCommand : IWorkspaceCommand
 public sealed class SetDocumentStatusCommandHandler : ICommandHandler<SetDocumentStatusCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public SetDocumentStatusCommandHandler(EngineeringDomainContext context)
+    /// <param name="context">Where the target object is found.</param>
+    /// <param name="dispatcher">Dispatches this transition's own compensation (`WP 21.1A`) — optional; <see langword="null"/> means no <see cref="CommandResult.Compensation"/> is attached.</param>
+    public SetDocumentStatusCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(SetDocumentStatusCommand command, CancellationToken cancellationToken)
@@ -53,6 +57,9 @@ public sealed class SetDocumentStatusCommandHandler : ICommandHandler<SetDocumen
 
         if (target is not IHasLifecycle lifecycle)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind has no lifecycle status.");
+
+        var previousStatus = lifecycle.Status;
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? command.TargetObjectId.ToString();
 
         try
         {
@@ -63,6 +70,12 @@ public sealed class SetDocumentStatusCommandHandler : ICommandHandler<SetDocumen
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Status set to '{command.Status}' for '{command.TargetObjectId}'.");
+        var compensation = WorkspaceCommandBindings.StatusCompensation(
+            _context, _dispatcher, command.TargetObjectId, command.TargetKind, sourceName, previousStatus, command.Status,
+            status => new SetDocumentStatusCommand(command.TargetObjectId, command.TargetKind, status));
+
+        return CommandResult.Success(
+            $"Status set to '{command.Status}' for '{command.TargetObjectId}'.", compensation: compensation,
+            undoUnavailableReason: compensation is null ? WorkspaceCommandBindings.UndoUnavailableForStatus(previousStatus, command.Status) : null);
     }
 }

@@ -2,6 +2,7 @@ using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringData;
+using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
@@ -51,7 +52,7 @@ public class VerificationSampleModuleIntegrationTests
 
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
         services.Singleton<IPermissionEvaluator, PermissionEvaluator>();
 
         // One store instance under all three shapes, as `TempestHost`
@@ -63,6 +64,7 @@ public class VerificationSampleModuleIntegrationTests
         services.AddInstance<IBinaryPersistenceStore>(persistenceStore);
         services.AddInstance<IQueryablePersistenceStore>(persistenceStore);
         services.Singleton<IEngineeringDocumentStore, EngineeringDocumentStore>();
+        services.Singleton<IEngineeringRelationshipRepository, InMemoryEngineeringRelationshipRepository>();
         services.Singleton<IVerificationService, VerificationService>();
 
         services.AddDiscoveredModules(runtimeManager.GetAll().Select(module => module.Descriptor));
@@ -148,8 +150,8 @@ public class VerificationSampleModuleIntegrationTests
         var lifecycleManager = new ModuleLifecycleManager(runtimeManager, serviceProvider);
         await lifecycleManager.InitialiseAllAsync(CancellationToken.None);
 
-        var accessor = (CurrentPrincipalAccessor)serviceProvider.GetService(typeof(CurrentPrincipalAccessor));
-        accessor.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
+        var principalSession = (PrincipalSession)serviceProvider.GetService(typeof(PrincipalSession));
+        principalSession.Establish(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var result = await commandRegistry.InvokeAsync(VerificationSampleModule.GetSampleVerificationHistoryCommandId, CancellationToken.None);
 
@@ -184,7 +186,9 @@ public class VerificationSampleModuleIntegrationTests
         ])).Build());
         var accessorTwo = new CurrentPrincipalAccessor();
         var documentStoreTwo = new EngineeringDocumentStore(persistenceStoreTwo, accessorTwo);
-        var serviceTwo = new VerificationService(documentStoreTwo, accessorTwo, new PermissionEvaluator());
+        var serviceTwo = new VerificationService(
+            documentStoreTwo, accessorTwo, new PermissionEvaluator(),
+            persistenceStoreTwo, new Tempest.Core.EngineeringDomain.InMemoryEngineeringRelationshipRepository());
         accessorTwo.SetCurrent(new PlatformPrincipal(new PlatformIdentity("verifier", "Verifier"), [VerificationService.ReadPermission]));
 
         var history = await serviceTwo.GetVerificationHistoryAsync(moduleOne.SampleSubjectDocumentId!.Value);

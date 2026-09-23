@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -50,6 +51,15 @@ public sealed class ConfirmationDialog : Border
 
         _confirmButton.Classes.Add(ChromeStyles.Danger);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_cancelButton, "Cancel");
+        // A real default, not just a fallback for the walk below: nothing
+        // guarantees `ConfirmAsync` runs before this dialog (permanently
+        // present, never removed — see `MainWindowComposer.Layout`) is
+        // first inspected, so the button never sits nameless between
+        // construction and its first real use.
+        AutomationProperties.SetName(_confirmButton, "Discard");
+        ToolTip.SetTip(_confirmButton, "Discard");
         _title.FontFamily = DesignTokens.TitleFont;
         _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(false);
@@ -100,6 +110,8 @@ public sealed class ConfirmationDialog : Border
         _title.Text = title;
         _message.Text = message;
         _confirmButton.Content = confirmText;
+        AutomationProperties.SetName(_confirmButton, confirmText);
+        ToolTip.SetTip(_confirmButton, confirmText);
         IsVisible = true;
         // The safe action gets initial focus — pressing Enter before
         // tabbing anywhere cancels, never confirms (this dialog is used

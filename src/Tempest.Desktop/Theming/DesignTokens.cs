@@ -161,8 +161,14 @@ internal static class DesignTokens
     /// <summary>The rail's compact (glyph-only) width, used below <see cref="CompactShellWidth"/>.</summary>
     public const double RailCompactWidth = 56;
 
-    /// <summary>The window width below which the rail collapses to its compact form.</summary>
-    public const double CompactShellWidth = 1240;
+    /// <summary>
+    /// The window width below which the rail folds to its icons
+    /// (<see cref="Tempest.Desktop.Views.GlobalNavigationRail.SetCompact"/>)
+    /// and the ribbon compacts to icons, labels hidden
+    /// (<see cref="Tempest.Desktop.Views.RibbonView.SetCompact"/>) — `WP
+    /// 19.2B`, `TD-73`.
+    /// </summary>
+    public const double CompactShellWidth = 1200;
 
     /// <summary>The status bar's own height.</summary>
     public const double StatusBarHeight = 26;

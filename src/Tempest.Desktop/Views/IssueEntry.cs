@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -62,6 +63,13 @@ public sealed class IssueEntry : Border
 
         _issueButton.Classes.Add(ChromeStyles.Primary);
         _cancelButton.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_issueReference, "Issue reference");
+        AutomationProperties.SetName(_revision, "Revision");
+        AutomationProperties.SetName(_client, "Client");
+        AutomationProperties.SetName(_issueButton, "Issue");
+        AutomationProperties.SetName(_cancelButton, "Cancel");
+        ToolTip.SetTip(_issueButton, "Issue");
+        ToolTip.SetTip(_cancelButton, "Cancel");
 
         _issueButton.Click += (_, _) => TryComplete();
         _cancelButton.Click += (_, _) => Complete(null);

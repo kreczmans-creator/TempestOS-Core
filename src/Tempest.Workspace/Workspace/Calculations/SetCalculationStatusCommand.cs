@@ -44,12 +44,14 @@ public sealed class SetCalculationStatusCommand : IWorkspaceCommand
 public sealed class SetCalculationStatusCommandHandler : ICommandHandler<SetCalculationStatusCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public SetCalculationStatusCommandHandler(EngineeringDomainContext context)
+    public SetCalculationStatusCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(SetCalculationStatusCommand command, CancellationToken cancellationToken)
@@ -58,6 +60,9 @@ public sealed class SetCalculationStatusCommandHandler : ICommandHandler<SetCalc
 
         if (target is not IHasLifecycle lifecycle)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind has no lifecycle status.");
+
+        var previousStatus = lifecycle.Status;
+        var sourceName = (target as IHasBusinessIdentifier)?.DisplayName ?? command.TargetObjectId.ToString();
 
         try
         {
@@ -68,6 +73,12 @@ public sealed class SetCalculationStatusCommandHandler : ICommandHandler<SetCalc
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Status set to '{command.Status}' for '{command.TargetObjectId}'.");
+        var compensation = WorkspaceCommandBindings.StatusCompensation(
+            _context, _dispatcher, command.TargetObjectId, command.TargetKind, sourceName, previousStatus, command.Status,
+            status => new SetCalculationStatusCommand(command.TargetObjectId, command.TargetKind, status));
+
+        return CommandResult.Success(
+            $"Status set to '{command.Status}' for '{command.TargetObjectId}'.", compensation: compensation,
+            undoUnavailableReason: compensation is null ? WorkspaceCommandBindings.UndoUnavailableForStatus(previousStatus, command.Status) : null);
     }
 }

@@ -1,0 +1,23 @@
+:root{
+  /* On dark, elevation is a hairline + a faint glow, never a drop shadow. */
+  --hairline-dark:1px solid var(--paper-a08);
+  --hairline-dark-strong:1px solid var(--paper-a14);
+  --hairline-light:1px solid var(--ink-a08);
+  --hairline-light-strong:1px solid var(--ink-a14);
+
+  --shadow-none:none;
+  --shadow-sm:0 1px 2px rgba(7,9,21,.06);
+  --shadow-md:0 4px 12px rgba(7,9,21,.08);
+  --shadow-lg:0 16px 40px rgba(7,9,21,.14);
+  --shadow-panel:0 24px 64px rgba(7,9,21,.5);
+
+  --glow-cyan:0 0 0 1px var(--cyan-a40),0 0 24px var(--cyan-a24);
+  --glow-focus:0 0 0 2px var(--navy-800),0 0 0 4px var(--cyan-500);
+  --inset-top:inset 0 1px 0 var(--paper-a08);
+
+  /* Blueprint grid — from the desktop wallpaper. Layer over --navy-800. */
+  --grid-line:rgba(64,162,206,.055);
+  --grid-size:64px;
+  --bg-grid:linear-gradient(var(--grid-line) 1px,transparent 1px) 0 0/var(--grid-size) var(--grid-size),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px) 0 0/var(--grid-size) var(--grid-size);
+  --bg-scan:repeating-linear-gradient(180deg,rgba(245,246,250,.02) 0 1px,transparent 1px 3px);
+}

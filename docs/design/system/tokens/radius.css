@@ -1,0 +1,14 @@
+:root{
+  /* Tempest is a squared-off system. Nothing is soft. */
+  --radius-0:0px;
+  --radius-xs:2px;
+  --radius-sm:3px;
+  --radius-md:5px;
+  --radius-lg:8px;
+  --radius-xl:12px;
+  --radius-pill:999px;
+  /* Notch: the cut corner in the TEMPEST logotype (E, S, P). Use on hero panels and badges. */
+  --notch:10px;
+  --notch-clip:polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, var(--notch) 100%, 0 calc(100% - var(--notch)));
+  --notch-clip-tr:polygon(0 0, calc(100% - var(--notch)) 0, 100% var(--notch), 100% 100%, 0 100%);
+}

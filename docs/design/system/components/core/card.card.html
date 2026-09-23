@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Card" subtitle="Panel surface: eyebrow, title, actions, accent rule" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page);padding:20px;font-family:var(--font-body)}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:14px}.lbl{font-family:var(--font-display);font-size:10px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;color:var(--text-faint)}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { Card, Badge, IconButton, Button } = window.TempestEngineeringDesignSystem_1d4355;
+const Metric = ({k,v,u}) => (
+  <div><div style={{fontFamily:'var(--font-display)',fontSize:10,fontWeight:600,letterSpacing:'.28em',textTransform:'uppercase',color:'var(--text-faint)'}}>{k}</div>
+  <div style={{fontFamily:'var(--font-display)',fontSize:28,fontWeight:600,letterSpacing:'-.015em',color:'var(--text-heading)',marginTop:4}}>{v}<span style={{fontFamily:'var(--font-mono)',fontSize:12,color:'var(--text-faint)',marginLeft:4}}>{u}</span></div></div>
+);
+const App = () => (
+  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+    <Card eyebrow="Array 04" title="Turbine output" accent actions={<IconButton icon="more-horizontal" label="More" size="sm" />}>
+      <div style={{display:'flex',gap:32}}><Metric k="Current" v="12.4" u="MW" /><Metric k="24h peak" v="18.1" u="MW" /></div>
+    </Card>
+    <Card eyebrow="Fleet" title="Health" accent="var(--violet-500)" actions={<Badge tone="success" dot>Nominal</Badge>}>
+      <div style={{fontSize:14,color:'var(--text-body)'}}>142 of 144 units reporting. Two units in scheduled maintenance.</div>
+    </Card>
+    <Card interactive title="Dispatch schedule" padding="md">
+      <div style={{fontSize:14,color:'var(--text-body)'}}>Hairline turns cyan on hover.</div>
+    </Card>
+    <Card notch padding="md" eyebrow="Notched" title="Hero panel">
+      <div style={{fontSize:14,color:'var(--text-body)'}}>Cut corner echoes the logotype.</div>
+    </Card>
+  </div>
+);
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

@@ -354,7 +354,7 @@ public sealed class ActionOutcomeReportingTests
 
             var view = await workspace.Navigation.OpenAsync(node.Id, node.Kind!);
             var content = coordinator.BuildDocumentContent(view);
-            var editor = content as Editors.ObjectEditorView;
+            var editor = content as Tempest.Desktop.Editors.ObjectEditorView;
             Assert.NotNull(editor);
 
             RaiseActionCompleted(editor!, "Saved 'WP-D1 Editor Save'.", ActionOutcome.Changed);

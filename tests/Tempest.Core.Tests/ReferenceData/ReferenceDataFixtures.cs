@@ -1,9 +1,9 @@
-using System.Collections.Concurrent;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.Tests.Persistence;
 
 namespace Tempest.Core.Tests.ReferenceData;
 
@@ -13,37 +13,151 @@ namespace Tempest.Core.Tests.ReferenceData;
 /// duplicated here rather than shared, per this codebase's own established
 /// precedent of small, test-local fakes.
 /// </summary>
-internal sealed class InMemoryPersistenceStore : IPersistenceStore
+/// <remarks>
+/// `TD-158`: <see cref="ReferenceData.ReferenceDataCatalog{TDefinition}"/>
+/// now refuses a store that is not also an <see cref="IQueryablePersistenceStore"/>
+/// (a clear refusal, never a silent non-transactional fallback), so this
+/// double must be one too. Rather than reimplementing real transaction
+/// semantics a third time, it composes the suite's own hardened,
+/// already-shared double (<see cref="InMemoryQueryablePersistenceStore"/>)
+/// for storage and <see cref="CommitFailingPersistenceStore"/> for fault
+/// injection, and exposes <see cref="FailNextCommit"/> straight through to
+/// it — the same mechanism `TransactionalWriteFaultInjectionTests` already
+/// uses for the engineering-object write path (`WP 17.1B`).
+/// </remarks>
+internal sealed class InMemoryPersistenceStore : IPersistenceStore, IQueryablePersistenceStore
 {
-    private readonly ConcurrentDictionary<string, string> _values = new();
+    private readonly InMemoryQueryablePersistenceStore _inner = new();
+    private readonly CommitFailingPersistenceStore _transactional;
 
-    private static string MakeKey(string collection, string key) => $"{collection} {key}";
+    public InMemoryPersistenceStore()
+    {
+        _transactional = new CommitFailingPersistenceStore(_inner);
+    }
+
+    /// <summary>When set, the next transaction's commit fails after its body completes — `TD-158` fault injection.</summary>
+    public bool FailNextCommit
+    {
+        get => _transactional.FailNextCommit;
+        set => _transactional.FailNextCommit = value;
+    }
+
+    // ----------------------------------------------------------------
+    // IPersistenceStore — straight through to the shared backing store.
+    // ----------------------------------------------------------------
 
     public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_values.TryGetValue(MakeKey(collection, key), out var value) ? value : null);
+        _inner.ReadAsync(collection, key, cancellationToken);
 
-    public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default)
+    public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
+        _inner.WriteAsync(collection, key, value, cancellationToken);
+
+    public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+        _inner.DeleteAsync(collection, key, cancellationToken);
+
+    public Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default) =>
+        _inner.ListKeysAsync(collection, cancellationToken);
+
+    // ----------------------------------------------------------------
+    // IQueryablePersistenceStore — through the fault-injecting wrapper,
+    // so a test can arm FailNextCommit and see the whole transaction body
+    // (document write, index write, secondary index write) fail to land.
+    // ----------------------------------------------------------------
+
+    public long CurrentSequence => _inner.CurrentSequence;
+
+    public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
+        _transactional.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+    public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default) =>
+        _transactional.ReadAllAsync(collection, cancellationToken);
+
+    public Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(
+        string collection, IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default) =>
+        _transactional.ReadManyAsync(collection, keys, cancellationToken);
+
+    public Task ExecuteInTransactionAsync(
+        Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
+        _transactional.ExecuteInTransactionAsync(work, cancellationToken);
+
+    public Task<T> ExecuteInReadTransactionAsync<T>(
+        Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+        _transactional.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+    public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+        _transactional.SearchAsync(query, limit, cancellationToken);
+
+    public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+        _transactional.IsSearchIndexEmptyAsync(cancellationToken);
+}
+
+/// <summary>
+/// A counting <see cref="IEngineeringDocumentStore"/> decorator — every
+/// other member forwards straight through to <paramref name="inner"/>
+/// unchanged; only <see cref="GetRevisionHistoryAsync"/> and
+/// <see cref="GetLatestRevisionAsync"/> are counted. Proves `TD-20`: a
+/// latest-only catalogue lookup must call the single-revision fetch, never
+/// the whole-history one.
+/// </summary>
+internal sealed class CountingDocumentStore(IEngineeringDocumentStore inner)
+    : IEngineeringDocumentStore, Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter
+{
+    public int GetRevisionHistoryAsyncCallCount { get; private set; }
+
+    public int GetLatestRevisionAsyncCallCount { get; private set; }
+
+    public Task<IEngineeringDocument> CreateAsync(string kind, string initialContent, CancellationToken cancellationToken = default) =>
+        inner.CreateAsync(kind, initialContent, cancellationToken);
+
+    public Task<IEngineeringDocument?> FindAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        inner.FindAsync(documentId, cancellationToken);
+
+    public Task<IDocumentRevision> ReviseAsync(Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken = default) =>
+        inner.ReviseAsync(documentId, newContent, changeSummary, cancellationToken);
+
+    public Task<IReadOnlyList<IDocumentRevision>> GetRevisionHistoryAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
-        _values[MakeKey(collection, key)] = value;
-        return Task.CompletedTask;
+        GetRevisionHistoryAsyncCallCount++;
+        return inner.GetRevisionHistoryAsync(documentId, cancellationToken);
     }
 
-    public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default)
+    public Task<IDocumentRevision> GetLatestRevisionAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
-        _values.TryRemove(MakeKey(collection, key), out _);
-        return Task.CompletedTask;
+        GetLatestRevisionAsyncCallCount++;
+        return inner.GetLatestRevisionAsync(documentId, cancellationToken);
     }
 
-    public Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
-    {
-        var prefix = $"{collection} ";
-        IReadOnlyList<string> keys = _values.Keys
-            .Where(k => k.StartsWith(prefix, StringComparison.Ordinal))
-            .Select(k => k[prefix.Length..])
-            .ToList();
+    public Task LinkAsync(Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken = default) =>
+        inner.LinkAsync(sourceDocumentId, targetDocumentId, relationshipKind, cancellationToken);
 
-        return Task.FromResult(keys);
-    }
+    public Task<IReadOnlyList<DocumentReference>> GetReferencesAsync(Guid documentId, CancellationToken cancellationToken = default) =>
+        inner.GetReferencesAsync(documentId, cancellationToken);
+
+    // ----------------------------------------------------------------
+    // ITransactionalDocumentWriter — ReferenceDataCatalog's constructor
+    // requires this capability on whatever documentStore it is given
+    // (`TD-158`); forwarded straight through to the real store `inner`
+    // always is in this fixture.
+    // ----------------------------------------------------------------
+
+    private Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter InnerWriter =>
+        (Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter)inner;
+
+    Task<Tempest.Core.EngineeringDomain.DocumentCreation> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.CreateAsync(
+        IPersistenceTransaction transaction, Guid documentId, string kind, string initialContent, CancellationToken cancellationToken) =>
+        InnerWriter.CreateAsync(transaction, documentId, kind, initialContent, cancellationToken);
+
+    Task<IDocumentRevision> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.ReviseAsync(
+        IPersistenceTransaction transaction, Guid documentId, string newContent, string? changeSummary, CancellationToken cancellationToken) =>
+        InnerWriter.ReviseAsync(transaction, documentId, newContent, changeSummary, cancellationToken);
+
+    Task Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.LinkAsync(
+        IPersistenceTransaction transaction, Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken) =>
+        InnerWriter.LinkAsync(transaction, sourceDocumentId, targetDocumentId, relationshipKind, cancellationToken);
+
+    Task<bool> Tempest.Core.EngineeringDomain.ITransactionalDocumentWriter.ExistsAsync(
+        IPersistenceTransaction transaction, Guid documentId, CancellationToken cancellationToken) =>
+        InnerWriter.ExistsAsync(transaction, documentId, cancellationToken);
 }
 
 /// <summary>
@@ -110,6 +224,14 @@ internal static class ReferenceDataFixtures
     {
         persistenceStore = new InMemoryPersistenceStore();
         documentStore = new EngineeringDocumentStore(persistenceStore, new CurrentPrincipalAccessor());
+        return new WidgetCatalog(documentStore, persistenceStore);
+    }
+
+    /// <summary>Builds a catalogue backed by <see cref="CountingDocumentStore"/>, so a test can assert how many times each read shape was called (`TD-20`).</summary>
+    public static WidgetCatalog BuildCatalog(out CountingDocumentStore documentStore)
+    {
+        var persistenceStore = new InMemoryPersistenceStore();
+        documentStore = new CountingDocumentStore(new EngineeringDocumentStore(persistenceStore, new CurrentPrincipalAccessor()));
         return new WidgetCatalog(documentStore, persistenceStore);
     }
 

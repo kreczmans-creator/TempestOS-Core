@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Cost estimate / BoQ" description="A4 landscape bill of quantities — itemised sections, rates, section subtotals and grand total" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" orientation="landscape" margin="14mm" style="background:var(--paper-050)">
+<div slot="header" style="padding-bottom:6mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:3mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:10mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">COST ESTIMATE</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1mm">[TDE-0000-EST-000] &middot; REV [00] &middot; [DD/MM/YYYY]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:2mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>[Project name] &middot; www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:9pt;line-height:1.5;color:var(--slate-700)">
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:5mm">
+<div style="font-family:var(--font-display);font-weight:700;font-size:15pt;letter-spacing:-.01em;color:var(--ink-900)">[Project name — cost estimate]</div>
+<div style="font-family:var(--font-mono);font-size:7pt;color:var(--slate-700)">BASIS: [Budget / tender / pre-contract] &middot; CURRENCY: GBP &middot; EXCL. VAT</div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">ITEM</th>
+<th style="text-align:left;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">DESCRIPTION</th>
+<th style="text-align:right;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">QTY</th>
+<th style="text-align:left;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:8%">UNIT</th>
+<th style="text-align:right;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:12%">RATE</th>
+<th style="text-align:right;padding:2mm 2.5mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:14%">AMOUNT</th>
+</tr></thead>
+<tbody>
+<tr><td colspan="6" style="padding:2.5mm;background:var(--paper-100);font-family:var(--font-display);font-weight:600;font-size:8pt;letter-spacing:.12em;color:var(--indigo-600);border-bottom:1px solid var(--ink-a14)">A &nbsp;PRELIMINARIES</td></tr>
+<tr><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A1</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Site setup, welfare, access]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[1]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08)">[sum]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td></tr>
+<tr><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">A2</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Supervision and management]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[0]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08)">[wk]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td></tr>
+<tr><td colspan="6" style="padding:2.5mm;background:var(--paper-100);font-family:var(--font-display);font-weight:600;font-size:8pt;letter-spacing:.12em;color:var(--indigo-600);border-bottom:1px solid var(--ink-a14)">B &nbsp;MATERIALS AND PLANT</td></tr>
+<tr><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">B1</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Material — specification ref]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[00]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08)">[t]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td></tr>
+<tr><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">B2</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Plant hire — item and duration]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[00]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08)">[day]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£000]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td></tr>
+<tr><td colspan="6" style="padding:2.5mm;background:var(--paper-100);font-family:var(--font-display);font-weight:600;font-size:8pt;letter-spacing:.12em;color:var(--indigo-600);border-bottom:1px solid var(--ink-a14)">C &nbsp;LABOUR</td></tr>
+<tr><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">C1</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Trade — activity]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[00]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08)">[hr]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£00]</td><td style="padding:2mm 2.5mm;border-bottom:1px solid var(--ink-a08);text-align:right;font-family:var(--font-mono)">[£0,000]</td></tr>
+</tbody>
+</table>
+<div style="display:flex;justify-content:flex-end;margin-top:5mm">
+<div style="width:80mm">
+<div style="display:flex;justify-content:space-between;padding:1.5mm 2.5mm;font-size:8.5pt"><span>Subtotal</span><span style="font-family:var(--font-mono)">[£00,000]</span></div>
+<div style="display:flex;justify-content:space-between;padding:1.5mm 2.5mm;font-size:8.5pt"><span>Contingency @ [00]%</span><span style="font-family:var(--font-mono)">[£0,000]</span></div>
+<div style="display:flex;justify-content:space-between;padding:1.5mm 2.5mm;font-size:8.5pt;border-bottom:2px solid var(--indigo-600)"><span>Overheads and profit @ [00]%</span><span style="font-family:var(--font-mono)">[£0,000]</span></div>
+<div style="display:flex;justify-content:space-between;padding:2.5mm;background:var(--paper-100)"><span style="font-family:var(--font-display);font-weight:600;color:var(--ink-900)">Estimate total (excl. VAT)</span><span style="font-family:var(--font-mono);font-weight:700;color:var(--ink-900)">[£00,000]</span></div>
+</div>
+</div>
+<p style="margin:4mm 0 0;font-size:7.5pt;color:var(--slate-600);text-wrap:pretty">[Exclusions: VAT, land costs, statutory fees, asbestos removal, works outside the boundary shown on [drawing ref]. Rates current at [date]; validity [00] days.]</p>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

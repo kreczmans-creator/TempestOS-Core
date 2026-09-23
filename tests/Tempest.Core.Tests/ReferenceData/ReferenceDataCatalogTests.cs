@@ -274,6 +274,26 @@ public class ReferenceDataCatalogTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => catalog.GetRevisionAsync("w-1", 9));
     }
 
+    [Fact]
+    public async Task FindAsync_ReadsTheLatestRevisionOnly_NeverTheWholeHistory()
+    {
+        // `TD-20`: a latest-only lookup must not pull the document's whole
+        // revision history off the store — proven here by counting the
+        // store calls a lookup makes, against a record with several prior
+        // revisions behind it.
+        var catalog = ReferenceDataFixtures.BuildCatalog(out var documentStore);
+        await catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("W-1", "red"), ReferenceDataFixtures.Sourced());
+        await catalog.ReviseAsync("w-1", ReferenceDataFixtures.Widget("W-1", "green"), ReferenceDataFixtures.Sourced(), "Colour corrected.");
+        await catalog.ReviseAsync("w-1", ReferenceDataFixtures.Widget("W-1", "blue"), ReferenceDataFixtures.Sourced(), "Colour corrected again.");
+
+        var before = documentStore.GetLatestRevisionAsyncCallCount;
+        var record = await catalog.FindAsync("w-1");
+
+        Assert.Equal("blue", record!.Definition.Colour);
+        Assert.Equal(1, documentStore.GetLatestRevisionAsyncCallCount - before);
+        Assert.Equal(0, documentStore.GetRevisionHistoryAsyncCallCount);
+    }
+
     // ----------------------------------------------------------------
     // Lifecycle and provenance gates
     // ----------------------------------------------------------------
@@ -403,6 +423,75 @@ public class ReferenceDataCatalogTests
         await ReferenceDataFixtures.ReleaseAsync(catalog, "w-1");
 
         await Assert.ThrowsAsync<ReferenceRecordNotFoundException>(() => catalog.SupersedeAsync("w-1", "w-missing", null));
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158`/`TD-156` — composed writes are one transaction, and a
+    // superseded record's own secondary key can be reclaimed. Run through
+    // the shared ReferenceDataTransactionalFacts helper (`WP 19.10K`), so
+    // every real library runs the identical facts against its own fixture.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = ReferenceDataFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("W-1"), ReferenceDataFixtures.Sourced()),
+            async () => await catalog.FindAsync("w-1") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+        Assert.Null(await catalog.FindByDesignationAsync("W-1"));
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = ReferenceDataFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("W-1"), ReferenceDataFixtures.Verified());
+        await catalog.RegisterAsync("w-2", ReferenceDataFixtures.Widget("W-2"), ReferenceDataFixtures.Verified());
+        await ReferenceDataFixtures.ReleaseAsync(catalog, "w-1");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<WidgetDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("w-1", "w-2", "Replaced."),
+            () => catalog.FindAsync("w-1"),
+            ReferenceValidationState.Released);
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_ThenTheReplacementClaimsTheFreedKey_FindBySecondaryKeyReturnsTheReplacement()
+    {
+        var catalog = ReferenceDataFixtures.BuildCatalog();
+        await catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("SHARED"), ReferenceDataFixtures.Verified());
+        await catalog.RegisterAsync("w-2", ReferenceDataFixtures.Widget("W-2"), ReferenceDataFixtures.Verified());
+        await ReferenceDataFixtures.ReleaseAsync(catalog, "w-1");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync<WidgetDefinition>(
+            () => catalog.SupersedeAsync("w-1", "w-2", "Replaced."),
+            () => catalog.ReviseAsync("w-2", ReferenceDataFixtures.Widget("SHARED"), ReferenceDataFixtures.Verified(), "Adopts the designation it replaces."),
+            () => catalog.FindByDesignationAsync("SHARED"),
+            "w-1",
+            "w-2");
+    }
+
+    [Fact]
+    public async Task RegisterAsync_ReusingASupersededRecordsSecondaryKey_Succeeds()
+    {
+        var catalog = ReferenceDataFixtures.BuildCatalog();
+        await catalog.RegisterAsync("w-1", ReferenceDataFixtures.Widget("SHARED"), ReferenceDataFixtures.Verified());
+        await catalog.RegisterAsync("w-2", ReferenceDataFixtures.Widget("W-2"), ReferenceDataFixtures.Verified());
+        await ReferenceDataFixtures.ReleaseAsync(catalog, "w-1");
+        await catalog.SupersedeAsync("w-1", "w-2", null);
+
+        // Not only the replacement — any new record may claim a key a
+        // superseded record no longer actively holds.
+        var claimed = await catalog.RegisterAsync("w-3", ReferenceDataFixtures.Widget("SHARED"), ReferenceDataFixtures.Sourced());
+
+        Assert.Equal("w-3", claimed.Id);
+        Assert.Equal("w-3", (await catalog.FindByDesignationAsync("SHARED"))!.Id);
     }
 
     // ----------------------------------------------------------------

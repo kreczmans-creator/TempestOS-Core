@@ -5,6 +5,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Fasteners;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
+using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Settings;
 using Tempest.Core.Standards;
@@ -112,7 +113,19 @@ public sealed class EvidenceService : IEvidenceService
                 nameof(parentId));
         }
 
+        if (parentId is { } candidateParentId
+            && await FindArchivedOwningProjectAsync(candidateParentId, cancellationToken).ConfigureAwait(false) is { } archivedOnCreate)
+        {
+            throw new InvalidOperationException(
+                $"Project '{archivedOnCreate.Id}' is archived (closed {archivedOnCreate.ClosedOn:O}); no new evidence can be added to it.");
+        }
+
         var authorId = _context.ResolveCurrentPrincipalId();
+
+        // `TD-38`: the project this evidence is about to be placed under,
+        // resolved from the parent it is about to be moved to — mirrors
+        // every factory registry's own identical remark (`EngineeringObjectFactory{T}.CreateAsync`).
+        var projectScopeId = BusinessIdentifierScope.ResolveProjectId(parentId, _context.Repository);
 
         var created = await new EngineeringObjectFactory<Evidence>(
             Evidence.CanonicalKind,
@@ -120,7 +133,7 @@ public sealed class EvidenceService : IEvidenceService
             (doc, rev) => new Evidence(
                 doc, rev, _context, identifier: null, title, EngineeringObjectMetadata.Empty,
                 classification, subjectId, authorId))
-            .CreateAsync($"{title} — evidence recorded in Tempest.", cancellationToken)
+            .CreateAsync($"{title} — evidence recorded in Tempest.", projectScopeId, cancellationToken)
             .ConfigureAwait(false);
 
         if (parentId is { } pid && created is IHasParent hasParent)
@@ -138,6 +151,14 @@ public sealed class EvidenceService : IEvidenceService
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
         if (evidence is null)
             return new EvidenceCitationResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null, null);
+
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForCite)
+        {
+            return new EvidenceCitationResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForCite.Id}' is archived (closed {archivedForCite.ClosedOn:O}); this evidence is read-only.",
+                evidence, null);
+        }
 
         var lookup = await FindRecordAsync(library, recordId, cancellationToken).ConfigureAwait(false);
         if (lookup is null)
@@ -169,6 +190,8 @@ public sealed class EvidenceService : IEvidenceService
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false)
             ?? throw new ArgumentException($"No evidence '{evidenceId}' is registered.", nameof(evidenceId));
 
+        await EnsureNotArchivedAsync(evidence.Id, cancellationToken).ConfigureAwait(false);
+
         await evidence.RemoveCitationAsync(pin, cancellationToken).ConfigureAwait(false);
 
         return evidence;
@@ -182,6 +205,8 @@ public sealed class EvidenceService : IEvidenceService
 
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false)
             ?? throw new ArgumentException($"No evidence '{evidenceId}' is registered.", nameof(evidenceId));
+
+        await EnsureNotArchivedAsync(evidence.Id, cancellationToken).ConfigureAwait(false);
 
         // Refused as an exception, not a result: an unrecognised unit is a
         // caller programming/typing error, not an engineering-governance
@@ -216,6 +241,14 @@ public sealed class EvidenceService : IEvidenceService
                 evidence);
         }
 
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForCheck)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForCheck.Id}' is archived (closed {archivedForCheck.ClosedOn:O}); this evidence is read-only.",
+                evidence);
+        }
+
         var principal = _principals.Current;
         string? checkerIdentityId = null;
 
@@ -231,9 +264,13 @@ public sealed class EvidenceService : IEvidenceService
 
             if (string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal))
             {
+                // `WP 21.3B`: the second principal "Switch person…" now
+                // actually builds is what this refusal was always asking
+                // for — the message names that act directly rather than
+                // only restating the rule.
                 return new EvidenceActionResult(
                     EvidenceRefusal.CheckerMustDifferFromAuthor,
-                    $"The independent-check rule is on: principal '{principal.Identity.Id}' authored this evidence and may not also check it.",
+                    "An independent check needs a second person; switch person first.",
                     evidence);
             }
 
@@ -249,7 +286,10 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
-    public async Task<EvidenceActionResult> IssueAsync(Guid evidenceId, string issueReference, string revision, string client, CancellationToken cancellationToken = default)
+    public async Task<EvidenceActionResult> IssueAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<Guid?>>? attachIssueSheetAsync = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
         ArgumentException.ThrowIfNullOrWhiteSpace(revision);
@@ -267,7 +307,30 @@ public sealed class EvidenceService : IEvidenceService
                 evidence);
         }
 
-        var issue = new IssueRecord(issueReference, revision, client, _time.GetUtcNow(), IssueSheetAttachmentId: null);
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForIssue)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForIssue.Id}' is archived (closed {archivedForIssue.ClosedOn:O}); this evidence is read-only.",
+                evidence);
+        }
+
+        var issuedAtUtc = _time.GetUtcNow();
+
+        // B2: every refusal has now been decided, so what remains is the
+        // durable write. The sheet — bytes and its attachment metadata, one
+        // transaction (`WP 17.1B`) — is rendered and attached first; its id
+        // is folded straight into the IssueRecord the one call below
+        // commits, so "the record" and "the pointer" are the same write. A
+        // fault in attachIssueSheetAsync leaves this evidence merely
+        // Checked; a fault in RecordIssueAsync leaves it Checked with, at
+        // worst, one harmless unreferenced attachment — never Issued
+        // without its sheet.
+        var issueSheetAttachmentId = attachIssueSheetAsync is null
+            ? null
+            : await attachIssueSheetAsync(evidence, issuedAtUtc, cancellationToken).ConfigureAwait(false);
+
+        var issue = new IssueRecord(issueReference, revision, client, issuedAtUtc, issueSheetAttachmentId);
         await evidence.RecordIssueAsync(issue, cancellationToken).ConfigureAwait(false);
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
@@ -285,6 +348,14 @@ public sealed class EvidenceService : IEvidenceService
             return new EvidenceActionResult(
                 EvidenceRefusal.TransitionNotPermitted,
                 $"Evidence '{evidenceId}' is {evidence.Status}; only Issued evidence can be revised.",
+                evidence);
+        }
+
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForRevise)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForRevise.Id}' is archived (closed {archivedForRevise.ClosedOn:O}); this evidence is read-only.",
                 evidence);
         }
 
@@ -316,6 +387,14 @@ public sealed class EvidenceService : IEvidenceService
                 evidence);
         }
 
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForSubject)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForSubject.Id}' is archived (closed {archivedForSubject.ClosedOn:O}); this evidence is read-only.",
+                evidence);
+        }
+
         await evidence.SetSubjectAsync(subjectId, cancellationToken).ConfigureAwait(false);
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
@@ -327,9 +406,52 @@ public sealed class EvidenceService : IEvidenceService
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false)
             ?? throw new ArgumentException($"No evidence '{evidenceId}' is registered.", nameof(evidenceId));
 
+        await EnsureNotArchivedAsync(evidence.Id, cancellationToken).ConfigureAwait(false);
+
         await evidence.SetIssueSheetAttachmentAsync(issueSheetAttachmentId, cancellationToken).ConfigureAwait(false);
 
         return evidence;
+    }
+
+    /// <summary>The archived-project guard (`WP 19.10H`, `TD-179`) for the methods that throw rather than return a refusal result: throws when <paramref name="objectId"/> belongs to an archived project.</summary>
+    private async Task EnsureNotArchivedAsync(Guid objectId, CancellationToken cancellationToken)
+    {
+        if (await FindArchivedOwningProjectAsync(objectId, cancellationToken).ConfigureAwait(false) is { } archived)
+        {
+            throw new InvalidOperationException(
+                $"Project '{archived.Id}' is archived (closed {archived.ClosedOn:O}); this evidence is read-only.");
+        }
+    }
+
+    /// <summary>
+    /// The project owning <paramref name="objectId"/> — walking the parent
+    /// chain, since evidence need not be parented directly to a project —
+    /// when that project is Archive; <see langword="null"/> when
+    /// <paramref name="objectId"/> belongs to no project, or to one that is
+    /// not archived. <c>Tempest.Core</c> cannot reference
+    /// <c>Tempest.Workspace.Projects.ProjectMembership</c> (the dependency
+    /// runs the other way, mirroring <c>Tempest.Core.Quotations.QuotationService</c>'s
+    /// own disclosed reason), so the walk is repeated here rather than
+    /// shared.
+    /// </summary>
+    private async Task<Project?> FindArchivedOwningProjectAsync(Guid objectId, CancellationToken cancellationToken)
+    {
+        var visited = new HashSet<Guid>();
+        var current = objectId;
+
+        while (visited.Add(current))
+        {
+            var found = await _context.Repository.FindAsync(current, cancellationToken).ConfigureAwait(false);
+            if (found is Project project)
+                return ProjectArchival.IsArchived(project, _time.GetUtcNow()) ? project : null;
+
+            if (found is not IHasParent { ParentId: { } parentId })
+                return null;
+
+            current = parentId;
+        }
+
+        return null;
     }
 
     private async Task<Evidence?> FindEvidenceAsync(Guid evidenceId, CancellationToken cancellationToken) =>

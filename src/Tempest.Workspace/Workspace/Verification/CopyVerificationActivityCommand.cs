@@ -46,14 +46,16 @@ public sealed class CopyVerificationActivityCommandHandler : ICommandHandler<Cop
 {
     private readonly EngineeringDomainContext _context;
     private readonly VerificationActivityFactoryRegistry _registry;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CopyVerificationActivityCommandHandler(EngineeringDomainContext context, VerificationActivityFactoryRegistry registry)
+    public CopyVerificationActivityCommandHandler(EngineeringDomainContext context, VerificationActivityFactoryRegistry registry, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(registry);
 
         _context = context;
         _registry = registry;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CopyVerificationActivityCommand command, CancellationToken cancellationToken)
@@ -80,6 +82,12 @@ public sealed class CopyVerificationActivityCommandHandler : ICommandHandler<Cop
             return CommandResult.Failure(ex.Message);
         }
 
-        return CommandResult.Success($"Copied '{command.TargetObjectId}' to new VerificationActivity '{copy.Id}'.");
+        var destinationPhrase = await WorkspaceCommandBindings.DestinationPhraseAsync(_context, command.NewParentId, cancellationToken).ConfigureAwait(false);
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, copy.Id, source.Kind, $"Copy '{sourceDisplayName}'",
+            buildDelete: () => new DeleteVerificationActivityCommand(copy.Id, source.Kind),
+            buildUndelete: () => new UndeleteVerificationActivityCommand(copy.Id, source.Kind));
+
+        return CommandResult.Success($"Copied '{sourceDisplayName}' as '{displayName}' {destinationPhrase}.", copy.Id, source.Kind, compensation);
     }
 }

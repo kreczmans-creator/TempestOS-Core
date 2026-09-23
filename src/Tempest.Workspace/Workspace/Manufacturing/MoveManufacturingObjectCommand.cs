@@ -29,12 +29,14 @@ public sealed class MoveManufacturingObjectCommand : IWorkspaceCommand
 public sealed class MoveManufacturingObjectCommandHandler : ICommandHandler<MoveManufacturingObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public MoveManufacturingObjectCommandHandler(EngineeringDomainContext context)
+    public MoveManufacturingObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(MoveManufacturingObjectCommand command, CancellationToken cancellationToken)
@@ -44,17 +46,9 @@ public sealed class MoveManufacturingObjectCommandHandler : ICommandHandler<Move
         if (target is not IHasParent hasParent)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be moved.");
 
-        try
-        {
-            await hasParent.MoveAsync(command.NewParentId, cancellationToken).ConfigureAwait(false);
-        }
-        catch (CircularParentAssignmentException ex)
-        {
-            return CommandResult.Failure(ex.Message);
-        }
-
-        return CommandResult.Success(command.NewParentId is { } parentId
-            ? $"Moved '{command.TargetObjectId}' under '{parentId}'."
-            : $"Moved '{command.TargetObjectId}' to top level.");
+        return await WorkspaceCommandBindings.MoveResultAsync(
+            _context, _dispatcher, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId,
+            parentId => new MoveManufacturingObjectCommand(command.TargetObjectId, command.TargetKind, parentId),
+            cancellationToken).ConfigureAwait(false);
     }
 }

@@ -79,9 +79,21 @@ public interface IRequirementsService
 
     // ---- WP 9.1A: additive lifecycle/ownership/priority operations (ADR-0084) ----
 
-    /// <summary>Sets the requirement's own current owner. <see langword="null"/> clears it.</summary>
+    /// <summary>Sets the requirement's own current owner. <see langword="null"/> clears it. Leaves <see cref="IRequirement.OwnerPersonId"/> unset — see the overload below for a pick made from the People library (`WP 20.10F`).</summary>
     /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
     Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the requirement's own current owner together with the
+    /// <see cref="People.IPersonCatalog"/> record id <paramref name="owner"/>
+    /// was picked from (`WP 20.10F`, Product Owner finding D8) — the same
+    /// owner-changed act as the overload above, with the link a rename of
+    /// the person can later be resolved through. <paramref name="ownerPersonId"/>
+    /// is <see langword="null"/> where <paramref name="owner"/> was typed
+    /// rather than picked, or where both are being cleared.
+    /// </summary>
+    /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
+    Task<IRequirement> SetOwnerAsync(Guid requirementId, string? owner, string? ownerPersonId, CancellationToken cancellationToken = default);
 
     /// <summary>Sets the requirement's own current priority. <see langword="null"/> clears it.</summary>
     /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
@@ -90,6 +102,16 @@ public interface IRequirementsService
     /// <summary>Soft-deletes the requirement — never erases it; <see cref="FindAsync"/> still returns it, with <see cref="IRequirement.IsDeleted"/> set.</summary>
     /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
     Task<IRequirement> DeleteAsync(Guid requirementId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores a soft-deleted requirement (`WP 21.6A`) — the Undo half of
+    /// <see cref="DeleteAsync"/>'s own compensation, and the Redo half of
+    /// <see cref="CreateAsync"/>'s.
+    /// </summary>
+    /// <exception cref="RequirementNotFoundException"><paramref name="requirementId"/> does not exist.</exception>
+    /// <exception cref="RequirementNotDeletedException"><paramref name="requirementId"/> is not currently deleted.</exception>
+    /// <exception cref="RequirementGroupDeletedException">The requirement's own current group has itself been deleted in the meantime.</exception>
+    Task<IRequirement> UndeleteAsync(Guid requirementId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Moves the requirement into <paramref name="groupId"/> (or ungroups it, if <see langword="null"/>) — the requirement's own live, current

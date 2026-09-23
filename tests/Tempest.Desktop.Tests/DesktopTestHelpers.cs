@@ -1,7 +1,10 @@
 using System.Reflection;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Tempest.Workspace;
 using Tempest.Core.Commands;
 using Tempest.Desktop.Views;
@@ -75,15 +78,43 @@ internal static class DesktopTestHelpers
     /// deliberately stacked in a Grid cell is not a sibling of the content
     /// it covers in any layout this product uses.
     /// </summary>
-    public static void AssertNoSiblingOverlap(Control control, string what)
+    /// <param name="control">The control to check against its own siblings.</param>
+    /// <param name="what">Describes <paramref name="control"/> in a failure message.</param>
+    /// <param name="isExemptOverlay">
+    /// `WP 19.3A`: when supplied, a sibling this predicate accepts is never
+    /// checked against <paramref name="control"/> — the layout walk's own
+    /// explicit allow-list of intentional overlays (dialogs, the command
+    /// palette, the toast host) stacked in <c>MainWindow</c>'s root
+    /// <c>Grid</c>. <see langword="null"/> (every other call site) keeps
+    /// this method's original behaviour exactly.
+    /// </param>
+    public static void AssertNoSiblingOverlap(Control control, string what, Func<Control, bool>? isExemptOverlay = null)
+    {
+        if (FindSiblingOverlap(control, what, isExemptOverlay) is { } finding)
+            Assert.Fail(finding);
+    }
+
+    /// <summary>
+    /// The non-throwing core of <see cref="AssertNoSiblingOverlap"/>
+    /// (`WP 19.3A-R1`) — the identical walk and the identical first-violation
+    /// semantics (it stops at the first offending sibling of
+    /// <paramref name="control"/>, in child order, exactly as the throwing
+    /// version always has), just returning the message instead of asserting
+    /// it. <see cref="AssertNoSiblingOverlap"/> itself keeps throwing
+    /// immediately, so every existing call site (<see cref="AssertPlaced"/>
+    /// and its own callers) is unaffected; <see cref="CollectLayoutFindings"/>
+    /// calls this directly so the layout walk can gather every finding
+    /// across a whole run instead of stopping at the first.
+    /// </summary>
+    private static string? FindSiblingOverlap(Control control, string what, Func<Control, bool>? isExemptOverlay)
     {
         if (control.Parent is not Panel parent)
-            return;
+            return null;
 
         var mine = control.Bounds;
         foreach (var sibling in parent.Children)
         {
-            if (ReferenceEquals(sibling, control) || !sibling.IsVisible || IsDecorationOnly(sibling))
+            if (ReferenceEquals(sibling, control) || !sibling.IsVisible || IsDecorationOnly(sibling) || (isExemptOverlay?.Invoke(sibling) ?? false))
                 continue;
 
             var theirs = sibling.Bounds;
@@ -91,10 +122,327 @@ internal static class DesktopTestHelpers
                 continue;
 
             var overlap = mine.Intersect(theirs);
-            Assert.False(
-                overlap.Width > 0.5 && overlap.Height > 0.5,
-                $"{what} at {mine} is drawn over its sibling {Describe(sibling)} at {theirs} (overlap {overlap}).");
+            if (overlap.Width <= 0.5 || overlap.Height <= 0.5)
+                continue;
+
+            if (IsGridSplitterGrabHandleOverlap(control, sibling, overlap))
+                continue;
+
+            return $"{what} at {mine} is drawn over its sibling {Describe(sibling)} at {theirs} (overlap {overlap}).";
         }
+
+        return null;
+    }
+
+    /// <summary>
+    /// `WP 19.3A-R1` — a docking pane and its own <see cref="GridSplitter"/>
+    /// (<c>WorkspaceLayoutHost.BuildSplitter</c>) are deliberately given a
+    /// slightly larger grab handle than the hairline the splitter paints, so
+    /// it stays comfortably draggable; that handle legitimately extends a
+    /// little way onto the pane beside it. That is not the `TD-83`/`WP 17.0A`
+    /// overlap defect this check exists to catch — two independent pieces of
+    /// content drawn on top of each other — so it is exempted, but narrowly:
+    /// only an overlap no larger than the splitter's own arranged thickness
+    /// in its thin axis (<see cref="GridSplitter.Width"/> for a
+    /// vertical/column splitter, <see cref="GridSplitter.Height"/> for a
+    /// horizontal/row one), never a blanket widening of the tolerance this
+    /// method applies to every other sibling pair.
+    /// </summary>
+    private static bool IsGridSplitterGrabHandleOverlap(Control control, Control sibling, Rect overlap)
+    {
+        var splitter = control as GridSplitter ?? sibling as GridSplitter;
+        if (splitter is null)
+            return false;
+
+        var thinAxisIsWidth = splitter.Bounds.Width <= splitter.Bounds.Height;
+        var thickness = thinAxisIsWidth ? splitter.Bounds.Width : splitter.Bounds.Height;
+        var overlapExtent = thinAxisIsWidth ? overlap.Width : overlap.Height;
+        return overlapExtent <= thickness + 0.5;
+    }
+
+    /// <summary>
+    /// Finds <paramref name="content"/> — the actual control a
+    /// <see cref="TabItem"/> puts in <c>Content</c>, rendered inside
+    /// <paramref name="tabControl"/>'s own selected-content presenter
+    /// (<c>PART_SelectedContentHost</c>) — overlapping
+    /// <paramref name="tabControl"/>'s own tab-strip header
+    /// (<c>PART_ItemsPresenter</c>) (`WP 19.4A`). This is deliberately a
+    /// check of the tab's *rendered content*, not of the two template
+    /// parts against each other: a `ContentPresenter` stretches to fill
+    /// whatever its own template gives it regardless of what its child
+    /// does, so a content control's own negative margin — exactly
+    /// `ProjectWorkspaceView`'s old `_structureHost`, `po-comments.md` #1
+    /// — moves only the *child's* bounds, never the presenter's own, and a
+    /// presenter-vs-presenter comparison would stay silent on precisely
+    /// the bug this exists to catch. The strip is looked up by template
+    /// part name, not by type or traversal order: the selected content can
+    /// itself contain further <see cref="TabControl"/>s (the Ribbon's own
+    /// category strip), and a type-only <c>FirstOrDefault</c> over every
+    /// visual descendant could match one of those instead of
+    /// <paramref name="tabControl"/>'s own part. Both bounds are
+    /// translated into <paramref name="tabControl"/>'s own coordinate
+    /// space (<see cref="Visual.TranslatePoint(Point, Visual)"/>) rather
+    /// than compared as raw <see cref="Layoutable.Bounds"/>, since nothing
+    /// guarantees <paramref name="content"/> is an immediate visual child
+    /// of the strip's own parent.
+    /// </summary>
+    private static string? FindTabStripContentOverlap(Control content, TabControl tabControl, string area)
+    {
+        var stripHost = tabControl.GetVisualDescendants().OfType<ItemsPresenter>().FirstOrDefault(p => ReferenceEquals(p.TemplatedParent, tabControl));
+        if (stripHost is null || !stripHost.IsVisible)
+            return null;
+
+        var stripOrigin = stripHost.TranslatePoint(new Point(0, 0), tabControl);
+        var contentOrigin = content.TranslatePoint(new Point(0, 0), tabControl);
+        if (stripOrigin is not { } stripPoint || contentOrigin is not { } contentPoint)
+            return null;
+
+        var stripBounds = new Rect(stripPoint, stripHost.Bounds.Size);
+        var contentBounds = new Rect(contentPoint, content.Bounds.Size);
+        if (stripBounds.Width <= 0 || stripBounds.Height <= 0 || contentBounds.Width <= 0 || contentBounds.Height <= 0)
+            return null;
+
+        var overlap = stripBounds.Intersect(contentBounds);
+        if (overlap.Width <= 0.5 || overlap.Height <= 0.5)
+            return null;
+
+        return $"[{area}] {Describe(content)} at {contentBounds} is drawn over {Describe(tabControl)}'s own tab strip at {stripBounds} (overlap {overlap}).";
+    }
+
+    /// <summary>
+    /// The layout walk's own explicit allow-list of intentional overlays
+    /// (`WP 19.3A`) — every overlay <c>MainWindow</c> stacks directly in its
+    /// root <c>Grid</c> over the shell's real content (`WP 10.5A`'s dialog
+    /// framework, the Evidence dialogs it grew, the command palette and the
+    /// toast host). These are checked as neither "mine" nor "theirs" by
+    /// <see cref="AssertLayoutIsSound"/>: a modal dialog covering the whole
+    /// window while open is the product working as designed, not a defect,
+    /// and while closed each already reports zero bounds — this list is the
+    /// explicit, structural version of that fact rather than a reliance on
+    /// every dialog happening to be closed whenever the walk runs.
+    /// <see cref="BusyOverlay"/> is included for the same reason even though
+    /// nothing in the walk opens it.
+    /// </summary>
+    private static readonly HashSet<Type> IntentionalOverlayTypes =
+    [
+        typeof(ToastHost),
+        typeof(CommandPaletteOverlay),
+        typeof(BusyOverlay),
+        typeof(ConfirmationDialog),
+        typeof(InputDialog),
+        typeof(MessageDialog),
+        typeof(MacroManagerDialog),
+        typeof(CitationPicker),
+        typeof(SubjectPicker),
+        typeof(DeclaredFigureEntry),
+        typeof(CheckEntry),
+        typeof(IssueEntry),
+        typeof(ReviseReferenceRecordEntry),
+    ];
+
+    private static bool IsIntentionalOverlay(Control control) => IntentionalOverlayTypes.Contains(control.GetType());
+
+    /// <summary>
+    /// The layout walk's own whole-tree check (`WP 19.3A`, `TD-83`, the
+    /// `WP 17.0A` overlap class): walks every <b>logical</b> descendant of
+    /// <paramref name="root"/> and asserts, everywhere in the tree rather
+    /// than at one caller's own control, the same two properties a person
+    /// needs a screen to actually be usable — <see cref="AssertPlaced"/>'s
+    /// premise extended from a single control to a whole rendered area.
+    /// </summary>
+    /// <param name="root">The rendered area to walk — a rail module's content, a project tab, or a whole window.</param>
+    /// <param name="area">Names <paramref name="root"/> in every failure message (the area and the window size, so a failure is diagnosable from the message alone).</param>
+    /// <remarks>
+    /// <para>
+    /// <b>The logical tree, deliberately, not the visual one.</b> A first
+    /// version walked <see cref="Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(Avalonia.Visual)"/>
+    /// and failed on its very first control: every
+    /// <see cref="Window"/>'s own default template stacks a background
+    /// <see cref="Border"/> and a <c>VisualLayerManager</c> as siblings in
+    /// the same template <see cref="Panel"/>, coextensive with the whole
+    /// window, by design — template plumbing every Avalonia control has,
+    /// not a product layout defect. The logical tree
+    /// (<see cref="LogicalExtensions.GetLogicalDescendants"/>) skips
+    /// exactly this: a <see cref="ContentPresenter"/> re-parents its own
+    /// content to be a logical child of the templated control itself, which
+    /// is why <c>window.GetLogicalDescendants().OfType‹T›()</c> is already
+    /// this suite's own convention for finding real application content
+    /// (<see cref="EvidenceWorkspaceJourneyTests"/> and every journey test
+    /// beside it) — this walk follows the identical convention, for the
+    /// identical reason.
+    /// </para>
+    /// <para>
+    /// <b>(a) No two visible, hit-testable siblings in the same Panel
+    /// intersect.</b> Reuses <see cref="AssertNoSiblingOverlap"/> itself,
+    /// called once per non-decoration, non-allow-listed child of every
+    /// <see cref="Panel"/> found anywhere in the logical tree — the
+    /// identical decoration-only exclusion, extended from one caller's own
+    /// control to every panel, plus <see cref="IsIntentionalOverlay"/> so a
+    /// dialog, the palette or the toast host is never checked against
+    /// whatever they legitimately sit over.
+    /// </para>
+    /// <para>
+    /// <b>(b) Every visible control's bounds lie within its parent's
+    /// bounds</b>, a 1px tolerance for sub-pixel arrangement. A
+    /// <see cref="ScrollViewer"/>'s own content is exempt by design — it may
+    /// genuinely be taller or wider than the viewport that shows it (its
+    /// content is a direct logical child of the <see cref="ScrollViewer"/>
+    /// itself, exactly like any other <c>ContentControl</c>, so this is a
+    /// simple type check); the <see cref="ScrollViewer"/>'s own bounds (the
+    /// viewport) are what get checked against <em>its</em> parent instead,
+    /// when the walk visits the <see cref="ScrollViewer"/> itself. A
+    /// <see cref="Viewbox"/>'s content is exempt for the same shape of
+    /// reason — fitted by a render <c>Scale</c> transform rather than by
+    /// arrangement, so its un-scaled <c>Bounds</c> legitimately disagrees
+    /// with the smaller size it actually renders at (every rail and Ribbon
+    /// icon, <see cref="Icons.IconGeometry"/>). A control's own
+    /// <em>negative</em> <see cref="Layoutable.Margin"/> component
+    /// (`WP 19.3A-R1`) earns the identical exemption, bounded to that exact
+    /// magnitude on that one edge — the codebase's own established
+    /// "negative margin cancels a margin" technique
+    /// (<see cref="Views.CockpitCardControl.AddAction"/>, the card grid in
+    /// <see cref="Views.CockpitView"/>), not an accidental overflow.
+    /// </para>
+    /// <para>
+    /// <b>Fail-on-first, deliberately.</b> This throws at the first finding,
+    /// exactly as it always has — the deliberate-overlap self-test
+    /// (<c>AssertLayoutIsSound_CatchesADeliberateOverlap_NamingBothControls</c>)
+    /// depends on that. The layout walk's own main test
+    /// (`WP 19.3A-R1`, so one run tells the whole story instead of one
+    /// screen at a time) calls <see cref="CollectLayoutFindings"/> — the
+    /// same walk, never throwing — directly instead, and aggregates across
+    /// every rail entry, project tab and window size itself.
+    /// </para>
+    /// </remarks>
+    public static void AssertLayoutIsSound(Control root, string area)
+    {
+        var findings = CollectLayoutFindings(root, area);
+        if (findings.Count > 0)
+            Assert.Fail(findings[0]);
+    }
+
+    /// <summary>
+    /// The non-throwing core of <see cref="AssertLayoutIsSound"/>
+    /// (`WP 19.3A-R1`) — the identical walk, returning every finding instead
+    /// of throwing at the first. Used directly by the layout walk's own main
+    /// test so a single run collects every finding across both window sizes,
+    /// every rail entry and every project tab before reporting; every other
+    /// call site keeps using <see cref="AssertLayoutIsSound"/>, which is
+    /// unchanged.
+    /// </summary>
+    /// <param name="root">The rendered area to walk — a rail module's content, a project tab, or a whole window.</param>
+    /// <param name="area">Names <paramref name="root"/> in every failure message (the area and the window size, so a failure is diagnosable from the message alone).</param>
+    public static List<string> CollectLayoutFindings(Control root, string area)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        var findings = new List<string>();
+
+        foreach (var logical in new ILogical[] { root }.Concat(root.GetLogicalDescendants()))
+        {
+            if (logical is not Control control || !control.IsVisible)
+                continue;
+
+            if (control is Panel panel)
+            {
+                foreach (var child in panel.Children)
+                {
+                    if (!child.IsVisible || IsDecorationOnly(child) || IsIntentionalOverlay(child))
+                        continue;
+
+                    if (FindSiblingOverlap(child, $"[{area}] {Describe(child)}", IsIntentionalOverlay) is { } overlapFinding)
+                        findings.Add(overlapFinding);
+                }
+            }
+
+            // The *visual* parent, deliberately, not the logical one used
+            // above to decide what to visit: `Bounds` is a visual-tree
+            // coordinate, relative to whatever control actually hosts this
+            // one on screen. For an ordinary product-authored container
+            // (a `Panel` a view added a child to directly) the two parents
+            // are the same control. They diverge for anything a
+            // `ContentPresenter` places — a `TabItem`'s own `Content`
+            // renders inside the `TabControl`'s selected-content host, not
+            // inside the `TabItem`'s own small header-button bounds, and a
+            // `ListBoxItem` renders inside the list's internal items panel,
+            // not directly inside the `ListBox`'s own outer bounds. Using
+            // the logical parent there compared real content against the
+            // wrong rectangle and failed on every `TabControl` in the
+            // shell; the visual parent is the rectangle the control is
+            // actually drawn into, whatever template stands between them.
+            if (control.GetVisualParent() is not Control parent || !parent.IsVisible)
+                continue;
+
+            // `WP 19.4A`: a `TabControl`'s own tab-strip header and the
+            // content its selected `TabItem` actually renders are
+            // different template parts, never a pair of `Panel` children
+            // the sibling-overlap walk above ever visits together —
+            // exactly why `ProjectWorkspaceView`'s old negative-margin
+            // Structure tab could bleed up into its own tab strip
+            // (`po-comments.md` #1) with the walk staying green: `control`
+            // here is precisely "a `TabItem`'s own `Content`" the comment
+            // above already identifies as rendering inside the selected-
+            // content host. Checked once per such control, and
+            // deliberately *not* run through the negative-margin tolerance
+            // the bounds-within-parent check below allows: a control
+            // covering its own tab strip is exactly the defect this exists
+            // to catch, not a case `WP 19.3A-R1` ever meant to exempt.
+            if (parent is ContentPresenter { Name: "PART_SelectedContentHost", TemplatedParent: TabControl tabControl }
+                && FindTabStripContentOverlap(control, tabControl, area) is { } tabStripFinding)
+            {
+                findings.Add(tabStripFinding);
+            }
+
+            // `ScrollViewer` content is exempt by design (stated above),
+            // checked against its own presenter's coextensive bounds; a
+            // `Viewbox`'s own content is the same shape of exemption for a
+            // different reason — it fits its child by a render `Scale`
+            // transform, not by arranging it inside the `Viewbox`'s own
+            // bounds, so the child's un-scaled `Bounds` legitimately
+            // disagrees with the smaller size it actually renders at (an
+            // icon's own 24x24 `StreamGeometry`, for instance, scaled down
+            // to the 16x16 a rail button actually shows).
+            if (parent is ScrollViewer or ScrollContentPresenter or Viewbox)
+                continue;
+
+            if (control.Bounds.Width <= 0 || control.Bounds.Height <= 0)
+                continue;
+
+            const double tolerance = 1.0;
+            var bounds = control.Bounds;
+
+            // `WP 19.3A-R1`: a *negative* `Margin` component is this
+            // codebase's own established way to deliberately bleed a
+            // control past the edge of whatever reports its layout bounds —
+            // `CockpitCardControl.AddAction`'s left-aligned action button
+            // pulls its own left edge out by `-SpaceMd` so its hit/hover
+            // area reaches the card's edge while its text still lines up
+            // with the card's other content; `CockpitView`'s card-grid
+            // `WrapPanel` is given `-SpaceMd` on every side to cancel each
+            // card's own `SpaceMd` margin, so the grid's outer cards sit
+            // flush with the page rather than leaving a doubled gutter. Both
+            // are the standard "negative margin cancels a margin" technique,
+            // not an accidental overflow — nothing is clipped or overlaps an
+            // unrelated sibling (the sibling-overlap check above still runs,
+            // unaffected). Exempt only up to the exact magnitude of the
+            // control's own negative margin on that specific edge — never
+            // more, and a positive or zero margin adds no tolerance at all.
+            var margin = control.Margin;
+            var leftTolerance = tolerance + Math.Max(0, -margin.Left);
+            var topTolerance = tolerance + Math.Max(0, -margin.Top);
+            var rightTolerance = tolerance + Math.Max(0, -margin.Right);
+            var bottomTolerance = tolerance + Math.Max(0, -margin.Bottom);
+
+            var withinParent =
+                bounds.X >= -leftTolerance
+                && bounds.Y >= -topTolerance
+                && bounds.Right <= parent.Bounds.Width + rightTolerance
+                && bounds.Bottom <= parent.Bounds.Height + bottomTolerance;
+
+            if (!withinParent)
+                findings.Add($"[{area}] {Describe(control)} at {bounds} lies outside its parent {Describe(parent)} ({parent.Bounds.Width:0.#}x{parent.Bounds.Height:0.#}).");
+        }
+
+        return findings;
     }
 
     /// <summary>
@@ -156,6 +504,34 @@ internal static class DesktopTestHelpers
 
         return (T)field.GetValue(instance)!;
     }
+
+    /// <summary>
+    /// The one genuine <typeparamref name="T"/> in <paramref name="root"/>'s
+    /// logical tree — safe against a real Avalonia `TabControl` quirk a
+    /// plain <c>.OfType&lt;T&gt;().Single()</c> is not (`WP 19.2B`).
+    /// </summary>
+    /// <remarks>
+    /// A selected `TabItem`'s own `Content` is a logical child of both the
+    /// `TabItem` itself (the property that holds it) and the `TabControl`
+    /// (whose own internal presenter renders it) — proven, not assumed: a
+    /// reference-equality walk of every claimed logical child in the whole
+    /// window finds the identical control object listed under both parents,
+    /// never two distinct instances. Nothing in this codebase's own control
+    /// hierarchy is duplicated; `GetLogicalDescendants()`'s downward walk
+    /// simply visits that one control twice on the way through. This was
+    /// never observable before `WP 19.2B`: the Engineering surface — and
+    /// the <see cref="Views.ProjectExplorerView"/>/<see cref="Views.PropertyInspectorView"/>
+    /// panels it carries — previously only ever sat directly in the
+    /// shell's own module host, never inside a `TabItem`'s `Content`. Now
+    /// that the Structure tab embeds that same surface in place
+    /// (<c>ProjectWorkspaceView.SetEngineeringSurface</c>), every test that
+    /// finds those panels while a project's Structure tab is the selected
+    /// one meets this for the first time. Collapsing reference-equal
+    /// duplicates before choosing is the fix — not a widened tolerance,
+    /// since there really is exactly one control either way.
+    /// </remarks>
+    public static T FindUnique<T>(this ILogical root) where T : class =>
+        root.GetLogicalDescendants().OfType<T>().Distinct((IEqualityComparer<T>)ReferenceEqualityComparer.Instance).Single();
 
     /// <summary>
     /// The Ribbon button for <paramref name="commandId"/>, found inside that

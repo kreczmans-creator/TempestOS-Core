@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Tempest.Core\Tempest.Core.csproj" />
+    <ProjectReference Include="..\..\Tempest.Workspace\Tempest.Workspace.csproj" />
   </ItemGroup>
 
 </Project>

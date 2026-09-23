@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Meeting minutes" description="A4 minutes — attendance, numbered items with owner and due date, actions summary" -->
+<helmet>
+<script src="./ds-base.js"></script>
+<script src="./doc-page.js"></script>
+<style>doc-page:not(:defined){visibility:hidden}</style>
+</helmet>
+<doc-page class="t-light" size="a4" margin="20mm">
+<div slot="header" style="padding-bottom:9mm">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:2px solid var(--indigo-600);padding-bottom:4mm">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="Tempest Engineering" style="height:12mm;width:auto;display:block">
+<div style="text-align:right;white-space:nowrap">
+<div style="font-family:var(--font-display);font-weight:600;font-size:10pt;letter-spacing:.18em;color:var(--indigo-600)">MEETING MINUTES</div>
+<div style="font-family:var(--font-mono);font-size:7pt;letter-spacing:.08em;color:var(--slate-700);margin-top:1.5mm">[TDE-0000-MIN-000]</div>
+</div>
+</div>
+</div>
+<div slot="footer" style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--ink-a08);padding-top:3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.06em;color:var(--slate-600)">
+<span>Tempest Design Engineering Ltd &middot; Company No. 17349874</span>
+<span>www.tempest-engineering.co.uk</span>
+</div>
+<div style="font-family:var(--font-body);font-size:10pt;line-height:1.6;color:var(--slate-700)">
+<div style="font-family:var(--font-display);font-weight:700;font-size:20pt;letter-spacing:-.02em;line-height:1.15;color:var(--ink-900);text-wrap:pretty">[Meeting title — project and purpose]</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--ink-a14);border-bottom:1px solid var(--ink-a14);margin:7mm 0 8mm">
+<div style="padding:4mm 4mm 4mm 0">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">DATE</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[DD/MM/YYYY]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">TIME</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[00:00–00:00]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">LOCATION</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Venue / call]</div>
+</div>
+<div style="padding:4mm;border-left:1px solid var(--ink-a08)">
+<div style="font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.14em;color:var(--slate-600)">CHAIR</div>
+<div style="font-size:9.5pt;color:var(--ink-900);margin-top:1.5mm">[Name]</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-bottom:8mm">
+<div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">PRESENT</div>
+<div style="font-size:9pt;line-height:1.8">[Name — organisation, initials]<br>[Name — organisation, initials]<br>[Name — organisation, initials]</div>
+</div>
+<div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2.5mm">APOLOGIES / DISTRIBUTION</div>
+<div style="font-size:9pt;line-height:1.8">[Name — organisation]<br>[Distribution beyond attendees]</div>
+</div>
+</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:3mm">ITEMS DISCUSSED</div>
+<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8mm">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:9%">ITEM</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14)">DISCUSSION / DECISION</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:13%">ACTION</th>
+<th style="text-align:left;padding:2.5mm 3mm;font-family:var(--font-mono);font-size:6.5pt;letter-spacing:.12em;color:var(--slate-600);font-weight:400;border-bottom:1px solid var(--ink-a14);width:13%">DUE</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">1.0</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Matters arising from previous minutes — status of open actions.]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">2.0</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Item discussed. Record the decision reached and the reasoning where it matters for the record.]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">3.0</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Item discussed.]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td></tr>
+<tr><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">4.0</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);text-wrap:pretty">[Any other business.]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08)">[Initials]</td><td style="padding:3mm;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono)">[DD/MM]</td></tr>
+</tbody>
+</table>
+<div style="border-left:2px solid var(--cyan-500);padding-left:5mm;margin-bottom:8mm">
+<div style="font-family:var(--font-display);font-weight:600;font-size:8.5pt;letter-spacing:.16em;color:var(--indigo-600);margin-bottom:2mm">NEXT MEETING</div>
+<p style="margin:0">[Date, time, location, and any items already tabled.]</p>
+</div>
+<div style="font-size:8.5pt;color:var(--slate-700);text-wrap:pretty">These minutes are taken as a correct record unless comments are received by [date]. Minutes prepared by [name].</div>
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

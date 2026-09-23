@@ -1,4 +1,6 @@
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.ReferenceData;
 
 namespace Tempest.Workspace.Projects;
 
@@ -35,12 +37,26 @@ namespace Tempest.Workspace.Projects;
 /// <param name="DisplayName">The project's own display name.</param>
 /// <param name="Status">The project's own current lifecycle state.</param>
 /// <param name="ProgrammeId">The owning programme, or <see langword="null"/> for a standalone project.</param>
+/// <param name="ClientOrganisationId">The client's own record id in the Organisation catalogue (`WP 19.0A`, `ADR-0150`). <see langword="null"/> if unset.</param>
+/// <param name="PurchaseOrderReference">The client's own purchase-order reference. <see langword="null"/> if unset.</param>
+/// <param name="Budget">The project's own budget. <see langword="null"/> if unset.</param>
+/// <param name="RateCardPin">The Released rate card this project bills against, pinned to the revision read. <see langword="null"/> if none is pinned.</param>
+/// <param name="StartDate">When the project starts. <see langword="null"/> if unset.</param>
+/// <param name="TargetDate">When the project is targeted to complete. <see langword="null"/> if unset.</param>
+/// <param name="ProjectManagerIdentityId">The identity id of the principal managing this project. <see langword="null"/> if unset.</param>
 public sealed record ProjectSummary(
     Guid Id,
     string? Identifier,
     string DisplayName,
     LifecycleState Status,
-    Guid? ProgrammeId)
+    Guid? ProgrammeId,
+    string? ClientOrganisationId = null,
+    string? PurchaseOrderReference = null,
+    Money? Budget = null,
+    ReferencePin? RateCardPin = null,
+    DateOnly? StartDate = null,
+    DateOnly? TargetDate = null,
+    string? ProjectManagerIdentityId = null)
 {
     /// <summary>The label a shell surface shows for this project — the identifier and name together when both exist, mirroring the mock-ups' own "P-0027 Apollo Pump Redesign" form.</summary>
     public string Label => string.IsNullOrWhiteSpace(Identifier) ? DisplayName : $"{Identifier} {DisplayName}";

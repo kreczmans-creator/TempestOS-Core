@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Project kickoff deck" description="Kickoff meeting: objectives, scope, team and roles, programme, ways of working, risks" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" data-screen-label="01" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.22em;color:var(--cyan-500);margin-bottom:36px">PROJECT KICKOFF &middot; [TDE-0000]</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:110px;letter-spacing:-.02em;line-height:1.05;color:var(--paper-050);max-width:1500px">[Project name]</div>
+<div style="font-size:38px;color:var(--slate-400);margin-top:36px">[Client] &middot; kickoff meeting</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>[Facilitator name &middot; title]</span><span>[DD Month YYYY]</span>
+</div>
+</section>
+<section data-label="Objectives" data-screen-label="02" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">OBJECTIVES</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">What success looks like</div>
+<div style="display:flex;flex-direction:column;gap:40px;max-width:1500px">
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:34px;color:var(--cyan-600)">01</span><div style="font-size:32px;line-height:1.5;color:var(--slate-700)">[Objective — measurable, dated, owned by someone in this room]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:34px;color:var(--cyan-600)">02</span><div style="font-size:32px;line-height:1.5;color:var(--slate-700)">[Objective]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:34px;color:var(--cyan-600)">03</span><div style="font-size:32px;line-height:1.5;color:var(--slate-700)">[Objective]</div></div>
+</div>
+</section>
+<section data-label="Scope" data-screen-label="03" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">SCOPE</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">In and out of scope</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1">
+<div style="border-top:4px solid var(--cyan-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:28px">In scope</div>
+<ul style="margin:0;padding-left:40px;font-size:28px;line-height:1.5;color:var(--slate-700);display:flex;flex-direction:column;gap:20px"><li>[Included work package]</li><li>[Included work package]</li><li>[Included work package]</li></ul>
+</div>
+<div style="border-top:4px solid var(--red-500);padding-top:32px">
+<div style="font-family:var(--font-display);font-weight:600;font-size:36px;color:var(--ink-900);margin-bottom:28px">Out of scope</div>
+<ul style="margin:0;padding-left:40px;font-size:28px;line-height:1.5;color:var(--slate-700);display:flex;flex-direction:column;gap:20px"><li>[Excluded item — and who owns it instead]</li><li>[Excluded item]</li><li>[Excluded item]</li></ul>
+</div>
+</div>
+</section>
+<section data-label="Team" data-screen-label="04" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">TEAM &amp; ROLES</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Who does what</div>
+<table style="width:100%;border-collapse:collapse;font-size:28px">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14)">NAME</th>
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14)">ORGANISATION</th>
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14)">ROLE ON THIS PROJECT</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Name]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Tempest]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Project lead — single point of contact]</td></tr>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Name]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Tempest]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Lead engineer]</td></tr>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Name]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Client]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--slate-700)">[Decision maker / approvals]</td></tr>
+</tbody>
+</table>
+</section>
+<section data-label="Programme" data-screen-label="05" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">PROGRAMME</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:80px">Key dates</div>
+<div style="display:flex;align-items:flex-start;gap:0;position:relative;padding-top:24px">
+<div style="position:absolute;top:36px;left:6%;right:6%;height:4px;background:var(--ink-a14)"></div>
+<div style="flex:1;text-align:center;position:relative"><div style="width:28px;height:28px;background:var(--cyan-500);border-radius:50%;margin:0 auto 28px;position:relative;z-index:1"></div><div style="font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[DD MMM]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900);margin-top:10px">[Kickoff]</div></div>
+<div style="flex:1;text-align:center;position:relative"><div style="width:28px;height:28px;background:var(--indigo-600);border-radius:50%;margin:0 auto 28px;position:relative;z-index:1"></div><div style="font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[DD MMM]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900);margin-top:10px">[Concept issue]</div></div>
+<div style="flex:1;text-align:center;position:relative"><div style="width:28px;height:28px;background:var(--indigo-600);border-radius:50%;margin:0 auto 28px;position:relative;z-index:1"></div><div style="font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[DD MMM]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900);margin-top:10px">[Design freeze]</div></div>
+<div style="flex:1;text-align:center;position:relative"><div style="width:28px;height:28px;background:var(--violet-500);border-radius:50%;margin:0 auto 28px;position:relative;z-index:1"></div><div style="font-family:var(--font-mono);font-size:24px;color:var(--slate-600)">[DD MMM]</div><div style="font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--ink-900);margin-top:10px">[Issue for construction]</div></div>
+</div>
+<p style="margin:80px 0 0;font-size:26px;color:var(--slate-600);text-wrap:pretty">[Programme assumptions: client review windows, information required by dates, long-lead orders.]</p>
+</section>
+<section data-label="Ways of working" data-screen-label="06" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">WAYS OF WORKING</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">How we'll run the job</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:64px 96px;font-size:28px;line-height:1.55;color:var(--slate-700);align-content:start">
+<div><div style="font-family:var(--font-display);font-weight:600;font-size:32px;color:var(--ink-900);margin-bottom:14px">Meetings</div>[Cadence, attendees, who chairs, minutes within 48h]</div>
+<div><div style="font-family:var(--font-display);font-weight:600;font-size:32px;color:var(--ink-900);margin-bottom:14px">Information exchange</div>[Document system, drawing numbering, transmittals]</div>
+<div><div style="font-family:var(--font-display);font-weight:600;font-size:32px;color:var(--ink-900);margin-bottom:14px">Approvals</div>[Who signs off what, and target turnaround]</div>
+<div><div style="font-family:var(--font-display);font-weight:600;font-size:32px;color:var(--ink-900);margin-bottom:14px">Changes</div>[Change order route — no varied work without written approval]</div>
+</div>
+</section>
+<section data-label="Risks & actions" data-screen-label="07" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<div>
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--cyan-500);padding-bottom:28px;margin-bottom:80px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-400)">CLOSE</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:80px;letter-spacing:-.02em;color:var(--paper-050);margin-bottom:48px">Top risks and first actions</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;font-size:30px;line-height:1.6;color:var(--slate-400)">
+<div><div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-500);margin-bottom:20px">RISKS WE'RE WATCHING</div>[Top three from the risk register, one line each]</div>
+<div><div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-500);margin-bottom:20px">ACTIONS LEAVING THIS ROOM</div>[Owner, action, date — captured in the action tracker]</div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>[Next meeting: DD Month, location]</span><span>www.tempest-engineering.co.uk</span>
+</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

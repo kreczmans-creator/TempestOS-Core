@@ -3,6 +3,21 @@ using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Workspace.Mechanical;
 
+/// <summary>The command ids <see cref="MechanicalWorkspaceRegistration"/> registers.</summary>
+public static class MechanicalCommandIds
+{
+    public const string Create = "mechanical.create";
+    public const string Rename = "mechanical.rename";
+    public const string Edit = "mechanical.edit";
+    public const string Delete = "mechanical.delete";
+    public const string Move = "mechanical.move";
+    public const string Copy = "mechanical.copy";
+    public const string Duplicate = "mechanical.duplicate";
+    public const string SetBomLine = "mechanical.set-bom-line";
+    public const string CompareBaselines = "mechanical.compare-baselines";
+    public const string ValidateConfiguration = "mechanical.validate-configuration";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Mechanical
 /// Product Structure discipline into a running Workspace — everything
@@ -70,13 +85,14 @@ public static class MechanicalWorkspaceRegistration
         }
 
         var factoryRegistry = new MechanicalObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyMechanicalObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyMechanicalObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry, domainContext));
+        commandDispatcher.RegisterHandler<CreateMechanicalObjectCommand>(new CreateMechanicalObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameMechanicalObjectCommand>(new RenameMechanicalObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseMechanicalObjectCommand>(new ReviseMechanicalObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteMechanicalObjectCommand>(new DeleteMechanicalObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveMechanicalObjectCommand>(new MoveMechanicalObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteMechanicalObjectCommand>(new DeleteMechanicalObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteMechanicalObjectCommand>(new UndeleteMechanicalObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveMechanicalObjectCommand>(new MoveMechanicalObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyMechanicalObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateMechanicalObjectCommand>(new DuplicateMechanicalObjectCommandHandler(domainContext, copyHandler));
         commandDispatcher.RegisterHandler<SetBomLineCommand>(new SetBomLineCommandHandler(domainContext));
@@ -93,7 +109,7 @@ public static class MechanicalWorkspaceRegistration
         var boundKinds = MechanicalObjectFactoryRegistry.SupportedKinds;
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.create", displayName: "Create Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Create, displayName: "Create Mechanical Object", category: "Mechanical",
             description: "Creates a new Project, Assembly, Sub-Assembly, Part, or Component.")
         {
             // Kind is offered as this discipline's own already-declared
@@ -113,10 +129,11 @@ public static class MechanicalWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, MechanicalObjectFactoryRegistry.Part),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.rename", displayName: "Rename Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Rename, displayName: "Rename Mechanical Object", category: "Mechanical",
             description: "Renames the selected Mechanical Product Structure object.")
         {
             // Bound for the Palette and every other future Id-based consumer.
@@ -127,10 +144,11 @@ public static class MechanicalWorkspaceRegistration
                 (context, values) => new RenameMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.edit", displayName: "Edit Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Edit, displayName: "Edit Mechanical Object", category: "Mechanical",
             description: "Records a new content revision of the selected Mechanical Product Structure object.")
         {
             // ChangeSummary stays at the command's own optional default.
@@ -139,10 +157,11 @@ public static class MechanicalWorkspaceRegistration
                 (context, values) => new ReviseMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.delete", displayName: "Delete Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Delete, displayName: "Delete Mechanical Object", category: "Mechanical",
             description: "Soft-deletes the selected Mechanical Product Structure object (rejected if it still has live children).")
         {
             // The confirmation is what keeps a soft-delete out of an unattended
@@ -154,24 +173,44 @@ public static class MechanicalWorkspaceRegistration
                 (context, _) => new DeleteMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Mechanical object")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Mechanical object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.move", displayName: "Move Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Move, displayName: "Move Mechanical Object", category: "Mechanical",
             description: "Reparents the selected Mechanical Product Structure object.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Mechanical object needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveMechanicalObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.copy", displayName: "Copy Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Copy, displayName: "Copy Mechanical Object", category: "Mechanical",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Mechanical object needs a destination parent chosen from the object tree")),
+            // NewIdentifier/NewDisplayName stay at the command's own
+            // optional defaults, exactly as Duplicate's own binding already
+            // leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyMechanicalObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.duplicate", displayName: "Duplicate Mechanical Object", category: "Mechanical",
+            id: MechanicalCommandIds.Duplicate, displayName: "Duplicate Mechanical Object", category: "Mechanical",
             description: "Creates a copy of the selected object under its own current parent.")
         {
             Binding = new CommandBinding(
@@ -179,10 +218,11 @@ public static class MechanicalWorkspaceRegistration
                 (context, _) => new DuplicateMechanicalObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Mechanical object")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Mechanical object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.set-bom-line", displayName: "Set BOM Line", category: "Mechanical",
+            id: MechanicalCommandIds.SetBomLine, displayName: "Set BOM Line", category: "Mechanical",
             description: "Sets the selected object's own Quantity, Unit of Measure, Find Number, Item Number, and Reference Designator.")
         {
             // Quantity is a decimal, so it is validated as one before Build runs
@@ -213,19 +253,28 @@ public static class MechanicalWorkspaceRegistration
                     WorkspaceCommandBindings.Text("itemNumber", "Item number"),
                     WorkspaceCommandBindings.Text("referenceDesignator", "Reference designator"),
                 ],
-                BomLineKinds),
+                BomLineKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.compare-baselines", displayName: "Compare Baselines", category: "Mechanical",
+            id: MechanicalCommandIds.CompareBaselines, displayName: "Compare Baselines", category: "Mechanical",
             description: "Compares two Configuration/Baseline/Release objects' own member revisions — added, removed, revision-changed.")
         {
-            // Two objects, and a context carries one selection whose first entry is
-            // the primary — the second Baseline/Release has nowhere to come from.
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Comparing baselines needs a second Baseline or Release chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the second Baseline/Release —
+            // which a context carrying one selection has nowhere else to
+            // come from — is now chosen from the object picker, scoped to
+            // the same two Kinds this command itself applies to. Required,
+            // not a Destination: there is no "compare against nothing".
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CompareBaselinesCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["secondId"])!.Value),
+                [WorkspaceCommandBindings.RequiredObjectReference("secondId", "Second Baseline or Release", BaselineKinds)],
+                BaselineKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "mechanical.validate-configuration", displayName: "Validate Configuration", category: "Mechanical",
+            id: MechanicalCommandIds.ValidateConfiguration, displayName: "Validate Configuration", category: "Mechanical",
             description: "Checks a Baseline/Release's own member consistency (every member exists, at the referenced revision).")
         {
             // Needs only the selection: no parameter, no confirmation, and no
@@ -237,9 +286,19 @@ public static class MechanicalWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new ValidateConfigurationCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
-                appliesToKinds: [MechanicalObjectFactoryRegistry.Baseline, MechanicalObjectFactoryRegistry.Release]),
+                appliesToKinds: BaselineKinds),
         });
     }
+
+    /// <summary>
+    /// The two Kinds that satisfy <c>IBaseline</c> — held here (`WP 20.2A`)
+    /// so <c>mechanical.compare-baselines</c>'s own second-object picker and
+    /// <c>mechanical.validate-configuration</c>'s own Kind restriction state
+    /// the identical set once, rather than each spelling it out inline.
+    /// </summary>
+    internal static readonly IReadOnlyList<string> BaselineKinds =
+        [MechanicalObjectFactoryRegistry.Baseline, MechanicalObjectFactoryRegistry.Release];
+
     /// <summary>
     /// The Mechanical Kinds that carry a Bill of Materials line — the four
     /// whose own contracts declare <c>IHasBomLine</c>

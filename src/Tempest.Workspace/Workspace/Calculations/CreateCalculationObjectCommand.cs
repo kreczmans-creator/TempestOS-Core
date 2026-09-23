@@ -14,7 +14,7 @@ public sealed class CreateCalculationObjectCommand : ICommand
 {
     public CreateCalculationObjectCommand(
         string kind, string displayName, string? identifier = null, Guid? parentId = null, string? initialContent = null,
-        IReadOnlyList<Guid>? memberCalculationIds = null)
+        IReadOnlyList<Guid>? memberCalculationIds = null, DateOnly? dueOn = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(kind);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
@@ -25,6 +25,7 @@ public sealed class CreateCalculationObjectCommand : ICommand
         ParentId = parentId;
         InitialContent = initialContent ?? $"{displayName} — created via the Calculations module.";
         MemberCalculationIds = memberCalculationIds;
+        DueOn = dueOn;
     }
 
     /// <summary>Gets the Kind to create — one of <see cref="CalculationObjectFactoryRegistry.SupportedKinds"/>.</summary>
@@ -44,18 +45,32 @@ public sealed class CreateCalculationObjectCommand : ICommand
 
     /// <summary>Gets the new Calculation Set's own frozen members — only meaningful for <c>"CalculationSet"</c>; ignored for <c>"Calculation"</c>.</summary>
     public IReadOnlyList<Guid>? MemberCalculationIds { get; }
+
+    /// <summary>
+    /// Gets when the new calculation is due (`WP 20.10B`, T2) — only
+    /// meaningful for <c>"Calculation"</c>, and only once it resolves
+    /// under a project; ignored for <c>"CalculationSet"</c>, and discarded
+    /// for a standalone calculation exactly as
+    /// <see cref="CalculationObjectFactoryRegistry.CreateAsync"/>'s own
+    /// remarks describe.
+    /// </summary>
+    public DateOnly? DueOn { get; }
 }
 
 /// <summary>Handles <see cref="CreateCalculationObjectCommand"/>.</summary>
 public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<CreateCalculationObjectCommand>
 {
     private readonly CalculationObjectFactoryRegistry _registry;
+    private readonly EngineeringDomainContext? _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateCalculationObjectCommandHandler(CalculationObjectFactoryRegistry registry)
+    public CreateCalculationObjectCommandHandler(CalculationObjectFactoryRegistry registry, EngineeringDomainContext? context = null, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
+        _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateCalculationObjectCommand command, CancellationToken cancellationToken)
@@ -66,14 +81,24 @@ public sealed class CreateCalculationObjectCommandHandler : ICommandHandler<Crea
         {
             created = await _registry.CreateAsync(
                 command.Kind, command.Identifier, command.DisplayName, command.InitialContent, command.ParentId,
-                command.MemberCalculationIds, cancellationToken)
+                command.MemberCalculationIds, command.DueOn, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (ArgumentException ex)
         {
             return CommandResult.Failure(ex.Message);
         }
+        catch (DuplicateBusinessIdentifierException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
 
-        return CommandResult.Success($"Created {command.Kind} '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, command.Kind);
+        var displayName = (created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString();
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, created.Id, command.Kind, $"Create '{displayName}'",
+            buildDelete: () => new DeleteCalculationObjectCommand(created.Id, command.Kind),
+            buildUndelete: () => new UndeleteCalculationObjectCommand(created.Id, command.Kind));
+
+        return CommandResult.Success($"Created {command.Kind} '{displayName}'.", created.Id, command.Kind, compensation);
     }
 }

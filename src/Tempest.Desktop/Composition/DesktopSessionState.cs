@@ -33,6 +33,9 @@ internal sealed class DesktopSessionState
     /// <summary>Gets the restored user preferences (theme, delete-confirmation, toast duration, recent-search capacity).</summary>
     public UserSettings UserSettings { get; }
 
+    /// <summary>Gets the restored organisation identity (`WP 20.10G`, PO finding D4) — legal name, company number, website, address, email, phone; every exported document's footer reads this at render time.</summary>
+    public OrganisationIdentitySettings OrganisationIdentity { get; }
+
     /// <summary>Gets the restored Recent Objects list (`WP 10.6A`).</summary>
     public RecentObjectsState RecentObjects { get; }
 
@@ -55,6 +58,9 @@ internal sealed class DesktopSessionState
 
         UserSettings = new UserSettings(settingsProvider, logger);
         UserSettings.LoadAsync().GetAwaiter().GetResult();
+
+        OrganisationIdentity = new OrganisationIdentitySettings(settingsProvider, logger);
+        OrganisationIdentity.LoadAsync().GetAwaiter().GetResult();
 
         // Recent/Favourite Objects (`WP 10.6A`) — loaded synchronously
         // here, the identical established discipline every other

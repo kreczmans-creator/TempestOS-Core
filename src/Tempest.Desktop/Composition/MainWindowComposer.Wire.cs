@@ -1,0 +1,518 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Threading;
+using Tempest.Workspace;
+using Tempest.Workspace.Calculations;
+using Tempest.Workspace.Documents;
+using Tempest.Workspace.Manufacturing;
+using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.Projects;
+using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Shell;
+using Tempest.Workspace.Verification;
+using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Macros;
+using Tempest.Desktop.Input;
+using Tempest.Desktop.Theming;
+using Tempest.Desktop.Views;
+
+namespace Tempest.Desktop.Composition;
+
+internal sealed partial class MainWindowComposer
+{
+    // Continued from MainWindowComposer.cs / MainWindowComposer.Coordinators.cs.
+
+    /// <summary>
+    /// Wires every cross-collaborator event, delegate, palette binding and
+    /// keyboard shortcut — everything that makes the views and coordinators
+    /// <see cref="BuildViews"/>/<see cref="BuildCoordinators"/> built into
+    /// each other actually behave as one shell.
+    /// </summary>
+    public void Wire(WorkspaceHost host, Window window, ComposedViews views, ComposedCoordinators coordinators, MainWindowCallbacks callbacks)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(views);
+        ArgumentNullException.ThrowIfNull(coordinators);
+        ArgumentNullException.ThrowIfNull(callbacks);
+
+        var workspace = views.Workspace;
+        var manager = views.Manager;
+        var composition = views.Composition;
+        var navigator = host.ShellNavigator!;
+        var projectContext = host.ProjectContext!;
+
+        // Click-away: a pointer press landing directly on the Document
+        // Area closes any open Auto-Hide flyout.
+        views.DocumentArea.PointerPressed += (_, _) =>
+        {
+            if (coordinators.DockingComposer.IsFlyoutOpen)
+                coordinators.DockingComposer.CloseFlyout();
+        };
+        window.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape && coordinators.DockingComposer.IsFlyoutOpen)
+                coordinators.DockingComposer.CloseFlyout();
+        };
+
+        views.Ribbon.ActionCompleted += (message, outcome) =>
+            _ = views.ActionReporter.ReportAsync(message, outcome);
+
+        // `WP 17.9.4`: what you make opens right up.
+        views.Ribbon.ObjectCreated += (id, kind) => _ = callbacks.OpenObjectAsync(id, kind);
+
+        views.BackgroundTaskRunner.Changed += callbacks.RefreshOutputPanelExtras;
+
+        // Ribbon minimise (`TD-70`).
+        views.Ribbon.SetCollapsed(views.Session.PanelUiState.RibbonCollapsed);
+        views.Ribbon.CollapsedChanged += collapsed => views.Session.PanelUiState.RibbonCollapsed = collapsed;
+
+        // `WP 19.10O`: the rail's own manual collapse and each area tree's
+        // own manual collapse — restored before first render, exactly like
+        // the ribbon's identical pattern above, so nothing jumps once the
+        // window is shown.
+        views.NavigationRail.SetCollapsed(views.Session.PanelUiState.RailCollapsed);
+        views.NavigationRail.CollapsedChanged += collapsed => views.Session.PanelUiState.RailCollapsed = collapsed;
+
+        views.ProjectsAreaView.SetTreeCollapsed(views.Session.PanelUiState.ProjectsTreeCollapsed);
+        views.ProjectsAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.ProjectsTreeCollapsed = collapsed;
+
+        views.EngineeringAreaView.SetTreeCollapsed(views.Session.PanelUiState.EngineeringTreeCollapsed);
+        views.EngineeringAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.EngineeringTreeCollapsed = collapsed;
+
+        views.BusinessAreaView.SetTreeCollapsed(views.Session.PanelUiState.BusinessTreeCollapsed);
+        views.BusinessAreaView.TreeCollapsedChanged += collapsed => views.Session.PanelUiState.BusinessTreeCollapsed = collapsed;
+
+        // `WP 19.10O`: Ctrl+B toggles the rail — free (checked against
+        // `KeyboardShortcuts`'s own fixed bindings, `KeyboardCommandBindingProvider`'s
+        // own then-empty default set, and the Command Palette's own listed
+        // descriptors). Routed through the generic, already-proven
+        // `IInputBindingProvider` mechanism (`WP 10.6A`, `ADR-0100`) rather
+        // than a new fixed binding in `KeyboardShortcuts`, so it reaches
+        // `shell.toggleNavigationRail` through the identical
+        // Evaluate-then-InvokeAsync path every other command dispatch uses.
+        views.KeyboardBindingProvider.Bind(new KeyGesture(Key.B, KeyModifiers.Control), "shell.toggleNavigationRail");
+
+        views.Ribbon.CategorySelected += async category =>
+        {
+            var area = workspace.Navigation.Areas.FirstOrDefault(a => a.Title.Contains(category, StringComparison.OrdinalIgnoreCase));
+            if (area is null)
+                return;
+
+            await views.BusyOverlay.RunAsync($"Switching to {area.Title}…", async () =>
+            {
+                await workspace.Navigation.SwitchAreaAsync(area.Id).ConfigureAwait(true);
+                await views.ExplorerView.LoadAsync().ConfigureAwait(true);
+            }).ConfigureAwait(true);
+            callbacks.SetCurrentArea(area.Title);
+        };
+
+        // The Engineering Calculation surface raises intent; the
+        // coordinator performs it through the App-layer workbench.
+        views.EngineeringCalculation.PopulateRequested += () => _ = coordinators.EngineeringCalculationCoordinator.PopulateAsync();
+        views.EngineeringCalculation.AddMaterialRequested += () => _ = coordinators.EngineeringCalculationCoordinator.AddMaterialAsync();
+        views.EngineeringCalculation.ReleaseRequested += () => _ = coordinators.EngineeringCalculationCoordinator.VerifyAndReleaseAsync();
+        views.EngineeringCalculation.CalculateRequested += () => _ = coordinators.EngineeringCalculationCoordinator.CalculateAsync();
+        views.EngineeringCalculation.NewCalculationRequested += () => coordinators.EngineeringCalculationCoordinator.BeginNewCalculation();
+        views.EngineeringCalculation.OpenCalculationRequested += recordId => _ = coordinators.EngineeringCalculationCoordinator.OpenAsync(recordId);
+        views.EngineeringCalculation.RenameRequested += (objectId, name) => _ = coordinators.EngineeringCalculationCoordinator.RenameAsync(objectId, name);
+        views.EngineeringCalculation.RetireRequested += objectId => _ = coordinators.EngineeringCalculationCoordinator.RetireAsync(objectId);
+        views.EngineeringCalculation.ShowRetiredChanged += include => _ = coordinators.EngineeringCalculationCoordinator.SetShowRetiredAsync(include);
+        views.EngineeringCalculation.SelectionMoved += () => coordinators.EngineeringCalculationCoordinator.ForgetPendingRetirement();
+
+        views.NavigationRail.NavigationRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+        views.ProjectBrowser.ProjectOpened += () => _ = callbacks.RenderCurrentModuleAsync();
+        views.ProjectWorkspace.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+        views.ProjectWorkspace.ProjectClosed += () => _ = callbacks.RenderCurrentModuleAsync();
+
+        // `WP 19.7A`: the Projects tree's own project leaves open a project
+        // exactly as the retired standalone Projects rail button always
+        // did; the Engineering tree's own Modules → Mechanical node
+        // navigates on to the ribbon-and-docking surface the same way
+        // the project workspace's own "Enter Engineering" button does.
+        views.ProjectsAreaView.OpenProjectRequestedAsync += async projectId =>
+        {
+            await navigator.OpenProjectAsync(projectId).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+        views.EngineeringAreaView.EngineeringRequested += () => _ = callbacks.RenderCurrentModuleAsync();
+
+        // The Documents area opens a file through the same `TD-80` launcher
+        // the object editor uses.
+        views.ProjectWorkspace.OpenAttachmentRequested += (ownerId, attachmentId) =>
+            _ = callbacks.OpenProjectAttachmentAsync(ownerId, attachmentId, default);
+
+        // The Tasks/Risks/Issues/Decisions/Milestones/Deliverables areas
+        // raise intent; the shell performs it through the two project-CRUD
+        // coordinators and re-renders.
+        views.ProjectWorkspace.CreateTaskRequested += () => _ = coordinators.ProjectDelivery.CreateProjectTaskAsync();
+        views.ProjectWorkspace.AssignTaskToMeRequested += taskId => _ = coordinators.ProjectDelivery.AssignProjectTaskToMeAsync(taskId);
+        views.ProjectWorkspace.TaskWorkStateChangeRequested += (taskId, target) => _ = coordinators.ProjectDelivery.ChangeProjectTaskWorkStateAsync(taskId, target);
+        views.ProjectWorkspace.CreateRiskRequested += () => _ = coordinators.ProjectGovernanceCoordinator.CreateProjectRiskAsync();
+        views.ProjectWorkspace.CreateIssueRequested += () => _ = coordinators.ProjectGovernanceCoordinator.CreateProjectIssueAsync();
+        views.ProjectWorkspace.CreateDecisionRequested += () => _ = coordinators.ProjectGovernanceCoordinator.CreateProjectDecisionAsync();
+        views.ProjectWorkspace.RiskStatusChangeRequested += (id, target) => _ = coordinators.ProjectGovernanceCoordinator.ChangeProjectRiskStatusAsync(id, target);
+        views.ProjectWorkspace.IssueStatusChangeRequested += (id, target) => _ = coordinators.ProjectGovernanceCoordinator.ChangeProjectIssueStatusAsync(id, target);
+        views.ProjectWorkspace.DecisionStatusChangeRequested += (id, target) => _ = coordinators.ProjectGovernanceCoordinator.DecideProjectDecisionAsync(id, target);
+        views.ProjectWorkspace.OwnRiskRequested += id => _ = coordinators.ProjectGovernanceCoordinator.OwnProjectRiskAsync(id);
+        views.ProjectWorkspace.AssignIssueToMeRequested += id => _ = coordinators.ProjectGovernanceCoordinator.AssignProjectIssueToMeAsync(id);
+        views.ProjectWorkspace.ScoreRiskRequested += id => _ = coordinators.ProjectGovernanceCoordinator.ScoreProjectRiskAsync(id);
+        views.ProjectWorkspace.EditRiskRequested += id => _ = coordinators.ProjectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Risk);
+        views.ProjectWorkspace.EditIssueRequested += id => _ = coordinators.ProjectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Issue);
+        views.ProjectWorkspace.EditDecisionRequested += id => _ = coordinators.ProjectGovernanceCoordinator.EditProjectGovernanceObjectAsync(id, GovernanceFamily.Decision);
+        views.ProjectWorkspace.CreateMilestoneRequested += () => _ = coordinators.ProjectDelivery.CreateProjectMilestoneAsync();
+        views.ProjectWorkspace.AddDeliverableRequested += id => _ = coordinators.ProjectDelivery.AddProjectDeliverableAsync(id);
+        views.ProjectWorkspace.EditMilestoneRequested += id => _ = coordinators.ProjectDelivery.EditProjectMilestoneAsync(id);
+        views.ProjectWorkspace.EditTaskRequested += taskId => _ = coordinators.ProjectDelivery.EditProjectTaskAsync(taskId);
+        views.ProjectWorkspace.TaskDueDateChangeRequested += taskId => _ = coordinators.ProjectDelivery.ChangeProjectTaskDueDateAsync(taskId);
+
+        // `TD-104`: rehydration that could not recover everything is a fact
+        // about the user's own engineering work, said out loud here.
+        ReportIncompleteRehydration(views.ToastHost, host.RehydrationResult);
+
+        // The brand header. `TD-177`: the header's own search box now
+        // carries its typed text straight into the palette's own query.
+        views.Header.SearchRequested += query => views.CommandPalette.Open(query);
+        views.Header.ThemeToggleRequested += async () => await views.Theme.ToggleAsync().ConfigureAwait(true);
+        views.Header.ReturnToProjectRequested += async () =>
+        {
+            await navigator.ReturnToProjectAsync().ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+        // `WP 19.7A` (scope item 2): "the signed-in principal's name and
+        // role, which opens Settings" — Settings stays declared and
+        // reachable (`ShellAreas`'s own remarks) even though it left the
+        // rail, and this chip is that reachable path now.
+        views.Header.SettingsRequested += async () =>
+        {
+            await navigator.GoToModuleAsync(ShellArea.Settings).ConfigureAwait(true);
+            await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+        };
+
+        // Responsive shell chrome: below the compact threshold the rail
+        // folds to its icons, the header's search field to its glyph, the
+        // ribbon's own command buttons to icons alone (`WP 19.2B`,
+        // `TD-73`), and the Libraries tab's own open record replaces the
+        // list (with Back) rather than sitting beside it (`WP 19.6A`) —
+        // the same one threshold drives all four, so they never disagree
+        // about what counts as "narrow".
+        window.SizeChanged += (_, e) =>
+        {
+            var compact = e.NewSize.Width < DesignTokens.CompactShellWidth;
+            views.NavigationRail.SetCompact(compact);
+            views.Header.SetCompact(compact);
+            views.Ribbon.SetCompact(compact);
+            views.LibrariesView.SetCompact(compact);
+            views.ReferenceDataLibrariesView.SetCompact(compact);
+            views.ProjectsAreaView.SetCompact(compact);
+            views.EngineeringAreaView.SetCompact(compact);
+            views.BusinessAreaView.SetCompact(compact);
+        };
+
+        var shortcutActions = new KeyboardShortcutActions(
+            openCommandPalette: () => views.CommandPalette.Open(),
+            selectNextDocument: () => views.DocumentArea.SelectNextTab(),
+            selectPreviousDocument: () => views.DocumentArea.SelectPreviousTab(),
+            closeActiveDocument: () =>
+            {
+                if (views.DocumentArea.ActiveClosableViewId is { } viewId)
+                    _ = coordinators.ViewCoordinator.CloseDocumentAsync(viewId);
+            },
+            focusExplorerFilter: () => views.ExplorerView.FocusFilter(),
+            undo: () => _ = coordinators.UndoRedo.UndoAsync(),
+            redo: () => _ = coordinators.UndoRedo.RedoAsync(),
+            toggleFavourite: async () =>
+            {
+                if (workspace.Selection.Current is { } selection)
+                {
+                    var target = await composition.DomainContext.Repository.FindAsync(selection.ObjectId).ConfigureAwait(true);
+                    var title = (target as IHasBusinessIdentifier)?.DisplayName ?? selection.Kind;
+                    coordinators.ViewCoordinator.ToggleFavourite(selection.ObjectId, selection.Kind, title);
+                }
+                else
+                {
+                    views.StatusBar.SetText("Select an object first to favourite it.");
+                }
+            });
+        KeyboardShortcuts.Register(window, shortcutActions);
+
+        // Keyboard as an IInputBindingProvider (`WP 10.6A`) — handled after
+        // the fixed KeyboardShortcuts above, so a fixed binding always
+        // takes priority over a user-configured one for the same gesture.
+        window.KeyDown += (_, e) => views.KeyboardBindingProvider.HandleKeyDown(e);
+
+        // TD-77 Stage 5: the palette evaluates and invokes against the real
+        // selection, through the same adapter the Ribbon uses.
+        views.CommandPalette.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, projectContext.Current?.Id);
+        views.CommandPalette.ParameterPrompt = views.CommandPrompt.Prompt;
+        views.Ribbon.ProjectIdSource = () => projectContext.Current?.Id;
+
+        composition.InputBindingRegistry.ContextSource = () => WorkspaceCommandContext.From(workspace.Selection, projectContext.Current?.Id);
+        composition.InputBindingRegistry.ParameterPrompt = views.CommandPrompt.Prompt;
+
+        views.CommandPalette.InvokeOverride = async (descriptor, context) =>
+        {
+            if (!descriptor.Id.StartsWith(IMacroManager.CommandIdPrefix, StringComparison.Ordinal))
+            {
+                return await composition.CommandRegistry
+                    .InvokeAsync(descriptor.Id, context, views.CommandPrompt.Prompt)
+                    .ConfigureAwait(true);
+            }
+
+            var macroResult = await views.BackgroundTaskRunner.RunAsync(
+                $"Running macro '{descriptor.DisplayName}'…",
+                async ct =>
+                {
+                    var invocation = await composition.CommandRegistry
+                        .InvokeAsync(descriptor.Id, context, prompt: null, ct)
+                        .ConfigureAwait(false);
+
+                    return invocation.Result
+                        ?? CommandResult.Failure(invocation.Reason ?? "The macro could not be run.");
+                }).ConfigureAwait(true);
+
+            return CommandInvocation.Executed(macroResult);
+        };
+        views.CommandPalette.CommandInvoked += async (descriptor, result) =>
+        {
+            callbacks.RecordHistory(result.Succeeded
+                ? $"Invoked '{descriptor.DisplayName}' via Command Palette."
+                : $"'{descriptor.DisplayName}' failed via Command Palette: {result.Message ?? "Command failed."}");
+            callbacks.RefreshStatusBar(manager);
+
+            if (result.Succeeded)
+            {
+                if (result is { SubjectId: { } createdId, SubjectKind: { } createdKind } && RibbonView.IsCreate(descriptor.Id))
+                    await callbacks.OpenObjectAsync(createdId, createdKind).ConfigureAwait(true);
+
+                // `WP 21.1A`: the identical recording `RibbonView.RecordCompensation`
+                // does for its own two dispatch paths — the Palette's own
+                // `CommandInvoked` already carries the real CommandResult, so
+                // no second collaborator is threaded into that view itself.
+                // Covers a macro's own compound compensation for free: a
+                // macro's CommandResult carries one, built from each step's
+                // own (RunMacroCommand's own remarks), exactly like any
+                // other command's result reaching here.
+                if (result.Compensation is { } compensation)
+                {
+                    coordinators.UndoRedo.Stack.Record(new UndoableAction(compensation.Description, compensation.Undo, compensation.Redo));
+                }
+                else if (result.UndoUnavailableReason is { } reason)
+                {
+                    views.CommandHistory.Record($"Cannot be undone: {reason}", succeeded: true);
+                }
+            }
+        };
+        views.CommandPalette.CommandUnavailable += (descriptor, reason) =>
+        {
+            views.StatusBar.SetText(reason);
+            views.ToastHost.Show(reason, FeedbackSeverity.Warning);
+        };
+
+        // `WP 20.2A` (S2-2): Ctrl+Shift+M (Move…) / Ctrl+Shift+C (Copy…),
+        // with an object selected in the Project Explorer. Kind-dependent —
+        // twelve different command Ids across six disciplines
+        // (`MoveOrCopyCommandId`, below) — so `KeyboardCommandBindingProvider`'s
+        // fixed gesture -> one Id map (Ctrl+B's own mechanism, above) cannot
+        // serve it: a raw KeyDown check, mirroring `KeyboardShortcuts`'s own
+        // established shape, resolves the right Id from the current
+        // selection's own Kind and invokes it through the identical
+        // canonical Evaluate/InvokeAsync(id, context, prompt) path the
+        // Palette above already uses — so the destination is collected by
+        // the same picker (`DesktopCommandPrompt`/`ObjectPickerDialog`)
+        // whichever surface asked for it. Deliberately not registered
+        // through `KeyboardCommandBindingProvider.Bind` (and so carries no
+        // `DormantKeyboardBindingTests.DisclosedBindings` entry): that
+        // guard's own allow-list names gestures bound to one fixed Id,
+        // which a Kind-resolved dispatch genuinely is not.
+        window.KeyDown += async (_, e) =>
+        {
+            if (e.Handled || e.KeyModifiers != (KeyModifiers.Control | KeyModifiers.Shift) || (e.Key != Key.M && e.Key != Key.C))
+                return;
+
+            var selected = workspace.Selection.Current;
+            if (selected is null)
+            {
+                views.StatusBar.SetText("Select an object first to Move or Copy it.");
+                e.Handled = true;
+                return;
+            }
+
+            var isMove = e.Key == Key.M;
+            var commandId = MoveOrCopyCommandId(selected.Kind, isMove);
+            if (commandId is null)
+            {
+                views.StatusBar.SetText($"{(isMove ? "Moving" : "Copying")} a {selected.Kind} isn't supported yet.");
+                e.Handled = true;
+                return;
+            }
+
+            e.Handled = true;
+            var context = WorkspaceCommandContext.From(workspace.Selection, projectContext.Current?.Id);
+            var invocation = await composition.CommandRegistry
+                .InvokeAsync(commandId, context, views.CommandPrompt.Prompt)
+                .ConfigureAwait(true);
+
+            switch (invocation.Outcome)
+            {
+                case CommandOutcome.Executed:
+                    // `WP 20.10C` (PO finding T6): `RefreshStatusBar` alone
+                    // re-displays `manager.StatusBar.StatusText` — whatever
+                    // the last *selection* set it to — never this
+                    // command's own result. The picker closed, the Domain
+                    // genuinely moved or copied the object, and the user
+                    // saw nothing say so. `WorkspaceStatusBar.SetStatus`
+                    // (already `Tempest.Harness`'s own established way to
+                    // report a command's own result — see
+                    // `WorkspaceShell.HandleRunCommandAsync`) is the one
+                    // piece this path was missing.
+                    //
+                    // Posted at Background priority, not run inline. A
+                    // successful Move/Copy also commits a structural
+                    // change, which the Project Explorer's own reactive
+                    // `IWorkspaceChanges` subscription reloads from and
+                    // then re-selects/reveals the result (`WP-Z4`'s
+                    // "scroll-to-new-item", already-shipped) — and that
+                    // reveal is itself a real selection change, which the
+                    // identical Status Bar segment (`StatusBarView`'s own
+                    // "Selected Object") also reacts to
+                    // (`WorkspaceViewCoordinator`'s `ObjectSelected`
+                    // handler). Both are genuine, wanted updates to the
+                    // one segment; only their order decides which the
+                    // user is left reading. That reload is queued via
+                    // `Dispatcher.UIThread.Post` (default/Normal
+                    // priority) from inside the commit itself, before
+                    // this switch ever runs — so setting this message
+                    // inline here would only be the one to lose the
+                    // race, immediately overwritten once the reveal's own
+                    // reload runs. Posting this at Background priority
+                    // instead guarantees it drains after every Normal
+                    // (or higher) job already queued — the reload and
+                    // whatever reselection it triggers included, however
+                    // many turns that takes — so the command's own result
+                    // is what is left standing once the Explorer settles,
+                    // never a transient "Selected: …" this same gesture
+                    // itself caused.
+                    var result = invocation.Result!;
+                    var message = result.Message ?? (result.Succeeded
+                        ? $"{(isMove ? "Moved" : "Copied")}."
+                        : $"{(isMove ? "Move" : "Copy")} failed.");
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        manager.StatusBar.SetStatus(message);
+                        callbacks.RecordHistory(message);
+                        callbacks.RefreshStatusBar(manager);
+                    }, DispatcherPriority.Background);
+                    break;
+
+                case CommandOutcome.Cancelled:
+                    // Closing the picker is not an error and changed
+                    // nothing: no toast, no status text, no history entry —
+                    // the identical rule the Palette's own InvokeSelectedAsync
+                    // already follows.
+                    break;
+
+                default:
+                    var reason = invocation.Reason ?? $"{(isMove ? "Move" : "Copy")} is not available.";
+                    views.StatusBar.SetText(reason);
+                    views.ToastHost.Show(reason, FeedbackSeverity.Warning);
+                    break;
+            }
+        };
+
+        // `WP 18.1B` §2: the palette's own Objects section.
+        var searchStore = (Tempest.Core.Persistence.IQueryablePersistenceStore)host.Services!.GetService(typeof(Tempest.Core.Persistence.IQueryablePersistenceStore));
+        views.CommandPalette.ObjectSearchSource = async (query, cancellationToken) =>
+        {
+            var hits = await searchStore.SearchAsync(query, 10, cancellationToken).ConfigureAwait(true);
+            var results = new List<PaletteObjectHit>(hits.Count);
+
+            foreach (var hit in hits)
+            {
+                var found = await composition.DomainContext.Repository.FindAsync(hit.ObjectId, cancellationToken).ConfigureAwait(true);
+                var title = (found as IHasBusinessIdentifier)?.DisplayName ?? hit.ObjectId.ToString();
+
+                string? projectName = null;
+                if (hit.ProjectId is { } projectId)
+                {
+                    var project = await composition.DomainContext.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(true);
+                    projectName = (project as IHasBusinessIdentifier)?.DisplayName;
+                }
+
+                results.Add(new PaletteObjectHit(hit.ObjectId, hit.Kind, title, projectName));
+            }
+
+            return results;
+        };
+        views.CommandPalette.ObjectSelected += async hit =>
+        {
+            callbacks.RecordHistory($"Opened '{hit.Title}' from Command Palette search.");
+            await callbacks.OpenObjectAsync(hit.ObjectId, hit.Kind).ConfigureAwait(true);
+        };
+    }
+
+    /// <summary>
+    /// Tells the user when startup rehydration could not bring everything
+    /// back, and exactly what was missed.
+    /// </summary>
+    /// <remarks>
+    /// Silence here would be the worst outcome available: the workspace
+    /// would simply look emptier than the user left it, which is
+    /// indistinguishable from having lost the work.
+    /// </remarks>
+    private static void ReportIncompleteRehydration(ToastHost toastHost, EngineeringRehydrationResult? result)
+    {
+        if (result is null || result.IsComplete)
+            return;
+
+        var parts = new List<string>();
+
+        if (result.UnknownKinds.Count > 0)
+            parts.Add($"{result.UnknownKinds.Count} unrecognised kind(s): {string.Join(", ", result.UnknownKinds.Distinct().Order(StringComparer.Ordinal))}");
+
+        if (result.OrphanedStateIds.Count > 0)
+            parts.Add($"{result.OrphanedStateIds.Count} object(s) with no backing document");
+
+        if (result.FailedObjectIds.Count > 0)
+            parts.Add($"{result.FailedObjectIds.Count} object(s) that could not be reconstructed");
+
+        var message = $"Some saved engineering work could not be reopened — {string.Join("; ", parts)}. It is still on disk; see the Output panel.";
+
+        toastHost.Show(message, FeedbackSeverity.Error, TimeSpan.FromSeconds(20));
+    }
+
+    /// <summary>
+    /// The Move/Copy command Id for <paramref name="kind"/> (`WP 20.2A`,
+    /// S2-2), or <see langword="null"/> if this Kind has neither —
+    /// Requirement/RequirementGroup have no Copy among this Work Package's
+    /// own twelve. Matches each discipline's own already-declared Kind
+    /// scope exactly (each registration file's own <c>boundKinds</c>/
+    /// <c>appliesToKinds</c>), so <see cref="Tempest.Core.Commands.ICommandRegistry.Evaluate"/>
+    /// never refuses a resolved Id on a Kind mismatch.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not the Explorer's own separate drag-and-drop switch
+    /// (<c>WorkspaceViewCoordinator.ObjectMoveRequested</c>), which
+    /// constructs <c>MoveDocumentObjectCommand</c>/<c>MoveVerificationActivityCommand</c>
+    /// directly for <c>"WorkInstruction"</c>/<c>"Inspection"</c> — a
+    /// disclosed, pre-existing reuse quirk of that one call site, not a
+    /// Kind restriction: both paths reach the identical domain object
+    /// either way, since neither handler inspects Kind beyond passing it
+    /// through (<c>ManufacturingWorkspaceRegistration</c>'s own Rename/
+    /// Delete/Duplicate bindings already dispatch
+    /// <c>Rename</c>/<c>Delete</c>/<c>DuplicateManufacturingObjectCommand</c>
+    /// for all three Manufacturing Kinds the identical way).
+    /// </remarks>
+    private static string? MoveOrCopyCommandId(string kind, bool isMove) => kind switch
+    {
+        "Calculation" or "CalculationSet" => isMove ? CalculationsCommandIds.Move : CalculationsCommandIds.Copy,
+        _ when DocumentObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? DocumentsCommandIds.Move : DocumentsCommandIds.Copy,
+        _ when ManufacturingObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? ManufacturingCommandIds.Move : ManufacturingCommandIds.Copy,
+        _ when MechanicalObjectFactoryRegistry.SupportedKinds.Contains(kind) => isMove ? MechanicalCommandIds.Move : MechanicalCommandIds.Copy,
+        "VerificationActivity" => isMove ? VerificationCommandIds.Move : VerificationCommandIds.Copy,
+        "Requirement" when isMove => RequirementsCommandIds.Move,
+        "RequirementGroup" when isMove => RequirementsCommandIds.MoveGroup,
+        _ => null,
+    };
+}

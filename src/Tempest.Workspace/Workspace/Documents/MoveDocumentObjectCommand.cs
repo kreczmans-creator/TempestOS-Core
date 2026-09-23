@@ -29,12 +29,16 @@ public sealed class MoveDocumentObjectCommand : IWorkspaceCommand
 public sealed class MoveDocumentObjectCommandHandler : ICommandHandler<MoveDocumentObjectCommand>
 {
     private readonly EngineeringDomainContext _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public MoveDocumentObjectCommandHandler(EngineeringDomainContext context)
+    /// <param name="context">Where the target object is found.</param>
+    /// <param name="dispatcher">Dispatches this move's own compensation (`WP 21.1A`) — optional; <see langword="null"/> means no <see cref="CommandResult.Compensation"/> is attached.</param>
+    public MoveDocumentObjectCommandHandler(EngineeringDomainContext context, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(context);
 
         _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(MoveDocumentObjectCommand command, CancellationToken cancellationToken)
@@ -44,17 +48,9 @@ public sealed class MoveDocumentObjectCommandHandler : ICommandHandler<MoveDocum
         if (target is not IHasParent hasParent)
             return CommandResult.Failure($"'{command.TargetObjectId}' was not found, or its own Kind cannot be moved.");
 
-        try
-        {
-            await hasParent.MoveAsync(command.NewParentId, cancellationToken).ConfigureAwait(false);
-        }
-        catch (CircularParentAssignmentException ex)
-        {
-            return CommandResult.Failure(ex.Message);
-        }
-
-        return CommandResult.Success(command.NewParentId is { } parentId
-            ? $"Moved '{command.TargetObjectId}' under '{parentId}'."
-            : $"Moved '{command.TargetObjectId}' to top level.");
+        return await WorkspaceCommandBindings.MoveResultAsync(
+            _context, _dispatcher, hasParent, command.TargetObjectId, command.TargetKind, command.NewParentId,
+            parentId => new MoveDocumentObjectCommand(command.TargetObjectId, command.TargetKind, parentId),
+            cancellationToken).ConfigureAwait(false);
     }
 }

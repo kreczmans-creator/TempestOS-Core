@@ -51,8 +51,12 @@ internal sealed class ManufacturingCockpitReadModel
         var objects = new List<IEngineeringObject>();
         foreach (var kind in ManufacturingObjectFactoryRegistry.SupportedKinds)
         {
+            // `TD-88`/`WP 21.5B`: liveness is filtered from the index
+            // alone; every survivor is materialised — `Classification`
+            // (the supplier-operation check below) is not on the index row.
             var byKind = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
-            objects.AddRange(byKind.Where(o => o is not IDeletable { IsDeleted: true }));
+            var liveEntries = byKind.Where(entry => !entry.IsDeleted).ToList();
+            objects.AddRange(await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false));
         }
 
         _liveObjects = objects;

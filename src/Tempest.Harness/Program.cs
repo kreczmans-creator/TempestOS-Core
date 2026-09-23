@@ -1,6 +1,8 @@
 using Tempest.Harness;
 using Tempest.Workspace.Composition;
 using Tempest.Workspace;
+using Tempest.Core.Configuration;
+using Tempest.Core.Identity;
 
 Console.Title = "TempestOS";
 
@@ -26,6 +28,30 @@ await using var shell = new WorkspaceShell(manager, Console.Out, Console.In);
 // Starts the Workspace (and, inside it, the Runtime Host — ITempestHost.Services
 // only becomes resolvable from this point on).
 await shell.StartAsync();
+
+// `WP 21.5F` Offensive Security Audit, item 9: establishes the session
+// principal the identical way Tempest.Desktop's own WorkspaceHost does
+// (`TD-103`, `ADR-0146`) — before this fix, this Harness never set one at
+// all, so every audit row, authorship field and check record a Harness
+// session produced fell back to
+// EngineeringDocumentStore.UnknownAuthorPrincipalId, indistinguishable
+// from a genuinely unauthenticated write. Tempest.Harness is a shipped
+// release asset (release.yml's own "engineering-harness" archive), not
+// only a developer tool, so this is a real audit-trail gap, not a test-only
+// one. Published unconditionally, null included, mirroring WorkspaceHost's
+// own identical remark: a session that genuinely has no principal must
+// report none, not silently inherit whatever a sample module happened to
+// establish during its own initialisation.
+//
+// `WP 21.6A` (OSA-12/OSA-14): reached through PrincipalSession, the same
+// single seam WorkspaceHost's own start-up uses — CurrentPrincipalAccessor
+// itself is no longer registered under its own concrete type at all, and
+// its SetCurrent is internal to Tempest.Core regardless.
+if (host.Services!.GetService(typeof(PrincipalSession)) is PrincipalSession principalSession)
+{
+    var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
+    principalSession.Establish(new SessionPrincipalSource(configuration).Resolve());
+}
 
 // The Mechanical Product Structure discipline (WP 9.0A) was the first
 // Workspace registration to need a running Host, so all six real

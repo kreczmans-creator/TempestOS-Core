@@ -6,6 +6,21 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Verification;
 namespace Tempest.Workspace.Manufacturing;
 
+/// <summary>The command ids <see cref="ManufacturingWorkspaceRegistration"/> registers.</summary>
+public static class ManufacturingCommandIds
+{
+    public const string Create = "manufacturing.create";
+    public const string Rename = "manufacturing.rename";
+    public const string Edit = "manufacturing.edit";
+    public const string Delete = "manufacturing.delete";
+    public const string Move = "manufacturing.move";
+    public const string Copy = "manufacturing.copy";
+    public const string Duplicate = "manufacturing.duplicate";
+    public const string Release = "manufacturing.release";
+    public const string Archive = "manufacturing.archive";
+    public const string RecordInspectionResult = "manufacturing.record-inspection-result";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Manufacturing
 /// discipline into a running Workspace — everything <c>Program.cs</c>
@@ -105,16 +120,17 @@ public static class ManufacturingWorkspaceRegistration
         manager.RegisterReviseFactory("Inspection", static (id, targetKind, content) => new ReviseVerificationActivityCommand(id, targetKind, content));
 
         var factoryRegistry = new ManufacturingObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyManufacturingObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyManufacturingObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateManufacturingObjectCommand>(new CreateManufacturingObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateManufacturingObjectCommand>(new CreateManufacturingObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameManufacturingObjectCommand>(new RenameManufacturingObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseManufacturingObjectCommand>(new ReviseManufacturingObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteManufacturingObjectCommand>(new DeleteManufacturingObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveManufacturingObjectCommand>(new MoveManufacturingObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteManufacturingObjectCommand>(new DeleteManufacturingObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteManufacturingObjectCommand>(new UndeleteManufacturingObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveManufacturingObjectCommand>(new MoveManufacturingObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyManufacturingObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateManufacturingObjectCommand>(new DuplicateManufacturingObjectCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetManufacturingObjectStatusCommand>(new SetManufacturingObjectStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetManufacturingObjectStatusCommand>(new SetManufacturingObjectStatusCommandHandler(domainContext, commandDispatcher));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
         // hand-written lambda closing over the same constructor the handler
@@ -125,7 +141,7 @@ public static class ManufacturingWorkspaceRegistration
         var boundKinds = SupportedKinds;
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.create", displayName: "Create Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Create, displayName: "Create Manufacturing Object", category: "Manufacturing",
             description: "Creates a new Manufacturing Operation (incl. Routing/Supplier Operation via Classification), Work Instruction, or Inspection.")
         {
             // Kind is offered as this discipline's own already-declared
@@ -161,10 +177,11 @@ public static class ManufacturingWorkspaceRegistration
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, ManufacturingObjectFactoryRegistry.ManufacturingOperationKind),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
                     WorkspaceCommandBindings.Choice("method", "Method (Inspection only)", ["Inspection", "Test", "Analysis", "Demonstration"], "Inspection"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.rename", displayName: "Rename Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Rename, displayName: "Rename Manufacturing Object", category: "Manufacturing",
             description: "Renames the selected Manufacturing object.")
         {
             // Bound for the Palette and every other future Id-based consumer.
@@ -175,10 +192,11 @@ public static class ManufacturingWorkspaceRegistration
                 (context, values) => new RenameManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.edit", displayName: "Edit Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Edit, displayName: "Edit Manufacturing Object", category: "Manufacturing",
             description: "Records a new content revision of the selected Manufacturing object.")
         {
             // ChangeSummary stays at the command's own optional default.
@@ -187,10 +205,11 @@ public static class ManufacturingWorkspaceRegistration
                 (context, values) => new ReviseManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.delete", displayName: "Delete Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Delete, displayName: "Delete Manufacturing Object", category: "Manufacturing",
             description: "Soft-deletes the selected Manufacturing object.")
         {
             // The confirmation is what keeps a soft-delete out of an unattended
@@ -202,24 +221,43 @@ public static class ManufacturingWorkspaceRegistration
                 (context, _) => new DeleteManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Manufacturing object")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Manufacturing object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.move", displayName: "Move Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Move, displayName: "Move Manufacturing Object", category: "Manufacturing",
             description: "Reparents the selected Manufacturing object — for an Operation, this adds/removes it from a Routing's own sequence.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Manufacturing object needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.copy", displayName: "Copy Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Copy, displayName: "Copy Manufacturing Object", category: "Manufacturing",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Manufacturing object needs a destination parent chosen from the object tree")),
+            // NewDisplayName stays at the command's own optional default,
+            // exactly as Duplicate's own binding already leaves it.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyManufacturingObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.duplicate", displayName: "Duplicate Manufacturing Object", category: "Manufacturing",
+            id: ManufacturingCommandIds.Duplicate, displayName: "Duplicate Manufacturing Object", category: "Manufacturing",
             description: "Creates a copy of the selected object under its own current parent.")
         {
             Binding = new CommandBinding(
@@ -227,22 +265,23 @@ public static class ManufacturingWorkspaceRegistration
                 (context, _) => new DuplicateManufacturingObjectCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Manufacturing object")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Manufacturing object"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.release", displayName: "Release", category: "Manufacturing",
+            id: ManufacturingCommandIds.Release, displayName: "Release", category: "Manufacturing",
             description: "Transitions the selected Manufacturing object's own status to Released (SetManufacturingObjectStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Released, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.archive", displayName: "Archive", category: "Manufacturing",
+            id: ManufacturingCommandIds.Archive, displayName: "Archive", category: "Manufacturing",
             description: "Transitions the selected Manufacturing object's own status to Archived, a terminal state (SetManufacturingObjectStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Archived, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "manufacturing.record-inspection-result", displayName: "Record Inspection Result", category: "Manufacturing",
+            id: ManufacturingCommandIds.RecordInspectionResult, displayName: "Record Inspection Result", category: "Manufacturing",
             description: "Records a real IVerificationRecord (Pass/Fail/Conditional) against the selected Inspection — dispatches Verification.RecordVerificationResultCommand directly, disclosed cross-Work-Package reuse.")
         {
             // The disclosed cross-discipline reuse this class's own remarks
@@ -271,7 +310,8 @@ public static class ManufacturingWorkspaceRegistration
                     // this default the same, literal way, for the same reason.
                     WorkspaceCommandBindings.Required("method", "Method", "Inspection"),
                 ],
-                [ManufacturingObjectFactoryRegistry.InspectionKind]),
+                [ManufacturingObjectFactoryRegistry.InspectionKind],
+                mutates: true),
         });
     }
     /// <summary>
@@ -287,6 +327,7 @@ public static class ManufacturingWorkspaceRegistration
                 WorkspaceCommandBindings.Target(context).ObjectId,
                 WorkspaceCommandBindings.Target(context).Kind,
                 status),
-            appliesToKinds: appliesToKinds);
+            appliesToKinds: appliesToKinds,
+            mutates: true);
 
 }

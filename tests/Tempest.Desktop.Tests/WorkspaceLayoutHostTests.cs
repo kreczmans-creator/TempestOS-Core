@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
 using Tempest.Desktop.Docking;
 
@@ -193,6 +195,84 @@ public sealed class WorkspaceLayoutHostTests
             .Select(b => Avalonia.Automation.AutomationProperties.GetName(b) ?? string.Empty);
 
         Assert.DoesNotContain(names, n => n.StartsWith("Close", StringComparison.Ordinal));
+    }
+
+    // ----------------------------------------------------------------
+    // Drag-to-dock live preview (`TD-92`)
+    // ----------------------------------------------------------------
+
+    private static Border FindDropTargetHighlight(WorkspaceLayoutHost host) =>
+        host.GetLogicalDescendants().OfType<Border>().Single(b =>
+            (Avalonia.Automation.AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Drop target:", StringComparison.Ordinal));
+
+    [AvaloniaFact]
+    public void SetDropTargetHighlight_WithARealCandidate_ShowsATranslucentOverlayOverItsBounds()
+    {
+        var (host, _) = Show(Default());
+        var group = host.TabGroups.Single(g => g.PanelIds.Contains(Explorer));
+
+        host.SetDropTargetHighlight(new DockTarget(group.NodeId, DockRelation.Left));
+
+        Assert.True(host.IsDropTargetHighlightVisible);
+
+        var overlay = FindDropTargetHighlight(host);
+        var origin = group.TranslatePoint(default, host)!.Value;
+
+        Assert.Equal(group.Bounds.Width, overlay.Width);
+        Assert.Equal(group.Bounds.Height, overlay.Height);
+        Assert.Equal(origin.X, overlay.Margin.Left);
+        Assert.Equal(origin.Y, overlay.Margin.Top);
+    }
+
+    [AvaloniaFact]
+    public void SetDropTargetHighlight_NamesTheEdgeForASplit_AndThePanelForATabTarget()
+    {
+        var (host, _) = Show(Default());
+        var group = host.TabGroups.Single(g => g.PanelIds.Contains(Explorer));
+
+        host.SetDropTargetHighlight(new DockTarget(group.NodeId, DockRelation.Left));
+        Assert.Equal("Drop target: Left", Avalonia.Automation.AutomationProperties.GetName(FindDropTargetHighlight(host)));
+
+        host.SetDropTargetHighlight(new DockTarget(group.NodeId, DockRelation.Into));
+        Assert.Equal("Drop target: Explorer", Avalonia.Automation.AutomationProperties.GetName(FindDropTargetHighlight(host)));
+    }
+
+    [AvaloniaFact]
+    public void SetDropTargetHighlight_WithNull_HidesIt_TheDropCase()
+    {
+        var (host, _) = Show(Default());
+        var group = host.TabGroups.Single(g => g.PanelIds.Contains(Explorer));
+        host.SetDropTargetHighlight(new DockTarget(group.NodeId, DockRelation.Into));
+        Assert.True(host.IsDropTargetHighlightVisible);
+
+        // `WorkspaceLayoutController.OnHostPointerReleased` invokes
+        // `DropTargetChanged(null)` unconditionally on every pointer
+        // release — whether the drag landed on a target (a dock) or
+        // outside every pane (a float) — both are simply "the drag ended
+        // with a drop" from this host's own point of view.
+        host.SetDropTargetHighlight(null);
+
+        Assert.False(host.IsDropTargetHighlightVisible);
+    }
+
+    [AvaloniaFact]
+    public void PointerCaptureLost_HidesTheHighlight_TheCancelCase()
+    {
+        var (host, _) = Show(Default());
+        var group = host.TabGroups.Single(g => g.PanelIds.Contains(Explorer));
+        host.SetDropTargetHighlight(new DockTarget(group.NodeId, DockRelation.Into));
+        Assert.True(host.IsDropTargetHighlightVisible);
+
+        // `WorkspaceLayoutController` cancels a drag on
+        // `InputElement.PointerCaptureLostEvent` without itself raising
+        // `DropTargetChanged` on that specific path (disclosed in this
+        // Work Package's own report) — the host hides the highlight on
+        // the same routed event directly, a second, independent handler,
+        // so the overlay can never outlive a cancelled drag regardless of
+        // which of the controller's own paths ended it.
+        host.RaiseEvent(new PointerCaptureLostEventArgs(host, new Pointer(0, PointerType.Mouse, true)));
+
+        Assert.False(host.IsDropTargetHighlightVisible);
     }
 
     // ----------------------------------------------------------------

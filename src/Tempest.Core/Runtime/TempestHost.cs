@@ -7,10 +7,15 @@ using Tempest.Core.Components;
 using Tempest.Core.Constants;
 using Tempest.Core.Configuration;
 using Tempest.Core.DependencyInjection;
+using Tempest.Core.Deliverables;
 using Tempest.Core.Diagnostics;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Expenses;
+using Tempest.Core.Projects;
+using Tempest.Core.PurchaseOrders;
+using Tempest.Core.Timesheets;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.BusinessOperations.Finance;
 using Tempest.Core.EngineeringAssets.CalculationPacks;
@@ -24,6 +29,10 @@ using Tempest.Core.Fasteners;
 using Tempest.Core.ExportImport;
 using Tempest.Core.Identity;
 using Tempest.Core.Input;
+using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.OAuth;
+using Tempest.Core.Invoicing.QuickBooksOnline;
+using Tempest.Core.Invoicing.Xero;
 using Tempest.Core.Logging;
 using Tempest.Core.Macros;
 using Tempest.Core.Manufacturing;
@@ -31,12 +40,15 @@ using Tempest.Core.Materials;
 using Tempest.Core.Modules;
 using Tempest.Core.Navigation;
 using Tempest.Core.Notifications;
+using Tempest.Core.People;
 using Tempest.Core.Persistence;
 using Tempest.Core.Plugins;
+using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Reporting;
 using Tempest.Core.Requirements;
+using Tempest.Core.Secrets;
 using Tempest.Core.Settings;
 using Tempest.Core.Standards;
 using Tempest.Core.Verification;
@@ -381,25 +393,29 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<ICommandDispatcher, CommandDispatcher>();
         services.Singleton<ICommandRegistry, CommandRegistry>();
 
-        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once,
-        // and registered under both its own concrete type and
-        // ICurrentPrincipalAccessor - the same already-built instance under
-        // two service-type keys - so a caller needing write access (the
-        // presentation layer's own SessionPrincipalSource boundary,
-        // `WP 17.2A`) and every ordinary consumer (which resolves only the
-        // read-only interface) share the exact same object, never two
-        // independently-constructed ones. See CurrentPrincipalAccessor's
-        // own remarks.
+        // ADR-0044: CurrentPrincipalAccessor is constructed directly, once.
+        // `WP 21.6A` (OSA-12/OSA-14) narrows what its own registration
+        // exposes: the interface (read-only Current, broadly resolvable,
+        // unchanged) and a PrincipalSession wrapping the identical
+        // instance (the one write capability, Establish only) — never the
+        // concrete CurrentPrincipalAccessor itself, whose own SetCurrent
+        // is now internal and unreachable outside this assembly regardless
+        // of what a caller resolves. Before this, the concrete type was
+        // registered here too, so "any in-process component" that resolved
+        // it (not only the presentation layer's own SessionPrincipalSource
+        // boundary, `WP 17.2A`) could call SetCurrent directly — see
+        // CurrentPrincipalAccessor's and PrincipalSession's own remarks for
+        // the finding and the fix.
         //
         // `WP 17.2A` (ADR-0146): IRoleProvider/RoleProvider and
         // IIdentityService/IdentityService are deleted, not merely
         // unregistered - Identity collapses to one session principal
-        // (SessionPrincipalSource, established directly on the concrete
-        // CurrentPrincipalAccessor by the presentation layer, never
-        // resolved through a Host-registered identity service).
+        // (SessionPrincipalSource, established through the PrincipalSession
+        // seam by the presentation layer, never resolved through a
+        // Host-registered identity service).
         var currentPrincipalAccessor = new CurrentPrincipalAccessor();
         services.AddInstance<ICurrentPrincipalAccessor>(currentPrincipalAccessor);
-        services.AddInstance(currentPrincipalAccessor);
+        services.AddInstance(new PrincipalSession(currentPrincipalAccessor));
 
         // `WP 17.9.1`: identity ids are stored; names are shown. One directory
         // over the same accessor, so every surface describes a principal the
@@ -562,6 +578,15 @@ public sealed class TempestHost : ITempestHost
         // seven collaborators by hand.
         services.Singleton<EngineeringDomainContext>();
 
+        // `WP 19.10R` (`TD-179`'s residual): the one rule CommandRegistry
+        // consults so a mutating command's Evaluate/InvokeAsync refuses
+        // against an archived project — registered after
+        // EngineeringDomainContext, which its own constructor takes.
+        // Resolution is lazy (TempestServiceProvider), so this registration's
+        // own position relative to ICommandRegistry's below does not matter;
+        // it is placed here only because this is where it is read through.
+        services.Singleton<ArchivedProjectCommandGuard>();
+
         // TD-85: rebuilds the live object graph from the two stores above
         // at startup. Registered after EngineeringDomainContext, which it
         // reads through; it stores nothing of its own.
@@ -680,6 +705,27 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IQuotationCatalog, QuotationCatalog>();
         services.Singleton<IQuotationValidationService, QuotationValidationService>();
 
+        // `TD-157` (closed `WP 19.10E`): both `CalculationPackValidationService`
+        // and `VerificationArtefactValidationService` already declare an
+        // optional `IEnumerable<IReferencePinResolver>` constructor
+        // parameter — one resolver per library a `ReferencePin` can name,
+        // the same eight libraries `ReferenceLibraryCatalogues`
+        // (`src/Tempest.Desktop/Views/ReferenceRecordView.cs`) lists — but
+        // nothing registered one, so the parameter always fell back to its
+        // declared default (`null`) and the "pinned source superseded"
+        // warning could never fire. This container has no built-in
+        // multi-registration/`IEnumerable<T>` resolution — one descriptor
+        // per exact `Type` (`ServiceCollection._descriptorsByType`), so
+        // registering eight `CatalogPinResolver<TDefinition>` instances
+        // directly under `IReferencePinResolver` would silently keep only
+        // the last. `ReferencePinResolverCollection` (below) is the seam
+        // instead: a plain collaborator whose own constructor lets the
+        // container resolve each of the eight catalogue interfaces exactly
+        // as any other dependency, registered once under the closed
+        // generic `IEnumerable<IReferencePinResolver>` itself so both
+        // validation services above receive the same full set.
+        services.Singleton<IEnumerable<IReferencePinResolver>, ReferencePinResolverCollection>();
+
         // `Group D` (P03, CommercialIntelligence) was frozen to
         // `src/Frozen/Tempest.Core.CommercialIntelligence` by `WP 18.0C`
         // (`D-028`): unreachable from any shipped surface. See
@@ -729,6 +775,17 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IOrganisationValidationService, OrganisationValidationService>();
 
         services.Singleton<IBudgetCatalog, BudgetCatalog>();
+
+        // `WP 20.10F` (Product Owner finding D8): the consultancy's own
+        // people — the same shared `ReferenceDataCatalog<T>` base every P01/P04/P07
+        // library already sits on (`ADR-0126`), registered alongside Organisations
+        // and Contacts, the two libraries closest in kind (people the platform
+        // knows about, governed the identical Draft-to-Released way). No
+        // validation service of its own: a person's own definition has no
+        // engineering rule beyond the base catalogue's own duplicate-display-name
+        // refusal, so `ReferenceReviewService` (already registered above, generic
+        // over `IReferenceDataCatalog<TDefinition>`) is all Verify/Release need.
+        services.Singleton<IPersonCatalog, PersonCatalog>();
 
         // ADR-0056: every calculation execution is durably recorded as an
         // Engineering Data Model document (Kind = "CalculationRecord"),
@@ -783,6 +840,170 @@ public sealed class TempestHost : ITempestHost
         // libraries above and Identity/Configuration/Settings already
         // provide, registered here because it depends on all of them.
         services.Singleton<IEvidenceService, EvidenceService>();
+
+        // `ADR-0150` (`v0.19.0` "Consultancy Seam and Desktop", `WP 19.0A`).
+        // The project commercial core, time and deliverable completion —
+        // registered here because each depends on the reference catalogues
+        // and Settings above (the rate-card catalogue, the working-pattern
+        // setting).
+        services.Singleton<IProjectCommercialService, ProjectCommercialService>();
+        services.Singleton<IWorkingPatternProvider, WorkingPatternProvider>();
+        services.Singleton<ITimesheetService, TimesheetService>();
+        services.Singleton<IDeliverableService, DeliverableService>();
+
+        // `WP 19.5C`. Hold/resume/sign-off/reopen and the 90-day archival
+        // window — a project's own lifecycle, distinct from the generic,
+        // unused `LifecycleState` every canonical object carries.
+        // Registered as an ordinary Core service, exactly as
+        // `IProjectCommercialService` above, so every Core-only test host
+        // can resolve it the same way.
+        services.Singleton<IProjectLifecycleService, ProjectLifecycleService>();
+
+        // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
+        // Home dashboard's own task tiles and task list. Registered as an
+        // ordinary Core service, exactly as `IQuotationService` above.
+        services.Singleton<Tempest.Core.Tasks.ITaskService, Tempest.Core.Tasks.TaskService>();
+
+        // `ADR-0152` (`WP 19.5A`). Quotation core — depends on the
+        // rate-card catalogue above (currency resolution) and Requirements
+        // above that (`AcceptAsync`'s per-line requirement). Registered as
+        // an ordinary Core service, exactly as `IInvoicingService` is
+        // below, so `EngineeringWorkspaceComposer.RegisterEngineeringDisciplines`
+        // and every Core-only test host can resolve it the same way.
+        services.Singleton<IQuotationService, QuotationService>();
+
+        // `WP 21.3B`. Expenses and purchase orders — the commercial edges:
+        // an expense against a project, a purchase order raised against a
+        // supplier, whose received lines a consultant records as expenses
+        // in one act. Registered as ordinary Core services, exactly as
+        // `IQuotationService` above, so every Core-only test host and
+        // `EngineeringWorkspaceComposer.RegisterEngineeringDisciplines` can
+        // resolve them identically. `IExpenseService` before
+        // `IPurchaseOrderService` — the order service reads it to record a
+        // received order's own lines as expenses.
+        services.Singleton<IExpenseService, ExpenseService>();
+        services.Singleton<IPurchaseOrderService, PurchaseOrderService>();
+
+        // The "Switch person" seam (`WP 21.3B`, brief's own disclosed
+        // fallback): `WP 20.10F`'s real People directory was not in this
+        // Work Package's own base — see `IPeopleDirectory`'s own remarks.
+        // One process-lifetime, empty-until-seeded instance; nothing here
+        // seeds it, since no Desktop surface manages People on this branch
+        // either — a future `WP 20.10F` merge replaces this binding, not
+        // anything that reads through the interface.
+        services.Singleton<IPeopleDirectory, PersonCatalogPeopleDirectory>(); // the People library (WP 20.10F) behind WP 21.3B's seam, reconciled at merge
+
+        // `ADR-0151` (`WP 19.1A`). Outbound invoicing: the token store,
+        // then the connector, then the service over both plus Timesheets/
+        // Deliverables just above (`MarkInvoicedAsync`) and the rate-card
+        // catalogue above that (currency resolution). Neither the store nor
+        // the connector has a compile-time-fixed implementation to bind
+        // with `Singleton<TService, TImplementation>()`: which concrete
+        // type answers depends on `OperatingSystem.IsWindows()` for the
+        // store and on `Invoicing:Connector` for the connector, so each is
+        // constructed directly, once, and registered as an instance —
+        // ADR-0044's own dual-registration precedent for
+        // `CurrentPrincipalAccessor`, applied here to pick a runtime branch
+        // rather than to share one instance under two keys.
+        //
+        // Never the persistence database (`ISecretStore`'s own remarks):
+        // `WindowsDpapiSecretStore` encrypts each token with DPAPI, scoped
+        // to the signed-in Windows user; `FileSecretStore` is the
+        // documented, disclosed non-Windows fallback until a platform
+        // keychain binding exists.
+        ISecretStore secretStore = OperatingSystem.IsWindows()
+            ? new WindowsDpapiSecretStore(configuration)
+            : new FileSecretStore(configuration, logger);
+        services.AddInstance(secretStore);
+
+        // `Invoicing:Connector` (`InvoicingService.ConnectorConfigurationKey`):
+        // `"Fake"` (default), `"Xero"`, `"QuickBooksOnline"` — `WP 19.1A`
+        // part 2's own real bindings, replacing this seam's own selection
+        // logic, never `IInvoicingConnector` itself. A value this build
+        // does not recognise still resolves to the Fake connector, loudly
+        // — never a silent fallback. Neither real connector fails
+        // construction over a missing client id: `OAuthAuthoriser` itself
+        // resolves credentials lazily, per call, from configuration or
+        // `ISecretStore` (a Settings screen's own later write, `WP 19.2B`)
+        // — a real provider with nothing configured yet answers every call
+        // `Reauthorise("not configured")`, never a crash at startup.
+        var configuredConnectorName = configuration.TryGetValue(InvoicingService.ConnectorConfigurationKey, out var connectorNameValue)
+            ? connectorNameValue?.Trim()
+            : null;
+
+        // `WP 21.6P`: the Settings area saves the operator's connector
+        // choice through `ISettingsProvider` — into the `Settings`
+        // collection of the persistence store, under this same key — but
+        // this selection only ever read `IConfigurationProvider`
+        // (appsettings.json, environment, command line), so a connector
+        // chosen in Settings never took effect at the next start unless
+        // the operator had also edited a configuration file. Configuration
+        // still wins when it says anything (an operator's explicit file or
+        // environment beats a saved setting); the persisted setting is the
+        // answer only when configuration is silent. Read raw here because
+        // `SettingsProvider` itself is registered above as a lazily
+        // constructed singleton and this is the one place that needs the
+        // value before the container is built.
+        if (string.IsNullOrWhiteSpace(configuredConnectorName) && persistenceStore is IPersistenceStore settingsBackingStore)
+        {
+            var persistedConnectorName = await settingsBackingStore
+                .ReadAsync(SettingsProvider.SettingsCollectionName, InvoicingService.ConnectorConfigurationKey, runToken)
+                .ConfigureAwait(false);
+            configuredConnectorName = persistedConnectorName?.Trim();
+        }
+
+        IInvoicingConnector invoicingConnector;
+
+        if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))
+        {
+            invoicingConnector = BuildXeroConnector(configuration, secretStore, microsoftLoggerFactory);
+        }
+        else if (string.Equals(configuredConnectorName, "QuickBooksOnline", StringComparison.OrdinalIgnoreCase))
+        {
+            invoicingConnector = BuildQuickBooksOnlineConnector(configuration, secretStore, microsoftLoggerFactory);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(configuredConnectorName) && !string.Equals(configuredConnectorName, "Fake", StringComparison.OrdinalIgnoreCase))
+            {
+                logger.Warning(
+                    $"'{InvoicingService.ConnectorConfigurationKey}' is configured as '{configuredConnectorName}', which this build does not implement yet; "
+                    + "using the Fake connector instead.");
+            }
+
+            invoicingConnector = new FakeInvoicingConnector();
+        }
+
+        services.AddInstance(invoicingConnector);
+
+        // `WP 19.8B` (po-comments.md item 8): the same connector instance
+        // also answers `IAccountsConnector` — `FakeInvoicingConnector`,
+        // `XeroConnector` and `QuickBooksOnlineConnector` all implement
+        // both interfaces over the identical `HttpClient`/`OAuthAuthoriser`
+        // — registered a second time under the second interface type,
+        // exactly the `IPersistenceStore`/`IBinaryPersistenceStore`/
+        // `IQueryablePersistenceStore` triple-registration above does for
+        // one instance answering more than one service type.
+        services.AddInstance(typeof(IAccountsConnector), invoicingConnector);
+        services.Singleton<IAccountsReadingStore, FileAccountsReadingStore>();
+        services.Singleton<IAccountsReadModel, AccountsReadModel>();
+
+        services.Singleton<IInvoicingService, InvoicingService>();
+
+        // `InvoiceReconciliationService` and `AccountsRefreshService`
+        // (`IHostedService`s, the latter `WP 19.8B`) need no registration
+        // line here: the platform's own reflection-based hosted-service
+        // discovery (this method's own "Hosted Service Discovery" phase,
+        // above) finds each like every other hosted service, and
+        // constructs it from the container once its own dependencies —
+        // `IInvoicingService`/`IAccountsConnector`/`IAccountsReadingStore`/
+        // `EngineeringDomainContext`/`IConfigurationProvider` — are
+        // resolvable, which they now are. `AccountsReadModel` above
+        // resolves the same singleton `AccountsRefreshService` instance
+        // for its own "why is there no reading yet" reason (`AddDiscoveredHostedServices`'s
+        // own remarks: the discovered type is registered as a singleton,
+        // so every resolution — this constructor injection included —
+        // shares the one instance the hosted-service manager starts).
 
         // Composition Root pattern (ADR-0009), like Configuration/Logging/
         // PlatformVersionProvider above: DiagnosticsProvider needs references
@@ -1033,28 +1254,92 @@ public sealed class TempestHost : ITempestHost
     }
 
     /// <summary>
-    /// The Service Disposal lifecycle phase, for the services the Host
-    /// registered as already-constructed instances (`TD-03`, `WP 17.1A`).
+    /// Builds the real Xero <see cref="IInvoicingConnector"/> (`WP 19.1A`
+    /// part 2): the redirect URI a sandbox app must register is a fresh
+    /// loopback port every run (<c>OAuthLoopbackListener</c>'s own remarks)
+    /// — never one of these fixed endpoints.
+    /// </summary>
+    private static XeroConnector BuildXeroConnector(
+        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
+    {
+        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero")))
+        {
+            BaseAddress = new Uri("https://api.xero.com/api.xro/2.0/"),
+        };
+
+        var profile = new OAuthProviderProfile(
+            Provider: "Xero",
+            AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
+            TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
+            Scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
+            TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
+
+        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
+
+        return new XeroConnector(httpClient, authoriser, configuration);
+    }
+
+    /// <summary>
+    /// Builds the real QuickBooks Online <see cref="IInvoicingConnector"/>
+    /// (`WP 19.1A` part 2): <c>Invoicing:QuickBooksOnline:Environment</c>
+    /// (<c>"sandbox"</c>, the default, or <c>"production"</c>) selects
+    /// Intuit's own sandbox or live API host.
+    /// </summary>
+    private static QuickBooksOnlineConnector BuildQuickBooksOnlineConnector(
+        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
+    {
+        var environment = configuration.TryGetValue("Invoicing:QuickBooksOnline:Environment", out var configuredEnvironment)
+            ? configuredEnvironment?.Trim()
+            : null;
+
+        var baseAddress = string.Equals(environment, "production", StringComparison.OrdinalIgnoreCase)
+            ? new Uri("https://quickbooks.api.intuit.com/")
+            : new Uri("https://sandbox-quickbooks.api.intuit.com/");
+
+        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.QuickBooksOnline")))
+        {
+            BaseAddress = baseAddress,
+        };
+
+        var profile = new OAuthProviderProfile(
+            Provider: "QuickBooksOnline",
+            AuthorizationEndpoint: new Uri("https://appcenter.intuit.com/connect/oauth2"),
+            TokenEndpoint: new Uri("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"),
+            Scopes: ["com.intuit.quickbooks.accounting"]);
+
+        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
+
+        return new QuickBooksOnlineConnector(httpClient, authoriser, configuration);
+    }
+
+    /// <summary>
+    /// The Service Disposal lifecycle phase, for every disposable service
+    /// this Host is responsible for — registered as an already-constructed
+    /// instance, or built by the container via reflection (`TD-03`,
+    /// `WP 17.1A`).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Disposes every registered instance implementing
+    /// Disposes the container's own reflection-constructed singletons first
+    /// (<see cref="TempestServiceProvider.DisposeAsync"/>, in the reverse of
+    /// the order the container built them), then every registered
+    /// already-constructed instance implementing
     /// <see cref="IAsyncDisposable"/> or <see cref="IDisposable"/>, in
     /// <b>reverse registration order</b> — the order a composition root
-    /// must use, because a service registered later may have been handed a
-    /// service registered earlier and must stop using it first. Async
-    /// disposal is preferred where a type offers both.
+    /// must use, because a service constructed or registered later may have
+    /// been handed one from earlier and must stop using it first, and a
+    /// reflection-constructed singleton may depend on an instance
+    /// registration (the persistence store, `ADR-0144`) exactly that way.
+    /// Async disposal is preferred where a type offers both.
     /// </para>
     /// <para>
-    /// This closes `TD-03` for instance registrations, which is where the
-    /// platform's disposable services actually are: the persistence store
-    /// (`ADR-0144`) is registered this way, and it holds a database file
-    /// and a cross-process lock that a second Host on the same root cannot
-    /// take until this one lets go. It does <b>not</b> close `TD-03` for
-    /// container-constructed singletons; <c>TempestServiceProvider</c>
-    /// keeps no disposal list of what it built, and giving it one is a
-    /// change to the container rather than to the Host. That remains open
-    /// and is deliberately not claimed here.
+    /// This closes `TD-03` for both halves of the singleton population:
+    /// instance registrations, where the platform's own foundational
+    /// disposable services live (the persistence store holds a database
+    /// file and a cross-process lock that a second Host on the same root
+    /// cannot take until this one lets go), and reflection-constructed
+    /// singletons, which <see cref="TempestServiceProvider"/> now tracks and
+    /// disposes itself rather than this Host reaching into the container.
     /// </para>
     /// <para>
     /// Idempotent, and never allowed to fail shutdown: a failing dispose is
@@ -1065,6 +1350,7 @@ public sealed class TempestHost : ITempestHost
     private async Task DisposeRegisteredServiceInstancesAsync()
     {
         IReadOnlyList<object>? instances;
+        ITempestServiceProvider? services;
 
         lock (_gate)
         {
@@ -1073,7 +1359,13 @@ public sealed class TempestHost : ITempestHost
 
             _serviceInstancesDisposed = true;
             instances = _registeredServiceInstances;
+            services = _services;
         }
+
+        // The container's own reflection-constructed singletons, before the
+        // instance registrations they may depend on (see remarks above).
+        if (services is IAsyncDisposable disposableProvider)
+            await disposableProvider.DisposeAsync().ConfigureAwait(false);
 
         if (instances is null)
             return;
@@ -1204,5 +1496,59 @@ public sealed class TempestHost : ITempestHost
         _logger?.Information("Host -> Stopped.");
 
         return null;
+    }
+}
+
+/// <summary>
+/// The full set of <see cref="IReferencePinResolver"/>s — one
+/// <see cref="CatalogPinResolver{TDefinition}"/> per library a
+/// <see cref="ReferencePin"/> can name, over the same eight catalogue
+/// interfaces <c>ReferenceLibraryCatalogues</c>
+/// (<c>src/Tempest.Desktop/Views/ReferenceRecordView.cs</c>) lists —
+/// registered as <see cref="TempestHost"/>'s answer to a constructor asking
+/// for <see cref="IEnumerable{T}"/> of <see cref="IReferencePinResolver"/>
+/// (`TD-157`, closed `WP 19.10E`).
+/// </summary>
+/// <remarks>
+/// Exists only because <c>Tempest.Core.DependencyInjection</c>'s own
+/// container resolves a constructor parameter by its exact declared
+/// <see cref="Type"/> and holds at most one descriptor per type — it has no
+/// ASP.NET-Core-style multi-registration that collects every
+/// <see cref="IReferencePinResolver"/> registration into one
+/// <see cref="IEnumerable{T}"/> automatically. Inheriting
+/// <see cref="List{T}"/> lets this type satisfy
+/// <c>IEnumerable&lt;IReferencePinResolver&gt;</c> directly, so
+/// <c>services.Singleton&lt;IEnumerable&lt;IReferencePinResolver&gt;,
+/// ReferencePinResolverCollection&gt;()</c> is the one registration both
+/// <c>CalculationPackValidationService</c> and
+/// <c>VerificationArtefactValidationService</c> need — the container
+/// resolves this type's own constructor exactly as it would any other
+/// collaborator, recursively supplying each of the eight already-registered
+/// catalogue interfaces below.
+/// </remarks>
+internal sealed class ReferencePinResolverCollection : List<IReferencePinResolver>
+{
+    /// <summary>Initialises a new instance of the <see cref="ReferencePinResolverCollection"/> class.</summary>
+    public ReferencePinResolverCollection(
+        IMaterialCatalog materials,
+        IFastenerCatalog fasteners,
+        IBearingCatalog bearings,
+        IStandardCatalog standards,
+        IConstantCatalog constants,
+        IProcessCatalog manufacturing,
+        IComponentCatalog components,
+        IRateCardCatalog businessRateCards)
+        : base(
+        [
+            new CatalogPinResolver<MaterialDefinition>(materials),
+            new CatalogPinResolver<FastenerDefinition>(fasteners),
+            new CatalogPinResolver<BearingDefinition>(bearings),
+            new CatalogPinResolver<StandardDefinition>(standards),
+            new CatalogPinResolver<ConstantDefinition>(constants),
+            new CatalogPinResolver<ProcessDefinition>(manufacturing),
+            new CatalogPinResolver<ComponentDefinition>(components),
+            new CatalogPinResolver<RateCard>(businessRateCards),
+        ])
+    {
     }
 }

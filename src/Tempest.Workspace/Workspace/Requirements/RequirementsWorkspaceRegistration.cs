@@ -3,6 +3,29 @@ using Tempest.Core.Requirements;
 
 namespace Tempest.Workspace.Requirements;
 
+/// <summary>The command ids <see cref="RequirementsWorkspaceRegistration"/> registers.</summary>
+public static class RequirementsCommandIds
+{
+    public const string Create = "requirements.create";
+    public const string Revise = "requirements.revise";
+    public const string SetStatus = "requirements.set-status";
+    public const string SetOwner = "requirements.set-owner";
+    public const string SetPriority = "requirements.set-priority";
+    public const string Delete = "requirements.delete";
+    public const string Move = "requirements.move";
+    public const string Duplicate = "requirements.duplicate";
+    public const string Link = "requirements.link";
+    public const string CreateGroup = "requirements.create-group";
+    public const string MoveGroup = "requirements.move-group";
+    public const string DeleteGroup = "requirements.delete-group";
+    public const string CreateCollection = "requirements.create-collection";
+    public const string DeleteCollection = "requirements.delete-collection";
+    public const string AddToCollection = "requirements.add-to-collection";
+    public const string BulkSetStatus = "requirements.bulk-set-status";
+    public const string BulkSetOwner = "requirements.bulk-set-owner";
+    public const string BulkSetPriority = "requirements.bulk-set-priority";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Requirements
 /// Management discipline into a running Workspace — everything
@@ -69,17 +92,26 @@ public static class RequirementsWorkspaceRegistration
         // neither Kind), just the other way around for Requirement itself.
         manager.RegisterReviseFactory(RequirementsService.RequirementDocumentKind, static (id, _, content) => new ReviseRequirementCommand(id, content));
 
-        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService));
+        // `WP 21.6A`: Create/Delete/Move/MoveGroup/SetStatus now build a
+        // CommandCompensation of their own (item 1b), so each is handed the
+        // same ICommandDispatcher its compensation dispatches an Undo/Redo
+        // command back through — the identical shape every
+        // EngineeringDomain Create/Delete/Move/SetStatus handler already
+        // uses. UndeleteRequirementCommand is registered as a handler only
+        // — never a CommandDescriptor — reached solely as a compensation,
+        // exactly as `EngineeringDomain`'s own `Undelete*ObjectCommand`s.
+        commandDispatcher.RegisterHandler<CreateRequirementCommand>(new CreateRequirementCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<ReviseRequirementCommand>(new ReviseRequirementCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<SetRequirementOwnerCommand>(new SetRequirementOwnerCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<SetRequirementPriorityCommand>(new SetRequirementPriorityCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<DeleteRequirementCommand>(new DeleteRequirementCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<DeleteRequirementCommand>(new DeleteRequirementCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteRequirementCommand>(new UndeleteRequirementCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<DuplicateRequirementCommand>(new DuplicateRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<LinkRequirementCommand>(new LinkRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<CreateRequirementGroupCommand>(new CreateRequirementGroupCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<DeleteRequirementGroupCommand>(new DeleteRequirementGroupCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<CreateRequirementCollectionCommand>(new CreateRequirementCollectionCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<DeleteRequirementCollectionCommand>(new DeleteRequirementCollectionCommandHandler(requirementsService));
@@ -98,7 +130,7 @@ public static class RequirementsWorkspaceRegistration
         // — never this class's own three-entry SupportedKinds.
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create", displayName: "Create Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Create, displayName: "Create Requirement", category: "Requirements",
             description: "Creates a new Requirement with a business identifier and statement.")
         {
             // Both prompts the Ribbon's own Create flow already collects, with the
@@ -113,10 +145,11 @@ public static class RequirementsWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Required("identifier", "Identifier (e.g. REQ-001)"),
                     WorkspaceCommandBindings.Required("statement", "Statement"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.revise", displayName: "Revise Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Revise, displayName: "Revise Requirement", category: "Requirements",
             description: "Records a new revision of the selected Requirement's own statement.")
         {
             // A Requirement's own mutable field is its Statement — this discipline
@@ -129,10 +162,11 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new ReviseRequirementCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, values["newStatement"]),
                 [WorkspaceCommandBindings.Required("newStatement", "New statement")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-status", displayName: "Set Requirement Status", category: "Requirements",
+            id: RequirementsCommandIds.SetStatus, displayName: "Set Requirement Status", category: "Requirements",
             description: "Sets the selected Requirement's own current lifecycle status.")
         {
             Binding = new CommandBinding(
@@ -141,10 +175,11 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     Enum.Parse<RequirementStatus>(values["status"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementStatus>("status", "New status")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-owner", displayName: "Set Requirement Owner", category: "Requirements",
+            id: RequirementsCommandIds.SetOwner, displayName: "Set Requirement Owner", category: "Requirements",
             description: "Sets the selected Requirement's own current owner.")
         {
             // Owner is nullable on the command and unvalidated in the Ribbon's own
@@ -155,10 +190,11 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new SetRequirementOwnerCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.OrNull(values["owner"])),
                 [WorkspaceCommandBindings.Text("owner", "Owner")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.set-priority", displayName: "Set Requirement Priority", category: "Requirements",
+            id: RequirementsCommandIds.SetPriority, displayName: "Set Requirement Priority", category: "Requirements",
             description: "Sets the selected Requirement's own current priority.")
         {
             Binding = new CommandBinding(
@@ -167,10 +203,11 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     Enum.Parse<RequirementPriority>(values["priority"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementPriority>("priority", "Priority")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete", displayName: "Delete Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Delete, displayName: "Delete Requirement", category: "Requirements",
             description: "Soft-deletes the selected Requirement.")
         {
             // The confirmation is what keeps a delete out of an unattended macro.
@@ -181,17 +218,28 @@ public static class RequirementsWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: RequirementKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.move", displayName: "Move Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Move, displayName: "Move Requirement", category: "Requirements",
             description: "Moves the selected Requirement into a different group, or ungroups it.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement needs a destination Requirement Group chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination Group is chosen
+            // from the object picker, scoped to RequirementGroup. Blank
+            // means ungrouped — MoveRequirementCommand's own NewGroupId is
+            // nullable for exactly that.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveRequirementCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination group", [RequirementsService.RequirementGroupDocumentKind])],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.duplicate", displayName: "Duplicate Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Duplicate, displayName: "Duplicate Requirement", category: "Requirements",
             description: "Creates a copy of the selected Requirement's own Statement/Category/Priority/Group under a new identifier.")
         {
             // Alone among the six disciplines' Duplicate commands, this one takes a
@@ -203,17 +251,36 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId, values["newIdentifier"]),
                 [WorkspaceCommandBindings.Required("newIdentifier", "New identifier for the duplicate")],
                 RequirementKinds,
-                WorkspaceCommandBindings.DuplicateConfirmation("Requirement")),
+                WorkspaceCommandBindings.DuplicateConfirmation("Requirement"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.link", displayName: "Link Requirement", category: "Requirements",
+            id: RequirementsCommandIds.Link, displayName: "Link Requirement", category: "Requirements",
             description: "Records a typed relationship from the selected Requirement to another document — allocation, dependency, derivation, reference, or satisfaction.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Linking a Requirement needs a target object chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the target is now chosen from
+            // the object picker (any Kind — LinkRequirementCommand's own
+            // remarks: "another requirement, a group, a collection, an
+            // allocated engineering object, or any other document").
+            // RelationshipKind is offered as the five linkable kinds this
+            // descriptor's own description already names — GroupedUnder/
+            // CollectedIn are structural relationships this generic command
+            // does not record (Move/Add-to-Collection already own those).
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new LinkRequirementCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["targetDocumentId"])!.Value,
+                    values["relationshipKind"]),
+                [
+                    WorkspaceCommandBindings.RequiredObjectReference("targetDocumentId", "Target document"),
+                    WorkspaceCommandBindings.Choice("relationshipKind", "Relationship kind", LinkableRelationshipKinds, RequirementRelationshipKinds.AllocatedTo),
+                ],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create-group", displayName: "Create Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.CreateGroup, displayName: "Create Requirement Group", category: "Requirements",
             description: "Creates a new Requirement Group, optionally nested under an existing parent group.")
         {
             // ParentGroupId stays at the command's own optional default: nesting a
@@ -223,53 +290,77 @@ public static class RequirementsWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (_, values) => new CreateRequirementGroupCommand(values["name"]),
-                [WorkspaceCommandBindings.Required("name", "Name for the new group")]),
+                [WorkspaceCommandBindings.Required("name", "Name for the new group")],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.move-group", displayName: "Move Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.MoveGroup, displayName: "Move Requirement Group", category: "Requirements",
             description: "Reparents the selected Requirement Group, or makes it a root group.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Requirement Group needs a destination parent Group chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination parent Group is
+            // chosen from the object picker, scoped to RequirementGroup.
+            // Blank means root — MoveRequirementGroupCommand's own
+            // NewParentGroupId is nullable for exactly that.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveRequirementGroupCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination group", [RequirementsService.RequirementGroupDocumentKind])],
+                [RequirementsService.RequirementGroupDocumentKind],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete-group", displayName: "Delete Requirement Group", category: "Requirements",
+            id: RequirementsCommandIds.DeleteGroup, displayName: "Delete Requirement Group", category: "Requirements",
             description: "Soft-deletes the selected Requirement Group (rejected if it still has live grouped requirements or sub-groups).")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementGroupCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: [RequirementsService.RequirementGroupDocumentKind],
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Group")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Group"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.create-collection", displayName: "Create Requirement Collection", category: "Requirements",
+            id: RequirementsCommandIds.CreateCollection, displayName: "Create Requirement Collection", category: "Requirements",
             description: "Creates a new, empty Requirement Collection (a Requirement Set).")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (_, values) => new CreateRequirementCollectionCommand(values["name"]),
-                [WorkspaceCommandBindings.Required("name", "Name for the new collection")]),
+                [WorkspaceCommandBindings.Required("name", "Name for the new collection")],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.delete-collection", displayName: "Delete Requirement Collection", category: "Requirements",
+            id: RequirementsCommandIds.DeleteCollection, displayName: "Delete Requirement Collection", category: "Requirements",
             description: "Soft-deletes the selected Requirement Collection — never affects any member requirement.")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
                 (context, _) => new DeleteRequirementCollectionCommand(WorkspaceCommandBindings.Target(context).ObjectId),
                 appliesToKinds: [RequirementsService.RequirementCollectionDocumentKind],
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Collection")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Requirement Collection"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.add-to-collection", displayName: "Add Requirement to Collection", category: "Requirements",
+            id: RequirementsCommandIds.AddToCollection, displayName: "Add Requirement to Collection", category: "Requirements",
             description: "Adds the selected Requirement to an existing Requirement Collection.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Adding a Requirement to a Collection needs the target Collection chosen from the object tree")),
+            // WP 20.2A (TD-115, FCR-0073): the target Collection is chosen
+            // from the object picker, scoped to RequirementCollection.
+            // Required — there is no "add to nothing".
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new AddRequirementToCollectionCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.ParseDestination(values["collectionId"])!.Value),
+                [WorkspaceCommandBindings.RequiredObjectReference(
+                    "collectionId", "Collection", [RequirementsService.RequirementCollectionDocumentKind])],
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-status", displayName: "Bulk Set Requirement Status", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetStatus, displayName: "Bulk Set Requirement Status", category: "Requirements",
             description: "Sets the same status on every requirement in a set.")
         {
             // The whole ordered selection, not just the primary — which is exactly
@@ -281,10 +372,11 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.SelectedIds(context),
                     Enum.Parse<RequirementStatus>(values["status"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementStatus>("status", "New status")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-owner", displayName: "Bulk Set Requirement Owner", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetOwner, displayName: "Bulk Set Requirement Owner", category: "Requirements",
             description: "Sets the same owner on every requirement in a set.")
         {
             Binding = new CommandBinding(
@@ -292,10 +384,11 @@ public static class RequirementsWorkspaceRegistration
                 (context, values) => new BulkSetRequirementOwnerCommand(
                     WorkspaceCommandBindings.SelectedIds(context), WorkspaceCommandBindings.OrNull(values["owner"])),
                 [WorkspaceCommandBindings.Text("owner", "Owner")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "requirements.bulk-set-priority", displayName: "Bulk Set Requirement Priority", category: "Requirements",
+            id: RequirementsCommandIds.BulkSetPriority, displayName: "Bulk Set Requirement Priority", category: "Requirements",
             description: "Sets the same priority on every requirement in a set.")
         {
             Binding = new CommandBinding(
@@ -304,7 +397,8 @@ public static class RequirementsWorkspaceRegistration
                     WorkspaceCommandBindings.SelectedIds(context),
                     Enum.Parse<RequirementPriority>(values["priority"], ignoreCase: true)),
                 [WorkspaceCommandBindings.EnumChoice<RequirementPriority>("priority", "Priority")],
-                RequirementKinds),
+                RequirementKinds,
+                mutates: true),
         });
     }
     /// <summary>
@@ -316,4 +410,19 @@ public static class RequirementsWorkspaceRegistration
     internal static readonly IReadOnlyList<string> RequirementKinds =
         [RequirementsService.RequirementDocumentKind];
 
+    /// <summary>
+    /// The five relationship kinds <c>requirements.link</c> offers (`WP
+    /// 20.2A`) — this descriptor's own description, named exactly:
+    /// allocation, dependency, derivation, reference, satisfaction.
+    /// <c>GroupedUnder</c>/<c>CollectedIn</c> are excluded: those are the
+    /// structural relationships <c>requirements.move</c>/
+    /// <c>requirements.add-to-collection</c> already record, never this
+    /// generic command's own concern.
+    /// </summary>
+    internal static readonly IReadOnlyList<string> LinkableRelationshipKinds =
+    [
+        RequirementRelationshipKinds.AllocatedTo, RequirementRelationshipKinds.DependsOn,
+        RequirementRelationshipKinds.DerivesFrom, RequirementRelationshipKinds.References,
+        RequirementRelationshipKinds.Satisfies,
+    ];
 }

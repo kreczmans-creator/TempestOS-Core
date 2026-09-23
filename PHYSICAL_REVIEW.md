@@ -93,6 +93,22 @@ the five that derive from source and git). On Windows without PowerShell 7,
 
 ---
 
+## 2a. Support matrix
+
+Stated to match the evidence this repository actually carries, no more
+(`WP 21.5A`, `WP RC.0A` scope item 1) — the installer (§3) ships for
+Windows only; every other platform's own standing is unchanged by this
+Work Package.
+
+| Platform | Status | Evidence |
+|---|---|---|
+| **Windows 11 x64** | **Tested.** | `ci.yml` restores, builds and runs the full suite on `windows-2022` (§1), on every push; the development team's own direct desktop-launch experience (§1); this Work Package's own gate. |
+| **Windows 10 x64** | **Expected.** | Not independently CI-verified — no `windows-2019`/equivalent job exists — but nothing in the build, the runtime, or Velopack's own installer targets a Windows 11-specific API; expected to behave identically to Windows 11 x64. |
+| **Linux** | **Advisory.** | `linux-launch-smoke` (§1, §8 item 1) launches the built desktop application under `xvfb-run` and is not a required merge/release gate. No installer is built or published for Linux (`vpk pack` is invoked with no `--runtime`/`-r` targeting Linux, and `release.yml` publishes only a Windows `Setup.exe`); a Linux operator runs from source or the plain zip, exactly as before this Work Package. |
+| **macOS** | **Untested.** | Expected to build and launch by design (Avalonia's own cross-platform reach, `ADR-0094`) but never built, launched, or CI-verified on this platform at any point in this programme. No installer is built or published for macOS. |
+
+---
+
 ## 3. Launching the application
 
 **The shipped application is `Tempest.Desktop`.**
@@ -105,12 +121,20 @@ Or run the built executable directly:
 `src/Tempest.Desktop/bin/Release/net10.0/Tempest.Desktop` (`.exe` on
 Windows).
 
-> **The working directory decides where your data goes.** See §4. Running
+**Installed:** run TempestOS from the Start menu; the title bar reads the
+same (`WP 21.5A`). The Velopack-packaged installer
+(`TempestOS-<tag>-Setup.exe`, §2a) puts a shortcut there; nothing about
+launching, the rail, or any surface differs from a `dotnet run`/plain-exe
+launch — only where data lives changes (§4).
+
+> **The working directory decides where your data goes — unless you are
+> running an installed build.** See §4. Running
 > via `dotnet run` from the repository root puts data in the repository
-> root; double-clicking the built executable puts it beside the executable.
-> Pick one and stay with it for the whole review, or the second launch will
-> look like it lost your work when it has simply looked in a different
-> place.
+> root; double-clicking the built executable puts it beside the executable;
+> an installed build always uses `%LOCALAPPDATA%\TempestOS\persistence-data`
+> (or wherever the first-run dialog was pointed instead). Pick one and stay
+> with it for the whole review, or the second launch will look like it lost
+> your work when it has simply looked in a different place.
 
 > **Check the title bar before you review anything.** The window title is
 > `TempestOS <version> (<commit>)`, for example `TempestOS 0.17.0 (9e52a53)`.
@@ -122,6 +146,17 @@ Windows).
 > had been placed inside the working tree, and its rail had no
 > *Engineering Calculations* entry. Keep no second clone inside the
 > working tree.
+>
+> **`WP 19.7A`: the rail is five entries now.** Earlier releases' rails
+> (ten-entry, then the eight-entry `WP 19.2B` rail with `Engineering
+> Calculations` as its own button) are gone. The current rail reads
+> **Home, Projects, Tasks, Engineering, Business** — Projects, Engineering
+> and Business are each a tree with a right pane over the selected node
+> (Engineering → Modules → Engineering Calculations is where that surface
+> lives now; Business → Timesheets/Invoices/Quotes/Subscriptions; Settings
+> is reached from the header, not the rail). A build whose rail still
+> shows more than five buttons, or a dimmed "not implemented" badge on
+> any of them, is not this build.
 
 > **One instance per data folder.** A second launch over the same
 > `persistence-data/` is refused with a message naming the folder (§4).
@@ -166,7 +201,7 @@ dotnet run --project src/Tempest.Harness/Tempest.Harness.csproj
 All persisted state is written under a single folder:
 
 ```
-<working directory>/persistence-data/
+<root>/persistence-data/
 ├── tempest.db      # Everything: settings, session and UI state, window
 │                   # geometry, recents, favourites, macros, projects,
 │                   # engineering objects, document revisions, audit rows
@@ -177,13 +212,37 @@ All persisted state is written under a single folder:
 ├── tempest.lock    # Held open exclusively while the application runs,
 │                   # so a second instance on this folder is refused
 │                   # rather than allowed to interleave writes.
+├── backups/        # tempest-<schemaversion>-<yyyyMMdd-HHmmss>.db —
+│                   # written automatically, once, the moment a launch
+│                   # finds a database at an older schema version than
+│                   # this build, before any migration runs; also where
+│                   # Settings → Data → "Back up now…" suggests saving to,
+│                   # and where "Restore from backup…" moves the database
+│                   # it is replacing (as tempest-replaced-<stamp>.db) —
+│                   # `WP 21.5A` (`WP RC.0A` scope item 3/4).
 └── logs/           # tempest-yyyyMMdd.log, one file per day, oldest
                     # deleted beyond 14 files (`WP 17.2A`, ADR-0146).
 ```
 
-- The root is the value of `Persistence:RootPath`, and when that is not
-  configured it is the **relative** path `persistence-data` — resolved
-  against the **process working directory**, not the install location.
+- **`<root>` depends on how you are running TempestOS** (`WP 21.5A`,
+  closing `TD-36` for the installed case):
+  - **Installed** (via the Velopack-packaged `Setup.exe`, §2a/§3):
+    `%LOCALAPPDATA%\TempestOS\persistence-data` by default — a real
+    Windows per-user data folder, decided once by Velopack's own "is this
+    process running from an install" answer
+    (`Velopack.Locators.VelopackLocator`), never a heuristic on paths.
+    Overridable by `--persistence-root <path>` on the command line or by
+    configuring `Persistence:RootPath` (below); absent both, the first
+    launch of an installed build shows a one-page dialog naming the
+    default location, with **Change…** (a folder picker) and
+    **Continue** — the choice is then recorded
+    (`%LOCALAPPDATA%\TempestOS\first-run.json`) so it is never asked
+    again.
+  - **Everything else** (`dotnet run`, a plain built `bin/` exe, the
+    plain release zip): unchanged from before `WP 21.5A` — the value of
+    `Persistence:RootPath`, and when that is not configured, the
+    **relative** path `persistence-data`, resolved against the
+    **process working directory**.
 - The folder is created on first launch. It is listed in `.gitignore` and
   is never source.
 - **Before `v0.17.0` this folder held a tree of directories and files, one
@@ -192,8 +251,12 @@ All persisted state is written under a single folder:
   scanning a directory, make two writes land together, or keep a second
   instance out. `Persistence:Backend=files` restores the old layout for
   `v0.17.0` only, and is deleted in `v0.18.0`.
-- There is no registry use, no `%APPDATA%`/`~/.config` use, and no file
-  written outside this folder and the build output.
+- There is no registry use, no `~/.config` use, and no file written
+  outside this folder and the build output — with one disclosed
+  exception since `WP 21.5A`: an installed build's default root itself
+  lives under `%LOCALAPPDATA%`, and the tiny first-run marker JSON
+  (above) lives beside it, both because that is precisely the per-user
+  data location an installed Windows application is expected to use.
 - **Logs go to `logs/` under this same root, and to the console when one
   is genuinely attached** (`Tempest.Harness`'s own console harness; never
   `Tempest.Desktop`, which has none) — `WP 17.2A` (ADR-0146). Before this,
@@ -212,6 +275,11 @@ separator — for example `TEMPEST_Runtime__Logging__MinimumLevel=Debug` —
 or on the command line as `--Section:Key=value`. Precedence, lowest to
 highest: `appsettings.json` next to the executable, `appsettings.json` in
 the current directory, environment variables, the command line.
+
+`--persistence-root <path>` (`WP 21.5A`) is a friendlier command-line
+alias for `--Persistence:RootPath=<path>` specifically — the two are
+interchangeable, and either one skips the installed build's own first-run
+dialog (§4).
 
 ---
 
@@ -267,7 +335,7 @@ rebuild then takes about 15 seconds after restore.
 
 ---
 
-## 7. Physical smoke test (10–15 minutes)
+## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7k add about two hours in total, each timed in its own heading)
 
 Every step below uses behaviour that exists today. Where something is
 deliberately not implemented, the step says so rather than asking for it.
@@ -277,8 +345,8 @@ from the repository root, so data lands in `<repo>/persistence-data`.
 
 | # | Step | Expected result | Counts as a failure if |
 |---|---|---|---|
-| 1 | Launch | A window titled *TempestOS — Engineering Workspace* opens on **Home**, showing the cross-project Cockpit with honest empty states. The left rail lists **Home, Projects, Engineering, Engineering Calculations** as active and **Tasks, Commercial, Resources, Knowledge, Administration** dimmed with a "not implemented" badge. | The window does not appear; an error dialog appears; a dimmed module is clickable and opens something. |
-| 2 | Rail → **Projects** | The project catalogue appears, empty, with **Open Project** and **New Project…** buttons. | The catalogue does not render, or claims projects that do not exist. |
+| 1 | Launch | A window titled *TempestOS — Engineering Workspace* opens on **Home**, showing the cross-project Cockpit with honest empty states. The left rail reads exactly **Home, Projects, Tasks, Engineering, Business** — nothing dimmed, nothing else (`WP 19.7A`). | The window does not appear; an error dialog appears; the rail shows any other entry, or a sixth. |
+| 2 | Rail → **Projects** | A tree — **Dashboard + Reports, Open, Closed, Archive** — with a right pane; **Dashboard + Reports** is a disclosed placeholder naming `WP 19.7B`. Select **Open**: the project catalogue appears, empty, with **Open Project** and **New Project…** buttons. | The catalogue does not render, or claims projects that do not exist. |
 | 3 | **New Project…** | A prompt appears pre-filled with the next free identifier (`P-0001` on a clean machine). Accept it and give a name, e.g. *Apollo Pump Redesign*. The project appears in the list. | No prompt; the project is not listed after creating it. |
 | 4 | Open the project | The **Project Workspace** opens. Tabs: **Overview, Engineering, Documents, Requirements, Tasks, Risks, Timeline** are live; **Reports** and **Settings** are marked not implemented. The status bar names the open project. | The status bar does not name the project; a live tab renders nothing. |
 | 5 | Rail → **Engineering** | The Engineering Workspace opens *inside the project*: Ribbon across the top with one tab per discipline (Calculations, Documents, Manufacturing, Mechanical, Requirements, Verification), Project Explorer, and a docking area. | The Ribbon or Explorer is missing; the project context is lost. |
@@ -314,6 +382,12 @@ Commercial, Resources, Knowledge, Administration and cross-project Tasks modules
 
 ### 7a. Evidence journey (`v0.18.0`, about 10 minutes)
 
+**This section describes the shell before `WP 19.7A`** (rail: Home,
+Projects, Evidence, Timesheets, Invoicing, Reports, Engineering
+Calculations, Settings). See §7c for the consultancy journey through the
+current `v0.19.1` shell (rail: Home, Projects, Tasks, Engineering,
+Business).
+
 Launch per §3. The title bar reads `TempestOS 0.18.0 (<commit>)`. The
 rail shows **Evidence** and still shows **Engineering Calculations**;
 the Engineering workspace still has its **Calculations** tab.
@@ -332,6 +406,280 @@ the Engineering workspace still has its **Calculations** tab.
 | E10 | **Revise** the issued record with a new file | A new *Draft* revision; the issued revision is still readable and unchanged in the revision history. | The issued revision changes; the sheet disappears. |
 | E11 | Libraries → a Draft material → **Verify**, **Release** | Its state advances; it now appears in the citation picker without restart. | Requires a restart; a permission refusal is shown as a crash. |
 | E12 | Home cockpit | **Recently changed** lists the evidence at the top; clicking it opens the record. | Stale after a change; a manual refresh is needed anywhere. |
+
+### 7b. Consultancy journey (`v0.19.0`, about 15 minutes)
+
+**This section also describes the shell before `WP 19.7A`** — the
+`v0.19.0` candidate, superseded for testing by `v0.19.1` (see
+`docs/releases/v0.19.1/Release Notes.md`). See §7c for the consultancy
+journey through the current `v0.19.1` shell.
+
+Launch per §3. The title bar reads `TempestOS 0.19.0 (<commit>)`. The rail
+reads Home, Projects, Evidence, Timesheets, Invoicing, Reports,
+Engineering Calculations, Settings, and nothing else; no entry is dimmed.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| C1 | Rail → **Settings** | The Settings area (not a dialog): persistence root shown with *Open folder*; principal display name and role as configured; **Invoicing** with connector *Fake*, an **Authorise** button and the poll interval; **Working pattern** hours per week (37.5); the independent-check toggle; theme. Set the working pattern to 40. | A dialog instead of an area; a setting that does not persist. |
+| C2 | Projects → open or create a project → its editor's **Commercial** section | Change client → **Add organisation** *Client Ltd* → chosen and shown by name; **Rate card** → pick a Released card (on a clean install create one first: Engineering → **Reference data** → *Add a rate card* — name, grade, hourly rate in GBP → **Add Rate Card**, then **Verify** and **Release** it from its own row; added 2026-09-16 because nothing in the shipped application could create one; a Draft card is refused with the reason); PO reference `PO-1001`; budget `25000 GBP`; dates; project manager defaults to you. | An id where a name belongs; a Draft card accepted. |
+| C3 | Rail → **Timesheets** | This week, empty, with available hours 40 and utilisation 0 %. **Record** → project, today, 3 h, billable, grade from the card, task *Bracket calc* → the entry opens right up; the week shows the day and week totals and the utilisation. Record 2 h non-billable tomorrow. **Amend** the first to 3.5 h; **Delete** the second. | Totals wrong; an entry that opens nowhere; a rate that changes after a card revision. |
+| C4 | Evidence → Libraries → **Revise** the pinned rate card (raise the billing rate) → Release; back to Timesheets | The existing entry still shows the rate it was recorded at. | The entry's rate moved. |
+| C5 | Project → **Deliverables** tab → **Complete** a deliverable (create a milestone deliverable in Timeline first if none) with one Issued evidence record and fixed price `500 GBP` | The completion opens right up, and completing has raised an invoice request (Draft) by itself; **Complete** again → refused naming the first completion. | A second completion accepted; no request raised. |
+| C6 | Deliverables tab → **Raise invoice** on the same completion; then rail → **Invoicing** → **Review** the request | Raise invoice is refused, naming the request completing already raised (it is the retry for a completion whose raise was refused, not a second bill). Review opens the request right up: two lines (3.5 h × the frozen rate, the 500 fixed price), the total in GBP, status Draft, the Connector section. | A second request raised; lines missing; a total in the wrong currency. |
+| C7 | Rail → **Invoicing** → the request → **Send** (connector Fake) | Sent, with the fake's invoice number; Timesheets shows the entry as *invoiced*; Amend and Delete on it are refused. | Sent without linking the entry; a refusal missing. |
+| C8 | Invoicing → **Reconcile now** | External status and dates read from the fake (paid date shown when the fake reports paid); nothing in Tempest can set *Paid*. | A Paid control anywhere. |
+| C9 | Home | Five cards with *This week*: utilisation (3.5 ÷ 40), margin for the project (billing minus cost), WIP (nothing unbilled after C7), DSO (from the sent request's dates, or *unavailable*), calc throughput (issued evidence this period). Switch to *Last month* → cards change; relaunch → the period is remembered. | A zero where *unavailable* belongs; a card that ignores the period. |
+| C10 | Rail → **Reports** | Issued evidence sheets (Open, Export) and project documents, filtered by project. | Empty with an issued record present. |
+| C11 | Project → **Structure** tab | The engineering surface (ribbon and docking) inside the tab; Create a Part from it; it opens right up; the rail has no Engineering entry. | The tab swaps the whole module away. |
+| C12 | Narrow the window below 1,200 px | The rail folds to icons; the ribbon compacts to icons with tooltips; nothing overlaps or is clipped; the status bar collapses lower-priority segments. Widen: everything returns. | A horizontal scroll bar in the ribbon; clipped controls. |
+| C13 | Keyboard only: Tab to a Digital Thread edge and press Enter; with a panel header focused press Ctrl+Shift+Right | The edge's target is selected; the panel moves to the next slot. | No keyboard reach. |
+| C14 | Close, relaunch from the same folder | Project, entries, completion, request, KPI period and settings all present; the last area is remembered. | Anything missing. |
+
+### 7c. The consultancy journey in `v0.19.1` (about 20 minutes)
+
+Launch per §3. The title bar reads `TempestOS 0.19.1 (<commit>)`. The rail
+reads exactly **Home, Projects, Tasks, Engineering, Business** — Projects,
+Engineering and Business are each a tree with a right pane; Settings is
+reached from the header, not the rail (`WP 19.7A`,
+`src/Tempest.Desktop/Views/GlobalNavigationRail.cs`; see §3). Every claim
+below names the file it comes from in a trailing parenthesis; where a
+Release Notes Warning limits what the step actually shows, that is said
+inline.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| D1 | Rail → **Home**, on a fresh persistence root | Five task tiles — **Overdue**, **Due today**, **Due this week**, **Approvals**, **Finance** — each reading 0; **Commercial snapshot**: "Quotes: 0 open, £0.00 total value." and, before the accounts connector has ever read, "Invoices: unavailable — No accounts reading yet." (`AccountsSnapshot.UnavailableReason`'s own text, capital N, verbatim); **Project status** as a horizontal bar chart (On track / At risk / Overdue / On hold) with "0 open project(s) in total."; **Upcoming milestones**: "No upcoming milestones."; **Task list**: "Nothing due."; the right rail reads **Continue**: "No projects yet." (plain text, not a button), **Recent**: "Nothing opened yet this session.", **Favourite**: "Nothing favourited yet.", **Recently changed**: "Nothing has changed yet." The header's **Search or run a command** field (present on every page) takes real text now; pressing Enter or its own search button opens the Command Palette with that same query already seeded and filtering the Objects section (`TD-177`, `WP 19.10C`) (`ShellHeaderView.cs`, `CommandPaletteOverlay.cs`). | Any tile, panel or rail section shows something other than its own honest empty state, or a lying zero where "unavailable" belongs. |
+| D2 | Rail → **Projects** → **Open** → **New Project…** (Home's own header carries the identical action, next to its dashboard content — `HomeDashboardView.cs`); name it, pick an existing **Client** from the drop-down or **Add organisation…** (opens the real organisation picker in place — pick from list, or add a new one), pick a **Rate card** (a drop-down of Released cards only, defaulting to the most recently released one; choosing **None** states inline "Time cannot be recorded against this project until a rate card is pinned."), an optional **PO reference**, leave **Open a quotation for this project** ticked (checked by default) | The client, rate card and PO reference are each written through the identical `ProjectCommercialService` act the project's own **Details** tab uses (one transaction each, with its own audit row) before the project opens directly on its **Quote** tab, already carrying one Draft quotation: reference generated `Q-<yyyy>-<nnn>`, client defaulted from the project, currency from its rate-card pin (GBP otherwise), validity 30 days (`NewProjectPrompt.cs`, `MainWindow.PromptForNewProjectAsync`, `ProjectQuoteView.cs`, `QuotationService.CreateAsync`/`NextReferenceAsync`). The project's own **Details** tab (first in its tab strip) shows the client's own name and the rate card's own code/name/pinned revision afterwards, never the bare id (`ProjectDetailsView.cs`). | No quotation exists after creation; the project opens on Overview instead of Quote; the reference is not `Q-yyyy-nnn`-shaped; the client/rate card/PO reference chosen in the prompt is not set on the created project; the Details tab does not show them. |
+| D3 | Quote tab: add one hourly line (description, hours, rate) and one fixed-price line | Identity reads "{reference} — Draft", "Date … • Client … • Currency … • Valid 30 day(s)"; the line form offers Description/Hours/Rate/Fixed price and an **Add line** button; each line lists as "{description} • {hours} × {rate} = {amount}" (hourly) or "{description} • {amount} (fixed)"; the Total updates live; supplying both hours-and-rate and a fixed price, or neither, is refused ("A line is either hours and a rate, or a fixed price — never both." / "A line needs either hours and a rate, or a fixed price.") (`ProjectQuoteView.cs`, `QuotationService.BuildLine`). | A line is accepted with both bases, or neither; the Total does not reflect the lines shown. |
+| D4 | **Export** | The save picker opens pre-named `<reference>-quote.pdf`; the saved file is a real PDF now rendered through the shared `DocumentTemplate` (`WP 20.10G`, closing `TD-182`): a header band carrying the TEMPEST OS wordmark (left) and, right-aligned under a 2px indigo rule, QUOTATION with a reference/date/status row, then the issuer's name, project code and name, client, reference/date/validity, status/currency, a Lines table (Description / Hours / Rate / Amount, the numeric columns right-aligned), the Total, and Terms. The footer carries the organisation's own identity from Settings → Organisation (legal name and company number left, website right — "Tempest Design Engineering Ltd · Company No. 17349874" / "www.tempest-engineering.co.uk" by default, editable, never a renderer constant) and, on the line below it, the same app version, reference, generation time and page number every page already carried. The Release Notes describe this sheet as a fixed one page that clips an overrun; the renderer's own test says otherwise — a short quote is one page, and one whose lines overrun a page continues onto further pages, each repeating the table's column headers and carrying its own footer, never clipping (`Documents/DocumentTemplate.cs`, `Quotations/QuotationSheetRenderer.cs`; `tests/Tempest.Desktop.Tests/Documents/DocumentTemplateTests.cs`; `tests/Tempest.Desktop.Tests/Quotations/QuotationSheetRendererTests.cs`, `Render_ProducesAValidOnePagePdf`, `Render_EveryD4Field_IsReadableBackOutOfTheText` and `Render_FortyLines_Paginates_AndEveryPageCarriesTheFooter`). | No picker; the saved file is not a valid PDF; a continuation page is missing its own footer or its table header; the footer names no organisation identity. |
+| D5 | **Send** | Confirmed ("Send the selected quotation?"); the quotation moves to Sent, `SentOn` is recorded, and the rendered sheet is attached to the quotation itself over the same path Export uses (`ProjectQuoteView.OnSendAsync`; `tests/Tempest.Desktop.Tests/QuotationJourneyTests.cs`). | Sent without a PDF attachment; the attachment is not a real PDF. |
+| D6 | **Accept** (confirmed: "Accept the selected quotation? This creates a Deliverable and a Requirement for every line.") | One Deliverable and one Requirement is created per line, all under one Milestone titled exactly after the quotation's own reference; the Quote tab grows a "Created on acceptance" section with an **Open deliverable** and an **Open requirement** button per line, each opening the created object right up. Declining instead ("Decline the selected quotation? This cannot be undone.") moves the quotation to Declined and creates nothing (`QuotationService.AcceptAsync`/`DeclineAsync`; `ADR-0152`; `ProjectQuoteView.cs`; `QuotationJourneyTests.cs`). | Fewer objects than lines; the milestone is not titled after the reference; Open deliverable/Open requirement does not open the object. |
+| D7 | Project → **Requirements** tab, then **Deliverables** tab; on Deliverables, **Add Deliverable** for one added directly | Requirements lists the requirement(s) the quote created ("{n} requirement(s) in {project} — 0 passed, 0 failed, {n} with no verification recorded", each "Not verified" until something verifies it; before any quote it reads "No requirements in this project" / "No requirement is allocated to anything in {project}."). Deliverables lists the deliverable(s) under the quote's own milestone; **Add Deliverable** prompts for a title and an optional target date, creates it under a milestone titled "Unquoted" (created 90 days out if none exists yet), and opens it right up (`ProjectRequirementsView.cs`; `ProjectDeliverablesView.cs`; `DeliverableService.AddDeliverableAsync`, `UnquotedMilestoneTitle`; `QuotationJourneyTests.AddDeliverableFromTheDeliverablesTab_OpensRightUp_AndCanBeCompleted`). | A quote-created object appears in neither tab; Add Deliverable does not open the new deliverable. |
+| D8 | Project → **Structure** tab | The full engineering surface (ribbon, Project Explorer, docking) renders inside the tab's own content bounds — no menu bar above the ribbon, and the ribbon's category row shows only the seven engineering disciplines (Calculations, Documents, Evidence, Manufacturing, Mechanical, Requirements, Verification); Deliverables/Invoicing/Projects/Quotations/Timesheets commands stay registered and reachable from the Command Palette but get no tab here. Create a Calculation from the ribbon, then drop a file onto its Attachments section ("Drop a file here, or Browse…"): it is stored with real bytes, size and SHA-256 through the same path as **Browse…**, and its row gets an **Open** button that opens it in the viewer; "Record a reference without the file" (collapsed by default) still offers the typed File Name/Content Type/Size fallback. Create (or open) a Requirement: its own **Owner / Priority** section offers **Owner** as a drop-down of Released people (display name and role), reading fresh every time — a person released anywhere is offered here without relaunching — with **Add person…** at the foot, which registers, verifies and releases a new person in one action and selects them; an existing requirement whose stored owner matches no person still shows its own text, suffixed "(not in People)", and the drop-down still offers to pick a real one instead (`WP 20.10F`, Product Owner finding D8) (`ProjectWorkspaceView.cs`; `ProjectAreas.cs`; `RibbonView.SetCategoryFilter`; `MainWindowComposer.Layout.cs`, `EngineeringRibbonCategories`; `ObjectEditorView.cs`; `PersonAddPrompt.cs`). | The surface bleeds outside the tab or covers the project's own tab strip; a business category shows a ribbon tab here; the drop does not store real bytes; the attachment has no Open button; the Owner control still free-types with no picker offered. |
+| D9 | Project → **Evidence** tab | The same Evidence surface as before (Draft → Checked → Issued, Libraries) — now one of the project's own tabs rather than a rail entry, already scoped to the open project (`ProjectAreas.cs`; `ProjectWorkspaceView.cs`; `EvidenceWorkspaceView.cs`). | The tab is not scoped to the open project; the surface differs from §7a's. |
+| D10 | Deliverables tab → **Complete** a deliverable (completion date, optional fixed price, the project's own Issued evidence, documents) | Completing raises a Draft invoice request by itself, best-effort — the completion always succeeds even if raising fails; the row grows **Open completion** and **Raise invoice** buttons. A second **Complete** on the same deliverable is refused, naming the first completion and its date; a **Raise invoice** click once a request already exists is refused, naming that request and its status rather than raising a second (`DeliverableCompletionPrompt.cs`; `ProjectDeliverablesView.cs`; `DeliverableService.CompleteAsync`, `AlreadyCompleted`; `InvoicingService.RaiseFromCompletionAsync`, `AlreadyInvoiced`). | A second Complete or a second Raise invoice succeeds; the refusal does not name the first completion/request. |
+| D11 | Rail → **Business** → **Invoices** | Requests and completions are grouped as the Product Owner sketched: **New** (Draft — Review, Send, Void), **Available to invoice** (a live `DeliverableCompletion` not yet invoiced and not carried by any live request's own lines — Open completion, Raise invoice; `WP 21.3B` adds a live, billable `ProjectExpense` on the identical uncarried rule, its own Open expense/Raise invoice — see §7e R1/R2), **Sent** (Sending, Sent, Accepted requests not yet Outstanding — Review, Reconcile now), **Outstanding / Overdue** (Sent/Accepted unpaid more than thirty days after being sent, plus Reauthorise and Unknown, which always need attention — Review, Reconcile now, and Settings → Invoicing named for Reauthorise), **Closed** (Rejected, Voided — Review only; collapsed by default). Every request lands in exactly one group. **Send** (Draft only) dispatches through the configured connector — **Fake** in review; **Xero** and **QuickBooks Online** are the other two named in Settings → Invoicing. **Reconcile now** reads external status and dates from the connector. No control anywhere sets Paid — `PaidDate` is written only from what the connector itself reports (`InvoicingView.cs`; `SettingsView.cs`; `InvoicingService.cs`; `WP 19.10D`). | A grouping other than the five above; a request in no group or in more than one; a Paid control anywhere; Send/Reconcile act without going through the connector. |
+| D12 | Rail → **Business** → **Timesheets** → **Record**; choose a project with no rate card pinned, then one with a Released card pinned | The form leads with a **Project** drop-down listing every open project (`ClosedOn is null`; a held project still listed), pinned or not, then **Hours**, then Date/Billable/Grade/Task. Choosing a project with no rate card pinned disables **Grade** and **Hours** and states inline "No rate card is pinned on {project}. Pin one on the project's Details tab first." with an **Open Details** button that closes Record and lands on that project's own Details tab; choosing one with a pin behaves exactly as before, and the entry opens right up (`TimesheetEntryPrompt.cs`; `TimesheetWeekView.cs`). | The drop-down offers a closed project, or omits an open project with no pin; Project/Hours are not the first two fields; an unpinned project leaves Grade/Hours enabled, or gives no reason, or Open Details does not land on that project's own Details tab. |
+| D13 | Rail → **Business** → **Quotes**, then **Subscriptions** | Quotes groups **New** (Draft) / **Sent** / **Outstanding** (sent more than seven days ago), each row offering **Open** (opens the project's own Quote tab right up) and **Export**; **New Quote** opens a project picker, then opens the new quotation right up. Subscriptions groups **Hardware / Software / Premises / Other**, read from Xero's own account names and tracking categories, with a **Refresh now** action; before a reading exists it shows "Subscriptions unavailable" with the reason and, once one attempt has been made, "(since <time>)" appended — the accounts reads are written to the connectors' own API documents, not proven against a live Xero/QuickBooks sandbox from this review (`QuotesView.cs`; `SubscriptionsView.cs`; `AccountsCategoriser.cs`; `AccountsReadModel.cs`). | A quotation appears in the wrong group; Subscriptions shows a zero rather than "unavailable" with no reading yet. |
+| D14 | Rail → **Tasks** | Seven bucket sections — Overdue, Due today, Due this week, Later, Reviews, Approvals, Finance — each reading "Nothing here." when empty, plus an Upcoming milestones section when any exist; **New task…** creates a `ManualTask` that opens right up; each row's **Open** button opens the underlying object right up. Finance has no payment-terms field to read from: it lists a Sent invoice request unpaid more than 30 days and a Sent quotation older than 7 days — a disclosed heuristic, not a recorded term (`TasksAreaView.cs`; `TasksReadModelService.cs`; `TaskEquations.cs`, `InvoiceTermsDays = 30`, `QuoteChaseAfterDays = 7`). | A bucket other than these seven; Finance reads a recorded term that does not exist; New task does not open right up. |
+| D15 | Rail → **Engineering** → **Tasks**, then → **Reference data** → open a library record | Tasks shows **Calculations**, **Reviews** and **Approvals** — Calculations lists every live Calculation under a project, not yet complete and not yet cited by issued evidence, each row with an **Open** (right up) and a **Complete** action (`WP 20.1B`, `TD-181`). Reference data lists all nine libraries (Materials, Fasteners, Bearings, Standards, Constants, Manufacturing, Components, Rate cards, **People** — `WP 20.10F`, Product Owner finding D8), each with its own heading even when it holds no record yet (reading "(0)" with "No records yet" beneath it, its own Add action — where one exists — still available); People has its own **Add a person** form (Display name, Role, Email — no source organisation/document to type: a fixed provenance names TempestOS itself, which is what lets a person leave Draft at all); opening a record (double-click or **Open**) shows its identity, every field the definition declares rendered generically with its own unit, revision history with the current revision marked "(current)", its source citation, every Evidence record that cites it under "cited by" (People is not part of Evidence's own citable set — a person is picked as an owner, never cited), and **Verify** / **Release** / **Revise** sized to its own state — Release from Draft verifies first, as one action (`EngineeringAreaView.cs`; `ReferenceRecordView.cs`; `LibrariesView.cs`; `Tempest.Core.People`). | A Calculations heading missing, or shown empty when a live calculation exists; Complete does not remove a row; a library missing (People included); a record's fields shown as raw text with no unit. |
+| D16 | Rail → **Projects** → **Dashboard + Reports** | Four tiles — Active, At risk, On hold, Ready to invoice; three reason-carrying lists — Blocked projects, At risk, Ready to invoice — each with its own honest empty text; a schedule of every open project that carries both a start and a target date, drawn as a simple Gantt, each row captioned with the project's own quoted hours (from its quote) alongside hours actually recorded (`ProjectsDashboardView.cs`). | A project with no dates gets a row anyway; a list's empty text is a bare "None". |
+| D17 | Rail → **Business** → **Dashboard & Reports** | Four tiles — Invoiced, Overdue, Due 30, Due 90 — each reading "unavailable" rather than a zero before the accounts connector has ever read; Accounts receivable (due 30 and overdue) and Accounts payable (subscriptions within 60 days, bills within 30) panels; a Quotes panel reading live Sent quotations directly (open value, and a chase list of those sent more than 7 days ago); a 12-week cash-flow chart, with the identical "unavailable" wording when there is no reading yet (`BusinessDashboardView.cs`). | A tile reads 0 rather than "unavailable" with no accounts reading; the cash-flow chart draws with no data. |
+| D18 | Accept a two-line quote (two deliverables), complete one; Project → **Sign off**: enter a statement, **Sign off** | A blank statement is refused before any service call ("A statement is required before signing off."). With the other deliverable still open, the tab shows "1 item(s) still open against the quote:" with its own row ("Deliverable '{name}'") and an **Open** button before Sign off is even attempted; **Sign off** is refused, verbatim: "Project '{id}' has 1 item(s) still open against the quote: Deliverable '{name}'. Complete or close them, or raise a change order that carries them, before signing off." (`ProjectLifecycleService.SignOffAsync`, `ProjectLifecycleRefusal.WorkStillOpen` — `WP 20.10E`, Product Owner finding D18). **Raise change order…** opens a Draft `CO-<yyyy>-<nnn>` carrying that deliverable (its line pre-filled, a nominal zero price to re-price through the Quote tab's own Edit) and opens it on the Quote tab; back on Sign off the row now reads "— carried by CO-…" and **Sign off** succeeds: records who and when, closes the project, and the tab shows the record verbatim: "Signed off by {principal} on {date}, closing the project on {date}." with the statement quoted underneath, and the status line reads "Signed off; the project is now closed."; **Reopen** appears once closed, and works within 90 days of the close date; **Hold**/**Resume** are offered only while the project is open (`ProjectSignOffView.cs`; `ProjectLifecycleService.SignOffAsync`/`GetOpenWorkAsync`/`ReopenAsync`/`HoldAsync`/`ResumeAsync`; `QuotationService` — `QuotationKind.ChangeOrder`, `AddLineAsync`'s own `carriedDeliverableId`). A live `ManualTask` or an incomplete calculation blocks identically but can never be carried — only completing or closing it clears the row. | A blank statement is accepted; sign-off succeeds with open work and no change order carrying it; the open-work row is missing, wrongly carried, or not named by kind and title; Raise change order does not open the Quote tab; the record does not quote the statement; Reopen is offered on an Archive-age project. |
+| D19 | Projects tree → a project closed 90 days or more ago | It lists under **Archive (90 days and over)** rather than **Closed (under 90 days)** (`ProjectArchival.ArchiveAfterDays = 90`); opening it shows "Archived — closed {date}. Reference data only; nothing here can be changed." — and the project workspace now means it: on the Evidence, Tasks, Timeline and Quote tabs, every write control the review can reach (Evidence's Create; Tasks' New Task and each entry's Edit/Assign to me/Due date/work-state move; Timeline's Set Milestone and each entry's Edit/Add Deliverable; the Quote tab's Add line/Edit/Remove/Send on a Draft quote and Accept/Decline on a Sent one) is disabled, carrying the tooltip "Archived project — read only", rather than sitting enabled behind a refusal. Every write the review can still reach a service for is refused, each message naming the project and its closed date — a new quotation, an edit to an existing quotation, a commercial change, a new or existing deliverable completion, a new or existing timesheet entry, a new or existing invoice request, a new milestone or engineering task, a new or edited evidence record — and **Reopen** itself is refused ("it is Archive and read-only. It cannot be reopened.") while staying enabled, the one control this Work Package's own disabled-control list deliberately leaves live. This guard now sits in the commercial, quotation, deliverable, timesheet, invoicing, milestone, engineering-task, evidence and manual-task services. The Structure tab's Ribbon and the Command Palette refuse too: every mutating Mechanical/Manufacturing/Documents/Verification/Requirements/Quotations/Deliverables/Tasks/Evidence command shows disabled with the tooltip "Project '{code}' is archived — read only." when the selected object's own project (or, for a create, the shell's open project) is Archive, and the Palette lists it the same way, refusing on Enter — one `ArchivedProjectCommandGuard` the command registry's own `Evaluate` consults, so a macro replaying either route stops with the identical reason. `IRequirementsService.CreateAsync` (no project id parameter to guard on) remains open — the one residual `TD-179` still names — `TD-179`, narrowed by `WP 19.10H` (`ProjectArchival.cs`; `ProjectsAreaView.cs`; `ProjectWorkspaceView.cs`; `QuotationService.cs`; `ProjectCommercialService.cs`; `DeliverableService.cs`; `TimesheetService.cs`; `InvoicingService.cs`; `ProjectLifecycleService.cs`; `ProjectMilestoneService.cs`; `ProjectTaskService.cs`; `EvidenceService.cs`; `Tempest.Core.Tasks.TaskService.cs`) and again by `WP 19.10R` (`CommandRegistry.cs`; `CommandBinding.cs`; `ArchivedProjectCommandGuard.cs`; the nine discipline/business registration files; `TempestHost.cs`). | A project closed 90+ days ago still lists as Closed; a write on it succeeds anywhere the review can reach; a refusal does not name the project or its closed date. |
+
+### 7d. What the debt tranche added in `v0.20.0` (about 15 minutes)
+
+Walk §7c first — everything there still holds on `v0.20.0`. Then these,
+which are the user-visible half of the twelve packages merged on
+2026-09-15 (`docs/releases/v0.20.0/Release Notes.md`). Launch per §3;
+the title bar reads `TempestOS 0.20.0 (<commit>)`. As in §7c, every
+claim names the file it comes from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| T1 | Project → **Details** tab (first in the project's own tab strip) → **Change client…** → **Add organisation** | The Details tab shows the project's own identity and its Commercial section — client, purchase order, budget, rate card, dates and project manager — reachable directly from the project workspace; this is the one path to it, since it no longer lives only in the generic Object Editor no project tab ever embedded. **Change client…** opens the same real organisation picker New Project's own Client field opens (reused, not rebuilt), carrying a **Payment terms** drop-down reading Up front / 30 days / 60 days, Up front selected by default (`src/Tempest.Desktop/Views/ProjectDetailsView.cs`, `src/Tempest.Desktop/Views/OrganisationPicker.cs`, `WP 20.1B`, `WP 20.10A`). Complete a deliverable for that client (§7c D10) and open Business → Invoices: the request's row reads "… — Terms {terms}", and once sent "… — Due {date}"; the **Outstanding / Overdue** group is unpaid past its own due date, not thirty days after sending (`src/Tempest.Desktop/Views/InvoicingView.cs`). | No Details tab, or the Commercial fields are not reachable there; no drop-down; a request raised for a 60-day client shows no terms or a due date thirty days out; changing the client's terms afterwards changes an already-raised request. |
+| T2 | Project → **Structure** → Calculations → create a calculation; then rail → **Engineering** → **Tasks** | The create prompt now carries a **Due** date field (default today + 14 days, editable, refused blank; `src/Tempest.Core/EngineeringDomain/Implementation/Calculations.cs`, `Calculation.DueOn`; `src/Tempest.Workspace/Workspace/Calculations/CalculationsWorkspaceRegistration.cs`, `WP 20.10B`) — the calculation lists under **Calculations** the moment it exists, with **Open** and **Complete** on its row; **Complete** removes it. A dated calculation also joins **Overdue / Due today / Due this week / Later** by date, exactly like a manual task, and counts on Home's own Overdue tile (`src/Tempest.Workspace/Tasks/TaskEquations.cs`, `CalculationDueItems`); it stays under Calculations regardless of its own date until complete (`TD-181`'s own "no date condition", unchanged). The Object Editor shows Due and lets it be changed afterwards (`SetCalculationDueDateCommand`). Rail → **Tasks** shows the same buckets. Issuing evidence that cites the calculation removes it from Calculations too. The Product Owner's own original finding here ("initial creation doesn't show on the task list") was not a missing due date: a selection left over from a *different* project (the single, global selection service — `WP 17.9.4`'s own `CreatedObjectOpensRightUpTests` met this once already) silently parented the new calculation outside the project actually open, so it never resolved a project ancestor — fixed locally in `CalculationsWorkspaceRegistration.ResolveCreateParent`, proven by `CalculationCreationCrossProjectSelectionTests` (`tests/Tempest.Desktop.Tests`). | A newly created calculation carries no due date, or the prompt accepts one left blank; the calculation does not appear on the Tasks list after creation from the Structure tab; Complete needs a second person; a calculation with no project appears as a task. |
+| T3 | Structure → Mechanical → create two Parts with the same identifier in one project; then rename a third to one of them | The second creation and the rename are both refused in the status bar, naming the identifier already in use; the same identifier in another project is accepted (`src/Tempest.Core/EngineeringDomain/Implementation/BusinessIdentifierIndex.cs`, the discipline `Rename*Command.cs` handlers; `TD-38`, `WP 20.1A2`). | A raw exception; the duplicate is created; a rename to an existing identifier succeeds; a different project's identifier is refused. |
+| T4 | Structure → drag the Requirements tree by its own tab header and release it a couple of pixels short of the open requirement editor's own edge (inside the workspace, over no drop target); drag it again and release well past the workspace's own edge; reopen it from the Command Palette (**Show Panel: Project Explorer**); close its floating window from its own title bar; then **Reset Layout**. Separately, dock the tree beside a requirement's editor and edit the requirement's title | The first release changes nothing — the tree stays exactly where it was, and the status bar says so ("… stays where it was — drop it on a highlighted target to move it."). Released past the workspace's own edge is the one gesture that tears it out into its own window — a real top-level window, owned by the main window and shown in front of it, never off-screen even if the drop point would otherwise land off every monitor. **Show Panel: Project Explorer** in the Command Palette brings it to the front from wherever it is — docked, floating, or hidden — and docks it back in first if it was floating; every registered panel gets its own such entry. Closing the floating window from its own title bar redocks its content at the position it floated from rather than discarding it. **Reset Layout** closes every floating window, redocks its content, restores the default arrangement, and says so in the status bar. Editing the requirement's title updates the tree's own row without re-entering the tab, unchanged (`src/Tempest.Core/Requirements/RequirementsService.cs` publishes every write on the change bus; `TD-28`, `WP 20.1A1`) (`src/Tempest.Desktop/Docking/WorkspaceLayoutController.cs`, `FloatingWindowPlacement.cs`, `FloatingPanelWindow.cs`, `MainWindowComposer.Layout.cs`; `WP 20.10D`). | A release short of a target still floats the panel, or says nothing; a torn-out window opens off-screen, behind the main window, or with no owner; **Show Panel** cannot find a floating or hidden panel; closing a floating window's own title bar leaves its panel gone rather than redocked; Reset Layout leaves any panel floating or missing; the tree still shows the requirement's old title until the tab is left and re-entered. |
+| T5 | Project → Documents → attach a `.dwg` (any file renamed will do), a PDF and an `.svg`; **Open** each; rotate the PDF's page 90° with ⟳; draw a rectangle and a text note on it from the **Annotations** group, then **Save annotated copy…** | The DWG's viewer says "This drawing opens in its own application" with an **Open externally** button; the PDF renders, and ⟲ / ⟳ rotate it in 90° steps, re-fitting to the rotated page with no manual zoom step; the SVG renders in-app too, at the same fidelity zoomed in (`src/Tempest.Desktop/Viewing/DocumentViewerView.cs`, `SvgDocumentPageSource`; `WP 20.2B`, `WP 21.4A`). The two markup shapes appear over the page, each selectable and deletable; **Save annotated copy…** writes a PDF beside wherever the file picker points, with the markup burned in, and the original attachment still opens exactly as before. | A blank page with no message; a rotated page needs a manual zoom step to fit; the SVG still reports unsupported; a drawn shape is not persisted across closing and reopening the tab; the saved copy does not open, or the markup is missing from it. |
+| T6 | Structure → select an object in the Project Explorer → **Ctrl+Shift+M**; then **Ctrl+Shift+C** | The object picker opens — objects by Kind, a **Filter…** box, the open project's own objects first, a top-level row — and **Choose** moves the object under the chosen parent; Ctrl+Shift+C copies it there. Both are now genuinely visible, not just logged: the Project Explorer expands and re-selects the moved object (the copy, selected, for Copy) right under its new parent, and the Status Bar's own "Selected Object" segment names both ends — "Moved 'Name' under 'Destination'." / "Copied 'Name' as 'Name (Copy)' under 'Destination'." — with the identical text landing in Command History (`src/Tempest.Desktop/Composition/MainWindowComposer.Wire.cs`, `src/Tempest.Workspace/Workspace/WorkspaceCommandBindings.cs`, the twelve `Move*Command.cs`/`Copy*Command.cs` handlers across the six disciplines; `WP 20.10C`, PO finding T6). Choosing the object's own current parent reports "Already under 'Destination'." (or "Already at top level.") instead of running a no-op move; choosing its own descendant is still refused with the same cycle message drag-and-drop gives; cancelling the picker changes nothing and says nothing. | No dialog; the shortcut moves the wrong object; Copy still says it is unavailable; the Status Bar or Explorer stays unchanged after a real Move/Copy; a same-parent choice is silently accepted as a move. |
+| T7 | **Ctrl+Shift+P** (Command Palette) with nothing typed | The list holds only the commands that apply to the current selection, grouped by category, the most recently run first; typing a query still finds every command, unavailable ones with their reason (`src/Tempest.Desktop/Views/CommandPaletteOverlay.cs`; `TD-77`, `WP 20.2A`). Up/Down skip the headers. | Every registered command listed with most disabled; a header is selectable; the ranking is claimed to survive a restart (it does not — Release Notes Warning). |
+| T8 | Palette → **Macro Manager** → **New Macro…** → add `mechanical.create` (it prompts for its values now), then `mechanical.rename` → **Save Macro** → **Run** on another project → **Delete** | Add Step collects each parameterised step's values through the same prompt a live invocation uses; the run replays them unattended and stops at the first failure naming the step; a confirmation-gated command (Delete, Duplicate) is not offered; deleting the macro removes its own command from the Palette (`src/Tempest.Desktop/Views/MacroManagerDialog.cs`, `src/Tempest.Core/Macros/`; `ADR-0099`, `WP 20.2C`). | A step prompts mid-run; a deleted macro is still invocable; a confirmation-gated command is offered. |
+| T9 | Attach the same file to two objects; open both editors' **Attachments** sections; delete one attachment | Each row reads "… , sha256 {hash}" with the identical hash — the bytes are stored once; deleting one leaves the other opening normally (`src/Tempest.Desktop/Editors/ObjectEditorView.cs`, `src/Tempest.Core/Attachments/AttachmentContentStore.cs`; `TD-95`, `TD-96`, `WP 20.1C1`). A persistence root from `v0.19.1` opens, and its existing attachments open on first read. | Different hashes for identical bytes; the surviving attachment fails to open; an older root's attachments cannot be read. |
+| T10 | **Ctrl+B**, then the tree column's own chevron; relaunch | The rail folds to its icons and the tree column to its edge, the work area takes the space, and both states survive the relaunch (`src/Tempest.Desktop/Views/GlobalNavigationRail.cs`; `WP 19.10O`). | The rail reopens on relaunch; the work area does not grow. |
+
+### 7e. Engineering Assets in `v0.21.0` (about 10 minutes)
+
+Walk §7d first. Then this: the merged engineering capability
+(`src/Tempest.Core/EngineeringAssets/` — calculation packs, templates,
+verification artefacts, engineering evidence) finally has a Desktop
+surface, built on the Product Owner's "close all of those" instruction
+against the gap list that named it (`WP 21.2B`, `TD-160`, `TD-165`). As in
+§7c/§7d, every claim names the file it comes from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| E1 | Rail → **Engineering** → **Modules** → **Engineering Assets** | Five tabs — **Calculation packs**, **Templates**, **Verification artefacts**, **Engineering evidence**, **Bracket verification**. Each of the first three lists every record of its own kind, record id leading the row, with a **Filter** box and **Open**; on a fresh persistence root each reads "No records match." rather than an empty silence. **Engineering evidence** lists every `EngineeringEvidence` item any of the three governance facts cite, naming which record cites it, with **Open** navigating to it (`src/Tempest.Desktop/Views/EngineeringAssets/EngineeringAssetsView.cs` and its sibling list views). | The tree entry is missing; a tab is missing; a list gives no honest empty state; the filter box does not filter. |
+| E2 | Open a calculation pack's own row (or register one by hand first, if none exists yet) | Beside the list, a **Details** tab (its own fields, then **Applicability** and **Governance**, then **Validation** — every error and warning named by its own rule code, e.g. `TEMPEST-EAG-001`) and a **Trace** tab: the pack's own `EngineeringTraceRegister.CalculationTrace` — every input traced to the governed reference it pins (or reported untraceable), the template used, the outputs, whether every reference resolved and was verified against its own source — read-only, with an **Export trace** button that saves it as text through the file picker (`CalculationPackListView.cs`). | No Trace tab; Export does nothing or exports nothing recognisable; Applicability/Validation are absent from the pane. |
+| E3 | **Bracket verification** tab: pick a released material, enter Applied load/Section area/Member length/Mass limit — each has its own unit picker, not a fixed unit — then **Check** | The result shows applied stress, allowable stress, margin, estimated mass, each with its own unit, and the pass/fail against the governed limits, worded as a finding ("Meets criteria" / "Does not meet criteria"), never "Approved". Picking a Draft (unreleased) material and Checking is refused, in words, naming why (`BracketVerificationView.cs`, `GovernedBracketCheckService`). | A field has no unit picker; the outcome reads "Approved" anywhere; an unreleased material is silently accepted. |
+| E4 | Still on Bracket verification, after a successful Check: pick a **Calculation pack** and a **Verification artefact** to record into, state the **Independent basis**, **Independent margin** and **Independent mass** (obtained separately, never by re-running the check), a **Verifier** and **Performed on** date, then **Record verification artefact** | Writes through `BracketEngineeringRecordService.RecordCalculationAsync` then `.RecordVerificationAsync` — the identical Core path `BracketEngineeringDemonstrationTests` proves; the status names the artefact's own new standing (`Passed`/`Failed`). Switching to **Verification artefacts** shows that artefact at its new standing; switching to **Calculation packs** and reopening the pack's own **Trace** tab shows this run's own inputs and outputs. Where neither library holds a record yet, Record says so plainly rather than pretending to succeed. | Nothing is written; the artefact does not list its new standing; the Trace tab still shows the pack's prior (or no) state; Record silently no-ops when no pack/artefact is registered. |
+
+---
+
+### 7f. Documents from the templates in `v0.21.0` (about 15 minutes)
+
+Walk §7d first. Then these, `WP 21.2A`'s own six document renderers and
+the buttons that export them — the design system's three type families
+(Chakra Petch, Inter, Space Mono) and the horizontal navy lockup, embedded
+in the application itself rather than drawn with the platform default
+face. Launch per §3; the title bar reads `TempestOS 0.21.0 (<commit>)`.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| D1 | Business → **Invoices** → any request row → **Export invoice** | The file picker opens pre-named `<reference>-invoice.pdf`; the saved PDF opens in any PDF reader with the client, project, lines, net total, payment terms and — once Settings → Organisation's own new **Bank details** section (Sort code/Account number/Account name/IBAN) is filled in — a **Payment details** section carrying them (`src/Tempest.Desktop/Documents/Invoicing/InvoiceDocumentRenderer.cs`, `src/Tempest.Desktop/Views/SettingsView.cs`). With Bank details left blank, the section instead says so plainly. | Export does nothing, or a blank/corrupt PDF; the bank fields never appear even once entered; an invented VAT figure appears (this release renders net only). |
+| D2 | Business → **Timesheets** → **Export week** | The saved PDF carries the current principal's own week — hours by project and day, week/billable totals — and a blank **Prepared by**/**Approved by** signature block, never a fabricated approver (`src/Tempest.Desktop/Documents/Timesheets/TimesheetDocumentRenderer.cs`). | A day or entry is missing; an approver name appears that nobody entered. |
+| D3 | Open a project → **Documents** → **Export register** | The saved PDF is **landscape**, wider than it is tall, listing every document/drawing in the project — number, title, current revision, status (`src/Tempest.Desktop/Documents/DrawingRegisters/DrawingRegisterDocumentRenderer.cs`). | The PDF is portrait; a document present in the Documents tab is missing from the register. |
+| D4 | Open (or create) a Document, open its editor, **Attachments** section → **Export as report** | The saved PDF carries a cover block, a revision history table (every revision, oldest first) and numbered sections — split from the current revision's own content by leading `#` lines; content with no `#` at all renders as one "Content" section rather than empty (`src/Tempest.Desktop/Documents/TechnicalReports/TechnicalReportDocumentRenderer.cs`, `src/Tempest.Desktop/Editors/ObjectEditorView.cs`). The button appears only for a Document, never for another Kind's editor. | The button appears for a non-Document Kind; a revision is missing from the table; a heading-free document renders blank. |
+| D5 | Projects rail → **Dashboard + Reports** → any project row (now every open project lists here, not only Blocked/At risk/Ready to invoice) → **Export progress report** | The saved PDF is **landscape**, one page per section — RAG status, cost position (quoted vs recorded hours), risks (the project's own live governance register), a four-week look-ahead — never a fabricated deliverable-completion percentage: that section states plainly it is not available from this report's own data (`src/Tempest.Desktop/Documents/ProgressReports/ProgressReportDocumentRenderer.cs`, `src/Tempest.Desktop/Views/Dashboards/ProjectsDashboardView.cs`). | The PDF is one page, or portrait; a live risk from the Risks tab is missing; a deliverables percentage appears with nothing backing it. |
+| D6 | Any exported PDF from D1–D5 → open in a reader and select/copy the eyebrow heading text (e.g. "INVOICE") and a numeric table cell | The wordmark in the header band is the horizontal navy lockup image, not "TEMPEST"/"OS" text; the eyebrow/heading text copies out correctly (Chakra Petch); a numeric or right-aligned cell copies out correctly (Space Mono) — both embedded, not the platform default face (`src/Tempest.Desktop/Documents/DocumentFonts.cs`, `DocumentLogo.cs`). | The header still shows plain "TEMPEST"/"OS" text; copied text is garbled or empty for the eyebrow/heading or a numeric cell (prose body text staying the platform default face is expected — see this Work Package's own report). |
+### 7g. Undo across commands, in `v0.21.0` (about 10 minutes)
+
+Walk §7d first. Then these — `WP 21.1A`, closing the weakness "Undo
+covers Rename and Favourite only." Every claim names the file it comes
+from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| U1 | Documents → create a Document; Ctrl+Z; Ctrl+Y | The Undo/Redo toolbar buttons enable the moment the create completes, naming it in their own tooltip ("Undo: Create 'Name'"); Ctrl+Z removes it from the Project Explorer and Command History records "Undo completed."; Ctrl+Y brings back the same object — the same Id, not a second one created alongside a permanently-orphaned first (`src/Tempest.Core/Commands/CommandCompensation.cs`, the discipline `Create*Command.cs` handlers, `IDeletable.UndeleteAsync`). | The object stays listed after Ctrl+Z; Ctrl+Y creates a visibly different object; the toolbar never enables. |
+| U2 | Select an object with no children → **Delete** → Ctrl+Z → Ctrl+Y | Delete removes it from the tree as always; Ctrl+Z brings it straight back, in the same place, with its own name and content intact; Ctrl+Y deletes it again (`DeleteDocumentObjectCommand.cs`/`UndeleteDocumentObjectCommand.cs` and the mirrored pair in the other four disciplines). | Undo restores it with a blank name or content; Redo leaves it visible. |
+| U3 | Drag an object to a new parent in the Explorer (or Ctrl+Shift+M) → Ctrl+Z → Ctrl+Y | The object moves as always; Ctrl+Z moves it back to its own prior parent; Ctrl+Y moves it forward again (`WorkspaceCommandBindings.MoveCompensation`). Deleting the *old* parent before pressing Ctrl+Z (an edge case, not required for the walkthrough) refuses the undo, naming the missing parent, and leaves the object exactly where it was. | Ctrl+Z leaves the object under the new parent; the Explorer does not reflect either move. |
+| U4 | Ctrl+Shift+C to copy an object → Ctrl+Z → Ctrl+Y | The copy appears as always; Ctrl+Z removes only the copy — the original stays untouched; Ctrl+Y restores the same copy (`WorkspaceCommandBindings.CreationCompensation`). | Undo removes or alters the original; Redo produces a second, different copy. |
+| U5 | Select an object → **Request Review** (Draft → InReview) → Ctrl+Z → Ctrl+Y | Status changes as always; Ctrl+Z reverses it to Draft; Ctrl+Y reapplies InReview (`WorkspaceCommandBindings.StatusCompensation`, the platform-wide `LifecycleTransitionTable`). Then, separately: take an object all the way to **Released** — Command History reads "Cannot be undone: the lifecycle does not permit reversing 'Approved' → 'Released'." and the Undo toolbar's own tooltip does not name that action. | Undo/Redo do not change the status; a Released object is offered as undoable, or Undo silently does nothing with no explanation anywhere. |
+| U6 | Open any object → change its content in the editor → **Save** → Ctrl+Z → Ctrl+Y | Rename already worked this way; a content edit now does too — Ctrl+Z restores the prior content, Ctrl+Y reapplies the new content (`src/Tempest.Desktop/Editors/ObjectEditorView.cs`, `OnSaveAsync`). | Only a Rename in the same Save is undoable; the content half is not. |
+| U7 | Run any two-step macro (Palette → **Macro Manager**) → Ctrl+Z → Ctrl+Y | The whole run undoes as one action — both steps reversed, in reverse order — not two separate Undo presses; Ctrl+Y reapplies both, forward (`RunMacroCommandHandler`, the compound `CommandCompensation`). | Ctrl+Z undoes only the macro's own last step; two presses are needed to fully reverse a two-step run. |
+| U8 | With unsaved Undo history recorded (U1–U7, any one), switch to a different project (or close the open one) | The status bar and Command History both say "Undo history cleared." once, and Ctrl+Z/Ctrl+Y do nothing until a new action is recorded in the newly-open project (`UndoRedoCoordinator`, subscribed to `ProjectContextChangedEvent`). Opening a project with no Undo history yet recorded says nothing — no false "cleared" notice. | The stack survives a project switch (a stale Undo reaches into the wrong project's own objects); the notice appears on every project open regardless of whether anything was actually cleared. |
+
+**Requirements is a disclosed exception**, not a bug: Create/Delete/Move/
+status changes on a Requirement, a Requirement Group or a Requirement
+Collection are not undoable in `v0.21.0` — unchanged from `v0.20.0` and
+every earlier release. See `BACKLOG.md`'s own `WP 21.1A` entry for why.
+
+---
+
+### 7h. Commercial edges in `v0.21.0` — expenses, purchase orders, VAT, a second principal (about 15 minutes)
+
+Walk §7d first — everything there still holds on `v0.21.0`. Then these,
+covering `WP 21.3B` (the commercial edges: expenses, purchase orders, VAT
+on lines, a second principal). Launch per §3; the title bar reads
+`TempestOS 0.21.0 (<commit>)`. As in §7c/§7d, every claim names the file
+it comes from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| R1 | Rail → **Business** → **Timesheets** → **Record expense…**; separately, Project → **Details** tab → **Expenses** section → **Record expense…** | Both open the identical dialog: Project, Date, Description, Category (Travel/Subsistence/Materials/Subcontract/Other), Net amount, VAT amount, Billable — the project's own Details tab pre-selects the open project. Recording opens the expense right up; the Details tab's own Expenses section updates its count ("N expense(s) recorded — N billable and not yet invoiced") without leaving the tab (`src/Tempest.Desktop/Views/ExpenseEntryPrompt.cs`, `src/Tempest.Desktop/Views/TimesheetWeekView.cs`, `src/Tempest.Desktop/Views/ProjectDetailsView.cs`; `Tempest.Core.Expenses.ExpenseService`). | Either call site is missing; the Details tab's own dialog does not pre-select the open project; the created expense does not open; the Details tab's own count is stale until the tab is re-entered. |
+| R2 | Rail → **Business** → **Purchase orders** → **New Purchase Order…** (pick a project, a supplier) → **Add line…** (description, quantity, unit price, a VAT rate) → **Issue** → **Receive** → **Record as expenses** → **Close** | The order appears under **New**, then **Issued**, then **Received**, then **Closed** (collapsed by default, alongside Cancelled) as each act runs; **Issue** is refused with no lines; **Record as expenses** is offered only once, appears only once Received, and creates one billable `ProjectExpense` per line (visible in the project's own Details tab count); a second **Record as expenses** is refused (`src/Tempest.Desktop/Views/PurchaseOrdersView.cs`, `src/Tempest.Desktop/Views/PurchaseOrderLinePrompt.cs`; `Tempest.Core.PurchaseOrders.PurchaseOrderService`). The reference reads `PO-<year>-<nnn>`, scanning every purchase order this store already holds. | A status transition succeeds out of order (e.g. Receive before Issue); Record as expenses is offered twice, or creates a second set of expenses; the reference collides with, or ignores, an existing one for the same year. |
+| R3 | Settings → **VAT** → set the default VAT rate; then Project → **Quote** tab → **Add line…**, an hourly and a fixed-price line; open the quotation in the Property Inspector. *(Corrected 2026-09-16: the Quote tab has no per-line VAT control — every quotation line takes the default rate from Settings; per-line rates exist on purchase-order lines and expenses. Whether a per-line picker is owed is `TD-188`, a question for you.)* | Each line's own VAT amount is its net amount times the chosen rate's own percentage (Standard 20%, Reduced 5%, Zero-rated/Exempt/Out of scope 0%); the quotation's own facets read **Total (net)**, **VAT**, **Total (gross)**, each the sum across every line — a quotation raised before this Work Package (no stored rate at all) reads every line as **Out of scope**, its own totals unchanged from before (`src/Tempest.Core/Quotations/Quotation.cs`, `src/Tempest.Workspace/Workspace/Quotations/QuotationPropertyFacetProvider.cs`; `WP 21.3B`). Settings → **Organisation identity** → **Default VAT rate** changes what a new line defaults to when no rate is given. | A line's own VAT amount does not match its rate; the three totals are missing or wrong; an old quotation's own total changed value; the Settings default is not honoured on a new line. |
+| R4 | Settings → **Principal** → **Switch person…** (needs at least one released person with a known identity in the People directory — `WP 20.10F`, or seeded through the `IPeopleDirectory` seam where that Work Package has not yet merged); separately, with **Independent check required** on (Settings → **Evidence**), record evidence and attempt to **Check** it yourself | Before switching, Check is refused: "An independent check needs a second person; switch person first." **Switch person…** lists every switchable person, asks the chosen one to confirm by name — no password, the dialog states this platform's own single-user local trust posture — and the header updates immediately to show who is signed in. After switching, the identical Check on the same evidence succeeds, recorded as the new principal's own (`src/Tempest.Desktop/Views/SettingsView.cs`, `src/Tempest.Desktop/WorkspaceHost.cs`; `Tempest.Core.Evidence.EvidenceService.RecordCheckAsync`). | The refusal names anything other than "switch person first"; the picker offers a person with no identity, or none at all when one is seeded; the header does not update; the second principal's own check is refused, or is recorded as the first principal's. |
+
+
+---
+
+### 7i. Engineering Calculators in `v0.21.0` (about 15 minutes)
+
+Walk §7e first, which releases a material under Reference data. Then
+these — `WP 21.7A`, `WP 21.7B` and `WP 21.7C`: the sixteen product
+calculations from a form generated out of each calculation's own
+descriptor, records picked from the released libraries, the record's own
+Re-run and Compare commands on the result. Every claim names the file it
+comes from.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| C1 | Engineering → Modules → **Calculators** | Two columns: a catalogue by category on the left with sixteen calculations under it, on the right the guidance to pick one; the Libraries panel counts the released records of Materials, Fasteners and Bearings (`src/Tempest.Desktop/Views/CalculationModulesView.cs`, `src/Tempest.Core/Calculations/Modules/CalculationModuleDescriptors.cs`). | Fewer than sixteen; a category with nothing under it; the columns overlap. |
+| C2 | Pick **Beam bending and deflection** | The form is generated: Support and Loading choices, a unit picker beside every quantity (Span offers mm, m, in), the method reference (Roark) and the specification path `docs/engineering/calculations/calc.beam-deflection.md`; Young's modulus and Allowable bending stress are read-only, marked as filled from the record picked for Material record. | A quantity without a unit picker; a sourced field that can be typed into. |
+| C3 | With no material released, look at the Material record picker; press **Calculate** | The picker is disabled, its tooltip saying nothing is released in the library; Calculate names "Material record" as a problem beside the form and records nothing (`CalculationModuleForm.BuildInput`). | An unreleased material is offered; a run is recorded without a material. |
+| C4 | Release S355J2 (§7e), re-enter Calculators, pick it for Material record; type Load 10 kN, Span 2000 mm, second moment 2000000 mm⁴, extreme fibre 50 mm, deflection limit 8 mm → **Calculate** | Young's modulus reads 210 GPa and the allowable 355 MPa in the form's own units, the status naming the record and its revision (`CalculationModuleService.FillFromRecordAsync`). The outcome is "Meets its criteria", deflection 3.96825 mm, stress 125 MPa; Working lists every intermediate; the record note names the calculation ("Beam bending and deflection" and the time, or the name typed in Calculation name) and cites mat-s355j2; Engineering Calculations lists that calculation (`CalculationModuleWorkbench.CalculateAsync`, `EngineeringCalculationRegister.NameAsync`). | A typed allowable overrides the record's; nothing is listed under Engineering Calculations. |
+| C5 | Set Span to 200 mm → Calculate | The outcome says the method refused the input, the reason naming the span-to-depth ratio, the result fields showing "—"; the run is recorded with validation Conditional; no error dialog (`EngineeringCheckOutcome.OutsideMethodLimits`). | An exception dialog; a deflection computed for a beam the method excludes. |
+| C6 | Pick **Lifting lug and pin** | Two pickers, "Lug material record" and "Pin material record", each over the released materials; pick S355J2 in both, type Example 1 of `docs/engineering/calculations/calc.lifting-lug-pin-joint.md` → Calculate: the working shows "Lug material reference" and "Pin material reference", each its own pin. | One picker for both; a pin left empty is accepted. |
+| C7 | Under Reference data → Bearings release the seeded 6205; pick **Rolling bearing rating life L10**, pick 6205 for Bearing record; Radial load 2 kN, X 1, Y 0, 1500 r/min, a1 1, required life 1000 h → Calculate | Designation "6205", type Ball and C = 14 kN filled from the record; the 6305 is not offered while unreleased. The basic rating life is 343 million revolutions, "Meets its criteria", "Bearing reference" cites brg-rhd-6205 (`BearingPropertyReader`). | The rating can be typed over the record's; an unreleased bearing is offered. |
+| C8 | Pick **Bolt shear capacity**: 20 mm, 400 MPa, 2 planes, safety factor 1.5 → Calculate → **Re-run** | 167552 N. Re-run writes a second record on the same calculation ("Re-ran and recorded", run 2, "Re-run of" the first record) through `calculations.rerun`, the same command the Ribbon offers (`CalculationModuleWorkbench.RerunAsync`, `src/Tempest.Workspace/Workspace/Calculations/RerunCalculationCommand.cs`). | A second named calculation appears; the button is offered before a run or does nothing. |
+| C9 | **Compare with previous**; then safety factor 2 → Calculate → Compare with previous | First: "nothing differs between the last two runs". Then a table Section / Field / Before / After with the Safety factor row (1.5 → 2) and the Allowable shear capacity row (167552 N → 125664 N), nothing else, through `calculations.compare-with-previous` (`CalculationTemplateRegistry.CompareWithPreviousAsync`, `CalculationComparer`). | Compare enabled after one run; an unchanged input in the table; before and after without units. |
+| C10 | **Start a new calculation** → Calculate | A new named calculation at run 1, the previous one untouched under Engineering Calculations. | The new run lands on the old calculation. |
+| C11 | Type "abc" into Bolt diameter → Calculate | "Bolt diameter: 'abc' is not a number" beside the form, nothing recorded; correct it and the run proceeds. | A crash; a record written for a malformed input. |
+
+**A form-less caller** runs the same modules through
+`CalculationModuleService.RunAsync` (`src/Tempest.Core/Calculations/Modules/CalculationModuleService.cs`):
+the same pins, the same fills, the identical record. The refusals it
+returns are the ones C3, C5 and C11 show.
+
+
+### 7j. Docking steps 1–2 in `v0.21.0` (about 10 minutes, a second monitor for K4–K5)
+
+What `WP 21.0A` changed is the model and the controller under the docking
+you already use (`ADR-0153` steps 1–2: one window forest, one controller);
+the visible checks are focus after a move, a floating window holding more
+than one panel, and the layout coming back per monitor. K1, K4 and K5 are
+exactly the proofs the headless tests could not give (the headless
+platform ignores a window's own position), so record their outcomes in
+words.
+
+- **K1.** Open a project → **Structure** tab. Float the Property
+  Inspector by **dragging its tab header past the edge of the workspace
+  area** and releasing (there is no Float button — the tab chrome offers
+  Collapse, Pin/Auto-hide and Close only; `WP 21.0K` corrected this
+  wording). A floating window appears. Drag the Explorer's tab onto that
+  floating window's tab strip. **Expect:** the Explorer docks *into the
+  floating window* as a second tab — not back into the main window, not a
+  third window. *Verified on a real X11 screen by `WP 21.0K`
+  (`docs/releases/v0.21.0/evidence/docking/k1-…png`).*
+- **K2.** Close the Explorer tab in the floating window, then close the
+  Inspector's tab too. **Expect:** after the first close the floating
+  window stays with the Inspector and the main window's Documents area is
+  untouched; after the second the floating window disappears the moment
+  its last panel leaves; nothing is lost from the main window. *Until
+  `WP 21.0K` the first close discarded every panel in every other window
+  (a `WP 20.10D`-era defect carried through `WP 21.0A`, found and fixed in
+  the real application on 2026-09-16); verified after the fix
+  (`k2-…png`).*
+- **K3.** Keyboard only: reach a docked panel's tab header with **`Tab`**
+  (clicking a header selects the panel without focusing it, so the
+  gestures would look dead) and move it with `Ctrl+Shift+Arrow`.
+  **Expect:** after the re-render the same tab header has keyboard focus
+  and shows the focus ring (`TD-90`); `Ctrl+Shift+←` then moves it back,
+  which only works if the header kept the keyboard. *Both halves failed
+  before `WP 21.0K` (the gestures were applied by the host, never reaching
+  the controller's focus restore, and the restore was not `:focus-visible`);
+  verified after (`k3-…png`).*
+- **K7.** Keyboard only: focus a tab header in a group holding two or more
+  tabs (reach it with `Tab`) and press **`Ctrl+Shift+,`** then
+  **`Ctrl+Shift+.`**. **Expect:** the tab moves one position earlier and
+  later along its own strip, stops at either end without complaint, and
+  keeps the focus ring throughout (`ADR-0153` decision 8, `TD-133`'s
+  residual; `WP 21.0K`, `reorder-ctrl-shift-comma.png`). The new order
+  survives a relaunch.
+- **K4.** With a second monitor attached, drag a floating window onto it.
+  Close TempestOS. Reopen. **Expect:** the floating window restores on the
+  second monitor at the same place and size.
+- **K5.** Repeat K4 but unplug (or disable) the second monitor before
+  reopening. **Expect:** the floating window restores on the primary
+  monitor, fully visible, never off-screen.
+- **K6.** Reset the layout (Command Palette → **Reset Layout**). **Expect:**
+  every panel back in its default place, one window. *Verified by
+  `WP 21.0K` (`k6-reset-layout.png`).*
+- **K8 (Windows only).** With a floating panel window open, close the main
+  window from its title bar. **Expect:** the floating window closes with
+  it, the process exits, and on relaunch the layout (including the floating
+  window's place and size) comes back. Under Xvfb tonight the main
+  window's own `Closing` handler could not be driven (no window manager
+  delivers `WM_DELETE_WINDOW`), so the save-on-close half is **owed to a
+  real desktop session**; the restore half is verified
+  (`persistence-floating-window-restored.png`).
+
+### 7k. The first live Xero authorisation (`WP 21.6`, with `WP 21.6P`'s fixes; about 10 minutes, the Product Owner's own Xero app)
+
+Until `WP 21.6P` (the overnight acceptance campaign, 2026-09-15/16) this
+journey could not be completed from the product at all: **Authorise** only
+re-read the stored state, the client id typed in Settings was stored under
+a key the authoriser never read, and the connector chosen in Settings never
+reached the host at the next start. All three are fixed and driven in the
+real application up to the token exchange (`docs/releases/v0.21.0/WP21.6P
+Xero Authorisation Path Report.md`, evidence under `evidence/xero/`). The
+live sign-in itself needs your Xero app and your consent — it has not been
+performed by anyone yet. Record every status line verbatim.
+
+| Step | Action | Expect | Wrong if |
+|---|---|---|---|
+| X1 | In the Xero developer console, confirm the app's redirect URI is exactly `http://127.0.0.1:49301/callback/` (`ADR-0151` addendum). Copy the client id (and the secret, if the app is not PKCE-only). | — | The redirect URI differs by a character: Xero will refuse the sign-in at step X4 with a redirect-URI error. |
+| X2 | TempestOS → the account chip (top right, *root · Engineer*) → **Settings** → *Connector authorisation*: Connector **Xero**, paste the Client Id (and Secret), click **Authorise**. | Status: **"Saved. Restart TempestOS to use Xero — this session is running the Fake connector."** No browser opens. | The status says "Authorised." while the Fake is still running (this was the pre-fix behaviour). |
+| X3 | Close TempestOS and reopen it. Settings → *Connector authorisation*. | Connector **Xero**; the Client Id shown; status **"Not authorised."** | Connector back on Fake (the choice did not persist); "Not authorised. not configured" (the client id was not read). |
+| X4 | Click **Authorise**. | The button greys out; status **"Waiting for you to sign in to Xero in your browser (up to 5 minutes)…"**; the default browser opens on Xero's sign-in/consent page. Sign in, pick the organisation, allow. The browser shows *"Authorisation complete. You can close this window and return to TempestOS."*; the status reads **"Authorised."** | Any other wording — the status line names the cause (port in use, consent denied, token endpoint refusal, the browser could not open, the five-minute timeout). Record it. |
+| X5 | Business → **Invoices**, or Settings → *Refresh accounts reading*. | Contacts, bills or the cash position read from your Xero organisation (the accounts reading status changes from "No accounts reading yet"). | An error naming a Xero scope or tenant — record it verbatim for the lead. |
+
+Decision for you before X1: the default loopback port 49301 sits inside
+Windows' dynamic range (Release Notes, Warnings). Changing it means
+changing the redirect URI registered in the Xero app; leaving it means a
+rare "Port 49301 is already in use" refusal, answered by trying again.
 
 ---
 
@@ -359,13 +707,29 @@ the Engineering workspace still has its **Calculations** tab.
 2. **Data location follows the working directory** (§4). Not a defect, but
    the single most likely way to conclude wrongly that persistence is
    broken.
-3. **Port 5080 is not bound by default** (`D-024`, ratified by the Product
-   Owner on 2026-09-05). The REST API's listener starts only when
-   `Runtime:RestApi:Enabled` is configured `true`; absent, empty, or
-   unparseable all resolve to disabled. When enabled, it still binds
-   loopback-only on port 5080 (overridable via `Api:Port`), and a
-   conflict is isolated and logged exactly as before — the application
-   still starts.
+3. **Port 5080 is not bound, and cannot be, in this build.** The REST
+   API (`Tempest.Core.Api`) was frozen out of the build by `ADR-0146`
+   (`WP 17.2A`) — no project file, no `src/TempestOS.slnx` reference,
+   nothing compiled — before the `D-024`/`Runtime:RestApi:Enabled` gate
+   this item used to describe could ever be exercised on this build.
+   Verified by `WP 21.5E` (2026-09-15,
+   `FrozenLayersUnreachableTests.ADefaultlyConfiguredHost_NeverBindsTheFrozenRestApiDefaultPort`):
+   a default-configuration host never answers a connection on
+   `127.0.0.1:5080`. This item's own earlier wording (describing a
+   configuration flag) is corrected here rather than left implying a live
+   toggle exists — see `docs/security/Security Posture.md`, "Frozen
+   layers."
+4. **Operator security responsibilities** (`docs/security/Security
+   Posture.md`, "What the operator must do") — not something this
+   application defends on the operator's behalf:
+   - **Disk encryption** (BitLocker or equivalent) on the drive holding
+     the persistence root, protecting `tempest.db` and `secrets/` when
+     the drive itself is read outside Windows.
+   - **A real Windows account, not shared or guest, with a screen-lock
+     actually used** — every asset this platform holds is exactly as
+     available as that account.
+   - **Backups kept off the same disk** — this platform has no
+     ransomware or hardware-failure protection of its own.
 
 ---
 

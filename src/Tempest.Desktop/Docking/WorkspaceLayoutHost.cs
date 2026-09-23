@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.VisualTree;
 using Tempest.Workspace.Layout;
 using Tempest.Desktop.Theming;
 
@@ -49,6 +50,24 @@ public sealed class WorkspaceLayoutHost : UserControl
     private readonly ContentControl _layoutHost = new();
     private readonly Border _flyout = new() { IsVisible = false, MinWidth = 240, MinHeight = 160 };
 
+    /// <summary>
+    /// The `TD-92` drag-to-dock live preview: a translucent overlay shown
+    /// over whichever candidate the pointer is currently over, so a drag
+    /// answers "where will this land" before the user releases. Positioned
+    /// by <see cref="Border.Margin"/> against this host's own top-left
+    /// origin — the same absolute-placement-inside-a-<see cref="Panel"/>
+    /// technique <see cref="_flyout"/> would use if it were not
+    /// edge-anchored — and never hit-test visible, so it can never itself
+    /// steal the pointer the drag is tracking.
+    /// </summary>
+    private readonly Border _dropTargetHighlight = new()
+    {
+        IsVisible = false,
+        IsHitTestVisible = false,
+        HorizontalAlignment = HorizontalAlignment.Left,
+        VerticalAlignment = VerticalAlignment.Top,
+    };
+
     private WorkspaceLayoutTree _tree = WorkspaceLayoutTree.Empty;
     private Guid? _flyoutPanelId;
 
@@ -57,6 +76,42 @@ public sealed class WorkspaceLayoutHost : UserControl
 
     /// <summary>Raised when the user starts dragging a panel's own tab.</summary>
     public event Action<Guid, PointerPressedEventArgs>? PanelDragStarted;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+Arrow</c> on a focused
+    /// tab header (`WP 19.2B`, `TD-133`) — move this panel to the
+    /// workspace edge in that direction.
+    /// </summary>
+    /// <remarks>
+    /// Raised rather than applied here, unlike every mouse gesture above:
+    /// a keyboard gesture is the one case where the control that was
+    /// operated is itself destroyed by the re-render it causes, so it must
+    /// go through <see cref="Docking.WorkspaceLayoutController"/>'s own
+    /// <c>Apply</c> — the one place that records which panel held focus
+    /// beforehand and restores it to that panel's own new tab header
+    /// afterwards (`ADR-0153` decision 7, `TD-90`). Applying it here
+    /// instead re-rendered the strip with nothing focused at all, which is
+    /// exactly what `PHYSICAL_REVIEW` §7j K3 asks a reviewer to look for.
+    /// </remarks>
+    public event Action<Guid, DockRelation>? PanelMoveRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+[</c> or
+    /// <c>Ctrl+Shift+]</c> on a focused tab header (`WP 19.2B`, `TD-133`)
+    /// — shrink or grow this panel's own proportional share. Raised, not
+    /// applied, for the same reason as <see cref="PanelMoveRequested"/>.
+    /// </summary>
+    public event Action<Guid, double>? PanelResizeRequested;
+
+    /// <summary>
+    /// Raised when the user presses <c>Ctrl+Shift+,</c> or
+    /// <c>Ctrl+Shift+.</c> on a focused tab header (`ADR-0153` decision 8,
+    /// `TD-133`) — carrying the tab group the header belongs to, the
+    /// panel, and the direction (<c>-1</c> one position earlier,
+    /// <c>+1</c> one position later). Raised, not applied, for the same
+    /// reason as <see cref="PanelMoveRequested"/>.
+    /// </summary>
+    public event Action<Guid, Guid, int>? PanelReorderRequested;
 
     /// <summary>Initialises a new instance of the <see cref="WorkspaceLayoutHost"/> class.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="registry"/> is <see langword="null"/>.</exception>
@@ -72,8 +127,17 @@ public sealed class WorkspaceLayoutHost : UserControl
         _flyout.VerticalAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetName(_flyout, "Auto-hide flyout");
 
+        // `SelectedBackgroundBrushKey` is already the platform's own
+        // "accent at low opacity" token (`BrandPalette`: the accent colour
+        // at 0.12 alpha in both themes) — reused here rather than adding a
+        // new brush purely for this overlay.
+        ThemeReactiveBrush.Bind(_dropTargetHighlight, Border.BackgroundProperty, BrandPalette.SelectedBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_dropTargetHighlight, Border.BorderBrushProperty, BrandPalette.AccentBrushKey);
+        _dropTargetHighlight.BorderThickness = new Thickness(2);
+
         _root.Children.Add(_layoutHost);
         _root.Children.Add(_flyout);
+        _root.Children.Add(_dropTargetHighlight);
         Content = _root;
 
         // `TD-70`'s responsive rule was previously never wired to anything
@@ -82,6 +146,19 @@ public sealed class WorkspaceLayoutHost : UserControl
         // for a user resizing the window, and holds for floating windows
         // too, since they render through this same host.
         SizeChanged += (_, e) => ApplyResponsiveLayout(e.NewSize.Width, e.NewSize.Height);
+
+        // `TD-92`: a drag can end by pointer capture being taken away
+        // (`WorkspaceLayoutController`'s own cancel path) rather than by a
+        // pointer release the controller's `DropTargetChanged` already
+        // covers. Hiding here too, independently, means the overlay can
+        // never outlive the drag it previews regardless of which of the
+        // controller's own paths ended it — a defensive second handler on
+        // the same event, not a replacement for the controller's own.
+        // `PointerCaptureLostEvent` is declared `RoutingStrategies.Direct`
+        // (confirmed by reflection against `Avalonia` 11.3.20: the event
+        // never tunnels or bubbles), so the handler is registered `Direct`
+        // here — the strategy the event actually delivers on.
+        AddHandler(InputElement.PointerCaptureLostEvent, (_, _) => HideDropTargetHighlight(), Avalonia.Interactivity.RoutingStrategies.Direct);
     }
 
     /// <summary>The arrangement currently rendered.</summary>
@@ -92,6 +169,16 @@ public sealed class WorkspaceLayoutHost : UserControl
 
     /// <summary>Every tab group currently rendered — the candidate drop targets.</summary>
     public IReadOnlyList<LayoutTabGroupView> TabGroups { get; private set; } = [];
+
+    /// <summary>
+    /// The tab header for <paramref name="panelId"/>, across every group
+    /// this host currently renders, or <see langword="null"/> when it is
+    /// not shown here — the anchor <see cref="Docking.WorkspaceLayoutController"/>
+    /// restores focus to after a re-render moves a panel (`ADR-0153`
+    /// decision 7, `TD-90`).
+    /// </summary>
+    public Control? FindPanelHeader(Guid panelId) =>
+        TabGroups.Select(g => g.FindHeader(panelId)).FirstOrDefault(h => h is not null);
 
     /// <summary>Renders <paramref name="tree"/>, replacing whatever was shown.</summary>
     public void Update(WorkspaceLayoutTree tree)
@@ -142,6 +229,14 @@ public sealed class WorkspaceLayoutHost : UserControl
         view.PinToggled += (panelId, pinned) => Apply(t => t.SetPinned(panelId, pinned));
         view.FlyoutRequested += ShowFlyout;
         view.TabDragStarted += (panelId, e) => PanelDragStarted?.Invoke(panelId, e);
+
+        // `WP 19.2B` (`TD-133`) and `ADR-0153` decision 8: keyboard
+        // docking moves, resizes and tab reordering, from a focused panel
+        // header. These three alone are forwarded to the controller rather
+        // than applied here — see `PanelMoveRequested` for why.
+        view.MoveRequested += (panelId, edge) => PanelMoveRequested?.Invoke(panelId, edge);
+        view.ResizeRequested += (panelId, delta) => PanelResizeRequested?.Invoke(panelId, delta);
+        view.ReorderRequested += (panelId, direction) => PanelReorderRequested?.Invoke(node.Id, panelId, direction);
 
         return view;
     }
@@ -237,6 +332,61 @@ public sealed class WorkspaceLayoutHost : UserControl
     private bool IsStrip(WorkspaceLayoutNode node) =>
         node is LayoutTabGroupNode group
         && (_tree.PresentationOf(group.SelectedPanelId).IsCollapsed || !_tree.PresentationOf(group.SelectedPanelId).IsPinned);
+
+    // ----------------------------------------------------------------
+    // Drag-to-dock live preview (`TD-92`)
+    // ----------------------------------------------------------------
+
+    /// <summary>Whether the drop-target highlight overlay is currently shown.</summary>
+    public bool IsDropTargetHighlightVisible => _dropTargetHighlight.IsVisible;
+
+    /// <summary>
+    /// Shows a translucent highlight over <paramref name="target"/>'s own
+    /// tab group bounds, or hides it when <paramref name="target"/> is
+    /// <see langword="null"/> — <see cref="WorkspaceLayoutController"/>'s
+    /// own drop-target resolution, rendered. Meant to be driven by
+    /// <see cref="WorkspaceLayoutController.DropTargetChanged"/>: shown as
+    /// the pointer moves over a candidate during a drag, and hidden again
+    /// once the drag ends, dock or float either one, or is cancelled.
+    /// </summary>
+    public void SetDropTargetHighlight(DockTarget? target)
+    {
+        if (target is not { } dock)
+        {
+            HideDropTargetHighlight();
+            return;
+        }
+
+        var group = TabGroups.FirstOrDefault(g => g.NodeId == dock.NodeId);
+        if (group is null || group.GetVisualRoot() is null || group.TranslatePoint(default, this) is not { } origin)
+        {
+            HideDropTargetHighlight();
+            return;
+        }
+
+        _dropTargetHighlight.Width = group.Bounds.Width;
+        _dropTargetHighlight.Height = group.Bounds.Height;
+        _dropTargetHighlight.Margin = new Thickness(origin.X, origin.Y, 0, 0);
+        AutomationProperties.SetName(_dropTargetHighlight, $"Drop target: {DescribeTarget(group, dock.Relation)}");
+        _dropTargetHighlight.IsVisible = true;
+    }
+
+    /// <summary>Hides the drop-target highlight, if shown — a no-op otherwise.</summary>
+    public void HideDropTargetHighlight() => _dropTargetHighlight.IsVisible = false;
+
+    /// <summary>
+    /// Names what dropping now would do: the target panel's own title for
+    /// <see cref="DockRelation.Into"/> (tabbing alongside it), or the edge
+    /// name for a split (`Left`/`Right`/`Above`/`Below`).
+    /// </summary>
+    private string DescribeTarget(LayoutTabGroupView group, DockRelation relation)
+    {
+        if (relation != DockRelation.Into)
+            return relation.ToString();
+
+        var title = _registry.Find(group.SelectedPanelId)?.Title;
+        return string.IsNullOrWhiteSpace(title) ? "panel" : title;
+    }
 
     // ----------------------------------------------------------------
     // Auto-hide flyout

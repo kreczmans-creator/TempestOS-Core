@@ -46,8 +46,12 @@ internal sealed class VerificationCockpitReadModel
     /// <summary>Loads every live Verification Activity, its own most recent recorded result, and the total record count across all of them — the three reads every property below is derived from.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var activities = await _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind, cancellationToken).ConfigureAwait(false);
-        var liveActivities = activities.Where(o => o is not IDeletable { IsDeleted: true }).ToList();
+        // `TD-88`/`WP 21.5B`: liveness is filtered from the index alone;
+        // every survivor is materialised — `LiveVerificationActivities` is
+        // a public, fully-materialised surface.
+        var activityEntries = await _domainContext.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind, cancellationToken).ConfigureAwait(false);
+        var liveEntries = activityEntries.Where(entry => !entry.IsDeleted).ToList();
+        var liveActivities = await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(liveEntries, cancellationToken).ConfigureAwait(false);
         _liveActivities = liveActivities;
 
         var snapshots = new List<(IEngineeringObject Activity, VerificationRecordSnapshot? LatestRecord)>(liveActivities.Count);
@@ -194,7 +198,7 @@ internal sealed class VerificationCockpitReadModel
                 new("Failed", FailedVerificationCount.ToString(), IsPlaceholder: false),
                 new("Conditional", ConditionalVerificationCount.ToString(), IsPlaceholder: false),
                 new("Outstanding", OutstandingActions.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", CockpitFormatting.FormatCoverage(recorded, total), IsPlaceholder: false, CockpitFormatting.PercentOf(recorded, total)),
+                new("Verification Coverage", CockpitFormatting.FormatCoverage(recorded, total, "verification results"), IsPlaceholder: false, CockpitFormatting.PercentOf(recorded, total)),
                 new("Project Verification Health", Status.ToString(), IsPlaceholder: false),
             ];
         }

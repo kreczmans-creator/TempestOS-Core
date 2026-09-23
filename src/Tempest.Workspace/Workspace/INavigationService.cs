@@ -14,6 +14,9 @@ public interface INavigationService
     /// <summary>Gets every registered top-level area. Delegates directly to <see cref="Tempest.Core.Navigation.INavigationProvider.Items"/>.</summary>
     IReadOnlyList<Tempest.Core.Navigation.NavigationItem> Areas { get; }
 
+    /// <summary>The area currently selected, or <see langword="null"/> when nothing has chosen one yet (the shell's own default applies only then).</summary>
+    string? CurrentAreaId { get; }
+
     /// <summary>Switches the Project Explorer's own current top-level area. Delegates to <see cref="Tempest.Core.Navigation.INavigationProvider.Navigate"/>.</summary>
     /// <exception cref="Tempest.Core.Navigation.NavigationItemNotFoundException"><paramref name="areaId"/> is not registered.</exception>
     Task SwitchAreaAsync(string areaId, CancellationToken cancellationToken = default);

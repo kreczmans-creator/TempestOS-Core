@@ -1,5 +1,17 @@
 # TempestOS Engineering Governance
 
+> **Status note, September 2026.** This document describes the process
+> TempestOS followed from `WP 2.1` to `v0.16.0`, and its principles still
+> hold. `WP 17.0B` (2026-09-08, the governance reset) replaced the
+> day-to-day mechanics — retrospectives, readiness reviews, completion
+> certifications and the register suite — with the shorter process in
+> `CONTRIBUTING.md` at the repository root. Where this document and
+> `CONTRIBUTING.md` differ on what a Work Package must produce,
+> `CONTRIBUTING.md` governs. The story of the change is in
+> `09-the-governance-reset-and-how-a-release-is-now-run.md`. Paths under
+> `docs/governance/` cited below that no longer resolve are under
+> `archive/docs-2026-09/governance/`.
+
 ## Status
 
 This document is normative. Where any other document in this repository —

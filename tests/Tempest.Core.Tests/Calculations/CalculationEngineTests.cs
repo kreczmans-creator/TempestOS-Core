@@ -17,7 +17,7 @@ public class CalculationEngineTests
         public const string Id = "test.add-one";
         public string CalculationId => Id;
         public CalculationMetadata Metadata { get; } = new("Add One", null, null, [], []);
-        public double Calculate(double input, CalculationContext context) => input + 1;
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default) => input + 1;
     }
 
     private sealed class ThrowingBelowZeroCalculation : ICalculationDefinition<double, double>
@@ -27,7 +27,7 @@ public class CalculationEngineTests
         public CalculationMetadata Metadata { get; } = new(
             "Throwing Below Zero", null, null, [], [new CalculationConstraint("Input must be non-negative.")]);
 
-        public double Calculate(double input, CalculationContext context)
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default)
         {
             var isSatisfied = input >= 0;
             context.RecordConstraintCheck("Input must be non-negative.", isSatisfied, $"Input was {input}.");
@@ -45,7 +45,7 @@ public class CalculationEngineTests
         public CalculationMetadata Metadata { get; } = new(
             "Intermediate", null, null, [new CalculationAssumption("Test assumption.", "Because tests need one.")], []);
 
-        public double Calculate(double input, CalculationContext context)
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default)
         {
             var squared = input * input;
             context.RecordIntermediate("squared", squared);
@@ -60,7 +60,7 @@ public class CalculationEngineTests
         public CalculationMetadata Metadata { get; } = new(
             "Soft Constraint", null, null, [], [new CalculationConstraint("Should be within typical range.")]);
 
-        public double Calculate(double input, CalculationContext context)
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default)
         {
             context.RecordConstraintCheck("Should be within typical range.", input <= 100, $"Value was {input}.");
             return input;
@@ -73,7 +73,7 @@ public class CalculationEngineTests
         public string CalculationId => Id;
         public CalculationMetadata Metadata { get; } = new("Material Ref", null, null, [], []);
 
-        public double Calculate(double input, CalculationContext context)
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default)
         {
             context.ReferenceMaterial("test-material-001");
             return input;
@@ -121,6 +121,21 @@ public class CalculationEngineTests
         Assert.Throws<ArgumentNullException>(() => engine.RegisterDefinition<double, double>(null!));
     }
 
+    private sealed class BlankCalculationIdCalculation : ICalculationDefinition<double, double>
+    {
+        public string CalculationId => "   ";
+        public CalculationMetadata Metadata { get; } = new("Blank Id", null, null, [], []);
+        public double Calculate(double input, CalculationContext context, CancellationToken cancellationToken = default) => input;
+    }
+
+    [Fact]
+    public void RegisterDefinition_BlankCalculationId_ThrowsArgumentException()
+    {
+        var engine = BuildEngine(out _, out _);
+
+        Assert.Throws<ArgumentException>(() => engine.RegisterDefinition(new BlankCalculationIdCalculation()));
+    }
+
     // ----------------------------------------------------------------
     // ExecuteAsync — round-trip / dispatch
     // ----------------------------------------------------------------
@@ -165,6 +180,52 @@ public class CalculationEngineTests
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => engine.ExecuteAsync<double, double>(null!, 1.0));
         await Assert.ThrowsAsync<ArgumentException>(() => engine.ExecuteAsync<double, double>("   ", 1.0));
+    }
+
+    // ----------------------------------------------------------------
+    // Cancellation (`TD-21`)
+    // ----------------------------------------------------------------
+
+    /// <summary>
+    /// A definition that opts into observing its own <see cref="CancellationToken"/>
+    /// (`TD-21`) — most definitions are closed-form and never see this, but a
+    /// definition whose own work is iterative can check it exactly this way.
+    /// </summary>
+    private sealed class LongRunningLoopCalculation : ICalculationDefinition<int, int>
+    {
+        public const string Id = "test.long-running-loop";
+        public string CalculationId => Id;
+        public CalculationMetadata Metadata { get; } = new("Long Running Loop", null, null, [], []);
+
+        /// <summary>Set once <see cref="Calculate"/> has started looping, so a test can wait for it before cancelling.</summary>
+        public ManualResetEventSlim Started { get; } = new(initialState: false);
+
+        public int Calculate(int input, CalculationContext context, CancellationToken cancellationToken = default)
+        {
+            Started.Set();
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Thread.Sleep(5);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CancelledTokenMidExecution_StopsALongRunningDefinition()
+    {
+        var engine = BuildEngine(out _, out _);
+        var definition = new LongRunningLoopCalculation();
+        engine.RegisterDefinition(definition);
+
+        using var cts = new CancellationTokenSource();
+        var executing = Task.Run(() => engine.ExecuteAsync<int, int>(LongRunningLoopCalculation.Id, 0, cts.Token));
+
+        Assert.True(definition.Started.Wait(TimeSpan.FromSeconds(5)), "The calculation never started.");
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => executing);
     }
 
     // ----------------------------------------------------------------

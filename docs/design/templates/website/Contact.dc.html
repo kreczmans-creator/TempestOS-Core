@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="../../tokens/fonts.css">
+  <link rel="stylesheet" href="../../tokens/colors.css">
+  <link rel="stylesheet" href="../../tokens/typography.css">
+  <link rel="stylesheet" href="../../tokens/spacing.css">
+  <link rel="stylesheet" href="../../tokens/radius.css">
+  <link rel="stylesheet" href="../../tokens/elevation.css">
+  <link rel="stylesheet" href="../../tokens/motion.css">
+  <link rel="stylesheet" href="../../tokens/semantic.css">
+  <link rel="stylesheet" href="../../tokens/base.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <script src="../../_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:var(--navy-800)}
+    a{color:var(--cyan-500)} a:hover{color:var(--cyan-400)}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:var(--navy-800);color:var(--text-body);font-family:var(--font-body);display:flex;flex-direction:column" data-screen-label="Contact">
+  <header style="position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:40px;height:72px;padding:0 32px;background:rgba(11,14,30,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--border-subtle)">
+    <a href="Home.dc.html" style="border-bottom:0;display:flex"><img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:38px;display:block"></img></a>
+    <nav style="display:flex;align-items:center;gap:28px">
+      <a href="Home.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Home</a>
+      <a href="About.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">About</a>
+      <a href="Capabilities.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Capabilities</a>
+      <a href="Work.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);border-bottom:0" style-hover="color:var(--paper-050)">Work</a>
+      <a href="Contact.dc.html" style="font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-050);border-bottom:0">Contact</a>
+    </nav>
+    <div style="flex:1"></div>
+    <a href="mailto:StevenK@Tempest-Engineering.com" style="font-family:var(--font-mono);font-size:12px;color:var(--cyan-500);border-bottom:0">StevenK@Tempest-Engineering.com</a>
+  </header>
+
+  <section style="flex:1;padding:96px 32px;background-color:var(--navy-800);background-image:var(--bg-grid)">
+    <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:start">
+      <div>
+        <h1 style="margin:0;font-family:var(--font-display);font-size:var(--text-4xl);font-weight:600;letter-spacing:var(--tracking-tightest);color:var(--text-heading)">Contact</h1>
+        <div style="margin-top:24px"><a href="mailto:StevenK@Tempest-Engineering.com" style="border-bottom:0;display:inline-flex"><x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Button" size="lg" notch="{{ true }}" hint-size="auto,44px">StevenK@Tempest-Engineering.com</x-import></a></div>
+        <div style="margin-top:16px"><a href="tel:+447761073202" style="font-family:var(--font-mono);font-size:13px;color:var(--cyan-500);border-bottom:0">+44 7761 073202</a></div>
+        <p style="margin:32px 0 0;max-width:54ch;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">The quickest way to start is an email with a short description of what you're building and roughly when you need it. If there's enough to go on I'll come back with an initial view; if not, I'll ask the two or three questions that matter.</p>
+        <p style="margin:16px 0 0;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-body)">I aim to reply within one working day.</p>
+      </div>
+      <x-import component-from-global-scope="TempestEngineeringDesignSystem_1d4355.Card" padding="lg" hint-size="100%,320px">
+        <div class="t-eyebrow">Before you write, it helps to know</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:20px">
+          <div style="display:flex;gap:12px;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)"><span style="font-family:var(--font-mono);color:var(--cyan-500)">→</span><span>What the part or assembly does, and what it sits inside</span></div>
+          <div style="display:flex;gap:12px;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)"><span style="font-family:var(--font-mono);color:var(--cyan-500)">→</span><span>Whether there's existing CAD, drawings, or a physical sample</span></div>
+          <div style="display:flex;gap:12px;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)"><span style="font-family:var(--font-mono);color:var(--cyan-500)">→</span><span>Which CAD format you work in</span></div>
+          <div style="display:flex;gap:12px;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-body)"><span style="font-family:var(--font-mono);color:var(--cyan-500)">→</span><span>Your target date, and whether it's firm</span></div>
+        </div>
+        <p style="margin:20px 0 0;font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-muted)">None of this is essential. An email that just says "can you do this?" is fine too.</p>
+      </x-import>
+    </div>
+  </section>
+
+  <footer class="t-light" style="background:var(--bg-page);color:var(--text-body);padding:40px 32px;border-top:1px solid var(--border-subtle)">
+    <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Tempest Design Engineering Ltd</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Trading as Tempest Engineering</div>
+      <div style="font-size:13px;line-height:1.6;color:var(--text-body)">Registered in England and Wales, company no. {{ companyNumber }}</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-faint)"><a href="Privacy.dc.html" style="color:var(--text-faint)">Privacy Notice</a><span>·</span><span>© 2026</span></div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;companyNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;17349874&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Footer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      companyNumber: this.props.companyNumber ?? '17349874',
+    };
+  }
+}
+</script>
+</body>
+</html>

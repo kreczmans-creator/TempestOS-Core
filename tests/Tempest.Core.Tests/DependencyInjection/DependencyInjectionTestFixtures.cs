@@ -140,3 +140,81 @@ internal sealed class RequiredAndOptionalDependencyConsumer
     {
     }
 }
+
+// `TD-03`: a reflection-constructed singleton the container itself builds -
+// as opposed to an AddInstance registration, which the registering Host
+// already tracks and disposes on its own path (TempestHost's own Service
+// Disposal phase). Takes only a List<string> constructor dependency (never
+// a defaulted parameter of its own - a non-nullable reference type with a
+// default is deliberately NOT resolved from its default by this container,
+// `TD-64`/`WP 17.0A`, so a test fixture built through it must not carry
+// one) so it can be both container-constructed and instantiated directly.
+internal sealed class DisposableService : IDisposable
+{
+    public DisposableService(List<string> disposalOrder)
+    {
+    }
+
+    public int DisposeCallCount { get; private set; }
+
+    public void Dispose() => DisposeCallCount++;
+}
+
+// The async-disposal counterpart - proves DisposeAsync is preferred over
+// Dispose where a type offers both, mirroring TempestHost's own
+// DisposeRegisteredServiceInstancesAsync convention exactly.
+internal sealed class AsyncDisposableService : IAsyncDisposable, IDisposable
+{
+    public AsyncDisposableService(List<string> disposalOrder)
+    {
+    }
+
+    public bool AsyncDisposeCalled { get; private set; }
+
+    public bool SyncDisposeCalled { get; private set; }
+
+    public ValueTask DisposeAsync()
+    {
+        AsyncDisposeCalled = true;
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose() => SyncDisposeCalled = true;
+}
+
+// A singleton whose own disposal throws - proves one failing dispose does
+// not stop the remaining instances from being disposed (`FOUNDATION.md`
+// principle 5, the same guarantee TempestHost's own instance disposal
+// already gives).
+internal sealed class ThrowingDisposableService : IDisposable
+{
+    public void Dispose() => throw new InvalidOperationException("Deliberately fails disposal, for the test.");
+}
+
+// A dependency chain of two reflection-constructed singletons, so a test
+// can prove disposal happens in the reverse of construction order: B
+// depends on A, so A is constructed (and cached) first, and must be
+// disposed last.
+internal sealed class DisposableDependency : IDisposable
+{
+    private readonly List<string> _disposalOrder;
+
+    public DisposableDependency(List<string> disposalOrder)
+    {
+        _disposalOrder = disposalOrder;
+    }
+
+    public void Dispose() => _disposalOrder.Add("dependency");
+}
+
+internal sealed class DisposableDependent : IDisposable
+{
+    private readonly List<string> _disposalOrder;
+
+    public DisposableDependent(DisposableDependency dependency, List<string> disposalOrder)
+    {
+        _disposalOrder = disposalOrder;
+    }
+
+    public void Dispose() => _disposalOrder.Add("dependent");
+}

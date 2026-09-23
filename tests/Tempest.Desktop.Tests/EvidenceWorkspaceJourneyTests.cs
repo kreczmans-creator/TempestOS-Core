@@ -74,11 +74,11 @@ public sealed class EvidenceWorkspaceJourneyTests
             await navigator.OpenProjectAsync(project.Id);
             await window.RenderCurrentModuleAsync();
 
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            await navigator.GoToProjectAreaAsync(ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             evidenceWorkspace.ParameterPrompt = (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(
                 new Dictionary<string, string> { ["classification"] = nameof(EvidenceClassification.Calculation) });
             evidenceWorkspace.SubjectPrompt = _ => Task.FromResult<Guid?>(null);
@@ -97,8 +97,9 @@ public sealed class EvidenceWorkspaceJourneyTests
             Core.Evidence.Evidence? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<Core.Evidence.Evidence>().FirstOrDefault(e => e.ParentId == project.Id);
+                var entry = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
+                    .FirstOrDefault(e => e.ParentId == project.Id);
+                created = entry is null ? null : domain.Repository.FindAsync(entry.Id).GetAwaiter().GetResult() as Core.Evidence.Evidence;
                 return created is not null;
             });
             Assert.NotNull(created);
@@ -176,11 +177,11 @@ public sealed class EvidenceWorkspaceJourneyTests
             Assert.NotNull(project);
             await navigator.OpenProjectAsync(project!.Id);
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            await navigator.GoToProjectAreaAsync(ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             await RenderUntilAsync(window, () =>
                 evidenceWorkspace.GetLogicalDescendants().OfType<ListBoxItem>().Any(i => (i.Content as string)?.Contains(createdTitle) == true));
 
@@ -277,11 +278,11 @@ public sealed class EvidenceWorkspaceJourneyTests
             var project = await host.ProjectDirectory!.CreateAsync("P-EVD-3", "Evidence Drop Project");
             await navigator.OpenProjectAsync(project.Id);
             await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            await navigator.GoToProjectAreaAsync(ProjectArea.Evidence);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
+            var evidenceWorkspace = window.GetLogicalDescendants().OfType<EvidenceWorkspaceView>().First();
             evidenceWorkspace.ParameterPrompt = (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(
                 new Dictionary<string, string> { ["classification"] = nameof(EvidenceClassification.Report) });
             evidenceWorkspace.SubjectPrompt = _ => Task.FromResult<Guid?>(null);
@@ -310,8 +311,9 @@ public sealed class EvidenceWorkspaceJourneyTests
             Core.Evidence.Evidence? created = null;
             await RenderUntilAsync(window, () =>
             {
-                created = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
-                    .OfType<Core.Evidence.Evidence>().FirstOrDefault(e => e.ParentId == project.Id);
+                var entry = domain.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind).GetAwaiter().GetResult()
+                    .FirstOrDefault(e => e.ParentId == project.Id);
+                created = entry is null ? null : domain.Repository.FindAsync(entry.Id).GetAwaiter().GetResult() as Core.Evidence.Evidence;
                 return created is not null;
             });
             Assert.NotNull(created);
@@ -403,14 +405,19 @@ public sealed class EvidenceWorkspaceJourneyTests
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window); // shows the window now, before `Opened`'s own status-bar/explorer refresh could otherwise overwrite state a later assertion reads.
             var navigator = host.ShellNavigator!;
-            await navigator.GoToModuleAsync(ShellArea.Evidence);
+            // `WP 19.7A`: Libraries reaches Reference data under Engineering
+            // now — reachable with no project open, exactly as it always
+            // was, but through the Engineering tree rather than Evidence
+            // (which is now a per-project tab and needs one open first).
+            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
+            var engineeringArea = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
+            engineeringArea.SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
 
-            var evidenceWorkspace = GetPrivateField<EvidenceWorkspaceView>(window, "_evidenceWorkspace");
-            var tabs = (TabControl)evidenceWorkspace.Content!;
-            tabs.SelectedIndex = 1;
-            var librariesView = (LibrariesView)((TabItem)tabs.Items[1]!).Content!;
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
             // The row naming this test's own record specifically — this
@@ -450,8 +457,8 @@ public sealed class EvidenceWorkspaceJourneyTests
             await pickTask;
 
             // A principal without `reference.release` sees the refusal.
-            var accessor = (CurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
-            accessor.SetCurrent(new PlatformPrincipal(
+            var principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
+            principalSession.Establish(new PlatformPrincipal(
                 new PlatformIdentity("restricted-user", "Restricted User"),
                 [Tempest.Core.Verification.VerificationService.ReadPermission]));
 

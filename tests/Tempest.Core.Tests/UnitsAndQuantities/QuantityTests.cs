@@ -39,7 +39,9 @@ public class QuantityTests
     [InlineData(double.NegativeInfinity)]
     public void Constructor_NonFiniteValue_ThrowsArgumentOutOfRangeException(double value)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Quantity<Length>(value, LengthUnits.Metre));
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new Quantity<Length>(value, LengthUnits.Metre));
+
+        Assert.Contains("finite number", exception.Message, StringComparison.Ordinal);
     }
 
     // ----------------------------------------------------------------
@@ -176,6 +178,83 @@ public class QuantityTests
         Assert.Throws<ArgumentOutOfRangeException>(() => quantity / 0.0);
     }
 
+    [Fact]
+    public void ScalarMultiplication_AffineUnit_ThrowsWithAMessageAboutBeingScaled()
+    {
+        var quantity = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => quantity * 2.0);
+        Assert.Contains("scaled", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ScalarDivision_AffineUnit_ThrowsWithAMessageAboutBeingScaled()
+    {
+        var quantity = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => quantity / 2.0);
+        Assert.Contains("scaled", exception.Message, StringComparison.Ordinal);
+    }
+
+    // ADR-0125's affine guard fires independently for each operand: adding
+    // an affine left with a non-affine right must still refuse (the left
+    // check alone must not be skippable just because the right operand
+    // happens to pass), and vice versa.
+
+    [Fact]
+    public void Addition_LeftAffine_RightNonAffine_Throws_WithAMessageAboutBeingAdded()
+    {
+        var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+        var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => celsius + kelvin);
+        Assert.Contains("added", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Addition_LeftNonAffine_RightAffine_Throws_WithAMessageAboutBeingAdded()
+    {
+        var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
+        var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => kelvin + celsius);
+        Assert.Contains("added", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Subtraction_LeftAffine_RightNonAffine_Throws_WithAMessageAboutBeingSubtracted()
+    {
+        var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+        var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => celsius - kelvin);
+        Assert.Contains("subtracted", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Subtraction_LeftNonAffine_RightAffine_Throws_WithAMessageAboutBeingSubtracted()
+    {
+        var kelvin = new Quantity<Temperature>(5.0, TemperatureUnits.Kelvin);
+        var celsius = new Quantity<Temperature>(20.0, TemperatureUnits.DegreeCelsius);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => kelvin - celsius);
+        Assert.Contains("subtracted", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Addition_SameNonUnityUnit_TakesTheFastPath_NoRoundTripRoundingApplied()
+    {
+        // The `left.Unit == right.Unit` branch of ValueInLeftUnit is only
+        // distinguishable from the general FromBase(ToBase(...)) round trip
+        // against a factor/value combination where that round trip is not
+        // bit-exact — verified empirically (7.0 through the 0.3048 Foot
+        // factor loses a ulp; smaller integers do not).
+        var a = new Quantity<Length>(1.0, LengthUnits.Foot);
+        var b = new Quantity<Length>(7.0, LengthUnits.Foot);
+
+        Assert.Equal(8.0, (a + b).Value); // bit-exact
+    }
+
     // ----------------------------------------------------------------
     // Comparison
     // ----------------------------------------------------------------
@@ -191,6 +270,11 @@ public class QuantityTests
         Assert.True(large > small);
         Assert.True(small <= equalToSmall);
         Assert.True(small >= equalToSmall);
+
+        // The equal-value boundary: < and > must both be false here, or a
+        // mutation widening either to <=/>= would go unnoticed.
+        Assert.False(small < equalToSmall);
+        Assert.False(small > equalToSmall);
     }
 
     [Fact]
@@ -261,5 +345,65 @@ public class QuantityTests
         var result = quantity.ToString("F1", new System.Globalization.CultureInfo("de-DE"));
 
         Assert.Equal("1234.5 m", result);
+    }
+
+    // ----------------------------------------------------------------
+    // Parse failure message
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void Parse_UnrecognisedInput_ThrowsFormatException_NamingTheInput()
+    {
+        var exception = Assert.Throws<FormatException>(() => Quantity<Length>.Parse("nonsense", LengthUnits.All));
+
+        Assert.Contains("nonsense", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("not a recognised quantity", exception.Message, StringComparison.Ordinal);
+    }
+
+    // ----------------------------------------------------------------
+    // ToQuantity / FromQuantity — the typed/runtime facade bridge (ADR-0147)
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public void ToQuantity_CarriesTheSameValueAndUnitDefinition()
+    {
+        var typed = new Quantity<Length>(5.0, LengthUnits.Metre);
+
+        var runtime = typed.ToQuantity();
+
+        Assert.Equal(5.0, runtime.Value);
+        Assert.Equal(LengthUnits.Metre.UnitDefinition, runtime.Unit);
+    }
+
+    [Fact]
+    public void FromQuantity_MatchingDimension_ReturnsTheTypedFacade()
+    {
+        var runtime = new Quantity(5.0, LengthUnits.Metre.UnitDefinition);
+
+        var typed = Quantity<Length>.FromQuantity(runtime);
+
+        Assert.Equal(5.0, typed.Value);
+        Assert.Equal(LengthUnits.Metre.Symbol, typed.Unit.Symbol);
+    }
+
+    [Fact]
+    public void FromQuantity_MismatchedDimension_Throws_NamingBothDimensions()
+    {
+        var mass = new Quantity(5.0, MassUnits.Kilogram.UnitDefinition);
+
+        var exception = Assert.Throws<IncompatibleUnitsException>(() => Quantity<Length>.FromQuantity(mass));
+
+        Assert.Contains(nameof(Length), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToQuantity_ThenFromQuantity_RoundTrips()
+    {
+        var original = new Quantity<Length>(12.5, LengthUnits.Foot);
+
+        var roundTripped = Quantity<Length>.FromQuantity(original.ToQuantity());
+
+        Assert.Equal(original.Value, roundTripped.Value);
+        Assert.Equal(original.Unit.Symbol, roundTripped.Unit.Symbol);
     }
 }

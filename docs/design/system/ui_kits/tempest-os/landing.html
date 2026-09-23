@@ -1,0 +1,24 @@
+<!-- @dsCard group="Brand" viewport="1200x740" name="Website landing intro" subtitle="Same charge pulse and blade fades as the OS splash; the mark slides left into the horizontal Tempest Engineering lockup, then docks top-left as the site loads" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Tempest Engineering — landing intro</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>html,body,#root{height:100%}body{margin:0;overflow:hidden;background:#0b0e1e}a{color:var(--cyan-500)}a:hover{color:var(--cyan-400, var(--cyan-500))}</style></head>
+<body><div id="root"></div>
+<script type="text/babel" src="LandingIntro.jsx"></script>
+<script type="text/babel" data-presets="react">
+(() => {
+function Demo() {
+  const [k, setK] = React.useState(0);
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      <LandingIntro key={k} demo />
+      <button type="button" id="replay" onClick={() => setK(k + 1)}
+        style={{ position: 'absolute', right: 20, bottom: 44, border: '1px solid var(--border-subtle)', background: 'var(--navy-800)', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.2em', padding: '5px 10px', borderRadius: 'var(--radius-xs)', cursor: 'pointer', zIndex: 5 }}>REPLAY</button>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+})();
+</script></body></html>

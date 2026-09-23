@@ -38,12 +38,13 @@ namespace Tempest.Core.EngineeringDomain;
 /// </remarks>
 public abstract partial class EngineeringObjectBase :
     IEngineeringObject, IHasBusinessIdentifier, IHasMetadata, IHasLifecycle, IHasRevisions,
-    IHasRelationships, ITraceable, IValidatable, IHasAttachments, ISearchable,
+    IHasRelationships, ITraceable, IValidatable, IHasAttachments, IHasAttachmentAnnotations, ISearchable,
     IRenamable, IHasParent, IDeletable, IHasBomLine
 {
     private readonly EngineeringDomainContext _context;
     private readonly List<ILifecycleTransitionRecord> _history = new();
     private readonly List<IAttachment> _attachments = new();
+    private readonly List<AttachmentAnnotation> _annotations = new();
     private readonly object _lifecycleLock = new();
     private readonly object _structuralLock = new();
 
@@ -314,6 +315,24 @@ public abstract partial class EngineeringObjectBase :
 
     /// <inheritdoc />
     public string? Identifier { get; }
+
+    /// <inheritdoc cref="IEngineeringObject.BusinessIdentifier" />
+    public string BusinessIdentifier => ResolveBusinessIdentifier(DisplayName);
+
+    /// <summary>
+    /// <see cref="BusinessIdentifier"/> if <see cref="DisplayName"/> were
+    /// <paramref name="candidateDisplayName"/> instead — the projection
+    /// <see cref="RenameAsync"/> checks against
+    /// <see cref="EngineeringDomainContext.BusinessIdentifierIndex"/>
+    /// before <see cref="DisplayName"/> itself has actually changed
+    /// (`ADR-0145`'s project-before-commit rule; `TD-38`). The default
+    /// simply is the candidate name, matching <see cref="BusinessIdentifier"/>'s
+    /// own default; a Kind whose business identifier is not its display
+    /// name (<see cref="Document"/>) overrides this instead of
+    /// <see cref="BusinessIdentifier"/>, so a rename is always checked
+    /// against the identifier the rename will actually produce.
+    /// </summary>
+    protected internal virtual string ResolveBusinessIdentifier(string candidateDisplayName) => candidateDisplayName;
 
     /// <inheritdoc />
     public string DisplayName
@@ -628,21 +647,143 @@ public abstract partial class EngineeringObjectBase :
             .ConfigureAwait(false);
     }
 
+    // ================================================================
+    // Attachment annotations (`TD-98`)
+    // ================================================================
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Beside the attachment, never in it: this writes into the owner's own
+    /// state — the same record <see cref="AttachAsync"/> appends to — so an
+    /// annotation rehydrates with its owner and is exported with it, and
+    /// <see cref="Tempest.Core.EngineeringDomain.IAttachmentContentStore"/>
+    /// is never touched by this call.
+    /// </remarks>
+    public async Task<AttachmentAnnotation> AddAttachmentAnnotationAsync(
+        Guid attachmentId,
+        int pageIndex,
+        AnnotationTool tool,
+        IReadOnlyList<AnnotationPoint> points,
+        string colorHex,
+        string? text,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(colorHex);
+        ArgumentNullException.ThrowIfNull(points);
+
+        if (pageIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(pageIndex), pageIndex, "A page index cannot be negative.");
+
+        if (points.Count == 0)
+            throw new ArgumentException("An annotation needs at least one point.", nameof(points));
+
+        var annotationId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+        var createdBy = _context.ResolveCurrentPrincipalId();
+        var annotation = new AttachmentAnnotation(annotationId, attachmentId, pageIndex, tool, points, colorHex, text, createdAt, createdBy);
+        var annotationState = new EngineeringObjectAttachmentAnnotationState(
+            annotationId, attachmentId, pageIndex, tool,
+            [.. points.Select(p => new EngineeringObjectAnnotationPointState(p.X, p.Y))],
+            colorHex, text, createdAt, createdBy);
+
+        // No `alsoApply` needed here: `ApplyBaseState` (this type's own
+        // state half) already rebuilds `_annotations` from the committed
+        // state's own `AnnotationsOrEmpty` on every mutation, the same way
+        // it already does for `_history`/`_status` — unlike `_attachments`,
+        // which needs `applyAttachments` to keep the caller's own
+        // `IAttachment` reference rather than an equal-valued rebuild.
+        // `AttachmentAnnotation` is a value-equal record, so a rebuild is
+        // exactly as good; adding an `alsoApply` here as well would apply
+        // the same add twice.
+        await MutateAndPersistAsync(
+            current => current with { Annotations = [.. current.AnnotationsOrEmpty, annotationState] },
+            EngineeringAuditActions.AnnotationAdded,
+            $"{tool} on page {pageIndex + 1} of attachment '{attachmentId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+
+        return annotation;
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<AttachmentAnnotation>> GetAttachmentAnnotationsAsync(Guid attachmentId, CancellationToken cancellationToken = default)
+    {
+        lock (_annotations)
+        {
+            IReadOnlyList<AttachmentAnnotation> snapshot = _annotations.Where(a => a.AttachmentId == attachmentId).ToList();
+            return Task.FromResult(snapshot);
+        }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>Does nothing, successfully, if the id names no live annotation — already removed is not a failure.</remarks>
+    public async Task DeleteAttachmentAnnotationAsync(Guid annotationId, CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current => current with { Annotations = [.. current.AnnotationsOrEmpty.Where(a => a.Id != annotationId)] },
+            EngineeringAuditActions.AnnotationDeleted,
+            $"Annotation '{annotationId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task ClearAttachmentAnnotationsAsync(Guid attachmentId, int pageIndex, CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current => current with
+            {
+                Annotations = [.. current.AnnotationsOrEmpty.Where(a => a.AttachmentId != attachmentId || a.PageIndex != pageIndex)],
+            },
+            EngineeringAuditActions.AnnotationsCleared,
+            $"Page {pageIndex + 1} of attachment '{attachmentId:N}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public virtual string SearchableText =>
         string.Join(' ', new[] { DisplayName, Identifier, Category, Content }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>Checked against `TD-38`'s index before the rename commits, when
+    /// this Kind is one <see cref="BusinessIdentifierScope.EnforcedKinds"/>
+    /// names.</b> The candidate identifier is projected from
+    /// <paramref name="newDisplayName"/> via
+    /// <see cref="ResolveBusinessIdentifier"/> — not read back from
+    /// <see cref="BusinessIdentifier"/>, which still answers for the
+    /// pre-rename name at this point — checked, and the winning claim
+    /// applied only after the rename itself has committed, mirroring
+    /// <see cref="EngineeringObjectFactory{T}.CreateAsync"/>'s own
+    /// identical project/commit/apply shape.
+    /// </remarks>
     public async Task RenameAsync(string newDisplayName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newDisplayName);
 
+        var enforced = BusinessIdentifierScope.EnforcedKinds.Contains(Kind);
+        var candidateBusinessIdentifier = ResolveBusinessIdentifier(newDisplayName);
+        var projectScopeId = enforced ? BusinessIdentifierScope.ResolveProjectId(ParentId, _context.Repository) : null;
+
         await MutateAndPersistAsync(
-            current => current with { DisplayName = newDisplayName },
+            current =>
+            {
+                if (enforced)
+                {
+                    BusinessIdentifierScope.EnsureAvailable(
+                        _context.BusinessIdentifierIndex, _context.Repository, Kind, projectScopeId, candidateBusinessIdentifier, Id);
+                }
+
+                return current with { DisplayName = newDisplayName };
+            },
             EngineeringAuditActions.Renamed,
             $"Renamed to '{newDisplayName}'.",
             WorkspaceChangeType.Updated,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken,
+            alsoApply: enforced
+                ? _ => _context.BusinessIdentifierIndex.Claim(Kind, projectScopeId, candidateBusinessIdentifier, Id)
+                : null).ConfigureAwait(false);
 
     }
 
@@ -772,10 +913,13 @@ public abstract partial class EngineeringObjectBase :
             current =>
             {
                 // `WP 17.9.3`: an indexed lookup, not a scan of every object
-                // while holding the domain write lock (hazard H5).
+                // while holding the domain write lock (hazard H5). `IsDeleted`
+                // is on the index row itself (`TD-88`/`WP 21.5B`), so this
+                // stays a pure in-memory read — no materialisation, still
+                // synchronous-safe under the write lock.
                 var children = _context.Repository.ListChildrenAsync(Id, CancellationToken.None).GetAwaiter().GetResult();
 
-                var liveChildren = children.Count(o => o is not IDeletable { IsDeleted: true });
+                var liveChildren = children.Count(entry => !entry.IsDeleted);
 
                 if (liveChildren > 0)
                     throw new EngineeringObjectHasChildrenException(Id, liveChildren);
@@ -796,15 +940,64 @@ public abstract partial class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>The parent-liveness check is inside the transaction</b> — the
+    /// identical reasoning <see cref="DeleteAsync"/>'s own remarks give for
+    /// its live-children check: a concurrent delete of this object's own
+    /// parent must not be able to land between the check and the commit and
+    /// leave this object restored under a parent that is itself gone.
+    /// Restoring the structural fact alone: any attachment bytes
+    /// <see cref="DeleteAsync"/> already removed durably are not restored —
+    /// see this member's own interface remarks.
+    /// </remarks>
+    public async Task UndeleteAsync(CancellationToken cancellationToken = default)
+    {
+        await MutateAndPersistAsync(
+            current =>
+            {
+                if (!current.IsDeleted)
+                    throw new EngineeringObjectNotDeletedException(Id);
+
+                if (current.ParentId is { } parentId)
+                {
+                    var parent = _context.Repository.FindAsync(parentId, CancellationToken.None).GetAwaiter().GetResult();
+                    if (parent is IDeletable { IsDeleted: true })
+                        throw new EngineeringObjectParentDeletedException(Id, parentId);
+                }
+
+                return current with { IsDeleted = false };
+            },
+            EngineeringAuditActions.Undeleted,
+            "Restored from deletion.",
+            WorkspaceChangeType.Updated,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
     public decimal Quantity
     {
         get { lock (_structuralLock) { return _quantity; } }
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Read through <see cref="BomUnitsOfMeasure.TryCanonicalise"/>
+    /// (`ADR-0083` addendum, `WP 20.3A`), so a value stored before this
+    /// vocabulary existed — <c>"each"</c>, <c>"Each"</c> — displays as the
+    /// same canonical unit a fresh <see cref="SetBomLineAsync"/> of any of
+    /// them now produces. A raw stored value this vocabulary does not
+    /// recognise is returned unchanged: reading never refuses, only
+    /// <see cref="SetBomLineAsync"/> does.
+    /// </remarks>
     public string? UnitOfMeasure
     {
-        get { lock (_structuralLock) { return _unitOfMeasure; } }
+        get
+        {
+            lock (_structuralLock)
+            {
+                return BomUnitsOfMeasure.TryCanonicalise(_unitOfMeasure, out var canonical) ? canonical : _unitOfMeasure;
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -826,6 +1019,16 @@ public abstract partial class EngineeringObjectBase :
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <paramref name="unitOfMeasure"/> is canonicalised against
+    /// <see cref="BomUnitsOfMeasure"/> before anything is written
+    /// (`ADR-0083` addendum, `WP 20.3A`) — <c>"ea"</c>, <c>"EA"</c> and
+    /// <c>"Each"</c> all commit as the one unit they name. Refused, as an
+    /// <see cref="ArgumentException"/>, for a unit this platform does not
+    /// know — before the write transaction ever opens, exactly like the
+    /// non-positive-<paramref name="quantity"/> guard above it.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="unitOfMeasure"/> is not blank and does not name a known unit.</exception>
     public async Task SetBomLineAsync(
         decimal quantity, string? unitOfMeasure = null, string? findNumber = null,
         string? itemNumber = null, string? referenceDesignator = null, CancellationToken cancellationToken = default)
@@ -833,13 +1036,17 @@ public abstract partial class EngineeringObjectBase :
         if (quantity <= 0)
             throw new ArgumentOutOfRangeException(nameof(quantity), quantity, $"Quantity must be positive ({StructuralValidationRules.QuantityMustBePositive}).");
 
+        var canonicalUnitOfMeasure = string.IsNullOrWhiteSpace(unitOfMeasure)
+            ? null
+            : BomUnitsOfMeasure.Canonicalise(unitOfMeasure);
+
         await MutateAndPersistAsync(
             current => current with
             {
-                BomLine = new EngineeringObjectBomLineState(quantity, unitOfMeasure, findNumber, itemNumber, referenceDesignator),
+                BomLine = new EngineeringObjectBomLineState(quantity, canonicalUnitOfMeasure, findNumber, itemNumber, referenceDesignator),
             },
             EngineeringAuditActions.BomLineSet,
-            $"Quantity {quantity}{(unitOfMeasure is null ? string.Empty : " " + unitOfMeasure)}.",
+            $"Quantity {quantity}{(canonicalUnitOfMeasure is null ? string.Empty : " " + canonicalUnitOfMeasure)}.",
             WorkspaceChangeType.Updated,
             cancellationToken).ConfigureAwait(false);
 

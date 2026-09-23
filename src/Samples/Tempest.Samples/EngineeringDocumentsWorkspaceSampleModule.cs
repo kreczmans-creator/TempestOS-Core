@@ -1,6 +1,7 @@
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Identity;
 using Tempest.Core.Modules;
+using Tempest.Workspace.Documents;
 
 namespace Tempest.Samples;
 
@@ -26,7 +27,7 @@ namespace Tempest.Samples;
 /// the "Representative Data" section names by name, disclosed the same way
 /// `WP 8.1C` disclosed its own scope expansion. Every Document beyond
 /// <c>"Drawing"</c> is a plain <c>"Document"</c> distinguished by
-/// <c>Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry</c>'s
+/// <see cref="DocumentObjectFactoryRegistry"/>'s
 /// own named <see cref="EngineeringObjectMetadata.Classification"/>
 /// constants (`ADR-0088`) — never a new Domain Kind.
 /// </para>
@@ -100,10 +101,14 @@ namespace Tempest.Samples;
 /// <para>
 /// Builds its own <see cref="EngineeringObjectFactory{T}"/> instances
 /// directly, in its own composition root — never through
-/// <c>Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry</c>,
-/// which lives in <c>Tempest.App</c> (never referenced by this project),
+/// <see cref="DocumentObjectFactoryRegistry"/>'s own <c>CreateAsync</c>,
 /// mirroring <see cref="MechanicalProductStructureSampleModule"/>'s own
-/// identical, disclosed precedent.
+/// identical, disclosed precedent. `TD-93`: this project now carries a
+/// direct <c>Tempest.Workspace</c> project reference solely so its own
+/// <c>Classification</c> vocabulary below can reference
+/// <see cref="DocumentObjectFactoryRegistry"/>'s own named constants
+/// rather than re-spelling them — the one remaining use of that registry
+/// this class makes.
 /// </para>
 /// </remarks>
 [ModuleMetadata("tempest.samples.workspacedocuments", "Documents Workspace Sample", "1.0.0")]
@@ -112,24 +117,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
     /// <summary>The identity id this module establishes as current during its own initialisation.</summary>
     public const string SampleIdentityId = "sample.documentsworkspace-user";
 
-    /// <summary>
-    /// This project (<c>Tempest.Samples</c>) is never referenced by
-    /// <c>Tempest.App</c>'s dependants in the reverse direction (<c>Tempest.App</c>
-    /// depends on <c>Tempest.Samples</c>, never the reverse — the same
-    /// boundary <see cref="EngineeringCalculationsWorkspaceSampleModule"/>'s
-    /// own <c>CalculatedByRelationshipKind</c> remarks already disclose), so
-    /// these must match <c>Tempest.App.Workspace.Documents.DocumentObjectFactoryRegistry</c>'s
-    /// own identically-named constants exactly (`ADR-0088`), duplicated here
-    /// rather than referenced.
-    /// </summary>
-    private const string Specification = "Specification";
-    private const string Report = "Report";
-    private const string Procedure = "Procedure";
-    private const string Standard = "Standard";
-    private const string Datasheet = "Datasheet";
-    private const string ExternalReferenceClassification = "External Reference";
-
-    private readonly CurrentPrincipalAccessor _currentPrincipalAccessor;
+    private readonly PrincipalSession _principalSession;
     private readonly EngineeringDomainContext _context;
     private readonly MechanicalProductStructureSampleModule _mechanicalSampleModule;
     private readonly RequirementsWorkspaceSampleModule _requirementsSampleModule;
@@ -137,20 +125,20 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     /// <summary>Initialises a new instance of the <see cref="EngineeringDocumentsWorkspaceSampleModule"/> class.</summary>
     public EngineeringDocumentsWorkspaceSampleModule(
-        CurrentPrincipalAccessor currentPrincipalAccessor,
+        PrincipalSession principalSession,
         EngineeringDomainContext context,
         MechanicalProductStructureSampleModule mechanicalSampleModule,
         RequirementsWorkspaceSampleModule requirementsSampleModule,
         EngineeringCalculationsWorkspaceSampleModule calculationsSampleModule)
         : base("tempest.samples.workspacedocuments", "Documents Workspace Sample", "1.0.0")
     {
-        ArgumentNullException.ThrowIfNull(currentPrincipalAccessor);
+        ArgumentNullException.ThrowIfNull(principalSession);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(mechanicalSampleModule);
         ArgumentNullException.ThrowIfNull(requirementsSampleModule);
         ArgumentNullException.ThrowIfNull(calculationsSampleModule);
 
-        _currentPrincipalAccessor = currentPrincipalAccessor;
+        _principalSession = principalSession;
         _context = context;
         _mechanicalSampleModule = mechanicalSampleModule;
         _requirementsSampleModule = requirementsSampleModule;
@@ -172,7 +160,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
     public override async Task InitialiseAsync(CancellationToken cancellationToken)
     {
-        SamplePrincipalFactory.Establish(_currentPrincipalAccessor, SampleIdentityId);
+        SamplePrincipalFactory.Establish(_principalSession, SampleIdentityId);
 
         var documentIds = new List<Guid>();
 
@@ -212,7 +200,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- Specification: references a real Requirement ----
         var specification = await CreateDocumentAsync(
-            "SPEC-100", "Wing Structural Design Specification", Specification,
+            "SPEC-100", "Wing Structural Design Specification", DocumentObjectFactoryRegistry.Specification,
             "Fictional sample Specification — for demonstration only.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(specification.Id);
         SpecificationId = specification.Id;
@@ -221,7 +209,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- Test Report: carries a real Attachment, references the one Requirement with a real recorded Verification ----
         var testReport = await CreateDocumentAsync(
-            "RPT-TR-001", "Wing Spar Static Test Report", Report,
+            "RPT-TR-001", "Wing Spar Static Test Report", DocumentObjectFactoryRegistry.Report,
             "Fictional sample Test Report — for demonstration only.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(testReport.Id);
         TestReportId = testReport.Id;
@@ -233,7 +221,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- Design Report: references a real Calculation; the only object taken to Released ----
         var designReport = await CreateDocumentAsync(
-            "RPT-DR-001", "Wing Spar Bending Design Report", Report,
+            "RPT-DR-001", "Wing Spar Bending Design Report", DocumentObjectFactoryRegistry.Report,
             "Fictional sample Design Report — for demonstration only.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(designReport.Id);
         DesignReportId = designReport.Id;
@@ -245,7 +233,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- Material Datasheet: references the real Spar Web Plate Part ----
         var datasheet = await CreateDocumentAsync(
-            "DS-001", "Fictional Sample Alloy Material Datasheet", Datasheet,
+            "DS-001", "Fictional Sample Alloy Material Datasheet", DocumentObjectFactoryRegistry.Datasheet,
             "Fictional sample Material Datasheet — for demonstration only.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(datasheet.Id);
         MaterialDatasheetId = datasheet.Id;
@@ -256,18 +244,18 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- Procedure: references the base sample's own already-existing live Risk (queried, never duplicated) ----
         var procedure = await CreateDocumentAsync(
-            "PROC-001", "Wing Structural Inspection Procedure", Procedure,
+            "PROC-001", "Wing Structural Inspection Procedure", DocumentObjectFactoryRegistry.Procedure,
             "Fictional sample Procedure — for demonstration only.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(procedure.Id);
         ProcedureId = procedure.Id;
         await procedure.TransitionAsync(LifecycleState.InReview, cancellationToken).ConfigureAwait(false);
         var existingRisks = await _context.Repository.ListByKindAsync("Risk", cancellationToken).ConfigureAwait(false);
-        if (existingRisks.FirstOrDefault(r => r is not IDeletable { IsDeleted: true }) is { } existingRisk)
+        if (existingRisks.FirstOrDefault(entry => !entry.IsDeleted) is { } existingRisk)
             await procedure.LinkAsync(existingRisk.Id, "references", cancellationToken).ConfigureAwait(false);
 
         // ---- Standard: a fixed, external-body reference document ----
         var standard = await CreateDocumentAsync(
-            "STD-AS9100", "AS9100 Quality Management Standard", Standard,
+            "STD-AS9100", "AS9100 Quality Management Standard", DocumentObjectFactoryRegistry.Standard,
             "Fictional reference to AS9100 — for demonstration only, no real standard body content reproduced.", cancellationToken).ConfigureAwait(false);
         documentIds.Add(standard.Id);
         StandardId = standard.Id;
@@ -277,7 +265,7 @@ public sealed class EngineeringDocumentsWorkspaceSampleModule : ModuleLifecycleB
 
         // ---- External Reference: deliberately left with zero Attachments and zero relationships — the Cockpit's own real "Missing Evidence" example, disclosed above ----
         var externalReference = await CreateDocumentAsync(
-            "EXT-001", "Aircraft Structural Design Handbook (External)", ExternalReferenceClassification,
+            "EXT-001", "Aircraft Structural Design Handbook (External)", DocumentObjectFactoryRegistry.ExternalReference,
             "external://vendor-portal/handbook/ASDH-7th-ed — placeholder URI; no file/URL storage service exists in this platform.",
             cancellationToken).ConfigureAwait(false);
         documentIds.Add(externalReference.Id);

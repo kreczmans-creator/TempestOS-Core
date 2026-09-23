@@ -3,9 +3,16 @@ using Tempest.Workspace.Composition;
 using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Workspace.Documents;
+using Tempest.Workspace.Evidence;
+using Tempest.Workspace.Expenses;
+using Tempest.Workspace.Invoicing;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
+using Tempest.Workspace.PurchaseOrders;
+using Tempest.Workspace.Quotations;
 using Tempest.Workspace.Requirements;
+using Tempest.Workspace.Tasks;
+using Tempest.Workspace.Timesheets;
 using Tempest.Workspace.Verification;
 using Tempest.Core.Commands;
 using Tempest.Core.Configuration;
@@ -46,10 +53,21 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     // ==================================================================
 
     private static readonly IReadOnlyList<string> Disciplines =
-        ["Calculations", "Documents", "Evidence", "Manufacturing", "Mechanical", "Requirements", "Verification"];
+        [
+            "Calculations", "Deliverables", "Documents", "Evidence", "Expenses", "Invoicing", "Manufacturing", "Mechanical",
+            "Projects", "Purchase Orders", "Quotations", "Requirements", "Tasks", "Timesheets", "Verification",
+        ];
 
-    /// <summary>U1 — an object picker this platform does not have (FCR-0073).</summary>
-    private static readonly IReadOnlyList<string> ObjectPickerUnavailable =
+    /// <summary>
+    /// The twelve `S2-2` commands and TD-115's own three, all fifteen of
+    /// which declared <c>U1</c> ("this platform has no object picker") until
+    /// `WP 20.2A` built one (FCR-0073) and gave every one of them a real
+    /// binding instead. Kept as a named set — never re-derived from the
+    /// registry — so a future regression back to <c>Unavailable</c> is a
+    /// deliberate edit here, not a silent drift the arithmetic below would
+    /// paper over.
+    /// </summary>
+    private static readonly IReadOnlyList<string> ObjectPickerBound =
     [
         "calculations.move", "documents.move", "manufacturing.move", "mechanical.move",
         "verification.move", "requirements.move", "requirements.move-group",
@@ -63,18 +81,26 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         ["calculations.execute", "calculations.recalculate", "documents.attach"];
 
     /// <summary>
-    /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>
-    /// — every command that can run unattended in a macro, and no other
-    /// (ADR-0098).
+    /// The thirteen status transitions plus <c>mechanical.validate-configuration</c>,
+    /// <c>task.complete</c> (`WP 19.5C`), <c>calculations.complete</c>
+    /// (`WP 20.1B`, `TD-181` — no parameters, no confirmation, a low-stakes
+    /// status move exactly like the others here) and <c>calculations.rerun</c>/
+    /// <c>calculations.compare-with-previous</c> (`WP 21.3A`, `TD-29` — Re-run
+    /// needs no value collected, since it replays the selected object's own
+    /// most recent record's retained input rather than asking for one, and
+    /// Compare needs none either) — every command that can run unattended in
+    /// a macro, and no other (ADR-0098).
     /// </summary>
     private static readonly IReadOnlyList<string> MacroSafe =
     [
         "calculations.lock", "calculations.unlock", "calculations.request-review",
-        "calculations.approve", "calculations.archive",
+        "calculations.approve", "calculations.archive", "calculations.complete",
+        "calculations.rerun", "calculations.compare-with-previous",
         "documents.request-review", "documents.approve", "documents.release",
         "manufacturing.release", "manufacturing.archive",
         "verification.request-review", "verification.approve", "verification.archive",
         "mechanical.validate-configuration",
+        "task.complete",
     ];
 
     private static readonly IReadOnlyList<string> CalculationKinds = ["Calculation", "CalculationSet"];
@@ -184,7 +210,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     [Fact]
     public void EveryBindableAuditedDescriptor_HasAnInvocableBinding()
     {
-        var unavailable = ObjectPickerUnavailable.Concat(StructuredInputUnavailable).ToHashSet(StringComparer.Ordinal);
+        var unavailable = StructuredInputUnavailable.ToHashSet(StringComparer.Ordinal);
         var bindable = ProductionDescriptors.Where(d => !unavailable.Contains(d.Id)).ToList();
 
         // The canonical reconciliation, and the one place in the suite where
@@ -198,9 +224,58 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // `WP 18.2B` adds a ninth, invocable Evidence descriptor
         // ("evidence.set-subject"), so 82 becomes 83 and 64 becomes 65; 18
         // is unchanged.
-        Assert.Equal(83, ProductionDescriptors.Count);
-        Assert.Equal(18, unavailable.Count);
-        Assert.Equal(65, bindable.Count);
+        // `WP 19.0A` adds ten production descriptors across three new
+        // discipline categories (Projects, Timesheets, Deliverables), none
+        // of them unavailable, so 83 becomes 93 and 65 becomes 75; 18 is
+        // unchanged.
+        // `WP 19.1A` adds four production descriptors in a fourth new
+        // discipline category (Invoicing), none of them unavailable, so 93
+        // becomes 97 and 75 becomes 79; 18 is unchanged.
+        // `WP 19.5A` adds five production descriptors in a fifth new
+        // discipline category (Quotations: create, add-line, send, accept,
+        // decline), none of them unavailable, so 97 becomes 102 and 79
+        // becomes 84; 18 is unchanged.
+        // `WP 19.5C` adds two production descriptors in a sixth new
+        // discipline category (Tasks: create, complete), none of them
+        // unavailable, so 102 becomes 104 and 84 becomes 86; 18 is
+        // unchanged.
+        //
+        // `WP 19.5B` adds three more, none of them unavailable: two more
+        // Quotations commands the Quote tab's own editable lines table
+        // needs (update-line, remove-line — `WP 19.5A` built
+        // `IQuotationService.UpdateLineAsync`/`RemoveLineAsync` but no
+        // Workspace command wrapped either yet) and one more Deliverables
+        // command (add — a deliverable added directly, with no quotation,
+        // `ADR-0152` §7). So 104 becomes 107 and 86 becomes 89; 18 is
+        // unchanged.
+        //
+        // `WP 20.1B` (`TD-181`) adds one more, not unavailable
+        // (calculations.complete). So 107 becomes 108 and 89 becomes 90;
+        // 18 is unchanged. `WP 20.2A` (FCR-0073, S2-2/TD-115) then builds
+        // the object picker and gives all fifteen U1 descriptors
+        // (`ObjectPickerBound`, above) a real binding — the twelve S2-2
+        // Move/Copy commands, plus TD-115's own three (`requirements.link`/
+        // `add-to-collection`, `mechanical.compare-baselines`), which turn
+        // out to need nothing beyond the identical picker parameter kind.
+        // 108 is unchanged (no descriptor is added or removed, only
+        // rebound); 18 becomes 3 (`StructuredInputUnavailable` alone); 90
+        // becomes 105.
+        //
+        // `WP 20.10B` (T2) adds one more, not unavailable
+        // (calculations.set-due-date); `WP 21.3A` (`TD-29`) adds two more,
+        // neither unavailable (calculations.rerun, calculations.compare-with-previous).
+        // So 108 becomes 111 and 105 becomes 108; 3 is unchanged.
+        // `WP 21.3B` adds twelve production descriptors across two new
+        // discipline categories: Expenses (record, amend, delete) and
+        // Purchase Orders (create, add-line, update-line, remove-line,
+        // issue, receive, close, cancel, record-as-expenses) — none of
+        // them unavailable (every parameter is a plain text/choice value
+        // this platform's prompt already collects). So 108 becomes 120 and
+        // 105 becomes 117; 3 is unchanged.
+                // Over that: 111 becomes 123 and 108 becomes 120; 3 is unchanged.
+        Assert.Equal(123, ProductionDescriptors.Count);
+        Assert.Equal(3, unavailable.Count);
+        Assert.Equal(120, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();
@@ -211,26 +286,162 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     // 3. Every U1/U2 descriptor has its own specific unavailable reason
     // ==================================================================
 
+    /// <summary>
+    /// `WP 20.2A` (FCR-0073) — every one of the fifteen `ObjectPickerBound`
+    /// descriptors is now invocable, and declares exactly one parameter
+    /// scoped to the object picker (<see cref="CommandParameter.ObjectPickerKinds"/>
+    /// non-null). Replaces `EveryObjectPickerDescriptor_DeclaresThatAnObjectMustBeChosen`
+    /// (`WP-F`), which asserted the opposite — that these fifteen declared
+    /// themselves unavailable — now that the platform has the picker that
+    /// assertion existed to wait for.
+    /// </summary>
     [Fact]
-    public void EveryObjectPickerDescriptor_DeclaresThatAnObjectMustBeChosen()
+    public void EveryObjectPickerBoundDescriptor_IsInvocable_WithExactlyOnePickerParameter()
     {
-        Assert.Equal(15, ObjectPickerUnavailable.Count);
+        Assert.Equal(15, ObjectPickerBound.Count);
 
-        foreach (var id in ObjectPickerUnavailable)
+        foreach (var id in ObjectPickerBound)
         {
             var binding = Binding(id);
 
-            Assert.False(binding.IsInvocable);
-            var reason = Assert.IsType<string>(binding.UnavailableReason);
+            Assert.True(binding.IsInvocable);
+            Assert.Null(binding.UnavailableReason);
 
-            // Names the missing capability, not merely the absence of one.
-            Assert.Contains("chosen from the object tree", reason, StringComparison.Ordinal);
-            Assert.Contains("object picker", reason, StringComparison.Ordinal);
-            Assert.Contains("FCR-0073", reason, StringComparison.Ordinal);
-
-            // And says what specifically must be chosen, not just "an object".
-            Assert.Matches(new Regex("needs (a|the) [^,]+"), reason);
+            var pickerParameters = binding.Parameters.Where(p => p.ObjectPickerKinds is not null).ToList();
+            Assert.Single(pickerParameters);
         }
+    }
+
+    /// <summary>
+    /// The five Move/MoveGroup commands whose own destination is optional
+    /// (blank means top level, or ungrouped) accept an empty string; the
+    /// three needing a real second object (`requirements.link`'s own target,
+    /// `requirements.add-to-collection`'s own Collection,
+    /// `mechanical.compare-baselines`'s own second Baseline/Release) refuse
+    /// one, by name.
+    /// </summary>
+    [Theory]
+    [InlineData("calculations.move")]
+    [InlineData("calculations.copy")]
+    [InlineData("documents.move")]
+    [InlineData("documents.copy")]
+    [InlineData("manufacturing.move")]
+    [InlineData("manufacturing.copy")]
+    [InlineData("mechanical.move")]
+    [InlineData("mechanical.copy")]
+    [InlineData("verification.move")]
+    [InlineData("verification.copy")]
+    [InlineData("requirements.move")]
+    [InlineData("requirements.move-group")]
+    public void MoveAndCopyDestinations_AcceptBlank_AsTopLevelOrUngrouped(string id)
+    {
+        var destination = Binding(id).Parameters.Single(p => p.ObjectPickerKinds is not null);
+
+        Assert.Null(destination.Check(""));
+        Assert.Null(destination.Check(Guid.NewGuid().ToString()));
+        Assert.NotNull(destination.Check("not a guid"));
+    }
+
+    [Theory]
+    [InlineData("requirements.link", "targetDocumentId")]
+    [InlineData("requirements.add-to-collection", "collectionId")]
+    [InlineData("mechanical.compare-baselines", "secondId")]
+    public void TheThreeRequiredObjectReferences_RefuseBlank(string id, string parameterName)
+    {
+        var reference = Parameter(Binding(id), parameterName);
+
+        Assert.NotNull(reference.ObjectPickerKinds);
+        Assert.NotNull(reference.Check(""));
+        Assert.Null(reference.Check(Guid.NewGuid().ToString()));
+        Assert.NotNull(reference.Check("not a guid"));
+    }
+
+    /// <summary>
+    /// The Move/Copy destination is scoped to every Kind (an empty
+    /// <see cref="CommandParameter.ObjectPickerKinds"/> list) for the five
+    /// disciplines whose own drag-and-drop reparenting already accepts any
+    /// target (`WorkspaceViewCoordinator.ObjectMoveRequested`); the three
+    /// structural ones name their own container Kind exactly, matching
+    /// each command's own description.
+    /// </summary>
+    [Theory]
+    [InlineData("calculations.move")]
+    [InlineData("calculations.copy")]
+    [InlineData("documents.move")]
+    [InlineData("documents.copy")]
+    [InlineData("manufacturing.move")]
+    [InlineData("manufacturing.copy")]
+    [InlineData("mechanical.move")]
+    [InlineData("mechanical.copy")]
+    [InlineData("verification.move")]
+    [InlineData("verification.copy")]
+    public void FreeMoveAndCopyDestinations_OfferEveryKind(string id) =>
+        Assert.Empty(Binding(id).Parameters.Single(p => p.ObjectPickerKinds is not null).ObjectPickerKinds!);
+
+    [Fact]
+    public void StructuralDestinations_ScopeThePickerToTheirOwnContainerKind()
+    {
+        Assert.Equal(
+            ["RequirementGroup"],
+            Binding("requirements.move").Parameters.Single(p => p.ObjectPickerKinds is not null).ObjectPickerKinds);
+        Assert.Equal(
+            ["RequirementGroup"],
+            Binding("requirements.move-group").Parameters.Single(p => p.ObjectPickerKinds is not null).ObjectPickerKinds);
+        Assert.Equal(
+            ["RequirementCollection"],
+            Parameter(Binding("requirements.add-to-collection"), "collectionId").ObjectPickerKinds);
+        Assert.Equal(
+            ["Baseline", "Release"],
+            Parameter(Binding("mechanical.compare-baselines"), "secondId").ObjectPickerKinds);
+    }
+
+    [Fact]
+    public void MoveBuilds_PassBlankAsNull_AndAGuidAsTheParsedDestination()
+    {
+        var targetId = Guid.NewGuid();
+        var context = CommandContext.For(targetId, "Calculation");
+
+        var toTopLevel = (MoveCalculationObjectCommand)Binding("calculations.move")
+            .Build(context, new Dictionary<string, string>(StringComparer.Ordinal) { ["destinationId"] = "" });
+        Assert.Null(toTopLevel.NewParentId);
+
+        var destinationId = Guid.NewGuid();
+        var toDestination = (MoveCalculationObjectCommand)Binding("calculations.move")
+            .Build(context, new Dictionary<string, string>(StringComparer.Ordinal) { ["destinationId"] = destinationId.ToString() });
+        Assert.Equal(destinationId, toDestination.NewParentId);
+    }
+
+    [Fact]
+    public void LinkBuild_PassesTheChosenTargetAndRelationshipKind()
+    {
+        var sourceId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
+
+        var command = (LinkRequirementCommand)Binding("requirements.link").Build(
+            CommandContext.For(sourceId, "Requirement"),
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["targetDocumentId"] = targetId.ToString(),
+                ["relationshipKind"] = RequirementRelationshipKinds.DependsOn,
+            });
+
+        Assert.Equal(sourceId, command.TargetObjectId);
+        Assert.Equal(targetId, command.TargetDocumentId);
+        Assert.Equal(RequirementRelationshipKinds.DependsOn, command.RelationshipKind);
+    }
+
+    [Fact]
+    public void CompareBaselinesBuild_PassesTheSelectionFirst_AndThePickedObjectSecond()
+    {
+        var firstId = Guid.NewGuid();
+        var secondId = Guid.NewGuid();
+
+        var command = (CompareBaselinesCommand)Binding("mechanical.compare-baselines").Build(
+            CommandContext.For(firstId, "Baseline"),
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["secondId"] = secondId.ToString() });
+
+        Assert.Equal(firstId, command.FirstId);
+        Assert.Equal(secondId, command.SecondId);
     }
 
     [Fact]
@@ -266,7 +477,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // command to replace with a reason of its own.
         const string Generic = "isn't available yet";
 
-        foreach (var id in ObjectPickerUnavailable.Concat(StructuredInputUnavailable))
+        foreach (var id in StructuredInputUnavailable)
         {
             var availability = _registry.Evaluate(id, One("Requirement"));
             var invocation = await _registry.InvokeAsync(id, One("Requirement"));
@@ -302,9 +513,9 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
     /// <summary>
     /// The structural guard: a future production descriptor cannot be added
-    /// to one of the seven discipline registrations without either a binding
-    /// or a stated reason, because this reads the registration sources
-    /// themselves and counts what they declare.
+    /// to one of the thirteen discipline registrations without either a
+    /// binding or a stated reason, because this reads the registration
+    /// sources themselves and counts what they declare.
     /// </summary>
     [Fact]
     public void EveryDescriptorRegistrationInSource_DeclaresABinding()
@@ -316,7 +527,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         {
             foreach (var registration in DescriptorRegistrations(source))
             {
-                var id = Regex.Match(registration, @"id: ""(?<id>[^""]+)""").Groups["id"].Value;
+                var id = ExtractDescriptorId(registration);
                 declaredIds.Add(id);
 
                 if (!registration.Contains("Binding =", StringComparison.Ordinal))
@@ -337,7 +548,7 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
         Assert.True(
             declaredOnly.Count == 0 && registeredOnly.Count == 0,
-            $"The seven registration sources and the live registry disagree.\n"
+            $"The thirteen registration sources and the live registry disagree.\n"
             + $"  Declared in source but not registered: {string.Join(", ", declaredOnly)}\n"
             + $"  Registered but not declared in source: {string.Join(", ", registeredOnly)}");
 
@@ -350,11 +561,19 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         foreach (var (folder, file) in new[]
                  {
                      ("Calculations", "CalculationsWorkspaceRegistration.cs"),
+                     ("Deliverables", "DeliverableCompletionWorkspaceRegistration.cs"),
                      ("Documents", "DocumentsWorkspaceRegistration.cs"),
                      ("Evidence", "EvidenceWorkspaceRegistration.cs"),
+                     ("Expenses", "ExpenseWorkspaceRegistration.cs"),
+                     ("Invoicing", "InvoicingWorkspaceRegistration.cs"),
                      ("Manufacturing", "ManufacturingWorkspaceRegistration.cs"),
                      ("Mechanical", "MechanicalWorkspaceRegistration.cs"),
+                     ("Projects", "ProjectCommercialWorkspaceRegistration.cs"),
+                     ("PurchaseOrders", "PurchaseOrderWorkspaceRegistration.cs"),
+                     ("Quotations", "QuotationWorkspaceRegistration.cs"),
                      ("Requirements", "RequirementsWorkspaceRegistration.cs"),
+                     ("Tasks", "TaskWorkspaceRegistration.cs"),
+                     ("Timesheets", "TimesheetsWorkspaceRegistration.cs"),
                      ("Verification", "VerificationWorkspaceRegistration.cs"),
                  })
         {
@@ -398,6 +617,56 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
 
             yield return string.Join("\n", statement);
         }
+    }
+
+    /// <summary>
+    /// `WP 19.2A`: each discipline registration's own <c>CommandIds</c>
+    /// class, keyed by its own name — how <see cref="ExtractDescriptorId"/>
+    /// resolves a <c>&lt;Discipline&gt;CommandIds.&lt;Name&gt;</c> constant
+    /// reference back to its literal value by reflection, without this
+    /// scan taking a build-time dependency on the constant it reads.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, Type> CommandIdsTypes = new Dictionary<string, Type>(StringComparer.Ordinal)
+    {
+        [nameof(CalculationsCommandIds)] = typeof(CalculationsCommandIds),
+        [nameof(DocumentsCommandIds)] = typeof(DocumentsCommandIds),
+        [nameof(EvidenceCommandIds)] = typeof(EvidenceCommandIds),
+        [nameof(ExpenseCommandIds)] = typeof(ExpenseCommandIds),
+        [nameof(InvoicingCommandIds)] = typeof(InvoicingCommandIds),
+        [nameof(ManufacturingCommandIds)] = typeof(ManufacturingCommandIds),
+        [nameof(MechanicalCommandIds)] = typeof(MechanicalCommandIds),
+        [nameof(PurchaseOrderCommandIds)] = typeof(PurchaseOrderCommandIds),
+        [nameof(QuotationCommandIds)] = typeof(QuotationCommandIds),
+        [nameof(RequirementsCommandIds)] = typeof(RequirementsCommandIds),
+        [nameof(TaskCommandIds)] = typeof(TaskCommandIds),
+        [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
+        [nameof(VerificationCommandIds)] = typeof(VerificationCommandIds),
+        [nameof(TimesheetCommandIds)] = typeof(TimesheetCommandIds),
+    };
+
+    /// <summary>
+    /// The command id a <c>RegisterDescriptor</c> statement declares — a
+    /// quoted literal, or (`WP 19.2A`, `TD-105`–`TD-107`/`TD-112`/`TD-113`)
+    /// a <c>&lt;Discipline&gt;CommandIds.&lt;Name&gt;</c> constant
+    /// reference, resolved back to its own literal value here so this
+    /// remains a source-text check on what each registration declares,
+    /// not a build-time assertion of a constant against itself.
+    /// </summary>
+    private static string ExtractDescriptorId(string registration)
+    {
+        var literal = Regex.Match(registration, @"id: ""(?<id>[^""]+)""");
+        if (literal.Success)
+            return literal.Groups["id"].Value;
+
+        var constant = Regex.Match(registration, @"id: (?<type>\w+CommandIds)\.(?<field>\w+)");
+        if (constant.Success
+            && CommandIdsTypes.TryGetValue(constant.Groups["type"].Value, out var type)
+            && type.GetField(constant.Groups["field"].Value)?.GetRawConstantValue() is string value)
+        {
+            return value;
+        }
+
+        return string.Empty;
     }
 
     // ==================================================================
@@ -575,6 +844,8 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
     [InlineData("calculations.request-review")]
     [InlineData("calculations.approve")]
     [InlineData("calculations.archive")]
+    [InlineData("calculations.rerun")]
+    [InlineData("calculations.compare-with-previous")]
     public void CalculationBindings_ApplyToTheTwoRealCalculationKinds(string id) =>
         Assert.Equal(CalculationKinds, Binding(id).AppliesToKinds);
 
@@ -614,6 +885,15 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // IHasBomLine, and member consistency to the two that are Baselines.
         Assert.Equal(BomLineKinds, Binding("mechanical.set-bom-line").AppliesToKinds);
         Assert.Equal(BaselineKinds, Binding("mechanical.validate-configuration").AppliesToKinds);
+    }
+
+    [Fact]
+    public void CalculationCompleteBinding_AppliesOnlyToTheRealCalculationKind_NeverTheSet()
+    {
+        // `WP 20.1B` (`TD-181`): a Calculation Set is a container, never
+        // itself a task — narrower than the two-Kind `CalculationKinds`
+        // every other Calculation command above applies to.
+        Assert.Equal(["Calculation"], Binding("calculations.complete").AppliesToKinds);
     }
 
     [Theory]

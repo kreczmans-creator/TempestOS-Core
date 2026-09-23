@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Technical design review deck" description="Design review gate: purpose, requirements compliance, design presentation, analysis, open items, decision" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" data-screen-label="01" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;justify-content:space-between;font-family:var(--font-body)">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="Tempest Engineering" style="height:64px;width:auto;align-self:flex-start">
+<div>
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.22em;color:var(--cyan-500);margin-bottom:36px">[PRELIMINARY / CRITICAL] DESIGN REVIEW &middot; [TDE-0000]</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:100px;letter-spacing:-.02em;line-height:1.05;color:var(--paper-050);max-width:1500px">[System or package under review]</div>
+<div style="font-size:38px;color:var(--slate-400);margin-top:36px">[Design stage] &middot; review gate [n]</div>
+</div>
+<div style="display:flex;justify-content:space-between;border-top:1px solid var(--paper-a14);padding-top:32px;font-family:var(--font-mono);font-size:22px;letter-spacing:.06em;color:var(--slate-400)">
+<span>[Lead engineer &middot; reviewer panel]</span><span>[DD Month YYYY]</span>
+</div>
+</section>
+<section data-label="Purpose & criteria" data-screen-label="02" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">PURPOSE</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">What this review must decide</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1">
+<div>
+<div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-600);margin-bottom:24px">DECISION SOUGHT</div>
+<p style="margin:0;font-size:30px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[Approve to proceed to [next stage] / approve with actions / rework. Name the gate criteria this design is judged against.]</p>
+</div>
+<div>
+<div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.14em;color:var(--cyan-600);margin-bottom:24px">EVIDENCE PACK</div>
+<p style="margin:0;font-size:30px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[Documents issued ahead of this review: drawings, calculations, specification, with references and revisions.]</p>
+</div>
+</div>
+</section>
+<section data-label="Compliance" data-screen-label="03" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">REQUIREMENTS</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">Compliance against specification</div>
+<table style="width:100%;border-collapse:collapse;font-size:28px">
+<thead><tr style="background:var(--paper-100)">
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14);width:14%">CLAUSE</th>
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14)">REQUIREMENT</th>
+<th style="text-align:left;padding:20px 28px;font-family:var(--font-mono);font-size:22px;letter-spacing:.1em;color:var(--slate-600);font-weight:400;border-bottom:2px solid var(--ink-a14);width:22%">STATUS</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[2.1]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Requirement]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:22px;color:#fff;background:var(--green-500);padding:6px 16px">COMPLIANT</span></td></tr>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[2.2]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Requirement]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:22px;color:var(--ink-900);background:var(--amber-500);padding:6px 16px">PARTIAL — SEE 5.2</span></td></tr>
+<tr><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);font-family:var(--font-mono);color:var(--cyan-600)">[2.3]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08);color:var(--ink-900)">[Requirement]</td><td style="padding:22px 28px;border-bottom:1px solid var(--ink-a08)"><span style="font-family:var(--font-mono);font-size:22px;color:#fff;background:var(--green-500);padding:6px 16px">COMPLIANT</span></td></tr>
+</tbody>
+</table>
+</section>
+<section data-label="Design" data-screen-label="04" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">THE DESIGN</span>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:96px;flex:1;min-height:0">
+<div style="border:2px dashed var(--paper-300);background:var(--paper-100);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:26px;color:var(--slate-600)">[General arrangement / model view]</div>
+<div style="display:flex;flex-direction:column;justify-content:center">
+<div style="font-family:var(--font-display);font-weight:700;font-size:52px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:32px">[Design overview]</div>
+<p style="margin:0;font-size:28px;line-height:1.6;color:var(--slate-700);text-wrap:pretty">[The chosen concept in three sentences, and the main alternatives rejected with the reason.]</p>
+</div>
+</div>
+</section>
+<section data-label="Analysis" data-screen-label="05" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--cyan-500);padding-bottom:28px;margin-bottom:96px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-light.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-400)">ANALYSIS</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--paper-050);margin-bottom:96px">Margins against acceptance criteria</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:96px">
+<div style="border-left:6px solid var(--cyan-500);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[0.00]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[Utilisation — governing case]</div></div>
+<div style="border-left:6px solid var(--indigo-600);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[0.0]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[Factor of safety / margin]</div></div>
+<div style="border-left:6px solid var(--violet-500);padding-left:40px"><div style="font-family:var(--font-display);font-weight:700;font-size:100px;color:var(--paper-050);line-height:1">[00]</div><div style="font-size:28px;color:var(--slate-400);margin-top:20px">[Load cases analysed]</div></div>
+</div>
+</section>
+<section data-label="Open items" data-screen-label="06" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--paper-050);padding:100px 120px;display:flex;flex-direction:column;font-family:var(--font-body)">
+<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--indigo-600);padding-bottom:28px;margin-bottom:64px">
+<img src="../../assets/logo/derived/logo-horizontal-transparent-ink.svg" alt="" style="height:48px;width:auto">
+<span style="font-family:var(--font-mono);font-size:22px;letter-spacing:.18em;color:var(--slate-700)">OPEN ITEMS</span>
+</div>
+<div style="font-family:var(--font-display);font-weight:700;font-size:64px;letter-spacing:-.02em;color:var(--ink-900);margin-bottom:56px">What is not yet closed</div>
+<div style="display:flex;flex-direction:column;gap:36px;max-width:1600px">
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:30px;color:var(--cyan-600)">[OI-1]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[Open item — what's outstanding, who closes it, by when, and whether it blocks the gate]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:30px;color:var(--cyan-600)">[OI-2]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[Open item]</div></div>
+<div style="display:flex;gap:36px;align-items:baseline"><span style="font-family:var(--font-mono);font-size:30px;color:var(--cyan-600)">[OI-3]</span><div style="font-size:30px;line-height:1.5;color:var(--slate-700)">[Open item]</div></div>
+</div>
+</section>
+<section data-label="Decision" data-screen-label="07" style="width:1920px;height:1080px;box-sizing:border-box;background:var(--navy-800);padding:100px 200px;display:flex;flex-direction:column;justify-content:center;font-family:var(--font-body);position:relative">
+<img src="../../assets/logo/derived/mark-navy.svg" alt="" style="position:absolute;top:100px;left:120px;width:72px;height:72px">
+<div style="border-left:8px solid var(--cyan-500);padding-left:72px">
+<div style="font-family:var(--font-mono);font-size:26px;letter-spacing:.2em;color:var(--cyan-500);margin-bottom:40px">DECISION REQUESTED</div>
+<div style="font-family:var(--font-display);font-weight:600;font-size:72px;letter-spacing:-.01em;line-height:1.25;color:var(--paper-050);text-wrap:pretty">[Approve the design to proceed to [next stage], subject to closure of OI-1 by [date].]</div>
+<div style="font-family:var(--font-mono);font-size:24px;letter-spacing:.08em;color:var(--slate-400);margin-top:48px">RECORDED IN MINUTES [TDE-0000-MIN-000]</div>
+</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

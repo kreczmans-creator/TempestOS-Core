@@ -60,9 +60,16 @@ public sealed class ProductConvergenceAcceptanceTests
 
             Assert.Equal(ShellArea.Home, navigator.Current.Area);
 
-            // → Projects
+            // → Projects (`WP 19.7A`: a tree now — Open shows the catalogue)
             await navigator.GoToProjectsAsync();
             await window.RenderCurrentModuleAsync();
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Open");
+            var browserDeadline = DateTime.UtcNow.AddSeconds(5);
+            while (!window.GetLogicalDescendants().OfType<ProjectBrowserView>().Any() && DateTime.UtcNow < browserDeadline)
+            {
+                await Task.Delay(10);
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            }
             Assert.NotNull(window.GetLogicalDescendants().OfType<ProjectBrowserView>().SingleOrDefault());
 
             // → Create project
@@ -237,11 +244,11 @@ public sealed class ProductConvergenceAcceptanceTests
 
             var domain = DomainOf(first);
             var calculation = (await domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QC-1");
+                .Single(entry => entry.Identifier == "QC-1");
             calculationId = calculation.Id;
 
             // It belongs to no project — that is the whole point.
-            Assert.Null(((IHasParent)calculation).ParentId);
+            Assert.Null(calculation.ParentId);
             Assert.True(await first.EngineeringScope.ContainsAsync(calculationId));
 
             // → Run the calculation, for real.
@@ -263,7 +270,7 @@ public sealed class ProductConvergenceAcceptanceTests
             Assert.True(setResult.Succeeded, setResult.Message);
 
             calculationSetId = (await domain.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationSetKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QS-1").Id;
+                .Single(entry => entry.Identifier == "QS-1").Id;
 
             await first.ShutdownAsync();
         }
@@ -392,14 +399,18 @@ public sealed class ProductConvergenceAcceptanceTests
             var context = host.ProjectContext!;
             var scope = host.EngineeringScope!;
 
-            // 1. A global module — declared, unimplemented, and still real.
-            await navigator.GoToModuleAsync(ShellArea.Tasks);
+            // 1. A removed module (`WP 19.2B`, `TD-81`; `WP 19.7A` revives
+            // `Tasks` as a real area, so `Commercial` is this test's own
+            // example now): the navigator still accepts it — only
+            // ProjectWorkspace/Engineering refuse `GoToModuleAsync` — but
+            // rendering it finds no registry entry (its descriptor left
+            // `ShellAreas` with the module) and redirects Home rather than
+            // showing a "not yet implemented" card that no longer exists.
+            await navigator.GoToModuleAsync(ShellArea.Commercial);
             await window.RenderCurrentModuleAsync();
 
-            Assert.Equal(ShellArea.Tasks, navigator.Current.Area);
+            Assert.Equal(ShellArea.Home, navigator.Current.Area);
             Assert.False(context.HasProject);
-            var declared = window.GetLogicalDescendants().OfType<DeclaredCapabilityView>().SingleOrDefault();
-            Assert.NotNull(declared);
 
             // 2. Project
             var project = await host.ProjectDirectory!.CreateAsync("P-0500", "Circuit");
@@ -409,7 +420,7 @@ public sealed class ProductConvergenceAcceptanceTests
             Assert.Equal(ShellArea.ProjectWorkspace, navigator.Current.Area);
             Assert.Equal(project.Id, context.Current!.Id);
 
-            // 3. A project area — declared, unimplemented, still project-aware.
+            // 3. A project area, project-aware throughout.
             await navigator.GoToProjectAreaAsync(ProjectArea.Risks);
             await window.RenderCurrentModuleAsync();
 
@@ -455,8 +466,16 @@ public sealed class ProductConvergenceAcceptanceTests
     // The shell surface itself
     // ================================================================
 
+    /// <summary>
+    /// `WP 19.2B` (`TD-81`): every rail module is now genuinely
+    /// Implemented — the five that were only Declared are removed from
+    /// <see cref="ShellAreas.RailModules"/> entirely, so there is no
+    /// "not yet implemented" badge left to mark any of them with. This
+    /// test now only proves the rail button every module needs is
+    /// actually there.
+    /// </summary>
     [AvaloniaFact]
-    public async Task TheRail_OffersEveryDesignedModule_AndMarksTheOnesWithNoCapabilityBehindThem()
+    public async Task TheRail_OffersEveryDesignedModule()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -469,15 +488,11 @@ public sealed class ProductConvergenceAcceptanceTests
 
             foreach (var module in ShellAreas.RailModules)
             {
+                Assert.Equal(NavigationAvailability.Implemented, module.Availability);
+
                 var button = buttons.SingleOrDefault(
                     b => Avalonia.Automation.AutomationProperties.GetName(b) == module.Title);
                 Assert.True(button is not null, $"The rail must offer the '{module.Title}' module.");
-
-                var help = Avalonia.Automation.AutomationProperties.GetHelpText(button!) ?? string.Empty;
-                if (module.Availability == NavigationAvailability.Declared)
-                    Assert.Contains(DeclaredCapabilityView.NotImplementedBadge, help, StringComparison.Ordinal);
-                else
-                    Assert.DoesNotContain(DeclaredCapabilityView.NotImplementedBadge, help, StringComparison.Ordinal);
             }
         }
         finally
@@ -487,8 +502,15 @@ public sealed class ProductConvergenceAcceptanceTests
         }
     }
 
+    /// <summary>
+    /// `WP 19.2B` (`TD-81`): every project area is now genuinely
+    /// Implemented — Reports and Settings, the two that were only
+    /// Declared, are removed from <see cref="ProjectAreas.All"/> entirely
+    /// rather than shown project-aware and dimmed, so there is no
+    /// declared-only tab left to name the open project on.
+    /// </summary>
     [AvaloniaFact]
-    public async Task TheProjectWorkspace_OffersEveryDesignedArea_AndNamesTheOpenProjectOnDeclaredOnes()
+    public async Task TheProjectWorkspace_OffersEveryDesignedArea()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -501,22 +523,20 @@ public sealed class ProductConvergenceAcceptanceTests
             await window.RenderCurrentModuleAsync();
 
             var workspace = window.GetLogicalDescendants().OfType<ProjectWorkspaceView>().Single();
-            var tabs = workspace.GetLogicalDescendants().OfType<TabItem>().ToList();
+            // `WP 19.7A`: the project's own Evidence tab embeds
+            // `EvidenceWorkspaceView`, which carries two `TabItem`s of its
+            // own (Evidence, Libraries) — real content, not one of
+            // `ProjectAreas.All`'s own top-level areas, so this walk keeps
+            // only the `TabItem`s `ProjectWorkspaceView` itself built
+            // (`Tag` set to the `ProjectArea` each represents).
+            var tabs = workspace.GetLogicalDescendants().OfType<TabItem>().Where(t => t.Tag is ProjectArea).ToList();
 
             Assert.Equal(ProjectAreas.All.Count, tabs.Count);
             foreach (var area in ProjectAreas.All)
+            {
+                Assert.Equal(NavigationAvailability.Implemented, area.Availability);
                 Assert.Contains(tabs, t => Equals(t.Tag, area.Area));
-
-            // A declared-only area is project-aware: it names the open project.
-            await host.ShellNavigator.GoToProjectAreaAsync(ProjectArea.Timeline);
-            await window.RenderCurrentModuleAsync();
-
-            var declared = workspace.GetLogicalDescendants().OfType<DeclaredCapabilityView>().ToList();
-            var texts = declared.SelectMany(d => d.GetLogicalDescendants().OfType<TextBlock>())
-                .Select(t => t.Text ?? string.Empty).ToList();
-
-            Assert.Contains(texts, t => t.Contains("P-0600 Tabbed", StringComparison.Ordinal));
-            Assert.Contains(texts, t => t.Contains("TD-81", StringComparison.Ordinal));
+            }
         }
         finally
         {

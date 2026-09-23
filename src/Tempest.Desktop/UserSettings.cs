@@ -61,10 +61,21 @@ public sealed class UserSettings
     /// <summary>Gets or sets how many entries the Project Explorer's own recent-search list keeps.</summary>
     public int RecentSearchCapacity { get; set; } = 5;
 
+    /// <summary>
+    /// Gets or sets whether an installed run checks the release feed for an
+    /// update on launch (`WP 21.5A`, `WP RC.0A` scope item 1).
+    /// <see langword="false"/> by default — so nothing phones home unasked
+    /// until the Product Owner turns it on here, in Settings → Updates.
+    /// Read by a not-installed run too (harmlessly: <see cref="Startup.IUpdateService.IsInstalled"/>
+    /// is <see langword="false"/> there regardless of this setting, so no
+    /// check ever actually runs).
+    /// </summary>
+    public bool CheckForUpdatesOnLaunch { get; set; }
+
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new UserSettingsDto(ToastDurationSeconds, ConfirmBeforeDelete, RecentSearchCapacity);
+        var dto = new UserSettingsDto(ToastDurationSeconds, ConfirmBeforeDelete, RecentSearchCapacity, CheckForUpdatesOnLaunch);
         await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
@@ -79,8 +90,9 @@ public sealed class UserSettings
         ToastDurationSeconds = dto.ToastDurationSeconds;
         ConfirmBeforeDelete = dto.ConfirmBeforeDelete;
         RecentSearchCapacity = dto.RecentSearchCapacity;
+        CheckForUpdatesOnLaunch = dto.CheckForUpdatesOnLaunch;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
-    private sealed record UserSettingsDto(double ToastDurationSeconds, bool ConfirmBeforeDelete, int RecentSearchCapacity);
+    private sealed record UserSettingsDto(double ToastDurationSeconds, bool ConfirmBeforeDelete, int RecentSearchCapacity, bool CheckForUpdatesOnLaunch = false);
 }

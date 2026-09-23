@@ -217,6 +217,8 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             case Key.Space:
                 if (e.Source is Border { Tag: Guid nodeId })
                     await ActivateFocusedNodeAsync(nodeId).ConfigureAwait(true);
+                else if (e.Source is Line { Tag: DigitalThreadEdgeSnapshot edge })
+                    ActivateFocusedEdge(edge);
                 e.Handled = true;
                 break;
         }
@@ -238,6 +240,22 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
             CollapseNode(nodeId);
         else
             await ExpandNodeAsync(nodeId).ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// <c>Enter</c>/<c>Space</c> on a focused edge (`WP 19.2B`, `TD-128`):
+    /// selects it, exactly as clicking it already does, then moves
+    /// keyboard focus on to the edge's own target node — "Enter selects
+    /// the edge's target" — so a keyboard-only journey can keep exploring
+    /// outward from here, the same direction a sighted user's eye follows
+    /// the line, with no pointer input at all.
+    /// </summary>
+    private void ActivateFocusedEdge(DigitalThreadEdgeSnapshot edge)
+    {
+        _model.SelectEdge(edge);
+        Rebuild();
+
+        _graphCanvas.Children.OfType<Border>().FirstOrDefault(b => Equals(b.Tag, edge.TargetId))?.Focus();
     }
 
     // ------------------------------------------------------------
@@ -540,6 +558,20 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
 
         var nodesById = nodes.ToDictionary(n => n.ObjectId);
 
+        // `WP 19.2B` (`TD-128`): a deterministic Tab order that visits
+        // each edge right after the node it leaves — "Tab order along
+        // the edges from a node" — rather than every edge before every
+        // node (the drawing order above, which stays a hit-test/paint
+        // concern only; `TabIndex` is the separate, explicit property
+        // Avalonia's own keyboard navigation actually reads). Each node
+        // reserves a block of 100 indices for its own outgoing edges,
+        // comfortably more than any real relationship graph in this
+        // product has from one object.
+        var nodeIndexById = new Dictionary<Guid, int>();
+        for (var i = 0; i < nodes.Count; i++)
+            nodeIndexById[nodes[i].ObjectId] = i;
+        var edgeOrdinalBySource = new Dictionary<Guid, int>();
+
         foreach (var edge in _model.Edges)
         {
             if (_model.HiddenCategories.Contains(edge.Category))
@@ -581,6 +613,35 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
                 ZIndex = 0,
             };
             hitTestLine.PointerPressed += SelectThisEdge;
+
+            // Keyboard reach for edges (`WP 19.2B`, `TD-128`): the
+            // invisible hit-test line, not the visible one, is the
+            // interactive/focusable element — exactly the same "one
+            // interactive control, one focus target" shape a node's own
+            // Border already is. `Tag` carries the edge snapshot itself so
+            // `OnGraphKeyDown`'s Enter/Space case can find it, mirroring a
+            // node's own `Tag: Guid`.
+            hitTestLine.Focusable = true;
+            hitTestLine.TabIndex = nodeIndexById[edge.SourceId] * 100 + 1 + edgeOrdinalBySource.GetValueOrDefault(edge.SourceId);
+            edgeOrdinalBySource[edge.SourceId] = edgeOrdinalBySource.GetValueOrDefault(edge.SourceId) + 1;
+            hitTestLine.Tag = edge;
+            AutomationProperties.SetName(hitTestLine, $"{source.DisplayName} → {target.DisplayName}");
+
+            // No `Border`/`Background` to react on a `Line` — focus is
+            // shown instead exactly as selection already is, by
+            // thickening and colouring the *visible* line the invisible
+            // one sits under (the same `isHighlighted` treatment above).
+            hitTestLine.GotFocus += (_, _) =>
+            {
+                line.StrokeThickness = 3;
+                line.Stroke = BrandPalette.Brush(ApplicationPalette.FocusRingBrushKey);
+            };
+            hitTestLine.LostFocus += (_, _) =>
+            {
+                line.StrokeThickness = isHighlighted ? 3 : 1.4;
+                line.Stroke = CategoryColors.Resolve(edge.Category);
+            };
+
             _graphCanvas.Children.Add(hitTestLine);
             _graphCanvas.Children.Add(line);
 
@@ -600,9 +661,10 @@ public sealed class DigitalThreadGraphView : UserControl, IWorkspaceView
         // stable order the nodes are already rendered in (`_model.Nodes`'s
         // own order, unchanged by anything here), so Tab always visits
         // them in the same sequence a sighted user reads the model in.
-        var tabIndex = 0;
+        // `* 100` (`WP 19.2B`, `TD-128`) reserves each node's own block for
+        // its outgoing edges — see the reservation's own remarks above.
         foreach (var node in nodes)
-            _graphCanvas.Children.Add(BuildNodeVisual(node, tabIndex++));
+            _graphCanvas.Children.Add(BuildNodeVisual(node, nodeIndexById[node.ObjectId] * 100));
     }
 
     private Control BuildNodeVisual(DigitalThreadNodeSnapshot node, int tabIndex)

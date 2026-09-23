@@ -22,7 +22,15 @@ public class AuditQueryCorruptionTests
         await recorder.RecordAsync("action-a");
 
         var keys = await store.ListKeysAsync(AuditRecorder.AuditCollectionName);
-        await store.WriteAsync(AuditRecorder.AuditCollectionName, keys[0], "{{{not json");
+
+        // `WP 21.6A`, OSA-13: the store's own ordinary WriteAsync now
+        // refuses this collection unconditionally — this fact corrupts a
+        // stored row on purpose (to prove QueryAsync's own controlled
+        // failure path), the identical simulated-corruption route this
+        // audit's own OSA-13 finding named, so it goes through the same
+        // internal capability AuditRecorder itself uses rather than the
+        // now-refused ordinary path.
+        await ((IAuditCollectionWriter)store).WriteAuditRowAsync(keys[0], "{{{not json", CancellationToken.None);
 
         var query = BuildGrantedQuery(store);
         await Assert.ThrowsAsync<AuditException>(() => query.QueryAsync(new AuditQueryCriteria()));

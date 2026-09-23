@@ -7,6 +7,7 @@ using Tempest.Workspace;
 using Tempest.Core.Bearings;
 using Tempest.Core.Commands;
 using Tempest.Core.Calculations;
+using Tempest.Core.Calculations.Modules;
 using Tempest.Core.ReferenceData.Seeding;
 using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
@@ -50,6 +51,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
+    private PrincipalSession? _principalSession;
 
     /// <summary>Gets the running <see cref="IWorkspace"/>, or <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public IWorkspace? Workspace { get; private set; }
@@ -170,7 +172,13 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // `new` over already-resolved Platform Services, exactly as
         // every other Desktop-side collaborator is (`ADR-0103`).
         var domainContext = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-        var principalAccessor = (ICurrentPrincipalAccessor)host.Services!.GetService(typeof(ICurrentPrincipalAccessor));
+        // `WP 21.6A` (OSA-12/OSA-14): the write side is PrincipalSession,
+        // resolved separately from the read-only ICurrentPrincipalAccessor
+        // — the accessor's own concrete type is no longer registered at
+        // all, and its SetCurrent is internal to Tempest.Core regardless,
+        // so this is the only capability this class (or anything else
+        // outside Tempest.Core) can reach to establish a principal.
+        _principalSession = (PrincipalSession)host.Services!.GetService(typeof(PrincipalSession));
         var eventBus = (IEventBus)host.Services!.GetService(typeof(IEventBus));
         var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
 
@@ -192,16 +200,13 @@ public sealed class WorkspaceHost : IAsyncDisposable
         var configuration = (IConfigurationProvider)host.Services!.GetService(typeof(IConfigurationProvider));
         var sessionPrincipals = _sessionPrincipalsOverride ?? new SessionPrincipalSource(configuration);
         SessionPrincipal = sessionPrincipals.Resolve();
-        if (principalAccessor is CurrentPrincipalAccessor accessor)
-        {
-            // Published unconditionally, null included. Publishing only a
-            // non-null answer would leave whatever a module happened to
-            // establish during its own initialisation standing as the
-            // session's principal — which is the `TD-103` defect itself,
-            // not a safe fallback: a session that genuinely has no
-            // principal must report none, not inherit a sample's.
-            accessor.SetCurrent(SessionPrincipal);
-        }
+        // Published unconditionally, null included. Publishing only a
+        // non-null answer would leave whatever a module happened to
+        // establish during its own initialisation standing as the
+        // session's principal — which is the `TD-103` defect itself,
+        // not a safe fallback: a session that genuinely has no
+        // principal must report none, not inherit a sample's.
+        _principalSession?.Establish(SessionPrincipal);
 
         // `TD-85`. Bring back every engineering object a previous run
         // persisted — projects, and everything inside them — before
@@ -214,7 +219,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         ProjectDirectory = new ProjectDirectory(domainContext);
         var hostLogger = (Tempest.Core.Logging.ILogger)host.Services!.GetService(typeof(Tempest.Core.Logging.ILogger));
-        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider, hostLogger);
+        var projectContext = new ProjectContext(ProjectDirectory, eventBus, settingsProvider, hostLogger, domainContext.Repository);
         ProjectContext = projectContext;
         var shellNavigator = new ShellNavigator(projectContext, eventBus, settingsProvider, hostLogger);
         ShellNavigator = shellNavigator;
@@ -318,6 +323,41 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
+        // `WP 21.7B`/`WP 21.7C`: the Engineering Calculators. The governed
+        // service runs any product calculation on pinned records from the
+        // three libraries; the workbench names each run as a Calculation
+        // object (the same register the bracket workbench uses) and offers
+        // the record's own Re-run and Compare commands through the
+        // dispatcher and the Template registry — every module registered
+        // there so the commands reach all sixteen.
+        CalculationModuleService = new CalculationModuleService(
+            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
+            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
+            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
+            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
+        CalculationModules = new CalculationModuleWorkbench(
+            CalculationModuleService,
+            CalculationTemplates!,
+            new EngineeringCalculationRegister(
+                domainContext,
+                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+                projectContext),
+            (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
+            domainContext);
+
+        // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
+        // own three governed libraries and their validation services, so the
+        // Engineering Assets area can list every calculation pack, template
+        // and verification artefact and show each one's own applicability
+        // and validation — all already-registered Platform Services,
+        // resolved the same `ADR-0103` way as every collaborator above.
+        CalculationPacks = (ICalculationPackCatalog)host.Services!.GetService(typeof(ICalculationPackCatalog));
+        EngineeringTemplates = (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog));
+        VerificationArtefacts = (IVerificationArtefactCatalog)host.Services!.GetService(typeof(IVerificationArtefactCatalog));
+        CalculationPackValidation = (ICalculationPackValidationService)host.Services!.GetService(typeof(ICalculationPackValidationService));
+        EngineeringTemplateValidation = (ITemplateValidationService)host.Services!.GetService(typeof(ITemplateValidationService));
+        VerificationArtefactValidation = (IVerificationArtefactValidationService)host.Services!.GetService(typeof(IVerificationArtefactValidationService));
+
         // Recover where the user was, and which project they were in.
         // Order matters: the navigator's own restore opens the project,
         // so loading the context first would be redundant work, not a
@@ -336,6 +376,29 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// assert the boundary did its job, not as a second source of truth.
     /// </remarks>
     public ISessionPrincipal? SessionPrincipal { get; private set; }
+
+    /// <summary>
+    /// Establishes <paramref name="principal"/> as this session's own
+    /// principal from this moment on — the "Switch person…" act (`WP
+    /// 21.3B`, Settings → Principal). Every subsequent mutation's audit
+    /// row and every "checked by"/"signed off by" field reads this from
+    /// <see cref="ICurrentPrincipalAccessor"/> onward, exactly as the
+    /// principal <see cref="StartAsync"/> established at launch already
+    /// does — published unconditionally through the identical
+    /// <see cref="PrincipalSession.Establish"/> call (`WP 21.6A`), never a
+    /// second mechanism.
+    /// </summary>
+    /// <exception cref="InvalidOperationException"><see cref="StartAsync"/> has not completed.</exception>
+    public void SwitchPrincipal(ISessionPrincipal principal)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+
+        if (_principalSession is null)
+            throw new InvalidOperationException($"{nameof(SwitchPrincipal)} needs a running Host — call {nameof(StartAsync)} first.");
+
+        _principalSession.Establish(principal);
+        SessionPrincipal = principal;
+    }
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
@@ -438,6 +501,29 @@ public sealed class WorkspaceHost : IAsyncDisposable
     public IConstantCatalog? Constants { get; private set; }
 
     /// <summary>
+    /// Gets the calculation pack library (`E2`, `WP 21.2B`) — the merged
+    /// engineering capability's own records, surfaced by the Engineering
+    /// Assets area. <see langword="null"/> before <see cref="StartAsync"/>
+    /// completes.
+    /// </summary>
+    public ICalculationPackCatalog? CalculationPacks { get; private set; }
+
+    /// <summary>Gets the engineering template library (`E1`, `WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ITemplateCatalog? EngineeringTemplates { get; private set; }
+
+    /// <summary>Gets the verification artefact library (`E3`, `WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IVerificationArtefactCatalog? VerificationArtefacts { get; private set; }
+
+    /// <summary>Gets the calculation pack library's own governance/completeness validation (`WP 21.2B`, TD-160 scope item 4). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ICalculationPackValidationService? CalculationPackValidation { get; private set; }
+
+    /// <summary>Gets the template library's own governance/completeness validation (`WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public ITemplateValidationService? EngineeringTemplateValidation { get; private set; }
+
+    /// <summary>Gets the verification artefact library's own governance/completeness validation (`WP 21.2B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public IVerificationArtefactValidationService? VerificationArtefactValidation { get; private set; }
+
+    /// <summary>
     /// Gets the Engineering Calculation surface's own read model -
     /// <see langword="null"/> before <see cref="StartAsync"/> completes.
     /// </summary>
@@ -447,6 +533,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// no rule of its own.
     /// </remarks>
     public BracketCalculationWorkbench? BracketCalculations { get; private set; }
+
+    /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public CalculationModuleWorkbench? CalculationModules { get; private set; }
+
+    /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
+    public CalculationModuleService? CalculationModuleService { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

@@ -47,11 +47,12 @@ internal sealed class CalculationsCockpitReadModel
     /// <summary>Loads every live Calculation, its own most recent executed record, and its own most recent revision timestamp — the three reads every property below is derived from.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        var calculations = await _domainContext.Repository.ListByKindAsync("Calculation", cancellationToken).ConfigureAwait(false);
-        var live = calculations
-            .Where(o => o is not IDeletable { IsDeleted: true })
-            .OfType<ICalculation>()
-            .ToList();
+        // `TD-88`/`WP 21.5B`: liveness is filtered from the index alone;
+        // every survivor is materialised as `ICalculation` (the record read
+        // and revision history read below both need the real object).
+        var calculationEntries = await _domainContext.Repository.ListByKindAsync("Calculation", cancellationToken).ConfigureAwait(false);
+        var liveEntries = calculationEntries.Where(entry => !entry.IsDeleted).ToList();
+        var live = await _domainContext.Repository.MaterialiseAsync<ICalculation>(liveEntries, cancellationToken).ConfigureAwait(false);
         _liveCalculations = live;
 
         var snapshots = new List<(ICalculation Calculation, CalculationRecordSnapshot? LatestRecord)>(live.Count);
@@ -197,7 +198,7 @@ internal sealed class CalculationsCockpitReadModel
                 new("Approved", CountStatus(LifecycleState.Approved).ToString(), IsPlaceholder: false),
                 new("Failed", FailedCalculationsCount.ToString(), IsPlaceholder: false),
                 new("Out-of-date", outOfDate.ToString(), IsPlaceholder: false),
-                new("Verification Coverage", CockpitFormatting.FormatCoverage(executed, total), IsPlaceholder: false, CockpitFormatting.PercentOf(executed, total)),
+                new("Verification Coverage", CockpitFormatting.FormatCoverage(executed, total, "calculations"), IsPlaceholder: false, CockpitFormatting.PercentOf(executed, total)),
                 new("Calculation Health", Status.ToString(), IsPlaceholder: false),
             ];
         }

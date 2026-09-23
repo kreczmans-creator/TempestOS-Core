@@ -32,12 +32,24 @@ public sealed class ProjectBrowserView : UserControl
     private readonly Button _newButton = new() { Content = "New Project…", MinHeight = DesignTokens.ControlSizeMedium };
 
     private IReadOnlyList<ProjectSummary> _current = [];
+    private IReadOnlySet<Guid>? _visibleProjectIds;
 
     /// <summary>The catalogue's own empty state — shown in place of an empty list, with the one action that fills it.</summary>
     private readonly EmptyStateView _empty = new("▣", "No projects yet", "Engineering work happens inside a project. Create the first one to give requirements, calculations, documents and verification a home.") { IsVisible = false };
 
     /// <summary>Raised after a project is opened, so the shell can render its workspace.</summary>
     public event Action? ProjectOpened;
+
+    /// <summary>
+    /// Raised the instant a new project exists in the directory (`WP
+    /// 19.10Q`), before this view refreshes its own list or opens it — so
+    /// a container that shows this view filtered to one group (<see
+    /// cref="ProjectsAreaView"/>'s Open/Closed/Archive tree) can extend
+    /// its own visible set synchronously, in step with the create path,
+    /// rather than waiting for a later, fire-and-forget change-feed
+    /// reaction to catch up.
+    /// </summary>
+    public event Action<Guid>? ProjectCreated;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectBrowserView"/> class.</summary>
     /// <param name="directory">The project catalogue this view lists.</param>
@@ -54,6 +66,8 @@ public sealed class ProjectBrowserView : UserControl
         _promptForNewProject = promptForNewProject;
 
         AutomationProperties.SetName(_projects, "Projects");
+        AutomationProperties.SetName(_openButton, "Open Project");
+        AutomationProperties.SetName(_newButton, "New Project…");
 
         var root = new StackPanel { Spacing = DesignTokens.SpaceLg, Margin = DesignTokens.PagePadding, MaxWidth = 960, HorizontalAlignment = HorizontalAlignment.Left };
         root.Children.Add(PageHeading.Label("PROJECTS"));
@@ -94,10 +108,22 @@ public sealed class ProjectBrowserView : UserControl
         Content = root;
     }
 
-    /// <summary>Re-reads every project from the directory.</summary>
+    /// <summary>
+    /// Restricts the catalogue this view lists to exactly
+    /// <paramref name="projectIds"/> (`WP 19.7A`) — set by
+    /// <see cref="ProjectsAreaView"/> to show one listing group (Open,
+    /// Closed, Archive) at a time from the same single instance, since a
+    /// control can only ever be parented in one place at once.
+    /// <see langword="null"/> restores the unfiltered, every-project view.
+    /// Takes effect on the next <see cref="RefreshAsync"/>.
+    /// </summary>
+    public void SetVisibleProjects(IReadOnlySet<Guid>? projectIds) => _visibleProjectIds = projectIds;
+
+    /// <summary>Re-reads every project from the directory, filtered to <see cref="SetVisibleProjects"/>'s own set when one is set.</summary>
     public async Task RefreshAsync()
     {
-        _current = await _directory.ListAsync().ConfigureAwait(true);
+        var everyProject = await _directory.ListAsync().ConfigureAwait(true);
+        _current = _visibleProjectIds is null ? everyProject : [.. everyProject.Where(p => _visibleProjectIds.Contains(p.Id))];
         _projects.ItemsSource = _current.Select(p => $"{p.Label}  —  {p.Status}").ToList();
 
         _empty.IsVisible = _current.Count == 0;
@@ -129,20 +155,27 @@ public sealed class ProjectBrowserView : UserControl
         if (!await _promptForNewProject(identifier, string.Empty).ConfigureAwait(true))
             return;
 
-        await RefreshAsync().ConfigureAwait(true);
-
-        // "Create your first project" (and every subsequent New Project…)
-        // used to leave the user back on the now-populated, but still
-        // unopened, list — a dead end the empty state's own instruction
-        // ("Create the first one...") never actually resolved. The
-        // identifier generated above is exactly the one the newly created
-        // project carries, so it is found in the just-refreshed list
-        // without a second directory capability — reusing OpenSelectedAsync's
-        // own OpenProjectAsync path, never a second "current project"
-        // notion of this view's own.
-        var created = _current.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+        // The project (and, if requested, its quotation) already exists —
+        // created inside `_promptForNewProject` itself. Finding it here
+        // reads the directory directly, the same service that just
+        // created it (`WP 19.10Q`), rather than this view's own
+        // `_current`: `_current` is whatever `RefreshAsync` last filtered
+        // to `SetVisibleProjects`'s set, and that set is a snapshot taken
+        // before this project existed whenever a group node (Open/Closed/
+        // Archive) is selected — relying on it here left `CreateAsync`
+        // unable to find the very project it just created, and it
+        // returned without ever opening anything.
+        var everyProject = await _directory.ListAsync().ConfigureAwait(true);
+        var created = everyProject.FirstOrDefault(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
         if (created is null)
             return;
+
+        // A project just created is open by definition — let a filtered
+        // container (`ProjectsAreaView`'s Open group) extend its own
+        // visible set before this view's own refresh reads it, so the
+        // list and the filter agree by the moment the project opens.
+        ProjectCreated?.Invoke(created.Id);
+        await RefreshAsync().ConfigureAwait(true);
 
         await _navigator.OpenProjectAsync(created.Id).ConfigureAwait(true);
         _status.Text = $"Opened {created.Label}.";

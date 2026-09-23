@@ -29,6 +29,7 @@ public sealed class CommandRegistry : ICommandRegistry
     private readonly Dictionary<string, CommandDescriptor> _descriptorsById = new(StringComparer.Ordinal);
     private readonly CommandHandlerTable _table;
     private readonly ILogger? _logger;
+    private readonly ArchivedProjectCommandGuard? _archivedProjectGuard;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="CommandRegistry"/> class.
@@ -39,13 +40,22 @@ public sealed class CommandRegistry : ICommandRegistry
     /// activity via the logging abstraction. May be <see langword="null"/>
     /// if logging is not required.
     /// </param>
+    /// <param name="archivedProjectGuard">
+    /// The rule <see cref="Evaluate(CommandDescriptor, CommandContext)"/>
+    /// consults for a mutating binding (`WP 19.10R`, `TD-179`'s residual).
+    /// <see langword="null"/> — the default, and every test fixture that
+    /// constructs this type directly — means no binding is ever checked
+    /// against an archived project, exactly the behaviour before this Work
+    /// Package; the composition root supplies a real one.
+    /// </param>
     /// <exception cref="ArgumentNullException"><paramref name="table"/> is <see langword="null"/>.</exception>
-    public CommandRegistry(CommandHandlerTable table, ILogger? logger = null)
+    public CommandRegistry(CommandHandlerTable table, ILogger? logger = null, ArchivedProjectCommandGuard? archivedProjectGuard = null)
     {
         ArgumentNullException.ThrowIfNull(table);
 
         _table = table;
         _logger = logger;
+        _archivedProjectGuard = archivedProjectGuard;
     }
 
     /// <inheritdoc />
@@ -62,6 +72,21 @@ public sealed class CommandRegistry : ICommandRegistry
         }
 
         _logger?.Information($"Command descriptor registered: '{descriptor.Id}' ({descriptor.DisplayName}).");
+    }
+
+    /// <inheritdoc />
+    public void Unregister(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+
+        bool removed;
+        lock (_gate)
+        {
+            removed = _descriptorsById.Remove(id);
+        }
+
+        if (removed)
+            _logger?.Information($"Command descriptor unregistered: '{id}'.");
     }
 
     /// <inheritdoc />
@@ -231,9 +256,10 @@ public sealed class CommandRegistry : ICommandRegistry
     /// The whole of command availability, in one place, in the order a
     /// person would want to be told about it: what does not exist, then
     /// what was never wired, then what the current selection cannot
-    /// satisfy, then the command's own opinion.
+    /// satisfy, then whether it would write to an archived project
+    /// (`WP 19.10R`), then the command's own opinion.
     /// </summary>
-    private static CommandAvailability Evaluate(CommandDescriptor descriptor, CommandContext context)
+    private CommandAvailability Evaluate(CommandDescriptor descriptor, CommandContext context)
     {
         var binding = descriptor.Binding;
 
@@ -267,6 +293,17 @@ public sealed class CommandRegistry : ICommandRegistry
             // Refused rather than silently applied to the first item only.
             if (context.Selection.Count > 1 && !binding.Requires.HasFlag(CommandContextRequirement.MultipleAllowed))
                 return CommandAvailability.Blocked($"'{descriptor.DisplayName}' applies to one object at a time.");
+
+            // `TD-179`'s residual (`WP 19.10R`): a mutating binding against
+            // an archived project is refused here, in the one place the
+            // Ribbon, the Palette and a macro replaying either already ask
+            // this question — never by matching the descriptor's own Id.
+            if (binding.Mutates
+                && _archivedProjectGuard is not null
+                && _archivedProjectGuard.FindReason(context) is { } archivedReason)
+            {
+                return CommandAvailability.Blocked(archivedReason);
+            }
         }
 
         // The command's own last word, kept as the final gate - the seam a

@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Desktop.Branding;
@@ -76,16 +78,74 @@ public sealed class ShellHeaderView : UserControl
         TextTrimming = TextTrimming.CharacterEllipsis,
     };
 
-    private readonly Button _search = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = 220 };
-    private readonly Button _theme = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
-    private readonly TextBlock _principal = new() { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
-    private readonly StackPanel _principalChip = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+    // A Border, not a Button — `TD-177`: the header's own search box takes
+    // real text now (previously a static label whose only affordance was
+    // opening the Command Palette empty, forcing a retype there).
+    // `ChromeStyles.Subtle` is a `Button`-only treatment (its own selector
+    // targets `Button` directly), so the identical hairline-sunken look is
+    // bound here the same direct way `_projectChip`'s own remarks already
+    // explain for a bespoke chip.
+    private readonly Border _searchFrame = new()
+    {
+        CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+        BorderThickness = new Thickness(1),
+        MinHeight = DesignTokens.ControlSizeSmall,
+        MinWidth = 220,
+        Padding = new Thickness(DesignTokens.SpaceXs, 0),
+    };
 
-    /// <summary>Raised when the user asks for the global search / command palette.</summary>
-    public event Action? SearchRequested;
+    // The search box's own submit affordance beside it — clicking this
+    // hands over the box's current text exactly as Enter does.
+    private readonly Button _searchButton = new() { Padding = new Thickness(DesignTokens.SpaceSm, 0) };
+
+    private readonly TextBox _searchBox = new()
+    {
+        BorderThickness = new Thickness(0),
+        Background = Brushes.Transparent,
+        FontSize = DesignTokens.FontSizeBody,
+        VerticalAlignment = VerticalAlignment.Center,
+        VerticalContentAlignment = VerticalAlignment.Center,
+        Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
+    };
+    private readonly Button _theme = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
+    private readonly Button _notifications = new() { MinHeight = DesignTokens.ControlSizeSmall, MinWidth = DesignTokens.ControlSizeSmall };
+    private readonly TextBlock _notificationsBadge = new() { FontSize = DesignTokens.FontSizeLabel, VerticalAlignment = VerticalAlignment.Center, IsVisible = false };
+    private readonly ListBox _notificationsList = new() { MaxHeight = 320, MinWidth = 280 };
+    // `IsVisible = false` explicitly, independent of `IsOpen`: a closed
+    // `Popup` still reports non-zero `Bounds` as a logical child of `root`
+    // (an Avalonia quirk — `IsOpen` gates the overlay window, not this
+    // control's own layout participation), which the layout walk's own
+    // sibling-overlap check would otherwise flag on every single area —
+    // that check explicitly skips an invisible sibling.
+    private readonly Popup _notificationsFlyout = new() { Placement = PlacementMode.BottomEdgeAlignedRight, IsLightDismissEnabled = true, IsVisible = false };
+    private readonly TextBlock _principal = new() { FontSize = DesignTokens.FontSizeCaption, VerticalAlignment = VerticalAlignment.Center };
+
+    // A Button, not a Border — `WP 19.7A`, scope item 2: "the signed-in
+    // principal's name and role, which opens Settings" — the identical
+    // "this is the one place the shell already names it, so it is the
+    // natural target" reasoning `_projectChip`'s own remarks give.
+    private readonly Button _principalChip = new()
+    {
+        CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+        Padding = new Thickness(DesignTokens.SpaceSm, DesignTokens.SpaceXs),
+        VerticalAlignment = VerticalAlignment.Center,
+        IsVisible = false,
+    };
+
+    /// <summary>
+    /// Raised when the user asks for the global search / command palette —
+    /// carrying whatever text sat in the search box at that moment
+    /// (`TD-177`), or <see langword="null"/> for an empty box, exactly what
+    /// <see cref="CommandPaletteOverlay.Open(string?)"/> treats as an
+    /// empty open.
+    /// </summary>
+    public event Action<string?>? SearchRequested;
 
     /// <summary>Raised when the user asks to switch theme.</summary>
     public event Action? ThemeToggleRequested;
+
+    /// <summary>Raised when the user clicks the principal chip, asking for Settings (`WP 19.7A`).</summary>
+    public event Action? SettingsRequested;
 
     /// <summary>
     /// Raised when the user clicks the current-project chip (`WP-Z4`
@@ -147,12 +207,31 @@ public sealed class ShellHeaderView : UserControl
         // ---- What can I do here ----------------------------------------
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
 
+        ThemeReactiveBrush.Bind(_searchFrame, Border.BackgroundProperty, BrandPalette.SunkenBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(_searchFrame, Border.BorderBrushProperty, BrandPalette.HairlineStrongBrushKey);
+
         var searchContent = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), MinWidth = 200 };
-        var searchIcon = IconGeometry.Build(IconGeometry.Search, 14);
-        searchIcon.Margin = new Thickness(0, 0, DesignTokens.SpaceMd, 0);
-        Grid.SetColumn(searchIcon, 0);
-        var searchLabel = new TextBlock { Text = "Search or run a command", FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center };
-        Grid.SetColumn(searchLabel, 1);
+
+        _searchButton.Content = IconGeometry.Build(IconGeometry.Search, 14);
+        _searchButton.Classes.Add(ChromeStyles.Flat);
+        Grid.SetColumn(_searchButton, 0);
+        AutomationProperties.SetName(_searchButton, "Run search");
+        ToolTip.SetTip(_searchButton, "Search every registered command (Ctrl+K)");
+        _searchButton.Click += (_, _) => SubmitSearch();
+
+        _searchBox.Watermark = "Search or run a command";
+        Grid.SetColumn(_searchBox, 1);
+        AutomationProperties.SetName(_searchBox, "Search or run a command");
+        ToolTip.SetTip(_searchBox, "Search every registered command (Ctrl+K)");
+        _searchBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                SubmitSearch();
+                e.Handled = true;
+            }
+        };
+
         var shortcut = new TextBlock
         {
             Text = "CTRL K",
@@ -163,16 +242,11 @@ public sealed class ShellHeaderView : UserControl
             Opacity = 0.7,
         };
         Grid.SetColumn(shortcut, 2);
-        searchContent.Children.Add(searchIcon);
-        searchContent.Children.Add(searchLabel);
+        searchContent.Children.Add(_searchButton);
+        searchContent.Children.Add(_searchBox);
         searchContent.Children.Add(shortcut);
-        _search.Content = searchContent;
-        _search.Classes.Add(ChromeStyles.Subtle);
-        _search.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-        AutomationProperties.SetName(_search, "Search or run a command");
-        ToolTip.SetTip(_search, "Search every registered command (Ctrl+K)");
-        _search.Click += (_, _) => SearchRequested?.Invoke();
-        actions.Children.Add(_search);
+        _searchFrame.Child = searchContent;
+        actions.Children.Add(_searchFrame);
 
         _theme.Content = IconGeometry.Build(IconGeometry.Theme, 15);
         _theme.Classes.Add(ChromeStyles.Flat);
@@ -181,15 +255,64 @@ public sealed class ShellHeaderView : UserControl
         _theme.Click += (_, _) => ThemeToggleRequested?.Invoke();
         actions.Children.Add(_theme);
 
+        // ---- Notifications (`WP 19.7A`, scope item 2) -------------------
+        var bellHost = new Panel();
+        var bellIcon = IconGeometry.Build(IconGeometry.Bell, 15);
+        bellHost.Children.Add(bellIcon);
+        _notificationsBadge.FontWeight = FontWeight.Bold;
+        var badgeFrame = new Border
+        {
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(3, 0),
+            MinWidth = 12,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -4, -6, 0),
+            Child = _notificationsBadge,
+        };
+        ThemeReactiveBrush.Bind(badgeFrame, Border.BackgroundProperty, BrandPalette.AccentBrushKey);
+        bellHost.Children.Add(badgeFrame);
+        _notifications.Content = bellHost;
+        _notifications.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(_notifications, "Notifications");
+        ToolTip.SetTip(_notifications, "No notifications");
+        _notifications.Click += (_, _) =>
+        {
+            var open = !_notificationsFlyout.IsOpen;
+            _notificationsFlyout.IsVisible = open;
+            _notificationsFlyout.IsOpen = open;
+        };
+        _notificationsFlyout.Closed += (_, _) => _notificationsFlyout.IsVisible = false;
+        actions.Children.Add(_notifications);
+
+        AutomationProperties.SetName(_notificationsList, "Notifications list");
+        var flyoutFrame = new Border
+        {
+            CornerRadius = new CornerRadius(DesignTokens.ControlCornerRadius),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(DesignTokens.SpaceSm),
+            Child = _notificationsList,
+        };
+        ThemeReactiveBrush.Bind(flyoutFrame, Border.BackgroundProperty, ApplicationPalette.PanelBackgroundBrushKey);
+        ThemeReactiveBrush.Bind(flyoutFrame, Border.BorderBrushProperty, ApplicationPalette.PanelBorderBrushKey);
+        _notificationsFlyout.Child = flyoutFrame;
+        _notificationsFlyout.PlacementTarget = _notifications;
+
+        // ---- The signed-in principal (`WP 19.7A`: name, role, opens Settings) ----
         var user = IconGeometry.Build(IconGeometry.User, 14);
-        _principalChip.Children.Add(user);
-        _principalChip.Children.Add(_principal);
+        var principalRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, VerticalAlignment = VerticalAlignment.Center };
+        principalRow.Children.Add(user);
+        principalRow.Children.Add(_principal);
+        _principalChip.Content = principalRow;
         _principalChip.Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0);
         ThemeReactiveBrush.Bind(_principal, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        AutomationProperties.SetName(_principalChip, "Account — opens Settings");
+        _principalChip.Click += (_, _) => SettingsRequested?.Invoke();
         actions.Children.Add(_principalChip);
 
         Grid.SetColumn(actions, 3);
         root.Children.Add(actions);
+        root.Children.Add(_notificationsFlyout);
 
         var frame = new Border { Child = root, BorderThickness = new Thickness(0, 0, 0, 1) };
         ThemeReactiveBrush.Bind(frame, Border.BorderBrushProperty, BrandPalette.HairlineBrushKey);
@@ -222,29 +345,51 @@ public sealed class ShellHeaderView : UserControl
     }
 
     /// <summary>Names the principal this session operates as (`TD-103`) — hidden when none could be established, never a fabricated name.</summary>
-    public void SetPrincipal(string? displayName)
+    public void SetPrincipal(string? displayName, string? role = null)
     {
-        _principal.Text = displayName ?? string.Empty;
+        _principal.Text = string.IsNullOrWhiteSpace(role) ? displayName ?? string.Empty : $"{displayName} · {role}";
         _principalChip.IsVisible = !string.IsNullOrWhiteSpace(displayName);
         if (!string.IsNullOrWhiteSpace(displayName))
-            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}");
+            ToolTip.SetTip(_principalChip, $"Signed in as {displayName}{(string.IsNullOrWhiteSpace(role) ? string.Empty : $" ({role})")} — click for Settings");
     }
 
-    /// <summary>Hides the search field's own long label when the window is narrow, keeping the icon and shortcut.</summary>
+    /// <summary>
+    /// Shows the notifications bell's own count, and — while the flyout is
+    /// open — the messages themselves (`WP 19.7A`, scope item 2: "a
+    /// notifications bell with the count and a flyout listing the platform
+    /// notifications the status bar counts today").
+    /// </summary>
+    public void SetNotifications(IReadOnlyList<string> messages)
+    {
+        _notificationsBadge.Text = messages.Count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _notificationsBadge.IsVisible = messages.Count > 0;
+        ToolTip.SetTip(_notifications, messages.Count == 0 ? "No notifications" : $"{messages.Count} notification(s)");
+        _notificationsList.ItemsSource = messages.Count == 0 ? new[] { "No notifications" } : messages;
+    }
+
+    /// <summary>Hides the search box itself when the window is narrow, keeping the icon and shortcut — unchanged from before this box was made editable.</summary>
     public void SetCompact(bool compact)
     {
-        _search.MinWidth = compact ? DesignTokens.ControlSizeSmall : 220;
-        if (_search.Content is Grid grid)
-        {
+        _searchFrame.MinWidth = compact ? DesignTokens.ControlSizeSmall : 220;
+        if (_searchFrame.Child is Grid grid)
             grid.MinWidth = compact ? 0 : 200;
-            foreach (var child in grid.Children)
-            {
-                if (child is TextBlock text && text.Text == "Search or run a command")
-                    text.IsVisible = !compact;
-            }
-        }
+        _searchBox.IsVisible = !compact;
 
         _module.MaxWidth = compact ? 140 : double.PositiveInfinity;
         _projectLabel.MaxWidth = compact ? 160 : 320;
+    }
+
+    /// <summary>
+    /// Hands the search box's current text to <see cref="SearchRequested"/>
+    /// — empty becomes <see langword="null"/>, exactly what
+    /// <see cref="CommandPaletteOverlay.Open(string?)"/> treats as an empty
+    /// open — then clears the box: the palette now holds the text, so
+    /// nobody retypes it a second time there (`TD-177`).
+    /// </summary>
+    private void SubmitSearch()
+    {
+        var query = _searchBox.Text;
+        SearchRequested?.Invoke(string.IsNullOrEmpty(query) ? null : query);
+        _searchBox.Text = string.Empty;
     }
 }

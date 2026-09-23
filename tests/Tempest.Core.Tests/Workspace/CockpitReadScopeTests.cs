@@ -61,8 +61,21 @@ public class CockpitReadScopeTests
     /// written to and read back from disk, so what is counted is the actual
     /// production read volume, not a mock's idea of it.
     /// </summary>
-    private sealed class CountingPersistenceStore(IPersistenceStore inner) : IPersistenceStore
+    private sealed class CountingPersistenceStore : IPersistenceStore, IQueryablePersistenceStore
     {
+        private readonly IPersistenceStore _inner;
+        private readonly IQueryablePersistenceStore _queryableInner;
+
+        public CountingPersistenceStore(IPersistenceStore inner)
+        {
+            _inner = inner;
+            _queryableInner = inner as IQueryablePersistenceStore
+                ?? throw new ArgumentException(
+                    "This double wraps a store that also implements IQueryablePersistenceStore " +
+                    "(RequirementsService/VerificationService now require one) - pass one that does.",
+                    nameof(inner));
+        }
+
         public int Reads { get; private set; }
 
         public int KeyListings { get; private set; }
@@ -76,20 +89,48 @@ public class CockpitReadScopeTests
         public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default)
         {
             Reads++;
-            return inner.ReadAsync(collection, key, cancellationToken);
+            return _inner.ReadAsync(collection, key, cancellationToken);
         }
 
         public Task<IReadOnlyList<string>> ListKeysAsync(string collection, CancellationToken cancellationToken = default)
         {
             KeyListings++;
-            return inner.ListKeysAsync(collection, cancellationToken);
+            return _inner.ListKeysAsync(collection, cancellationToken);
         }
 
         public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) =>
-            inner.WriteAsync(collection, key, value, cancellationToken);
+            _inner.WriteAsync(collection, key, value, cancellationToken);
 
         public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
-            inner.DeleteAsync(collection, key, cancellationToken);
+            _inner.DeleteAsync(collection, key, cancellationToken);
+
+        // ---- IQueryablePersistenceStore: delegated, uncounted - this
+        // double exists only to count the Cockpit read model's own
+        // ReadAsync/ListKeysAsync calls, not RequirementsService's/
+        // VerificationService's transactional writes. ----
+
+        public long CurrentSequence => _queryableInner.CurrentSequence;
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) =>
+            _queryableInner.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default) =>
+            _queryableInner.ReadAllAsync(collection, cancellationToken);
+
+        public Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(string collection, IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default) =>
+            _queryableInner.ReadManyAsync(collection, keys, cancellationToken);
+
+        public Task ExecuteInTransactionAsync(Func<IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default) =>
+            _queryableInner.ExecuteInTransactionAsync(work, cancellationToken);
+
+        public Task<T> ExecuteInReadTransactionAsync<T>(Func<IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) =>
+            _queryableInner.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+        public Task<IReadOnlyList<SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) =>
+            _queryableInner.SearchAsync(query, limit, cancellationToken);
+
+        public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) =>
+            _queryableInner.IsSearchIndexEmptyAsync(cancellationToken);
     }
 
     /// <summary>
@@ -130,7 +171,8 @@ public class CockpitReadScopeTests
         var counter = new CountingPersistenceStore(new SqlitePersistenceStore(configuration));
         var principalAccessor = new CurrentPrincipalAccessor();
         var documentStore = new EngineeringDocumentStore(counter, principalAccessor);
-        var verificationService = new VerificationService(documentStore, principalAccessor, new PermissionEvaluator());
+        var verificationService = new VerificationService(
+            documentStore, principalAccessor, new PermissionEvaluator(), counter, new InMemoryEngineeringRelationshipRepository());
         var requirements = new RequirementsService(documentStore, counter, principalAccessor, verificationService);
         var validation = new CountingRequirementValidationService(new RequirementValidationService(requirements));
 

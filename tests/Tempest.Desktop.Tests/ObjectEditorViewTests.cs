@@ -6,6 +6,8 @@ using Tempest.Workspace;
 using Tempest.Workspace.Calculations;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.People;
+using Tempest.Core.ReferenceData.Review;
 using Tempest.Core.Requirements;
 using Tempest.Desktop.Editors;
 using Tempest.Samples;
@@ -372,28 +374,23 @@ public sealed class ObjectEditorViewTests
     }
 
     /// <summary>
-    /// <b>Genuine, disclosed, pre-existing finding — not caused by `WP
-    /// 10.7A`</b>: <see cref="ObjectEditorView.TryCreate"/> gates
-    /// unconditionally on <c>EngineeringDomainContext.Repository.FindAsync</c>
-    /// resolving a real <see cref="IEngineeringObject"/> — and, confirmed
-    /// directly here, that call returns <see langword="null"/> for every
-    /// real Requirement (Requirements are real
-    /// <c>IEngineeringDocument</c>s, `ADR-0058`, but were never wired into
-    /// the general <c>IEngineeringObjectRepository</c>'s own
-    /// Kind-to-object materialisation — only reachable through
-    /// <see cref="IRequirementsService"/> directly, a genuinely different,
-    /// pre-`WP 10.3A` read path). This is why the identical, already-
-    /// existing <c>NavigateToObject_ClickedFromARelationshipRow_...</c>
-    /// test above already defends against a <see langword="null"/> editor
-    /// for a Requirement — this was already true before this Work
-    /// Package. This section's own code (verified correct by direct
-    /// review and by dispatching the identical commands successfully via
-    /// the Ribbon, proven in <c>FeatureCompletionTests</c>) is therefore
-    /// real but currently unreachable specifically through the Object
-    /// Editor for Requirements — honestly disclosed here rather than
-    /// forcing this test to assert something the real running application
-    /// cannot actually do, matching this project's own "never fabricate"
-    /// discipline.
+    /// <b>`TD-41`, closed by `WP 19.10I`.</b> <see cref="ObjectEditorView.TryCreate"/>
+    /// used to gate unconditionally on <c>EngineeringDomainContext.Repository.FindAsync</c>
+    /// resolving a real <see cref="IEngineeringObject"/> — and that call
+    /// always returns <see langword="null"/> for a Requirement
+    /// (Requirements are real <c>IEngineeringDocument</c>s, `ADR-0058`,
+    /// but were never wired into the general
+    /// <c>IEngineeringObjectRepository</c>'s own Kind-to-object
+    /// materialisation — only reachable through
+    /// <see cref="IRequirementsService"/> directly, a genuinely different
+    /// read path). <c>TryCreate</c> now falls back to
+    /// <see cref="IRequirementsService"/> when the repository has nothing
+    /// for a Requirement's own Kind, so this section's own code — real
+    /// since `WP 10.7A`, but unreachable through the Object Editor until
+    /// now — is exercised here exactly as the Ribbon already exercised it
+    /// (<c>FeatureCompletionTests</c>). The statement is asserted too,
+    /// alongside Owner/Priority, since both are now real through this one
+    /// editor.
     /// </summary>
     [AvaloniaFact]
     public async Task RequirementSection_SaveOwnerAndPriority_ActuallyPersistsThem()
@@ -408,24 +405,61 @@ public sealed class ObjectEditorViewTests
             var commandDispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
             var requirementsService = (IRequirementsService)host.Services!.GetService(typeof(IRequirementsService));
 
+            // `WP 20.10F` (Product Owner finding D8): the Owner control is
+            // now a drop-down of Released people — a Released person,
+            // registered directly through the catalogue, is what this
+            // test's own Save path now picks. The People library's own UI
+            // (Add a person, Verify, Release) is proven separately
+            // (`PersonLibraryJourneyTests`); this test's own focus stays the
+            // Save path once a person is pickable.
+            var personCatalog = (IPersonCatalog)host.Services!.GetService(typeof(IPersonCatalog));
+            const string personId = "person-wp2010f-test-owner";
+            const string personDisplayName = "WP 20.10F Test Owner";
+            await personCatalog.RegisterAsync(personId, new Person { DisplayName = personDisplayName }, PersonProvenance.Default);
+            var statement = new ReferenceReviewStatement("Test fixture — registered directly, not through the People library's own UI.");
+            await host.ReferenceReview!.VerifyAsync(personCatalog, personId, statement);
+            await host.ReferenceReview!.ReleaseAsync(personCatalog, personId, "Test fixture.");
+            var ownerSupport = new RequirementOwnerEditorSupport(personCatalog, _ => Task.FromResult<(string RecordId, string DisplayName)?>(null));
+
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
             var target = await FindFirstObjectNodeOfKindAsync(workspace.ProjectExplorer, roots, RequirementsService.RequirementDocumentKind);
             if (target is null)
                 return; // no real Requirement in this sample set — honestly nothing to prove here.
 
-            var editor = ObjectEditorView.TryCreate(target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, requirementsService);
-            if (editor is null)
-                return; // confirmed, disclosed, pre-existing gap (see this test's own remarks) — nothing more to prove here.
+            var editor = ObjectEditorView.TryCreate(
+                target.Id, target.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher, requirementsService,
+                ownerSupport: ownerSupport);
+            Assert.NotNull(editor);
 
-            var requirementExpander = editor.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
+            var sampleRequirement = await requirementsService.FindAsync(target.Id);
+            Assert.NotNull(sampleRequirement);
+            var contentBox = FindContentBox(editor!);
+            Assert.Equal(sampleRequirement!.Statement, contentBox.Text);
+
+            var requirementExpander = editor!.GetLogicalDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Owner / Priority"));
             Assert.True(requirementExpander.IsVisible);
 
-            var ownerBox = FindByLabelWithin<TextBox>(requirementExpander, "Owner");
-            ownerBox.Text = "WP10.7A Test Owner";
+            // The Owner section's own options are read through
+            // IPersonCatalog in the background (`PopulateRequirementInBackground`)
+            // — bounded poll for the option to appear, the same remedy this
+            // file's own Save-path polls already use for a real disk write.
+            var ownerBox = FindByLabelWithin<ComboBox>(requirementExpander, "Owner");
+            ComboBoxItem? ownerOption = null;
+            var optionDeadline = DesktopTestHelpers.Deadline(2);
+            while (ownerOption is null && DateTime.UtcNow < optionDeadline)
+            {
+                ownerOption = (ownerBox.ItemsSource as IEnumerable<ComboBoxItem>)?.FirstOrDefault(i => Equals(i.Content, personDisplayName));
+                if (ownerOption is null)
+                    await Task.Delay(10);
+            }
+
+            Assert.NotNull(ownerOption);
+            ownerBox.SelectedItem = ownerOption;
+
             var priorityBox = FindByLabelWithin<ComboBox>(requirementExpander, "Priority");
             priorityBox.SelectedItem = "High";
 
-            var saveButton = editor.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save Owner/Priority"));
+            var saveButton = editor!.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save Owner/Priority"));
             saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
             // `TD-119`: the Save/Attach click runs an `async void` handler over
@@ -435,13 +469,14 @@ public sealed class ObjectEditorViewTests
             // the write genuinely never lands.
             var reread = await requirementsService.FindAsync(target.Id);
             var ownerDeadline = DesktopTestHelpers.Deadline(2);
-            while ((reread is null || reread.Owner != "WP10.7A Test Owner") && DateTime.UtcNow < ownerDeadline)
+            while ((reread is null || reread.Owner != personDisplayName) && DateTime.UtcNow < ownerDeadline)
             {
                 await Task.Delay(10);
                 reread = await requirementsService.FindAsync(target.Id);
             }
 
-            Assert.Equal("WP10.7A Test Owner", reread!.Owner);
+            Assert.Equal(personDisplayName, reread!.Owner);
+            Assert.Equal(personId, reread.OwnerPersonId);
             Assert.Equal(RequirementPriority.High, reread.Priority);
         }
         finally
@@ -621,7 +656,7 @@ public sealed class ObjectEditorViewTests
                 CalculationObjectFactoryRegistry.CalculationKind, "Quick Bolt Check", "QC-1"), CancellationToken.None);
             Assert.True(created.Succeeded, created.Message);
             var calculation = (await domainContext.Repository.ListByKindAsync(CalculationObjectFactoryRegistry.CalculationKind))
-                .Single(o => ((IHasBusinessIdentifier)o).Identifier == "QC-1");
+                .Single(entry => entry.Identifier == "QC-1");
 
             var editor = ObjectEditorView.TryCreate(calculation.Id, calculation.Kind!, domainContext, host.Manager!, (_, _) => { }, commandDispatcher)!;
             Assert.NotNull(editor);

@@ -4,8 +4,13 @@ using Tempest.Workspace.Documents;
 using Tempest.Workspace.Manufacturing;
 using Tempest.Workspace.Mechanical;
 using Tempest.Workspace.Verification;
+using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Evidence;
+using Tempest.Core.Invoicing;
+using Tempest.Core.Quotations;
+using Tempest.Core.Tasks;
+using Tempest.Core.Timesheets;
 
 namespace Tempest.Core.Tests.EngineeringDomain;
 
@@ -66,6 +71,36 @@ public sealed class ProductionRehydrationTests
         // `WP 18.0A` (`ADR-0148`) — the eighteenth Kind with a production
         // rehydrator from the day it shipped.
         data.Add(Tempest.Core.Evidence.Evidence.CanonicalKind, typeof(Tempest.Core.Evidence.Evidence));
+
+        // `WP 19.0A` (`ADR-0150`) — the nineteenth and twentieth Kinds with
+        // a production rehydrator from the day they shipped, each its own
+        // discipline registration mirroring Evidence's own shape rather
+        // than joining `CanonicalObjectKinds` (that class is specifically
+        // for Kinds with no discipline workspace of their own; these two
+        // have one).
+        data.Add(TimesheetEntry.CanonicalKind, typeof(TimesheetEntry));
+        data.Add(DeliverableCompletion.CanonicalKind, typeof(DeliverableCompletion));
+
+        // `WP 19.1A` (`ADR-0151`) — the twenty-first Kind with a production
+        // rehydrator from the day it shipped, the identical Evidence shape
+        // once more: its own discipline registration rather than
+        // `CanonicalObjectKinds`.
+        data.Add(InvoiceRequest.CanonicalKind, typeof(InvoiceRequest));
+
+        // `WP 19.5A` (`ADR-0152`) — the twenty-second Kind with a
+        // production rehydrator from the day it shipped, the identical
+        // Evidence shape once more.
+        data.Add(Quotation.CanonicalKind, typeof(Quotation));
+
+        // `WP 19.5C` — the twenty-third Kind with a production rehydrator
+        // from the day it shipped, the identical Evidence shape once more.
+        data.Add(ManualTask.CanonicalKind, typeof(ManualTask));
+
+        // `WP 21.3B` — the twenty-fourth and twenty-fifth Kinds with a
+        // production rehydrator from the day they shipped, the identical
+        // Evidence shape once more.
+        data.Add(Tempest.Core.Expenses.ProjectExpense.CanonicalKind, typeof(Tempest.Core.Expenses.ProjectExpense));
+        data.Add(Tempest.Core.PurchaseOrders.PurchaseOrder.CanonicalKind, typeof(Tempest.Core.PurchaseOrders.PurchaseOrder));
 
         // The twelve that were registered only by Tempest.Samples.
         data.Add(CanonicalObjectKinds.Portfolio, typeof(Portfolio));
@@ -228,6 +263,13 @@ public sealed class ProductionRehydrationTests
         VerificationActivityFactoryRegistry.RegisterRehydrators(registry, context);
         ManufacturingObjectFactoryRegistry.RegisterRehydrators(registry, context);
         registry.Register<Tempest.Core.Evidence.Evidence>(Tempest.Core.Evidence.Evidence.CanonicalKind, context);
+        registry.Register<TimesheetEntry>(TimesheetEntry.CanonicalKind, context);
+        registry.Register<DeliverableCompletion>(DeliverableCompletion.CanonicalKind, context);
+        registry.Register<InvoiceRequest>(InvoiceRequest.CanonicalKind, context);
+        registry.Register<Quotation>(Quotation.CanonicalKind, context);
+        registry.Register<ManualTask>(ManualTask.CanonicalKind, context);
+        registry.Register<Tempest.Core.Expenses.ProjectExpense>(Tempest.Core.Expenses.ProjectExpense.CanonicalKind, context);
+        registry.Register<Tempest.Core.PurchaseOrders.PurchaseOrder>(Tempest.Core.PurchaseOrders.PurchaseOrder.CanonicalKind, context);
         CanonicalObjectKinds.RegisterRehydrators(registry, context);
     }
 

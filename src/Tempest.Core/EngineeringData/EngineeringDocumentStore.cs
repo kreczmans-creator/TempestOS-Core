@@ -195,6 +195,27 @@ public sealed class EngineeringDocumentStore : IEngineeringDocumentStore, Engine
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <b>`TD-20`.</b> Reads the document record once (to learn
+    /// <see cref="EngineeringDocumentDto.CurrentRevisionNumber"/>) and then
+    /// exactly the one revision it names — never the full history
+    /// <see cref="GetRevisionHistoryAsync"/> would build, which costs one
+    /// read per revision the document has ever had.
+    /// </remarks>
+    public async Task<IDocumentRevision> GetLatestRevisionAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        var dto = await ReadDocumentAsync(documentId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDocumentNotFoundException(documentId);
+
+        var revisionDto = await ReadRevisionAsync(documentId, dto.CurrentRevisionNumber, cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDataException(
+                $"Engineering document '{documentId}' is missing its own revision {dto.CurrentRevisionNumber} — the store is internally inconsistent.");
+
+        return new DocumentRevision(
+            documentId, dto.CurrentRevisionNumber, revisionDto.Content, revisionDto.ChangeSummary, revisionDto.AuthorPrincipalId, revisionDto.CreatedAt);
+    }
+
+    /// <inheritdoc />
     public async Task LinkAsync(Guid sourceDocumentId, Guid targetDocumentId, string relationshipKind, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relationshipKind);

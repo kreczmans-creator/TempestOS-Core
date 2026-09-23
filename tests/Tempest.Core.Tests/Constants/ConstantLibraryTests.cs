@@ -1,6 +1,7 @@
 using Tempest.Core.Constants;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.ReferenceData;
+using Tempest.Core.Tests.ReferenceData;
 using Tempest.Core.UnitsAndQuantities;
 
 namespace Tempest.Core.Tests.Constants;
@@ -540,5 +541,57 @@ public class ConstantLibraryTests
                 "Refused."));
 
         Assert.Equal(1000, (await catalog.FindBySymbolAsync("fx_a"))!.Definition.Value!.CanonicalValue);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-158`/`TD-156` through the shared ReferenceDataTransactionalFacts
+    // helper (`WP 19.10K`) — ConstantCatalog runs the same transactional
+    // path.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RegisterAsync_FaultBetweenDocumentAndIndexWrite_LeavesNothingDurable()
+    {
+        var catalog = ConstantFixtures.BuildCatalog(out _, out var persistenceStore);
+
+        await ReferenceDataTransactionalFacts.RegisterAsync_FaultDuringCommit_LeavesNothingDurableAsync(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.RegisterAsync("con-fault", ConstantFixtures.Measured("fx_fault"), ConstantFixtures.SourcedProvenance()),
+            async () => await catalog.FindAsync("con-fault") is not null);
+
+        Assert.Empty(await catalog.ListAsync());
+        Assert.Null(await catalog.FindBySymbolAsync("fx_fault"));
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrent()
+    {
+        var catalog = ConstantFixtures.BuildCatalog(out _, out var persistenceStore);
+        await catalog.RegisterAsync("con-a", ConstantFixtures.Measured("fx_a"), ConstantFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("con-b", ConstantFixtures.Measured("fx_b"), ConstantFixtures.VerifiedProvenance());
+        await ConstantFixtures.ReleaseAsync(catalog, "con-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_FaultDuringCommit_LeavesTheOldRecordCurrentAsync<ConstantDefinition>(
+            v => persistenceStore.FailNextCommit = v,
+            () => catalog.SupersedeAsync("con-a", "con-b", "Replaced."),
+            () => catalog.FindAsync("con-a"),
+            ReferenceValidationState.Released);
+    }
+
+    [Fact]
+    public async Task SupersedeAsync_ThenTheReplacementClaimsTheFreedSymbol_FindBySymbolReturnsTheReplacement()
+    {
+        var catalog = ConstantFixtures.BuildCatalog();
+        await catalog.RegisterAsync("con-a", ConstantFixtures.Measured("fx_shared"), ConstantFixtures.VerifiedProvenance());
+        await catalog.RegisterAsync("con-b", ConstantFixtures.Measured("fx_b"), ConstantFixtures.VerifiedProvenance());
+        await ConstantFixtures.ReleaseAsync(catalog, "con-a");
+
+        await ReferenceDataTransactionalFacts.SupersedeAsync_ThenTheReplacementClaimsTheFreedKeyAsync<ConstantDefinition>(
+            () => catalog.SupersedeAsync("con-a", "con-b", "Replaced."),
+            () => catalog.ReviseAsync(
+                "con-b", ConstantFixtures.Measured("fx_shared"), ConstantFixtures.VerifiedProvenance(), "Adopts the symbol it replaces."),
+            () => catalog.FindBySymbolAsync("fx_shared"),
+            "con-a",
+            "con-b");
     }
 }

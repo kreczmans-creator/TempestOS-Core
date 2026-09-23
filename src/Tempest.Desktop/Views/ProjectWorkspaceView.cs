@@ -6,6 +6,9 @@ using Avalonia.Media;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.Shell;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.DrawingRegisters;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.Views;
@@ -41,15 +44,15 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly IProjectTaskRegister _tasks;
     private readonly IProjectGovernanceRegister _governance;
     private readonly IProjectMilestoneRegister _milestones;
+    private readonly EngineeringDomainContext _domainContext;
 
     private readonly TextBlock _title = PageHeading.Title(string.Empty);
     private readonly TextBlock _subtitle = PageHeading.Lead(string.Empty);
+    private readonly TextBlock _lifecycleBanner = new() { FontSize = DesignTokens.FontSizeCaption, FontWeight = FontWeight.Medium, IsVisible = false, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0) };
     private readonly TabControl _areas = new();
     private readonly StackPanel _overview = new() { Spacing = DesignTokens.SpaceSm };
     private readonly Button _enterEngineering = new() { Content = "Enter Engineering →", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _closeProject = new() { Content = "Close Project", MinHeight = DesignTokens.ControlSizeMedium };
-
-    private readonly List<ContentControl> _areaHosts = [];
 
     // The areas with real surfaces of their own. Built once and refreshed
     // in place, so the register a user is looking at survives a re-render
@@ -59,6 +62,42 @@ public sealed class ProjectWorkspaceView : UserControl
     private readonly ProjectTasksView _tasksView = new();
     private readonly ProjectRisksView _risksView = new();
     private readonly ProjectTimelineView _timelineView = new();
+    private readonly ProjectDeliverablesView _deliverablesView;
+    private readonly ProjectQuoteView _quoteView;
+    private readonly EvidenceWorkspaceView _evidenceView;
+    private readonly ProjectSignOffView _signOffView;
+    private readonly ProjectDetailsView _detailsView;
+    private readonly DocumentExporter? _documentExporter;
+    private readonly DrawingRegisterDocumentRenderer? _drawingRegisterRenderer;
+    private readonly Func<string>? _applicationVersionText;
+
+    // `WP 19.2B`: the Structure tab's own content host — a stable
+    // placeholder built at construction time, before the engineering
+    // surface (ribbon + docking) exists; `SetEngineeringSurface` fills it
+    // once the composer has built that surface, and `ClearEngineeringSurface`
+    // frees it again when the shell needs the same, single control
+    // instance for standalone engineering instead (see both methods' own
+    // remarks).
+    //
+    // `WP 19.4A`: no `Margin` at all — this host's parent bounds (the
+    // `TabControl`'s own selected-content presenter, `root`'s remarks
+    // below) *are* the surface's bounds now, not a padded box a negative
+    // margin then escapes past. WP 19.2B's negative margin cancelled
+    // `root`'s own page padding so the surface reached the window edges
+    // exactly as it does standalone at Home, but `root`'s single ambient
+    // margin wrapped the tab strip along with the content, so escaping it
+    // meant bleeding 16px upward into the tab strip's own row too — the
+    // PO's "the surface sits over other things" (`po-comments.md` #1,
+    // `seam-map-shell.md` §3). `root` no longer carries that ambient
+    // margin (below): the same Home-matching width this host relied on
+    // (avoiding `CockpitView`'s card-grid wrap threshold at the narrower
+    // width — the reason WP 19.2B gave the negative margin in the first
+    // place) now comes from `_areas` itself having no side margin either,
+    // so nothing needs cancelling and the tab strip can never be covered.
+    // Every *other* tab's content keeps its own page padding directly
+    // (`BuildAreaContent`), since only this one surface is not page-shaped
+    // content.
+    private readonly ContentControl _structureHost = new();
 
     private bool _suppressAreaSelection;
 
@@ -67,6 +106,9 @@ public sealed class ProjectWorkspaceView : UserControl
 
     /// <summary>Raised after the user closes the project.</summary>
     public event Action? ProjectClosed;
+
+    /// <summary>Raised after Export register completes (`WP 21.2A`) — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`); this view's own other actions raise intent events the shell performs instead, but Export reads and saves a copy entirely within this view, exactly as <c>ProjectQuoteView.OnExportAsync</c> does for the quote sheet.</summary>
+    public event Action<string, ActionOutcome>? ActionCompleted;
 
     /// <summary>
     /// Raised when the user asks to open one of this project's files,
@@ -148,7 +190,29 @@ public sealed class ProjectWorkspaceView : UserControl
     /// <summary>The Timeline surface, so the shell can drive and inspect it.</summary>
     public ProjectTimelineView TimelineView => _timelineView;
 
+    /// <summary>The Deliverables surface, so the shell can drive and inspect it (`WP 19.0A`, `ADR-0150`).</summary>
+    public ProjectDeliverablesView DeliverablesView => _deliverablesView;
+
+    /// <summary>The Quote surface, so the shell can drive and inspect it (`WP 19.5B`, `ADR-0152`).</summary>
+    public ProjectQuoteView QuoteView => _quoteView;
+
+    /// <summary>The Sign off surface, so the shell can drive and inspect it (`WP 19.7A`, `WP 20.10E`).</summary>
+    public ProjectSignOffView SignOffView => _signOffView;
+
     /// <summary>Initialises a new instance of the <see cref="ProjectWorkspaceView"/> class.</summary>
+    /// <param name="deliverablesView">
+    /// This project's own Deliverables tab (`WP 19.0A`, `ADR-0150`) — built
+    /// externally (it needs the Engineering Domain and the command
+    /// dispatcher directly, neither of which this view otherwise depends
+    /// on), so it is handed in already constructed, exactly as
+    /// <see cref="EvidenceWorkspaceView"/> is handed to <c>MainWindow</c>'s
+    /// own area registry.
+    /// </param>
+    /// <param name="quoteView">This project's own Quote tab (`WP 19.5B`, `ADR-0152`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="evidenceView">This project's own Evidence tab (`WP 19.7A`) — the same Evidence surface (`WP 18.2A`), already scoped to whichever project is open, built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="signOffView">This project's own Sign off tab (`WP 19.7A`) — built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="detailsView">This project's own Details tab (`WP 20.10A`, Product Owner findings D2/D12/T1) — the project's own identity and Commercial section, built externally for the identical reason <paramref name="deliverablesView"/> is.</param>
+    /// <param name="domainContext">Reads this project's own <c>ClosedOn</c>/<c>Held</c> facts for the lifecycle banner — <see cref="ProjectSummary"/> carries neither.</param>
     public ProjectWorkspaceView(
         IProjectContext projectContext,
         IProjectDirectory directory,
@@ -157,7 +221,16 @@ public sealed class ProjectWorkspaceView : UserControl
         IProjectRequirementRegister requirements,
         IProjectTaskRegister tasks,
         IProjectGovernanceRegister governance,
-        IProjectMilestoneRegister milestones)
+        IProjectMilestoneRegister milestones,
+        ProjectDeliverablesView deliverablesView,
+        ProjectQuoteView quoteView,
+        EvidenceWorkspaceView evidenceView,
+        ProjectSignOffView signOffView,
+        ProjectDetailsView detailsView,
+        EngineeringDomainContext domainContext,
+        DocumentExporter? documentExporter = null,
+        DrawingRegisterDocumentRenderer? drawingRegisterRenderer = null,
+        Func<string>? applicationVersionText = null)
     {
         ArgumentNullException.ThrowIfNull(projectContext);
         ArgumentNullException.ThrowIfNull(directory);
@@ -167,6 +240,12 @@ public sealed class ProjectWorkspaceView : UserControl
         ArgumentNullException.ThrowIfNull(tasks);
         ArgumentNullException.ThrowIfNull(governance);
         ArgumentNullException.ThrowIfNull(milestones);
+        ArgumentNullException.ThrowIfNull(deliverablesView);
+        ArgumentNullException.ThrowIfNull(quoteView);
+        ArgumentNullException.ThrowIfNull(evidenceView);
+        ArgumentNullException.ThrowIfNull(signOffView);
+        ArgumentNullException.ThrowIfNull(detailsView);
+        ArgumentNullException.ThrowIfNull(domainContext);
 
         _projectContext = projectContext;
         _directory = directory;
@@ -176,9 +255,38 @@ public sealed class ProjectWorkspaceView : UserControl
         _tasks = tasks;
         _governance = governance;
         _milestones = milestones;
+        _deliverablesView = deliverablesView;
+        _quoteView = quoteView;
+
+        // DEFECT-2 of the overnight real-shell journey (2026-09-16, `WP 21.5C`
+        // Linux): Accept created the Deliverables and Requirements but the
+        // sibling tabs kept their empty state until the project was closed
+        // and reopened — `ProjectQuoteView` refreshes only itself and
+        // `QuotationService` publishes nothing on the change bus. The
+        // workspace owns every area view, so it refreshes the ones an
+        // accepted (or declined) quotation changes, the moment the quote
+        // view reports a successful action.
+        quoteView.ActionCompleted += async (_, outcome) =>
+        {
+            if (outcome != ActionOutcome.Changed || projectContext.Current is not { } current)
+                return;
+
+            _requirementsView.Show(await requirements.ListAsync(current.Id).ConfigureAwait(true), current.Label);
+            await deliverablesView.RefreshAsync().ConfigureAwait(true);
+            await detailsView.RefreshAsync().ConfigureAwait(true);
+        };
+        _evidenceView = evidenceView;
+        _signOffView = signOffView;
+        _detailsView = detailsView;
+        _domainContext = domainContext;
+        _documentExporter = documentExporter;
+        _drawingRegisterRenderer = drawingRegisterRenderer;
+        _applicationVersionText = applicationVersionText;
 
         _documentsView.OpenAttachmentRequested += (ownerId, attachmentId) =>
             OpenAttachmentRequested?.Invoke(ownerId, attachmentId);
+        // `WP 21.2A`, scope item 3.
+        _documentsView.ExportRegisterRequested += () => _ = OnExportRegisterAsync();
 
         _requirementsView.EngineeringRequested += async () =>
         {
@@ -229,11 +337,39 @@ public sealed class ProjectWorkspaceView : UserControl
         // present and still navigable — it opens a real, project-aware
         // surface that says what is missing (`DeclaredCapabilityView`).
         foreach (var descriptor in ProjectAreas.All)
-            _areas.Items.Add(new TabItem { Header = descriptor.Title, Tag = descriptor.Area, Content = BuildAreaContent(descriptor) });
+        {
+            var tabItem = new TabItem { Header = descriptor.Title, Tag = descriptor.Area, Content = BuildAreaContent(descriptor) };
+
+            // `WP 19.3A`: named so the layout walk's own bounds/overlap
+            // failures can name the actual tab rather than a bare
+            // "TabItem" — the same convention the rail buttons already
+            // follow (`GlobalNavigationRail.AddModule`).
+            AutomationProperties.SetName(tabItem, descriptor.Title);
+            _areas.Items.Add(tabItem);
+        }
 
         AutomationProperties.SetName(_areas, "Project areas");
-        _areas.SelectionChanged += async (_, _) =>
+        _areas.SelectionChanged += async (_, e) =>
         {
+            // `WP 19.2B`: `SelectionChanged` is a bubbling routed event
+            // shared by every `SelectingItemsControl` — and the Structure
+            // tab now embeds the whole engineering surface (the Project
+            // Explorer tree, the Ribbon's own tab strip, the calculation
+            // pickers), each a `SelectingItemsControl` of its own. Their
+            // selection changes bubble through `_structureHost` and reach
+            // this handler exactly as a real tab-strip click would,
+            // unless it is the tab strip itself that raised the event —
+            // checked here the same way `DigitalThreadGraphView`'s own
+            // hit-test guard already does for its own bubbled events.
+            // Without this, an unrelated reload deep inside the embedded
+            // surface (the Explorer's own change-feed refresh, say) reads
+            // as the user picking the Structure tab, silently steering the
+            // navigator back to project-scoped Engineering and tearing the
+            // shell's own module host away from whatever area was actually
+            // on screen.
+            if (!ReferenceEquals(e.Source, _areas))
+                return;
+
             if (_suppressAreaSelection || _areas.SelectedItem is not TabItem { Tag: ProjectArea area })
                 return;
 
@@ -259,19 +395,35 @@ public sealed class ProjectWorkspaceView : UserControl
 
         _enterEngineering.Classes.Add(ChromeStyles.Primary);
         _closeProject.Classes.Add(ChromeStyles.Subtle);
+        AutomationProperties.SetName(_enterEngineering, "Enter Engineering");
+        AutomationProperties.SetName(_closeProject, "Close Project");
 
         var header = new StackPanel { Spacing = DesignTokens.SpaceXs };
         header.Children.Add(PageHeading.Label("PROJECT WORKSPACE"));
         header.Children.Add(_title);
         header.Children.Add(_subtitle);
+        header.Children.Add(_lifecycleBanner);
 
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, Margin = new Thickness(0, DesignTokens.SpaceMd, 0, 0) };
         actions.Children.Add(_enterEngineering);
         actions.Children.Add(_closeProject);
         header.Children.Add(actions);
 
-        var root = new DockPanel { Margin = DesignTokens.PagePadding };
-        header.Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg);
+        // `WP 19.4A`: `root` itself carries no ambient margin any more —
+        // the single blanket `Margin` WP 19.2B gave it inset the tab strip
+        // right along with the header and every tab's content, which is
+        // exactly what the negative-margin trick on `_structureHost` then
+        // had to escape (and, escaping upward, covered). `header` now
+        // carries the page padding directly on its own three outer edges
+        // (its existing bottom margin below is the gap to the tab strip,
+        // unchanged); `_areas` carries none, so the tab strip and every
+        // tab's content-presenter box reach the window edges exactly as
+        // the engineering surface does standalone at Home — each
+        // page-shaped tab then adds its own left/right/bottom padding
+        // back in `BuildAreaContent`, and the Structure tab (not
+        // page-shaped content) does not.
+        var root = new DockPanel();
+        header.Margin = new Thickness(DesignTokens.PagePadding.Left, DesignTokens.PagePadding.Top, DesignTokens.PagePadding.Right, DesignTokens.SpaceLg);
         DockPanel.SetDock(header, Dock.Top);
         root.Children.Add(header);
         root.Children.Add(_areas);
@@ -280,6 +432,40 @@ public sealed class ProjectWorkspaceView : UserControl
 
     /// <summary>Notes that a file is now open in the viewer, so its row says where it went.</summary>
     public void MarkDocumentOpened(Guid attachmentId) => _documentsView.MarkOpened(attachmentId);
+
+    /// <summary>
+    /// Puts <paramref name="surface"/> — the engineering surface (ribbon +
+    /// docking) — into the Structure tab (`WP 19.2B`). Idempotent: calling
+    /// it again with the same instance already in place does nothing, so
+    /// <c>MainWindow</c> can call it on every entry into project-scoped
+    /// Engineering without first checking whether it already ran.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="surface"/> is the same single control instance
+    /// standalone Engineering (no project open) shows directly in the
+    /// shell's own module host — never two instances of one surface. The
+    /// caller is responsible for detaching it from wherever it currently
+    /// lives (<see cref="ClearEngineeringSurface"/>'s own remarks) before
+    /// handing it here; Avalonia refuses to reparent a control that is
+    /// still attached somewhere else.
+    /// </remarks>
+    public void SetEngineeringSurface(Control surface)
+    {
+        ArgumentNullException.ThrowIfNull(surface);
+        if (!ReferenceEquals(_structureHost.Content, surface))
+            _structureHost.Content = surface;
+    }
+
+    /// <summary>
+    /// Frees the engineering surface from the Structure tab, so the shell
+    /// can hand the same instance to standalone Engineering instead (`WP
+    /// 19.2B`). A no-op when the Structure tab is not currently holding it.
+    /// </summary>
+    public void ClearEngineeringSurface()
+    {
+        if (_structureHost.Content is not null)
+            _structureHost.Content = null;
+    }
 
     /// <summary>Re-reads the open project and its contents.</summary>
     public async Task RefreshAsync()
@@ -296,6 +482,14 @@ public sealed class ProjectWorkspaceView : UserControl
             _tasksView.Show([], [], null);
             _risksView.Show([], [], [], null);
             _timelineView.Show([], null);
+            await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+            _quoteView.SetArchived(false);
+            await _quoteView.RefreshAsync().ConfigureAwait(true);
+            _evidenceView.SetArchived(false);
+            await _evidenceView.RefreshAsync().ConfigureAwait(true);
+            await _signOffView.RefreshAsync().ConfigureAwait(true);
+            await _detailsView.RefreshAsync().ConfigureAwait(true);
+            _lifecycleBanner.IsVisible = false;
             _enterEngineering.IsEnabled = false;
             _closeProject.IsEnabled = false;
             return;
@@ -306,19 +500,58 @@ public sealed class ProjectWorkspaceView : UserControl
         _enterEngineering.IsEnabled = true;
         _closeProject.IsEnabled = true;
 
+        // `WP 19.7A`: the lifecycle banner reads facts `ProjectSummary`
+        // does not carry (`ClosedOn`/`Held`) straight from the real
+        // domain object, exactly as `ProjectsAreaView`'s own grouping does
+        // — an Archived project (`ProjectArchival`, `WP 19.5C`) is read-only
+        // reference data, said out loud here rather than discovered only
+        // when a write is refused.
+        //
+        // `WP 19.10H`: this same read is where `isArchived` comes from —
+        // resolved once, here, and handed to every tab below, rather than
+        // each tab re-deriving it from its own read of the domain (`TD-179`:
+        // the banner said "nothing here can be changed" while Evidence,
+        // Tasks and Timeline kept their write controls enabled).
+        var isArchived = false;
+        if (await _domainContext.Repository.FindAsync(project.Id).ConfigureAwait(true) is Tempest.Core.EngineeringDomain.Project realProject)
+        {
+            var asOf = DateTimeOffset.UtcNow;
+            isArchived = ProjectArchival.IsArchived(realProject, asOf);
+            _lifecycleBanner.Text = ProjectArchival.ListingGroupOf(realProject, asOf) switch
+            {
+                ProjectListingGroup.Archive => $"Archived — closed {realProject.ClosedOn:d}. Reference data only; nothing here can be changed.",
+                ProjectListingGroup.Closed => $"Closed — signed off {realProject.SignOff?.SignedOn:d}. Most writes are refused; see Sign off to reopen.",
+                _ when realProject.Held => $"On hold: {realProject.HoldReason}",
+                _ => null,
+            } ?? string.Empty;
+            _lifecycleBanner.IsVisible = !string.IsNullOrEmpty(_lifecycleBanner.Text);
+        }
+        else
+        {
+            _lifecycleBanner.IsVisible = false;
+        }
+
         var contents = await _directory.ListProjectContentsAsync(project.Id).ConfigureAwait(true);
         _documentsView.Show(await _documents.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _requirementsView.Show(await _requirements.ListAsync(project.Id).ConfigureAwait(true), project.Label);
         _tasksView.Show(
             await _tasks.ListAsync(project.Id).ConfigureAwait(true),
             await _tasks.ListBoardAsync(project.Id).ConfigureAwait(true),
-            project.Label);
+            project.Label,
+            isArchived);
         _risksView.Show(
             await _governance.ListRisksAsync(project.Id).ConfigureAwait(true),
             await _governance.ListIssuesAsync(project.Id).ConfigureAwait(true),
             await _governance.ListDecisionsAsync(project.Id).ConfigureAwait(true),
             project.Label);
-        _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label);
+        _timelineView.Show(await _milestones.ListAsync(project.Id).ConfigureAwait(true), project.Label, isArchived);
+        await _deliverablesView.RefreshAsync().ConfigureAwait(true);
+        _quoteView.SetArchived(isArchived);
+        await _quoteView.RefreshAsync().ConfigureAwait(true);
+        _evidenceView.SetArchived(isArchived);
+        await _evidenceView.RefreshAsync().ConfigureAwait(true);
+        await _signOffView.RefreshAsync().ConfigureAwait(true);
+        await _detailsView.RefreshAsync().ConfigureAwait(true);
         _overview.Children.Clear();
         _overview.Margin = new Thickness(0, DesignTokens.SpaceXl, 0, 0);
         var overviewCard = new CockpitCardControl(Icons.IconGeometry.Layers, "Engineering objects") { Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Left };
@@ -328,8 +561,54 @@ public sealed class ProjectWorkspaceView : UserControl
         _overview.Children.Add(overviewCard);
         _overview.Children.Add(new TextBlock { Text = $"Engineering objects in this project: {contents.Count}", FontSize = DesignTokens.FontSizeCaption, Opacity = 0.0, Height = 0 });
 
-        RefreshAreaSurfaces();
         SyncSelectedArea();
+    }
+
+    /// <summary>Renders this project's own drawing register and saves it through <see cref="DocumentExporter"/> (`WP 21.2A`, scope item 3) — every document/drawing/file-carrying object <see cref="IProjectDocumentRegister.ListAsync"/> already resolves for the Documents tab, re-read at export time for each row's own current status and revision number.</summary>
+    private async Task OnExportRegisterAsync()
+    {
+        if (_documentExporter is null || _drawingRegisterRenderer is null || _applicationVersionText is null)
+        {
+            ActionCompleted?.Invoke("Export is unavailable here.", ActionOutcome.Failed);
+            return;
+        }
+
+        if (_projectContext.Current is not { } project)
+        {
+            ActionCompleted?.Invoke("Open a project to export its own drawing register.", ActionOutcome.Failed);
+            return;
+        }
+
+        var entries = await _documents.ListAsync(project.Id).ConfigureAwait(true);
+        var rows = new List<DrawingRegisterRow>(entries.Count);
+        foreach (var entry in entries)
+        {
+            var target = await _domainContext.Repository.FindAsync(entry.ObjectId).ConfigureAwait(true);
+            var status = (target as IHasLifecycle)?.Status.ToString() ?? "—";
+            // Every revision-by-revision date would need `IEngineeringDocumentStore`
+            // threaded through this view as well — not named by this Work
+            // Package's own "files you own" list, so the register's own
+            // "issue history" column states the current revision only,
+            // honestly, rather than a fabricated history.
+            var issueHistory = target is { } t ? $"Current: rev {t.CurrentRevisionNumber}" : "—";
+
+            rows.Add(new DrawingRegisterRow(
+                entry.Identifier ?? "—",
+                entry.DisplayName,
+                target?.CurrentRevisionNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—",
+                status,
+                issueHistory));
+        }
+
+        var model = new DrawingRegisterDocumentModel(
+            ProjectCode: project.Identifier ?? project.DisplayName,
+            ProjectName: project.DisplayName,
+            Rows: rows,
+            GeneratedAtUtc: DateTimeOffset.UtcNow,
+            ApplicationVersionText: _applicationVersionText());
+
+        var result = await _documentExporter.ExportAsync(_drawingRegisterRenderer, model, project.Label, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        ActionCompleted?.Invoke(result.Message, ActionOutcome.From(result.Succeeded));
     }
 
     /// <summary>Selects the tab matching the navigator's own current project area, without re-raising navigation.</summary>
@@ -345,44 +624,49 @@ public sealed class ProjectWorkspaceView : UserControl
         _suppressAreaSelection = false;
     }
 
+    /// <summary>
+    /// Every project area now has a real surface of its own (`WP 19.2B`,
+    /// `TD-81`: Reports and Settings, the last two that did not, are
+    /// removed from <see cref="ProjectAreas.All"/> rather than rendered
+    /// declared) — so this is a closed mapping, not a fallback chain.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="descriptor"/>'s area has no case here — <see cref="ProjectAreas.All"/> declared an area this view does not yet know how to render.</exception>
     private Control BuildAreaContent(ProjectAreaDescriptor descriptor)
     {
-        // The areas with live content of their own; every other area
-        // renders from its own declaration, so a view can never claim a
-        // capability the application state does not.
-        if (descriptor.Area == ProjectArea.Overview)
-            return _overview;
-
-        if (descriptor.Area == ProjectArea.Documents)
-            return _documentsView;
-
-        if (descriptor.Area == ProjectArea.Requirements)
-            return _requirementsView;
-
-        if (descriptor.Area == ProjectArea.Tasks)
-            return _tasksView;
-
-        if (descriptor.Area == ProjectArea.Risks)
-            return _risksView;
-
-        if (descriptor.Area == ProjectArea.Timeline)
-            return _timelineView;
-
-        var host = new ContentControl { Tag = descriptor.Area };
-        _areaHosts.Add(host);
-        host.Content = new DeclaredCapabilityView(descriptor, _projectContext.Current?.Label);
-        return host;
-    }
-
-    /// <summary>Re-renders every declared area's own surface so it names the currently open project.</summary>
-    private void RefreshAreaSurfaces()
-    {
-        var label = _projectContext.Current?.Label;
-
-        foreach (var host in _areaHosts)
+        var content = descriptor.Area switch
         {
-            if (host.Tag is ProjectArea area)
-                host.Content = new DeclaredCapabilityView(ProjectAreas.For(area), label);
+            ProjectArea.Details => _detailsView,
+            ProjectArea.Overview => _overview,
+            ProjectArea.Quote => _quoteView,
+            // `WP 19.2B`: the Structure tab embeds the engineering surface
+            // (ribbon + docking) through `_structureHost`, filled once
+            // `MainWindow`/`MainWindowComposer` has built that surface (see
+            // `SetEngineeringSurface`) — never built here, which would be too
+            // early.
+            ProjectArea.Engineering => (Control)_structureHost,
+            ProjectArea.Documents => _documentsView,
+            ProjectArea.Requirements => _requirementsView,
+            ProjectArea.Tasks => _tasksView,
+            ProjectArea.Risks => _risksView,
+            ProjectArea.Timeline => _timelineView,
+            ProjectArea.Deliverables => _deliverablesView,
+            ProjectArea.Evidence => _evidenceView,
+            ProjectArea.SignOff => _signOffView,
+            _ => throw new ArgumentOutOfRangeException(nameof(descriptor), descriptor.Area, "No content is built for this project area."),
+        };
+
+        // `WP 19.4A`: `_areas` (the `TabControl`) and `root` now carry no
+        // ambient margin of their own (the constructor's own remarks), so
+        // every page-shaped tab's content applies its own page padding
+        // here instead of inheriting one — every tab except the Structure
+        // tab, whose engineering surface (ribbon + docking) fills the tab
+        // content presenter's bounds exactly, matching the width it has
+        // standalone at Home (`_structureHost`'s own remarks).
+        if (descriptor.Area != ProjectArea.Engineering)
+        {
+            content.Margin = new Thickness(DesignTokens.PagePadding.Left, 0, DesignTokens.PagePadding.Right, DesignTokens.PagePadding.Bottom);
         }
+
+        return content;
     }
 }

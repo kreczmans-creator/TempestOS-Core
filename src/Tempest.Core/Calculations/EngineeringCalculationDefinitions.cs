@@ -72,7 +72,7 @@ public sealed class BoltShearCapacityCalculationDefinition : ICalculationDefinit
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own diameter is not positive, or its safety factor is below 1.0.</exception>
-    public BoltShearCapacityResult Calculate(BoltShearCapacityInput input, CalculationContext context)
+    public BoltShearCapacityResult Calculate(BoltShearCapacityInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var diameterMm = input.Diameter.ConvertTo(LengthUnits.Millimetre).Value;
         var isPositiveDiameter = diameterMm > 0;
@@ -144,7 +144,7 @@ public sealed class BeamBendingStressCalculationDefinition : ICalculationDefinit
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own section width or height is not positive.</exception>
-    public BeamBendingStressResult Calculate(BeamBendingStressInput input, CalculationContext context)
+    public BeamBendingStressResult Calculate(BeamBendingStressInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var widthMm = input.SectionWidth.ConvertTo(LengthUnits.Millimetre).Value;
         var heightMm = input.SectionHeight.ConvertTo(LengthUnits.Millimetre).Value;
@@ -216,7 +216,7 @@ public sealed class BearingLoadCapacityCalculationDefinition : ICalculationDefin
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own hole diameter/plate thickness is not positive, or its safety factor is below 1.0.</exception>
-    public BearingLoadCapacityResult Calculate(BearingLoadCapacityInput input, CalculationContext context)
+    public BearingLoadCapacityResult Calculate(BearingLoadCapacityInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var diameterMm = input.HoleDiameter.ConvertTo(LengthUnits.Millimetre).Value;
         var thicknessMm = input.PlateThickness.ConvertTo(LengthUnits.Millimetre).Value;
@@ -285,7 +285,7 @@ public sealed class PressureVesselWallThicknessCalculationDefinition
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException">The thin-wall formula's own denominator is not positive for <paramref name="input"/>.</exception>
-    public PressureVesselWallThicknessResult Calculate(PressureVesselWallThicknessInput input, CalculationContext context)
+    public PressureVesselWallThicknessResult Calculate(PressureVesselWallThicknessInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var pressureMPa = input.InternalPressure.ConvertTo(PressureUnits.Megapascal).Value;
         var radiusMm = input.InnerRadius.ConvertTo(LengthUnits.Millimetre).Value;
@@ -354,7 +354,7 @@ public sealed class MaterialSelectionMarginCalculationDefinition : ICalculationD
 
     /// <inheritdoc />
     /// <exception cref="CalculationInputInvalidException"><paramref name="input"/>'s own applied stress is not positive.</exception>
-    public MaterialSelectionMarginResult Calculate(MaterialSelectionMarginInput input, CalculationContext context)
+    public MaterialSelectionMarginResult Calculate(MaterialSelectionMarginInput input, CalculationContext context, CancellationToken cancellationToken = default)
     {
         var appliedMPa = input.AppliedStress.ConvertTo(PressureUnits.Megapascal).Value;
         var isPositive = appliedMPa > 0;
@@ -429,14 +429,44 @@ public static class ProductCalculationCatalogue
     /// and executable without restating the list, and so a reader can see
     /// what a running host holds without reading the method body.
     /// </remarks>
-    public static IReadOnlyList<string> CalculationIds { get; } =
+    public static IReadOnlyList<string> CalculationIds => CalculationIdsInOrder;
+
+    /// <summary>
+    /// Every calculation this catalogue registers, with its own
+    /// <see cref="CalculationMetadata"/>, in registration order (`WP 21.7A`).
+    /// </summary>
+    /// <remarks>
+    /// The one list the catalogue is stated in: <see cref="CalculationIds"/>
+    /// is derived from it, and a surface listing the catalogue reads the
+    /// name and description from here rather than restating either, so a
+    /// module added to <see cref="RegisterAll"/> and to this list appears
+    /// everywhere at once. The eleven `WP 21.7A` modules live in
+    /// <c>Tempest.Core.Calculations.Modules</c>, each specified under
+    /// <c>docs/engineering/calculations/</c>.
+    /// </remarks>
+    public static IReadOnlyList<(string Id, CalculationMetadata Metadata)> Descriptions { get; } =
     [
-        BoltShearCapacityCalculationDefinition.Id,
-        BeamBendingStressCalculationDefinition.Id,
-        BearingLoadCapacityCalculationDefinition.Id,
-        PressureVesselWallThicknessCalculationDefinition.Id,
-        MaterialSelectionMarginCalculationDefinition.Id,
+        (BoltShearCapacityCalculationDefinition.Id, new BoltShearCapacityCalculationDefinition().Metadata),
+        (BeamBendingStressCalculationDefinition.Id, new BeamBendingStressCalculationDefinition().Metadata),
+        (BearingLoadCapacityCalculationDefinition.Id, new BearingLoadCapacityCalculationDefinition().Metadata),
+        (PressureVesselWallThicknessCalculationDefinition.Id, new PressureVesselWallThicknessCalculationDefinition().Metadata),
+        (MaterialSelectionMarginCalculationDefinition.Id, new MaterialSelectionMarginCalculationDefinition().Metadata),
+        (Modules.BeamDeflectionCalculationDefinition.Id, new Modules.BeamDeflectionCalculationDefinition().Metadata),
+        (Modules.BoltedJointPreloadCalculationDefinition.Id, new Modules.BoltedJointPreloadCalculationDefinition().Metadata),
+        (Modules.BoltGroupEccentricShearCalculationDefinition.Id, new Modules.BoltGroupEccentricShearCalculationDefinition().Metadata),
+        (Modules.FilletWeldThroatStressCalculationDefinition.Id, new Modules.FilletWeldThroatStressCalculationDefinition().Metadata),
+        (Modules.LiftingLugPinJointCalculationDefinition.Id, new Modules.LiftingLugPinJointCalculationDefinition().Metadata),
+        (Modules.ColumnBucklingCalculationDefinition.Id, new Modules.ColumnBucklingCalculationDefinition().Metadata),
+        (Modules.ShaftCombinedStressCalculationDefinition.Id, new Modules.ShaftCombinedStressCalculationDefinition().Metadata),
+        (Modules.BearingRatingLifeCalculationDefinition.Id, new Modules.BearingRatingLifeCalculationDefinition().Metadata),
+        (Modules.ThickWalledCylinderCalculationDefinition.Id, new Modules.ThickWalledCylinderCalculationDefinition().Metadata),
+        (Modules.ThermalExpansionStressCalculationDefinition.Id, new Modules.ThermalExpansionStressCalculationDefinition().Metadata),
+        (Modules.FatigueMinerCalculationDefinition.Id, new Modules.FatigueMinerCalculationDefinition().Metadata),
     ];
+
+    // Declared after Descriptions, which it is derived from: static
+    // initialisers run in textual order.
+    private static readonly IReadOnlyList<string> CalculationIdsInOrder = Descriptions.Select(d => d.Id).ToList();
 
     /// <summary>Registers the product's five engineering calculations with <paramref name="engine"/>.</summary>
     /// <remarks>
@@ -458,6 +488,17 @@ public static class ProductCalculationCatalogue
         Register(() => engine.RegisterDefinition(new BearingLoadCapacityCalculationDefinition()));
         Register(() => engine.RegisterDefinition(new PressureVesselWallThicknessCalculationDefinition()));
         Register(() => engine.RegisterDefinition(new MaterialSelectionMarginCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.BeamDeflectionCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.BoltedJointPreloadCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.BoltGroupEccentricShearCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.FilletWeldThroatStressCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.LiftingLugPinJointCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ColumnBucklingCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ShaftCombinedStressCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.BearingRatingLifeCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ThickWalledCylinderCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ThermalExpansionStressCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.FatigueMinerCalculationDefinition()));
     }
 
     private static void Register(Action register)

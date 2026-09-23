@@ -58,8 +58,8 @@ public sealed class EngineeringEntryLayoutTests
             Assert.True(window.WorkspaceLayout.IsPanelVisible(composer.ExplorerPanelId), "Explorer missing from the layout after entering Engineering from a project.");
             Assert.True(window.WorkspaceLayout.IsPanelVisible(composer.InspectorPanelId), "Inspector missing from the layout after entering Engineering from a project.");
 
-            var explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
-            var inspector = window.GetLogicalDescendants().OfType<PropertyInspectorView>().Single();
+            var explorer = window.FindUnique<ProjectExplorerView>();
+            var inspector = window.FindUnique<PropertyInspectorView>();
             Assert.True(explorer.IsVisible && explorer.Bounds.Width > 100, $"Explorer not usable after entering Engineering: visible={explorer.IsVisible}, bounds={explorer.Bounds}.");
             Assert.True(inspector.IsVisible && inspector.Bounds.Width > 100, $"Inspector not usable after entering Engineering: visible={inspector.IsVisible}, bounds={inspector.Bounds}.");
 
@@ -72,8 +72,8 @@ public sealed class EngineeringEntryLayoutTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            explorer = window.GetLogicalDescendants().OfType<ProjectExplorerView>().Single();
-            inspector = window.GetLogicalDescendants().OfType<PropertyInspectorView>().Single();
+            explorer = window.FindUnique<ProjectExplorerView>();
+            inspector = window.FindUnique<PropertyInspectorView>();
             Assert.True(explorer.IsVisible && explorer.Bounds.Width > 100, $"Explorer not usable on re-entry: bounds={explorer.Bounds}.");
             Assert.True(inspector.IsVisible && inspector.Bounds.Width > 100, $"Inspector not usable on re-entry: bounds={inspector.Bounds}.");
         }

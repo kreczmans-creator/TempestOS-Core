@@ -3,6 +3,22 @@ using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Workspace.Documents;
 
+/// <summary>The command ids <see cref="DocumentsWorkspaceRegistration"/> registers.</summary>
+public static class DocumentsCommandIds
+{
+    public const string Create = "documents.create";
+    public const string Rename = "documents.rename";
+    public const string Edit = "documents.edit";
+    public const string Delete = "documents.delete";
+    public const string Move = "documents.move";
+    public const string Copy = "documents.copy";
+    public const string Duplicate = "documents.duplicate";
+    public const string Attach = "documents.attach";
+    public const string RequestReview = "documents.request-review";
+    public const string Approve = "documents.approve";
+    public const string Release = "documents.release";
+}
+
 /// <summary>
 /// The single composition-root entry point wiring the whole Engineering
 /// Documents discipline into a running Workspace — everything
@@ -61,16 +77,17 @@ public static class DocumentsWorkspaceRegistration
         }
 
         var factoryRegistry = new DocumentObjectFactoryRegistry(domainContext);
-        var copyHandler = new CopyDocumentObjectCommandHandler(domainContext, factoryRegistry);
+        var copyHandler = new CopyDocumentObjectCommandHandler(domainContext, factoryRegistry, commandDispatcher);
 
-        commandDispatcher.RegisterHandler<CreateDocumentObjectCommand>(new CreateDocumentObjectCommandHandler(factoryRegistry));
+        commandDispatcher.RegisterHandler<CreateDocumentObjectCommand>(new CreateDocumentObjectCommandHandler(factoryRegistry, domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<RenameDocumentObjectCommand>(new RenameDocumentObjectCommandHandler(domainContext));
         commandDispatcher.RegisterHandler<ReviseDocumentCommand>(new ReviseDocumentCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<DeleteDocumentObjectCommand>(new DeleteDocumentObjectCommandHandler(domainContext));
-        commandDispatcher.RegisterHandler<MoveDocumentObjectCommand>(new MoveDocumentObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<DeleteDocumentObjectCommand>(new DeleteDocumentObjectCommandHandler(domainContext, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteDocumentObjectCommand>(new UndeleteDocumentObjectCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<MoveDocumentObjectCommand>(new MoveDocumentObjectCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<CopyDocumentObjectCommand>(copyHandler);
         commandDispatcher.RegisterHandler<DuplicateDocumentObjectCommand>(new DuplicateDocumentObjectCommandHandler(domainContext, copyHandler));
-        commandDispatcher.RegisterHandler<SetDocumentStatusCommand>(new SetDocumentStatusCommandHandler(domainContext));
+        commandDispatcher.RegisterHandler<SetDocumentStatusCommand>(new SetDocumentStatusCommandHandler(domainContext, commandDispatcher));
         commandDispatcher.RegisterHandler<AttachDocumentCommand>(new AttachDocumentCommandHandler(domainContext));
 
         // TD-77 Stage 3 — descriptor binding. Every binding below is a
@@ -82,7 +99,7 @@ public static class DocumentsWorkspaceRegistration
         var boundKinds = SupportedKinds;
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.create", displayName: "Create Document", category: "Documents",
+            id: DocumentsCommandIds.Create, displayName: "Create Document", category: "Documents",
             description: "Creates a new Document, Drawing, or CAD Model.")
         {
             // Classification/DrawingNumber/ModelFormat stay at
@@ -98,10 +115,11 @@ public static class DocumentsWorkspaceRegistration
                 [
                     WorkspaceCommandBindings.Choice("kind", "Kind", boundKinds, DocumentObjectFactoryRegistry.Document),
                     WorkspaceCommandBindings.ObjectName("displayName", "Name"),
-                ]),
+                ],
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.rename", displayName: "Rename Document", category: "Documents",
+            id: DocumentsCommandIds.Rename, displayName: "Rename Document", category: "Documents",
             description: "Renames the selected Document Domain object.")
         {
             // Bound for the Palette and every other future Id-based
@@ -114,10 +132,11 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).Kind,
                     values["newDisplayName"]),
                 [WorkspaceCommandBindings.ObjectName("newDisplayName", "New name")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.edit", displayName: "Edit Document", category: "Documents",
+            id: DocumentsCommandIds.Edit, displayName: "Edit Document", category: "Documents",
             description: "Records a new content revision of the selected Document.")
         {
             Binding = new CommandBinding(
@@ -127,10 +146,11 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).Kind,
                     values["newContent"]),
                 [WorkspaceCommandBindings.Text("newContent", "New content")],
-                boundKinds),
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.delete", displayName: "Delete Document", category: "Documents",
+            id: DocumentsCommandIds.Delete, displayName: "Delete Document", category: "Documents",
             description: "Soft-deletes the selected Document Domain object.")
         {
             Binding = new CommandBinding(
@@ -139,24 +159,44 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Document")),
+                confirmationMessage: WorkspaceCommandBindings.DeleteConfirmation("Document"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.move", displayName: "Move Document", category: "Documents",
+            id: DocumentsCommandIds.Move, displayName: "Move Document", category: "Documents",
             description: "Reparents the selected Document Domain object.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Moving a Document needs a destination parent chosen from the object tree")),
+            // WP 20.2A (S2-2, FCR-0073): the destination is chosen from the
+            // object picker rather than typed. Blank means top level.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new MoveDocumentObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.copy", displayName: "Copy Document", category: "Documents",
+            id: DocumentsCommandIds.Copy, displayName: "Copy Document", category: "Documents",
             description: "Creates a copy of the selected object under a chosen target parent.")
         {
-            Binding = CommandBinding.Unavailable(
-                WorkspaceCommandBindings.ObjectPickerRequired("Copying a Document needs a destination parent chosen from the object tree")),
+            // NewIdentifier/NewDisplayName stay at the command's own
+            // optional defaults, exactly as Duplicate's own binding already
+            // leaves them.
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new CopyDocumentObjectCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId,
+                    WorkspaceCommandBindings.Target(context).Kind,
+                    WorkspaceCommandBindings.ParseDestination(values["destinationId"])),
+                [WorkspaceCommandBindings.Destination("destinationId", "Destination")],
+                boundKinds,
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.duplicate", displayName: "Duplicate Document", category: "Documents",
+            id: DocumentsCommandIds.Duplicate, displayName: "Duplicate Document", category: "Documents",
             description: "Creates a copy of the selected object under its own current parent.")
         {
             Binding = new CommandBinding(
@@ -165,10 +205,11 @@ public static class DocumentsWorkspaceRegistration
                     WorkspaceCommandBindings.Target(context).ObjectId,
                     WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: boundKinds,
-                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Document")),
+                confirmationMessage: WorkspaceCommandBindings.DuplicateConfirmation("Document"),
+                mutates: true),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.attach", displayName: "Attach File", category: "Documents",
+            id: DocumentsCommandIds.Attach, displayName: "Attach File", category: "Documents",
             description: "Attaches a new file reference to the selected Document (IHasAttachments.AttachAsync).")
         {
             // Not a weaker parameter: AttachDocumentCommand's own two
@@ -183,19 +224,19 @@ public static class DocumentsWorkspaceRegistration
         // each is the one shape that can run unattended in a macro
         // (ADR-0098): no parameters to collect, and nothing to confirm.
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.request-review", displayName: "Request Review", category: "Documents",
+            id: DocumentsCommandIds.RequestReview, displayName: "Request Review", category: "Documents",
             description: "Transitions the selected Document's own status to InReview (SetDocumentStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.InReview, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.approve", displayName: "Approve Document", category: "Documents",
+            id: DocumentsCommandIds.Approve, displayName: "Approve Document", category: "Documents",
             description: "Transitions the selected Document's own status to Approved (SetDocumentStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Approved, boundKinds),
         });
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
-            id: "documents.release", displayName: "Release Document", category: "Documents",
+            id: DocumentsCommandIds.Release, displayName: "Release Document", category: "Documents",
             description: "Transitions the selected Document's own status to Released (SetDocumentStatusCommand).")
         {
             Binding = StatusBinding(LifecycleState.Released, boundKinds),
@@ -215,5 +256,6 @@ public static class DocumentsWorkspaceRegistration
                 WorkspaceCommandBindings.Target(context).ObjectId,
                 WorkspaceCommandBindings.Target(context).Kind,
                 status),
-            appliesToKinds: appliesToKinds);
+            appliesToKinds: appliesToKinds,
+            mutates: true);
 }

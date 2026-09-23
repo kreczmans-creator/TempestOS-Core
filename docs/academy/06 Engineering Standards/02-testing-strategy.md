@@ -1,5 +1,13 @@
 # Engineering Standard: Testing Strategy
 
+> **Status note, September 2026.** The strategy below still applies. What
+> the suite learned after it was written — fixed delays replaced by real
+> joins, tests that could not fail, console capture that serialised the
+> whole suite, one host fixture instead of ninety-three copies,
+> property-based and mutation testing — is in
+> `07-test-determinism-and-suite-hygiene.md`. Current counts are in
+> `PROJECT_STATUS.md`.
+
 ## Purpose
 
 This standard describes the testing conventions consistently applied across

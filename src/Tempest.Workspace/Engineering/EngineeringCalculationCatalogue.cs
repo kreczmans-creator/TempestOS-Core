@@ -17,9 +17,9 @@ namespace Tempest.Workspace.Engineering;
 /// drift out of step with its own catalogue entry.
 /// </para>
 /// <para>
-/// <b>Every entry says whether this surface can run it.</b> Five product
-/// calculations are registered with the engine and all five genuinely
-/// compute, but only the bracket section check has a governed entry point
+/// <b>Every entry says whether this surface can run it.</b> The product
+/// calculations are registered with the engine and every one genuinely
+/// computes, but only the bracket section check has a governed entry point
 /// that resolves its inputs from a released reference
 /// (<see cref="GovernedBracketCheckService"/>). The others need an input
 /// document this surface has no form for. Offering them as though they were
@@ -47,11 +47,11 @@ public static class EngineeringCalculationCatalogue
             new(BracketSectionCheckCalculationDefinition.Id, bracket.Metadata.Name, bracket.Metadata.Description ?? string.Empty, true, null),
         };
 
-        entries.AddRange(Describe(new BoltShearCapacityCalculationDefinition().Metadata, BoltShearCapacityCalculationDefinition.Id));
-        entries.AddRange(Describe(new BeamBendingStressCalculationDefinition().Metadata, BeamBendingStressCalculationDefinition.Id));
-        entries.AddRange(Describe(new BearingLoadCapacityCalculationDefinition().Metadata, BearingLoadCapacityCalculationDefinition.Id));
-        entries.AddRange(Describe(new PressureVesselWallThicknessCalculationDefinition().Metadata, PressureVesselWallThicknessCalculationDefinition.Id));
-        entries.AddRange(Describe(new MaterialSelectionMarginCalculationDefinition().Metadata, MaterialSelectionMarginCalculationDefinition.Id));
+        // `WP 21.7A`: every product calculation, read from the one list the
+        // catalogue is stated in, so a module registered there is listed
+        // here without a second edit.
+        foreach (var (id, metadata) in ProductCalculationCatalogue.Descriptions)
+            entries.AddRange(Describe(metadata, id));
 
         return entries;
     }

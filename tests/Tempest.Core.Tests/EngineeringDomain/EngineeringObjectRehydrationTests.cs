@@ -163,7 +163,8 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal("Impeller (Rev B)", recovered.DisplayName);
         Assert.Equal(parent.Id, recovered.ParentId);
         Assert.Equal(4m, recovered.Quantity);
-        Assert.Equal("ea", recovered.UnitOfMeasure);
+        // "ea" canonicalises to "EA" on write and on read alike (ADR-0083 addendum, WP 20.3A).
+        Assert.Equal("EA", recovered.UnitOfMeasure);
         Assert.Equal("FN-07", recovered.FindNumber);
         Assert.Equal("IT-3", recovered.ItemNumber);
         Assert.Equal("RD-9", recovered.ReferenceDesignator);
@@ -192,6 +193,174 @@ public class EngineeringObjectRehydrationTests
         var recoveredAttachment = Assert.Single(await recovered.GetAttachmentsAsync());
 
         Assert.Equal(attachment.Id, recoveredAttachment.Id);
+    }
+
+    // ----------------------------------------------------------------
+    // Attachment annotations (`TD-98`) — beside the owner's own state,
+    // never in the attachment bytes, rehydrated with the owner exactly as
+    // an attachment's own metadata already is.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AnAnnotation_RoundTripsThroughPersistenceAndRehydration()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var points = new[] { new AnnotationPoint(10, 20), new AnnotationPoint(80, 120) };
+        var recorded = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, pageIndex: 2, AnnotationTool.Rectangle, points, "#E5484D", text: null);
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+        var recoveredAnnotation = Assert.Single(await recovered.GetAttachmentAnnotationsAsync(attachment.Id));
+
+        Assert.Equal(recorded.Id, recoveredAnnotation.Id);
+        Assert.Equal(attachment.Id, recoveredAnnotation.AttachmentId);
+        Assert.Equal(2, recoveredAnnotation.PageIndex);
+        Assert.Equal(AnnotationTool.Rectangle, recoveredAnnotation.Tool);
+        Assert.Equal(points, recoveredAnnotation.Points);
+        Assert.Equal("#E5484D", recoveredAnnotation.ColorHex);
+        Assert.Null(recoveredAnnotation.Text);
+        Assert.Equal(recorded.CreatedAtUtc, recoveredAnnotation.CreatedAtUtc);
+        Assert.Equal(recorded.CreatedByPrincipalId, recoveredAnnotation.CreatedByPrincipalId);
+    }
+
+    [Fact]
+    public async Task ATextNoteAnnotation_CarriesItsTextThroughRehydration()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        await part.AddAttachmentAnnotationAsync(
+            attachment.Id, pageIndex: 0, AnnotationTool.TextNote,
+            [new AnnotationPoint(5, 5)], "#F5A524", "Check clearance here.");
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+        var note = Assert.Single(await recovered.GetAttachmentAnnotationsAsync(attachment.Id));
+
+        Assert.Equal("Check clearance here.", note.Text);
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentAnnotationAsync_RemovesIt_AndTheRemovalSurvivesRestart()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var kept = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#12B981", null);
+        var removed = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Arrow, [new AnnotationPoint(2, 2), new AnnotationPoint(3, 3)], "#12B981", null);
+
+        await part.DeleteAttachmentAnnotationAsync(removed.Id);
+
+        var remaining = await part.GetAttachmentAnnotationsAsync(attachment.Id);
+        Assert.Equal([kept.Id], remaining.Select(a => a.Id));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal([kept.Id], (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task DeleteAttachmentAnnotationAsync_OnAnIdThatIsNotThere_DoesNothing()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+
+        // No throw, and no annotation created out of nothing.
+        await part.DeleteAttachmentAnnotationAsync(Guid.NewGuid());
+
+        Assert.Empty(await part.GetAttachmentAnnotationsAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task ClearAttachmentAnnotationsAsync_RemovesOnlyThatPagesAnnotations()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var onPageZero = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Freehand, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#6C29D9", null);
+        await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Freehand, [new AnnotationPoint(2, 2), new AnnotationPoint(3, 3)], "#6C29D9", null);
+        var onPageOne = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 1, AnnotationTool.Freehand, [new AnnotationPoint(4, 4), new AnnotationPoint(5, 5)], "#6C29D9", null);
+
+        await part.ClearAttachmentAnnotationsAsync(attachment.Id, 0);
+
+        var remaining = await part.GetAttachmentAnnotationsAsync(attachment.Id);
+        Assert.Equal([onPageOne.Id], remaining.Select(a => a.Id));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal([onPageOne.Id], (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+        // Page zero's annotations are gone, not merely hidden.
+        Assert.DoesNotContain(onPageZero.Id, (await recovered.GetAttachmentAnnotationsAsync(attachment.Id)).Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task ReviseAsync_CarriesAttachmentAnnotationsOntoTheRevisedInstance()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+        var attachment = new Attachment("elevation.pdf", "application/pdf", 4096);
+        await part.AttachAsync(attachment);
+
+        var annotation = await part.AddAttachmentAnnotationAsync(
+            attachment.Id, 0, AnnotationTool.Rectangle, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#40A2CE", null);
+
+        var revised = Assert.IsType<Part>(await part.ReviseAsync("Revised.", "Rev B"));
+
+        var carried = Assert.Single(await revised.GetAttachmentAnnotationsAsync(attachment.Id));
+        Assert.Equal(annotation.Id, carried.Id);
+    }
+
+    [Fact]
+    public async Task AnAnnotationOnAnAttachment_IsUnaffectedByAnnotationsOnAnother()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var life = NewLifetime(persistence);
+        var part = await CreatePartAsync(life.Domain);
+        var first = new Attachment("first.pdf", "application/pdf", 100);
+        var second = new Attachment("second.pdf", "application/pdf", 200);
+        await part.AttachAsync(first);
+        await part.AttachAsync(second);
+
+        await part.AddAttachmentAnnotationAsync(first.Id, 0, AnnotationTool.Rectangle, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#E5484D", null);
+        await part.AddAttachmentAnnotationAsync(second.Id, 0, AnnotationTool.Ellipse, [new AnnotationPoint(0, 0), new AnnotationPoint(1, 1)], "#12B981", null);
+
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(first.Id));
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(second.Id));
+
+        await part.ClearAttachmentAnnotationsAsync(first.Id, 0);
+
+        Assert.Empty(await part.GetAttachmentAnnotationsAsync(first.Id));
+        Assert.Single(await part.GetAttachmentAnnotationsAsync(second.Id));
     }
 
     [Fact]
@@ -328,7 +497,8 @@ public class EngineeringObjectRehydrationTests
         Assert.Equal("Impeller (Rev B)", revised.DisplayName);
         Assert.Equal(parent.Id, revised.ParentId);
         Assert.Equal(4m, revised.Quantity);
-        Assert.Equal("ea", revised.UnitOfMeasure);
+        // "ea" canonicalises to "EA" on write and on read alike (ADR-0083 addendum, WP 20.3A).
+        Assert.Equal("EA", revised.UnitOfMeasure);
         Assert.Equal("FN-07", revised.FindNumber);
         Assert.Equal("IT-3", revised.ItemNumber);
         Assert.Equal("RD-9", revised.ReferenceDesignator);
@@ -661,6 +831,196 @@ public class EngineeringObjectRehydrationTests
 
         Assert.Equal(0, result.ObjectCount);
         Assert.True(result.IsComplete);
+    }
+
+    // ----------------------------------------------------------------
+    // `TD-27`: rehydration registers in a deterministic order, not
+    // whatever order the state store's own collection scan happens to
+    // return
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task Rehydration_RegistersObjectsInTheSameOrder_EveryTimeItRunsOverTheSameDiskState()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+
+        var created = new List<Part>();
+        for (var i = 0; i < 6; i++)
+            created.Add(await CreatePartAsync(first.Domain, $"PN-{i:D4}", $"Part {i}"));
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var firstOrder = (await second.Domain.Repository.ListAllAsync()).Select(o => o.Id).ToList();
+
+        var third = NewLifetime(persistence);
+        await third.Service.RehydrateAsync();
+        var secondOrder = (await third.Domain.Repository.ListAllAsync()).Select(o => o.Id).ToList();
+
+        Assert.Equal(created.Count, firstOrder.Count);
+        Assert.Equal(firstOrder, secondOrder);
+
+        // The specific guarantee this Work Package fixes it to: sorted by
+        // id, since the durable state carries no reliable creation-order
+        // field of its own for `ListAsync` to preserve.
+        Assert.Equal(created.Select(p => p.Id).Order().ToList(), firstOrder);
+    }
+
+    // ----------------------------------------------------------------
+    // BOM unit of measure vocabulary (ADR-0083 addendum, WP 20.3A):
+    // a value stored before this vocabulary existed reads through the
+    // canonicaliser after a restart, without the durable record itself
+    // ever being rewritten.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task AfterRestart_ARawUnitOfMeasureStoredBeforeTheVocabularyExisted_ReadsAsItsCanonicalUnit()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        // Bypasses SetBomLineAsync's own canonicalisation entirely - the
+        // exact shape of data ADR-0083 disclosed as already possible
+        // before this addendum: "each" and "EA" are two different stored
+        // strings for the one same unit.
+        var dirty = await first.StateStore.FindAsync(part.Id);
+        await first.StateStore.SaveAsync(dirty! with { BomLine = dirty.BomLine with { UnitOfMeasure = "each" } });
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal("EA", recovered.UnitOfMeasure);
+    }
+
+    [Fact]
+    public async Task AfterRestart_ARawUnitOfMeasureThisVocabularyDoesNotRecognise_ReadsUnchanged()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        // A pre-existing free-text value with no equivalent in the closed
+        // vocabulary (ADR-0083's own disclosed "a caller could write 'XYZ'
+        // and nothing would object") must never be silently altered or
+        // refused on a passive read - only a fresh SetBomLineAsync refuses.
+        var dirty = await first.StateStore.FindAsync(part.Id);
+        await first.StateStore.SaveAsync(dirty! with { BomLine = dirty.BomLine with { UnitOfMeasure = "XYZ" } });
+
+        var second = NewLifetime(persistence);
+        await second.Service.RehydrateAsync();
+        var recovered = Assert.IsType<Part>(await second.Domain.Repository.FindAsync(part.Id));
+
+        Assert.Equal("XYZ", recovered.UnitOfMeasure);
+    }
+
+    // `TD-88`/`WP 20.1C2`: the index stage — raised before any document
+    // is read, complete for the whole estate even where full
+    // materialisation cannot proceed, and deterministic across restarts.
+    // Full materialisation itself stays eager (the brief's kill switch:
+    // see `EngineeringObjectRehydrationService`'s own remarks for the
+    // callers that made deferring it unsafe to prove in this Work
+    // Package's scope) — these tests pin the index-first structure and
+    // its hook, not a laziness claim this change does not make.
+    // ----------------------------------------------------------------
+
+    [Fact]
+    public async Task RehydrateAsync_RaisesIndexBuilt_WithEveryIndexFieldPopulated_BeforeMaterialisation()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var parent = await CreateAsync(first.Domain, MechanicalObjectFactoryRegistry.Assembly,
+            (doc, rev) => new Assembly(doc, rev, first.Domain, "ASM-100", "Pump Head", EngineeringObjectMetadata.Empty));
+        var part = await CreatePartAsync(first.Domain);
+        await part.MoveAsync(parent.Id);
+        await part.TransitionAsync(LifecycleState.InReview);
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? captured = null;
+        second.Service.IndexBuilt += entries => captured = entries;
+
+        await second.Service.RehydrateAsync();
+
+        Assert.NotNull(captured);
+        var entry = Assert.Single(captured!, e => e.Id == part.Id);
+        Assert.Equal(MechanicalObjectFactoryRegistry.Part, entry.Kind);
+        Assert.Equal("PN-1001", entry.Identifier);
+        Assert.Equal("Impeller", entry.DisplayName);
+        Assert.Equal(parent.Id, entry.ParentId);
+        Assert.Equal(LifecycleState.InReview, entry.Status);
+        Assert.False(entry.IsDeleted);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_StillNamesAnObject_WhoseKindHasNoRehydrator()
+    {
+        // The information a business-identifier index needs (id, Kind,
+        // Identifier) is available from `EngineeringObjectState` alone —
+        // it survives even for a row full materialisation must skip.
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var exotic = await CreateAsync(first.Domain, "SomeFutureKind",
+            (d, r) => new Part(d, r, first.Domain, "X-1", "Exotic", EngineeringObjectMetadata.Empty));
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? captured = null;
+        second.Service.IndexBuilt += entries => captured = entries;
+
+        var result = await second.Service.RehydrateAsync();
+
+        Assert.NotNull(captured);
+        var entry = Assert.Single(captured!, e => e.Id == exotic.Id);
+        Assert.Equal("SomeFutureKind", entry.Kind);
+        Assert.Equal("X-1", entry.Identifier);
+        Assert.Equal(["SomeFutureKind"], result.UnknownKinds);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_ProducesTheSameIdOrder_EveryTimeItRunsOverTheSameDiskState()
+    {
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+
+        var created = new List<Part>();
+        for (var i = 0; i < 6; i++)
+            created.Add(await CreatePartAsync(first.Domain, $"PN-{i:D4}", $"Part {i}"));
+
+        var second = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? firstIndex = null;
+        second.Service.IndexBuilt += entries => firstIndex = entries;
+        await second.Service.RehydrateAsync();
+
+        var third = NewLifetime(persistence);
+        IReadOnlyList<EngineeringObjectIndexEntry>? secondIndex = null;
+        third.Service.IndexBuilt += entries => secondIndex = entries;
+        await third.Service.RehydrateAsync();
+
+        Assert.NotNull(firstIndex);
+        Assert.NotNull(secondIndex);
+        var firstOrder = firstIndex!.Select(e => e.Id).ToList();
+        var secondOrder = secondIndex!.Select(e => e.Id).ToList();
+
+        Assert.Equal(created.Count, firstOrder.Count);
+        Assert.Equal(firstOrder, secondOrder);
+        Assert.Equal(created.Select(p => p.Id).Order().ToList(), firstOrder);
+    }
+
+    [Fact]
+    public async Task IndexBuilt_WithNoSubscriber_RehydrationBehavesExactlyAsBefore()
+    {
+        // The hook must never be load-bearing for the (still eager)
+        // materialisation loop it precedes.
+        var persistence = new InMemoryQueryablePersistenceStore();
+        var first = NewLifetime(persistence);
+        var part = await CreatePartAsync(first.Domain);
+
+        var second = NewLifetime(persistence);
+        var result = await second.Service.RehydrateAsync();
+
+        Assert.Equal(1, result.ObjectCount);
+        Assert.True(result.IsComplete);
+        Assert.NotNull(await second.Domain.Repository.FindAsync(part.Id));
     }
 
     // ----------------------------------------------------------------

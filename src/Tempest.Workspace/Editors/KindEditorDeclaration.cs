@@ -105,8 +105,20 @@ public static class EditorSectionKeys
     /// <summary>The object's own lifecycle position and history.</summary>
     public const string Lifecycle = "lifecycle";
 
+    /// <summary>A project's own commercial core: client, purchase order, budget, pinned rate card, dates and project manager (`WP 19.0A`, `ADR-0150`).</summary>
+    public const string Commercial = "commercial";
+
     /// <summary>Evidence's own check and issue records, read-only (the Check and Issue actions themselves are `WP 18.2B`).</summary>
     public const string CheckAndIssue = "check-and-issue";
+
+    /// <summary>An invoice request's own lines and total, read-only — built by <c>InvoicingService.RaiseFromCompletionAsync</c>, never edited here (`WP 19.1A`, `ADR-0151`).</summary>
+    public const string InvoiceLines = "invoice-lines";
+
+    /// <summary>An invoice request's own connector and every external field it has reported — external id, invoice number, status, issued and paid dates, and the last error (`WP 19.1A`, `ADR-0151`).</summary>
+    public const string InvoicingExternal = "invoicing-external";
+
+    /// <summary>A quotation's own lines and total — rendered here by declaration alone in this Work Package (no <c>Populate*</c> method exists in <c>ObjectEditorView</c> yet; that, and the section's own real rendering, are `WP 19.5B`'s) (`WP 19.5A`, `ADR-0152`).</summary>
+    public const string QuotationLines = "quotation-lines";
 
     /// <summary>The object's own audit trail.</summary>
     public const string Audit = "audit";

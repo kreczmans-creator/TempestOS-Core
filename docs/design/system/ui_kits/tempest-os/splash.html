@@ -1,0 +1,33 @@
+<!-- @dsCard group="Tempest OS" viewport="1200x740" name="Launch splash" subtitle="System-charge pulse on void navy, then the mark constructs by colour group and lifts into the vertical lockup" -->
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Tempest OS — launch splash</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="tempest-boot.js"></script>
+<style>html,body,#root{height:100%}body{margin:0;overflow:hidden;background:#0b0e1e}</style></head>
+<body><div id="root"></div>
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="SplashScreen.jsx"></script>
+<script type="text/babel" src="AppShell.jsx"></script>
+<script type="text/babel" src="LoginScreen.jsx"></script>
+<script type="text/babel" src="OverviewScreen.jsx"></script>
+<script type="text/babel" src="TelemetryScreen.jsx"></script>
+<script type="text/babel" src="AlertsScreen.jsx"></script>
+<script type="text/babel" data-presets="react">
+(() => {
+function Demo() {
+  const boot = React.useMemo(() => window.TempestBoot.start(), []);
+  const [k, setK] = React.useState(0);
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      <SplashScreen key={k} boot={boot} demo />
+      <button type="button" id="replay" onClick={() => { boot.retry(); setK(k + 1); }}
+        style={{ position: 'absolute', right: 20, bottom: 16, border: '1px solid var(--border-subtle)', background: 'transparent', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '.2em', padding: '5px 10px', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>REPLAY</button>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+})();
+</script></body></html>

@@ -46,12 +46,16 @@ public sealed class CreateVerificationActivityCommand : ICommand
 public sealed class CreateVerificationActivityCommandHandler : ICommandHandler<CreateVerificationActivityCommand>
 {
     private readonly VerificationActivityFactoryRegistry _registry;
+    private readonly EngineeringDomainContext? _context;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateVerificationActivityCommandHandler(VerificationActivityFactoryRegistry registry)
+    public CreateVerificationActivityCommandHandler(VerificationActivityFactoryRegistry registry, EngineeringDomainContext? context = null, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(registry);
 
         _registry = registry;
+        _context = context;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateVerificationActivityCommand command, CancellationToken cancellationToken)
@@ -68,7 +72,17 @@ public sealed class CreateVerificationActivityCommandHandler : ICommandHandler<C
         {
             return CommandResult.Failure(ex.Message);
         }
+        catch (DuplicateBusinessIdentifierException ex)
+        {
+            return CommandResult.Failure(ex.Message);
+        }
 
-        return CommandResult.Success($"Created VerificationActivity '{(created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString()}'.", created.Id, "VerificationActivity");
+        var displayName = (created as IHasBusinessIdentifier)?.DisplayName ?? created.Id.ToString();
+        var compensation = WorkspaceCommandBindings.CreationCompensation(
+            _context, _dispatcher, created.Id, "VerificationActivity", $"Create '{displayName}'",
+            buildDelete: () => new DeleteVerificationActivityCommand(created.Id, "VerificationActivity"),
+            buildUndelete: () => new UndeleteVerificationActivityCommand(created.Id, "VerificationActivity"));
+
+        return CommandResult.Success($"Created VerificationActivity '{displayName}'.", created.Id, "VerificationActivity", compensation);
     }
 }

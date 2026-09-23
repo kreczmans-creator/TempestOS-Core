@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Tempest.Workspace;
+using Tempest.Workspace.Kpi;
 using Tempest.Core.Events;
 using Tempest.Core.Navigation;
 using Tempest.Desktop.Icons;
@@ -15,14 +16,35 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The Engineering Cockpit (`WP 10.1A`) — the complete graphical
 /// realisation of <see cref="EngineeringCockpit"/>, the Workspace's own
-/// default landing screen (`ADR-0069`). Every region is bound directly to
-/// an <see cref="EngineeringCockpit"/> member — real data wherever that
-/// member already is (`WP 8.1C`–`WP 9.5A`) or was upgraded to be; an
-/// honest, disclosed placeholder wherever no platform capability exists
-/// to back it, never fabricated content (`WP 10.1A`'s own explicit
-/// instruction).
+/// default landing screen for the engineering surface (`ADR-0069`). Every
+/// region is bound directly to an <see cref="EngineeringCockpit"/> member
+/// — real data wherever that member already is (`WP 8.1C`–`WP 9.5A`) or
+/// was upgraded to be; an honest, disclosed placeholder wherever no
+/// platform capability exists to back it, never fabricated content
+/// (`WP 10.1A`'s own explicit instruction).
 /// </summary>
 /// <remarks>
+/// <para>
+/// <b>`WP 19.7B`: no longer the rail's own Home screen.</b> `WP 19.2B` had
+/// the rail's Home button render the shared engineering surface directly,
+/// with this view as its own permanent Document Area tab — `WP 19.7B`
+/// gives Home its own dedicated dashboard (<c>Tempest.Desktop.Views.Dashboards.HomeDashboardView</c>,
+/// Product Owner comment item 6, sheets 1-2) instead. This view is
+/// unchanged and stays exactly where it always was — the engineering
+/// surface's own permanent tab, reached from standalone Engineering or a
+/// project's own Structure tab, never from the rail's Home button any
+/// more. Its own Continue/Recent Engineering Activity/Favourite
+/// Projects/Recently changed cards are <em>not</em> removed, despite
+/// duplicating the same four concepts <c>HomeDashboardView</c>'s own
+/// right rail now shows: this view still needs its own copy while it
+/// remains reachable independently of Home (the engineering-scoped
+/// context those cards make sense in has not gone away, only stopped
+/// being the rail's own default screen), and stripping them would break
+/// the pinned coverage <c>CockpitViewHonestyTests</c> already holds for
+/// them (`WP 10.1A`/`WP 10.6A`/`WP 10.7A`/`WP 18.1B`) for no functional
+/// gain — a deliberate, disclosed deviation from a literal reading of
+/// this Work Package's own "remove what Home now renders" instruction.
+/// </para>
 /// <para>
 /// <b>Information architecture, since the Desktop brand alignment.</b>
 /// The Cockpit answers the user's questions in the order they ask them,
@@ -55,9 +77,22 @@ internal sealed class CockpitView : UserControl
 
     private readonly StackPanel _page = new() { Spacing = DesignTokens.SpaceXl };
     private readonly WrapPanel _hero = new() { Orientation = Orientation.Horizontal };
+    private readonly WrapPanel _periodBar = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly WrapPanel _tiles = new() { Orientation = Orientation.Horizontal };
     private readonly WrapPanel _disciplines = new() { Orientation = Orientation.Horizontal };
     private readonly WrapPanel _cards = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(-DesignTokens.SpaceMd) };
+
+    // `WP 19.1B` — the KPI period selector (`ADR-0150`): the six named
+    // presets plus an explicit custom range, built once here (never
+    // rebuilt on `RefreshAsync`, so a control mid-edit — the user
+    // choosing custom dates — is never torn down under them) and
+    // reconciled to `_cockpit.SelectedKpiPeriod` by `SyncPeriodBar` on
+    // every refresh instead.
+    private readonly ComboBox _periodPresetCombo = new() { MinWidth = 170, VerticalAlignment = VerticalAlignment.Center };
+    private readonly DatePicker _periodFromPicker = new() { IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    private readonly DatePicker _periodToPicker = new() { IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button _periodApplyButton = new() { Content = "Apply", IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    private bool _suppressPeriodPresetChanged;
 
     /// <summary>Initialises a new instance of the <see cref="CockpitView"/> class.</summary>
     /// <param name="favourites">
@@ -155,7 +190,10 @@ internal sealed class CockpitView : UserControl
         _page.MaxWidth = 1480;
         _page.HorizontalAlignment = HorizontalAlignment.Left;
 
+        BuildPeriodBar();
+
         _page.Children.Add(_hero);
+        _page.Children.Add(Section("KPI PERIOD", _periodBar));
         _page.Children.Add(Section("NEEDS ATTENTION", _tiles));
         _page.Children.Add(Section("DISCIPLINES", _disciplines));
         _page.Children.Add(Section("DETAIL", _cards));
@@ -197,6 +235,7 @@ internal sealed class CockpitView : UserControl
         _disciplines.Children.Clear();
         _cards.Children.Clear();
 
+        SyncPeriodBar();
         BuildHero();
 
         // What needs attention — four state tiles.
@@ -211,16 +250,20 @@ internal sealed class CockpitView : UserControl
         AddRecentActivityCard();
         AddRecentlyChangedCard();
 
-        // `WP-Z4` Productisation Phase 1 (P1) — `EngineeringCockpit.KpiCards`,
-        // the one real cross-discipline aggregate (Requirements/
-        // Verification/Calculations/Documentation/Review/Risks totals,
-        // `ADR-0103`), was fully computed but never rendered anywhere:
-        // only the five per-discipline KPI sets below ever reached this
-        // view. Placed first among the KPI cards — the summary before the
-        // detail, the same order the Cockpit's own information
-        // architecture already uses everywhere else (hero, then tiles,
-        // then per-discipline detail).
-        AddKpiCard(IconGeometry.Chart, "Engineering Overview", _cockpit.KpiCards);
+        // `WP 19.1B` (`ADR-0150`) — the Home cockpit's own five KPI cards,
+        // reading `_cockpit`'s own KPI snapshot (loaded inside the single
+        // `PrimeAsync` pass above, for the period `_periodBar` selected).
+        // Placed first among the KPI cards — the summary before the
+        // per-discipline detail, the same order the Cockpit's own
+        // information architecture already uses everywhere else (hero,
+        // then tiles, then per-discipline detail). Supersedes the old
+        // cross-discipline "Engineering Overview" placeholder aggregate
+        // this Work Package's own row removes.
+        AddKpiCard(IconGeometry.People, "Utilisation", _cockpit.UtilisationKpiCards);
+        AddKpiCard(IconGeometry.Scales, "Margin per project", _cockpit.MarginKpiCards);
+        AddKpiCard(IconGeometry.Inbox, "Work in progress", _cockpit.WorkInProgressKpiCards);
+        AddKpiCard(IconGeometry.Currency, "Days sales outstanding", _cockpit.DaysSalesOutstandingKpiCards);
+        AddKpiCard(IconGeometry.Chart, "Calc throughput", _cockpit.CalcThroughputKpiCards);
         AddKpiCard(IconGeometry.Requirement, "Requirements KPIs", _cockpit.RequirementsKpiCards);
         AddKpiCard(IconGeometry.Calculator, "Calculations KPIs", _cockpit.CalculationsKpiCards);
         AddKpiCard(IconGeometry.CheckCircle, "Verification KPIs", _cockpit.VerificationKpiCards);
@@ -235,6 +278,118 @@ internal sealed class CockpitView : UserControl
         AddNavigationShortcutsCard();
         AddWorkspaceStatusCard();
     }
+
+    // ------------------------------------------------------------
+    // KPI period selector (`WP 19.1B`, `ADR-0150`) — the six named
+    // presets plus an explicit custom range, controlling every one of
+    // the five KPI cards below.
+    // ------------------------------------------------------------
+
+    private void BuildPeriodBar()
+    {
+        _periodPresetCombo.ItemsSource = PresetLabels;
+        AutomationProperties.SetName(_periodPresetCombo, "KPI reporting period");
+        _periodPresetCombo.SelectionChanged += async (_, _) => await OnPeriodPresetChangedAsync().ConfigureAwait(true);
+
+        AutomationProperties.SetName(_periodFromPicker, "Custom period — from");
+        AutomationProperties.SetName(_periodToPicker, "Custom period — to");
+
+        AutomationProperties.SetName(_periodApplyButton, "Apply custom period");
+        _periodApplyButton.Click += async (_, _) => await ApplyCustomPeriodAsync().ConfigureAwait(true);
+
+        _periodBar.Children.Add(_periodPresetCombo);
+        _periodBar.Children.Add(_periodFromPicker);
+        _periodBar.Children.Add(_periodToPicker);
+        _periodBar.Children.Add(_periodApplyButton);
+    }
+
+    /// <summary>Reconciles the period bar's own controls to <see cref="EngineeringCockpit.SelectedKpiPeriod"/> — never rebuilds them, so a control the user is mid-edit on (choosing custom dates) is never torn down under them.</summary>
+    private void SyncPeriodBar()
+    {
+        _suppressPeriodPresetChanged = true;
+        try
+        {
+            var period = _cockpit.SelectedKpiPeriod;
+            _periodPresetCombo.SelectedItem = PresetLabel(period.Preset);
+
+            var isCustom = period.Preset == KpiPeriodPreset.Custom;
+            _periodFromPicker.IsVisible = isCustom;
+            _periodToPicker.IsVisible = isCustom;
+            _periodApplyButton.IsVisible = isCustom;
+            _periodFromPicker.SelectedDate = new DateTimeOffset(period.From.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            _periodToPicker.SelectedDate = new DateTimeOffset(period.To.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        }
+        finally
+        {
+            _suppressPeriodPresetChanged = false;
+        }
+    }
+
+    private async Task OnPeriodPresetChangedAsync()
+    {
+        if (_suppressPeriodPresetChanged)
+            return;
+
+        if (_periodPresetCombo.SelectedItem is not string label)
+            return;
+
+        if (label == CustomLabel)
+        {
+            // Reveal the two date pickers; the user commits a range via
+            // `_periodApplyButton`, never on every single date pick.
+            _periodFromPicker.IsVisible = true;
+            _periodToPicker.IsVisible = true;
+            _periodApplyButton.IsVisible = true;
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        await _cockpit.SetKpiPeriodAsync(KpiPeriod.ForPreset(ParsePresetLabel(label), today)).ConfigureAwait(true);
+        await RefreshAsync().ConfigureAwait(true);
+    }
+
+    private async Task ApplyCustomPeriodAsync()
+    {
+        if (_periodFromPicker.SelectedDate is not { } from || _periodToPicker.SelectedDate is not { } to)
+            return;
+
+        var fromDate = DateOnly.FromDateTime(from.UtcDateTime);
+        var toDate = DateOnly.FromDateTime(to.UtcDateTime);
+        if (toDate < fromDate)
+            return;
+
+        await _cockpit.SetKpiPeriodAsync(KpiPeriod.Custom(fromDate, toDate)).ConfigureAwait(true);
+        await RefreshAsync().ConfigureAwait(true);
+    }
+
+    private const string CustomLabel = "Custom";
+
+    private static readonly string[] PresetLabels =
+    [
+        "This week", "Last week", "This month", "Last month", "This quarter", "This year", CustomLabel,
+    ];
+
+    private static string PresetLabel(KpiPeriodPreset preset) => preset switch
+    {
+        KpiPeriodPreset.ThisWeek => "This week",
+        KpiPeriodPreset.LastWeek => "Last week",
+        KpiPeriodPreset.ThisMonth => "This month",
+        KpiPeriodPreset.LastMonth => "Last month",
+        KpiPeriodPreset.ThisQuarter => "This quarter",
+        KpiPeriodPreset.ThisYear => "This year",
+        _ => CustomLabel,
+    };
+
+    private static KpiPeriodPreset ParsePresetLabel(string label) => label switch
+    {
+        "This week" => KpiPeriodPreset.ThisWeek,
+        "Last week" => KpiPeriodPreset.LastWeek,
+        "This month" => KpiPeriodPreset.ThisMonth,
+        "Last month" => KpiPeriodPreset.LastMonth,
+        "This quarter" => KpiPeriodPreset.ThisQuarter,
+        "This year" => KpiPeriodPreset.ThisYear,
+        _ => KpiPeriodPreset.ThisWeek,
+    };
 
     // ------------------------------------------------------------
     // Hero — where am I, is it healthy, what do I continue?

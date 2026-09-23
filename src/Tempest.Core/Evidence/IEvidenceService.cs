@@ -43,8 +43,30 @@ public interface IEvidenceService
     /// </summary>
     Task<EvidenceActionResult> RecordCheckAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default);
 
-    /// <summary>Records an issue against <paramref name="evidenceId"/>'s own evidence and moves it to <see cref="EvidenceStatus.Issued"/>. Refused, as a result, unless the evidence is <see cref="EvidenceStatus.Checked"/>.</summary>
-    Task<EvidenceActionResult> IssueAsync(Guid evidenceId, string issueReference, string revision, string client, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Records an issue against <paramref name="evidenceId"/>'s own evidence
+    /// and moves it to <see cref="EvidenceStatus.Issued"/>. Refused, as a
+    /// result, unless the evidence is <see cref="EvidenceStatus.Checked"/>.
+    /// </summary>
+    /// <param name="attachIssueSheetAsync">
+    /// Renders and attaches the issue sheet, once every refusal check above
+    /// has passed and immediately before <see cref="Evidence.RecordIssueAsync"/>
+    /// itself commits (`B2`, `WP 20.3A`). Receives the validated evidence
+    /// and the instant <see cref="IssueRecord.DateUtc"/> will carry, and
+    /// returns the sheet's own attachment id (already durably attached via
+    /// <see cref="Tempest.Core.EngineeringDomain.IHasAttachments.AttachContentAsync"/>,
+    /// bytes and metadata as one transaction, `WP 17.1B`) — folded straight
+    /// into the same <see cref="IssueRecord"/> the issue transaction below
+    /// writes, so "the record" and "the pointer" are one commit rather than
+    /// two. <see langword="null"/> when no renderer is available (the
+    /// console harness) or the caller declines to render one; a fault
+    /// raised here leaves the evidence merely <see cref="EvidenceStatus.Checked"/>
+    /// — never <see cref="EvidenceStatus.Issued"/> with no sheet.
+    /// </param>
+    Task<EvidenceActionResult> IssueAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<Guid?>>? attachIssueSheetAsync = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Revises <paramref name="evidenceId"/>'s own Issued evidence: a new revision is created, and moved to <see cref="EvidenceStatus.Draft"/>, while the issued revision stays readable via its own revision history. Refused, as a result, unless the evidence is <see cref="EvidenceStatus.Issued"/>.</summary>
     Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default);

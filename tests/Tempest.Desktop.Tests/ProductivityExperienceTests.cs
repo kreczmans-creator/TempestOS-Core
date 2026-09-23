@@ -120,7 +120,7 @@ public sealed class ProductivityExperienceTests
             Assert.True(createResult.Succeeded);
             var domainContext = (Tempest.Core.EngineeringDomain.EngineeringDomainContext)host.Services!.GetService(typeof(Tempest.Core.EngineeringDomain.EngineeringDomainContext));
             var created = (await domainContext.Repository.ListByKindAsync("Part"))
-                .Single(o => (o as Tempest.Core.EngineeringDomain.IHasBusinessIdentifier)?.DisplayName == "Original Name");
+                .Single(entry => entry.DisplayName == "Original Name");
 
             var oldName = "Original Name";
             var newName = "Renamed";
@@ -393,7 +393,7 @@ public sealed class ProductivityExperienceTests
             var commandRegistry = (ICommandRegistry)host.Services!.GetService(typeof(ICommandRegistry));
 
             var ranMacroIds = new List<Guid>();
-            var dialog = new MacroManagerDialog(macroManager, commandRegistry, runMacro: id =>
+            var dialog = new MacroManagerDialog(macroManager, commandRegistry, TestMacroStepPrompt.AutoFill, runMacro: id =>
             {
                 ranMacroIds.Add(id);
                 return Task.FromResult(CommandResult.Success());

@@ -197,7 +197,7 @@ public sealed class CreateEvidenceFromFilesCommandTests : IAsyncLifetime
 public sealed class KindEditorDeclarationsTests
 {
     [Fact]
-    public void RegisterAll_RegistersExactlyEvidencePartAssemblyComponent()
+    public void RegisterAll_RegistersExactlyEvidencePartAssemblyComponentProject()
     {
         var registry = new KindEditorDeclarationRegistry();
         KindEditorDeclarations.RegisterAll(registry);
@@ -207,6 +207,9 @@ public sealed class KindEditorDeclarationsTests
         Assert.NotNull(registry.For(MechanicalObjectFactoryRegistry.Assembly));
         Assert.NotNull(registry.For(MechanicalObjectFactoryRegistry.Component));
 
+        // `WP 19.0A` (`ADR-0150`): Project's own Commercial section.
+        Assert.NotNull(registry.For(MechanicalObjectFactoryRegistry.Project));
+
         // Every other Kind falls back to the Object Editor's own existing
         // generic path (Execution Plan §6 risk table's own explicit,
         // narrow scope) — no declaration is registered for it.
@@ -214,6 +217,41 @@ public sealed class KindEditorDeclarationsTests
         Assert.Null(registry.For("Document"));
         Assert.Null(registry.For(MechanicalObjectFactoryRegistry.SubAssembly));
         Assert.Null(registry.For(MechanicalObjectFactoryRegistry.Configuration));
+    }
+
+    [Fact]
+    public void Project_DeclaresIdentityCommercialLifecycle_InOrder_WithTheThreeEditableCommercialFields()
+    {
+        var declaration = KindEditorDeclarations.Project();
+
+        Assert.Equal(
+            [EditorSectionKeys.Identity, EditorSectionKeys.Commercial, EditorSectionKeys.Lifecycle],
+            declaration.Sections.Select(s => s.Key));
+
+        var commercial = declaration.Sections.Single(s => s.Key == EditorSectionKeys.Commercial);
+
+        // Client, Rate Card and Project Manager need a picker (Desktop
+        // work of part 2 of this Work Package) so are shown read-only;
+        // purchase order, budget and dates are plain text and editable now.
+        Assert.False(commercial.Fields.Single(f => f.Label == "Client").Editable);
+        Assert.False(commercial.Fields.Single(f => f.Label == "Rate Card").Editable);
+        Assert.False(commercial.Fields.Single(f => f.Label == "Project Manager").Editable);
+
+        var purchaseOrder = commercial.Fields.Single(f => f.Label == "Purchase Order Reference");
+        Assert.True(purchaseOrder.Editable);
+        Assert.Equal("project.set-purchase-order", purchaseOrder.WriteCommandId);
+
+        var budget = commercial.Fields.Single(f => f.Label == "Budget");
+        Assert.True(budget.Editable);
+        Assert.Equal("project.set-budget", budget.WriteCommandId);
+
+        Assert.All(
+            commercial.Fields.Where(f => f.Label is "Start Date" or "Target Date"),
+            f =>
+            {
+                Assert.True(f.Editable);
+                Assert.Equal("project.set-dates", f.WriteCommandId);
+            });
     }
 
     [Fact]

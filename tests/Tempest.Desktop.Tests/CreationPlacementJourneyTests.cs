@@ -64,8 +64,8 @@ public sealed class CreationPlacementJourneyTests
             Assert.True(invocation.Result!.Succeeded, invocation.Result.Message);
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            var created = (await domain.Repository.ListByKindAsync("Document")).Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Placement Test Spec");
-            Assert.Equal(projectId, ((IHasParent)created).ParentId);
+            var created = (await domain.Repository.ListByKindAsync("Document")).Single(entry => entry.DisplayName == "Placement Test Spec");
+            Assert.Equal(projectId, created.ParentId);
 
             // Still findable in the Documents tree: a document placed under a
             // project is a category member, not a vanished one.
@@ -92,13 +92,16 @@ public sealed class CreationPlacementJourneyTests
             await workspace.Navigation.SwitchAreaAsync(CalculationsWorkspaceExplorerModule.NavigationItemId);
             await workspace.Selection.ClearAsync();
 
-            var invocation = await InvokeAsync(registry, "calculations.create", palette.ContextSource!(), ("kind", "Calculation"), ("displayName", "Placement Test Calc"));
+            // `dueOn` (`WP 20.10B`, T2): required by the create prompt itself now.
+            var invocation = await InvokeAsync(
+                registry, "calculations.create", palette.ContextSource!(),
+                ("kind", "Calculation"), ("displayName", "Placement Test Calc"), ("dueOn", "2026-10-01"));
             Assert.Equal(CommandOutcome.Executed, invocation.Outcome);
             Assert.True(invocation.Result!.Succeeded, invocation.Result.Message);
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            var created = (await domain.Repository.ListByKindAsync("Calculation")).Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Placement Test Calc");
-            Assert.Equal(projectId, ((IHasParent)created).ParentId);
+            var created = (await domain.Repository.ListByKindAsync("Calculation")).Single(entry => entry.DisplayName == "Placement Test Calc");
+            Assert.Equal(projectId, created.ParentId);
 
             var roots = await workspace.ProjectExplorer.GetRootNodesAsync();
             Assert.Contains(roots, n => n.Id == created.Id);
@@ -163,15 +166,17 @@ public sealed class CreationPlacementJourneyTests
             var part = await InvokeAsync(registry, "mechanical.create", palette.ContextSource!(), ("kind", "Part"), ("displayName", "Placement Test Bracket"));
             Assert.True(part.Result!.Succeeded, part.Result.Message);
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            var bracket = (await domain.Repository.ListByKindAsync("Part")).Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Placement Test Bracket");
-            Assert.Equal(projectId, ((IHasParent)bracket).ParentId);
+            var bracket = (await domain.Repository.ListByKindAsync("Part")).Single(entry => entry.DisplayName == "Placement Test Bracket");
+            Assert.Equal(projectId, bracket.ParentId);
 
             await workspace.Selection.SelectAsync(bracket.Id, "Part");
             var operation = await InvokeAsync(registry, "manufacturing.create", palette.ContextSource!(), ("kind", "ManufacturingOperation"), ("displayName", "Drill 4 holes"), ("method", "Inspection"));
             Assert.True(operation.Result!.Succeeded, operation.Result.Message);
 
-            var created = (await domain.Repository.ListByKindAsync("ManufacturingOperation")).Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Drill 4 holes");
-            Assert.Equal(bracket.Id, ((IManufacturingOperation)created).PartId);
+            var createdEntries = await domain.Repository.ListByKindAsync("ManufacturingOperation");
+            var created = (await domain.Repository.MaterialiseAsync<IManufacturingOperation>(createdEntries))
+                .Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Drill 4 holes");
+            Assert.Equal(bracket.Id, created.PartId);
         }
         finally
         {
@@ -193,7 +198,7 @@ public sealed class CreationPlacementJourneyTests
             var part = await InvokeAsync(registry, "mechanical.create", palette.ContextSource!(), ("kind", "Part"), ("displayName", "Named Parent Test Part"));
             Assert.True(part.Result!.Succeeded, part.Result.Message);
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-            var created = (await domain.Repository.ListByKindAsync("Part")).Single(o => ((IHasBusinessIdentifier)o).DisplayName == "Named Parent Test Part");
+            var created = (await domain.Repository.ListByKindAsync("Part")).Single(entry => entry.DisplayName == "Named Parent Test Part");
 
             var inspector = GetPrivateField<PropertyInspectorView>(window, "_inspectorView");
             inspector.SetCurrentSelection(created.Id, "Part");
