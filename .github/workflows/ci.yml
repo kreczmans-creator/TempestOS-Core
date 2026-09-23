@@ -435,7 +435,7 @@ jobs:
       # single producer, so the name carries no shard suffix.
       - name: Upload layout verification screenshots (Release)
         if: always() && matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         # Not advisory: a walk that wrote no screenshots is a broken walk.
         with:
           name: layout-screenshots
@@ -598,7 +598,7 @@ jobs:
       # collide, not merely duplicate.
       - name: Upload build log (${{ matrix.configuration }} / ${{ matrix.shard }})
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: build-log-${{ matrix.configuration }}-${{ matrix.shard }}
@@ -608,7 +608,7 @@ jobs:
 
       - name: Upload test results (${{ matrix.configuration }} / ${{ matrix.shard }})
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: test-results-${{ matrix.configuration }}-${{ matrix.shard }}
@@ -635,7 +635,7 @@ jobs:
       # suffix.
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: tempestos-desktop-release
@@ -645,7 +645,7 @@ jobs:
 
       - name: Upload Tempest.Harness build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: tempestos-engineering-harness
@@ -753,7 +753,7 @@ jobs:
 
       - name: Upload dependency scan log
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: dependency-scan-log
@@ -920,7 +920,7 @@ jobs:
       - name: Upload the journey's own step tables and screenshots
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: realshell-journey
           path: |
@@ -977,7 +977,7 @@ jobs:
       # nobody can diagnose.
       - name: Upload mutation report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
           name: stryker-mutation-report
