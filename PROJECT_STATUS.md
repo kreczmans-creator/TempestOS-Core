@@ -35,16 +35,24 @@ the answer to `TD-188` (per-line VAT on the Quote tab).
 None. `v0.22.0` is released, on `main`. The next Work Package is the
 live Xero/QuickBooks connector run `v1.0.0` is waiting on.
 
-## Gate (`release/v0.22.0` integration merge, re-derived 2026-09-23)
+## Gate (`release/v0.22.0` integration merge, re-derived 2026-09-23 on Linux)
 
-- Build: see `docs/releases/v0.22.0/Release Notes.md` for this
-  integration's own re-derived Debug/Release figures.
-- Governance health check: 5 of 5.
-- The acceptance line's own last-recorded gate (its head `37264671`,
-  2026-09-16): Core tests 5,314/5,324 (10 Windows-only failures, green on
-  Windows CI); Desktop tests 901/902 both configurations (1 Linux-only
-  failure, green on Windows CI); CI green on run 442. Full detail in
-  `PRODUCT_OWNER_ACCEPTANCE.md` §3 and `docs/releases/v0.21.0/Release Notes.md`.
+- Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`.
+- Core tests: 5,447 passed of 5,457, Debug and Release — the 10 failures
+  are the same known Windows-only tests as the acceptance line's own gate
+  (6 spawn `powershell`, 4 DPAPI), expected green on Windows CI.
+- Desktop tests: 902 passed of 903, both configurations — the 1 failure
+  is the same known Linux-only test as the acceptance line's own gate
+  (`StatusBarCollapseTests…`, font fallback), expected green on Windows CI.
+- Architecture invariants (`DependencyDirectionTests`): 6 of 6.
+- Governance health check: 5 of 5 (Python emulation of
+  `scripts/governance-healthcheck.ps1`'s five checks — no PowerShell on
+  this Linux worktree).
+- Merge-caused failures (main's Dashboard Export code against the
+  acceptance line's TD-88/WP 21.5B lazy-materialisation repository
+  contract, a layout overflow in ADR-0155's new Project Health card, and
+  one version-pinned test) found and fixed; see the "Fix merge-caused…"
+  commit for detail.
 - Live backlog: `BACKLOG.md`.
 
 ## Released

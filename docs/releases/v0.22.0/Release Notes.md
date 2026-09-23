@@ -38,6 +38,14 @@ the acceptance pack: docking steps 3–4 (`ADR-0153`), the first live Xero
 sign-in and QuickBooks connection, the first `Setup.exe`, and the answer
 to `TD-188`.
 
+## Gate (re-derived 2026-09-23 on Linux, `release/v0.22.0` integration head)
+
+- Build: 0 warnings, 0 errors, Debug and Release, `TreatWarningsAsErrors`.
+- Core tests: 5,447/5,457, both configurations (10 known Windows-only
+  failures). Desktop tests: 902/903, both configurations (1 known
+  Linux-only failure). Architecture invariants: 6/6. Governance health
+  check: 5/5.
+
 ## v1.0.0
 
 Deferred at the Product Owner's instruction of 2026-09-23 until the live
