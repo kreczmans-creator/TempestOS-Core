@@ -147,9 +147,10 @@ public class ProjectHealthTests
 
         // Membership is the parent chain (ProjectMembership) — moving the
         // failed activity from A to B moves the Blocked signal with it.
-        var failedInA = (await domain.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind))
-            .OfType<IHasParent>()
-            .Single(o => o.ParentId == a.Id);
+        var activityEntries = await domain.Repository.ListByKindAsync(VerificationActivityFactoryRegistry.SupportedKind);
+        var activities = await domain.Repository.MaterialiseAsync<IHasParent>(
+            [.. activityEntries.Where(entry => !entry.IsDeleted)]);
+        var failedInA = activities.Single(o => o.ParentId == a.Id);
         await failedInA.MoveAsync(b.Id);
 
         await cockpit.PrimeAsync();

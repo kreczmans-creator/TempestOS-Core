@@ -640,20 +640,34 @@ internal sealed class CockpitView : UserControl
         _cards.Children.Add(card);
     }
 
-    /// <summary>One Project's own row on the Project Health card — the same dot/word/colour shape <see cref="BuildDisciplineStrip"/> already renders per discipline, plus the Project's own score text in the meta face.</summary>
+    /// <summary>
+    /// One Project's own row on the Project Health card — the same
+    /// dot/word/colour shape <see cref="BuildDisciplineStrip"/> already
+    /// renders per discipline, plus the Project's own score text in the
+    /// meta face. The score text is put on its own line below the
+    /// name/badge line, in an outer vertical <see cref="StackPanel"/>,
+    /// rather than sharing a horizontal one with them: a horizontal
+    /// <see cref="StackPanel"/> gives every child unconstrained width
+    /// along its own axis, so <see cref="TextWrapping.Wrap"/> on a long
+    /// score string (e.g. "0/1 healthy (1/5 disciplines reporting)")
+    /// never actually wraps and the row overflows the card at real
+    /// window widths (caught by <c>LayoutWalkTests</c>) — stacking
+    /// vertically instead respects the card's own width and lets the
+    /// score text wrap for real.
+    /// </summary>
     private static Control ProjectHealthRow(CockpitProjectHealth project)
     {
         var brush = HealthColors.Resolve(project.Health);
         var word = HealthColors.Label(project.Health);
 
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
-        row.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Background = brush, VerticalAlignment = VerticalAlignment.Center });
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceMd, VerticalAlignment = VerticalAlignment.Center };
+        header.Children.Add(new Border { Width = 8, Height = 8, CornerRadius = new CornerRadius(4), Background = brush, VerticalAlignment = VerticalAlignment.Center });
 
         var name = new TextBlock { Text = project.Label, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
         ThemeReactiveBrush.Bind(name, TextBlock.ForegroundProperty, BrandPalette.BodyTextBrushKey);
-        row.Children.Add(name);
+        header.Children.Add(name);
 
-        row.Children.Add(new TextBlock
+        header.Children.Add(new TextBlock
         {
             Text = word.ToUpperInvariant(),
             FontFamily = DesignTokens.TitleFont,
@@ -664,8 +678,11 @@ internal sealed class CockpitView : UserControl
             VerticalAlignment = VerticalAlignment.Center,
         });
 
-        var score = new TextBlock { Text = project.HealthScoreDisplay, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        var score = new TextBlock { Text = project.HealthScoreDisplay, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap };
         ThemeReactiveBrush.Bind(score, TextBlock.ForegroundProperty, BrandPalette.FaintTextBrushKey);
+
+        var row = new StackPanel { Spacing = DesignTokens.SpaceXs / 2, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        row.Children.Add(header);
         row.Children.Add(score);
 
         AutomationProperties.SetName(row, $"{project.Label}: {word} — {project.HealthScoreDisplay}");

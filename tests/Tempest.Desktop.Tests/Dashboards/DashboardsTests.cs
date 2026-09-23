@@ -394,7 +394,7 @@ public sealed class DashboardsTests
 
         // ---- An old Sent quotation, more than seven days old, to chase ----
         const string chaseReference = "Q-CHASE-OLD";
-        var chaseLine = new QuotationLine(Guid.NewGuid(), "Old chase line", 5m, new Money(100m, CurrencyCode.Gbp), null, new Money(500m, CurrencyCode.Gbp), QuotationLineBasis.Hourly);
+        var chaseLine = new Tempest.Core.Quotations.QuotationLine(Guid.NewGuid(), "Old chase line", 5m, new Money(100m, CurrencyCode.Gbp), null, new Money(500m, CurrencyCode.Gbp), QuotationLineBasis.Hourly);
         await new EngineeringObjectFactory<Quotation>(
             Quotation.CanonicalKind, domain,
             (doc, rev) => new Quotation(

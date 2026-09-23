@@ -43,7 +43,7 @@ namespace Tempest.Workspace.Integration.DashboardExport;
 /// <list type="bullet">
 /// <item><description><c>requirements.byStatus</c> — <see cref="RequirementsCockpitReadModel.StatusCounts"/>.</description></item>
 /// <item><description><c>verification.recorded</c>/<c>byOutcome</c> — <see cref="VerificationCockpitReadModel.TotalVerificationRecordsCount"/>/<see cref="VerificationCockpitReadModel.PassedVerificationCount"/>/<see cref="VerificationCockpitReadModel.FailedVerificationCount"/>/<see cref="VerificationCockpitReadModel.ConditionalVerificationCount"/> — see this class's own <see cref="BuildVerificationSection"/> remarks for a disclosed definitional deviation from the contract document's own assumption.</description></item>
-/// <item><description><c>health</c>/<c>kpis</c>/<c>attention</c>/<c>blockedItems</c>/<c>overdueActions</c> (schema v2) — <see cref="EngineeringCockpit.Health"/>, the five per-discipline <c>*Status</c> reads, <see cref="EngineeringCockpit.KpiCards"/> plus the five per-discipline <c>*KpiCards</c> sets, <see cref="EngineeringCockpit.AttentionItemsByDiscipline"/>, <see cref="EngineeringCockpit.BlockedItems"/> and <see cref="EngineeringCockpit.OverdueActions"/> — see <see cref="BuildHealthSection"/> and its siblings.</description></item>
+/// <item><description><c>health</c>/<c>kpis</c>/<c>attention</c>/<c>blockedItems</c>/<c>overdueActions</c> (schema v2) — <see cref="EngineeringCockpit.Health"/>, the five per-discipline <c>*Status</c> reads, the five per-discipline <c>*KpiCards</c> sets, <see cref="EngineeringCockpit.AttentionItemsByDiscipline"/>, <see cref="EngineeringCockpit.BlockedItems"/> and <see cref="EngineeringCockpit.OverdueActions"/> — see <see cref="BuildHealthSection"/> and its siblings.</description></item>
 /// </list>
 /// <para>
 /// <b>Schema v2 — "the Pi renders what the desktop cockpit computes"
@@ -202,9 +202,10 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
 
     private async Task<IReadOnlyList<IEvidenceRecord>> LoadLiveEvidenceAsync(CancellationToken cancellationToken)
     {
-        var all = await _domainContext.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var entries = await _domainContext.Repository.ListByKindAsync(Core.Evidence.Evidence.CanonicalKind, cancellationToken).ConfigureAwait(false);
 
-        return all.OfType<IEvidenceRecord>().Where(e => !e.IsDeleted).ToList();
+        return await _domainContext.Repository.MaterialiseAsync<IEvidenceRecord>(
+            [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
     }
 
     private static EvidenceSection BuildEvidenceSection(IReadOnlyList<IEvidenceRecord> liveEvidence)
@@ -295,8 +296,10 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
         var lined = new List<IEngineeringObject>();
         foreach (var kind in BomBearingKinds)
         {
-            var byKind = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
-            lined.AddRange(byKind.Where(o => o is not IDeletable { IsDeleted: true } && o is IHasBomLine));
+            var entries = await _domainContext.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+            var materialised = await _domainContext.Repository.MaterialiseAsync<IEngineeringObject>(
+                [.. entries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
+            lined.AddRange(materialised.Where(o => o is IHasBomLine));
         }
 
         var pendingByLifecycle = new Dictionary<string, int>
@@ -327,7 +330,7 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
     private async Task<DigitalThreadSection> BuildDigitalThreadSectionAsync(CancellationToken cancellationToken)
     {
         var liveObjects = (await _domainContext.Repository.ListAllAsync(cancellationToken).ConfigureAwait(false))
-            .Where(o => o is not IDeletable { IsDeleted: true })
+            .Where(entry => !entry.IsDeleted)
             .ToList();
 
         var byCategory = Enum.GetValues<RelationshipCategory>()
@@ -423,15 +426,16 @@ public sealed class EngineeringStatusExportAdapter : IExportable, IExportableKin
 
     /// <summary>
     /// <c>kpis</c> (schema v2): every <see cref="CockpitKpiCard"/> the
-    /// desktop Cockpit renders, verbatim — the cross-discipline
-    /// <see cref="EngineeringCockpit.KpiCards"/> under <c>overview</c>
-    /// (the "Engineering Overview" card), then each discipline's own set
-    /// under its <see cref="CockpitDisciplines"/> key.
+    /// desktop Cockpit renders, verbatim — each discipline's own set
+    /// under its <see cref="CockpitDisciplines"/> key. No cross-discipline
+    /// <c>overview</c> key: the old "Engineering Overview" aggregate
+    /// (<c>EngineeringCockpit.KpiCards</c>) was retired by `WP 19.1B` in
+    /// favour of the Home cockpit's own five KPI card sets — this export
+    /// never carried it either, matching the Cockpit it mirrors.
     /// </summary>
     private static Dictionary<string, IReadOnlyList<KpiCardExport>> BuildKpiSection(EngineeringCockpit cockpit) =>
         new()
         {
-            ["overview"] = ToKpiCards(cockpit.KpiCards),
             [CockpitDisciplines.Requirements] = ToKpiCards(cockpit.RequirementsKpiCards),
             [CockpitDisciplines.Verification] = ToKpiCards(cockpit.VerificationKpiCards),
             [CockpitDisciplines.Calculations] = ToKpiCards(cockpit.CalculationsKpiCards),

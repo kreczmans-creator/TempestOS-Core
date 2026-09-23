@@ -51,7 +51,11 @@ public class ModuleMetadataCoverageTests
         // exactly as to any other module) and none yet in Tempest.Core
         // itself. A deliberate count change updates this line with a
         // one-line rationale rather than loosening the assertion below.
-        Assert.Equal(32, moduleTypes.Count);
+        // 32 -> 33 (`release/v0.22.0` integration, 2026-09-23): `main`'s
+        // Dashboard Export capability (2026-09-20/21) added a seventh
+        // Tempest.Workspace module, `DashboardExportModule`, carrying
+        // `[ModuleMetadata]` exactly like its six siblings.
+        Assert.Equal(33, moduleTypes.Count);
 
         var missingMetadata = moduleTypes
             .Where(type => type.GetCustomAttribute<ModuleMetadataAttribute>() is null)

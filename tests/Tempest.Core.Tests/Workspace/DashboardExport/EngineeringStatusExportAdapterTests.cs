@@ -361,11 +361,12 @@ public class EngineeringStatusExportAdapterTests
         Assert.Contains(exported, node => node!["label"]!.GetValue<string>() == "Total Requirements" && node["value"]!.GetValue<string>() == "1" && !node["isPlaceholder"]!.GetValue<bool>());
 
         // Every KPI set the desktop renders is present, keyed the same way.
+        // No "overview" key: the cross-discipline aggregate it used to
+        // carry (EngineeringCockpit.KpiCards) was retired by WP 19.1B.
         Assert.Equal(
-            ["calculations", "documents", "manufacturing", "overview", "requirements", "verification"],
+            ["calculations", "documents", "manufacturing", "requirements", "verification"],
             json["kpis"]!.AsObject().Select(p => p.Key).OrderBy(k => k, StringComparer.Ordinal).ToList());
         Assert.Equal(cockpit.VerificationKpiCards.Select(c => c.Label), json["kpis"]!["verification"]!.AsArray().Select(n => n!["label"]!.GetValue<string>()));
-        Assert.Equal(cockpit.KpiCards.Select(c => c.Label), json["kpis"]!["overview"]!.AsArray().Select(n => n!["label"]!.GetValue<string>()));
 
         await manager.ShutdownAsync();
     }

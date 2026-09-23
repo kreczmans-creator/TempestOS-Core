@@ -161,13 +161,13 @@ public sealed class ProgrammeHierarchyExportAdapter : IExportable, IExportableKi
     {
         ArgumentNullException.ThrowIfNull(destination);
 
-        var portfolios = (await _domainContext.Repository.ListByKindAsync("Portfolio", cancellationToken).ConfigureAwait(false))
-            .OfType<IPortfolio>()
-            .ToList();
+        var portfolioEntries = await _domainContext.Repository.ListByKindAsync("Portfolio", cancellationToken).ConfigureAwait(false);
+        var portfolios = await _domainContext.Repository.MaterialiseAsync<IPortfolio>(
+            [.. portfolioEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
-        var programmes = (await _domainContext.Repository.ListByKindAsync("Programme", cancellationToken).ConfigureAwait(false))
-            .OfType<IProgramme>()
-            .ToList();
+        var programmeEntries = await _domainContext.Repository.ListByKindAsync("Programme", cancellationToken).ConfigureAwait(false);
+        var programmes = await _domainContext.Repository.MaterialiseAsync<IProgramme>(
+            [.. programmeEntries.Where(entry => !entry.IsDeleted)], cancellationToken).ConfigureAwait(false);
 
         // One coherent Cockpit pass per export — exactly what
         // CockpitView.RefreshAsync does once per desktop render. Its
@@ -184,8 +184,7 @@ public sealed class ProgrammeHierarchyExportAdapter : IExportable, IExportableKi
         }
 
         var deletedProjectCount = (await _domainContext.Repository.ListByKindAsync(MechanicalObjectFactoryRegistry.Project, cancellationToken).ConfigureAwait(false))
-            .OfType<IDeletable>()
-            .Count(o => o.IsDeleted);
+            .Count(entry => entry.IsDeleted);
 
         var projectEntries = new List<ProjectEntry>(liveProjects.Count);
         foreach (var (project, health) in liveProjects)
