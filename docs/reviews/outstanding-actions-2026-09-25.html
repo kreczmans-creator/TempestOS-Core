@@ -1,0 +1,567 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tempest Outstanding Actions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --navy-900:#070915;--navy-800:#0b0e1e;--navy-700:#111527;--navy-600:#181d33;--navy-400:#2e3552;
+    --paper-000:#ffffff;--paper-050:#f5f6fa;--paper-100:#eff0f5;--paper-300:#bec1c9;
+    --slate-400:#a2a5af;--slate-500:#82848e;--slate-600:#4b5160;--slate-700:#31343f;--ink-900:#16181d;
+    --indigo-600:#1c2d97;--indigo-500:#2a3fbe;--cyan-500:#40a2ce;--cyan-400:#68bde2;--violet-500:#6c29d9;
+    --green:#12b981;--amber:#f5a524;--red:#e5484d;--grey:#82848e;
+
+    color-scheme:dark;
+    --bg-page:var(--navy-800);--bg-surface:var(--navy-700);--bg-raised:var(--navy-600);--bg-sunken:var(--navy-900);
+    --bg-hover:rgba(245,246,250,.05);
+    --text-heading:var(--paper-050);--text-body:rgba(245,246,250,.82);--text-muted:var(--slate-400);--text-faint:var(--slate-500);
+    --text-accent:var(--cyan-500);--link:var(--cyan-400);
+    --border-subtle:rgba(245,246,250,.08);--border-default:rgba(245,246,250,.14);--border-strong:var(--navy-400);
+    --accent:var(--cyan-500);--rule:var(--indigo-500);--code-bg:rgba(245,246,250,.06);
+    --you:#a882f0;--claude:var(--cyan-400);
+    --focus:0 0 0 2px var(--navy-800),0 0 0 4px var(--cyan-500);
+    --font-display:"Chakra Petch",system-ui,sans-serif;--font-body:"Inter","Helvetica Neue",system-ui,sans-serif;--font-mono:"Space Mono",ui-monospace,Menlo,monospace;
+    --notch:10px;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      color-scheme:light;
+      --bg-page:var(--paper-050);--bg-surface:var(--paper-000);--bg-raised:var(--paper-000);--bg-sunken:var(--paper-100);
+      --bg-hover:rgba(22,24,29,.04);
+      --text-heading:var(--ink-900);--text-body:var(--slate-700);--text-muted:var(--slate-600);--text-faint:var(--slate-500);
+      --text-accent:var(--indigo-600);--link:var(--indigo-600);
+      --border-subtle:rgba(22,24,29,.08);--border-default:rgba(22,24,29,.14);--border-strong:var(--paper-300);
+      --accent:var(--indigo-600);--rule:var(--indigo-600);--code-bg:rgba(22,24,29,.06);
+      --green:#0e8f65;--amber:#a8700c;--red:#c43a3f;--you:#6c29d9;--claude:#2b7fa5;
+      --focus:0 0 0 2px var(--paper-050),0 0 0 4px var(--indigo-600);
+    }
+  }
+  :root[data-theme="light"]{
+    color-scheme:light;
+    --bg-page:var(--paper-050);--bg-surface:var(--paper-000);--bg-raised:var(--paper-000);--bg-sunken:var(--paper-100);
+    --bg-hover:rgba(22,24,29,.04);
+    --text-heading:var(--ink-900);--text-body:var(--slate-700);--text-muted:var(--slate-600);--text-faint:var(--slate-500);
+    --text-accent:var(--indigo-600);--link:var(--indigo-600);
+    --border-subtle:rgba(22,24,29,.08);--border-default:rgba(22,24,29,.14);--border-strong:var(--paper-300);
+    --accent:var(--indigo-600);--rule:var(--indigo-600);--code-bg:rgba(22,24,29,.06);
+    --green:#0e8f65;--amber:#a8700c;--red:#c43a3f;--you:#6c29d9;--claude:#2b7fa5;
+    --focus:0 0 0 2px var(--paper-050),0 0 0 4px var(--indigo-600);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg-page);color:var(--text-body);font-family:var(--font-body);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+  code{font-family:var(--font-mono);font-size:.84em;background:var(--code-bg);padding:1px 5px;border-radius:2px;color:var(--text-heading);word-break:break-word}
+  pre{margin:6px 0 0;background:var(--bg-sunken);border:1px solid var(--border-subtle);border-radius:3px;padding:9px 12px;overflow-x:auto;font-family:var(--font-mono);font-size:12px;line-height:1.6;color:var(--text-heading)}
+  a{color:var(--link)}
+  strong{color:var(--text-heading);font-weight:600}
+  :focus-visible{outline:none;box-shadow:var(--focus)}
+  button{font:inherit;cursor:pointer}
+
+  .hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg-page);border-bottom:1px solid var(--border-subtle);padding:12px 0}
+  .hdr .wrap{padding-block:0}
+  .hdr-in{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .mark{display:flex;flex-direction:column;line-height:1}
+  .mark .t{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:.06em;color:var(--text-heading)}
+  .mark .e{font-family:var(--font-display);font-weight:500;font-size:9.5px;letter-spacing:.28em;color:var(--text-accent);margin-top:3px}
+  .hdr .title{font-family:var(--font-display);font-weight:600;font-size:15px;letter-spacing:.04em;color:var(--text-heading)}
+  .hdr .sub{font-size:12px;color:var(--text-muted)}
+  .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .meter{display:flex;align-items:center;gap:10px}
+  .bar{width:160px;height:6px;background:var(--bg-sunken);border:1px solid var(--border-subtle);border-radius:2px;overflow:hidden;display:flex}
+  .bar i{display:block;height:100%}
+  .bar .p{background:var(--green)}.bar .f{background:var(--red)}.bar .s{background:var(--amber)}.bar .d{background:var(--accent)}
+  .meter .n{font-family:var(--font-display);font-size:13px;letter-spacing:.04em;color:var(--text-heading);font-variant-numeric:tabular-nums}
+
+  nav.toc{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-family:var(--font-display);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
+  nav.toc a{color:var(--text-muted);text-decoration:none}
+  nav.toc a:hover{color:var(--text-heading)}
+
+  .hero{margin-top:22px;background:var(--bg-surface);border:1px solid var(--border-subtle);padding:22px 24px 20px;clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,0 100%);position:relative}
+  .hero:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rule)}
+  .eyebrow{font-family:var(--font-display);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-accent);font-weight:600}
+  h1{font-family:var(--font-display);font-weight:700;font-size:28px;color:var(--text-heading);margin:6px 0 4px;text-wrap:balance;line-height:1.15}
+  .hero p{margin:6px 0 0;max-width:75ch}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:18px}
+  .tile{background:var(--bg-sunken);border:1px solid var(--border-subtle);padding:10px 12px}
+  .tile .k{font-family:var(--font-display);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+  .tile .v{font-family:var(--font-display);font-weight:700;font-size:24px;color:var(--text-heading);font-variant-numeric:tabular-nums;line-height:1.2}
+  .tile .v small{font-size:13px;font-weight:500;color:var(--text-muted)}
+  .tile.red{border-left:3px solid var(--red)}.tile.amber{border-left:3px solid var(--amber)}.tile.green{border-left:3px solid var(--green)}.tile.acc{border-left:3px solid var(--accent)}
+
+  .pill{display:inline-block;font-family:var(--font-display);font-size:10.5px;letter-spacing:.12em;font-weight:600;padding:1px 7px;border-radius:2px;border:1px solid;white-space:nowrap}
+  .pill.pass{color:var(--green);border-color:var(--green)}.pill.fail{color:var(--red);border-color:var(--red)}.pill.skip{color:var(--amber);border-color:var(--amber)}.pill.none{color:var(--grey);border-color:var(--border-default)}
+  .pill.high{color:var(--red);border-color:var(--red)}.pill.med{color:var(--amber);border-color:var(--amber)}.pill.low{color:var(--text-muted);border-color:var(--border-default)}
+  .pill.you{color:var(--you);border-color:var(--you)}.pill.claude{color:var(--claude);border-color:var(--claude)}
+  .pill.arch{color:var(--green);border-color:var(--green)}.pill.hold{color:var(--amber);border-color:var(--amber)}.pill.out{color:var(--text-muted);border-color:var(--border-default)}
+
+  .sec{margin-top:36px}
+  .sec-h{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:8px}
+  .sec-h h2{margin:0;font-family:var(--font-display);font-weight:600;font-size:19px;color:var(--text-heading);text-wrap:balance}
+  .sec-h .id{font-family:var(--font-display);font-weight:700;color:var(--text-accent);letter-spacing:.1em}
+  .sec-h .cnt{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+  .lede{color:var(--text-muted);max-width:80ch;margin:10px 0 0}
+  h3.sub{font-family:var(--font-display);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-heading);margin:26px 0 0}
+
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .filters button{background:transparent;color:var(--text-muted);border:1px solid var(--border-default);border-radius:3px;padding:5px 10px;font-family:var(--font-display);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .filters button[aria-pressed="true"]{background:var(--accent);color:var(--bg-page);border-color:transparent}
+
+  .act{margin-top:10px;border:1px solid var(--border-subtle);border-left:3px solid var(--border-default);background:var(--bg-surface)}
+  .act.high{border-left-color:var(--red)}.act.med{border-left-color:var(--amber)}.act.low{border-left-color:var(--border-strong)}
+  .act.done{opacity:.55}
+  .act.done .ah h4{text-decoration:line-through}
+  .act summary{list-style:none;cursor:pointer;padding:11px 14px}
+  .act summary::-webkit-details-marker{display:none}
+  .ah{display:grid;grid-template-columns:auto 62px 1fr auto;gap:12px;align-items:center}
+  .ah input{width:18px;height:18px;accent-color:var(--green);margin:0}
+  .ah .aid{font-family:var(--font-display);font-weight:700;color:var(--text-heading);letter-spacing:.06em;font-size:13px}
+  .ah h4{margin:0;font-family:var(--font-body);font-weight:600;font-size:14px;color:var(--text-heading)}
+  .ah .why{display:block;font-weight:400;font-size:12.5px;color:var(--text-muted);margin-top:1px}
+  .ah .tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .ab{padding:2px 14px 14px 108px}
+  .ab .ev{font-size:12.5px;color:var(--text-muted);margin:0 0 8px}
+  .ab ol{margin:0;padding-left:20px}
+  .ab li{margin:5px 0;max-width:90ch}
+  .ab .done-when{margin-top:10px;font-size:12.5px;border-left:2px solid var(--green);padding:4px 10px;background:var(--bg-sunken)}
+  .ab .done-when b{font-family:var(--font-display);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-right:6px}
+
+  .twrap{overflow-x:auto;margin-top:12px;border:1px solid var(--border-subtle);background:var(--bg-surface)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border-subtle);vertical-align:top}
+  th{font-family:var(--font-display);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:600;background:var(--bg-sunken);position:sticky;top:0}
+  td.n{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.sid{font-family:var(--font-display);font-weight:600;color:var(--text-heading);white-space:nowrap}
+  tr.r-fail td{background:rgba(229,72,77,.06)}
+  tr.r-fail td:first-child{box-shadow:inset 3px 0 var(--red)}
+  tr.r-skip td:first-child{box-shadow:inset 3px 0 var(--amber)}
+  tr.r-pass td:first-child{box-shadow:inset 3px 0 var(--green)}
+  tr.r-none td:first-child{box-shadow:inset 3px 0 var(--border-default)}
+  tr.secrow td{font-family:var(--font-display);font-weight:600;letter-spacing:.06em;color:var(--text-accent);background:var(--bg-raised)}
+  td .cm{color:var(--text-muted);font-size:12.5px}
+  tr.total td{font-weight:600;color:var(--text-heading);border-top:1px solid var(--border-default)}
+  .cP{color:var(--green)}.cF{color:var(--red)}.cS{color:var(--amber)}.cN{color:var(--text-faint)}
+
+  .callout{margin-top:14px;border:1px solid var(--border-subtle);border-left:3px solid var(--amber);background:var(--bg-surface);padding:12px 16px}
+  .callout.info{border-left-color:var(--accent)}
+  .callout h3{margin:0 0 4px;font-family:var(--font-display);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-heading)}
+  .callout p{margin:4px 0 0;max-width:90ch}
+
+  .foot{margin-top:36px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border-subtle);padding-top:12px}
+
+  @media (max-width:760px){
+    .ah{grid-template-columns:auto 1fr;row-gap:6px}
+    .ah .aid{grid-column:2}
+    .ah h4{grid-column:1/-1}
+    .ah .tags{grid-column:1/-1;justify-content:flex-start}
+    .ab{padding:2px 14px 14px 16px}
+    .bar{width:100px}
+    h1{font-size:23px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="hdr">
+  <div class="wrap">
+    <div class="hdr-in">
+      <span class="mark"><span class="t">TEMPEST</span><span class="e">ENGINEERING</span></span>
+      <div>
+        <div class="title">Outstanding Actions Register</div>
+        <div class="sub">TempestOS-Core · Tempest-Dashboard · TempestMobile · reviewed 25 Sep 2026</div>
+      </div>
+      <div class="hdr-right">
+        <div class="meter" title="Actions ticked off in this browser"><div class="bar"><i class="d" id="doneBar"></i></div><span class="n" id="doneN">0 / 0 done</span></div>
+      </div>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#runthrough">1 Runthrough</a><a href="#actions">2 Actions</a><a href="#requests">3 PO requests</a><a href="#branches">4 Branches</a><a href="#sessions">5 Sessions</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="eyebrow">Archive review · 3 repos · 36 code sessions</div>
+    <h1>Everything still open, and how to close each one.</h1>
+    <p>Built from the three repos at their current heads (Core <code>452276f</code> v0.22.0, Dashboard <code>d5458e4</code> v0.1.0, Mobile <code>28a86a6</code> v0.1.2), every Claude Code session on the account, and the results you recorded in the <strong>TempestOS RC Runbook</strong> (last saved 22 Sep 15:01) and <strong>Cockpit Runbook</strong> (last saved 15 Sep). Tick an action when it's done; ticks are kept in this browser only.</p>
+    <div class="tiles">
+      <div class="tile red"><div class="k">High priority</div><div class="v" id="tHigh">–</div></div>
+      <div class="tile amber"><div class="k">Medium</div><div class="v" id="tMed">–</div></div>
+      <div class="tile"><div class="k">Low</div><div class="v" id="tLow">–</div></div>
+      <div class="tile green"><div class="k">RC runthrough</div><div class="v">37 <small>pass · 2 fail · 8 skip</small></div></div>
+      <div class="tile acc"><div class="k">Cockpit bring-up</div><div class="v">9<small> / 15 steps</small></div></div>
+    </div>
+  </section>
+
+  <div class="callout">
+    <h3>Start here: the five that matter most</h3>
+    <p><strong>C-01</strong> first-run dialog hang (blocks every fresh install of v0.22.0) · <strong>C-02</strong> Ctrl+K search (your only recorded FAIL) · <strong>C-03 → C-04</strong> port decision, then live Xero/QuickBooks (the v1.0 gate) · <strong>D-01</strong> finish Cockpit Xero connect (4 steps left) · <strong>A-01</strong> GitHub Actions minutes (Mobile CI has failed 8 runs in a row).</p>
+  </div>
+
+  <!-- 1. RUNTHROUGH -->
+  <section class="sec" id="runthrough">
+    <div class="sec-h"><span class="id">1</span><h2>Software runthrough results</h2><span class="cnt">v1.0 RC · v0.21.0 build c55965dd</span></div>
+    <p class="lede">Your scores from the Product Owner Test Runbook artifact. 46 of 64 steps scored in the runbook. F8 is added as a known FAIL from the 21 Sep session (the installed build's first-run dialog hang); it was never entered in the runbook, which leaves 17 not run. None of these results are in the repo yet: <code>docs/releases/v0.21.0/PO Test Runbook.md</code> is still blank.</p>
+    <div class="twrap"><table id="digest"></table></div>
+    <h3 class="sub">Step by step</h3>
+    <div class="twrap" style="max-height:620px"><table id="steps"></table></div>
+
+    <h3 class="sub">Cockpit bring-up (Pi dashboard)</h3>
+    <div class="twrap"><table id="cockpit"></table></div>
+  </section>
+
+  <!-- 2. ACTIONS -->
+  <section class="sec" id="actions">
+    <div class="sec-h"><span class="id">2</span><h2>Outstanding actions</h2><span class="cnt" id="actCnt"></span></div>
+    <p class="lede">Grouped by repo. <span class="pill you">YOU</span> means it needs you: a decision, a physical machine, an account or a credential. <span class="pill claude">CLAUDE</span> means a code session can do it: open a new session on the repo and paste the action ID and title as the prompt. Click a row to open its steps.</p>
+    <div class="filters" role="group" aria-label="Filter actions">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="you" aria-pressed="false">Needs you</button>
+      <button type="button" data-f="claude" aria-pressed="false">Claude can do</button>
+      <button type="button" data-f="high" aria-pressed="false">High only</button>
+      <button type="button" data-f="open" aria-pressed="false">Not ticked</button>
+    </div>
+    <div id="actList"></div>
+  </section>
+
+  <!-- 3. REQUESTS -->
+  <section class="sec" id="requests">
+    <div class="sec-h"><span class="id">3</span><h2>Product requests from your runthrough comments</h2><span class="cnt">not yet in BACKLOG.md</span></div>
+    <p class="lede">You wrote these into the Comments column while marking steps PASS. They are feature requests, not defects, and none has been logged in the repo. Action <strong>C-06</strong> covers logging them.</p>
+    <div class="twrap"><table id="reqs"></table></div>
+  </section>
+
+  <!-- 4. BRANCHES -->
+  <section class="sec" id="branches">
+    <div class="sec-h"><span class="id">4</span><h2>Branch clean-up</h2><span class="cnt">ahead / behind main</span></div>
+    <p class="lede">Only one branch across the three repos holds commits that are not on main, and its work was folded into v0.21.0. Everything else is merged. Action <strong>X-01</strong> has the delete commands.</p>
+    <div class="twrap"><table id="br"></table></div>
+  </section>
+
+  <!-- 5. SESSIONS -->
+  <section class="sec" id="sessions">
+    <div class="sec-h"><span class="id">5</span><h2>Code sessions: what each left behind</h2><span class="cnt">36 sessions, 20 Aug – 25 Sep</span></div>
+    <p class="lede">Read from each session's last recorded status. <span class="pill arch">ARCHIVE</span> means nothing is left, or what is left is captured as an action here. <span class="pill hold">ARCHIVE AFTER</span> names the action to finish first if you want the session's context. <span class="pill out">OTHER REPO</span> sessions are outside these three repos; their open items are noted but not planned here.</p>
+    <div class="twrap"><table id="sess"></table></div>
+  </section>
+
+  <div class="foot">Generated 25 Sep 2026 by a Claude Code archive review on branch <code>claude/archive-review-actions-9zoo8e</code>. Sources: repo heads above, GitHub PRs/issues/Actions, session status summaries, and the stored records of the RC Runbook and Cockpit Runbook artifacts. Session transcripts were not opened; only each session's final summary was read.</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(s){return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');}
+
+/* ---------- 1. Runthrough ---------- */
+var RB=[
+ ['A','Install and launch',[
+  ['A1','Fresh clone, `git log -1`','PASS'],['A2','Release build, warnings as errors','PASS'],['A3','Launch with `--persistence-root`; title bar and rail','PASS'],['A4','Home on a fresh root','PASS']]],
+ ['B','Setup, project and quote',[
+  ['B1','Add and release a rate card','PASS'],
+  ['B2','Add and release a person','PASS','Is this for internal staff or for contacts to add to the quote? I would say these should be clients, so also have the company.'],
+  ['B3','New Project → Add organisation','PASS','Client management should live under Business (customer/supplier section). Project numbers from customer: 5-letter customer ID – 5-letter project name – Q – 001.'],
+  ['B4','Register client, rate card, PO','PASS','As above: add this to Business.'],
+  ['B5','Details tab: budget, dates','PASS'],['B6','Quote lines, total £7,300.00','PASS'],
+  ['B7','Export quote PDF','PASS','Creating a project should generate a standard Windows folder structure and export straight into its Quote folder. Quote template needs the light Tempest logo, not the dark one.'],
+  ['B8','Send','PASS'],['B9','Accept creates deliverables','PASS'],['B10','Requirements and Deliverables tabs','PASS'],['B11','Add a deliverable directly','PASS'],['B12','Calculations due date; duplicate part refused','PASS']]],
+ ['C','Calculators, assets, evidence',[
+  ['C1','Calculators list','PASS'],['C2','Bolt shear 167552 N','PASS'],['C3','Re-run','PASS'],['C4','Compare with previous','PASS'],['C5','SF 2, compare','PASS'],['C6','Start a new calculation','PASS'],['C7','`abc` refused','PASS'],
+  ['C8','Release S355J2; beam bending','SKIP','Need materials database.'],
+  ['C9','Span-to-depth refusal','SKIP'],['C10','Bracket verification Check → Record','SKIP'],['C11','Evidence record with real file','PASS'],['C12','Independent check refused for author','SKIP'],['C13','Switch person, check, issue','SKIP']]],
+ ['D','Time, invoice, dashboards, findability',[
+  ['D1','Timesheet: task required','PASS'],['D2','Record with task','PASS'],['D3','Export week PDF','PASS'],['D4','Complete deliverable raises invoice request','PASS'],['D5','Invoices: New (1)','PASS'],['D6','Export invoice','PASS'],['D7','Home bars','PASS'],['D8','Dashboards and reports','PASS'],
+  ['D9','Ctrl+K palette finds the project','FAIL','Search shortcut doesn\'t work.'],
+  ['D10','Move, undo, redo','SKIP'],['D11','Document undo/redo','SKIP'],['D12','Attach PDF/SVG, annotate','SKIP'],['D13','Shared file on two objects','']]],
+ ['E','Docking, persistence, backup, lifecycle',[
+  ['E1','Float Inspector; dock Explorer into it','PASS'],['E2','Close Explorer tab','PASS'],['E3','Close last tab','PASS'],['E4','Focus ring stays on header','PASS'],
+  ['E5','Move tab with Ctrl+Shift+, / .',''],['E6','Reset Layout',''],['E7','Float, close, relaunch',''],['E8','Second monitor',''],['E9','Back up now',''],['E10','Restore refused with project open',''],['E11','Restore and relaunch',''],['E12','Sign off statement',''],
+  ['E13','Closed ≥ 90 days read-only','PASS']]],
+ ['F','Xero and installer',[
+  ['F1','Xero redirect URI; port decision',''],['F2','Save Xero connector',''],['F3','Restart; not authorised',''],['F4','Authorise opens browser',''],['F5','Sign in, Authorised',''],['F6','Invoices read from Xero',''],['F7','Build installer',''],
+  ['F8','Install; launch from Start menu','FAIL','Not in the runbook record. Found 21 Sep: first-run dialog paints then hangs, busy cursor, buttons dead (App.ShowFirstRunDialogBlocking). See C-01.'],
+  ['F9','Check for updates now','']]]
+];
+var LBL={PASS:'pass',FAIL:'fail',SKIP:'skip','':'none'};
+var dg='<thead><tr><th>Section</th><th>Steps</th><th>Pass</th><th>Fail</th><th>Skip</th><th>Not run</th><th>Failures</th></tr></thead><tbody>';
+var st='<thead><tr><th>#</th><th>Step</th><th>Result</th><th>Your comment / note</th></tr></thead><tbody>';
+var T={n:0,P:0,F:0,S:0,N:0,f:[]};
+RB.forEach(function(s){
+  var c={P:0,F:0,S:0,N:0,f:[]};
+  st+='<tr class="secrow"><td colspan="4">'+s[0]+'. '+esc(s[1])+'</td></tr>';
+  s[2].forEach(function(r){
+    var k=r[2]; if(k==='PASS')c.P++;else if(k==='FAIL'){c.F++;c.f.push(r[0]);}else if(k==='SKIP')c.S++;else c.N++;
+    st+='<tr class="r-'+LBL[k]+'"><td class="sid">'+r[0]+'</td><td>'+fmt(r[1])+'</td><td><span class="pill '+LBL[k]+'">'+(k||'NOT RUN')+'</span></td><td><span class="cm">'+esc(r[3]||'')+'</span></td></tr>';
+  });
+  T.n+=s[2].length;T.P+=c.P;T.F+=c.F;T.S+=c.S;T.N+=c.N;T.f=T.f.concat(c.f);
+  dg+='<tr><td>'+s[0]+'. '+esc(s[1])+'</td><td class="n">'+s[2].length+'</td><td class="n cP">'+c.P+'</td><td class="n cF">'+c.F+'</td><td class="n cS">'+c.S+'</td><td class="n cN">'+c.N+'</td><td class="n cF">'+c.f.join(', ')+'</td></tr>';
+});
+dg+='<tr class="total"><td>Total</td><td class="n">'+T.n+'</td><td class="n cP">'+T.P+'</td><td class="n cF">'+T.F+'</td><td class="n cS">'+T.S+'</td><td class="n cN">'+T.N+'</td><td class="n cF">'+T.f.join(', ')+'</td></tr></tbody>';
+document.getElementById('digest').innerHTML=dg;
+document.getElementById('steps').innerHTML=st+'</tbody>';
+
+var CK=[
+ ['01','Pi','Get a terminal on the Pi',1],['02','Pi','Pull the new code',1],['03','Pi','Run the installer',1],['04','Pi','Reboot, kiosk comes up by itself',1],
+ ['05','Pi','Make an INGEST_TOKEN',1],['06','Pi','Put it in /opt/tempest-dashboard/.env',1],['07','Windows','Copy the agent onto the PC',1],['08','Windows','Install the workstation agent',1],
+ ['09','Browser','Create the Xero app',1],['10','Pi','Run tools/xero-connect.js',0],['11','Browser','Approve in the browser',0],['12','Pi','Paste the four XERO_ lines into .env',0],['13','Pi','Confirm accounting mode is "live"',0],
+ ['14','Pi','Set a DASHBOARD_TOKEN (optional)',0],['15','Browser','Let laptop and phone back in (optional)',0]];
+var ck='<thead><tr><th>#</th><th>Machine</th><th>Step</th><th>Result</th></tr></thead><tbody>';
+CK.forEach(function(r){var k=r[3]?'PASS':'';ck+='<tr class="r-'+LBL[k]+'"><td class="sid">'+r[0]+'</td><td>'+r[1]+'</td><td>'+esc(r[2])+'</td><td><span class="pill '+LBL[k]+'">'+(r[3]?'DONE':'NOT DONE')+'</span></td></tr>';});
+document.getElementById('cockpit').innerHTML=ck+'</tbody>';
+
+/* ---------- 2. Actions ---------- */
+// [id, repo, title, why, priority, owner, evidence, steps[], doneWhen]
+var A=[
+ ['C-01','TempestOS-Core','Fix the first-run dialog hang','Every fresh install of v0.22.0 freezes on "Where should your data live?" (F8 FAIL)','high','claude',
+  '`src/Tempest.Desktop/App.cs:160-183` blocks the UI thread on `ShowDialog().GetAwaiter().GetResult()` before the main loop runs. Still on main. Offered as a fix in the 21 Sep "Tempest Engineering setup and testing" session, never done.',
+  ['New Claude session on TempestOS-Core: "Fix C-01: first-run dialog hang in App.ShowFirstRunDialogBlocking, add a headless test, cut v0.22.1".',
+   'Fix: run a local loop instead of blocking, e.g. `var cts = new CancellationTokenSource(); var t = dialog.ShowDialog<string>(owner); t.ContinueWith(_ => cts.Cancel(), TaskScheduler.FromCurrentSynchronizationContext()); Dispatcher.UIThread.MainLoop(cts.Token);` then read `t.Result`. Also correct the wrong doc comment above the method.',
+   'Add a Desktop headless test that drives the resolver with no stored choice and asserts the dialog returns.',
+   'PR, CI green, merge, then `git tag -a v0.22.1 -m "v0.22.1"` and `git push origin v0.22.1` so Release Publish builds a new Setup.exe.',
+   'On Windows: `Remove-Item "$env:LOCALAPPDATA\\TempestOS\\first-run.json"`, run the new Setup.exe, launch from Start menu.',
+   'Until then, workaround: create `%LOCALAPPDATA%\\TempestOS\\first-run.json` with `{"PersistenceRoot":"C:\\\\TempestOS-rc-data"}`.'],
+  'Runbook F8 scores PASS on the v0.22.1 installer.'],
+ ['C-02','TempestOS-Core','Fix the Ctrl+K search shortcut','Your only FAIL in the runthrough (D9: "search shortcut doesn\'t work")','high','claude',
+  'Handler at `src/Tempest.Desktop/Input/KeyboardShortcuts.cs:37` (`e.Key == Key.K && e.KeyModifiers == KeyModifiers.Control`). Likely cause: the key is handled by a focused control first, or the handler is attached to a window that isn\'t focused (e.g. after a panel floats).',
+   ['New Claude session: "Fix C-02: Ctrl+K doesn\'t open the command palette on Windows (runbook D9). Reproduce headless with focus in a TextBox, the Structure tree and a floated window".',
+   'Register the gesture with `AddHandler(KeyDownEvent, …, RoutingStrategies.Tunnel, handledEventsToo: true)` on every top-level window, including floating dock windows.',
+   'Add headless tests for each focus case, PR, merge; ship in v0.22.1 with C-01.',
+   'Re-run runbook D9 on Windows.'],
+  'D9 scores PASS.'],
+ ['C-03','TempestOS-Core','Decide the Xero sign-in port (TD-183)','Must be settled before C-04','high','you',
+  '`BACKLOG.md:166`; `OAuthAuthoriser.cs:66` `DefaultLoopbackPort = 49301`. 49301 is inside Windows\' dynamic range (49152–65535), so something else can occasionally hold it.',
+  ['On the main PC run `netsh int ipv4 show excludedportrange protocol=tcp` and check 49301 isn\'t in a reserved block.',
+   'Choose: <strong>A</strong> keep 49301 (occasional retry), or <strong>B</strong> move below 49152, e.g. 48301.',
+   'If B: tell a Claude session "C-03: change the OAuth loopback port to 48301, update the default config, tests and docs".',
+   'Record the decision in the TD-183 row of BACKLOG.md.'],
+  'TD-183 closed with the chosen port.'],
+ ['C-04','TempestOS-Core','First live Xero and QuickBooks connection','This is the only gate between v0.22.0 and v1.0.0','high','you',
+  '`PRODUCT_OWNER_ACCEPTANCE.md:170-184` (accepted as v0.22.0, v1.0 waits on live accounting); `PHYSICAL_REVIEW.md` §7k X1–X5; runbook F1–F6 not run.',
+  ['developer.xero.com → your app → add redirect `http://127.0.0.1:49301/callback/` (or the C-03 port).',
+   'TempestOS → Settings → Connector <strong>Xero</strong> → client id and secret → <strong>Authorise</strong>. Expect "Saved. Restart TempestOS to use Xero…".',
+   'Restart → Settings shows "Not authorised." → <strong>Authorise</strong> → sign in and allow in the browser → status "Authorised."',
+   'Business → Invoices: contacts, bills and cash position come from Xero. Copy every status line word for word into runbook F2–F6.',
+   'Repeat for QuickBooks (Intuit developer portal, same redirect).',
+   'Give the results to a Claude session: "C-04 done, results attached: record them and prepare v1.0.0".'],
+  'F1–F6 PASS for Xero and QuickBooks; v1.0.0 tagged.'],
+ ['C-05','TempestOS-Core','Finish the runthrough and commit the scores','18 steps not run, 8 skipped; nothing recorded in the repo','med','you',
+  'RC Runbook artifact: 46/64 scored. `docs/releases/v0.21.0/PO Test Runbook.md` has every Result cell blank.',
+  ['C8/C9 were skipped for want of materials: Engineering → Reference data → release <strong>S355J2</strong>, then run C8 and C9.',
+   'Run the other skips: C10, C12, C13 (needs the B2 person), D10–D12, then D13, E5–E12 (E8 needs two monitors) and F1–F9 (after C-01 and C-03).',
+   'In the runbook page, fill Tester/Date/Machine, the Decisions box and the verdict, then <strong>Download filled runbook (.md)</strong>.',
+   'Ask a Claude session: "C-05: commit this filled runbook to docs/releases/v0.22.0/ and update the header to v0.22.0".'],
+  'All 64 rows scored and the file is on main.'],
+ ['C-06','TempestOS-Core','Log your runthrough feature requests','Five requests from your comments are nowhere in the backlog (section 3)','med','claude',
+  'Comments on B2, B3, B4, B7 and C8 in the RC Runbook record.',
+  ['New Claude session: "C-06: add the five PO requests in section 3 of docs/reviews/outstanding-actions-2026-09-25.html to BACKLOG.md as new items, one WP scope note each".',
+   'Review the rows, set the order you want them in.'],
+  'Five new BACKLOG rows with owners and target versions.'],
+ ['C-07','TempestOS-Core','Decide per-line VAT on quotes (TD-188)','Your call: one default rate per quote, or a per-line picker','med','you',
+  '`BACKLOG.md:169`; PHYSICAL_REVIEW §7h R3 already reworded to match the single rate.',
+  ['Decide: single default rate is v1.0 behaviour, or per-line VAT is wanted.',
+   'If per-line: tell a Claude session "C-07: add a per-line VAT picker to the Quote tab (WP 21.3B follow-up)".',
+   'Either way, write the decision in the TD-188 row.'],''],
+ ['C-08','TempestOS-Core','Approve or reject ADR-0153 docking steps 3–4 (TD-91)','Unblocks WP 21.0B/21.0C','med','you',
+  '`BACKLOG.md` TD-91; `PRODUCT_OWNER_ACCEPTANCE.md` §6; ADR in `docs/architecture`.',
+  ['Read ADR-0153 steps 3 and 4.','Record approve or hold in the ADR and in the runbook Decisions box.',
+   'If approved: Claude session "C-08: implement WP 21.0B and 21.0C, including removing WorkspaceDockingComposer.SyncWorkspacePlacements".'],''],
+ ['C-09','TempestOS-Core','Correct the stale installer statements','Three docs say no Setup.exe has ever been produced; v0.22.0 has one','low','claude',
+  '`PROJECT_STATUS.md` ("Owed … the first Setup.exe"), `docs/releases/v0.22.0/Release Notes.md`, `PRODUCT_OWNER_ACCEPTANCE.md` §3 and §5.1.',
+  ['Claude session: "C-09: update those three docs: Setup.exe produced by Release Publish run 11; first install hit the F8 hang (C-01)".'],''],
+ ['C-10','TempestOS-Core','Polish TD-186 and TD-187','Raw GUIDs in three places; literal "(TD-180)" in an Invoices heading','low','claude',
+  '`BACKLOG.md:167-168`.',
+  ['Claude session: "C-10: fix TD-186 (display names instead of GUIDs) and TD-187 (remove (TD-180) from InvoicingView heading)". Ship with v0.22.1 if convenient.'],''],
+ ['C-11','TempestOS-Core','Merge or close the four Dependabot PRs','#10 upload-artifact 7, #11 setup-dotnet 6, #12 checkout 7, #13 dotnet-stryker 5','low','claude',
+  'Open PRs on GitHub; CI passed on #13.',
+  ['Claude session: "C-11: check CI on Dependabot PRs 10–13 and merge the green ones one at a time, watching main CI after each".'],''],
+ ['C-12','TempestOS-Core','Decide on code signing','Installer is unsigned, so Windows SmartScreen will warn; needed before v1.0','low','you',
+  '`.github/workflows/release.yml:198-206` (audit finding OSA-10).',
+  ['Choose Azure Trusted Signing or a standard Authenticode certificate.',
+   'Add the signing secrets to the repo, then Claude session: "C-12: add a signtool step to release.yml after packaging".'],''],
+ ['C-13','TempestOS-Core','Finish the Cloudflare dev environment setup','The 25 Sep session stopped: plugin install was blocked by permissions','low','you',
+  'Session "Cloudflare AI development environment setup", branch `claude/cloudflare-dev-setup-h0jbws` (never pushed).',
+  ['Reopen that session and read its last message for the exact commands.',
+   'Either add the permission rule it names to <code>~/.claude/settings.json</code>, or run the commands yourself, then <code>/reload-plugins</code>.',
+   'Archive the session once the plugin loads.'],''],
+
+ ['D-01','Tempest-Dashboard','Finish the Cockpit Xero connection','Cockpit Runbook stopped at step 9 on 15 Sep','high','you',
+  'Cockpit Runbook record: steps 1–9 done, 10–15 not. Scope fix (openid) is on main (`tools/xero-connect.js`).',
+  ['At the Pi: close the dashboard, open Terminal: `cd ~/Tempest-Dashboard && git pull && node tools/xero-connect.js`.',
+   'Enter client id and secret; open the printed login.xero.com link in Chromium on the Pi; sign in and pick the organisation.',
+   '`sudo nano /opt/tempest-dashboard/.env`, paste the four `XERO_` lines, save, `sudo systemctl restart tempest-dashboard`.',
+   'Check: `curl -s localhost:8080/api/snapshot | grep -o \'"accounting":{"status":"[a-z]*","mode":"[a-z]*"\'` must show `"mode":"live"`.',
+   'If "demo" or an error: send `journalctl -u tempest-dashboard -n 30` to a Claude session.'],
+  'Cockpit steps 10–13 ticked; DEMO DATA badge gone from Business.'],
+ ['D-02','Tempest-Dashboard','Install the Core agent on the TempestOS PC','Without it, Projects/Engineering on the Pi stay on demo data','high','you',
+  '`agents/README.md` "Connecting Core"; TempestOS writes to `%ProgramData%\\Tempest\\dashboard-export\\`.',
+  ['On the TempestOS PC, Administrator PowerShell in the copied `agents` folder:',
+   '`powershell -ExecutionPolicy Bypass -File .\\install-core-agent.ps1 -DashboardUrl http://192.168.1.71:8080 -IngestToken <the token from Cockpit step 05>`',
+   'Open TempestOS so it writes an export.',
+   'On the Pi: `curl -s localhost:8080/api/snapshot` shows programme/engineering data that isn\'t demo.'],''],
+ ['D-03','Tempest-Dashboard','Lock the dashboard to your devices (optional)','Anyone on the Wi-Fi can read invoice values today','med','you',
+  'Cockpit Runbook Part D (steps 14–15). Also required before Mobile M-05.',
+  ['`openssl rand -hex 24`, add `DASHBOARD_TOKEN=…` to `/opt/tempest-dashboard/.env`, restart the service. Leave `DASHBOARD_URL` as localhost.',
+   'On each laptop/phone open `http://192.168.1.71:8080/?token=<token>` once.'],''],
+ ['D-04','Tempest-Dashboard','Act on the Gap Map direction (21 Sep)','Core-to-Pi pipes are built but no panel reads them','med','claude',
+  'Tempest Gap Map artifact: Projects/Engineering/attention pushes dormant; Contracts and Quotes run on demo; 4 Core cockpits have no panel.',
+  ['Your call first: Projects card, do you want RAG + open-actions count on it?',
+   'Claude session on both repos: "D-04: export Core\'s CockpitAttentionItem list and KPI cards in the dashboard push and render them on the Pi, per the Gap Map direction".',
+   'Later (v0.19-style WP): thaw IssuedContract/ContractParty/ContractStatus/CommercialTerms into Core; add a sales Quote kind.'],''],
+ ['D-05','Tempest-Dashboard','Fix the v0.1.0 tag and the Xero doc','Tag is `V0.1.0` (capital V) so the CHANGELOG link is broken; INTEGRATIONS.md step 3 is out of date','low','claude',
+  'GitHub release `V0.1.0` on d5458e4; `docs/INTEGRATIONS.md` step 3 says "use the Xero CLI or a scratch script".',
+  ['Claude session: "D-05: add tag v0.1.0 at d5458e4 and repoint the release; change INTEGRATIONS.md step 3 to use tools/xero-connect.js".'],''],
+ ['D-06','Tempest-Dashboard','Add CI','No workflows at all; 120 tests only run locally','low','claude',
+  'No `.github/workflows` directory.',
+  ['After A-01: Claude session "D-06: add a Node workflow running npm test and lint on push and PR".'],''],
+
+ ['M-01','TempestMobile','Tag and publish v0.1.2','The APK is built and on main but there\'s no tag or GitHub release','high','claude',
+  'Tags stop at v0.1.1; `releases/v0.1.2/Tempest-Mobile-0.1.2.apk` exists.',
+  ['Claude session: "M-01 and M-02: bump package.json to 0.1.2, add the [0.1.2] CHANGELOG link, tag v0.1.2 at 28a86a6, and create the GitHub release with the APK attached".'],''],
+ ['M-02','TempestMobile','Fix the version metadata','`package.json` still says 0.1.1; CHANGELOG Unreleased compares from v0.1.1','med','claude',
+  '`package.json`, `CHANGELOG.md`.',['Done together with M-01.'],''],
+ ['M-03','TempestMobile','Turn CI back on','Workflow was set to manual-only while Actions minutes ran out; runs #2–#9 all failed in 3–4 s','high','claude',
+  '`.github/workflows/android.yml` (`on: workflow_dispatch` only, commit 82bd3de). Depends on A-01.',
+  ['After A-01, add repo secret `DASHBOARD_REPO_TOKEN`: fine-grained PAT, read-only Contents on Tempest-Dashboard.',
+   'Claude session: "M-03: restore push and pull_request triggers on android.yml, fix the stale \'Tempest-Dashboard has no main\' comment in android.yml and README".',
+   'Actions → Android → Run workflow once; confirm the APK artifact uploads.'],''],
+ ['M-04','TempestMobile','Create a permanent signing key','0.1.0–0.1.2 were signed with a key from a temporary container; the next build elsewhere forces an uninstall','med','you',
+  'README §Signing; PLAN.md "Next candidates" #4.',
+  ['On your PC: `keytool -genkeypair -v -keystore tempest-release.jks -alias tempest -keyalg RSA -keysize 4096 -validity 10000`.',
+   'Back the .jks and passwords up offline (password manager + USB).',
+   'Add secrets `RELEASE_KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`; Claude session "M-04: sign release builds in CI from these secrets".',
+   'Expect a one-time uninstall/reinstall on your phone for the first build with the new key.'],''],
+ ['M-05','TempestMobile','Test live mode against a locked dashboard','Live mode has never been tried with DASHBOARD_TOKEN set','med','you',
+  'README "Known limitations (0.1.2)".',
+  ['After D-03, open the app → Settings → enter the Pi address and token → check each screen loads live figures.',
+   'Report anything odd to a Claude session with a screenshot.'],''],
+ ['M-06','TempestMobile','Roadmap items (not started)','Tailscale + TLS remote access, attention notifications, home-screen widget','low','claude',
+  '`docs/PLAN.md` "Next candidates".',['Pick one when ready and open a session for it.'],''],
+
+ ['A-01','Account','Restore GitHub Actions minutes','Blocks Mobile CI (M-03), Juno PR #1 CI, and any new Dashboard CI','high','you',
+  'Sessions "Mobile platform build and scoping" (Juno) and "CI failures overnight review": both flagged the account-level billing limit.',
+  ['GitHub → Settings → Billing and plans → Actions: add a spending limit or wait for the monthly reset.',
+   'Then do M-03.'],''],
+ ['X-01','All repos','Delete merged and superseded branches','20+ remote branches, only one with unmerged commits','low','claude',
+  'Section 4.',
+  ['Check the one real divergence first: `git diff origin/main origin/release/v0.19.0 --stat` (Core). Its v0.19 work is on main per `OVERNIGHT_FINAL_ACCEPTANCE_REPORT.md:17`.',
+   'Claude session on all three repos: "X-01: delete the branches marked Delete in section 4 of the outstanding-actions page".',
+   'Keep the `release/v0.22.0`, Mobile `release/v0.1.x` and Dashboard `release/v0.1.0` branches if you use them as release markers; tags cover them otherwise.'],'']
+];
+var KEY='tempest-outstanding-2026-09-25';
+var done={};try{done=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){done={};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(done));}catch(e){}}
+var PR={high:'HIGH',med:'MED',low:'LOW'};
+var list=document.getElementById('actList');
+var groups={};A.forEach(function(a){(groups[a[1]]=groups[a[1]]||[]).push(a);});
+var html='';
+Object.keys(groups).forEach(function(g){
+  html+='<h3 class="sub" data-grp="'+esc(g)+'">'+esc(g)+'</h3>';
+  groups[g].forEach(function(a){
+    html+='<details class="act '+a[4]+'" id="'+a[0]+'" data-p="'+a[4]+'" data-o="'+a[5]+'" data-g="'+esc(g)+'">'+
+      '<summary><div class="ah"><input type="checkbox" aria-label="Mark '+a[0]+' done" data-id="'+a[0]+'"><span class="aid">'+a[0]+'</span>'+
+      '<h4>'+fmt(a[2])+'<span class="why">'+fmt(a[3])+'</span></h4>'+
+      '<span class="tags"><span class="pill '+a[4]+'">'+PR[a[4]]+'</span><span class="pill '+a[5]+'">'+a[5].toUpperCase()+'</span></span></div></summary>'+
+      '<div class="ab"><p class="ev"><strong>Evidence:</strong> '+fmt(a[6])+'</p><ol>'+a[7].map(function(s){return '<li>'+fmt(s).replace(/&lt;(\/?(strong|code))&gt;/g,'<$1>')+'</li>';}).join('')+'</ol>'+
+      (a[8]?'<div class="done-when"><b>Done when</b>'+fmt(a[8])+'</div>':'')+'</div></details>';
+  });
+});
+list.innerHTML=html;
+var cnt={high:0,med:0,low:0};A.forEach(function(a){cnt[a[4]]++;});
+document.getElementById('tHigh').textContent=cnt.high;document.getElementById('tMed').textContent=cnt.med;document.getElementById('tLow').textContent=cnt.low;
+document.getElementById('actCnt').textContent=A.length+' actions';
+function paintDone(){
+  var n=0;
+  list.querySelectorAll('input[data-id]').forEach(function(cb){var on=!!done[cb.dataset.id];cb.checked=on;cb.closest('.act').classList.toggle('done',on);if(on)n++;});
+  document.getElementById('doneN').textContent=n+' / '+A.length+' done';
+  document.getElementById('doneBar').style.width=(100*n/A.length)+'%';
+}
+list.addEventListener('click',function(e){if(e.target.matches('input[data-id]'))e.stopPropagation();});
+list.addEventListener('change',function(e){var cb=e.target;if(!cb.dataset||!cb.dataset.id)return;if(cb.checked)done[cb.dataset.id]=1;else delete done[cb.dataset.id];save();paintDone();applyFilter();});
+paintDone();
+var filt='all';
+function applyFilter(){
+  list.querySelectorAll('.act').forEach(function(el){
+    var show=filt==='all'||(filt==='you'&&el.dataset.o==='you')||(filt==='claude'&&el.dataset.o==='claude')||(filt==='high'&&el.dataset.p==='high')||(filt==='open'&&!done[el.id]);
+    el.hidden=!show;
+  });
+  list.querySelectorAll('h3[data-grp]').forEach(function(h){
+    h.hidden=!list.querySelector('.act[data-g="'+h.dataset.grp+'"]:not([hidden])');
+  });
+}
+document.querySelectorAll('.filters button').forEach(function(b){b.addEventListener('click',function(){
+  filt=b.dataset.f;document.querySelectorAll('.filters button').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});applyFilter();});});
+
+/* ---------- 3. Requests ---------- */
+var R=[
+ ['B2, B3, B4','Customer and supplier management under Business','People added in Reference data should be client contacts with their company; clients registered from New Project belong in a Business section.'],
+ ['B3','Project numbering from the customer','Format: 5-letter customer ID – 5-letter project name – Q – 001.'],
+ ['B7','Project folder structure in Windows','Creating a project generates a standard folder tree in Explorer; quote export saves straight into its Quote folder.'],
+ ['B7','Light Tempest logo on the quote PDF','The quote template uses the dark logo; switch to the light one.'],
+ ['C8','Materials database','C8/C9 could not be run without released materials; a proper materials library is wanted.']];
+var rq='<thead><tr><th>From step</th><th>Request</th><th>What you asked for</th></tr></thead><tbody>';
+R.forEach(function(r){rq+='<tr><td class="sid">'+r[0]+'</td><td><strong>'+esc(r[1])+'</strong></td><td>'+esc(r[2])+'</td></tr>';});
+document.getElementById('reqs').innerHTML=rq+'</tbody>';
+
+/* ---------- 4. Branches ---------- */
+var B=[
+ ['Core','release/v0.19.0','71 / 226','Superseded (in v0.21.0), confirm then delete'],
+ ['Core','claude/tempestos-v1-final-acceptance-19hka8','0 / 12','Merged: delete'],
+ ['Core','claude/academy-docs-review-completion-iqzgwv','0 / 215','Merged: delete'],
+ ['Core','claude/upbeat-mayer-f3px72','0 / 218','Merged: delete'],
+ ['Core','claude/ci-failures-investigation-stohyz','0 / 385','Merged: delete'],
+ ['Core','claude/mobile-platform-build-vxi0sw','0 / 0','Level with main: delete'],
+ ['Core','release/v0.18.0 · v0.19.1 · v0.20.0 · v0.21.0','0 / 226–551','Merged: delete'],
+ ['Core','release/v0.22.0','0 / 0','Current release: keep'],
+ ['Core','dependabot/* (4)','1 / 0','See C-11'],
+ ['Dashboard','claude/mobile-platform-build-vxi0sw','2 / 1','Superseded by TempestMobile 0.1.1: delete'],
+ ['Dashboard','claude/tempestos-kiosk-dashboard-3jbc54','0 / 1','Merged (Xero fixes on main): delete'],
+ ['Dashboard','claude/upbeat-mayer-f3px72','0','Merged: delete'],
+ ['Dashboard','release/v0.1.0','0','Keep or delete (tag covers it)'],
+ ['Mobile','claude/mobile-platform-build-vxi0sw','0 / 0','Merged: delete'],
+ ['Mobile','release/v0.1.0 · v0.1.1 · v0.1.2','0','Keep or delete (tags cover them)'],
+ ['All three','claude/archive-review-actions-9zoo8e','this review','Delete once this page is merged']];
+var bt='<thead><tr><th>Repo</th><th>Branch</th><th>Ahead / behind</th><th>Recommendation</th></tr></thead><tbody>';
+B.forEach(function(r){bt+='<tr><td>'+r[0]+'</td><td><code>'+esc(r[1])+'</code></td><td class="n">'+r[2]+'</td><td>'+esc(r[3])+'</td></tr>';});
+document.getElementById('br').innerHTML=bt+'</tbody>';
+
+/* ---------- 5. Sessions ---------- */
+// [date, title, repos, last status, rec, note]
+var S=[
+ ['25 Sep','Code chat archive review and actions','Core, Dash, Mobile','This review','hold','Archive after X-01 deletes its branch'],
+ ['25 Sep','Cloudflare AI development environment setup','Core, Dash','Needs input: plugin install blocked by permissions','hold','C-13'],
+ ['23 Sep','Mobile platform build and scoping','Core, Dash, Mobile','Done: v0.1.2 APK built, signed, pushed','hold','M-01; before archiving, check where the 0.1.x signing key was saved (M-04)'],
+ ['21 Sep','Tempest Engineering setup and testing','Core','Needs input: F8 fix offered, runbook published','hold','C-01, C-05'],
+ ['20 Sep','Tempest desktop-dashboard integrations','Dash, Core','Done: main ready; set INGEST_TOKEN, run install-core-agent','hold','D-02'],
+ ['15 Sep','TempestOS v1.0 final acceptance campaign','Core','Done: graphify wired in, branch merged','arch','Captured in C-04, C-05'],
+ ['15 Sep','CI failures investigation','Core','Done: release/* cancel-in-progress exemption, merged','arch',''],
+ ['15 Sep','Academy documentation review and completion','Core','Done: Phase 2 committed, merged','arch',''],
+ ['8–15 Sep','TempestOS v1.0 release-candidate roadmap review','Core','No summary; release/v0.20.0 merged','arch',''],
+ ['8 Sep','Plugins marketplace ECC addition','Core','Done: explained launch methods; branch gone','arch',''],
+ ['8 Sep','Plugin marketplace ECC integration','Core','No summary; branch gone','arch',''],
+ ['14 Sep','ecc-universal setup','none','No summary','arch',''],
+ ['5–8 Sep','TempestOS A4 Bearing Library','Core','Done at v0.16.0 (superseded by v0.22.0)','arch',''],
+ ['5 Sep','TempestOS parallel work roadmap A–G','Core','Done: register self-hash fix','arch',''],
+ ['5–6 Sep','A3 Technical Debt Register update','Core','Done: TD-123–129 added','arch',''],
+ ['4–7 Sep','V1.0.0 release candidate audit','Core','Done; 3 decisions raised at v0.16 (materials Draft, REQ-BRACKET-001 seed, themes)','arch','Superseded by v0.22.0 acceptance; materials resurfaces as request C8'],
+ ['3–4 Sep','TempestOS Desktop UI audit and integration','Core','Done: WP 15.2A','arch',''],
+ ['27–29 Aug','TempestOS Companion mobile application','Core','Review ready: CI diagnostics','arch','Superseded by TempestMobile (TD-82)'],
+ ['27 Aug–15 Sep','TempestOS Chromium kiosk dashboard','Dashboard-runtime','Done: Xero scopes fixed, ready to test','hold','D-01'],
+ ['13–14 Sep','Design: Tempest Engineering Design System','none','Done: SEO audit, "ready to commit" site/SEO.md','hold','Confirm the website changes were saved/deployed, then archive'],
+ ['14 Sep','Audit shell area-view WorkspaceChanges reactivity','Core','Archived','arch','Already archived'],
+ ['31 Aug','Stage 3 command descriptor binding (×2)','Core','Archived; staged merge superseded by v0.15+','arch','Already archived'],
+ ['28–31 Aug','Finding closure verification pass','Core','Archived','arch','Already archived'],
+ ['29 Aug','CI failure investigation','Core','Archived: CI green','arch','Already archived'],
+ ['29 Aug','Instagram page visibility','Core','Archived','arch','Already archived'],
+ ['21 Aug','WP14.5 / WP14.6 / tempest-001 (×5)','Core','Archived','arch','Already archived'],
+ ['9 Sep','Interrupted request','none','Archived','arch','Already archived'],
+ ['23 Sep','Mobile platform build and scoping (Juno)','Mercury, Juno','Needs input: PR #1 ready, CI blocked by billing','out','A-01, then re-run Juno CI'],
+ ['20 Sep','CI failures overnight review','Mercury, Juno','Done: 2 fixes pushed; billing + 7 missing Mercury secrets','out','A-01; add the 7 Mercury secrets'],
+ ['29 Aug–14 Sep','Design: Juno App Icon Concepts','Juno, Mercury','Review ready: awaiting APK build and pairing','out',''],
+ ['8–14 Sep','Brio railway layout app concept','brio-builder','Done: 0.4.0 released','out',''],
+ ['29 Aug','Daily life tracker/organizer','Lifeorganiser','Archived','out','Already archived']];
+var RC={arch:'ARCHIVE',hold:'ARCHIVE AFTER',out:'OTHER REPO'};
+var sh='<thead><tr><th>Date</th><th>Session</th><th>Repos</th><th>Last status</th><th>Recommendation</th></tr></thead><tbody>';
+S.forEach(function(r){sh+='<tr><td class="n">'+r[0]+'</td><td><strong>'+esc(r[1])+'</strong></td><td>'+esc(r[2])+'</td><td><span class="cm">'+esc(r[3])+'</span></td><td><span class="pill '+r[4]+'">'+RC[r[4]]+'</span> <span class="cm">'+esc(r[5])+'</span></td></tr>';});
+document.getElementById('sess').innerHTML=sh+'</tbody>';
+})();
+</script>
