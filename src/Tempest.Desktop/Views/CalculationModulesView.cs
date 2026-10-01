@@ -42,7 +42,10 @@ namespace Tempest.Desktop.Views;
 /// pointing at or clicking a shape marks or focuses its field. Not to
 /// scale, inputs only. Where the Inputs section is narrower than
 /// <see cref="DiagramBesideMinimumWidth"/> (a laptop window), the panel
-/// stacks under the inputs instead, so no value box is squeezed.
+/// stacks above the inputs instead (the Product Owner, 2026-10-01), so no
+/// value box is squeezed and the drawing is in view without scrolling;
+/// the tab order still starts at the first input, since the panel holds
+/// no tab stop and stays after the inputs in the logical order.
 /// </para>
 /// <para>
 /// <b>This view decides nothing.</b> It collects text, raises intent and
@@ -84,7 +87,8 @@ public sealed class CalculationModulesView : UserControl
     /// The narrowest Inputs section that keeps the diagram beside the
     /// inputs: a 220 px label, a value box of 200 px or more, a 120 px
     /// unit picker, the gap and the panel. Narrower, the panel stacks
-    /// under the inputs (the board's F1, a 1180 x 760 window).
+    /// above the inputs (the board's F1, a 1180 x 760 window; above, not
+    /// under, by the Product Owner's decision of 2026-10-01).
     /// </summary>
     public const double DiagramBesideMinimumWidth = 220 + 200 + 120 + DesignTokens.SpaceLg + DiagramPanelWidth;
 
@@ -740,8 +744,9 @@ public sealed class CalculationModulesView : UserControl
         inputs.Children.Add(_problems);
         inputs.Children.Add(_status);
 
-        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`), or under them where that would squeeze them.
-        var inputsBeside = new BesideOrBelowPanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
+        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`), or above them where that would squeeze them.
+        // The inputs stay the first child, so the tab order runs through them whichever way the panel is placed.
+        var inputsBeside = new BesideOrAbovePanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
         inputsBeside.Children.Add(inputs);
         inputsBeside.Children.Add(_diagram);
         right.Children.Add(Section("Inputs", inputsBeside));
@@ -893,9 +898,10 @@ public sealed class CalculationModulesView : UserControl
     /// <summary>
     /// Two children: the first fills the width, the second (a fixed-width
     /// panel) sits beside it on the right while the width allows at least
-    /// <c>minimumBeside</c>, and under it otherwise.
+    /// <c>minimumBeside</c>, and above it otherwise. Only the placement
+    /// changes: the first child stays first in the logical (tab) order.
     /// </summary>
-    private sealed class BesideOrBelowPanel(double minimumBeside, double gap) : Panel
+    private sealed class BesideOrAbovePanel(double minimumBeside, double gap) : Panel
     {
         private bool Beside(double width) => double.IsInfinity(width) || width >= minimumBeside;
 
@@ -934,8 +940,8 @@ public sealed class CalculationModulesView : UserControl
             }
             else
             {
-                main.Arrange(new Rect(0, 0, finalSize.Width, main.DesiredSize.Height));
-                side.Arrange(new Rect(0, main.DesiredSize.Height + gap, sideWidth, side.DesiredSize.Height));
+                side.Arrange(new Rect(0, 0, sideWidth, side.DesiredSize.Height));
+                main.Arrange(new Rect(0, side.DesiredSize.Height + gap, finalSize.Width, main.DesiredSize.Height));
             }
 
             return finalSize;

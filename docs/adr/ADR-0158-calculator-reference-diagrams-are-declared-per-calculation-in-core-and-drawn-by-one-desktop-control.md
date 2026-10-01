@@ -41,7 +41,11 @@ builds plain Avalonia shapes from the spec, coloured from `BrandPalette`
 and `ApplicationPalette` tokens (focus highlight is the focus-ring
 token), marks every drawing "Not to scale · inputs only", and shows "No
 diagram yet" where there is none. `CalculationModulesView` places it
-beside the inputs, redraws it on every field change, highlights a
+beside the inputs — or, where the Inputs section is narrower than
+`DiagramBesideMinimumWidth` (a 1180 × 760 laptop window), above them, so
+it is seen without scrolling and no value box is squeezed (the Product
+Owner, 2026-10-01; the inputs stay first in the tab order) — redraws it
+on every field change, highlights a
 field's shapes on focus, and marks or focuses a field when its shape is
 pointed at or clicked.
 

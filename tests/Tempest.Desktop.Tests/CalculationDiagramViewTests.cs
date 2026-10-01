@@ -389,15 +389,21 @@ public sealed class CalculationDiagramViewTests
     [AvaloniaTheory]
     [InlineData(1180, 760)]
     [InlineData(1050, 760)]
-    public void OnALaptopWindow_EveryValueBoxStaysReadable_AndTheDiagramOverlapsNothing(double width, double height)
+    public void OnALaptopWindow_TheDiagramStacksAboveTheInputs_InView_AndEveryValueBoxStaysReadable(double width, double height)
     {
         // The board's F1: at 1180 x 760 the fixed panel beside the inputs squeezed every value box to ~64 px, under its unit picker.
+        // The Product Owner (2026-10-01): stacked, the diagram goes above the inputs, so it is seen without scrolling.
         WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
         {
             var diagram = view.Diagram;
             DesktopTestHelpers.AssertPlaced(diagram, "the reference diagram");
             var diagramBox = Box(diagram, window);
             Assert.True(diagramBox.Right <= width + 0.5, $"The diagram ends at x={diagramBox.Right}, past the {width} px window.");
+            Assert.True(diagramBox.Top >= 0 && diagramBox.Top < height, $"The diagram's top edge (y={diagramBox.Top:0}) is not in the {height} px window without scrolling.");
+            Assert.True(diagramBox.Bottom <= height + 0.5, $"The diagram ends at y={diagramBox.Bottom:0}, below the {height} px window; it must be seen without scrolling.");
+
+            var firstRow = Box(view.FieldRow(view.SelectedModule!.Inputs[0].Name)!, window);
+            Assert.True(diagramBox.Bottom <= firstRow.Top + 0.5, $"The diagram (ends y={diagramBox.Bottom:0}) is not above the first input row (y={firstRow.Top:0}).");
 
             foreach (var name in new[] { "Span", "Load", "YoungsModulus", "SecondMomentOfArea", "DeflectionLimit" })
             {
@@ -412,7 +418,62 @@ public sealed class CalculationDiagramViewTests
                 Assert.True(boxRect.Left >= labelRect.Right - 0.5, $"{name}: the value box (x={boxRect.Left:0}) overlaps its label (ends x={labelRect.Right:0}).");
                 Assert.True(unitRect.Left >= boxRect.Right - 0.5, $"{name}: the unit picker (x={unitRect.Left:0}) covers the value box (ends x={boxRect.Right:0}).");
                 Assert.False(boxRect.Intersects(diagramBox), $"{name}: the value box {boxRect} overlaps the diagram {diagramBox}.");
+                Assert.True(boxRect.Top >= diagramBox.Bottom - 0.5, $"{name}: the value box (y={boxRect.Top:0}) is not under the diagram (ends y={diagramBox.Bottom:0}).");
             }
+        }, width, height);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(1180, 760)]
+    [InlineData(1050, 760)]
+    public void OnALaptopWindow_TabStillReachesTheFirstInputFirst_AndFocusHighlightsBothWays(double width, double height)
+    {
+        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+
+            // The diagram holds no tab stop, and above the inputs it still is not reached before them.
+            Assert.DoesNotContain(diagram.GetVisualDescendants().Prepend(diagram).OfType<InputElement>(),
+                e => e.Focusable && KeyboardNavigation.GetIsTabStop(e) && e.IsEffectivelyVisible && e is not CalculationDiagramView);
+            var inputsSection = view.GetVisualDescendants().OfType<Expander>().Single(e => Equals(e.Header, "Inputs"));
+            // The first field that can take focus (a record picker over an empty library is disabled, so skipped).
+            var firstInput = view.SelectedModule!.Inputs.Select(i => view.FieldControl(i.Name)!)
+                .First(c => c.Focusable && c.IsEffectivelyEnabled && c.IsEffectivelyVisible);
+            IInputElement current = inputsSection;
+            IInputElement? reached = null;
+            for (var step = 0; step < 6 && reached is null; step++)
+            {
+                var next = KeyboardNavigationHandler.GetNext(current, NavigationDirection.Next);
+                Assert.NotNull(next);
+                Assert.False(next is Visual v && (ReferenceEquals(v, diagram) || diagram.IsVisualAncestorOf(v)), "Tab reaches the diagram before the first input.");
+                if (ReferenceEquals(next, firstInput) || (next is Visual nv && firstInput.IsVisualAncestorOf(nv)))
+                    reached = next;
+                current = next!;
+            }
+            Assert.True(reached is not null, "Tab from the Inputs section does not reach the first input field first.");
+
+            // Field to shape.
+            var span = view.FieldControl("Span")!;
+            Assert.True(span.Focus());
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(diagram.IsHighlighted("Span"));
+            Assert.All(diagram.ShapesFor("Span").OfType<Line>(), line => Assert.Same(ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey), line.Stroke));
+            Assert.True(view.FieldControl("Load")!.Focus());
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal("Load", diagram.HighlightedInput);
+
+            // Shape to field, by real pointer input on the stacked panel.
+            var label = diagram.ShapesFor("Span").OfType<TextBlock>().Single();
+            var centre = label.TranslatePoint(new Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
+            Assert.True(centre.Y > 0 && centre.Y < height, $"The span's label (y={centre.Y:0}) is not in view.");
+            window.MouseMove(centre, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(view.IsRowMarked("Span"), "Pointing at the span's label marks its row.");
+            window.MouseDown(centre, MouseButton.Left, RawInputModifiers.None);
+            window.MouseUp(centre, MouseButton.Left, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(span.IsFocused, "Clicking the span's shape focuses its box.");
+            Assert.Equal("Span", diagram.HighlightedInput);
         }, width, height);
     }
 
