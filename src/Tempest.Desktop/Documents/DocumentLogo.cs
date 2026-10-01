@@ -4,17 +4,21 @@ using SkiaSharp;
 namespace Tempest.Desktop.Documents;
 
 /// <summary>
-/// The horizontal navy Tempest wordmark lockup (`WP 21.2A`, closing
-/// `WP 20.10G`'s own disclosed gap — see <see cref="DocumentTemplate"/>'s
-/// class remarks), embedded as a <c>Tempest.Desktop</c> resource
-/// (<c>Documents/Assets/Logo/tempest-logo-horizontal-navy.png</c>) and
+/// The horizontal ink Tempest Engineering lockup — dark (ink/indigo)
+/// logotype and mark on a transparent ground, the design system's
+/// light-ground variant for the paper theme documents use
+/// (<c>docs/design/system/assets/logo/derived/logo-horizontal-transparent-ink.svg</c>,
+/// rasterised at 4x). It replaced the navy lockup `WP 21.2A` first
+/// embedded, whose white-on-navy box the Product Owner rejected on paper
+/// documents. Embedded as a <c>Tempest.Desktop</c> resource
+/// (<c>Documents/Assets/Logo/tempest-logo-horizontal-ink.png</c>) and
 /// decoded once through <see cref="SKBitmap.Decode(System.IO.Stream)"/> —
 /// no running Avalonia application needed, mirroring
 /// <see cref="DocumentFonts"/>'s own loading discipline.
 /// </summary>
 public static class DocumentLogo
 {
-    private static readonly Lazy<SKBitmap?> HorizontalNavyBitmap = new(() => Load("tempest-logo-horizontal-navy.png"));
+    private static readonly Lazy<SKBitmap?> HorizontalInkBitmap = new(() => Load("tempest-logo-horizontal-ink.png"));
 
     /// <summary>
     /// The lockup bitmap, or <see langword="null"/> when the embedded
@@ -23,7 +27,7 @@ public static class DocumentLogo
     /// before this Work Package when this is <see langword="null"/>, so a
     /// load failure degrades the header band rather than breaking it.
     /// </summary>
-    public static SKBitmap? HorizontalNavy => HorizontalNavyBitmap.Value;
+    public static SKBitmap? HorizontalInk => HorizontalInkBitmap.Value;
 
     private static SKBitmap? Load(string fileName)
     {
