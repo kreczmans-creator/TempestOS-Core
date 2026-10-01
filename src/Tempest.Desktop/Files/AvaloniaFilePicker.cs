@@ -85,6 +85,26 @@ public sealed class AvaloniaFilePicker : IFilePicker
         return file?.TryGetLocalPath() ?? file?.Path.ToString();
     }
 
+    /// <inheritdoc />
+    public async Task<string?> PickFolderAsync(string title, string? startFolder = null, CancellationToken cancellationToken = default)
+    {
+        if (TopLevel.GetTopLevel(_owner) is not { } topLevel)
+            return null;
+
+        IStorageFolder? startLocation = null;
+        if (!string.IsNullOrWhiteSpace(startFolder) && Directory.Exists(startFolder))
+            startLocation = await topLevel.StorageProvider.TryGetFolderFromPathAsync(startFolder).ConfigureAwait(true);
+
+        var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            SuggestedStartLocation = startLocation,
+        }).ConfigureAwait(true);
+
+        return folders.Count == 0 ? null : folders[0].TryGetLocalPath() ?? folders[0].Path.ToString();
+    }
+
     private static PickedFile ToPickedFile(IStorageFile file) =>
         new(file.Name, FileContentTypes.ForFileName(file.Name), () => ReadAllBytesAsync(file));
 

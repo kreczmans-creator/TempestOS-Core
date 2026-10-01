@@ -72,10 +72,19 @@ public sealed class UserSettings
     /// </summary>
     public bool CheckForUpdatesOnLaunch { get; set; }
 
+    /// <summary>
+    /// Gets or sets the folder Business → Timesheets → Export week saves to
+    /// by default (runbook G2), chosen in Settings → Timesheets.
+    /// <see langword="null"/> (the default) means
+    /// <see cref="Documents.Timesheets.TimesheetExportFolder.Fallback"/> —
+    /// <c>D:\11 Business Admin\02 Timesheets</c> on Windows.
+    /// </summary>
+    public string? TimesheetExportFolder { get; set; }
+
     /// <summary>Writes the current state via <see cref="ISettingsProvider.SetValueAsync"/>.</summary>
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        var dto = new UserSettingsDto(ToastDurationSeconds, ConfirmBeforeDelete, RecentSearchCapacity, CheckForUpdatesOnLaunch);
+        var dto = new UserSettingsDto(ToastDurationSeconds, ConfirmBeforeDelete, RecentSearchCapacity, CheckForUpdatesOnLaunch, TimesheetExportFolder);
         await _document.SaveAsync(dto, cancellationToken).ConfigureAwait(false);
     }
 
@@ -91,8 +100,9 @@ public sealed class UserSettings
         ConfirmBeforeDelete = dto.ConfirmBeforeDelete;
         RecentSearchCapacity = dto.RecentSearchCapacity;
         CheckForUpdatesOnLaunch = dto.CheckForUpdatesOnLaunch;
+        TimesheetExportFolder = string.IsNullOrWhiteSpace(dto.TimesheetExportFolder) ? null : dto.TimesheetExportFolder;
     }
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
-    private sealed record UserSettingsDto(double ToastDurationSeconds, bool ConfirmBeforeDelete, int RecentSearchCapacity, bool CheckForUpdatesOnLaunch = false);
+    private sealed record UserSettingsDto(double ToastDurationSeconds, bool ConfirmBeforeDelete, int RecentSearchCapacity, bool CheckForUpdatesOnLaunch = false, string? TimesheetExportFolder = null);
 }

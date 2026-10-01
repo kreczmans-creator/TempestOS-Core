@@ -73,6 +73,9 @@ public sealed class NewProjectDetailsAndTimesheetsJourneyTests
             Assert.Contains(texts, t => t.Contains(rateCardId, StringComparison.Ordinal) && t.Contains("Journey Rate Card", StringComparison.Ordinal));
 
             // ---- Timesheets → Record lists the project and records 3h ----
+            // Runbook G1: the task is one of the project's own deliverables.
+            var designWork = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Design work");
+
             await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
@@ -99,8 +102,7 @@ public sealed class NewProjectDetailsAndTimesheetsJourneyTests
             gradeCombo.SelectedItem = grade;
             hoursUpDown.Value = 3m;
 
-            var taskBox = prompt.GetLogicalDescendants().OfType<TextBox>().First();
-            taskBox.Text = "Design work";
+            await TimesheetTaskTestSupport.SelectTaskAsync(prompt, designWork.Id, condition => RenderUntilAsync(window, condition));
 
             var record = prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
             record.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -115,7 +117,7 @@ public sealed class NewProjectDetailsAndTimesheetsJourneyTests
                     .GetAwaiter().GetResult();
                 return entries.Any(e => e.ProjectId == projectId && e.Hours == 3m);
             });
-            Assert.Contains(entries, e => e.ProjectId == projectId && e.Hours == 3m && e.TaskDescription == "Design work");
+            Assert.Contains(entries, e => e.ProjectId == projectId && e.Hours == 3m && e.TaskDescription == designWork.Label && e.DeliverableId == designWork.Id);
         }
         finally
         {

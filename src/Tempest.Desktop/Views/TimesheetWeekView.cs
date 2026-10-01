@@ -83,6 +83,15 @@ public sealed class TimesheetWeekView : UserControl
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
 
+    /// <summary>
+    /// The folder Export week's own save picker starts in (runbook G2) —
+    /// Settings → Timesheets → Timesheet export folder, resolved through
+    /// <see cref="TimesheetExportFolder.Resolve"/>; created when missing.
+    /// <see langword="null"/> (or a delegate answering <see langword="null"/>)
+    /// leaves the picker's own normal start.
+    /// </summary>
+    public Func<string?>? ExportFolder { get; set; }
+
     /// <summary>The change feed this view reloads its own week from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -347,8 +356,11 @@ public sealed class TimesheetWeekView : UserControl
             ApplicationVersionText: _applicationVersionText());
 
         var reference = $"{principalName}-{_weekStart:yyyy-MM-dd}";
-        var result = await _documentExporter.ExportAsync(_timesheetRenderer, model, reference, cancellationToken: CancellationToken.None).ConfigureAwait(true);
-        Report(result.Message, succeeded: result.Succeeded);
+        var start = TimesheetExportFolder.Prepare(ExportFolder?.Invoke());
+        var result = await _documentExporter
+            .ExportAsync(_timesheetRenderer, model, reference, startFolder: start.Folder, cancellationToken: CancellationToken.None)
+            .ConfigureAwait(true);
+        Report(start.Note is null ? result.Message : $"{start.Note} {result.Message}", succeeded: result.Succeeded);
     }
 
     private async Task OnRecordAsync()
@@ -361,7 +373,7 @@ public sealed class TimesheetWeekView : UserControl
         }
 
         var command = new Tempest.Workspace.Timesheets.RecordTimesheetCommand(
-            input.ProjectId, input.Date, input.Hours, input.Billable, input.Grade, input.Task);
+            input.ProjectId, input.Date, input.Hours, input.Billable, input.Grade, input.Task, input.DeliverableId);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)

@@ -16,6 +16,20 @@ public sealed class StubFilePicker : IFilePicker
 {
     private readonly Queue<IReadOnlyList<string>> _pickResults = new();
     private string? _nextSavePath;
+    private string? _nextFolder;
+
+    /// <summary>Every folder pick this stub received, as (title, start folder), in call order.</summary>
+    public List<(string Title, string? StartFolder)> FolderRequests { get; } = [];
+
+    /// <summary>Sets the folder <see cref="PickFolderAsync"/> returns next. <see langword="null"/> (the default) simulates a cancelled pick.</summary>
+    public void SetNextFolder(string? folder) => _nextFolder = folder;
+
+    /// <inheritdoc />
+    public Task<string?> PickFolderAsync(string title, string? startFolder = null, CancellationToken cancellationToken = default)
+    {
+        FolderRequests.Add((title, startFolder));
+        return Task.FromResult(_nextFolder);
+    }
 
     /// <summary>Every <see cref="FilePickerRequest"/> this stub received, in call order.</summary>
     public List<FilePickerRequest> PickRequests { get; } = [];

@@ -131,9 +131,14 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
             week.ParameterPrompt = StubAmendDeletePrompt();
 
-            await RecordViaRealDialogAsync(window, week, projectId, monday, 4m, true, grade, "Design work");
-            await RecordViaRealDialogAsync(window, week, projectId, monday, 2m, false, grade, "Admin");
-            await RecordViaRealDialogAsync(window, week, projectId, tuesday, 3m, true, grade, "Review");
+            // Runbook G1: the task is one of the project's own deliverables.
+            var designWork = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Design work");
+            var admin = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Admin");
+            var review = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Review");
+
+            await RecordViaRealDialogAsync(window, week, projectId, monday, 4m, true, grade, designWork.Id);
+            await RecordViaRealDialogAsync(window, week, projectId, monday, 2m, false, grade, admin.Id);
+            await RecordViaRealDialogAsync(window, week, projectId, tuesday, 3m, true, grade, review.Id);
 
             var timesheets = (ITimesheetService)host.Services!.GetService(typeof(ITimesheetService));
             IReadOnlyList<TimesheetEntry> entries = [];
@@ -170,13 +175,13 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             // Captured before any mutation — a row's own task description
             // changes under Amend, so the id (never the description) is
             // what identifies an entry from here on.
-            var designWorkEntryId = entries.First(e => e.TaskDescription == "Design work").Id;
-            var adminEntryId = entries.First(e => e.TaskDescription == "Admin").Id;
-            var reviewEntryId = entries.First(e => e.TaskDescription == "Review").Id;
+            var designWorkEntryId = entries.First(e => e.DeliverableId == designWork.Id && e.TaskDescription == designWork.Label).Id;
+            var adminEntryId = entries.First(e => e.DeliverableId == admin.Id && e.TaskDescription == admin.Label).Id;
+            var reviewEntryId = entries.First(e => e.DeliverableId == review.Id && e.TaskDescription == review.Label).Id;
 
             // ---- Amend "Design work" ----
             var amendButton = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Amend Design work");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Amend {designWork.Label}");
             amendButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () =>
@@ -184,7 +189,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
 
             // ---- Delete "Admin" ----
             var deleteButton = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Delete Admin");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Delete {admin.Label}");
             deleteButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () => ((TimesheetEntry)domain.Repository.FindAsync(adminEntryId).GetAwaiter().GetResult()!).IsDeleted);
@@ -197,7 +202,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
             var amendReview = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Amend Review");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Amend {review.Label}");
             amendReview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase)));
@@ -206,7 +211,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
                 t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase));
 
             var deleteReview = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Delete Review");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Delete {review.Label}");
             deleteReview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase)));
@@ -566,7 +571,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
     }
 
     private static async Task RecordViaRealDialogAsync(
-        MainWindow window, TimesheetWeekView week, Guid projectId, DateOnly date, decimal hours, bool billable, string grade, string task)
+        MainWindow window, TimesheetWeekView week, Guid projectId, DateOnly date, decimal hours, bool billable, string grade, Guid deliverableId)
     {
         var recordButton = week.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
         recordButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -591,8 +596,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
         var billableCheck = prompt.GetLogicalDescendants().OfType<CheckBox>().First();
         billableCheck.IsChecked = billable;
 
-        var taskBox = prompt.GetLogicalDescendants().OfType<TextBox>().First();
-        taskBox.Text = task;
+        await TimesheetTaskTestSupport.SelectTaskAsync(prompt, deliverableId, condition => RenderUntilAsync(window, condition));
 
         var record = prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
         record.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
