@@ -250,7 +250,7 @@ public sealed class SettingsInvoicingAuthorisationTests
 
     private static async Task UntilAsync(Func<Task<bool>> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
+        var deadline = DesktopTestHelpers.Deadline(10);
         while (DateTime.UtcNow < deadline)
         {
             Dispatcher.UIThread.RunJobs();
@@ -259,7 +259,7 @@ public sealed class SettingsInvoicingAuthorisationTests
             await Task.Delay(10);
         }
 
-        Assert.Fail("The condition was not met within ten seconds.");
+        Assert.Fail("The condition was not met within ten (scaled) seconds.");
     }
 
     private sealed class NoBrowser : IBrowserLauncher

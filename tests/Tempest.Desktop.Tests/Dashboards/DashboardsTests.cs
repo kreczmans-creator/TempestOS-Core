@@ -108,7 +108,9 @@ public sealed class DashboardsTests
             var openLateFooting = homeButtons.Single(b =>
                 AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains("Late footing check", StringComparison.Ordinal));
             openLateFooting.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.LateFootingDeliverableId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.LateFootingDeliverableId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
 
             // ---------------------------------------------------------
@@ -185,7 +187,9 @@ public sealed class DashboardsTests
             var openDueSoon = engineeringDashboard.GetLogicalDescendants().OfType<Button>()
                 .Single(b => AutomationName(b) == "Open Due soon deliverable");
             openDueSoon.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.DueSoonDeliverableId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.DueSoonDeliverableId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
 
             // ---------------------------------------------------------
@@ -225,7 +229,9 @@ public sealed class DashboardsTests
             var openReceivable = businessDashboard.GetLogicalDescendants().OfType<Button>()
                 .Single(b => AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains(fixture.ReceivableClientId, StringComparison.Ordinal));
             openReceivable.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.ReceivableInvoiceId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.ReceivableInvoiceId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
         }
         finally
@@ -440,16 +446,8 @@ public sealed class DashboardsTests
 
     private static string AutomationName(Control control) => Avalonia.Automation.AutomationProperties.GetName(control) ?? string.Empty;
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

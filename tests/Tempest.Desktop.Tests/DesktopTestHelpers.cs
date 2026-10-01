@@ -1,8 +1,10 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.LogicalTree;
 using Avalonia.VisualTree;
 using Tempest.Workspace;
@@ -57,6 +59,48 @@ internal static class DesktopTestHelpers
     /// <summary>A deadline <paramref name="baseSeconds"/> from now, scaled by <see cref="TimeoutFactor"/>.</summary>
     public static DateTime Deadline(double baseSeconds) =>
         DateTime.UtcNow.AddSeconds(baseSeconds * TimeoutFactor);
+
+    /// <summary>
+    /// Pumps the UI dispatcher until <paramref name="condition"/> holds, for
+    /// at most <see cref="Deadline"/>(<paramref name="baseSeconds"/>), and
+    /// fails the test naming the condition if it never does (`v0.23.0` CI
+    /// board G-01). The ~40 per-class copies this replaces returned
+    /// silently on timeout, so a condition that could never be true (six
+    /// waits on <c>StartsWith("opened (")</c> against a phase the setter
+    /// prefixes with a timestamp) burned its whole deadline on every run and
+    /// passed anyway on whatever the test checked next. Each class keeps a
+    /// one-line <c>RenderUntilAsync</c> adapter only because its own
+    /// <c>LayOut</c> pass differs (window size, number of passes).
+    /// </summary>
+    /// <param name="condition">The state being waited for.</param>
+    /// <param name="baseSeconds">The unscaled deadline.</param>
+    /// <param name="afterEachPump">Run after every dispatcher pump - typically the calling class's own <c>LayOut(window)</c>.</param>
+    /// <param name="diagnostics">Extra context for the failure message - typically <see cref="MainWindow.LastOpenPhase"/>.</param>
+    /// <param name="what">The condition's own source text, filled in by the compiler.</param>
+    public static async Task WaitUntilAsync(
+        Func<bool> condition,
+        double baseSeconds,
+        Action? afterEachPump = null,
+        Func<string>? diagnostics = null,
+        [CallerArgumentExpression(nameof(condition))] string? what = null)
+    {
+        var deadline = Deadline(baseSeconds);
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+            afterEachPump?.Invoke();
+        }
+
+        if (!condition())
+        {
+            var context = diagnostics is null ? string.Empty : $" ({diagnostics()})";
+            Assert.Fail($"Timed out after {baseSeconds * TimeoutFactor:0.#} s waiting for: {what}{context}");
+        }
+    }
+
+    /// <summary>The <see cref="WaitUntilAsync"/> failure context for a real <see cref="MainWindow"/>: its last recorded open phase.</summary>
+    public static Func<string> OpenPhaseOf(MainWindow window) => () => $"last open phase: {window.LastOpenPhase}";
 
     /// <summary>
     /// Asserts <paramref name="control"/> is placed where a person could

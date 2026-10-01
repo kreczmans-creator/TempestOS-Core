@@ -135,8 +135,11 @@ public sealed class RailSurfaceContractTests
             var openTask = home.GetLogicalDescendants().OfType<Button>().Single(b =>
                 (AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Open ", StringComparison.Ordinal)
                 && (AutomationProperties.GetName(b) ?? string.Empty).Contains("Rail Contract Task", StringComparison.Ordinal));
+            var phasesBefore = window.OpenPhases.Count;
             openTask.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched
+            // anywhere, and only among phases this click recorded (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.OpenPhases.Count > phasesBefore && window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal));
             var documentArea = GetPrivateField<DocumentAreaView>(window, "_documentArea");
             LayOut(window);
             Assert.NotNull(documentArea.GetLogicalDescendants().OfType<ObjectEditorView>().FirstOrDefault());
@@ -1187,16 +1190,8 @@ public sealed class RailSurfaceContractTests
         return (T)field.GetValue(instance)!;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 10, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

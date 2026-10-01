@@ -321,16 +321,8 @@ public sealed class ArchivedProjectReadOnlyTests
         return (T)field.GetValue(instance)!;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {
