@@ -68,6 +68,7 @@ fi
 [ -f "$RUNNER" ] || { echo "The runner was not built: $RUNNER" >&2; exit 1; }
 
 STARTED_XVFB=0
+mkdir -p "$OUT_DIR"
 if ! DISPLAY="$DISPLAY_NUMBER" xdotool getdisplaygeometry >/dev/null 2>&1; then
   echo "-- Starting Xvfb on $DISPLAY_NUMBER"
   Xvfb "$DISPLAY_NUMBER" -screen 0 1600x1000x24 -nolisten tcp >"$OUT_DIR/xvfb.log" 2>&1 &

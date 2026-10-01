@@ -345,12 +345,15 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Complete")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => !prompt.IsVisible);
 
+            // `TD-186`: the refusal names the deliverable the operator knows
+            // ("already completed on …"), never the completion's own id.
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
             await RenderUntilAsync(window, () =>
-                statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains(completion!.Id.ToString(), StringComparison.Ordinal)));
-            Assert.Contains(
-                statusBar.GetLogicalDescendants().OfType<TextBlock>(),
-                t => t.Text != null && t.Text.Contains(completion!.Id.ToString(), StringComparison.Ordinal));
+                statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("was already completed", StringComparison.Ordinal)));
+            var refusal = statusBar.GetLogicalDescendants().OfType<TextBlock>().First(t => t.Text != null && t.Text.Contains("was already completed", StringComparison.Ordinal)).Text!;
+            Assert.Contains("'Deliverable One'", refusal);
+            Assert.DoesNotContain(completion!.Id.ToString(), refusal);
+            Assert.DoesNotContain(deliverable.Id.ToString(), refusal);
         }
         finally
         {

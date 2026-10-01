@@ -40,8 +40,121 @@ public class RequirementsCompensationTests
         dispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService, dispatcher));
         dispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService, dispatcher));
         dispatcher.RegisterHandler<SetRequirementStatusCommand>(new SetRequirementStatusCommandHandler(requirementsService, dispatcher));
+        // `v1.0.0` RC: groups and collections join the compensable families.
+        dispatcher.RegisterHandler<CreateRequirementGroupCommand>(new CreateRequirementGroupCommandHandler(requirementsService, dispatcher));
+        dispatcher.RegisterHandler<DeleteRequirementGroupCommand>(new DeleteRequirementGroupCommandHandler(requirementsService, dispatcher));
+        dispatcher.RegisterHandler<UndeleteRequirementGroupCommand>(new UndeleteRequirementGroupCommandHandler(requirementsService));
+        dispatcher.RegisterHandler<CreateRequirementCollectionCommand>(new CreateRequirementCollectionCommandHandler(requirementsService, dispatcher));
+        dispatcher.RegisterHandler<DeleteRequirementCollectionCommand>(new DeleteRequirementCollectionCommandHandler(requirementsService, dispatcher));
+        dispatcher.RegisterHandler<UndeleteRequirementCollectionCommand>(new UndeleteRequirementCollectionCommandHandler(requirementsService));
 
         return (requirementsService, dispatcher);
+    }
+
+    // ------------------------------------------------------------
+    // requirements.create-group / delete-group (`v1.0.0` RC)
+    // ------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateGroup_UndoSoftDeletesTheGroup_RedoRestoresIt()
+    {
+        var (requirements, dispatcher) = BuildPipeline();
+
+        var result = await dispatcher.DispatchAsync(new CreateRequirementGroupCommand("Structural", null), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Compensation);
+        var groupId = result.SubjectId!.Value;
+
+        Assert.True((await result.Compensation!.Undo(CancellationToken.None)).Succeeded);
+        Assert.True((await requirements.FindGroupAsync(groupId))!.IsDeleted);
+
+        Assert.True((await result.Compensation!.Redo(CancellationToken.None)).Succeeded);
+        Assert.False((await requirements.FindGroupAsync(groupId))!.IsDeleted);
+    }
+
+    [Fact]
+    public async Task DeleteGroup_UndoRestoresTheGroup_RedoDeletesItAgain_AndRefusesOnceItsParentIsGone()
+    {
+        var (requirements, dispatcher) = BuildPipeline();
+        var parent = await requirements.CreateGroupAsync("Parent", null);
+        var child = await requirements.CreateGroupAsync("Child", parent.Id);
+
+        var result = await dispatcher.DispatchAsync(new DeleteRequirementGroupCommand(child.Id), CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Compensation);
+
+        Assert.True((await result.Compensation!.Undo(CancellationToken.None)).Succeeded);
+        Assert.False((await requirements.FindGroupAsync(child.Id))!.IsDeleted);
+
+        Assert.True((await result.Compensation!.Redo(CancellationToken.None)).Succeeded);
+        Assert.True((await requirements.FindGroupAsync(child.Id))!.IsDeleted);
+
+        // The parent goes in between: the Undo refuses, naming why, and
+        // leaves the child deleted rather than restoring it under a gone parent.
+        await requirements.DeleteGroupAsync(parent.Id);
+        var refused = await result.Compensation!.Undo(CancellationToken.None);
+        Assert.False(refused.Succeeded);
+        Assert.Contains("parent group", refused.Message, StringComparison.Ordinal);
+        Assert.True((await requirements.FindGroupAsync(child.Id))!.IsDeleted);
+    }
+
+    [Fact]
+    public async Task UndeleteGroup_RefusesAGroupThatIsNotDeleted()
+    {
+        var (requirements, dispatcher) = BuildPipeline();
+        var group = await requirements.CreateGroupAsync("Live", null);
+
+        var result = await dispatcher.DispatchAsync(new UndeleteRequirementGroupCommand(group.Id), CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("is not deleted", result.Message, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------
+    // requirements.create-collection / delete-collection (`v1.0.0` RC)
+    // ------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateCollection_UndoSoftDeletesIt_RedoRestoresIt()
+    {
+        var (requirements, dispatcher) = BuildPipeline();
+
+        var result = await dispatcher.DispatchAsync(new CreateRequirementCollectionCommand("Safety"), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Compensation);
+        var collectionId = result.SubjectId!.Value;
+
+        Assert.True((await result.Compensation!.Undo(CancellationToken.None)).Succeeded);
+        Assert.True((await requirements.FindCollectionAsync(collectionId))!.IsDeleted);
+
+        Assert.True((await result.Compensation!.Redo(CancellationToken.None)).Succeeded);
+        Assert.False((await requirements.FindCollectionAsync(collectionId))!.IsDeleted);
+    }
+
+    [Fact]
+    public async Task DeleteCollection_UndoRestoresItWithItsMembers_RedoDeletesItAgain()
+    {
+        var (requirements, dispatcher) = BuildPipeline();
+        var requirement = await requirements.CreateAsync("REQ-010", "The system shall.");
+        var collection = await requirements.CreateCollectionAsync("Safety");
+        await requirements.AddToCollectionAsync(collection.Id, requirement.Id);
+
+        var result = await dispatcher.DispatchAsync(new DeleteRequirementCollectionCommand(collection.Id), CancellationToken.None);
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Compensation);
+
+        Assert.True((await result.Compensation!.Undo(CancellationToken.None)).Succeeded);
+        var restored = await requirements.FindCollectionAsync(collection.Id);
+        Assert.False(restored!.IsDeleted);
+        Assert.Contains(requirement.Id, restored.MemberRequirementIds);
+
+        Assert.True((await result.Compensation!.Redo(CancellationToken.None)).Succeeded);
+        Assert.True((await requirements.FindCollectionAsync(collection.Id))!.IsDeleted);
+
+        var notDeleted = await dispatcher.DispatchAsync(new UndeleteRequirementCollectionCommand(Guid.NewGuid()), CancellationToken.None);
+        Assert.False(notDeleted.Succeeded);
     }
 
     // ------------------------------------------------------------

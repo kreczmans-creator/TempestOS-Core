@@ -1002,7 +1002,8 @@ already established. `requirements.create`/`delete`/`move`/`move-group`/
 platform-wide `RequirementStatusTransitions` table will not permit
 reversing carries no compensation and says so in Command History, exactly
 as every other discipline's own status change already does.
-`create-group`/`delete-group`/`create-collection`/`delete-collection`/
+`create-group`/`delete-group`/`create-collection`/`delete-collection`
+became undoable in `v1.0.0` (same seam, `Undelete*` handlers, 2026-10-01).
 `add-to-collection`/`revise`/`set-owner`/`set-priority`/`link` stay
 outside this closure's own scope — undoable exactly as they were before
 `WP 21.6A`: not at all, with nothing recorded either way, the same

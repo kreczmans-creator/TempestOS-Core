@@ -23,12 +23,16 @@ public sealed class DeleteRequirementGroupCommand : IWorkspaceCommand
 public sealed class DeleteRequirementGroupCommandHandler : ICommandHandler<DeleteRequirementGroupCommand>
 {
     private readonly IRequirementsService _requirementsService;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public DeleteRequirementGroupCommandHandler(IRequirementsService requirementsService)
+    /// <param name="requirementsService">Where the group is deleted.</param>
+    /// <param name="dispatcher">Dispatches this delete's own compensation (`v1.0.0` RC) — optional.</param>
+    public DeleteRequirementGroupCommandHandler(IRequirementsService requirementsService, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
 
         _requirementsService = requirementsService;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(DeleteRequirementGroupCommand command, CancellationToken cancellationToken)
@@ -37,7 +41,14 @@ public sealed class DeleteRequirementGroupCommandHandler : ICommandHandler<Delet
         {
             var deleted = await _requirementsService.DeleteGroupAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false);
 
-            return CommandResult.Success($"Deleted group '{deleted.Name}'.");
+            // Undo restores the group (refused, with the reason, if its own
+            // parent group has since been deleted); redo deletes it again.
+            var compensation = _dispatcher is null ? null : new CommandCompensation(
+                $"Delete group '{deleted.Name}'",
+                undo: ct => _dispatcher.DispatchAsync(new UndeleteRequirementGroupCommand(command.TargetObjectId), ct),
+                redo: ct => _dispatcher.DispatchAsync(new DeleteRequirementGroupCommand(command.TargetObjectId), ct));
+
+            return CommandResult.Success($"Deleted group '{deleted.Name}'.", compensation: compensation);
         }
         catch (EngineeringDocumentNotFoundException ex)
         {

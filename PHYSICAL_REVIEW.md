@@ -540,10 +540,11 @@ from.
 | U7 | Run any two-step macro (Palette → **Macro Manager**) → Ctrl+Z → Ctrl+Y | The whole run undoes as one action — both steps reversed, in reverse order — not two separate Undo presses; Ctrl+Y reapplies both, forward (`RunMacroCommandHandler`, the compound `CommandCompensation`). | Ctrl+Z undoes only the macro's own last step; two presses are needed to fully reverse a two-step run. |
 | U8 | With unsaved Undo history recorded (U1–U7, any one), switch to a different project (or close the open one) | The status bar and Command History both say "Undo history cleared." once, and Ctrl+Z/Ctrl+Y do nothing until a new action is recorded in the newly-open project (`UndoRedoCoordinator`, subscribed to `ProjectContextChangedEvent`). Opening a project with no Undo history yet recorded says nothing — no false "cleared" notice. | The stack survives a project switch (a stale Undo reaches into the wrong project's own objects); the notice appears on every project open regardless of whether anything was actually cleared. |
 
-**Requirements is a disclosed exception**, not a bug: Create/Delete/Move/
-status changes on a Requirement, a Requirement Group or a Requirement
-Collection are not undoable in `v0.21.0` — unchanged from `v0.20.0` and
-every earlier release. See `BACKLOG.md`'s own `WP 21.1A` entry for why.
+**Requirements** (corrected 2026-10-01 for `v1.0.0`): create/delete/move/
+status on a Requirement are undoable since `WP 21.6A`; create/delete of a
+Requirement Group or Collection since `v1.0.0` (`UndeleteRequirementGroupCommand`,
+`UndeleteRequirementCollectionCommand`). Still not undoable, as disclosed:
+add-to-collection, revise, set-owner, set-priority, link.
 
 ---
 
