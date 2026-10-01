@@ -4,8 +4,9 @@ name: CI
 #
 # This is TempestOS's first CI pipeline and the authoritative engineering
 # gate for every future change: it builds Debug and Release, runs the
-# complete automated test suite against both, and fails immediately on
-# any build error or test failure. Before this pipeline existed, every
+# complete automated test suite against both (against Release only on a
+# pull request - ADR-0160, below), and fails immediately on any build
+# error or test failure. Before this pipeline existed, every
 # "0 Warnings/0 Errors, N/N tests passing" claim in this project's own
 # Work Package retrospectives was a manually-run, self-reported
 # assertion — see docs/releases/v0.11.0/WP11.0A Platform Architecture
@@ -52,6 +53,16 @@ name: CI
 # programme's own `WP RC.0C` ("Dependency vulnerability scan is a required
 # CI check"). See that job's own remark, and docs/security/Security
 # Posture.md.
+#
+# ADR-0160 (PO decision 2026-10-01, v0.23.0 CI board G-20): a pull
+# request runs the Release test legs only. Its Debug legs still restore and
+# build with TreatWarningsAsErrors (a Debug-only compile break is still
+# caught), but every Debug test step is skipped on `pull_request`. A push
+# to main, release/** or a tag, a manual run and the schedule keep the full
+# Debug + Release test matrix, so every commit that lands is still tested
+# in both configurations. The skip is per step, not per job: all eight
+# matrix legs exist on every event, so job names stay stable and CI Gate's
+# strict `success` check below needs no special case (see its remark).
 
 on:
   # Push runs only main, release branches and tags; every other branch is
@@ -197,8 +208,19 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      # ADR-0160: every restore in this workflow is locked. Each project's
+      # committed packages.lock.json pins every direct and transitive
+      # package by version and content hash; --locked-mode fails the step
+      # (NU1004) instead of resolving anything the lock does not name, so a
+      # stale lock or a package that changed on the feed stops CI here.
+      # Directory.Build.props also sets RestoreLockedMode when CI=true, so
+      # the implicit restores of later steps are locked too. The locks
+      # carry win-x64 and linux-x64 (Directory.Build.props explains why),
+      # so the same lock restores on these Windows legs and on the Linux
+      # smoke job. Regenerate with `dotnet restore src/TempestOS.slnx
+      # --force-evaluate` after changing a PackageReference (CONTRIBUTING.md).
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       # TreatWarningsAsErrors is applied here, at the CI build step only —
       # Directory.Build.props itself is deliberately left unchanged
@@ -251,6 +273,10 @@ jobs:
       # collapse for configuration alone; the same risk applies to a
       # conditional `--filter`/`--collect` combination, so every leg's
       # command is still written out in full rather than assembled.
+      # ADR-0160 (G-20): every Debug test step below also carries
+      # `github.event_name != 'pull_request'`, so a pull request's Debug
+      # legs build and then skip their tests; any other event runs them.
+      # A skipped step leaves the job `success`, which is what CI Gate reads.
       - name: Test Core (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
         timeout-minutes: 25
@@ -271,7 +297,7 @@ jobs:
           }
 
       - name: Test Core (Debug)
-        if: matrix.configuration == 'Debug' && matrix.shard == 'core'
+        if: matrix.configuration == 'Debug' && matrix.shard == 'core' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
         run: |
@@ -312,7 +338,7 @@ jobs:
           }
 
       - name: Test Desktop shard 1 (A-D) (Debug)
-        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-1'
+        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-1' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
         run: |
@@ -375,7 +401,7 @@ jobs:
           }
 
       - name: Test Desktop shard 2 (E-P) (Debug)
-        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-2'
+        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-2' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
         run: |
@@ -415,7 +441,7 @@ jobs:
           }
 
       - name: Test Desktop shard 3 (Q-Z) (Debug)
-        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-3'
+        if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-3' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
         run: |
@@ -568,6 +594,8 @@ jobs:
               $lines.Add("")
               $lines.Add("_Could not rank the slowest tests: $($_.Exception.Message)_")
             }
+          } elseif ($config -eq "Debug" -and "${{ github.event_name }}" -eq "pull_request") {
+            $lines.Add("_Debug tests are not run on a pull request (ADR-0160): this leg built only. Pushes to main, release/** and tags run them._")
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
           }
@@ -640,8 +668,10 @@ jobs:
           if-no-files-found: warn
           retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
+      # Not on a pull request's Debug legs (ADR-0160): they run no tests, so
+      # there is nothing to upload and the upload would only warn.
       - name: Upload test results (${{ matrix.configuration }} / ${{ matrix.shard }})
-        if: always()
+        if: always() && (matrix.configuration == 'Release' || github.event_name != 'pull_request')
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         continue-on-error: true
         with:
@@ -772,8 +802,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Scan for vulnerable packages
         shell: pwsh
@@ -850,8 +880,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Build Tempest.Desktop (Release)
         run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
@@ -910,6 +940,8 @@ jobs:
           # (the true end of that composition, on the same real
           # construction path every Desktop test drives) is now required
           # too, and can only appear after "Host -> Running." does.
+          # $LOGS is unquoted on purpose: it is a list of log files.
+          # shellcheck disable=SC2086
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
             if grep -qs "Host -> Running." launch.log $LOGS && grep -qs "Desktop -> Composed." launch.log $LOGS; then
               echo "Still running when the timeout fired, and startup reached 'Host -> Running.' and 'Desktop -> Composed.' - launched successfully."
@@ -991,8 +1023,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Restore dotnet tools (dotnet-stryker)
         run: dotnet tool restore
@@ -1054,6 +1086,17 @@ jobs:
   # linux-launch-smoke (WP 16.5B) is deliberately NOT in the needs list:
   # advisory for this release — see the comment above that job for why.
   #
+  # ADR-0160 (G-20): on a pull request the Debug legs skip their test
+  # steps. That needs nothing here, by design. A skipped *step* leaves its
+  # job `success`, so `needs.build-and-test.result` is still `success` only
+  # when every leg built (and, where tests ran, passed), and the check
+  # below stays a strict `-ne "success"`: `failure`, `cancelled` and
+  # `skipped` all fail the gate. No job is skipped by the policy, so a
+  # `skipped` result can only mean something went wrong upstream. `if:
+  # always()` (not `!cancelled()`) is deliberate: it makes the gate run and
+  # report red on a cancelled run, where a skipped gate would read as
+  # passing to branch protection.
+  #
   # Each failure is reported with `Write-Host "::error::..."`, not
   # `Write-Error`: pwsh on the runner runs with ErrorActionPreference=Stop,
   # so the first Write-Error threw and the remaining failures were never
@@ -1082,4 +1125,7 @@ jobs:
             $failed = $true
           }
           if ($failed) { exit 1 }
+          if ("${{ github.event_name }}" -eq "pull_request") {
+            Write-Host "Pull request: Debug built in every leg; its tests are not run on a pull request (ADR-0160) and run on the push to main, release/** or a tag."
+          }
           Write-Host "All Build & Test configurations, the Governance Health Check and the Dependency Scan succeeded."

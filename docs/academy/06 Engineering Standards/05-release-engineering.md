@@ -81,6 +81,22 @@ download *is* TempestOS. A release is not considered shipped until this
 second verification passes, not merely on the strength of an earlier CI
 run or a local script's own printed success message.
 
+**Tag only when the commit is ready; the release waits for CI on that
+commit** (`ADR-0160`, PO decision 2026-10-01). The tag push also starts
+`ci.yml` on the same commit, and `release.yml` publishes nothing until
+that commit's `CI Gate` check has concluded `success`: its first job
+polls the Checks API for up to 75 minutes, in parallel with the
+build/test job. A red, cancelled or missing `CI Gate` fails the release
+run; the tag stays where it is (§7.4), and once the cause is fixed (a CI
+re-run on the tag for a flake, otherwise a new patch version) the failed
+release jobs are re-run. The workflow is split so that only the final
+`publish` job holds a token that can write to the repository: the
+build/test job runs with a read-only, non-persisted token and hands the
+packaged assets, `SHA256SUMS.txt` and the release notes to `publish` as
+an artifact, and `publish` checks every asset against `SHA256SUMS.txt`
+before it creates the Release. `vpk`, which packages the installer, is
+pinned in `.config/dotnet-tools.json` and run as `dotnet vpk`.
+
 A release-readiness review recommending **APPROVED** or **CERTIFIED**
 remains required — the same pattern every release since `v0.6.0` has
 already followed (`WP 6.8`, `WP 7.4.0`, `WP 8.9.0`, `WP 9.9.0`,
@@ -172,5 +188,5 @@ since found before its own release branch closed. Full account:
 
 `docs/releases/v0.11.0/WP11.1B Engineering Workflow.md` (the full
 specification); `04-continuous-integration.md`; `Engineering
-Governance.md` §2, §7, §9; `.github/workflows/ci.yml`,
+Governance.md` §2, §7, §9; `ADR-0160`; `.github/workflows/ci.yml`,
 `.github/workflows/release.yml`; `scripts/new-release.ps1`.

@@ -86,6 +86,17 @@ another's result. The `gate` job (named `CI Gate`) depends on every leg,
 on the governance health check and on the dependency scan, and gives
 branch protection one named status check to require rather than eight.
 
+**On a pull request only the Release legs run tests** (`ADR-0160`, PO
+decision 2026-10-01). The four Debug legs still restore and build with
+warnings as errors, so a Debug-only compile break is still caught, but
+their test steps are skipped. A push to `main`, a `release/**` branch or
+a tag, a manual run and the weekly schedule run the full Debug and
+Release test matrix, so every commit that lands is tested in both
+configurations. Skipping is per step, not per job, so all eight legs
+exist on every event and their names never change. `CI Gate` still
+requires every leg to report `success`: a skipped step leaves its leg
+green, while a failed or cancelled leg turns the gate red.
+
 Each matrix leg:
 
 1. Checks out the commit.
@@ -94,13 +105,13 @@ Each matrix leg:
    `global-json-file` input — the identical single source of truth every
    local build already reads, so the SDK version cannot drift between a
    contributor's machine and CI.
-3. Restores, then builds `src/TempestOS.slnx` for its own configuration,
-   with warnings promoted to errors (above).
+3. Restores in locked mode (below), then builds `src/TempestOS.slnx`
+   for its own configuration, with warnings promoted to errors (above).
 4. Runs its own shard of the test suite (`Tempest.Core.Tests`, or one
    third of `Tempest.Desktop.Tests`, which exercises real Avalonia
    headless UI, not a mock) with TRX results written per configuration
-   and shard. Across the eight legs every test runs once per
-   configuration; `CiShardCoverageTests` fails if a Desktop test falls
+   and shard (Release legs only on a pull request, above). Across the
+   eight legs every test runs once per configuration; `CiShardCoverageTests` fails if a Desktop test falls
    outside the shard filters or inside two of them.
 5. Publishes a Markdown build/test summary to the run's own Job Summary,
    and uploads the build log and TRX results as downloadable artifacts —
@@ -116,6 +127,29 @@ the floating `windows-latest` alias, for the same reason this project
 pins every package version exactly (`Avalonia 11.2.3`, the SDK via
 `global.json`): an unannounced runner-image change should never silently
 change CI behaviour.
+
+**Every restore is locked** (`ADR-0160`, PO decision 2026-10-01). Each
+project commits a `packages.lock.json` that pins every direct and
+transitive package by version and content hash
+(`RestorePackagesWithLockFile` in `Directory.Build.props`). Every
+`dotnet restore` in `ci.yml` and `release.yml` runs with
+`--locked-mode`, and `RestoreLockedMode` is on whenever `CI=true`, so
+implicit restores (the installer's `dotnet publish`) are locked too: a
+lock that no longer matches a `PackageReference`, or a package whose
+content changed on the feed, fails the restore (`NU1004`/`NU1403`)
+instead of resolving something new. Every project also declares
+`RuntimeIdentifiers` `win-x64;linux-x64`, because a lock records the
+runtime identifiers it was restored for and a RID-specific restore
+(`dotnet publish -r win-x64`) spans every project in `Tempest.Desktop`'s
+graph; with both RIDs in every lock, the Windows legs, the release job's
+`-r win-x64` publish and the Linux smoke job all restore against the
+same committed files. Dependabot's `nuget` updates rewrite the affected
+lock files in the same pull request. After changing a
+`PackageReference` by hand, regenerate and commit the locks:
+
+```
+dotnet restore src/TempestOS.slnx --force-evaluate
+```
 
 ## Release Verification
 
@@ -149,11 +183,16 @@ The same commands the pipeline runs are exactly what to run locally
 first:
 
 ```
-dotnet restore src/TempestOS.slnx
+dotnet restore src/TempestOS.slnx --locked-mode
 dotnet build src/TempestOS.slnx -c Debug   -p:TreatWarningsAsErrors=true
 dotnet build src/TempestOS.slnx -c Release -p:TreatWarningsAsErrors=true
 dotnet test  src/TempestOS.slnx -c Release
 ```
+
+A pull request is not tested in Debug (above), so a Debug-only test
+failure shows up on the push run after merge. If a change touches
+`#if DEBUG` code or Debug-only behaviour, also run
+`dotnet test src/TempestOS.slnx -c Debug` before pushing.
 
 **For a Work Package's own Definition of Done:** the Build Gate and Test
 Gate (Engineering Governance §2/§3) are unchanged in substance — "verify
@@ -174,7 +213,8 @@ work. Merges to `main` are gated: `CI Gate` is a required status check on
 
 ## Related Documents
 
-`.github/workflows/ci.yml`; `docs/releases/v0.11.0/WP11.0A Platform
+`.github/workflows/ci.yml`; `ADR-0160` (pull requests test Release only;
+the release is gated on `CI Gate`; NuGet lock files and locked restore); `docs/releases/v0.11.0/WP11.0A Platform
 Architecture Review.md` (finding `R-1`, the source of this standard);
 `docs/releases/v0.11.0/WP11.1A Implementation Report.md`; `docs/releases/
 v0.11.0/WP11.0B Architecture Roadmap.md`; `Engineering Governance.md`

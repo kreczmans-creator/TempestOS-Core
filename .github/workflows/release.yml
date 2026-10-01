@@ -30,6 +30,29 @@ name: Release Publish
 # workflow needs no `act`-style GitHub-Actions-in-a-container tool to be
 # validated. `dotnet run` and the plain zips above are unaffected: the
 # installer is additive, never a replacement.
+#
+# ADR-0160 (PO decisions 2026-10-01, v0.23.0 CI board G-05, G-21) splits
+# this workflow into three jobs:
+#
+#   ci-gate  waits for the `CI Gate` check run of ci.yml on this exact
+#            commit and fails unless it concluded `success`. The tag push
+#            starts ci.yml on the same SHA, so a release is published only
+#            when CI is green on the tagged commit (until v0.23.0 the two
+#            ran in parallel and a red CI did not stop the publish).
+#   build    re-builds, re-tests and packages the tag with a read-only
+#            token that is not persisted in .git/config, and uploads the
+#            assets, SHA256SUMS.txt and the release notes as one artifact.
+#            Restore, build, test and vpk (third-party code) never see a
+#            token that can write to the repository.
+#   publish  the only job with `contents: write`. It runs no repository
+#            code: it downloads that artifact, checks every asset against
+#            SHA256SUMS.txt and creates the GitHub Release. It needs both
+#            jobs above, so a red, cancelled or missing CI Gate, or any
+#            build/test/packaging failure, publishes nothing.
+#
+# A failed release run can be re-run once the cause is fixed (for example
+# after CI on the tag is re-run green): "Re-run failed jobs" re-polls the
+# newest CI Gate. A tag is still never moved (Engineering Governance 7.4).
 
 on:
   push:
@@ -42,8 +65,10 @@ on:
       # pattern would be redundant, not additive.
       - "v*.*.*"
 
+# Default for every job: read-only. Each job below states its own
+# permissions; only `publish` can write (ADR-0160, G-05).
 permissions:
-  contents: write
+  contents: read
 
 env:
   DOTNET_NOLOGO: "true"
@@ -58,9 +83,75 @@ env:
   TEMPEST_TEST_TIMEOUT_FACTOR: "3"
 
 jobs:
-  publish:
-    name: Build, Verify & Publish Release
+  # ADR-0160 (G-21): the release requires a green `CI Gate` on github.sha.
+  #
+  # Why polling the Checks API, and not a `workflow_run` trigger: a
+  # `workflow_run` workflow always runs the copy of release.yml on the
+  # default branch, not the one at the tag, and its event carries the CI
+  # run's head branch rather than the tag, so the release would be built
+  # from a workflow file that was never reviewed with the tagged commit and
+  # would have to re-derive which tag it is publishing. Polling keeps the
+  # trigger, the workflow file and the commit all the tag's own, needs only
+  # `checks: read`, and runs alongside `build`, so it adds no time when CI
+  # finishes first (CI usually takes about 15-25 min, `build` about 20-25).
+  #
+  # Rules: wait while no `CI Gate` check run exists for the SHA yet (the
+  # tag-push CI run may not have started) or while any is still running;
+  # then the newest one decides, and only `success` passes - `failure`,
+  # `cancelled`, `timed_out` and anything else fail this job and so the
+  # release. Two CI runs can exist for one SHA (the push to main and the
+  # tag push); waiting for both and taking the newest means a re-run of CI
+  # on the tag is what counts. Only check runs created by GitHub Actions
+  # are read. 75 min covers CI's own 45-min leg ceiling plus queueing;
+  # after that the job fails, saying so, rather than waiting forever.
+  ci-gate:
+    name: Wait for CI Gate on the tagged commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    permissions:
+      checks: read
+    steps:
+      - name: Require CI Gate = success for this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          deadline=$(( $(date +%s) + 75 * 60 ))
+          while true; do
+            if runs=$(gh api "repos/$REPO/commits/$SHA/check-runs?check_name=CI%20Gate&filter=all&per_page=100" \
+                --jq '[.check_runs[] | select(.app.slug == "github-actions")]'); then
+              count=$(jq 'length' <<<"$runs")
+              pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+              if [ "$count" -gt 0 ] && [ "$pending" -eq 0 ]; then
+                conclusion=$(jq -r 'sort_by(.id) | last | .conclusion' <<<"$runs")
+                url=$(jq -r 'sort_by(.id) | last | .html_url' <<<"$runs")
+                if [ "$conclusion" = "success" ]; then
+                  echo "CI Gate concluded 'success' for $SHA ($url)."
+                  exit 0
+                fi
+                echo "::error::CI Gate concluded '$conclusion' for $SHA ($url). This tag will not be published. Fix the cause (or re-run CI on the tag if it was a flake), then re-run this workflow's failed jobs; a tag is never moved."
+                exit 1
+              fi
+              echo "Waiting for CI Gate on $SHA: $count check run(s) found, $pending still running."
+            else
+              echo "::warning::Could not query check runs for $SHA; retrying."
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::No completed CI Gate check run for $SHA after 75 minutes. This tag will not be published. Confirm ci.yml ran on the tag, then re-run this workflow's failed jobs."
+              exit 1
+            fi
+            sleep 30
+          done
+
+  build:
+    name: Build, Test & Package Release
     runs-on: windows-2022
+    # Read-only token, and not persisted (below): this job runs restore,
+    # build, test and vpk, i.e. third-party code (ADR-0160, G-05).
+    permissions:
+      contents: read
     # Measured: the v0.22.0 release job took about 21 min, its unsharded
     # Release test step 18:16 (CI's Release Desktop shards summed to 25:46
     # for the same commit, so shard sums overstate this job). v0.23.0's
@@ -81,14 +172,23 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           ref: ${{ github.sha }}
+          # The token is not left in .git/config for later steps (G-05);
+          # nothing after checkout talks to the remote.
+          persist-credentials: false
 
       - name: Set up .NET SDK (from global.json)
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      # Locked, as in ci.yml (ADR-0160): the release is built from exactly
+      # the packages the tagged commit's packages.lock.json files name, and
+      # the step fails rather than resolve anything else. The installer's
+      # `dotnet publish -r win-x64` is locked too (RestoreLockedMode when
+      # CI=true, Directory.Build.props), and matches the same lock because
+      # every project declares RuntimeIdentifiers win-x64;linux-x64.
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Build (Release)
         shell: pwsh
@@ -231,12 +331,17 @@ jobs:
       # publishing, so the checksums describe exactly the bytes attached
       # to the release, not a separately-fetched copy. Every uploaded asset
       # is hashed, the installer and its update feed included (until
-      # v0.23.0 only the two zips were - CI board G-04); the list is written
-      # once here and the publish step below uploads exactly that list plus
-      # SHA256SUMS.txt itself. Each line names the asset as it appears on
-      # the Release page (its file name, no folder), so `sha256sum -c`
-      # works in a folder of downloads.
-      - name: Compute release asset checksums
+      # v0.23.0 only the two zips were - CI board G-04).
+      #
+      # ADR-0160 (G-05): the assets are staged flat in release-staging/
+      # under the names they will have on the Release page, with
+      # SHA256SUMS.txt, release-assets.txt (the upload list) and
+      # release-notes.md beside them, and handed to `publish` as one
+      # artifact. Both lists are written with LF line endings, so
+      # `sha256sum -c SHA256SUMS.txt` works as is on Linux and macOS, in a
+      # folder of downloads, and in `publish`, which runs it before
+      # anything is published.
+      - name: Stage release assets and compute checksums
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
@@ -250,37 +355,81 @@ jobs:
             "artifacts/installer/assets.win.json",
             "artifacts/installer/RELEASES"
           )
-          $lines = foreach ($file in $files) {
+          # Absolute: [System.IO.File] resolves relative paths against the
+          # process directory, not the PowerShell location.
+          $staging = Join-Path $PWD.Path "release-staging"
+          New-Item -ItemType Directory -Path $staging -Force | Out-Null
+          $names = foreach ($file in $files) {
             if (-not (Test-Path -LiteralPath $file)) {
               Write-Error "Release asset '$file' is missing - this tag will not be published."
               exit 1
             }
-            $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
-            "$hash  $(Split-Path -Leaf $file)"
+            Copy-Item -LiteralPath $file -Destination $staging
+            Split-Path -Leaf $file
           }
-          $lines | Set-Content -Path "SHA256SUMS.txt" -Encoding ascii
-          $files | Set-Content -Path "release-assets.txt" -Encoding ascii
-          Get-Content "SHA256SUMS.txt"
+          $lines = foreach ($name in $names) {
+            $hash = (Get-FileHash -LiteralPath (Join-Path $staging $name) -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $name"
+          }
+          [System.IO.File]::WriteAllText((Join-Path $staging "SHA256SUMS.txt"), (($lines -join "`n") + "`n"))
+          [System.IO.File]::WriteAllText((Join-Path $staging "release-assets.txt"), (($names -join "`n") + "`n"))
+          Copy-Item -LiteralPath "${{ steps.notes.outputs.path }}" -Destination (Join-Path $staging "release-notes.md")
+          Get-Content (Join-Path $staging "SHA256SUMS.txt")
 
-      # `gh` is preinstalled on GitHub-hosted runners - no third-party
-      # release-publishing action is used, consistent with WP 11.1A's own
-      # minimal-supply-chain-surface precedent for this pipeline.
-      - name: Publish GitHub Release
-        shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # A hard gate, unlike ci.yml's diagnostic uploads: no artifact, no
+      # release (no `continue-on-error`, and a missing file is an error).
+      - name: Upload release assets for the publish job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-assets
+          path: release-staging/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The only job that can write to the repository (ADR-0160, G-05). It
+  # checks out nothing and runs no repository code: it publishes exactly
+  # the bytes `build` hashed, after checking them against SHA256SUMS.txt.
+  # `gh` is preinstalled on GitHub-hosted runners - no third-party
+  # release-publishing action is used, consistent with WP 11.1A's own
+  # minimal-supply-chain-surface precedent for this pipeline.
+  publish:
+    name: Publish GitHub Release
+    needs: [ci-gate, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-assets
+          path: release-staging
+
+      # Every listed asset must match its published hash, and the upload
+      # list and SHA256SUMS.txt must name exactly the same files, so
+      # nothing is uploaded without a published hash.
+      - name: Verify checksums
+        working-directory: release-staging
         run: |
-          $tag = "${{ github.ref_name }}"
-          $isPrerelease = $tag -match '-rc\.\d+$'
-          # Exactly the assets the checksum step hashed, plus the checksum
-          # file itself, so nothing is uploaded without a published hash.
-          $assets = @(Get-Content -Path "release-assets.txt") + "SHA256SUMS.txt"
-          $args = @(
-            "release", "create", $tag,
-            "--title", "TempestOS $tag",
-            "--notes-file", "${{ steps.notes.outputs.path }}"
-          ) + $assets
-          if ($isPrerelease) {
-            $args += "--prerelease"
-          }
-          gh @args
+          set -euo pipefail
+          sha256sum --check --strict SHA256SUMS.txt
+          if ! diff <(sort release-assets.txt) <(awk '{print $2}' SHA256SUMS.txt | sort); then
+            echo "::error::release-assets.txt and SHA256SUMS.txt do not list the same files - this tag will not be published."
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        working-directory: release-staging
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mapfile -t assets < release-assets.txt
+          args=(release create "$TAG" --verify-tag --title "TempestOS $TAG" --notes-file release-notes.md)
+          if [[ "$TAG" =~ -rc\.[0-9]+$ ]]; then
+            args+=(--prerelease)
+          fi
+          gh "${args[@]}" "${assets[@]}" SHA256SUMS.txt

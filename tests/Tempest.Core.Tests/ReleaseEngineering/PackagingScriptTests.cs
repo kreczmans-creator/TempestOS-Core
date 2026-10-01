@@ -41,6 +41,8 @@ public sealed class PackagingScriptTests
     [InlineData("--self-contained true")]
     [InlineData("Tempest.Desktop.exe")]
     [InlineData("vpk pack")]
+    [InlineData("dotnet tool restore")]
+    [InlineData("dotnet vpk pack")]
     [InlineData("--packId TempestOS")]
     [InlineData("TempestOS-win-Setup.exe")]
     [InlineData("TempestOS-$Version-Setup.exe")]
@@ -49,6 +51,40 @@ public sealed class PackagingScriptTests
         var content = File.ReadAllText(ScriptPath);
 
         Assert.Contains(expectedSubstring, content, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// `v0.23.0` CI board G-07 (ADR-0160): <c>vpk</c> is pinned in the
+    /// repository's tool manifest at the same version as the Velopack
+    /// runtime package Tempest.Desktop references, and the script runs it
+    /// only as <c>dotnet vpk</c>, so a different <c>vpk</c> on PATH can
+    /// never package a release.
+    /// </summary>
+    [Fact]
+    public void Vpk_IsPinnedInTheToolManifest_AtTheVelopackPackageVersion()
+    {
+        var manifestPath = Path.Combine(RepositoryPaths.RepositoryRoot, ".config", "dotnet-tools.json");
+        using var manifest = System.Text.Json.JsonDocument.Parse(File.ReadAllText(manifestPath));
+        var pinned = manifest.RootElement.GetProperty("tools").GetProperty("vpk").GetProperty("version").GetString();
+
+        var csproj = File.ReadAllText(Path.Combine(RepositoryPaths.RepositoryRoot, "src", "Tempest.Desktop", "Tempest.Desktop.csproj"));
+        var velopack = System.Text.RegularExpressions.Regex.Match(csproj, "<PackageReference Include=\"Velopack\" Version=\"([^\"]+)\"");
+        Assert.True(velopack.Success, "Tempest.Desktop.csproj no longer references Velopack.");
+        Assert.Equal(velopack.Groups[1].Value, pinned);
+
+        var script = File.ReadAllText(ScriptPath);
+        Assert.Contains($"$expectedVpkVersion = \"{pinned}\"", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("Get-Command vpk", script, StringComparison.Ordinal);
+        Assert.DoesNotContain("dotnet tool install", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PackageInstallerScript_IsAsciiOnly()
+    {
+        var bytes = File.ReadAllBytes(ScriptPath);
+        var offset = Array.FindIndex(bytes, b => b > 0x7F);
+
+        Assert.True(offset < 0, $"'{ScriptPath}' contains a non-ASCII byte at offset {offset}; Windows PowerShell 5.1 reads a BOM-less script as ANSI.");
     }
 
     /// <summary>

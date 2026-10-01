@@ -17,6 +17,11 @@
 # no live production traffic depending on same-day patching, and a weekly
 # cadence keeps the pull request volume something a small team can actually
 # triage rather than drowning in daily noise.
+#
+# ADR-0160: every project commits a packages.lock.json and CI restores in
+# locked mode. Dependabot's nuget updater detects the lock files and
+# regenerates the affected ones (a --force-evaluate restore) in the same
+# pull request, so its PRs pass CI's locked restore without a manual step.
 version: 2
 updates:
   - package-ecosystem: "nuget"

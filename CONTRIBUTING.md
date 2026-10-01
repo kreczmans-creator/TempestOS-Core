@@ -44,6 +44,25 @@ Every Work Package still ships with:
 - A row in `PHYSICAL_REVIEW.md` §7 for any new user-facing surface.
 - One Release Notes line.
 
+## NuGet lock files
+
+Every project commits a `packages.lock.json` (`ADR-0160`), and CI and
+the release workflow restore with `--locked-mode`, so a lock that does
+not match the project fails the build. After adding, removing or
+changing a `PackageReference`, regenerate every lock and commit them
+with the change:
+
+```
+dotnet restore src/TempestOS.slnx --force-evaluate
+```
+
+Locally (no `CI=true`) a plain `dotnet restore` also rewrites a stale
+lock; check `git status` for changed `packages.lock.json` files before
+pushing. Each lock carries `net10.0`, `net10.0/win-x64` and
+`net10.0/linux-x64` sections (`RuntimeIdentifiers` in
+`Directory.Build.props`); that is expected. Dependabot's NuGet pull
+requests update the lock files themselves.
+
 ## Branch protection on `main`
 
 Configured in GitHub under **Settings → Branches → Branch protection

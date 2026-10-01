@@ -116,7 +116,9 @@ including items waiting on a decision, is
   superseded pull request runs are cancelled; every `main` and release
   branch commit is gated. Each test step has a 25-minute limit, each
   shard's summary lists its ten slowest tests, and a test that could not
-  finish in time now fails, naming what it waited for.
+  finish in time now fails, naming what it waited for. A pull request
+  runs the Release tests only: Debug is still built, and its tests run
+  on the push to `main`, a release branch or a tag (`ADR-0160`).
 - **Desktop tests write at `synchronous=NORMAL`.** A new configuration
   key, `Persistence:Synchronous=Normal`, opens the SQLite store at
   `synchronous=NORMAL` instead of `FULL`. Only the Desktop test suite sets
@@ -127,6 +129,15 @@ including items waiting on a decision, is
   installer and its update feed, not just the two zips, and the release
   job re-runs the tests with the same timeout scaling and hang detection
   as CI.
+- **A release publishes only when CI is green on its tag, and packages
+  are locked.** `release.yml` waits for `CI Gate` on the tagged commit
+  and publishes nothing unless it passed; building and testing run with
+  a read-only token, and a separate publish job, the only one that can
+  write, checks every asset against `SHA256SUMS.txt` first. `vpk` is
+  pinned in the tool manifest. Every project commits a
+  `packages.lock.json` and CI and the release restore in locked mode;
+  after a package change run
+  `dotnet restore src/TempestOS.slnx --force-evaluate` (`ADR-0160`).
 
 ## Documentation
 
