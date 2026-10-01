@@ -47,6 +47,8 @@ public sealed class InstallTestBuildScriptTests
     [InlineData("--persistence-root")]
     [InlineData("TempestOS * (test).lnk")]
     [InlineData("TempestOS $version (test).lnk")]
+    [InlineData("$DataFolder = $DataFolder.TrimEnd('\\')")]
+    [InlineData("Start menu and desktop shortcut: TempestOS -> data folder $plainDataFolder")]
     public void Script_NamesTheExpectedStepsAndAssets(string expectedSubstring)
     {
         var content = File.ReadAllText(ScriptPath, Encoding.ASCII);

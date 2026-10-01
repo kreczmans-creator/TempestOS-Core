@@ -65,6 +65,12 @@ if (-not $DataFolder) {
     $minor = ($version -split '\.')[1]
     $DataFolder = "C:\TempestOS-rc$minor-data"
 }
+# A trailing backslash would escape the closing quote in the shortcut's
+# --persistence-root "..." argument (v0.23.0 board N2). A drive root keeps it.
+$DataFolder = $DataFolder.TrimEnd('\')
+if ($DataFolder -match '^[A-Za-z]:$') {
+    $DataFolder = "$DataFolder\."
+}
 
 Write-Host "Building the TempestOS $version test installer from $branch @ $commit"
 & (Join-Path $PSScriptRoot "package-installer.ps1") -Version $version
@@ -120,7 +126,22 @@ $shortcut.Description = "TempestOS $version test build ($branch @ $commit), data
 $shortcut.IconLocation = "$exe,0"
 $shortcut.Save()
 
+# The plain "TempestOS" Start menu and desktop shortcuts open whatever
+# first-run choice is recorded, which may be an older version's data folder
+# (v0.23.0 board N3) - say which folder each shortcut opens.
+$plainDataFolder = "(not recorded - the app asks on first launch)"
+if (Test-Path $marker) {
+    $recorded = (Get-Content $marker -Raw | ConvertFrom-Json).PersistenceRoot
+    if ($recorded) {
+        $plainDataFolder = $recorded
+    }
+}
+
 Write-Host ""
 Write-Host "Installed TempestOS $installedVersion ($branch @ $commit)."
 Write-Host "Desktop shortcut: TempestOS $version (test) -> data folder $DataFolder"
+Write-Host "Start menu and desktop shortcut: TempestOS -> data folder $plainDataFolder"
+if ($plainDataFolder -ne $DataFolder) {
+    Write-Host "Note: the plain TempestOS shortcut opens this build on a different data folder than the test shortcut."
+}
 Write-Host "Runbook 'Title-bar build' field: TempestOS $version ($commit)"
