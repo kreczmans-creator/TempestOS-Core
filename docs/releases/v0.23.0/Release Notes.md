@@ -40,6 +40,15 @@ including items waiting on a decision, is
   `accounting.contacts.read` and `accounting.reports.banksummary.read`,
   one scope per endpoint it calls. The Bank Summary reading also lacked
   a reports scope until now.
+- **Review queue on the dashboard and phone (read-only).** The
+  Dashboard Export writes a fifth file, `reviews.json` (`ADR-0157`):
+  every live item awaiting review, oldest first, with its project, how
+  long it has waited and who submitted it. It covers Documents,
+  Drawings and CAD Models, as the August Companion app did, plus
+  Calculations and Verification Activities in review, checked Evidence
+  awaiting issue, and Reviewed Requirements. Tempest-Dashboard shows it
+  on the Engineering view and counts it on Home. There is no approve
+  action.
 
 ## Documentation
 
