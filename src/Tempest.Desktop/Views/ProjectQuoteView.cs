@@ -17,6 +17,7 @@ using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace;
 using Tempest.Workspace.Files;
+using Tempest.Workspace.Projects;
 using Tempest.Workspace.Quotations;
 
 namespace Tempest.Desktop.Views;
@@ -118,6 +119,16 @@ public sealed class ProjectQuoteView : UserControl
     /// run without asking.
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
+
+    /// <summary>
+    /// Where a quote PDF export starts — the project's own Windows
+    /// Explorer folder, or its configured quote subfolder (PO decision
+    /// 2026-10-01; earlier PO comment: "exports direct to the quote
+    /// section there"). <see langword="null"/>, or a locator with nothing
+    /// to offer (not Windows, no D: drive, a refusing file system), leaves
+    /// the export exactly as it was: the picker opens at its own default.
+    /// </summary>
+    public ProjectFolderLocator? ProjectFolders { get; set; }
 
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -739,8 +750,9 @@ public sealed class ProjectQuoteView : UserControl
         if (_quotations.FirstOrDefault(q => q.Id == quotationId) is not { } quote)
             return;
 
+        var startFolder = await QuoteStartFolderAsync(quote).ConfigureAwait(true);
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", $"{SanitiseFileNameSegment(quote.Reference)}-quote.pdf"), CancellationToken.None)
+            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", $"{SanitiseFileNameSegment(quote.Reference)}-quote.pdf", startFolder), CancellationToken.None)
             .ConfigureAwait(true);
 
         if (destination is null)
@@ -756,6 +768,22 @@ public sealed class ProjectQuoteView : UserControl
         // `ActionOutcome.Changed`, mirroring `ObjectEditorView.OnExportAttachmentAsync`'s
         // own identical remark.
         Report($"Exported to '{destination}'.", succeeded: true);
+    }
+
+    /// <summary>The project folder (or its quote subfolder) to start the export picker in — <see langword="null"/> whenever there is none, never an exception (see <see cref="ProjectFolders"/>).</summary>
+    private async Task<string?> QuoteStartFolderAsync(Quotation quote)
+    {
+        if (ProjectFolders is not { } folders || (quote.ParentId ?? _currentProjectId()) is not { } projectId)
+            return null;
+
+        try
+        {
+            return await folders.QuoteFolderForAsync(projectId, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private async Task<byte[]> RenderSheetAsync(Quotation quote)

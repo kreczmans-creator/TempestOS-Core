@@ -662,6 +662,17 @@ internal sealed partial class MainWindowComposer
         };
         projectQuoteView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // PO decision 2026-10-01: each project's own Windows Explorer
+        // folder (`<root>\<customer>\<project>\<standard subfolders>`,
+        // root `Projects:FolderRoot`, default `D:\01 Projects` on Windows)
+        // — generated whenever a project becomes current (which every New
+        // Project path ends with), and the quote export's own start folder.
+        var projectFolderLocator = new Tempest.Workspace.Projects.ProjectFolderLocator(
+            new Tempest.Core.Projects.ProjectFolderService(Tempest.Core.Projects.ProjectFolderOptions.FromConfiguration(configurationProvider), composition.Logger),
+            projectDirectory, organisationCatalog);
+        projectQuoteView.ProjectFolders = projectFolderLocator;
+        composition.EventBus.Subscribe(new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome)));
+
         // Opens a specific quotation's own project, right up in its Quote
         // tab (`WP 17.9.4`) — specialised from the generic `openObjectRightUp`
         // above because a Quotation's own "opens right up" destination is
