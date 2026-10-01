@@ -86,6 +86,17 @@ another's result. The `gate` job (named `CI Gate`) depends on every leg,
 on the governance health check and on the dependency scan, and gives
 branch protection one named status check to require rather than eight.
 
+**On a pull request only the Release legs run tests** (`ADR-0160`, PO
+decision 2026-10-01). The four Debug legs still restore and build with
+warnings as errors, so a Debug-only compile break is still caught, but
+their test steps are skipped. A push to `main`, a `release/**` branch or
+a tag, a manual run and the weekly schedule run the full Debug and
+Release test matrix, so every commit that lands is tested in both
+configurations. Skipping is per step, not per job, so all eight legs
+exist on every event and their names never change. `CI Gate` still
+requires every leg to report `success`: a skipped step leaves its leg
+green, while a failed or cancelled leg turns the gate red.
+
 Each matrix leg:
 
 1. Checks out the commit.
@@ -99,8 +110,8 @@ Each matrix leg:
 4. Runs its own shard of the test suite (`Tempest.Core.Tests`, or one
    third of `Tempest.Desktop.Tests`, which exercises real Avalonia
    headless UI, not a mock) with TRX results written per configuration
-   and shard. Across the eight legs every test runs once per
-   configuration; `CiShardCoverageTests` fails if a Desktop test falls
+   and shard (Release legs only on a pull request, above). Across the
+   eight legs every test runs once per configuration; `CiShardCoverageTests` fails if a Desktop test falls
    outside the shard filters or inside two of them.
 5. Publishes a Markdown build/test summary to the run's own Job Summary,
    and uploads the build log and TRX results as downloadable artifacts —
@@ -155,6 +166,11 @@ dotnet build src/TempestOS.slnx -c Release -p:TreatWarningsAsErrors=true
 dotnet test  src/TempestOS.slnx -c Release
 ```
 
+A pull request is not tested in Debug (above), so a Debug-only test
+failure shows up on the push run after merge. If a change touches
+`#if DEBUG` code or Debug-only behaviour, also run
+`dotnet test src/TempestOS.slnx -c Debug` before pushing.
+
 **For a Work Package's own Definition of Done:** the Build Gate and Test
 Gate (Engineering Governance §2/§3) are unchanged in substance — "verify
 from a clean, fully-committed working tree" now means "confirm the CI
@@ -174,7 +190,8 @@ work. Merges to `main` are gated: `CI Gate` is a required status check on
 
 ## Related Documents
 
-`.github/workflows/ci.yml`; `docs/releases/v0.11.0/WP11.0A Platform
+`.github/workflows/ci.yml`; `ADR-0160` (pull requests test Release only;
+the release is gated on `CI Gate`); `docs/releases/v0.11.0/WP11.0A Platform
 Architecture Review.md` (finding `R-1`, the source of this standard);
 `docs/releases/v0.11.0/WP11.1A Implementation Report.md`; `docs/releases/
 v0.11.0/WP11.0B Architecture Roadmap.md`; `Engineering Governance.md`

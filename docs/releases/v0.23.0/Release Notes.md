@@ -116,7 +116,9 @@ including items waiting on a decision, is
   superseded pull request runs are cancelled; every `main` and release
   branch commit is gated. Each test step has a 25-minute limit, each
   shard's summary lists its ten slowest tests, and a test that could not
-  finish in time now fails, naming what it waited for.
+  finish in time now fails, naming what it waited for. A pull request
+  runs the Release tests only: Debug is still built, and its tests run
+  on the push to `main`, a release branch or a tag (`ADR-0160`).
 - **Desktop tests write at `synchronous=NORMAL`.** A new configuration
   key, `Persistence:Synchronous=Normal`, opens the SQLite store at
   `synchronous=NORMAL` instead of `FULL`. Only the Desktop test suite sets
