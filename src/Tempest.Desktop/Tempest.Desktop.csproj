@@ -95,7 +95,7 @@
   </ItemGroup>
 
   <!-- WP 21.2A: the design system's three type families and the horizontal
-       navy lockup, embedded as ordinary .NET resources (not AvaloniaResource
+       ink (light-ground) lockup, embedded as ordinary .NET resources (not AvaloniaResource
        - Documents/DocumentFonts.cs and DocumentLogo.cs load them through
        SKTypeface.FromStream/SKBitmap.Decode via Assembly.GetManifestResourceStream,
        independent of a running Avalonia application, so a plain xunit
