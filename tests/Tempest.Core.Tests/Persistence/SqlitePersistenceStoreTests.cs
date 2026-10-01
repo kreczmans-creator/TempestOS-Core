@@ -121,6 +121,29 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         Assert.Equal("wal", Convert.ToString(await ScalarAsync(connection, "PRAGMA journal_mode;")));
     }
 
+    [Theory]
+    [InlineData(null, "FULL")]
+    [InlineData("Normal", "NORMAL")]
+    [InlineData(" normal ", "NORMAL")]
+    [InlineData("Off", "FULL")]
+    [InlineData("", "FULL")]
+    public async Task Synchronous_IsFull_UnlessTheTestOnlyKeyRelaxesItToNormal(string? configured, string expected)
+    {
+        var values = new List<KeyValuePair<string, string>>
+        {
+            new(SqlitePersistenceStore.RootPathConfigurationKey, RootPath),
+        };
+        if (configured is not null)
+            values.Add(new(SqlitePersistenceStore.SynchronousConfigurationKey, configured));
+
+        var store = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(values)).Build());
+        _stores.Add(store);
+        await store.WriteAsync("collection", "key", "value");
+
+        Assert.Equal(expected, store.SynchronousLevel);
+        Assert.Equal("value", await store.ReadAsync("collection", "key"));
+    }
+
     [Fact]
     public async Task EveryRecord_CarriesTheInstantItWasLastWritten()
     {

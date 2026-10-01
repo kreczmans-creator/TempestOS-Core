@@ -305,6 +305,21 @@ option would end up wrapping anyway.
 Product Owner, on the grounds that the existing trees are test data. See
 the Decision.
 
+## Amendment (2026-10-01): a test-only relaxation of `synchronous`
+
+`Persistence:Synchronous` set to `Normal` opens every connection at
+`PRAGMA synchronous = NORMAL` instead of `FULL`; any other value, or none,
+keeps `FULL`. Only the Desktop test suite sets it (`TestPersistenceDurability`,
+a module initialiser, through the environment-variable configuration
+source). Reason: from `v0.23.0` every test host seeds and releases 276
+shipped reference records on a fresh root, about 4,900 commits per
+three-host test against 700 before; at `FULL` each waits on an fsync, and
+on Windows CI runners that made every host start about 14 seconds slower
+and pushed the Desktop shards past their 45-minute job timeout. Under WAL,
+`NORMAL` remains crash consistent and only risks the last commits on
+power loss, which a test run does not need. A real launch never sets the
+key, so a person's data keeps the durability this ADR decided.
+
 ## Related Documents
 
 - `docs/adr/ADR-0041-shared-persistence-abstraction.md` — superseded in
