@@ -58,7 +58,8 @@ public sealed class CreateQuotationCommandHandler : ICommandHandler<CreateQuotat
 public sealed class AddQuotationLineCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="AddQuotationLineCommand"/> class.</summary>
-    public AddQuotationLineCommand(Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice)
+    public AddQuotationLineCommand(
+        Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice, VatRate? vatRate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -69,6 +70,7 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
         Hours = hours;
         Rate = rate;
         FixedPrice = fixedPrice;
+        VatRate = vatRate;
     }
 
     /// <inheritdoc />
@@ -88,6 +90,9 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>The line's own fixed price. <see langword="null"/> for an hourly line.</summary>
     public Money? FixedPrice { get; }
+
+    /// <summary>This line's own VAT treatment (`TD-188`) — <see langword="null"/> takes the Settings default, exactly as <see cref="IQuotationService.AddLineAsync"/> does.</summary>
+    public VatRate? VatRate { get; }
 }
 
 /// <summary>Handles <see cref="AddQuotationLineCommand"/>.</summary>
@@ -106,7 +111,7 @@ public sealed class AddQuotationLineCommandHandler : ICommandHandler<AddQuotatio
     public async Task<CommandResult> HandleAsync(AddQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .AddLineAsync(command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
+            .AddLineAsync(command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice, vatRate: command.VatRate, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
@@ -219,7 +224,7 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="UpdateQuotationLineCommand"/> class.</summary>
     public UpdateQuotationLineCommand(
-        Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice)
+        Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice, VatRate? vatRate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -231,6 +236,7 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
         Hours = hours;
         Rate = rate;
         FixedPrice = fixedPrice;
+        VatRate = vatRate;
     }
 
     /// <inheritdoc />
@@ -253,6 +259,9 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>The line's own fixed price. <see langword="null"/> for an hourly line.</summary>
     public Money? FixedPrice { get; }
+
+    /// <summary>This line's own VAT treatment (`TD-188`) — <see langword="null"/> takes the Settings default, exactly as <see cref="IQuotationService.AddLineAsync"/> does.</summary>
+    public VatRate? VatRate { get; }
 }
 
 /// <summary>Handles <see cref="UpdateQuotationLineCommand"/>.</summary>
@@ -271,7 +280,7 @@ public sealed class UpdateQuotationLineCommandHandler : ICommandHandler<UpdateQu
     public async Task<CommandResult> HandleAsync(UpdateQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
+            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, vatRate: command.VatRate, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
