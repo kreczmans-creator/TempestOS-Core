@@ -56,17 +56,30 @@ public class CalculationDiagramsTests
                     Assert.Contains(value, inputs[name].Choices!);
             }
 
-            // Every shape and label sits on the sheet.
+            // Every label anchor sits on the sheet, and every label — with a representative four-digit value and unit —
+            // fits the room the sheet leaves it around that anchor, so no label is cut off at the sheet's edge.
             foreach (var element in variant.Elements)
             {
                 var anchor = element.LabelAnchor;
                 Assert.InRange(anchor.X, 0, CalculationDiagramSpec.Width);
                 Assert.InRange(anchor.Y, 0, CalculationDiagramSpec.Height);
+
+                if (element.Symbol is not { } symbol)
+                    continue;
+
+                var text = element.InputName is null ? symbol : $"{symbol} = {RepresentativeValue(inputs[element.InputName])}";
+                var width = text.Length * CalculationDiagramSpec.LabelFontSize * CalculationDiagramSpec.LabelCharacterWidth;
+                var leftAligned = element is DiagramDimension { IsVertical: true, LabelAt: null };
+                var room = leftAligned ? CalculationDiagramSpec.Width - anchor.X : 2 * Math.Min(anchor.X, CalculationDiagramSpec.Width - anchor.X);
+                Assert.True(width <= room, $"{calculationId}/{element.Id}: '{text}' needs {width:0} units at x={anchor.X}; the sheet leaves {room:0}.");
             }
         }
 
-        // An empty form still draws a variant.
-        Assert.Contains(CalculationDiagramReader.SelectVariant(spec, module, _ => null), spec.Variants);
+        // An empty form draws the variant drawn otherwise, or one keyed only on empty optional inputs.
+        var empty = CalculationDiagramReader.SelectVariant(spec, module, _ => null);
+        Assert.True(
+            ReferenceEquals(empty, spec.Variants[^1]) || (empty.When.Count > 0 && empty.When.Values.All(v => v is "" or CalculationDiagramReader.BooleanFalse)),
+            $"{calculationId}: an empty form drew '{empty.Caption}'.");
     }
 
     [Theory]
@@ -122,18 +135,96 @@ public class CalculationDiagramsTests
         Assert.Equal("L = ?", CalculationDiagramReader.Read(spec, module, name => typed.GetValueOrDefault(name)).LabelFor("Span"));
     }
 
-    [Fact]
-    public void ANumberCondition_SelectsTheDoubleShearVariant()
+    [Theory]
+    [InlineData(" 2 ", "Double shear")]
+    [InlineData("+2", "Double shear")]
+    [InlineData("02", "Double shear")]
+    [InlineData("1", "Single shear")]
+    [InlineData("+1", "Single shear")]
+    [InlineData("3", "The bolt through lapped plates")]
+    [InlineData("0", "The bolt through lapped plates")]
+    [InlineData("-1", "The bolt through lapped plates")]
+    [InlineData("2.0", "The bolt through lapped plates")]
+    [InlineData("", "The bolt through lapped plates")]
+    public void ANumberCondition_ReadsTheNumberAsTheFormDoes(string typed, string caption)
     {
+        // The form reads "+2" and "02" as 2 (a whole number) and calculates double shear; the diagram must agree.
+        // Anything but 1 or 2 is drawn with a neutral caption, never as "one shear plane".
         var spec = CalculationDiagrams.For(BoltShearCapacityCalculationDefinition.Id)!;
         var module = CalculationModuleDescriptors.For(BoltShearCapacityCalculationDefinition.Id)!;
 
-        var twin = CalculationDiagramReader.SelectVariant(spec, module, name => name == "ShearPlanes" ? Field(name, " 2 ") : null);
-        var single = CalculationDiagramReader.SelectVariant(spec, module, name => name == "ShearPlanes" ? Field(name, "1") : null);
+        var variant = CalculationDiagramReader.SelectVariant(spec, module, name => name == "ShearPlanes" ? Field(name, typed) : null);
 
-        Assert.StartsWith("Double shear", twin.Caption, StringComparison.Ordinal);
-        Assert.StartsWith("Single shear", single.Caption, StringComparison.Ordinal);
-        Assert.Equal(3, twin.Elements.Count(e => e is DiagramPlate p && p.Id.StartsWith("plate", StringComparison.Ordinal)));
+        Assert.StartsWith(caption, variant.Caption, StringComparison.Ordinal);
+        Assert.Equal(caption == "Double shear" ? 3 : 2, variant.Elements.Count(e => e is DiagramPlate p && p.Id.StartsWith("plate", StringComparison.Ordinal)));
+        if (caption == "Double shear")
+            Assert.Equal(2, variant.Elements.Count(e => e is DiagramPointLoad { Symbol: "F/2" }));
+    }
+
+    [Fact]
+    public void AWholeNumberInput_ShowsOnlyAWholeNumber_AsTheFormReadsIt()
+    {
+        var module = CalculationModuleDescriptors.For(BoltShearCapacityCalculationDefinition.Id)!;
+        Assert.Equal("+2", CalculationDiagramReader.ValueText(module, "ShearPlanes", Field("ShearPlanes", "+2")));
+        Assert.Equal(CalculationDiagramReader.Unknown, CalculationDiagramReader.ValueText(module, "ShearPlanes", Field("ShearPlanes", "2.0")));
+        Assert.Equal("1.5", CalculationDiagramReader.ValueText(module, "SafetyFactor", Field("SafetyFactor", "1.5")));
+    }
+
+    [Fact]
+    public void AnOptionalInputLeftEmpty_DrawsItsOwnBoundaryCondition()
+    {
+        // No restraint stiffness: a rigid restraint, no spring.
+        var rigid = Read(ThermalExpansionStressCalculationDefinition.Id, new() { ["RestraintStiffness"] = Field("RestraintStiffness", "") });
+        Assert.Contains("rigid", rigid.Variant.Caption, StringComparison.Ordinal);
+        Assert.DoesNotContain(rigid.Shapes, s => s.Element is DiagramSpring);
+        Assert.Equal("k_s = not given", rigid.LabelFor("RestraintStiffness"));
+
+        var elastic = Read(ThermalExpansionStressCalculationDefinition.Id, new() { ["RestraintStiffness"] = Field("RestraintStiffness", "5", "kN/mm") });
+        Assert.Contains("elastic", elastic.Variant.Caption, StringComparison.Ordinal);
+        Assert.Contains(elastic.Shapes, s => s.Element is DiagramSpring { InputName: "RestraintStiffness" });
+
+        // No film coefficient on a side: no film drawn there; the temperature is the wall face's own.
+        var bare = Read(PlaneWallHeatTransferCalculationDefinition.Id, new()
+        {
+            ["HotSideFilmCoefficient"] = Field("HotSideFilmCoefficient", ""),
+            ["ColdSideFilmCoefficient"] = Field("ColdSideFilmCoefficient", "25", "W/(m².K)"),
+        });
+        Assert.Contains("T₁ at the hot face", bare.Variant.Caption, StringComparison.Ordinal);
+        Assert.DoesNotContain(bare.Shapes, s => s.Element is DiagramPointLoad { InputName: "HotSideFilmCoefficient" });
+        Assert.Contains(bare.Shapes, s => s.Element is DiagramPointLoad { InputName: "ColdSideFilmCoefficient" });
+
+        var both = Read(PlaneWallHeatTransferCalculationDefinition.Id, new()
+        {
+            ["HotSideFilmCoefficient"] = Field("HotSideFilmCoefficient", "10", "W/(m².K)"),
+            ["ColdSideFilmCoefficient"] = Field("ColdSideFilmCoefficient", "25", "W/(m².K)"),
+        });
+        Assert.Equal(2, both.Shapes.Count(s => s.Element is DiagramPointLoad));
+        var neither = Read(PlaneWallHeatTransferCalculationDefinition.Id, new());
+        Assert.Contains("no films", neither.Variant.Caption, StringComparison.Ordinal);
+        Assert.DoesNotContain(neither.Shapes, s => s.Element is DiagramPointLoad);
+    }
+
+    [Fact]
+    public void TheSummary_IsWordedForAScreenReader_WithNoBareQuestionMarkOrUnderscore()
+    {
+        var reading = Read(BeamDeflectionCalculationDefinition.Id, new() { ["Span"] = Field("Span", "2000", "mm") });
+        Assert.Contains("L = 2000 mm", reading.Summary, StringComparison.Ordinal);
+        Assert.Contains("σ allow = not readable yet", reading.Summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("?", reading.Summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("_", reading.Summary, StringComparison.Ordinal);
+        Assert.Equal("σ_allow = ?", reading.LabelFor("AllowableBendingStress"));
+    }
+
+    [Fact]
+    public void SolidParts_AreDrawnSolid_NeverAsHoles()
+    {
+        // A bolt, a pin, a rolling element or a point is solid ink; a hole stays open.
+        Assert.All(
+            Read(BoltGroupEccentricShearCalculationDefinition.Id, new()).Shapes.Where(s => s.Element is DiagramCircle { InputName: "Bolts" }),
+            s => Assert.True(((DiagramCircle)s.Element).Solid));
+        var lug = Read(LiftingLugPinJointCalculationDefinition.Id, new()).Shapes.Select(s => s.Element).OfType<DiagramCircle>().ToList();
+        Assert.True(lug.Single(c => c.Id == "pin").Solid);
+        Assert.False(lug.Single(c => c.Id == "hole").Solid);
     }
 
     [Fact]
@@ -150,9 +241,9 @@ public class CalculationDiagramsTests
         var reading = CalculationDiagramReader.Read(spec, module, name => typed.GetValueOrDefault(name));
 
         Assert.Equal("Layers = 2 rows", reading.LabelFor("Layers"));
-        Assert.Equal("T_1 = 20 degC", reading.LabelFor("HotSideTemperature"));
-        Assert.Equal("h_1 = not given", reading.LabelFor("HotSideFilmCoefficient"));
-        Assert.Equal("T_2 = ?", reading.LabelFor("ColdSideTemperature"));
+        Assert.Equal("T₁ = 20 degC", reading.LabelFor("HotSideTemperature"));
+        Assert.Equal("h₁ = not given", reading.LabelFor("HotSideFilmCoefficient"));
+        Assert.Equal("T₂ = ?", reading.LabelFor("ColdSideTemperature"));
         Assert.True(reading.Shapes.Count(s => s.Element.InputName == "Layers") >= 3);
 
         Assert.Equal("1 row", CalculationDiagramReader.ValueText(module, "Layers", new("Layers", Rows: ["Glass, 8 mm, 0.78 W/(m.K)"])));
@@ -378,6 +469,17 @@ public class CalculationDiagramsTests
         Assert.Null(axes.Symbol);
         Assert.Equal(new DiagramPoint(40, 200), axes.LabelAnchor);
     }
+
+    /// <summary>A value as long as a label typically shows for <paramref name="input"/>: four digits and a unit, the longest choice, "yes", a row count.</summary>
+    private static string RepresentativeValue(CalculationInputDescriptor input) => input.Kind switch
+    {
+        CalculationInputKind.Quantity => "1250 mm",
+        CalculationInputKind.Number => "1250",
+        CalculationInputKind.Choice => input.Choices!.Select(CalculationModuleForm.Humanise).MaxBy(c => c.Length)!,
+        CalculationInputKind.Boolean => "yes",
+        CalculationInputKind.List => "12 rows",
+        _ => "S355J2",
+    };
 
     private static CalculationFormField Field(string name, string? text = null, string? unit = null, string? choice = null) =>
         new(name, text, unit, choice, false, null, null);

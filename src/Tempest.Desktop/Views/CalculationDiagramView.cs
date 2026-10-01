@@ -42,6 +42,17 @@ namespace Tempest.Desktop.Views;
 /// dimensions and the highlight are <see cref="BrandPalette"/> and
 /// <see cref="ApplicationPalette"/> keys, resolved against this control's
 /// own theme variant the way <see cref="ThemeReactiveBrush"/> resolves them.
+/// A plate is shaded with the strong hairline (visible on the panel in
+/// both themes); a solid part — a bolt, a pin, a point — is filled in ink,
+/// so it never reads as a hole. Labels are set in the body face at
+/// <see cref="CalculationDiagramSpec.LabelFontSize"/>, so <c>T₁</c> and
+/// <c>m²</c> read as the form writes them (the monospaced face draws its
+/// subscripts too small to read).
+/// </para>
+/// <para>
+/// <b>One thing for a screen reader.</b> The control carries the diagram in
+/// words as its help text; the drawing and its labels are raw, so the
+/// summary is not read three times over.
 /// </para>
 /// </remarks>
 public sealed class CalculationDiagramView : UserControl
@@ -56,11 +67,12 @@ public sealed class CalculationDiagramView : UserControl
     public const string NotToScaleText = "Not to scale · inputs only";
 
     /// <summary>What the panel says for a calculation that has no diagram yet.</summary>
-    public const string NoDiagramYetText = "No diagram yet for this calculation. Its inputs are described beside each field.";
+    public const string NoDiagramYetText = "No diagram yet for this calculation. Hover or focus a field for its description.";
 
-    private const double LabelBoxWidth = 180;
-    private const double LabelFontSize = 12;
+    private const double LabelFontSize = CalculationDiagramSpec.LabelFontSize;
     private const double ArrowHead = 8;
+
+    private static readonly Lazy<Cursor> HandCursor = new(() => new Cursor(StandardCursorType.Hand));
 
     private readonly Canvas _sheet = new() { Width = CalculationDiagramSpec.Width, Height = CalculationDiagramSpec.Height, ClipToBounds = true };
     private readonly Viewbox _drawing;
@@ -78,6 +90,7 @@ public sealed class CalculationDiagramView : UserControl
     {
         Ink,
         Plate,
+        Solid,
         Hole,
         Load,
         Dimension,
@@ -91,10 +104,12 @@ public sealed class CalculationDiagramView : UserControl
     {
         AutomationProperties.SetName(this, Heading);
         AutomationProperties.SetName(_sheet, DrawingAutomationName);
+        AutomationProperties.SetAccessibilityView(_sheet, AccessibilityView.Raw);
         AutomationProperties.SetName(_fallback, "Reference diagram status");
 
         _drawing = new Viewbox { Stretch = Stretch.Uniform, Child = _sheet, HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(_drawing, DrawingAutomationName);
+        AutomationProperties.SetAccessibilityView(_drawing, AccessibilityView.Raw);
 
         var heading = new TextBlock { Text = Heading, FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody + 1 };
         ThemeReactiveBrush.Bind(heading, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
@@ -222,16 +237,12 @@ public sealed class CalculationDiagramView : UserControl
         if (reading is null)
         {
             _fallback.Text = _module is null ? "Choose a calculation to see its reference diagram." : NoDiagramYetText;
-            var none = _module is null ? _fallback.Text : $"{_module.Title}. {NoDiagramYetText}";
-            AutomationProperties.SetHelpText(this, none);
-            AutomationProperties.SetHelpText(_drawing, none);
+            AutomationProperties.SetHelpText(this, _module is null ? _fallback.Text : $"{_module.Title}. {NoDiagramYetText}");
             return;
         }
 
         _caption.Text = reading.Variant.Caption;
         AutomationProperties.SetHelpText(this, reading.Summary);
-        AutomationProperties.SetHelpText(_drawing, reading.Summary);
-        AutomationProperties.SetHelpText(_sheet, reading.Summary);
 
         foreach (var shape in reading.Shapes)
             Draw(shape.Element);
@@ -265,7 +276,7 @@ public sealed class CalculationDiagramView : UserControl
                 var ellipse = new Ellipse { Width = c.Radius * 2, Height = c.Radius * 2, StrokeThickness = c.Filled ? 1.5 : 2.5 };
                 Canvas.SetLeft(ellipse, c.Centre.X - c.Radius);
                 Canvas.SetTop(ellipse, c.Centre.Y - c.Radius);
-                Add(ellipse, input, c.Filled ? Role.Plate : Role.Hole);
+                Add(ellipse, input, c.Solid ? Role.Solid : c.Filled ? Role.Plate : Role.Hole);
                 break;
             }
 
@@ -313,6 +324,9 @@ public sealed class CalculationDiagramView : UserControl
 
             case DiagramLabel:
                 break; // the label alone; drawn with the others.
+
+            default:
+                throw new NotSupportedException($"The reference diagram cannot draw a {element.GetType().Name} ('{element.Id}'); teach {nameof(CalculationDiagramView)} to draw it.");
         }
     }
 
@@ -396,6 +410,9 @@ public sealed class CalculationDiagramView : UserControl
         var to = P(s.To);
         var along = to - from;
         var length = Math.Sqrt(along.X * along.X + along.Y * along.Y);
+        if (length < 1)
+            return;
+
         var unit = along / length;
         var normal = new Vector(-unit.Y, unit.X);
         const double Lead = 8, Amplitude = 7;
@@ -441,6 +458,9 @@ public sealed class CalculationDiagramView : UserControl
     {
         var direction = tip - tail;
         var length = Math.Sqrt(direction.X * direction.X + direction.Y * direction.Y);
+        if (length < 1)
+            return;
+
         var unit = direction / length;
         Add(new Line { StartPoint = tail, EndPoint = tip - unit * (ArrowHead * 0.8), StrokeThickness = thickness }, input, role);
         Head(tip, unit, input, role);
@@ -457,18 +477,21 @@ public sealed class CalculationDiagramView : UserControl
     {
         var anchor = element.LabelAnchor;
         var leftAligned = element is DiagramDimension { IsVertical: true, LabelAt: null };
+
+        // The box is all the room the sheet leaves around the anchor, so a label too long for it ends in "…" rather than being cut at the sheet's edge.
+        var room = leftAligned ? CalculationDiagramSpec.Width - anchor.X : 2 * Math.Min(anchor.X, CalculationDiagramSpec.Width - anchor.X);
         var block = new TextBlock
         {
             Text = text,
             FontSize = LabelFontSize,
-            FontFamily = DesignTokens.MonoFont,
-            Width = LabelBoxWidth,
+            FontFamily = DesignTokens.BodyFont,
+            Width = Math.Max(0, room),
             TextAlignment = leftAligned ? TextAlignment.Left : TextAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis, // a long text input ends in "…", never cut mid-glyph
         };
-        Canvas.SetLeft(block, leftAligned ? anchor.X : anchor.X - LabelBoxWidth / 2);
+        Canvas.SetLeft(block, leftAligned ? anchor.X : anchor.X - block.Width / 2);
         Canvas.SetTop(block, anchor.Y - LabelFontSize * 0.75);
-        AutomationProperties.SetName(block, text);
+        AutomationProperties.SetAccessibilityView(block, AccessibilityView.Raw);
         Add(block, element.InputName, Role.Text);
     }
 
@@ -479,7 +502,7 @@ public sealed class CalculationDiagramView : UserControl
 
         if (input is not null)
         {
-            visual.Cursor = new Cursor(StandardCursorType.Hand);
+            visual.Cursor = HandCursor.Value;
             visual.PointerEntered += (_, _) => Hover(input);
             visual.PointerExited += (_, _) =>
             {
@@ -505,7 +528,7 @@ public sealed class CalculationDiagramView : UserControl
     private void ApplyBrushes()
     {
         var ink = Brush(BrandPalette.HeadingTextBrushKey, Brushes.Black);
-        var plate = Brush(BrandPalette.SunkenBackgroundBrushKey, Brushes.LightGray);
+        var plate = Brush(BrandPalette.HairlineStrongBrushKey, Brushes.LightGray);
         var surface = Brush(BrandPalette.SurfaceBackgroundBrushKey, Brushes.White);
         var load = Brush(BrandPalette.DangerBrushKey, Brushes.IndianRed);
         var dimension = Brush(BrandPalette.MutedTextBrushKey, Brushes.Gray);
@@ -538,6 +561,7 @@ public sealed class CalculationDiagramView : UserControl
                     shape.Fill = part.Role switch
                     {
                         Role.Plate => lit ? highlightFill : plate,
+                        Role.Solid => lit ? highlight : ink,
                         Role.Hole => surface,
                         _ => null,
                     };
@@ -546,8 +570,7 @@ public sealed class CalculationDiagramView : UserControl
         }
     }
 
-    private IBrush Brush(string key, IBrush fallback) =>
-        Application.Current?.TryGetResource(key, ActualThemeVariant, out var value) == true && value is IBrush brush ? brush : fallback;
+    private IBrush Brush(string key, IBrush fallback) => ThemeReactiveBrush.Resolve(this, key) ?? fallback;
 
     private static Point P(DiagramPoint point) => new(point.X, point.Y);
 

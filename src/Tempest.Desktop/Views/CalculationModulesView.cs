@@ -124,6 +124,7 @@ public sealed class CalculationModulesView : UserControl
     private readonly Dictionary<ReferenceLibrary, IReadOnlyList<ReleasedRecordOption>> _released = new();
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     private bool _replacingPickers;
+    private string? _markedInput;
 
     private sealed record FieldControls(CalculationInputDescriptor Descriptor, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, TextBox? Rows, ComboBox? Picker, Grid? Row = null)
     {
@@ -160,6 +161,11 @@ public sealed class CalculationModulesView : UserControl
 
         _diagram.InputActivated += name => FieldControl(name)?.Focus();
         _diagram.InputHovered += MarkHoveredRow;
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            if (_markedInput is not null)
+                MarkHoveredRow(_markedInput);
+        };
 
         _resultsSection = Section("Results", BuildResultsPanel());
         _workingSection = Section("Working", BuildWorkingPanel());
@@ -510,14 +516,38 @@ public sealed class CalculationModulesView : UserControl
         return field;
     }
 
+    /// <summary>
+    /// Marks the row of the input whose shape the pointer is on: the accent
+    /// wash behind it and its label bold in the focus-ring colour (a wash
+    /// alone measured about 1.1:1, barely visible). Re-applied on a theme
+    /// change, so a marked row never keeps the old theme's brushes.
+    /// </summary>
     private void MarkHoveredRow(string? inputName)
     {
-        IBrush? mark = null;
-        if (inputName is not null && Application.Current?.TryGetResource(ApplicationPalette.AccentPanelBackgroundBrushKey, ActualThemeVariant, out var value) == true)
-            mark = value as IBrush ?? Brushes.LightBlue;
+        _markedInput = inputName;
+        var wash = ThemeReactiveBrush.Resolve(this, ApplicationPalette.AccentPanelBackgroundBrushKey) ?? Brushes.LightBlue;
+        var ring = ThemeReactiveBrush.Resolve(this, ApplicationPalette.FocusRingBrushKey) ?? Brushes.RoyalBlue;
 
         foreach (var field in _fields.Values.Where(f => f.Row is not null))
-            field.Row!.Background = field.Descriptor.Name == inputName ? mark ?? Brushes.LightBlue : null;
+        {
+            var marked = field.Descriptor.Name == inputName;
+            field.Row!.Background = marked ? wash : null;
+            if (field.Row.Children.OfType<TextBlock>().FirstOrDefault() is not { } label)
+                continue;
+
+            if (marked)
+            {
+                label.Foreground = ring;
+                label.FontWeight = FontWeight.Bold;
+                label.Opacity = 1;
+            }
+            else
+            {
+                label.ClearValue(TextBlock.ForegroundProperty);
+                label.FontWeight = FontWeight.Normal;
+                label.Opacity = 0.8;
+            }
+        }
     }
 
     private static CalculationFormField Read(FieldControls f) => new(

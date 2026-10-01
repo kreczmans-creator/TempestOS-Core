@@ -64,8 +64,13 @@ public sealed record DiagramPlate(string Id, double X, double Y, double Width, d
     public override DiagramPoint LabelAnchor => LabelAt ?? new(X + Width / 2, Y + Height / 2);
 }
 
-/// <summary>A circle: a hole (unfilled), a bolt or shaft section, a vessel shell.</summary>
-public sealed record DiagramCircle(string Id, DiagramPoint Centre, double Radius, bool Filled, string? InputName = null, string? Symbol = null, DiagramPoint? LabelAt = null)
+/// <summary>
+/// A circle: a hole or a shell (unfilled), a section such as a cylinder
+/// wall (<paramref name="Filled"/>, shaded as a plate), or a solid part
+/// seen end-on — a bolt, a pin, a rolling element, a point
+/// (<paramref name="Solid"/>, filled in ink so it never reads as a hole).
+/// </summary>
+public sealed record DiagramCircle(string Id, DiagramPoint Centre, double Radius, bool Filled, string? InputName = null, string? Symbol = null, DiagramPoint? LabelAt = null, bool Solid = false)
     : DiagramElement(Id, InputName, Symbol)
 {
     /// <inheritdoc />
@@ -189,8 +194,8 @@ public sealed record DiagramAxes(string Id, DiagramPoint Origin, double XEnd, do
 /// <summary>
 /// One drawing of a calculation: the variant drawn when every input named
 /// in <paramref name="When"/> holds the value given there (a choice's
-/// member name, a number exactly as typed, or <c>true</c> / <c>false</c>
-/// for a yes-or-no input).
+/// member name, a number as the form reads it, <c>true</c> / <c>false</c>
+/// for a yes-or-no input, or <c>""</c> for an optional input left empty).
 /// </summary>
 /// <param name="Caption">What the variant shows, in words: "Simply supported, point load at mid-span".</param>
 /// <param name="When">The input values that select this variant; empty for the variant drawn otherwise.</param>
@@ -211,6 +216,12 @@ public sealed record CalculationDiagramSpec(string CalculationId, IReadOnlyList<
 
     /// <summary>The drawing sheet's height, in sheet units.</summary>
     public const double Height = 240;
+
+    /// <summary>The size of a label's text, in sheet units (about 11 px at the panel's 380 px width).</summary>
+    public const double LabelFontSize = 13;
+
+    /// <summary>A generous average advance of one character of a label, as a fraction of <see cref="LabelFontSize"/>: what a label is allowed per character when checking it fits the sheet.</summary>
+    public const double LabelCharacterWidth = 0.62;
 
     /// <summary>Every input name any shape of any variant is bound to, or any variant is selected by.</summary>
     public IEnumerable<string> BoundInputNames =>

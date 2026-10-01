@@ -11,7 +11,7 @@ public sealed record DiagramShapeReading(DiagramElement Element, string? Label);
 /// <param name="Spec">The diagram.</param>
 /// <param name="Variant">The variant drawn.</param>
 /// <param name="Shapes">Every shape of that variant, in drawing order, labelled.</param>
-/// <param name="Summary">The diagram in words.</param>
+/// <param name="Summary">The diagram in words, as a screen reader should say it: no bare "?" or "_".</param>
 public sealed record CalculationDiagramReading(CalculationDiagramSpec Spec, DiagramVariant Variant, IReadOnlyList<DiagramShapeReading> Shapes, string Summary)
 {
     /// <summary>The first label of the shapes bound to <paramref name="inputName"/>, or <see langword="null"/>.</summary>
@@ -50,7 +50,9 @@ public static class CalculationDiagramReader
         var variant = SelectVariant(spec, module, field);
         var shapes = variant.Elements.Select(e => new DiagramShapeReading(e, LabelOf(e, module, field))).ToList();
 
-        var labels = shapes.Where(s => s.Element.InputName is not null && s.Label is not null).Select(s => s.Label!).Distinct(StringComparer.Ordinal).ToList();
+        var labels = shapes.Where(s => s.Element is { InputName: not null, Symbol: not null } && s.Label is not null)
+            .Select(s => Spoken(s.Element.Symbol!, ValueText(module, s.Element.InputName!, field(s.Element.InputName!))))
+            .Distinct(StringComparer.Ordinal).ToList();
         var summary = $"{module.Title}. {NotToScale} {variant.Caption}." + (labels.Count == 0 ? string.Empty : $" {string.Join("; ", labels)}.");
         return new CalculationDiagramReading(spec, variant, shapes, summary);
     }
@@ -85,9 +87,7 @@ public static class CalculationDiagramReader
                 return CalculationInputUnits.TryParse(input.DimensionName!, text, unit, out _) is null ? Unknown : $"{text} {unit}";
 
             case CalculationInputKind.Number:
-                return !string.IsNullOrEmpty(text) && double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number)
-                    ? text
-                    : Unknown;
+                return CalculationModuleForm.TryReadNumber(text, CalculationModuleForm.IsWholeNumber(module, inputName), out _) ? text! : Unknown;
 
             case CalculationInputKind.Text:
                 return string.IsNullOrEmpty(text) ? Unknown : text;
@@ -118,14 +118,28 @@ public static class CalculationDiagramReader
         return element.InputName is { } name ? $"{symbol} = {ValueText(module, name, field(name))}" : symbol;
     }
 
+    /// <summary>What a screen reader says for a label: the symbol's subscript mark read as a space, an unreadable value said in words.</summary>
+    private static string Spoken(string symbol, string value) =>
+        $"{symbol.Replace('_', ' ')} = {(value == Unknown ? "not readable yet" : value)}";
+
+    /// <summary>
+    /// The value a condition compares: a choice's member name, <c>true</c>
+    /// or <c>false</c>, a number as the form reads it (so "+2" and "02"
+    /// select what 2 does), or the text as typed; an empty or absent field
+    /// is <c>""</c>, so a variant keyed on <c>""</c> draws an optional
+    /// input left empty.
+    /// </summary>
     private static string? ConditionValue(CalculationModuleDescriptor module, string inputName, CalculationFormField? field)
     {
         var kind = module.Inputs.FirstOrDefault(i => i.Name == inputName)?.Kind;
+        var text = field?.Text?.Trim() ?? string.Empty;
         return kind switch
         {
             CalculationInputKind.Choice => field?.Choice,
             CalculationInputKind.Boolean => field?.Flag == true ? BooleanTrue : BooleanFalse,
-            _ => field?.Text?.Trim(),
+            CalculationInputKind.Number when CalculationModuleForm.TryReadNumber(text, CalculationModuleForm.IsWholeNumber(module, inputName), out var number)
+                => number.ToString(CultureInfo.InvariantCulture),
+            _ => text,
         };
     }
 }

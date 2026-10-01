@@ -2,8 +2,11 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Tempest.Core.Calculations;
@@ -77,7 +80,7 @@ public sealed class CalculationDiagramViewTests
             Assert.Equal(CalculationDiagramView.Heading, AutomationProperties.GetName(diagram));
             Assert.StartsWith(view.SelectedModule!.Title, diagram.Summary, StringComparison.Ordinal);
             Assert.Contains(CalculationDiagramReader.NotToScale, diagram.Summary, StringComparison.Ordinal);
-            Assert.Contains("L_E = ?", diagram.Summary, StringComparison.Ordinal);
+            Assert.Contains("L E = not readable yet", diagram.Summary, StringComparison.Ordinal);
         });
     }
 
@@ -97,15 +100,25 @@ public sealed class CalculationDiagramViewTests
             Assert.Equal("Span", diagram.HighlightedInput);
             Assert.True(diagram.IsHighlighted("Span"));
             var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
-            Assert.All(diagram.ShapesFor("Span").OfType<Line>(), line => Assert.Same(focusRing, line.Stroke));
+            var spanLines = diagram.ShapesFor("Span").OfType<Line>().ToList();
+            Assert.NotEmpty(spanLines);
+            Assert.All(spanLines, line => Assert.Same(focusRing, line.Stroke));
             Assert.Equal(FontWeight.Bold, diagram.ShapesFor("Span").OfType<TextBlock>().Single().FontWeight);
-            Assert.All(diagram.ShapesFor("Load").OfType<Shape>(), shape => Assert.NotSame(focusRing, shape.Stroke));
+            var loadShapes = diagram.ShapesFor("Load").OfType<Shape>().ToList();
+            Assert.NotEmpty(loadShapes);
+            Assert.All(loadShapes, shape => Assert.NotSame(focusRing, shape.Stroke));
+            Assert.All(loadShapes.OfType<Polygon>(), head => Assert.NotSame(focusRing, head.Fill));
 
             Assert.True(load.Focus());
             Dispatcher.UIThread.RunJobs();
             Assert.Equal("Load", diagram.HighlightedInput);
             Assert.False(diagram.IsHighlighted("Span"));
-            Assert.All(diagram.ShapesFor("Load").OfType<Shape>().Where(s => s.Stroke is not null), shape => Assert.Same(focusRing, shape.Stroke));
+            var litLoad = diagram.ShapesFor("Load").OfType<Shape>().Where(s => s.Stroke is not null).ToList();
+            Assert.NotEmpty(litLoad);
+            Assert.All(litLoad, shape => Assert.Same(focusRing, shape.Stroke));
+            var heads = diagram.ShapesFor("Load").OfType<Polygon>().ToList();
+            Assert.NotEmpty(heads);
+            Assert.All(heads, head => Assert.Same(focusRing, head.Fill)); // the arrowhead is lit with its shaft
 
             // The reverse: pointing at the span's shape marks its row; clicking it focuses its box.
             diagram.Hover("Span");
@@ -135,7 +148,7 @@ public sealed class CalculationDiagramViewTests
             AssertDrawn(window, diagram, "Layers = 2 rows");
 
             view.SetField("HotSideTemperature", "20", "degC");
-            Assert.Equal("T_1 = 20 degC", diagram.LabelFor("HotSideTemperature"));
+            Assert.Equal("T₁ = 20 degC", diagram.LabelFor("HotSideTemperature"));
 
             Assert.True(view.FieldControl("Layers")!.Focus());
             Dispatcher.UIThread.RunJobs();
@@ -265,6 +278,111 @@ public sealed class CalculationDiagramViewTests
             view.SetField("AppliedStress", "120", "MPa");
             Assert.Equal("σ = 120 MPa", diagram.LabelFor("AppliedStress"));
             AssertDrawn(window, diagram, "σ_allow = ?");
+        });
+    }
+
+    [AvaloniaFact]
+    public void ThePointer_OnAShape_MarksItsRow_AndAClickFocusesItsField()
+    {
+        // Real pointer input through hit-testing, not the Hover/Activate shortcuts.
+        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            var label = diagram.ShapesFor("Span").OfType<TextBlock>().Single();
+            var centre = label.TranslatePoint(new Point(label.Bounds.Width / 2, label.Bounds.Height / 2), window)!.Value;
+            var label2 = ((Grid)view.FieldRow("Span")!).Children.OfType<TextBlock>().First();
+
+            window.MouseMove(centre, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(diagram.IsHighlighted("Span"), "Pointing at the span's label highlights the span.");
+            Assert.True(view.IsRowMarked("Span"), "Pointing at the span's label marks its row.");
+            Assert.Equal(FontWeight.Bold, label2.FontWeight);
+            Assert.Same(ResolveBrush(view, ApplicationPalette.FocusRingBrushKey), label2.Foreground);
+            Assert.False(view.IsRowMarked("Load"));
+
+            window.MouseMove(new Point(2, 2), RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(view.IsRowMarked("Span"), "Moving off the shape unmarks the row.");
+            Assert.Equal(FontWeight.Normal, label2.FontWeight);
+
+            window.MouseDown(centre, MouseButton.Left, RawInputModifiers.None);
+            window.MouseUp(centre, MouseButton.Left, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(view.FieldControl("Span")!.IsFocused, "Clicking the span's shape focuses its box.");
+        });
+    }
+
+    [AvaloniaFact]
+    public void SwitchingToDark_RedrawsEveryShapeInTheDarkTokens_AndAMarkedRowFollows()
+    {
+        WithCalculators(LiftingLugPinJointCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            diagram.Hover("PinDiameter");
+            var lightWash = view.FieldRow("PinDiameter")!.GetValue(Panel.BackgroundProperty);
+
+            window.RequestedThemeVariant = ThemeVariant.Dark;
+            LayOut(window);
+            Assert.Equal(ThemeVariant.Dark, diagram.ActualThemeVariant);
+
+            var ink = ResolveBrush(diagram, BrandPalette.HeadingTextBrushKey);
+            var plate = ResolveBrush(diagram, BrandPalette.HairlineStrongBrushKey);
+            var ring = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
+            var hole = diagram.ShapesFor("HoleDiameter").OfType<Ellipse>().Single();
+            Assert.Same(ResolveBrush(diagram, BrandPalette.SurfaceBackgroundBrushKey), hole.Fill);
+            var lug = diagram.ShapesFor("LugWidth").OfType<Rectangle>().Single();
+            Assert.Same(plate, lug.Fill);
+            Assert.Same(ink, lug.Stroke);
+
+            // The pin is solid, lit while pointed at; a marked row's wash is the dark theme's.
+            var pin = diagram.ShapesFor("PinDiameter").OfType<Ellipse>().Single();
+            Assert.Same(ring, pin.Fill);
+            Assert.Same(ResolveBrush(view, ApplicationPalette.AccentPanelBackgroundBrushKey), view.FieldRow("PinDiameter")!.GetValue(Panel.BackgroundProperty));
+            Assert.NotNull(lightWash);
+
+            diagram.Hover(null);
+            Assert.Same(ink, pin.Fill);
+        });
+    }
+
+    [AvaloniaFact]
+    public void EveryVariantOfEveryDiagram_IsDrawn_WithAShapeForEveryBoundInput()
+    {
+        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            foreach (var spec in CalculationDiagrams.All)
+            {
+                var module = CalculationModuleDescriptors.For(spec.CalculationId)!;
+                foreach (var variant in spec.Variants)
+                {
+                    // The variant's own conditions; any other conditioned input a value no other variant is keyed on.
+                    var kinds = module.Inputs.ToDictionary(i => i.Name, i => i.Kind, StringComparer.Ordinal);
+                    var conditioned = spec.Variants.SelectMany(v => v.When.Keys).ToHashSet(StringComparer.Ordinal);
+                    CalculationFormField? Field(string name)
+                    {
+                        if (!conditioned.Contains(name))
+                            return null;
+
+                        var value = variant.When.TryGetValue(name, out var keyed) ? keyed : kinds[name] == CalculationInputKind.Boolean ? CalculationDiagramReader.BooleanFalse : "3";
+                        return kinds[name] switch
+                        {
+                            CalculationInputKind.Choice => new CalculationFormField(name, Choice: value),
+                            CalculationInputKind.Boolean => new CalculationFormField(name, Flag: value == CalculationDiagramReader.BooleanTrue),
+                            _ => new CalculationFormField(name, value),
+                        };
+                    }
+
+                    diagram.Show(module, Field);
+
+                    Assert.True(diagram.HasDiagram, $"{spec.CalculationId}: nothing drawn.");
+                    Assert.Same(variant, diagram.Reading!.Variant);
+                    var drawn = diagram.GetVisualDescendants().OfType<Shape>().Count();
+                    Assert.True(drawn > 0, $"{spec.CalculationId} '{variant.Caption}': no shape drawn.");
+                    Assert.All(variant.Elements.Where(e => e.InputName is not null && e is not DiagramLabel && e.Symbol is null),
+                        e => Assert.True(diagram.Draws(e.InputName!), $"{spec.CalculationId}/{e.Id}: no shape for {e.InputName}."));
+                }
+            }
         });
     }
 

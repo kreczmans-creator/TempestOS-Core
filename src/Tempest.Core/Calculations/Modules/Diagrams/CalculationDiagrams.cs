@@ -57,27 +57,30 @@ public static class CalculationDiagrams
 
     private static CalculationDiagramSpec BoltShear()
     {
+        // Single shear: plate a (left) pulled left, plate b (right) pulled right, each by F.
+        // Double shear: the middle plate b pulled right by F, the outer plates a and c left by F/2 each.
         static DiagramVariant Variant(string caption, IReadOnlyDictionary<string, string> when, bool doubleShear)
         {
             var top = doubleShear ? 74.0 : 86.0;
             var elements = new List<DiagramElement>
             {
-                new DiagramPlate("plate-a", 40, top, 220, 24),
-                new DiagramPlate("plate-b", 140, top + 24, 220, 24),
+                new DiagramPlate("plate-a", 60, top, 200, 24),
+                new DiagramPlate("plate-b", 140, top + 24, 200, 24),
             };
             if (doubleShear)
-                elements.Add(new DiagramPlate("plate-c", 40, top + 48, 220, 24));
+                elements.Add(new DiagramPlate("plate-c", 60, top + 48, 200, 24));
 
             var plates = doubleShear ? 3 : 2;
+            var outer = doubleShear ? "F/2" : "F";
             elements.AddRange(
             [
                 new DiagramPlate("bolt", 190, top - 14, 20, 24 * plates + 28, "Diameter"),
                 new DiagramDimension("bolt-diameter", new(190, top - 14), new(210, top - 14), -14, "Diameter", "d", new(200, top - 42)),
-                new DiagramPointLoad("force-b", new(366, top + 36), DiagramDirection.Right, 30, Symbol: "F"),
-                new DiagramPointLoad("force-a", new(34, top + 12), DiagramDirection.Left, 30, Symbol: "F"),
+                new DiagramPointLoad("force-b", new(384, top + 36), DiagramDirection.Right, 40, Symbol: "F", LabelAt: new(364, top + 20)),
+                new DiagramPointLoad("force-a", new(16, top + 12), DiagramDirection.Left, 40, Symbol: outer, LabelAt: new(36, top - 4)),
             ]);
             if (doubleShear)
-                elements.Add(new DiagramPointLoad("force-c", new(34, top + 60), DiagramDirection.Left, 30));
+                elements.Add(new DiagramPointLoad("force-c", new(16, top + 60), DiagramDirection.Left, 40, Symbol: outer, LabelAt: new(36, top + 84)));
 
             elements.AddRange(
             [
@@ -91,7 +94,8 @@ public static class CalculationDiagrams
         return new(BoltShearCapacityCalculationDefinition.Id,
         [
             Variant("Double shear: the bolt through three plates, two shear planes", new Dictionary<string, string> { ["ShearPlanes"] = "2" }, doubleShear: true),
-            Variant("Single shear: the bolt through two plates, one shear plane", Always, doubleShear: false),
+            Variant("Single shear: the bolt through two plates, one shear plane", new Dictionary<string, string> { ["ShearPlanes"] = "1" }, doubleShear: false),
+            Variant("The bolt through lapped plates, drawn with one shear plane; the method takes n as entered (1 for single shear, 2 for double)", Always, doubleShear: false),
         ]);
     }
 
@@ -100,14 +104,14 @@ public static class CalculationDiagrams
         [
             new DiagramVariant("Cantilever with a point load at the free end; rectangular section b by h", Always,
             [
-                new DiagramSupport("wall", new(40, 110), DiagramSupportKind.Fixed, DiagramDirection.Left),
-                new DiagramMember("beam", new(40, 110), new(250, 110), 10),
-                new DiagramPointLoad("load", new(250, 104), DiagramDirection.Down, 44, "AppliedLoad", "P"),
-                new DiagramDimension("length", new(40, 110), new(250, 110), 40, "CantileverLength", "L"),
-                new DiagramLabel("section-note", new(315, 46), Symbol: "Section"),
-                new DiagramPlate("section", 300, 60, 30, 60),
-                new DiagramDimension("width", new(300, 120), new(330, 120), 16, "SectionWidth", "b"),
-                new DiagramDimension("height", new(330, 60), new(330, 120), 12, "SectionHeight", "h", new(360, 90)),
+                new DiagramSupport("wall", new(36, 110), DiagramSupportKind.Fixed, DiagramDirection.Left),
+                new DiagramMember("beam", new(36, 110), new(210, 110), 10),
+                new DiagramPointLoad("load", new(210, 104), DiagramDirection.Down, 34, "AppliedLoad", "P"),
+                new DiagramDimension("length", new(36, 110), new(210, 110), 40, "CantileverLength", "L"),
+                new DiagramLabel("section-note", new(277, 40), Symbol: "Section"),
+                new DiagramPlate("section", 262, 60, 30, 60),
+                new DiagramDimension("width", new(262, 120), new(292, 120), 16, "SectionWidth", "b"),
+                new DiagramDimension("height", new(292, 60), new(292, 120), 12, "SectionHeight", "h", new(350, 90)),
                 new DiagramLabel("allowable", new(145, 212), "AllowableBendingStress", "σ_allow"),
             ]),
         ]);
@@ -120,7 +124,7 @@ public static class CalculationDiagrams
                 new DiagramLabel("front-note", new(160, 30), Symbol: "Front"),
                 new DiagramPlate("plate", 60, 50, 200, 140),
                 new DiagramCircle("hole", new(160, 120), 28, Filled: false, "HoleDiameter"),
-                new DiagramDimension("hole-diameter", new(132, 120), new(188, 120), -48, "HoleDiameter", "d"),
+                new DiagramDimension("hole-diameter", new(132, 120), new(188, 120), -48, "HoleDiameter", "d", new(228, 72)),
                 new DiagramLabel("side-note", new(320, 30), Symbol: "Side"),
                 new DiagramPlate("plate-side", 310, 50, 20, 140, "PlateThickness"),
                 new DiagramDimension("thickness", new(310, 190), new(330, 190), 12, "PlateThickness", "t"),
@@ -134,15 +138,15 @@ public static class CalculationDiagrams
         [
             new DiagramVariant("A thin-walled cylinder in section under internal pressure", Always,
             [
-                new DiagramLabel("section-note", new(130, 20), Symbol: "Shell section"),
-                new DiagramCircle("shell", new(130, 120), 84, Filled: false),
-                new DiagramPointLoad("pressure-up", new(130, 52), DiagramDirection.Up, 34, "InternalPressure", "P", new(158, 70)),
-                new DiagramPointLoad("pressure-left", new(62, 120), DiagramDirection.Left, 34, "InternalPressure"),
-                new DiagramPointLoad("pressure-right", new(198, 120), DiagramDirection.Right, 34, "InternalPressure"),
-                new DiagramDimension("radius", new(130, 120), new(130, 204), 0, "InnerRadius", "R", new(176, 166)),
-                new DiagramLabel("allowable", new(310, 90), "AllowableStress", "S"),
-                new DiagramLabel("joint-efficiency", new(310, 120), "JointEfficiency", "E"),
-                new DiagramLabel("safety-factor", new(310, 150), "SafetyFactor", "SF"),
+                new DiagramLabel("section-note", new(120, 26), Symbol: "Shell section"),
+                new DiagramCircle("shell", new(120, 124), 80, Filled: false),
+                new DiagramPointLoad("pressure-up", new(120, 46), DiagramDirection.Up, 34, "InternalPressure", "P", new(120, 100)),
+                new DiagramPointLoad("pressure-left", new(42, 124), DiagramDirection.Left, 34, "InternalPressure"),
+                new DiagramPointLoad("pressure-right", new(198, 124), DiagramDirection.Right, 34, "InternalPressure"),
+                new DiagramDimension("radius", new(120, 124), new(63.4, 180.6), 0, "InnerRadius", "R", new(146, 162)),
+                new DiagramLabel("allowable", new(305, 94), "AllowableStress", "S"),
+                new DiagramLabel("joint-efficiency", new(305, 124), "JointEfficiency", "E"),
+                new DiagramLabel("safety-factor", new(305, 154), "SafetyFactor", "SF"),
             ]),
         ]);
 
@@ -231,59 +235,102 @@ public static class CalculationDiagrams
             ]),
         ]);
 
-    private static CalculationDiagramSpec ThermalExpansion() =>
-        new(ThermalExpansionStressCalculationDefinition.Id,
-        [
-            new DiagramVariant("A bar fixed at one end, a gap, then an elastic restraint", Always,
-            [
+    private static CalculationDiagramSpec ThermalExpansion()
+    {
+        static DiagramVariant Variant(string caption, IReadOnlyDictionary<string, string> when, bool elastic)
+        {
+            var elements = new List<DiagramElement>
+            {
                 new DiagramSupport("wall", new(40, 110), DiagramSupportKind.Fixed, DiagramDirection.Left),
                 new DiagramMember("bar", new(40, 110), new(260, 110), 14, "Area", "A", new(150, 86)),
                 new DiagramLabel("temperature", new(150, 50), "TemperatureChange", "ΔT"),
                 new DiagramDimension("length", new(40, 110), new(260, 110), 40, "Length", "L"),
-                new DiagramDimension("gap", new(260, 110), new(290, 110), 40, "Gap", "g", new(285, 162)),
-                new DiagramSpring("restraint", new(290, 110), new(350, 110), "RestraintStiffness", "k_s", new(312, 76)),
-                new DiagramSupport("restraint-wall", new(350, 110), DiagramSupportKind.Fixed, DiagramDirection.Right),
+                new DiagramDimension("gap", new(260, 110), new(290, 110), 40, "Gap", "g", new(312, 162)),
+            };
+            if (elastic)
+            {
+                elements.Add(new DiagramSpring("restraint", new(290, 110), new(350, 110), "RestraintStiffness", "k_s", new(318, 76)));
+                elements.Add(new DiagramSupport("restraint-wall", new(350, 110), DiagramSupportKind.Fixed, DiagramDirection.Right, "RestraintStiffness"));
+            }
+            else
+            {
+                elements.Add(new DiagramSupport("restraint-wall", new(290, 110), DiagramSupportKind.Fixed, DiagramDirection.Right, "RestraintStiffness", "k_s", new(318, 76)));
+                elements.Add(new DiagramLabel("rigid-note", new(332, 110), Symbol: "rigid"));
+            }
+
+            elements.AddRange(
+            [
                 new DiagramLabel("modulus", new(75, 206), "YoungsModulus", "E"),
                 new DiagramLabel("expansion", new(200, 206), "ExpansionCoefficient", "α"),
                 new DiagramLabel("allowable", new(325, 206), "AllowableStress", "σ_allow"),
-            ]),
-        ]);
+            ]);
+            return new DiagramVariant(caption, when, elements);
+        }
 
-    private static CalculationDiagramSpec PlaneWall() =>
-        new(PlaneWallHeatTransferCalculationDefinition.Id,
+        return new(ThermalExpansionStressCalculationDefinition.Id,
         [
-            new DiagramVariant("A composite plane wall, hot side left: a fluid film, the layers as listed (three drawn), a film on the cold side", Always,
-            [
+            Variant("A bar fixed at one end, a gap, then a rigid restraint (no stiffness given)", new Dictionary<string, string> { ["RestraintStiffness"] = "" }, elastic: false),
+            Variant("A bar fixed at one end, a gap, then an elastic restraint of stiffness k_s", Always, elastic: true),
+        ]);
+    }
+
+    private static CalculationDiagramSpec PlaneWall()
+    {
+        // A film is drawn on a side only where its coefficient is given; without one, the temperature is the wall face's own.
+        static DiagramVariant Variant(string caption, IReadOnlyDictionary<string, string> when, bool hotFilm, bool coldFilm)
+        {
+            var elements = new List<DiagramElement>
+            {
                 new DiagramLabel("layers-note", new(200, 22), Symbol: "t, k per layer"),
                 new DiagramDimension("thickness", new(150, 50), new(250, 50), -14, "Layers"),
                 new DiagramPlate("layer-1", 150, 50, 34, 130, "Layers", "Layers", new(200, 198)),
                 new DiagramPlate("layer-2", 184, 50, 33, 130, "Layers"),
                 new DiagramPlate("layer-3", 217, 50, 33, 130, "Layers"),
-                new DiagramLabel("hot-temperature", new(75, 70), "HotSideTemperature", "T_1"),
-                new DiagramLabel("hot-film", new(75, 104), "HotSideFilmCoefficient", "h_1"),
-                new DiagramPointLoad("hot-convection", new(146, 140), DiagramDirection.Right, 40, "HotSideFilmCoefficient"),
-                new DiagramLabel("cold-temperature", new(325, 70), "ColdSideTemperature", "T_2"),
-                new DiagramLabel("cold-film", new(325, 104), "ColdSideFilmCoefficient", "h_2"),
-                new DiagramPointLoad("cold-convection", new(294, 140), DiagramDirection.Right, 40, "ColdSideFilmCoefficient"),
+                new DiagramLabel("hot-temperature", new(75, 70), "HotSideTemperature", "T₁"),
+                new DiagramLabel("hot-film", new(75, 104), "HotSideFilmCoefficient", "h₁"),
+                new DiagramLabel("cold-temperature", new(325, 70), "ColdSideTemperature", "T₂"),
+                new DiagramLabel("cold-film", new(325, 104), "ColdSideFilmCoefficient", "h₂"),
                 new DiagramLabel("area", new(200, 222), "Area", "A"),
-            ]),
+            };
+            if (hotFilm)
+                elements.Add(new DiagramPointLoad("hot-convection", new(146, 140), DiagramDirection.Right, 40, "HotSideFilmCoefficient"));
+            else
+                elements.Add(new DiagramPolyline("hot-face", [new(100, 86), new(146, 86)], Dashed: true, Thickness: 1, InputName: "HotSideTemperature"));
+            if (coldFilm)
+                elements.Add(new DiagramPointLoad("cold-convection", new(294, 140), DiagramDirection.Right, 40, "ColdSideFilmCoefficient"));
+            else
+                elements.Add(new DiagramPolyline("cold-face", [new(254, 86), new(300, 86)], Dashed: true, Thickness: 1, InputName: "ColdSideTemperature"));
+            return new DiagramVariant(caption, when, elements);
+        }
+
+        const string Layers = "the layers as listed (three drawn)";
+        var noHot = new Dictionary<string, string> { ["HotSideFilmCoefficient"] = "" };
+        var noCold = new Dictionary<string, string> { ["ColdSideFilmCoefficient"] = "" };
+        var neither = new Dictionary<string, string> { ["HotSideFilmCoefficient"] = "", ["ColdSideFilmCoefficient"] = "" };
+        return new(PlaneWallHeatTransferCalculationDefinition.Id,
+        [
+            Variant($"A composite plane wall, hot side left: {Layers}; no films, T₁ and T₂ at the wall faces", neither, hotFilm: false, coldFilm: false),
+            Variant($"A composite plane wall, hot side left: T₁ at the hot face, {Layers}, a film on the cold side", noHot, hotFilm: false, coldFilm: true),
+            Variant($"A composite plane wall, hot side left: a fluid film, {Layers}, T₂ at the cold face", noCold, hotFilm: true, coldFilm: false),
+            Variant($"A composite plane wall, hot side left: a fluid film, {Layers}, a film on the cold side", Always, hotFilm: true, coldFilm: true),
         ]);
+    }
 
     private static CalculationDiagramSpec ThermalResistanceChain() =>
         new(ThermalResistanceChainCalculationDefinition.Id,
         [
             new DiagramVariant("Thermal resistances in series from the source to ambient, hottest first (three drawn; the stages as listed)", Always,
             [
-                new DiagramPointLoad("power", new(60, 94), DiagramDirection.Down, 40, "PowerDissipation", "P"),
-                new DiagramSpring("stage-1", new(60, 100), new(140, 100), "Stages"),
-                new DiagramSpring("stage-2", new(140, 100), new(220, 100), "Stages", "R stages", new(180, 70)),
-                new DiagramSpring("stage-3", new(220, 100), new(300, 100), "Stages"),
-                new DiagramCircle("source", new(60, 100), 6, Filled: true, "MaximumSourceTemperature", "T_max", new(60, 128)),
-                new DiagramCircle("node-1", new(140, 100), 4, Filled: true),
-                new DiagramCircle("node-2", new(220, 100), 4, Filled: true),
-                new DiagramCircle("ambient", new(300, 100), 6, Filled: true, "AmbientTemperature", "T_a", new(300, 128)),
-                new DiagramLabel("source-note", new(60, 152), Symbol: "source"),
-                new DiagramLabel("ambient-note", new(300, 152), Symbol: "ambient"),
+                new DiagramPointLoad("power", new(76, 94), DiagramDirection.Down, 40, "PowerDissipation", "P"),
+                new DiagramSpring("stage-1", new(76, 100), new(150, 100), "Stages"),
+                new DiagramSpring("stage-2", new(150, 100), new(224, 100), "Stages", "R stages", new(187, 70)),
+                new DiagramSpring("stage-3", new(224, 100), new(298, 100), "Stages"),
+                new DiagramCircle("source", new(76, 100), 6, Filled: true, "MaximumSourceTemperature", "T_max", new(76, 128), Solid: true),
+                new DiagramCircle("node-1", new(150, 100), 4, Filled: true, Solid: true),
+                new DiagramCircle("node-2", new(224, 100), 4, Filled: true, Solid: true),
+                new DiagramCircle("ambient", new(298, 100), 6, Filled: true, "AmbientTemperature", "T_a", new(298, 128), Solid: true),
+                new DiagramLabel("source-note", new(76, 152), Symbol: "source"),
+                new DiagramLabel("ambient-note", new(298, 152), Symbol: "ambient"),
             ]),
         ]);
 
@@ -322,18 +369,18 @@ public static class CalculationDiagrams
                 new DiagramMember("y-axis", new(40, 200), new(40, 40), 1),
                 new DiagramLabel("y-note", new(40, 30), Symbol: "y"),
                 new DiagramPlate("plate", 70, 40, 130, 132),
-                new DiagramCircle("bolt-1", new(100, 62), 8, Filled: true, "Bolts"),
-                new DiagramCircle("bolt-2", new(170, 62), 8, Filled: true, "Bolts"),
-                new DiagramCircle("bolt-3", new(100, 106), 8, Filled: true, "Bolts"),
-                new DiagramCircle("bolt-4", new(170, 106), 8, Filled: true, "Bolts", "Bolts", new(135, 26)),
-                new DiagramCircle("bolt-5", new(100, 150), 8, Filled: true, "Bolts"),
-                new DiagramCircle("bolt-6", new(170, 150), 8, Filled: true, "Bolts"),
-                new DiagramCircle("centroid", new(135, 106), 3, Filled: true, Symbol: "c.g.", LabelAt: new(135, 124)),
-                new DiagramDimension("load-point-y", new(320, 200), new(320, 80), 0, "LoadPointY", "y_P", new(268, 150)),
-                new DiagramDimension("load-point-x", new(40, 200), new(320, 200), 18, "LoadPointX", "x_P"),
-                new DiagramCircle("load-point", new(320, 80), 4, Filled: true, "LoadPointX"),
-                new DiagramPointLoad("load-y", new(320, 36), DiagramDirection.Up, 44, "LoadY", "F_y", new(320, 24)),
-                new DiagramPointLoad("load-x", new(372, 80), DiagramDirection.Right, 52, "LoadX", "F_x", new(362, 98)),
+                new DiagramCircle("bolt-1", new(100, 62), 8, Filled: true, "Bolts", Solid: true),
+                new DiagramCircle("bolt-2", new(170, 62), 8, Filled: true, "Bolts", Solid: true),
+                new DiagramCircle("bolt-3", new(100, 106), 8, Filled: true, "Bolts", Solid: true),
+                new DiagramCircle("bolt-4", new(170, 106), 8, Filled: true, "Bolts", "Bolts", new(135, 26), Solid: true),
+                new DiagramCircle("bolt-5", new(100, 150), 8, Filled: true, "Bolts", Solid: true),
+                new DiagramCircle("bolt-6", new(170, 150), 8, Filled: true, "Bolts", Solid: true),
+                new DiagramCircle("centroid", new(135, 106), 3, Filled: true, Symbol: "c.g.", LabelAt: new(135, 124), Solid: true),
+                new DiagramDimension("load-point-y", new(290, 200), new(290, 80), 0, "LoadPointY", "y_P", new(340, 150)),
+                new DiagramDimension("load-point-x", new(40, 200), new(290, 200), 18, "LoadPointX", "x_P"),
+                new DiagramCircle("load-point", new(290, 80), 4, Filled: true, "LoadPointX", Solid: true),
+                new DiagramPointLoad("load-y", new(290, 36), DiagramDirection.Up, 44, "LoadY", "F_y", new(290, 24)),
+                new DiagramPointLoad("load-x", new(342, 80), DiagramDirection.Right, 52, "LoadX", "F_x", new(344, 96)),
                 new DiagramLabel("allowable", new(135, 188), "AllowableShearPerBolt", "V_allow"),
             ]),
         ]);
@@ -369,21 +416,21 @@ public static class CalculationDiagrams
         [
             new DiagramVariant("A lug and its pin, front view and section through the pin: the lug between two cheek plates, the load through the pin", Always,
             [
-                new DiagramPlate("lug", 55, 44, 90, 120, "LugWidth"),
-                new DiagramCircle("hole", new(100, 86), 20, Filled: false, "HoleDiameter"),
-                new DiagramCircle("pin", new(100, 86), 17, Filled: true, "PinDiameter"),
-                new DiagramPointLoad("load", new(100, 12), DiagramDirection.Up, 30, "Load", "P", new(48, 24)),
-                new DiagramDimension("edge-distance", new(100, 44), new(100, 66), 60, "EdgeDistance", "a"),
-                new DiagramDimension("hole-diameter", new(80, 86), new(120, 86), 30, "HoleDiameter", "d_h"),
-                new DiagramDimension("width", new(55, 164), new(145, 164), 12, "LugWidth", "W"),
-                new DiagramPlate("cheek-left", 250, 30, 10, 80, "CheekPlateThickness"),
-                new DiagramPlate("cheek-right", 306, 30, 10, 80, "CheekPlateThickness"),
-                new DiagramPlate("lug-section", 270, 64, 26, 100, "LugThickness"),
-                new DiagramMember("pin-section", new(240, 86), new(326, 86), 16, "PinDiameter"),
-                new DiagramDimension("thickness", new(270, 164), new(296, 164), 12, "LugThickness", "t"),
-                new DiagramDimension("cheek-thickness", new(306, 30), new(316, 30), -10, "CheekPlateThickness", "t_s", new(360, 20)),
-                new DiagramDimension("clearance", new(260, 110), new(270, 110), 14, "Clearance", "g", new(226, 124)),
-                new DiagramDimension("pin-diameter", new(326, 78), new(326, 94), 14, "PinDiameter", "d_p", new(358, 110)),
+                new DiagramPlate("lug", 40, 44, 90, 120, "LugWidth"),
+                new DiagramCircle("hole", new(85, 86), 20, Filled: false, "HoleDiameter"),
+                new DiagramCircle("pin", new(85, 86), 16, Filled: true, "PinDiameter", Solid: true),
+                new DiagramPointLoad("load", new(85, 12), DiagramDirection.Up, 30, "Load", "P", new(130, 22)),
+                new DiagramDimension("edge-distance", new(85, 44), new(85, 66), 60, "EdgeDistance", "a"),
+                new DiagramDimension("hole-diameter", new(65, 86), new(105, 86), 30, "HoleDiameter", "d_h"),
+                new DiagramDimension("width", new(40, 164), new(130, 164), 12, "LugWidth", "W"),
+                new DiagramPlate("cheek-left", 240, 30, 10, 80, "CheekPlateThickness"),
+                new DiagramPlate("cheek-right", 296, 30, 10, 80, "CheekPlateThickness"),
+                new DiagramPlate("lug-section", 260, 64, 26, 100, "LugThickness"),
+                new DiagramMember("pin-section", new(230, 86), new(316, 86), 16, "PinDiameter"),
+                new DiagramDimension("thickness", new(260, 164), new(286, 164), 12, "LugThickness", "t"),
+                new DiagramDimension("cheek-thickness", new(296, 30), new(306, 30), -10, "CheekPlateThickness", "t_s", new(330, 8)),
+                new DiagramDimension("clearance", new(250, 110), new(260, 110), 14, "Clearance", "g", new(204, 124)),
+                new DiagramDimension("pin-diameter", new(316, 78), new(316, 94), 14, "PinDiameter", "d_p", new(346, 124)),
                 new DiagramLabel("allowable-tension", new(70, 210), "AllowableTensileStress", "S_t"),
                 new DiagramLabel("allowable-bearing", new(200, 210), "AllowableBearingStress", "S_br"),
                 new DiagramLabel("allowable-shear", new(330, 210), "AllowableShearStress", "S_v"),
@@ -399,14 +446,14 @@ public static class CalculationDiagrams
             var elements = new List<DiagramElement>
             {
                 new DiagramCircle("wall", new(130, 120), 90, Filled: true, "OuterRadius"),
-                new DiagramCircle("bore", new(130, 120), 56, Filled: false, "InnerRadius"),
-                new DiagramPointLoad("internal-up", new(130, 64), DiagramDirection.Up, 24, "InternalPressure", "p_i", new(130, 53)),
-                new DiagramPointLoad("internal-left", new(74, 120), DiagramDirection.Left, 24, "InternalPressure"),
+                new DiagramCircle("bore", new(130, 120), 60, Filled: false, "InnerRadius"),
+                new DiagramPointLoad("internal-up", new(130, 60), DiagramDirection.Up, 24, "InternalPressure", "p_i", new(130, 98)),
+                new DiagramPointLoad("internal-left", new(70, 120), DiagramDirection.Left, 24, "InternalPressure"),
                 new DiagramPointLoad("external-top", new(130, 30), DiagramDirection.Down, 26, "ExternalPressure", "p_o", new(205, 20)),
                 new DiagramPointLoad("external-left", new(40, 120), DiagramDirection.Right, 28, "ExternalPressure"),
                 new DiagramPointLoad("external-right", new(220, 120), DiagramDirection.Left, 28, "ExternalPressure"),
-                new DiagramDimension("inner-radius", new(130, 120), new(186, 120), 0, "InnerRadius", "a", new(130, 146)),
-                new DiagramDimension("outer-radius", new(130, 120), new(66.4, 56.4), 0, "OuterRadius", "b", new(40, 36)),
+                new DiagramDimension("inner-radius", new(130, 120), new(190, 120), 0, "InnerRadius", "a", new(150, 140)),
+                new DiagramDimension("outer-radius", new(130, 120), new(66.4, 183.6), 0, "OuterRadius", "b", new(46, 222)),
                 new DiagramLabel("side-note", new(330, 50), Symbol: "Side"),
                 new DiagramPlate("side-wall-top", 290, 70, 80, 12),
                 new DiagramPlate("side-wall-bottom", 290, 158, 80, 12),
@@ -451,7 +498,7 @@ public static class CalculationDiagrams
                 new DiagramMember("model-top", new(232, 70), new(372, 70), 4),
                 new DiagramMember("model-bottom", new(232, 160), new(372, 160), 4),
                 new DiagramSpring("bolt-spring", new(256, 70), new(256, 160), "BoltStiffness", "k_b", new(262, 52)),
-                new DiagramSpring("member-spring", new(346, 70), new(346, 160), "MemberStiffness", "k_m", new(338, 180)),
+                new DiagramSpring("member-spring", new(346, 70), new(346, 160), "MemberStiffness", "k_m", new(330, 180)),
                 new DiagramLabel("stress-area", new(110, 214), "TensileStressArea", "A_t"),
                 new DiagramLabel("proof-strength", new(290, 214), "ProofStrength", "S_p"),
             ]),
@@ -478,8 +525,8 @@ public static class CalculationDiagrams
             }
             else
             {
-                elements.Add(new DiagramCircle("element-top", new(150, 82), 12, Filled: true, "BearingType", "type", new(226, 74)));
-                elements.Add(new DiagramCircle("element-bottom", new(150, 168), 12, Filled: true, "BearingType"));
+                elements.Add(new DiagramCircle("element-top", new(150, 82), 12, Filled: true, "BearingType", "type", new(226, 74), Solid: true));
+                elements.Add(new DiagramCircle("element-bottom", new(150, 168), 12, Filled: true, "BearingType", Solid: true));
             }
 
             elements.AddRange(
@@ -487,11 +534,11 @@ public static class CalculationDiagrams
                 new DiagramPointLoad("radial-load", new(150, 52), DiagramDirection.Down, 30, "RadialLoad", "F_r"),
                 new DiagramPointLoad("axial-load", new(50, 125), DiagramDirection.Right, 36, "AxialLoad", "F_a", new(62, 96)),
                 new DiagramMoment("speed", new(246, 125), 16, Clockwise: true, "Speed", "n", new(246, 160)),
-                new DiagramLabel("rating", new(340, 36), "BasicDynamicLoadRating", "C"),
-                new DiagramLabel("radial-factor", new(340, 60), "RadialFactor", "X"),
-                new DiagramLabel("axial-factor", new(340, 84), "AxialFactor", "Y"),
-                new DiagramLabel("reliability", new(340, 108), "ReliabilityFactor", "a1"),
-                new DiagramLabel("required-life", new(340, 132), "RequiredLife", "L_req"),
+                new DiagramLabel("rating", new(336, 36), "BasicDynamicLoadRating", "C"),
+                new DiagramLabel("radial-factor", new(336, 60), "RadialFactor", "X"),
+                new DiagramLabel("axial-factor", new(336, 84), "AxialFactor", "Y"),
+                new DiagramLabel("reliability", new(336, 108), "ReliabilityFactor", "a1"),
+                new DiagramLabel("required-life", new(336, 132), "RequiredLife", "L_req"),
             ]);
             return new DiagramVariant(caption, new Dictionary<string, string> { ["BearingType"] = type }, elements);
         }
@@ -509,18 +556,18 @@ public static class CalculationDiagrams
             new DiagramVariant("A single-slope S-N line on log axes through its reference point, the endurance limit as a cut-off, and the loading blocks as listed (three drawn, representatively)", Always,
             [
                 new DiagramAxes("axes", new(60, 200), 380, 22),
-                new DiagramLabel("y-title", new(96, 24), Symbol: "log Δσ"),
+                new DiagramLabel("y-title", new(96, 30), Symbol: "log Δσ"),
                 new DiagramLabel("x-title", new(362, 214), Symbol: "log N"),
-                new DiagramLabel("curve-reference", new(250, 14), "CurveReference", "curve"),
+                new DiagramLabel("curve-reference", new(200, 10), "CurveReference", "curve"),
                 new DiagramPolyline("sn-line", [new(70, 40), new(320, 165)], InputName: "Slope"),
                 new DiagramPolyline("slope-triangle", [new(230, 120), new(270, 120), new(270, 140)], Thickness: 1.2, InputName: "Slope", Symbol: "m", LabelAt: new(290, 112)),
-                new DiagramPolyline("reference-range", [new(60, 95), new(180, 95)], Dashed: true, Thickness: 1, InputName: "ReferenceStressRange", Symbol: "Δσ_C", LabelAt: new(112, 107)),
-                new DiagramPolyline("reference-cycles", [new(180, 95), new(180, 200)], Dashed: true, Thickness: 1, InputName: "ReferenceCycles", Symbol: "N_C", LabelAt: new(180, 214)),
-                new DiagramCircle("reference-point", new(180, 95), 4, Filled: true, "ReferenceStressRange"),
+                new DiagramPolyline("reference-range", [new(60, 105), new(200, 105)], Dashed: true, Thickness: 1, InputName: "ReferenceStressRange", Symbol: "Δσ_C", LabelAt: new(125, 117)),
+                new DiagramPolyline("reference-cycles", [new(200, 105), new(200, 200)], Dashed: true, Thickness: 1, InputName: "ReferenceCycles", Symbol: "N_C", LabelAt: new(200, 214)),
+                new DiagramCircle("reference-point", new(200, 105), 4, Filled: true, "ReferenceStressRange", Solid: true),
                 new DiagramPolyline("endurance-limit", [new(320, 165), new(370, 165)], Dashed: true, InputName: "EnduranceLimit", Symbol: "Δσ_L", LabelAt: new(330, 180)),
-                new DiagramCircle("block-1", new(100, 150), 4, Filled: true, "Blocks"),
-                new DiagramCircle("block-2", new(135, 165), 4, Filled: true, "Blocks"),
-                new DiagramCircle("block-3", new(160, 182), 4, Filled: true, "Blocks", "blocks", new(119, 135)),
+                new DiagramCircle("block-1", new(95, 148), 4, Filled: true, "Blocks", Solid: true),
+                new DiagramCircle("block-2", new(125, 161), 4, Filled: true, "Blocks", Solid: true),
+                new DiagramCircle("block-3", new(155, 174), 4, Filled: true, "Blocks", "blocks", new(130, 190), Solid: true),
             ]),
         ]);
 
