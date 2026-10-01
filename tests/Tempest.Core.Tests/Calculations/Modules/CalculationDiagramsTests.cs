@@ -5,62 +5,33 @@ using Tempest.Core.Calculations.Modules.Diagrams;
 namespace Tempest.Core.Tests.Calculations.Modules;
 
 /// <summary>
-/// The calculator reference diagrams (`PO-2`, work packages A and D1): every
-/// calculation has a diagram or is honestly listed as having none yet, every
-/// shape is bound to an input its calculation really has, every choice the
-/// form offers selects a variant, and a label reads the form as typed —
-/// <c>L = 2000 mm</c>, or <c>L = ?</c> where the value cannot be read.
+/// The calculator reference diagrams (`PO-2`, `ADR-0158`): every
+/// calculation has exactly one diagram — a calculation is not complete
+/// without it (Engineering Principle 33) — every shape is bound to an
+/// input its calculation really has, every choice the form offers selects
+/// a variant, and a label reads the form as typed — <c>L = 2000 mm</c>,
+/// or <c>L = ?</c> where the value cannot be read.
 /// </summary>
 public class CalculationDiagramsTests
 {
-    /// <summary>
-    /// The calculations with no diagram on the day this list was written.
-    /// <see cref="CalculationDiagrams.NoDiagramYet"/> may only shrink from
-    /// this: adding a calculation here is a regression, removing one is a
-    /// diagram delivered (remove it here too).
-    /// </summary>
-    private static readonly string[] NoDiagramCeiling =
-    [
-    ];
-
     public static TheoryData<string> EveryDiagram() => [.. CalculationDiagrams.All.Select(d => d.CalculationId)];
 
     [Fact]
-    public void EveryCalculation_HasADiagram_OrIsOnTheNoDiagramYetList_NeverBoth()
+    public void EveryCalculation_HasExactlyOneReferenceDiagram()
     {
         var drawn = CalculationDiagrams.All.Select(d => d.CalculationId).ToList();
-        var pending = CalculationDiagrams.NoDiagramYet;
+        var duplicated = drawn.GroupBy(id => id, StringComparer.Ordinal).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        Assert.True(duplicated.Count == 0, $"More than one reference diagram for: {string.Join(", ", duplicated)}.");
 
-        Assert.Equal(drawn.Count, drawn.Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(pending.Count, pending.Distinct(StringComparer.Ordinal).Count());
-        Assert.Empty(drawn.Intersect(pending, StringComparer.Ordinal));
+        var missing = CalculationModuleDescriptors.All.Select(d => d.Id).Except(drawn, StringComparer.Ordinal).ToList();
+        Assert.True(
+            missing.Count == 0,
+            $"A calculation is not complete without its reference diagram (Engineering Principle 33, ADR-0158). "
+            + $"Add one to CalculationDiagrams.All for: {string.Join(", ", missing)}.");
 
-        var everyId = CalculationModuleDescriptors.All.Select(d => d.Id).Order(StringComparer.Ordinal).ToList();
-        Assert.Equal(everyId, drawn.Concat(pending).Order(StringComparer.Ordinal).ToList());
-    }
-
-    [Fact]
-    public void TheNoDiagramYetList_OnlyShrinks()
-    {
-        var added = CalculationDiagrams.NoDiagramYet.Except(NoDiagramCeiling, StringComparer.Ordinal).ToList();
-        Assert.True(added.Count == 0, $"Calculations newly listed as having no diagram (draw one instead): {string.Join(", ", added)}.");
-    }
-
-    [Fact]
-    public void TheSimpleDiagrams_AreDrawn()
-    {
-        string[] simple =
-        [
-            BeamBendingStressCalculationDefinition.Id, BeamDeflectionCalculationDefinition.Id, ColumnBucklingCalculationDefinition.Id,
-            BoltShearCapacityCalculationDefinition.Id, BearingLoadCapacityCalculationDefinition.Id, ThermalExpansionStressCalculationDefinition.Id,
-            ShaftCombinedStressCalculationDefinition.Id, PressureVesselWallThicknessCalculationDefinition.Id,
-            PlaneWallHeatTransferCalculationDefinition.Id, ThermalResistanceChainCalculationDefinition.Id, ToleranceStackCalculationDefinition.Id,
-            BoltGroupEccentricShearCalculationDefinition.Id, FilletWeldThroatStressCalculationDefinition.Id, LiftingLugPinJointCalculationDefinition.Id,
-            ThickWalledCylinderCalculationDefinition.Id, BoltedJointPreloadCalculationDefinition.Id,
-        ];
-
-        Assert.All(simple, id => Assert.NotNull(CalculationDiagrams.For(id)));
-        Assert.All(CalculationDiagrams.NoDiagramYet, id => Assert.Null(CalculationDiagrams.For(id)));
+        var orphaned = drawn.Except(CalculationModuleDescriptors.All.Select(d => d.Id), StringComparer.Ordinal).ToList();
+        Assert.True(orphaned.Count == 0, $"Diagrams for no registered calculation: {string.Join(", ", orphaned)}.");
+        Assert.All(CalculationModuleDescriptors.All, d => Assert.NotNull(CalculationDiagrams.For(d.Id)));
     }
 
     [Theory]
@@ -332,7 +303,6 @@ public class CalculationDiagramsTests
     {
         string[] charts = [BearingRatingLifeCalculationDefinition.Id, FatigueMinerCalculationDefinition.Id, MaterialSelectionMarginCalculationDefinition.Id];
         Assert.All(charts, id => Assert.NotNull(CalculationDiagrams.For(id)));
-        Assert.All(charts, id => Assert.DoesNotContain(id, CalculationDiagrams.NoDiagramYet));
 
         // The S-N diagram: axes, the line bound to its slope, the reference point, the cut-off, the blocks drawn representatively.
         var fatigue = CalculationDiagrams.For(FatigueMinerCalculationDefinition.Id)!;

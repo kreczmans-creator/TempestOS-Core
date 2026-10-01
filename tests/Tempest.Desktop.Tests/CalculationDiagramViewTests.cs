@@ -199,7 +199,7 @@ public sealed class CalculationDiagramViewTests
     {
         WithCalculators(ThermalExpansionStressCalculationDefinition.Id, (window, view) =>
         {
-            // A calculation no diagram is declared for (whatever NoDiagramYet holds today).
+            // Every product calculation has a diagram, so the defensive fallback is shown a synthetic descriptor.
             var undrawn = CalculationModuleDescriptors.For(FatigueMinerCalculationDefinition.Id)! with { Id = "calc.not-yet-drawn", Title = "Not yet drawn" };
             Assert.Null(CalculationDiagrams.For(undrawn.Id));
 

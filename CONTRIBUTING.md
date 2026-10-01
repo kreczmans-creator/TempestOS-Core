@@ -42,6 +42,10 @@ Every Work Package still ships with:
 - The architecture invariants (`DependencyDirectionTests`) green.
 - An ADR for any decision that constrains future code.
 - A row in `PHYSICAL_REVIEW.md` §7 for any new user-facing surface.
+- For a new engineering calculation, its 2D reference diagram in
+  `CalculationDiagrams.All` (`ADR-0158`, Engineering Principle 33): a
+  calculation is not complete without one, and the coverage test fails
+  until it is drawn.
 - One Release Notes line.
 
 ## Branch protection on `main`

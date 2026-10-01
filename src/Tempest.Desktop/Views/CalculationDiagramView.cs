@@ -32,9 +32,10 @@ namespace Tempest.Desktop.Views;
 /// the field the shape stands for.
 /// </para>
 /// <para>
-/// <b>Honest where there is nothing to draw.</b> A calculation with no
-/// diagram yet (<see cref="CalculationDiagrams.NoDiagramYet"/>) shows
-/// <see cref="NoDiagramYetText"/>, never a generic picture.
+/// <b>Honest where there is nothing to draw.</b> Every product calculation
+/// has a diagram (Engineering Principle 33); should a descriptor ever reach
+/// this control without one, it shows <see cref="NoDiagramYetText"/>,
+/// never a generic picture.
 /// </para>
 /// <para>
 /// <b>Theme tokens, re-read on every theme change.</b> Ink, plates, loads,

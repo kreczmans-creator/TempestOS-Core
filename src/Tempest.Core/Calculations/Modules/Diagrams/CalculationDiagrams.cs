@@ -1,8 +1,8 @@
 namespace Tempest.Core.Calculations.Modules.Diagrams;
 
 /// <summary>
-/// The reference diagram of every product calculation that has one
-/// (`PO-2`, work packages A and D1): a declarative drawing per calculation,
+/// The reference diagram of every product calculation (`PO-2`, work
+/// packages A, D1, D2 and D3): a declarative drawing per calculation,
 /// every shape bound to the input it stands for, drawn by one Desktop
 /// control and never to scale.
 /// </summary>
@@ -13,28 +13,19 @@ namespace Tempest.Core.Calculations.Modules.Diagrams;
 /// no stress marker. The Product Owner's own decision (2026-10-01).
 /// </para>
 /// <para>
-/// <b>Kept honest by a test.</b> Every calculation in
-/// <see cref="CalculationModuleDescriptors.All"/> either has a diagram here
-/// or is named in <see cref="NoDiagramYet"/>, a list that may only shrink;
-/// every input a shape is bound to, or a variant is selected by, is an
-/// input its descriptor really has, and a choice condition names one of
-/// the choice's own members.
+/// <b>A calculation is complete only with its diagram</b> (the Product
+/// Owner's rule of 2026-10-01, Engineering Principle 33). A test requires
+/// every calculation in <see cref="CalculationModuleDescriptors.All"/> to
+/// have exactly one diagram here; every input a shape is bound to, or a
+/// variant is selected by, to be an input its descriptor really has; and
+/// a choice condition to name one of the choice's own members.
 /// </para>
 /// </remarks>
 public static class CalculationDiagrams
 {
     private static readonly IReadOnlyDictionary<string, string> Always = new Dictionary<string, string>();
 
-    /// <summary>
-    /// The calculations drawn as "No diagram yet": the harder geometry
-    /// (`PO-2` D2) and the calculations better shown as a chart (D3). This
-    /// list only shrinks: a calculation leaves it when its diagram is added.
-    /// </summary>
-    public static IReadOnlyList<string> NoDiagramYet { get; } =
-    [
-    ];
-
-    /// <summary>Every diagram, one per calculation that has one.</summary>
+    /// <summary>Every diagram, exactly one per calculation.</summary>
     public static IReadOnlyList<CalculationDiagramSpec> All { get; } =
     [
         BoltShear(),
@@ -58,7 +49,7 @@ public static class CalculationDiagrams
         MaterialSelectionMargin(),
     ];
 
-    /// <summary>The diagram of <paramref name="calculationId"/>, or <see langword="null"/> where it has none yet.</summary>
+    /// <summary>The diagram of <paramref name="calculationId"/>, or <see langword="null"/> for an id no product calculation has.</summary>
     public static CalculationDiagramSpec? For(string calculationId) =>
         All.FirstOrDefault(d => string.Equals(d.CalculationId, calculationId, StringComparison.Ordinal));
 

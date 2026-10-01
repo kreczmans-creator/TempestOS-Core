@@ -205,6 +205,15 @@ stays in the workspace because the *Libraries* tab is where all five
 reference libraries are reviewed and released — what evidence cites. See
 `59-evidence.md` for what was built instead.
 
+## A calculation is drawn before it is done
+
+`PO-2` (`ADR-0158`) gave every calculator a 2D reference diagram beside
+its inputs: declared per calculation in Core, drawn by one Desktop
+control, not to scale, inputs only, each shape lit with its field. The
+Product Owner then made it a rule (Engineering Principle 33): a
+calculation is complete only with its diagram. There is no "no diagram
+yet" list; a calculation registered without one fails the coverage test.
+
 ## What was deliberately not built
 
 `ADR-0143` refuses a generic property-resolution layer, a

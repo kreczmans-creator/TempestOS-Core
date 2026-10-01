@@ -3,7 +3,7 @@
 ## Status
 
 Accepted — Product Owner feedback `PO-2` (2026-10-01), work packages A, B,
-C and D1 of the scope recorded in
+C, D1, D2 and D3 of the scope recorded in
 `docs/reviews/RC PO Feedback Actions (2026-10-01).md`.
 
 ## Context
@@ -42,25 +42,27 @@ beside the inputs, redraws it on every field change, highlights a
 field's shapes on focus, and marks or focuses a field when its shape is
 pointed at or clicked.
 
-**4. Coverage is enforced, and only shrinks.** A Core test requires every
-calculation in `CalculationModuleDescriptors.All` to have a diagram or
-sit on `CalculationDiagrams.NoDiagramYet`, every bound input to exist on
-its descriptor, every choice condition to name a member, and every
-choice combination to select a variant. The list starts with the eight
-D2/D3 calculations (bolt group, lug, fillet weld, thick cylinder,
-bolted-joint preload, bearing life, Miner, material margin); it may not
-grow.
+**4. A calculation is complete only with its diagram.** The Product
+Owner's rule (2026-10-01): "for future calculations the 2D diagram will
+be a necessary item to consider it complete" (Engineering Principle 33).
+A Core test requires every calculation in
+`CalculationModuleDescriptors.All` to have exactly one diagram in
+`CalculationDiagrams.All`, every bound input to exist on its descriptor,
+every choice condition to name a member, and every choice combination to
+select a variant. There is no "no diagram yet" list to join; the view's
+"No diagram yet" text survives only as a defensive fallback.
 
 ## Consequences
 
-- Eleven calculations are drawn (both beams, column, bolt shear, bearing
-  at a hole, thermal expansion, shaft, thin-wall vessel, plane wall,
-  thermal resistance chain, tolerance stack).
+- All nineteen calculations are drawn: eleven simple ones (both beams,
+  column, bolt shear, bearing at a hole, thermal expansion, shaft,
+  thin-wall vessel, plane wall, thermal resistance chain, tolerance
+  stack), the five D2 geometries and the three D3 charts below.
 - A row-list input (layers, stages, contributors) is drawn
   representatively — three layers, three stages, two parts — and its
   label says how many rows the form lists (`Layers = 2 rows`).
-- A new calculation must either ship a diagram or join the list — the
-  test names it either way.
+- A new calculation ships with its diagram or the build is red; the
+  test's message says the calculation is not complete without it.
 - The D2 geometry is drawn too: the bolt group (six bolts drawn, the
   load at its point from one origin), the fillet weld (plan and
   section), the lifting lug (front and through the pin), the thick

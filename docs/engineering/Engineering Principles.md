@@ -42,6 +42,11 @@ further principles (29-32, below) derived from what
 Engineering Foundation framework, built directly on the Engineering
 Foundation programme this document already covers in full.
 
+Extended by the Product Owner's rule of 2026-10-01 (`PO-2`, `ADR-0158`),
+adding one further principle (33, below) derived from what
+`Tempest.Core.Calculations.Modules.Diagrams` actually enforces — the
+first principle about how a calculation is presented to the engineer.
+
 ## Purpose
 
 Every future Engineering Foundation framework (`FCR-0030`–`FCR-0033`)
@@ -438,6 +443,21 @@ finding at the level of real, shipped code: a "digital thread" is a name
 for composing existing reads, never a new capability requiring its own
 implementation.
 
+## Engineering Calculators Extension (`PO-2`)
+
+### 33. A calculation is complete only with its reference diagram
+
+The Product Owner's rule (2026-10-01): "for future calculations the 2D
+diagram will be a necessary item to consider it complete." Every
+calculation in `CalculationModuleDescriptors.All` has exactly one
+`CalculationDiagramSpec` in `CalculationDiagrams.All` — not to scale,
+inputs only, every shape bound to the input it stands for — and there is
+no list of calculations excused from it. This is enforced structurally:
+`EveryCalculation_HasExactlyOneReferenceDiagram` fails the build for a
+calculation registered without one, its message telling the author the
+calculation is not complete without its reference diagram. A form an
+engineer cannot picture is a form an engineer can fill in wrongly.
+
 ## What This Document Does Not Cover
 
 - **Discipline-specific engineering principles** (a structural
@@ -473,7 +493,7 @@ them.
 `docs/academy/06 Engineering Standards/Engineering Governance.md`;
 `VISION.md`; `docs/releases/FOUNDATION.md`; `docs/governance/Future
 Capability Register.md`; `ADR-0053`; `ADR-0054`; `ADR-0055`; `ADR-0056`;
-`ADR-0057`; `ADR-0058`; `ADR-0059`; `ADR-0060`; `ADR-0061`;
+`ADR-0057`; `ADR-0058`; `ADR-0059`; `ADR-0060`; `ADR-0061`; `ADR-0158`;
 `docs/academy/03 Work Packages/WP7.1A-engineering-data-model-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1B-units-and-quantities-framework-implementation.md`;
 `docs/academy/03 Work Packages/WP7.1C-materials-framework-implementation.md`;
