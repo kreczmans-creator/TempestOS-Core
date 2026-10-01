@@ -209,12 +209,18 @@ public class ReviewQueueExportAdapterTests
         var (host, manager) = await DashboardExportTestHost.StartAsync(temp.Path);
         var documents = new DocumentObjectFactoryRegistry(DashboardExportTestHost.Domain(host));
 
-        var ids = new List<Guid>();
+        // Created in identifier order but submitted out of it (3, 1, 2), so
+        // the expected order can only come from submission time — an
+        // identifier or creation-order sort would give 1, 2, 3 (board N5).
+        var created = new Dictionary<int, IEngineeringObject>();
         foreach (var n in new[] { 1, 2, 3 })
+            created[n] = await documents.CreateAsync(DocumentObjectFactoryRegistry.Document, $"DOC-{n}", $"Document {n}", "content", parentId: null);
+
+        var ids = new List<Guid>();
+        foreach (var n in new[] { 3, 1, 2 })
         {
-            var document = await documents.CreateAsync(DocumentObjectFactoryRegistry.Document, $"DOC-{n}", $"Document {n}", "content", parentId: null);
-            await ((IHasLifecycle)document).TransitionAsync(LifecycleState.InReview);
-            ids.Add(document.Id);
+            await ((IHasLifecycle)created[n]).TransitionAsync(LifecycleState.InReview);
+            ids.Add(created[n].Id);
         }
 
         var now = DateTimeOffset.UtcNow.AddDays(15).AddHours(1);
