@@ -142,7 +142,7 @@ public sealed class HomeDashboardView : UserControl
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         var titleStack = new StackPanel();
         titleStack.Children.Add(PageHeading.Label("HOME"));
-        titleStack.Children.Add(PageHeading.Title("Home"));
+        titleStack.Children.Add(PageHeading.Title("Dashboard"));
         Grid.SetColumn(titleStack, 0);
         header.Children.Add(titleStack);
         Grid.SetColumn(_newProjectButton, 1);

@@ -822,7 +822,7 @@ internal sealed partial class MainWindowComposer
         engineeringAssetsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var engineeringAreaView = new EngineeringAreaView(
-            host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
+            host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
             engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync)
         {

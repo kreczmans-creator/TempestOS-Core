@@ -762,11 +762,11 @@ internal static class MainJourney
             });
 
         journal.Step(
-            "business-dashboard", "Business → Dashboard & Reports", "mouse",
+            "business-dashboard", "Business → Dashboard", "mouse",
             "The finance tiles read \"unavailable\" rather than a lying zero before any accounts reading",
             () =>
             {
-                if (!Act.ClickRow("Dashboard & Reports", settleMs: 3_000))
+                if (!Act.ClickRow("Dashboard", settleMs: 3_000))
                     return Act.Failed(Act.LastProblem);
 
                 if (!Ui.WaitUntil(() => Ui.ByName("Business dashboard") is not null, 20_000))

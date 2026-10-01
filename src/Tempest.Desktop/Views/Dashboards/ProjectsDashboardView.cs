@@ -15,8 +15,7 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// <summary>
 /// The Projects dashboard (`WP 19.7B`, Product Owner comment item 6,
 /// sheet 3): four status tiles, three reason-carrying lists, and a simple
-/// Gantt of every open project's own schedule — the tree's own "Dashboard
-/// + Reports" node in <see cref="ProjectsAreaView"/>.
+/// Gantt of every open project's own schedule — the tree's own "Dashboard" node in <see cref="ProjectsAreaView"/>.
 /// </summary>
 /// <remarks>
 /// One read, on entry and on <see cref="Tempest.Core.Events.IWorkspaceChanges"/>

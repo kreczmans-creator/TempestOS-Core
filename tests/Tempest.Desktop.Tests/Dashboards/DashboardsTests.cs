@@ -116,7 +116,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.Projects);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Dashboard + Reports");
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectsDashboardView>().Any());
             LayOut(window);
 
@@ -170,7 +170,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Dashboard + Reports");
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringDashboardView>().Any());
             LayOut(window);
 
@@ -193,7 +193,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard & Reports");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<BusinessDashboardView>().Any());
             LayOut(window);
 
@@ -283,7 +283,7 @@ public sealed class DashboardsTests
 
             await host.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard & Reports");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<BusinessDashboardView>().Any());
             LayOut(window);
 

@@ -52,15 +52,6 @@ namespace Tempest.Desktop.Tests;
 /// six-comment shape, in the identical order, so the table is the
 /// structure of the file rather than a runtime data structure.
 /// </para>
-/// <para>
-/// <b>Reports has no domain command of its own</b> — it is a read-only
-/// surface over Evidence issuance and project documents, both edited
-/// elsewhere. Its own "edit" check is met honestly, not faked: issuing a
-/// new evidence sheet through <c>IEvidenceService</c> while Reports is on
-/// screen is the edit, and Reports's own change-feed subscription (not a
-/// button inside Reports) is what changes its state — disclosed here
-/// rather than inventing a command Reports does not have.
-/// </para>
 /// </remarks>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class RailSurfaceContractTests
@@ -940,126 +931,6 @@ public sealed class RailSurfaceContractTests
         root.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => Equals(b.Tag, quoteId));
 
     // ================================================================
-    // Reports
-    // ================================================================
-
-    [AvaloniaFact]
-    public async Task Reports_MeetsAllSixChecks()
-    {
-        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
-        Guid evidenceId;
-
-        var host = new WorkspaceHost(root);
-        try
-        {
-            await host.StartAsync();
-            var window = new MainWindow(host, new StubFilePicker());
-            LayOut(window);
-            var navigator = host.ShellNavigator!;
-
-            await navigator.GoToProjectsAsync();
-            await window.RenderCurrentModuleAsync();
-            var project = await host.ProjectDirectory!.CreateAsync("P-RSC-R", "Rail Contract Reports Project");
-            await navigator.OpenProjectAsync(project.Id);
-            await window.RenderCurrentModuleAsync();
-
-            var firstSheet = await IssueWithSheetAsync(host, project.Id, "Rail Contract First Sheet", "ISS-RSC-1");
-
-            // 1. Click it -> something real renders: `WP 19.7A` embeds
-            // Reports under Engineering's own Dashboard + Reports node.
-            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
-            await window.RenderCurrentModuleAsync();
-            LayOut(window);
-            var reportsView = window.GetLogicalDescendants().OfType<ReportsView>().Single();
-            Assert.NotNull(reportsView);
-            await RenderUntilAsync(window, () =>
-                reportsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("ISS-RSC-1", StringComparison.Ordinal)));
-
-            // 3. Open it -> usable content: Open/Export on the sheet row.
-            // (Checked here, before filtering, so the later filter-narrows
-            // check below only has to prove one direction.)
-            var reportButtons = reportsView.GetLogicalDescendants().OfType<Button>().Select(b => b.Content).ToList();
-            Assert.Contains("Open", reportButtons);
-            Assert.Contains("Export", reportButtons);
-
-            // 2. Select something in it -> the selection has meaning:
-            // filtering to a different, empty project hides the sheet.
-            var otherProject = await host.ProjectDirectory!.CreateAsync("P-RSC-R2", "Rail Contract Reports Project Two");
-            await navigator.OpenProjectAsync(project.Id);
-            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
-            await window.RenderCurrentModuleAsync();
-            LayOut(window);
-            reportsView = window.GetLogicalDescendants().OfType<ReportsView>().Single();
-            await RenderUntilAsync(window, () => reportsView.GetLogicalDescendants().OfType<ComboBox>().Any());
-
-            var filter = reportsView.GetLogicalDescendants().OfType<ComboBox>().Single();
-            await RenderUntilAsync(window, () => filter.Items.OfType<ComboBoxItem>().Any(i => (i.Content as string)?.Contains("Reports Project Two", StringComparison.Ordinal) == true));
-            filter.SelectedIndex = filter.Items.OfType<ComboBoxItem>().ToList()
-                .FindIndex(i => (i.Content as string)?.Contains("Reports Project Two", StringComparison.Ordinal) == true);
-            // The selection's own event handler dispatches the resulting
-            // refresh fire-and-forget (`ApplyFilter`, mirroring every
-            // other view's identical "raise intent, refresh" shape) — this
-            // second, directly awaited call coalesces with it (see
-            // `RefreshAsync`'s own remarks) rather than racing it, so the
-            // assertion below reads a state guaranteed already settled.
-            await reportsView.RefreshAsync();
-            Assert.DoesNotContain(
-                reportsView.GetLogicalDescendants().OfType<TextBlock>(),
-                t => (t.Text ?? string.Empty).Contains("ISS-RSC-1", StringComparison.Ordinal));
-
-            // Back to "All projects" — the always-present first item —
-            // before the next check, so a real project filter never masks it.
-            filter.SelectedIndex = 0;
-            await reportsView.RefreshAsync();
-            Assert.Contains(
-                reportsView.GetLogicalDescendants().OfType<TextBlock>(),
-                t => (t.Text ?? string.Empty).Contains("ISS-RSC-1", StringComparison.Ordinal));
-
-            // 4. Edit it -> state changes. Reports has no command of its
-            // own (see class remarks): issuing a second sheet elsewhere,
-            // through Evidence's own command, is the edit; Reports's own
-            // change-feed subscription — not a button inside Reports — is
-            // what changes what it shows.
-            var secondSheet = await IssueWithSheetAsync(host, project.Id, "Rail Contract Second Sheet", "ISS-RSC-2");
-            evidenceId = secondSheet.Id;
-
-            await RenderUntilAsync(window, () =>
-                reportsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("ISS-RSC-2", StringComparison.Ordinal)));
-
-            // 6. Navigate away and back -> coherent.
-            await navigator.GoHomeAsync();
-            await window.RenderCurrentModuleAsync();
-            await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
-            await window.RenderCurrentModuleAsync();
-            LayOut(window);
-            await RenderUntilAsync(window, () =>
-                window.GetLogicalDescendants().OfType<ReportsView>().Single().GetLogicalDescendants().OfType<TextBlock>()
-                    .Any(t => (t.Text ?? string.Empty).Contains("ISS-RSC-2", StringComparison.Ordinal)));
-
-            await host.ShutdownAsync();
-        }
-        finally
-        {
-            await host.DisposeAsync();
-        }
-
-        // 5. Restart -> the state remains.
-        var second = new WorkspaceHost(root);
-        try
-        {
-            await second.StartAsync();
-            var domain = (EngineeringDomainContext)second.Services!.GetService(typeof(EngineeringDomainContext));
-            var reloaded = await domain.Repository.FindAsync(evidenceId) as Tempest.Core.Evidence.Evidence;
-            Assert.NotNull(reloaded?.Issue?.IssueSheetAttachmentId);
-        }
-        finally
-        {
-            await second.ShutdownAsync();
-            await second.DisposeAsync();
-        }
-    }
-
-    // ================================================================
     // Engineering Calculations
     // ================================================================
 
@@ -1277,25 +1148,6 @@ public sealed class RailSurfaceContractTests
         await rateCards.RegisterAsync(rateCardId, card, new ReferenceProvenance(SourceOrganisation: "Test Org", SourceDocument: "Test Doc")).ConfigureAwait(true);
         await host.ReferenceReview!.VerifyAsync(rateCards, rateCardId, new ReferenceReviewStatement("Consulted for the rail surface contract test.")).ConfigureAwait(true);
         await host.ReferenceReview!.ReleaseAsync(rateCards, rateCardId, "Released for the rail surface contract test.").ConfigureAwait(true);
-    }
-
-    /// <summary>
-    /// Creates, checks, issues and — the step a plain <see cref="IEvidenceService.IssueAsync"/>
-    /// call alone never does — attaches a real issue-sheet file to a piece
-    /// of Evidence, so <see cref="Evidence.Issue"/>'s own <see cref="IssueRecord.IssueSheetAttachmentId"/>
-    /// is genuinely non-null, exactly as <see cref="ReportsView"/>'s own
-    /// filter requires.
-    /// </summary>
-    private static async Task<Tempest.Core.Evidence.Evidence> IssueWithSheetAsync(WorkspaceHost host, Guid projectId, string name, string issueReference)
-    {
-        var evidence = await host.EvidenceService!.CreateAsync(projectId, name, EvidenceClassification.Calculation);
-        await host.EvidenceService!.RecordCheckAsync(evidence.Id, "Checker", "Org", "Fine.", CheckOutcome.Accepted);
-        await host.EvidenceService!.IssueAsync(evidence.Id, issueReference, "A", "Client Co");
-
-        var attachment = await evidence.AttachContentAsync($"{issueReference}.pdf", "application/pdf", new byte[] { 1, 2, 3 });
-        await host.EvidenceService!.RecordIssueSheetAsync(evidence.Id, attachment.Id);
-
-        return evidence;
     }
 
     private static Border? FindRequestRow(Control root, Guid requestId) =>

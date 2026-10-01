@@ -13,7 +13,7 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// <summary>
 /// The Engineering dashboard (`WP 19.7B`, Product Owner comment item 6,
 /// sheet 4): Calculations, Open tasks and Engineering reviews, each row
-/// opening right up — the tree's own "Dashboard + Reports" node in
+/// opening right up — the tree's own "Dashboard" node in
 /// <see cref="EngineeringAreaView"/>.
 /// </summary>
 /// <remarks>

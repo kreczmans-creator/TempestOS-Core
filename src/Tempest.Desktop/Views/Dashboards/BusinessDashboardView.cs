@@ -17,7 +17,7 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// The Business dashboard (`WP 19.7B`, Product Owner comment item 6,
 /// sheet 5): four tiles, accounts receivable and payable, quotes open
 /// value with a chase list, and a 12-week cash-flow chart — the tree's own
-/// "Dashboard &amp; Reports" node in <see cref="BusinessAreaView"/>.
+/// "Dashboard" node in <see cref="BusinessAreaView"/>.
 /// </summary>
 /// <remarks>
 /// One read per source, on entry and on <see cref="Tempest.Core.Events.IWorkspaceChanges"/>

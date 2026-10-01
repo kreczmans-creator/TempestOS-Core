@@ -402,9 +402,9 @@ public sealed class LayoutWalkTests
     /// </summary>
     private static IReadOnlyList<string> TreeNodesFor(ShellArea area) => area switch
     {
-        ShellArea.Projects => ["Dashboard + Reports", "Open", "Closed", "Archive"],
-        ShellArea.EngineeringDepartment => ["Dashboard + Reports", "Tasks", "Mechanical", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
-        ShellArea.Business => ["Dashboard & Reports", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
+        ShellArea.Projects => ["Dashboard", "Open", "Closed", "Archive"],
+        ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Mechanical", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
+        ShellArea.Business => ["Dashboard", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };
 

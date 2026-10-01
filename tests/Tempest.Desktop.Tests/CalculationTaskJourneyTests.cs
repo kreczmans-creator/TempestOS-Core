@@ -70,7 +70,7 @@ public sealed class CalculationTaskJourneyTests
             await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
             engineeringArea = window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single();
-            engineeringArea.SelectNode("Dashboard + Reports");
+            engineeringArea.SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringDashboardView>().Any());
             LayOut(window);
 

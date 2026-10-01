@@ -180,7 +180,6 @@ public sealed class WorkspaceChangesReattachTests
             var queryableStore = Resolve<IQueryablePersistenceStore>(host);
             var tasksReadModel = new TasksReadModelService(queryableStore);
 
-            var reportsView = new ReportsView(domainContext, host.ProjectDirectory!, host.ProjectDocuments!, (_, _) => { }, (_, _) => { });
             var engineeringCalculation = new EngineeringCalculationView();
             var referenceCitationIndex = new ReferenceCitationIndex(domainContext, host.ProjectDirectory!);
             var librariesView = new LibrariesView(
@@ -194,7 +193,7 @@ public sealed class WorkspaceChangesReattachTests
                 host.BracketCheck!, host.BracketEngineeringRecords!, new StubFilePicker(), () => host.SessionPrincipal?.IdentityId);
 
             var view = new EngineeringAreaView(
-                host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, librariesView, engineeringDashboard,
+                host.ShellNavigator!, tasksReadModel, engineeringCalculation, librariesView, engineeringDashboard,
                 () => Task.CompletedTask, Resolve<ICommandDispatcher>(host), (_, _) => { }, engineeringAssets,
                 new CalculationModulesView(), () => Task.CompletedTask);
 
