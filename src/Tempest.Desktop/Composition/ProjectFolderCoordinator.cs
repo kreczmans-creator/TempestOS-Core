@@ -31,13 +31,21 @@ namespace Tempest.Desktop.Composition;
 /// folder that already existed says nothing. "Unavailable" (no D: drive)
 /// is reported once per session, and only when a root is actually
 /// configured — a non-Windows session, or one with generation switched
-/// off, stays silent.
+/// off, stays silent and starts no background work at all.
+/// </para>
+/// <para>
+/// <b>Stopped with the window.</b> Work in flight is tracked
+/// (<see cref="Pending"/>) and cancelled and awaited by
+/// <see cref="StopAsync"/> as the window closes, so nothing touches the
+/// disk or reports into a shell that is being torn down.
 /// </para>
 /// </remarks>
 internal sealed class ProjectFolderCoordinator : IEventHandler<ProjectContextChangedEvent>
 {
     private readonly ProjectFolderLocator _locator;
     private readonly Func<string, ActionOutcome, Task> _report;
+    private readonly CancellationTokenSource _stopping = new();
+    private readonly HashSet<Task> _inFlight = [];
     private bool _reportedUnavailable;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectFolderCoordinator"/> class.</summary>
@@ -60,22 +68,54 @@ internal sealed class ProjectFolderCoordinator : IEventHandler<ProjectContextCha
         if (@event.Current is not { } current || @event.Previous?.Id == current.Id)
             return Task.CompletedTask;
 
-        _ = EnsureAsync(current.Id);
+        // Folders switched off (or not Windows): no background work at all.
+        if (string.IsNullOrWhiteSpace(_locator.Service.Options.Root) || _stopping.IsCancellationRequested)
+            return Task.CompletedTask;
+
+        Track(EnsureAsync(current.Id, _stopping.Token));
         return Task.CompletedTask;
     }
 
+    /// <summary>The folder work still in flight — completed once every <see cref="HandleAsync"/> it started has finished.</summary>
+    internal Task Pending
+    {
+        get
+        {
+            lock (_inFlight)
+                return Task.WhenAll([.. _inFlight]);
+        }
+    }
+
+    /// <summary>
+    /// Cancels the folder work still in flight and waits for it to finish,
+    /// reporting nothing more — called as the window closes, so no
+    /// background folder write or status report outlives the shell.
+    /// </summary>
+    internal async Task StopAsync()
+    {
+        await _stopping.CancelAsync().ConfigureAwait(false);
+        await Pending.ConfigureAwait(false);
+    }
+
     /// <summary>Ensures <paramref name="projectId"/>'s folder exists and reports the outcome — exposed so a caller (or a test) can await it directly.</summary>
-    internal async Task<ProjectFolderOutcome?> EnsureAsync(Guid projectId)
+    internal async Task<ProjectFolderOutcome?> EnsureAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
         ProjectFolderOutcome outcome;
         try
         {
-            outcome = await Task.Run(() => _locator.EnsureAsync(projectId)).ConfigureAwait(false);
+            outcome = await Task.Run(() => _locator.EnsureAsync(projectId, cancellationToken), cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return null;
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             outcome = new ProjectFolderOutcome(ProjectFolderStatus.Failed, $"Project folder could not be created: {ex.Message}", null, []);
         }
+
+        if (cancellationToken.IsCancellationRequested)
+            return outcome;
 
         (string Message, ActionOutcome Outcome)? report = outcome.Status switch
         {
@@ -93,5 +133,21 @@ internal sealed class ProjectFolderCoordinator : IEventHandler<ProjectContextCha
             await Dispatcher.UIThread.InvokeAsync(() => _report(r.Message, r.Outcome));
 
         return outcome;
+    }
+
+    private void Track(Task task)
+    {
+        lock (_inFlight)
+            _inFlight.Add(task);
+
+        _ = task.ContinueWith(
+            done =>
+            {
+                lock (_inFlight)
+                    _inFlight.Remove(done);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 }

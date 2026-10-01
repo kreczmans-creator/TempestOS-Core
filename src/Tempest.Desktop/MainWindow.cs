@@ -363,6 +363,9 @@ public sealed class MainWindow : Window
             await _session.RecentObjects.SaveAsync().ConfigureAwait(true);
             await _session.FavouriteObjects.SaveAsync().ConfigureAwait(true);
 
+            // Board M11: no project-folder write or report outlives the window.
+            await views.ProjectFolders.StopAsync().ConfigureAwait(true);
+
             closeConfirmed = true;
             Close();
         };
