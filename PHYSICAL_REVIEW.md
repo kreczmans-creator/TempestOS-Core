@@ -670,16 +670,15 @@ performed by anyone yet. Record every status line verbatim.
 
 | Step | Action | Expect | Wrong if |
 |---|---|---|---|
-| X1 | In the Xero developer console, confirm the app's redirect URI is exactly `http://127.0.0.1:49301/callback/` (`ADR-0151` addendum). Copy the client id (and the secret, if the app is not PKCE-only). | — | The redirect URI differs by a character: Xero will refuse the sign-in at step X4 with a redirect-URI error. |
+| X1 | In the Xero developer console, confirm the app's redirect URI is exactly `http://127.0.0.1:48131/callback/` (`ADR-0151` addendum; `48131` since 2026-10-01, `TD-183`). Copy the client id (and the secret, if the app is not PKCE-only). | — | The redirect URI differs by a character: Xero will refuse the sign-in at step X4 with a redirect-URI error. |
 | X2 | TempestOS → the account chip (top right, *root · Engineer*) → **Settings** → *Connector authorisation*: Connector **Xero**, paste the Client Id (and Secret), click **Authorise**. | Status: **"Saved. Restart TempestOS to use Xero — this session is running the Fake connector."** No browser opens. | The status says "Authorised." while the Fake is still running (this was the pre-fix behaviour). |
 | X3 | Close TempestOS and reopen it. Settings → *Connector authorisation*. | Connector **Xero**; the Client Id shown; status **"Not authorised."** | Connector back on Fake (the choice did not persist); "Not authorised. not configured" (the client id was not read). |
 | X4 | Click **Authorise**. | The button greys out; status **"Waiting for you to sign in to Xero in your browser (up to 5 minutes)…"**; the default browser opens on Xero's sign-in/consent page. Sign in, pick the organisation, allow. The browser shows *"Authorisation complete. You can close this window and return to TempestOS."*; the status reads **"Authorised."** | Any other wording — the status line names the cause (port in use, consent denied, token endpoint refusal, the browser could not open, the five-minute timeout). Record it. |
 | X5 | Business → **Invoices**, or Settings → *Refresh accounts reading*. | Contacts, bills or the cash position read from your Xero organisation (the accounts reading status changes from "No accounts reading yet"). | An error naming a Xero scope or tenant — record it verbatim for the lead. |
 
-Decision for you before X1: the default loopback port 49301 sits inside
-Windows' dynamic range (Release Notes, Warnings). Changing it means
-changing the redirect URI registered in the Xero app; leaving it means a
-rare "Port 49301 is already in use" refusal, answered by trying again.
+Decided 2026-10-01 (`TD-183`): the default loopback port moved from 49301,
+inside Windows' dynamic range, to 48131, below it — before any Xero app
+was registered, so X1 is the first and only place the URI is ever typed.
 
 ---
 

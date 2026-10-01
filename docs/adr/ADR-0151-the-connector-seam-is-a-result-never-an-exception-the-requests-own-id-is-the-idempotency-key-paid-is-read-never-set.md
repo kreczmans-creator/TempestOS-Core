@@ -237,10 +237,10 @@ fresh ephemeral port every run, which Xero's and Intuit's own app
 consoles cannot accept — both require one exact redirect URI, registered
 ahead of time. `OAuthLoopbackListener` now binds the port
 `OAuthAuthoriser.ResolveLoopbackPort()` resolves from
-`Invoicing:OAuth:LoopbackPort` — `49301` by default, `0` kept as the
+`Invoicing:OAuth:LoopbackPort` — `48131` by default (`49301` until the `v1.0.0` candidate; `TD-183`), `0` kept as the
 original ephemeral behaviour (a test's own choice only). **The exact
 redirect URI to register in a Xero or QuickBooks Online sandbox app is
-`http://127.0.0.1:49301/callback/`** — unchanged unless an operator
+`http://127.0.0.1:48131/callback/`** — unchanged unless an operator
 configures a different port. When the configured port is already bound by
 something else, `AuthoriseAsync` returns `OAuthResult.Failed`, naming both
 the port attempted and the `Invoicing:OAuth:LoopbackPort` key — never a

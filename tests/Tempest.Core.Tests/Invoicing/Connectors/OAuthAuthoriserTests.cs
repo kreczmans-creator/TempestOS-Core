@@ -152,7 +152,7 @@ public sealed class OAuthAuthoriserTests
 
         // The claim under test is that the default port is the one attempted when none is configured. Either
         // outcome proves it: a bound listener whose redirect URI carries that port, or — when another process's
-        // outbound socket holds 49301 for longer than the listener's retry budget, as on a hosted runner — the
+        // outbound socket holds the default port for longer than the listener's retry budget, as on a hosted runner — the
         // honest refusal that names exactly that port (see `Build`'s own note on the dynamic port range).
         if (result.Outcome == OAuthOutcome.Failed)
         {
@@ -422,7 +422,7 @@ public sealed class OAuthAuthoriserTests
         var handler = new StubHttpMessageHandler();
         var secretStore = new InMemorySecretStore();
         var launcher = new FakeBrowserLauncher();
-        // A free port per round trip, never the default: 49301 sits inside Windows' dynamic port range
+        // A free port per round trip, never the default: the former default 49301 sat inside Windows' dynamic port range
         // (49152–65535), so another process's outbound socket can hold it for longer than the listener's
         // same-port retry budget — six of these round trips failed together on a hosted runner on 2026-09-15
         // (`TD-183`'s family). Only the test that exists to prove the default port asks for it.
