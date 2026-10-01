@@ -18,7 +18,9 @@ namespace Tempest.Desktop.Views;
 /// <see cref="PurchaseOrdersView"/> (`WP 21.3B`), Timesheets is the
 /// existing <see cref="TimesheetWeekView"/>, Subscriptions is
 /// <see cref="SubscriptionsView"/> over <c>IAccountsReadModel</c>
-/// (`WP 19.8B`).
+/// (`WP 19.8B`). Customers &amp; Suppliers is <see cref="CustomersSuppliersView"/>
+/// (Product Owner decision 2026-10-01 §2): the one organisation list every
+/// client/supplier drop-down reads.
 /// </summary>
 public sealed class BusinessAreaView : UserControl
 {
@@ -28,6 +30,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly TimesheetWeekView _timesheets;
     private readonly SubscriptionsView _subscriptions;
     private readonly BusinessDashboardView _dashboard;
+    private readonly CustomersSuppliersView _customersSuppliers;
 
     private readonly TreeView _tree = new();
     private readonly ContentControl _detail = new();
@@ -39,6 +42,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly TreeViewItem _purchaseOrdersNode = new() { Header = "Purchase orders" };
     private readonly TreeViewItem _timesheetsNode = new() { Header = "Timesheets" };
     private readonly TreeViewItem _subscriptionsNode = new() { Header = "Subscriptions" };
+    private readonly TreeViewItem _customersSuppliersNode = new() { Header = "Customers & Suppliers" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
@@ -52,7 +56,7 @@ public sealed class BusinessAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="BusinessAreaView"/> class.</summary>
     public BusinessAreaView(
         QuotesView quotes, InvoicingView invoices, PurchaseOrdersView purchaseOrders, TimesheetWeekView timesheets,
-        SubscriptionsView subscriptions, BusinessDashboardView dashboard)
+        SubscriptionsView subscriptions, BusinessDashboardView dashboard, CustomersSuppliersView customersSuppliers)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         ArgumentNullException.ThrowIfNull(invoices);
@@ -60,6 +64,7 @@ public sealed class BusinessAreaView : UserControl
         ArgumentNullException.ThrowIfNull(timesheets);
         ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dashboard);
+        ArgumentNullException.ThrowIfNull(customersSuppliers);
 
         _quotes = quotes;
         _invoices = invoices;
@@ -67,10 +72,12 @@ public sealed class BusinessAreaView : UserControl
         _timesheets = timesheets;
         _subscriptions = subscriptions;
         _dashboard = dashboard;
+        _customersSuppliers = customersSuppliers;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _tree.Items.Add(_dashboardNode);
+        _tree.Items.Add(_customersSuppliersNode);
         _tree.Items.Add(_quotesNode);
         _tree.Items.Add(_invoicesNode);
         _tree.Items.Add(_purchaseOrdersNode);
@@ -79,7 +86,7 @@ public sealed class BusinessAreaView : UserControl
 
         foreach (var (node, name) in new[]
                  {
-                     (_dashboardNode, "Dashboard & Reports"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
+                     (_dashboardNode, "Dashboard & Reports"), (_customersSuppliersNode, "Customers & Suppliers"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
                      (_purchaseOrdersNode, "Purchase orders"), (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
                  })
             AutomationProperties.SetName(node, name);
@@ -101,13 +108,13 @@ public sealed class BusinessAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard &amp; Reports", "Quotes", "Invoices", "Purchase
-    /// orders", "Timesheets" or "Subscriptions") — the same name a screen
+    /// ("Dashboard &amp; Reports", "Customers &amp; Suppliers", "Quotes",
+    /// "Invoices", "Purchase orders", "Timesheets" or "Subscriptions") — the same name a screen
     /// reader announces, and what a journey test drives the tree by.
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
+        var item = new[] { _dashboardNode, _customersSuppliersNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -160,6 +167,13 @@ public sealed class BusinessAreaView : UserControl
         {
             await _dashboard.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _dashboard;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _customersSuppliersNode))
+        {
+            await _customersSuppliers.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _customersSuppliers;
             return;
         }
 

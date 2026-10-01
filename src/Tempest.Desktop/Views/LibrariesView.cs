@@ -77,6 +77,12 @@ public sealed class LibrariesView : UserControl
     private readonly TextBox _newPersonDisplayName = new() { Watermark = "Display name", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _newPersonRole = new() { Watermark = "Role", MinHeight = DesignTokens.MinControlSize };
     private readonly TextBox _newPersonEmail = new() { Watermark = "Email", MinHeight = DesignTokens.MinControlSize };
+
+    // Product Owner decision 2026-10-01 §1: the consultancy's own people
+    // keep contact details only — name, role/grade, e-mail and phone. A
+    // client's people are contacts of an organisation instead, kept in
+    // Business → Customers & Suppliers (`CustomersSuppliersView`).
+    private readonly TextBox _newPersonPhone = new() { Watermark = "Phone", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _addPersonButton = new() { Content = "Add Person", MinHeight = DesignTokens.MinControlSize };
 
     // DEFECT-1 of the overnight real-shell journey (2026-09-16, `WP 21.5C`
@@ -224,11 +230,12 @@ public sealed class LibrariesView : UserControl
         AutomationProperties.SetName(_newPersonDisplayName, "Display name");
         AutomationProperties.SetName(_newPersonRole, "Role");
         AutomationProperties.SetName(_newPersonEmail, "Email");
+        AutomationProperties.SetName(_newPersonPhone, "Phone");
         AutomationProperties.SetName(_addPersonButton, "Add Person");
         ToolTip.SetTip(_addPersonButton, "Add Person");
 
         var addPersonForm = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var field in new Control[] { _newPersonDisplayName, _newPersonRole, _newPersonEmail, _addPersonButton })
+        foreach (var field in new Control[] { _newPersonDisplayName, _newPersonRole, _newPersonEmail, _newPersonPhone, _addPersonButton })
         {
             field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
             addPersonForm.Children.Add(field);
@@ -643,6 +650,7 @@ public sealed class LibrariesView : UserControl
                 DisplayName = displayName,
                 Role = NullIfEmpty(_newPersonRole.Text),
                 Email = NullIfEmpty(_newPersonEmail.Text),
+                Phone = NullIfEmpty(_newPersonPhone.Text),
             };
 
             await _persons.RegisterAsync(recordId, person, PersonProvenance.Default).ConfigureAwait(true);
@@ -650,6 +658,7 @@ public sealed class LibrariesView : UserControl
             _newPersonDisplayName.Text = string.Empty;
             _newPersonRole.Text = string.Empty;
             _newPersonEmail.Text = string.Empty;
+            _newPersonPhone.Text = string.Empty;
 
             await RefreshAsync().ConfigureAwait(true);
             Report($"Added person '{displayName}'.", succeeded: true);

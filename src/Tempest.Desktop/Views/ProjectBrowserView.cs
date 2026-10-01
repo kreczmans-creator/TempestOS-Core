@@ -24,7 +24,7 @@ public sealed class ProjectBrowserView : UserControl
 {
     private readonly IProjectDirectory _directory;
     private readonly IShellNavigator _navigator;
-    private readonly Func<string, string, Task<bool>> _promptForNewProject;
+    private readonly Func<string, string, Task<string?>> _promptForNewProject;
 
     private readonly ListBox _projects = new() { MinHeight = 240 };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption };
@@ -54,8 +54,8 @@ public sealed class ProjectBrowserView : UserControl
     /// <summary>Initialises a new instance of the <see cref="ProjectBrowserView"/> class.</summary>
     /// <param name="directory">The project catalogue this view lists.</param>
     /// <param name="navigator">The shell navigator every open goes through.</param>
-    /// <param name="promptForNewProject">Collects an identifier and name for a new project; returns <see langword="false"/> if the user cancelled.</param>
-    public ProjectBrowserView(IProjectDirectory directory, IShellNavigator navigator, Func<string, string, Task<bool>> promptForNewProject)
+    /// <param name="promptForNewProject">Collects a name (and, with a coded client, a project reference) for a new project, given the old-scheme identifier suggested for it, and creates it; returns the identifier it was actually created under — <c>CUSTOMER-PROJECTREF</c> or the suggested <c>P-NNNN</c> (Product Owner decision 2026-10-01 §3) — or <see langword="null"/> if the user cancelled.</param>
+    public ProjectBrowserView(IProjectDirectory directory, IShellNavigator navigator, Func<string, string, Task<string?>> promptForNewProject)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(navigator);
@@ -151,8 +151,8 @@ public sealed class ProjectBrowserView : UserControl
 
     private async Task CreateAsync()
     {
-        var identifier = await NextIdentifierAsync().ConfigureAwait(true);
-        if (!await _promptForNewProject(identifier, string.Empty).ConfigureAwait(true))
+        var suggested = await NextIdentifierAsync().ConfigureAwait(true);
+        if (await _promptForNewProject(suggested, string.Empty).ConfigureAwait(true) is not { } identifier)
             return;
 
         // The project (and, if requested, its quotation) already exists —
@@ -182,7 +182,13 @@ public sealed class ProjectBrowserView : UserControl
         ProjectOpened?.Invoke();
     }
 
-    /// <summary>Suggests the next free <c>P-NNNN</c> identifier, continuing whatever the catalogue already uses.</summary>
+    /// <summary>
+    /// Suggests the next free <c>P-NNNN</c> identifier, continuing whatever
+    /// the catalogue already uses — the fallback identifier (Product Owner
+    /// decision 2026-10-01 §3, `ADR-0156`) for a project created with no
+    /// client, or with a client that has no customer code yet; a project
+    /// for a coded client is identified <c>CUSTOMER-PROJECTREF</c> instead.
+    /// </summary>
     public async Task<string> NextIdentifierAsync()
     {
         var projects = await _directory.ListAsync().ConfigureAwait(true);

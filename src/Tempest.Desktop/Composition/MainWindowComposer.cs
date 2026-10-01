@@ -133,7 +133,7 @@ internal sealed record MainWindowCallbacks(
     Func<Guid, string, Task> OpenObjectAsync,
     Func<Guid, Guid, CancellationToken, Task> OpenProjectAttachmentAsync,
     Func<Guid, string, Task> OpenEvidenceRecordAsync,
-    Func<string, string, Task<bool>> PromptForNewProjectAsync,
+    Func<string, string, Task<string?>> PromptForNewProjectAsync,
     Func<Task> RenderCurrentModuleAsync,
     Func<Task> EnterEngineeringCalculationAsync,
     Func<Task> EnterCalculationModulesAsync);
@@ -640,7 +640,7 @@ internal sealed partial class MainWindowComposer
         // defines its initial deliverables and requirements once accepted,
         // and exports as a PDF through the same SkiaSharp path the issue
         // sheet already established (comment item 9).
-        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker);
+        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker, projectDirectory);
         var projectPicker = new ProjectPicker(projectDirectory);
         var quotationSheetRenderer = new QuotationSheetRenderer();
         // `WP 20.10G` (threaded at merge): both sheet renderers read Settings → Organisation
@@ -833,7 +833,11 @@ internal sealed partial class MainWindowComposer
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
-        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView)
+        var businessAreaView = new BusinessAreaView(
+            quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
+            new CustomersSuppliersView(
+                organisationCatalog,
+                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))))
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };

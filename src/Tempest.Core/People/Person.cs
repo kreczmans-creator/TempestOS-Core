@@ -28,6 +28,16 @@ public sealed record Person
     public string? Email { get; init; }
 
     /// <summary>
+    /// Their work telephone number (Product Owner decision 2026-10-01 §1:
+    /// the consultancy's own people keep contact details only — name,
+    /// role/grade, e-mail, phone — while a client is an organisation with
+    /// company details and its own contacts, kept in the Business →
+    /// Customers &amp; Suppliers list instead). <see langword="null"/> where
+    /// unrecorded, and for every person recorded before this field existed.
+    /// </summary>
+    public string? Phone { get; init; }
+
+    /// <summary>
     /// The stable id of the signed-in identity this person corresponds to
     /// (<see cref="Identity.IIdentity.Id"/>) — the same id
     /// <see cref="Identity.IPrincipalDirectory.Describe"/> resolves a

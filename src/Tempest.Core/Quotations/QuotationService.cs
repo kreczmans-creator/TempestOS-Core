@@ -163,8 +163,9 @@ public sealed class QuotationService : IQuotationService
         var quoteDate = Today();
         var prefix = kind == QuotationKind.ChangeOrder ? ChangeOrderReferencePrefix : QuotationReferencePrefix;
 
+        var documentType = kind == QuotationKind.ChangeOrder ? ProjectNumbering.ChangeOrder : ProjectNumbering.Quotation;
         var resolvedReference = string.IsNullOrWhiteSpace(reference)
-            ? await NextReferenceAsync(quoteDate.Year, prefix, cancellationToken).ConfigureAwait(false)
+            ? await NextReferenceAsync(project, documentType, quoteDate.Year, prefix, cancellationToken).ConfigureAwait(false)
             : reference.Trim();
 
         var resolvedClient = clientOrganisationId ?? project.ClientOrganisationId;
@@ -543,36 +544,45 @@ public sealed class QuotationService : IQuotationService
     }
 
     /// <summary>
-    /// The next <c>&lt;prefix&gt;&lt;year&gt;-&lt;nnn&gt;</c> reference — one
-    /// past the highest existing suffix already used for <paramref name="year"/>
-    /// under that same prefix, among every quotation this store holds (live
-    /// or not: a reference, once used, is never reissued). Shared by both
-    /// prefixes this service generates (<see cref="QuotationReferencePrefix"/>
-    /// for an ordinary quotation, <see cref="ChangeOrderReferencePrefix"/>
-    /// for a change order — `WP 20.10E`): the two vocabularies never
-    /// collide, so one scan of every live-or-not <see cref="Quotation"/>
-    /// serves either.
+    /// The next reference for a quotation (or change order) opened with
+    /// <paramref name="project"/>.
     /// </summary>
-    private async Task<string> NextReferenceAsync(int year, string prefix, CancellationToken cancellationToken)
+    /// <remarks>
+    /// <para>
+    /// <b>Project-centric (Product Owner decision 2026-10-01 §3,
+    /// `ADR-0156`).</b> Where the project's own identifier is a
+    /// <c>CUSTOMER-PROJECTREF</c> one, the reference is
+    /// <c>CUSTOMER-PROJECTREF-Q-NNN</c> (<c>-CO-NNN</c> for a change
+    /// order) — one past the highest suffix already used under that prefix,
+    /// so the sequence is per project per document type and the first
+    /// quote in every project is 001.
+    /// </para>
+    /// <para>
+    /// <b>Fallback — the old scheme, unchanged.</b> Any other project (an
+    /// older <c>P-NNNN</c>, or one created with no customer code) gets the
+    /// next <c>&lt;prefix&gt;&lt;year&gt;-&lt;nnn&gt;</c> reference — one past
+    /// the highest existing suffix already used for <paramref name="year"/>
+    /// under that same prefix (<see cref="QuotationReferencePrefix"/> or
+    /// <see cref="ChangeOrderReferencePrefix"/>, `WP 20.10E`).
+    /// </para>
+    /// <para>
+    /// Either way the scan covers every quotation this store holds, live
+    /// or not: a reference, once used, is never reissued.
+    /// </para>
+    /// </remarks>
+    private async Task<string> NextReferenceAsync(
+        Project project, string documentType, int year, string prefix, CancellationToken cancellationToken)
     {
         // `TD-88`/`WP 21.5B`: `Reference` is a `Quotation`-own field, not on
         // the index row.
         var existingEntries = await _context.Repository.ListByKindAsync(Quotation.CanonicalKind, cancellationToken).ConfigureAwait(false);
         var existing = await _context.Repository.MaterialiseAsync<Quotation>(existingEntries, cancellationToken).ConfigureAwait(false);
-        var fullPrefix = $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        var max = 0;
-        foreach (var candidate in existing)
-        {
-            if (candidate.Reference.StartsWith(fullPrefix, StringComparison.Ordinal)
-                && int.TryParse(candidate.Reference.AsSpan(fullPrefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
-                && n > max)
-            {
-                max = n;
-            }
-        }
+        var fullPrefix = ProjectNumbering.TryGetDocumentPrefix(project.Identifier, documentType, out var projectPrefix)
+            ? projectPrefix
+            : $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        return $"{fullPrefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
+        return ProjectNumbering.NextNumber(fullPrefix, existing.Select(q => q.Reference));
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);
