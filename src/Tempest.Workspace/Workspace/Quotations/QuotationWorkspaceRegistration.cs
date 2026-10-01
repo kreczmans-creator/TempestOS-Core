@@ -117,7 +117,7 @@ public static class QuotationWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (context, values) => new CreateQuotationCommand(context.ProjectId ?? Guid.Empty, WorkspaceCommandBindings.OrNull(values["reference"])),
-                [new CommandParameter("reference", "Reference (blank to generate Q-<year>-<nnn>)", DefaultValue: string.Empty)],
+                [new CommandParameter("reference", "Reference (blank for the project's next number, <customer>-<project>-Q-<nnn>)", DefaultValue: string.Empty)],
                 mutates: true),
         });
 
