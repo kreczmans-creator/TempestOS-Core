@@ -826,6 +826,19 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         Assert.NotNull(status.Check("Rejected"));
     }
 
+    [Theory]
+    [InlineData(QuotationCommandIds.Create, "-Q-<nnn>")]
+    [InlineData(PurchaseOrderCommandIds.Create, "-PO-<nnn>")]
+    public void CreateReferenceLabels_DescribeTheProjectCentricNumber_NotTheOldYearScheme(string commandId, string suffix)
+    {
+        // Colour review board M2: references are numbered per project
+        // (`ADR-0156`), so the palette must not promise `Q-/PO-<year>-<nnn>`.
+        var label = Parameter(Binding(commandId), "reference").Label;
+
+        Assert.DoesNotContain("<year>", label, StringComparison.Ordinal);
+        Assert.Contains("<customer>-<project>" + suffix, label, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void KindChoices_ExposeExactlyTheirDisciplinesOwnSupportedKinds()
     {

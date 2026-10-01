@@ -301,6 +301,239 @@ public sealed class QuotationReviewJourneyTests
         await host.DisposeAsync();
     }
 
+    [Fact]
+    public async Task Approve_IsRefused_ForTheAuthor_EvenWhenAColleagueEditedAndSubmitted_AndAThirdPersonMayApprove()
+    {
+        // Colour review board B8: the author never touches a line or the
+        // submission here, so only the author clause can refuse them.
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = QuotationTestHost.Principals(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-B8");
+        var quoteId = (await quotations.CreateAsync(projectId)).Quotation!.Id;
+        await QuotationReviewTestSupport.AsAsync(principals, "colleague-c", async () =>
+        {
+            Assert.True((await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m))).Succeeded);
+            var submitted = await quotations.SubmitForReviewAsync(quoteId);
+            Assert.True(submitted.Succeeded, submitted.Reason);
+            return submitted;
+        });
+
+        var byAuthor = await quotations.ApproveAsync(quoteId);
+        Assert.Equal(QuotationRefusal.ReviewerMustDifferFromAuthor, byAuthor.Refusal);
+        Assert.Equal(QuotationStatus.InReview, byAuthor.Quotation!.Status);
+
+        var byThird = await QuotationReviewTestSupport.AsAsync(principals, "third-d", () => quotations.ApproveAsync(quoteId));
+        Assert.True(byThird.Succeeded, byThird.Reason);
+        Assert.Equal("R1", byThird.Quotation!.RevisionLabel);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Create_EditAndSubmit_AreRefused_WithNobodySignedIn()
+    {
+        // Colour review board B1 (b).
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = (Tempest.Core.Identity.CurrentPrincipalAccessor)QuotationTestHost.Principals(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-B1B");
+        var quoteId = (await quotations.CreateAsync(projectId)).Quotation!.Id;
+        var lineId = (await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m))).Quotation!.Lines[0].Id;
+
+        principals.SetCurrent(null);
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, (await quotations.CreateAsync(projectId)).Refusal);
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, (await quotations.AddLineAsync(quoteId, "More", null, null, Gbp(1m))).Refusal);
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, (await quotations.UpdateLineAsync(quoteId, lineId, "Survey", null, null, Gbp(2m))).Refusal);
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, (await quotations.RemoveLineAsync(quoteId, lineId)).Refusal);
+        var submitted = await quotations.SubmitForReviewAsync(quoteId);
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, submitted.Refusal);
+        Assert.Equal(QuotationStatus.Draft, submitted.Quotation!.Status);
+
+        // The store's own "unknown" id is nobody too.
+        principals.SetCurrent(new Tempest.Core.Identity.PlatformPrincipal(
+            new Tempest.Core.Identity.PlatformIdentity(EngineeringDocumentStore.UnknownAuthorPrincipalId, "Unknown"),
+            Tempest.Core.Identity.ApplicationPermissions.LocalSession));
+        Assert.Equal(QuotationRefusal.NoPrincipalSignedIn, (await quotations.SubmitForReviewAsync(quoteId)).Refusal);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Approve_IsRefused_WhenTheSubmitterIsNotOnRecord()
+    {
+        // Colour review board B1 (b): a review submitted before the submit
+        // guard existed, with the store's "unknown" id or none at all.
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = QuotationTestHost.Principals(host);
+        var domain = QuotationTestHost.Domain(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-B1S");
+        var quoteId = (await quotations.CreateAsync(projectId)).Quotation!.Id;
+        await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m));
+
+        var quote = (Quotation)(await domain.Repository.FindAsync(quoteId))!;
+        await quote.MarkInReviewAsync(EngineeringDocumentStore.UnknownAuthorPrincipalId, DateTimeOffset.UtcNow);
+
+        var refused = await QuotationReviewTestSupport.AsAsync(principals, "reviewer-b", () => quotations.ApproveAsync(quoteId));
+        Assert.Equal(QuotationRefusal.AuthorUnknown, refused.Refusal);
+        Assert.Equal(QuotationStatus.InReview, refused.Quotation!.Status);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Approve_IsRefused_ForAnyoneWhoChangedALineSinceTheLastApproval()
+    {
+        // Colour review board B1 (a): after R1, colleague-e edits a line and
+        // the author resubmits; colleague-e cannot approve R2.
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = QuotationTestHost.Principals(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-B1A");
+        var quoteId = (await quotations.CreateAsync(projectId)).Quotation!.Id;
+        var lineId = (await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m))).Quotation!.Lines[0].Id;
+        var r1 = await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, principals, quoteId);
+        Assert.Empty(r1.Quotation!.Review.LineEditors);
+
+        var edited = await QuotationReviewTestSupport.AsAsync(principals, "colleague-e", () =>
+            quotations.UpdateLineAsync(quoteId, lineId, "Survey and report", null, null, Gbp(650m)));
+        Assert.True(edited.Succeeded, edited.Reason);
+        Assert.Equal(["colleague-e"], edited.Quotation!.Review.LineEditors);
+        Assert.True((await quotations.SubmitForReviewAsync(quoteId)).Succeeded);
+
+        var byEditor = await QuotationReviewTestSupport.AsAsync(principals, "colleague-e", () => quotations.ApproveAsync(quoteId));
+        Assert.Equal(QuotationRefusal.ReviewerMustDifferFromAuthor, byEditor.Refusal);
+        Assert.Contains("changed", byEditor.Reason, StringComparison.Ordinal);
+
+        // The R1 approver did not change a line this time, so may approve R2;
+        // the editors are cleared by it.
+        var r2 = await QuotationReviewTestSupport.AsAsync(principals, QuotationReviewTestSupport.ReviewerId, () => quotations.ApproveAsync(quoteId));
+        Assert.True(r2.Succeeded, r2.Reason);
+        Assert.Equal("R2", r2.Quotation!.RevisionLabel);
+        Assert.Empty(r2.Quotation.Review.LineEditors);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ALegacyQuotationWithNoAuthor_TakesItsAuthorFromItsFirstRevision_OrRefusesApprovalWhenThatIsNobody()
+    {
+        // Colour review board B1 (c).
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = QuotationTestHost.Principals(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-B1C");
+
+        // Opened by the author before AuthorIdentityId was recorded.
+        var attributed = await CreateLegacyQuotationAsync(host, projectId, "QUO-LEGACY-1");
+        Assert.Null(attributed.AuthorIdentityId);
+        await SubmitAsColleagueAsync(quotations, principals, attributed.Id);
+        var byAuthor = await quotations.ApproveAsync(attributed.Id);
+        Assert.Equal(QuotationRefusal.ReviewerMustDifferFromAuthor, byAuthor.Refusal);
+        var byThird = await QuotationReviewTestSupport.AsAsync(principals, "third-d", () => quotations.ApproveAsync(attributed.Id));
+        Assert.True(byThird.Succeeded, byThird.Reason);
+
+        // Opened with nobody signed in: nobody can be shown not to be its author.
+        var anonymous = await QuotationReviewTestSupport.AsAsync(principals, "placeholder", async () =>
+        {
+            ((Tempest.Core.Identity.CurrentPrincipalAccessor)principals).SetCurrent(null);
+            return await CreateLegacyQuotationAsync(host, projectId, "QUO-LEGACY-2");
+        });
+        await SubmitAsColleagueAsync(quotations, principals, anonymous.Id);
+        var refused = await QuotationReviewTestSupport.AsAsync(principals, "third-d", () => quotations.ApproveAsync(anonymous.Id));
+        Assert.Equal(QuotationRefusal.AuthorUnknown, refused.Refusal);
+        Assert.Equal(QuotationStatus.InReview, refused.Quotation!.Status);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task AnApprovedRevision_RecordsItsLinesHash_AndAStoredRevisionWithoutOneStillLoads()
+    {
+        // Colour review board M18.
+        using var temp = new TempDirectory();
+        var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
+        QuotationTestHost.SignIn(host, AuthorId);
+        var quotations = QuotationTestHost.Quotations(host);
+        var principals = QuotationTestHost.Principals(host);
+
+        var projectId = await QuotationTestHost.CreateProjectAsync(host, "QUO-REV-M18");
+        var quoteId = (await quotations.CreateAsync(projectId)).Quotation!.Id;
+        var lineId = (await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m))).Quotation!.Lines[0].Id;
+        var r1 = (await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, principals, quoteId)).Quotation!;
+        var revision = Assert.Single(r1.Review.Revisions);
+        Assert.StartsWith("sha256:", revision.LinesHash, StringComparison.Ordinal);
+        Assert.Equal(r1.LinesHash, revision.LinesHash);
+
+        var edited = (await quotations.UpdateLineAsync(quoteId, lineId, "Survey", null, null, Gbp(650m))).Quotation!;
+        Assert.NotEqual(revision.LinesHash, edited.LinesHash);
+
+        // The stored shape before M18/B1: no LinesHash, no LineEditors.
+        var state = edited.CaptureState();
+        var reviewJson = state.TypeState[nameof(Quotation.Review)]!;
+        Assert.Contains("\"LinesHash\"", reviewJson, StringComparison.Ordinal);
+        var legacyReviewJson = System.Text.RegularExpressions.Regex.Replace(reviewJson, ",\"LinesHash\":\"[^\"]*\"", string.Empty);
+        legacyReviewJson = System.Text.RegularExpressions.Regex.Replace(legacyReviewJson, ",\"LineEditors\":\\[[^\\]]*\\]", string.Empty);
+        Assert.DoesNotContain("LinesHash", legacyReviewJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("LineEditors", legacyReviewJson, StringComparison.Ordinal);
+        var legacyTypeState = new Dictionary<string, string?>(state.TypeState) { [nameof(Quotation.Review)] = legacyReviewJson };
+
+        var legacy = RehydrateQuotation(edited, state with { TypeState = legacyTypeState });
+        var legacyRevision = Assert.Single(legacy.Review.Revisions);
+        Assert.Null(legacyRevision.LinesHash);
+        Assert.Equal("R1", legacyRevision.Label);
+        Assert.Empty(legacy.Review.LineEditors);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    private static async Task<Quotation> CreateLegacyQuotationAsync(ITempestHost host, Guid projectId, string reference)
+    {
+        var domain = QuotationTestHost.Domain(host);
+        var created = await new EngineeringObjectFactory<Quotation>(
+            Quotation.CanonicalKind,
+            domain,
+            (doc, rev) => new Quotation(
+                doc, rev, domain, identifier: null, $"Quotation — {reference}", EngineeringObjectMetadata.Empty, reference,
+                new DateOnly(2026, 1, 5), clientOrganisationId: null, CurrencyCode.Gbp, validityDays: 30, terms: null, lines: [],
+                authorIdentityId: null))
+            .CreateAsync($"Legacy quotation '{reference}'.");
+        await ((IHasParent)created).MoveAsync(projectId);
+        return (Quotation)(await domain.Repository.FindAsync(created.Id))!;
+    }
+
+    private static Task<QuotationResult> SubmitAsColleagueAsync(IQuotationService quotations, Tempest.Core.Identity.ICurrentPrincipalAccessor principals, Guid quoteId) =>
+        QuotationReviewTestSupport.AsAsync(principals, "colleague-c", async () =>
+        {
+            var added = await quotations.AddLineAsync(quoteId, "Survey", null, null, Gbp(500m));
+            Assert.True(added.Succeeded, added.Reason);
+            var submitted = await quotations.SubmitForReviewAsync(quoteId);
+            Assert.True(submitted.Succeeded, submitted.Reason);
+            return submitted;
+        });
+
     private static Quotation RehydrateQuotation(Quotation template, EngineeringObjectState state)
     {
         static object Protected(Quotation q, string name) =>

@@ -685,6 +685,9 @@ internal sealed partial class MainWindowComposer
         // own pinned rate card.
         projectQuoteView.RateCards = rateCardCatalog;
 
+        // Colour review board M4: the review line names people, not SIDs.
+        projectQuoteView.Principals = principals;
+
         // PO decision 2026-10-01: each project's own Windows Explorer
         // folder (`<root>\<customer>\<project>\<standard subfolders>`,
         // root `Projects:FolderRoot`, default `D:\01 Projects` on Windows)
@@ -716,6 +719,7 @@ internal sealed partial class MainWindowComposer
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
+        quotesView.ProjectFolders = projectFolderLocator;
         quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 21.3B`: the Purchase orders area — every PurchaseOrder across

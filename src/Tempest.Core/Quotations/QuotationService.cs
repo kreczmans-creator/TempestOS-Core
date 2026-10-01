@@ -154,6 +154,13 @@ public sealed class QuotationService : IQuotationService
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project))
             return new QuotationResult(QuotationRefusal.ProjectNotFound, $"No project '{projectId}' is registered.", null);
 
+        // Colour review board B1: a quotation's author is the person a
+        // second-person approval must differ from, so one cannot be opened
+        // with nobody to record as its author.
+        var authorId = CurrentPrincipalId();
+        if (authorId is null)
+            return NobodySignedIn(null, "open a quotation");
+
         if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
         {
             return new QuotationResult(
@@ -171,7 +178,6 @@ public sealed class QuotationService : IQuotationService
         var resolvedClient = clientOrganisationId ?? project.ClientOrganisationId;
         var currency = await ResolveCurrencyAsync(project, cancellationToken).ConfigureAwait(false);
         var displayName = kind == QuotationKind.ChangeOrder ? $"Change order — {resolvedReference}" : $"Quotation — {resolvedReference}";
-        var authorId = CurrentPrincipalId();
 
         var created = await new EngineeringObjectFactory<Quotation>(
             Quotation.CanonicalKind,
@@ -203,6 +209,9 @@ public sealed class QuotationService : IQuotationService
         if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "added");
 
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
+
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
@@ -227,7 +236,7 @@ public sealed class QuotationService : IQuotationService
         if (cardRate is not null)
             line = line with { RateCardServiceCode = rateCardServiceCode!.Trim() };
 
-        await quote.AddLineAsync(line, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await quote.AddLineAsync(line, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -245,6 +254,9 @@ public sealed class QuotationService : IQuotationService
 
         if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "changed");
+
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
 
         var existingLine = quote.Lines.FirstOrDefault(l => l.Id == lineId);
         if (existingLine is null)
@@ -276,7 +288,7 @@ public sealed class QuotationService : IQuotationService
         if (existingLine.DeliverableId is { } carried)
             line = line with { DeliverableId = carried };
 
-        await quote.UpdateLineAsync(line, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await quote.UpdateLineAsync(line, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -304,6 +316,9 @@ public sealed class QuotationService : IQuotationService
         if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "removed");
 
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
+
         var line = quote.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
             return new QuotationResult(QuotationRefusal.LineNotFound, $"No line '{lineId}' on quotation '{quotationId}'.", quote);
@@ -311,7 +326,7 @@ public sealed class QuotationService : IQuotationService
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        await quote.RemoveLineAsync(lineId, line.Description, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await quote.RemoveLineAsync(lineId, line.Description, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -445,10 +460,16 @@ public sealed class QuotationService : IQuotationService
         if (quote.Lines.Count == 0)
             return new QuotationResult(QuotationRefusal.NothingToSend, $"Quotation '{quote.Reference}' has no lines; there is nothing to review.", quote);
 
+        // Colour review board B1: a submission with nobody signed in would
+        // record the store's own "unknown" id, and the submitter could not
+        // then be told apart from the approver.
+        if (CurrentPrincipalId() is not { } submitterId)
+            return NobodySignedIn(quote, "submit a quotation for review");
+
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        await quote.MarkInReviewAsync(_context.ResolveCurrentPrincipalId(), _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await quote.MarkInReviewAsync(submitterId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -481,12 +502,36 @@ public sealed class QuotationService : IQuotationService
                 quote);
         }
 
-        if (string.Equals(approverId, quote.Review.SubmittedBy, StringComparison.Ordinal)
-            || string.Equals(approverId, quote.AuthorIdentityId, StringComparison.Ordinal))
+        // Colour review board B1: the approver must be shown to differ from
+        // the submitter, the author and everyone who changed a line since
+        // the last approval. Where the submitter or the author is not on
+        // record, nobody can be shown to differ, so the approval is refused
+        // rather than assumed.
+        var submittedBy = quote.Review.SubmittedBy;
+        if (string.IsNullOrWhiteSpace(submittedBy) || IsUnknownPrincipal(submittedBy))
+        {
+            return new QuotationResult(
+                QuotationRefusal.AuthorUnknown,
+                $"Quotation '{quote.Reference}' was submitted with nobody signed in, so a second person cannot be shown to differ from the submitter; return it to draft and submit it again signed in.",
+                quote);
+        }
+
+        var authorId = await ResolveAuthorIdAsync(quote, cancellationToken).ConfigureAwait(false);
+        if (authorId is null)
+        {
+            return new QuotationResult(
+                QuotationRefusal.AuthorUnknown,
+                $"Nobody is on record as having opened quotation '{quote.Reference}', so a second person cannot be shown to differ from its author; open a new quotation signed in and approve that instead.",
+                quote);
+        }
+
+        if (string.Equals(approverId, submittedBy, StringComparison.Ordinal)
+            || string.Equals(approverId, authorId, StringComparison.Ordinal)
+            || quote.Review.LineEditors.Contains(approverId, StringComparer.Ordinal))
         {
             return new QuotationResult(
                 QuotationRefusal.ReviewerMustDifferFromAuthor,
-                "A quote must be approved by a second person, not the one who prepared or submitted it; switch person first.",
+                "A quote must be approved by a second person, not the one who prepared, changed or submitted it; switch person first.",
                 quote);
         }
 
@@ -559,10 +604,35 @@ public sealed class QuotationService : IQuotationService
     private string? CurrentPrincipalId()
     {
         var id = _context.CurrentPrincipalAccessor.Current?.Identity.Id;
-        return string.IsNullOrWhiteSpace(id) || string.Equals(id, EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal)
-            ? null
-            : id;
+        return string.IsNullOrWhiteSpace(id) || IsUnknownPrincipal(id) ? null : id;
     }
+
+    private static bool IsUnknownPrincipal(string id) =>
+        string.Equals(id, EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Who opened <paramref name="quote"/> — its own <see cref="Quotation.AuthorIdentityId"/>,
+    /// or, for a quotation opened before runbook C3 recorded one, the
+    /// author of its backing document's first revision (the creation
+    /// write, colour review board B1). <see langword="null"/> when neither
+    /// names a real person.
+    /// </summary>
+    private async Task<string?> ResolveAuthorIdAsync(Quotation quote, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(quote.AuthorIdentityId) && !IsUnknownPrincipal(quote.AuthorIdentityId))
+            return quote.AuthorIdentityId;
+
+        var history = await _context.Store.GetRevisionHistoryAsync(quote.Id, cancellationToken).ConfigureAwait(false);
+        var first = history.OrderBy(r => r.RevisionNumber).FirstOrDefault();
+        return first is { AuthorPrincipalId: { } creator } && !string.IsNullOrWhiteSpace(creator) && !IsUnknownPrincipal(creator)
+            ? creator
+            : null;
+    }
+
+    private static QuotationResult NobodySignedIn(Quotation? quote, string act) =>
+        new(QuotationRefusal.NoPrincipalSignedIn,
+            $"Nobody is signed in; sign in (or switch person) to {act} — a second-person review needs to know who did what.",
+            quote);
 
     /// <summary>
     /// The guard on a line priced from the project's own pinned rate card

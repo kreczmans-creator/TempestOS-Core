@@ -37,11 +37,12 @@ public sealed class ProjectQuoteReviewTests
     public async Task NoPinnedRateCard_TheDropdownOffersFixedAlone_WithAHintToPinOne()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        Window? window = null;
         try
         {
             await host.StartAsync();
             var project = await host.ProjectDirectory!.CreateAsync("P-QR-NOCARD", "No Card Project");
-            var (view, window, _) = await OpenQuoteViewAsync(host, project.Id);
+            (var view, window, _) = await OpenQuoteViewAsync(host, project.Id);
 
             var choice = RateChoice(view);
             var items = choice.Items.OfType<ComboBoxItem>().Select(i => i.Content as string).ToList();
@@ -53,13 +54,10 @@ public sealed class ProjectQuoteReviewTests
             var hint = view.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Rate card hint");
             Assert.True(hint.IsVisible);
             Assert.Contains("Pin a rate card on the Details tab", hint.Text, StringComparison.Ordinal);
-
-            window.Close();
         }
         finally
         {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
+            await TearDownAsync(host, window);
         }
     }
 
@@ -67,12 +65,13 @@ public sealed class ProjectQuoteReviewTests
     public async Task APinnedCardsHourlyEntry_FillsTheReadOnlyRate_FixedEnablesTheFixedBox_AndTheLineSavesFromTheCard()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        Window? window = null;
         try
         {
             await host.StartAsync();
             var project = await host.ProjectDirectory!.CreateAsync("P-QR-CARD", "Card Project");
             await PinCardAsync(host, project.Id);
-            var (view, window, quoteId) = await OpenQuoteViewAsync(host, project.Id);
+            (var view, window, var quoteId) = await OpenQuoteViewAsync(host, project.Id);
             var domain = Resolve<EngineeringDomainContext>(host);
 
             var choice = RateChoice(view);
@@ -116,13 +115,10 @@ public sealed class ProjectQuoteReviewTests
             var fixedLine = Quote(domain, quoteId).Lines[1];
             Assert.Equal(QuotationLineBasis.FixedPrice, fixedLine.Basis);
             Assert.Equal(new Money(600m, CurrencyCode.Gbp), fixedLine.Amount);
-
-            window.Close();
         }
         finally
         {
-            await host.ShutdownAsync();
-            await host.DisposeAsync();
+            await TearDownAsync(host, window);
         }
     }
 
@@ -130,12 +126,13 @@ public sealed class ProjectQuoteReviewTests
     public async Task SaveDraft_SubmitForReview_SamePersonRefused_SecondPersonApprovesR1_ReturnToDraftNeedsAComment_ExportNamedR1()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        Window? window = null;
         try
         {
             await host.StartAsync();
             var project = await host.ProjectDirectory!.CreateAsync("P-QR-REVIEW", "Review Project");
             await PinCardAsync(host, project.Id);
-            var (view, window, quoteId) = await OpenQuoteViewAsync(host, project.Id);
+            (var view, window, var quoteId) = await OpenQuoteViewAsync(host, project.Id);
             var domain = Resolve<EngineeringDomainContext>(host);
             var filePicker = (StubFilePicker)typeof(ProjectQuoteView)
                 .GetField("_filePicker", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.GetValue(view)!;
@@ -192,7 +189,9 @@ public sealed class ProjectQuoteReviewTests
             });
             Assert.Equal("R1", Quote(domain, quoteId).RevisionLabel);
             await UntilAsync(() => view.GetLogicalDescendants().OfType<Button>().Any(b => Equals(b.Content, "Send")));
-            Assert.Contains("Approved R1 by " + QuotationReviewSupport.ReviewerId, ReviewState(view), StringComparison.Ordinal);
+            // M4: the approver by name — the reviewer's own display name while
+            // they are signed in, their readable id once they are not.
+            Assert.Matches("Approved R1 by (Second Reviewer|" + QuotationReviewSupport.ReviewerId + ")", ReviewState(view));
 
             // ---- Export after approval: R1 on the sheet and in the file name ----
             var exportPath = Path.Combine(Path.GetTempPath(), $"quote-r1-{Guid.NewGuid():N}.pdf");
@@ -204,9 +203,69 @@ public sealed class ProjectQuoteReviewTests
             var text = PdfTextExtractor.ExtractText(await File.ReadAllBytesAsync(exportPath));
             Assert.Contains("Revision: R1", text, StringComparison.Ordinal);
 
-            window.Close();
             TryDelete(draftPath);
             TryDelete(exportPath);
+        }
+        finally
+        {
+            await TearDownAsync(host, window);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task TheReviewLine_NamesPeople_NeverShowsARawWindowsSid()
+    {
+        // Colour review board M4.
+        const string AuthorSid = "S-1-5-21-1004336348-1177238915-682003330-1001";
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        Window? window = null;
+        try
+        {
+            await host.StartAsync();
+            host.SwitchPrincipal(new Tempest.Core.Identity.SessionPrincipal(AuthorSid, "Alex Author", Tempest.Core.Identity.SessionRole.Engineer));
+            var project = await host.ProjectDirectory!.CreateAsync("P-QR-NAMES", "Names Project");
+            (var view, window, var quoteId) = await OpenQuoteViewAsync(host, project.Id);
+            view.Principals = Resolve<Tempest.Core.Identity.IPrincipalDirectory>(host);
+            var quotations = Resolve<IQuotationService>(host);
+
+            Assert.True((await quotations.AddLineAsync(quoteId, "Survey", null, null, new Money(500m, CurrencyCode.Gbp))).Succeeded);
+            Assert.True((await quotations.SubmitForReviewAsync(quoteId)).Succeeded);
+            await view.RefreshAsync();
+            Assert.Contains("submitted by Alex Author", ReviewState(view), StringComparison.Ordinal);
+
+            // Seen by the reviewer: the author's SID is not theirs to name, and is still never printed.
+            await QuotationReviewSupport.AsReviewerAsync(host, async () =>
+            {
+                await view.RefreshAsync();
+                Assert.DoesNotContain("S-1-", ReviewState(view), StringComparison.Ordinal);
+                Assert.Contains("submitted by " + Tempest.Desktop.Documents.Timesheets.TimesheetPrincipalLabel.Unnamed, ReviewState(view), StringComparison.Ordinal);
+                Assert.True((await quotations.ApproveAsync(quoteId)).Succeeded);
+                await view.RefreshAsync();
+                Assert.Contains("Approved R1 by Second Reviewer", ReviewState(view), StringComparison.Ordinal);
+                return true;
+            });
+
+            await view.RefreshAsync();
+            Assert.DoesNotContain("S-1-", ReviewState(view), StringComparison.Ordinal);
+        }
+        finally
+        {
+            await TearDownAsync(host, window);
+        }
+    }
+
+    /// <summary>
+    /// Closes the window and drains its queued render work while the
+    /// headless session is still whole, then stops the host — in that
+    /// order, whether or not the test passed (colour review board M12; the
+    /// teardown fault <c>ProjectFolderExportTests</c> documents).
+    /// </summary>
+    private static async Task TearDownAsync(WorkspaceHost host, Window? window)
+    {
+        try
+        {
+            window?.Close();
+            Dispatcher.UIThread.RunJobs();
         }
         finally
         {
@@ -226,11 +285,13 @@ public sealed class ProjectQuoteReviewTests
             RateCards = Resolve<IRateCardCatalog>(host),
         };
 
-        var window = new Window { Width = 1400, Height = 900, Content = view };
-        window.Show();
-
+        // Created before the window is shown, so a refusal here leaves no
+        // window for the caller's teardown to miss.
         var created = await Resolve<IQuotationService>(host).CreateAsync(projectId);
         Assert.True(created.Succeeded, created.Reason);
+
+        var window = new Window { Width = 1400, Height = 900, Content = view };
+        window.Show();
         await view.SelectQuoteAsync(created.Quotation!.Id);
         Dispatcher.UIThread.RunJobs();
         return (view, window, created.Quotation.Id);
@@ -287,14 +348,14 @@ public sealed class ProjectQuoteReviewTests
 
     private static async Task UntilAsync(Func<bool> condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
+        var deadline = DesktopTestHelpers.Deadline(15);
         while (!condition() && DateTime.UtcNow < deadline)
         {
             await Task.Delay(10);
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.True(condition(), "The condition was not met within 15 seconds.");
+        Assert.True(condition(), $"The condition was not met within {15 * DesktopTestHelpers.TimeoutFactor:0.#} seconds.");
     }
 
     /// <summary>True once the export's own write stream has closed — see <c>QuotationJourneyTests.ExportIsComplete</c>.</summary>

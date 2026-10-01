@@ -136,6 +136,14 @@ public sealed class ProjectQuoteView : UserControl
     /// </summary>
     public ProjectFolderLocator? ProjectFolders { get; set; }
 
+    /// <summary>
+    /// Turns the submitter's, approver's and returner's stored identity ids
+    /// into names on the review line (colour review board M4).
+    /// <see langword="null"/> (a test that constructs this view directly)
+    /// still never shows a raw SID or GUID — see <c>PersonLabel</c>.
+    /// </summary>
+    public Tempest.Core.Identity.IPrincipalDirectory? Principals { get; set; }
+
     /// <summary>The automation name of the line form's own rate dropdown (runbook C3).</summary>
     public const string RateChoiceName = "Line rate basis";
 
@@ -674,8 +682,18 @@ public sealed class ProjectQuoteView : UserControl
         return panel;
     }
 
+    /// <summary>
+    /// The person behind <paramref name="identityId"/> as the review line
+    /// shows them — through <see cref="Principals"/> when composed, and
+    /// never a raw Windows SID or GUID (colour review board M4, the
+    /// identical rule <see cref="Tempest.Desktop.Documents.Timesheets.TimesheetPrincipalLabel"/>
+    /// applies to the timesheet's own heading).
+    /// </summary>
+    private string PersonLabel(string? identityId) =>
+        Tempest.Desktop.Documents.Timesheets.TimesheetPrincipalLabel.Resolve(Principals?.Describe(identityId), identityId);
+
     /// <summary>The line under the quote's own identity saying where it stands in draft-and-review (runbook C3).</summary>
-    private static string DescribeReviewState(Quotation quote)
+    private string DescribeReviewState(Quotation quote)
     {
         var review = quote.Review;
         var nextLabel = QuotationReview.LabelFor(quote.RevisionNumber + 1);
@@ -687,23 +705,23 @@ public sealed class ProjectQuoteView : UserControl
                     ? $"Draft — saved {at.ToLocalTime():yyyy-MM-dd HH:mm}"
                     : "Draft — not saved yet";
                 var after = quote.RevisionNumber > 0 ? $" A new draft after {quote.Review.Revisions.LastOrDefault()?.Label ?? QuotationReview.LabelFor(quote.RevisionNumber)}; the next approval issues {nextLabel}." : $" Approval by a second person issues {nextLabel}.";
-                var returned = review.ReturnComment is { Length: > 0 } comment ? $" Returned by {review.ReturnedBy}: \"{comment}\"" : string.Empty;
+                var returned = review.ReturnComment is { Length: > 0 } comment ? $" Returned by {PersonLabel(review.ReturnedBy)}: \"{comment}\"" : string.Empty;
                 return saved + "." + after + returned;
 
             case QuotationStatus.InReview:
-                return $"In review — submitted by {review.SubmittedBy} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. A second person approves it as {nextLabel}, or returns it to draft with a comment.";
+                return $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. A second person approves it as {nextLabel}, or returns it to draft with a comment.";
 
             case QuotationStatus.Approved:
                 var approved = review.Revisions.LastOrDefault();
                 return approved is null
                     ? $"Approved {quote.RevisionLabel} — ready to export and send."
-                    : $"Approved {approved.Label} by {approved.ApprovedBy} at {approved.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm} — ready to export and send.";
+                    : $"Approved {approved.Label} by {PersonLabel(approved.ApprovedBy)} at {approved.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm} — ready to export and send.";
 
             default:
                 var issued = review.Revisions.LastOrDefault();
                 return issued is null
                     ? $"Issued as {quote.RevisionLabel}."
-                    : $"Issued as {issued.Label}, approved by {issued.ApprovedBy} at {issued.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm}.";
+                    : $"Issued as {issued.Label}, approved by {PersonLabel(issued.ApprovedBy)} at {issued.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm}.";
         }
     }
 
@@ -1030,68 +1048,18 @@ public sealed class ProjectQuoteView : UserControl
     }
 
     /// <summary>The project folder (or its quote subfolder) to start the export picker in — <see langword="null"/> whenever there is none, never an exception (see <see cref="ProjectFolders"/>).</summary>
-    private async Task<string?> QuoteStartFolderAsync(Quotation quote)
-    {
-        if (ProjectFolders is not { } folders || (quote.ParentId ?? _currentProjectId()) is not { } projectId)
-            return null;
-
-        try
-        {
-            return await folders.QuoteFolderForAsync(projectId, CancellationToken.None).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
-        {
-            return null;
-        }
-    }
+    private Task<string?> QuoteStartFolderAsync(Quotation quote) =>
+        QuotationSheetModelBuilder.StartFolderAsync(ProjectFolders, quote.ParentId ?? _currentProjectId(), CancellationToken.None);
 
     private async Task<byte[]> RenderSheetAsync(Quotation quote)
     {
-        var (projectCode, projectName) = await ResolveProjectAsync(quote.ParentId).ConfigureAwait(true);
-        var clientName = await ResolveClientNameAsync(quote.ClientOrganisationId).ConfigureAwait(true);
-
-        var lines = quote.Lines.Select(l => new QuotationSheetLineRow(
-            l.Description,
-            l.Basis == QuotationLineBasis.Hourly ? l.Hours?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null,
-            l.Basis == QuotationLineBasis.Hourly ? MoneyDisplay.Format(l.Rate!.Value) : null,
-            MoneyDisplay.Format(l.Amount))).ToList();
-
-        var model = new QuotationSheetModel(
-            IssuerName: _issuerName(),
-            ProjectCode: projectCode,
-            ProjectName: projectName,
-            Client: clientName,
-            Reference: quote.Reference,
-            QuoteDate: quote.QuoteDate,
-            ValidityDays: quote.ValidityDays,
-            Currency: quote.Currency.ToString(),
-            Lines: lines,
-            Total: MoneyDisplay.Format(quote.Total),
-            Terms: quote.Terms,
-            Status: QuotationExport.StatusText(quote),
-            GeneratedAtUtc: _time.GetUtcNow(),
-            ApplicationVersionText: _applicationVersionText(),
-            Revision: QuotationExport.RevisionText(quote));
-
+        var model = await QuotationSheetModelBuilder.BuildAsync(
+            quote, _domainContext, _organisations, _issuerName(), _applicationVersionText(), _time.GetUtcNow(), CancellationToken.None).ConfigureAwait(true);
         return _sheetRenderer.Render(model).ToArray();
     }
 
-    private async Task<(string Code, string Name)> ResolveProjectAsync(Guid? projectId)
-    {
-        if (projectId is not { } id || await _domainContext.Repository.FindAsync(id, CancellationToken.None).ConfigureAwait(true) is not { } project)
-            return (string.Empty, string.Empty);
-
-        return ((project as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (project as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
-    }
-
-    private async Task<string> ResolveClientNameAsync(string? clientOrganisationId)
-    {
-        if (string.IsNullOrWhiteSpace(clientOrganisationId))
-            return "(none)";
-
-        var found = await _organisations.FindAsync(clientOrganisationId, CancellationToken.None).ConfigureAwait(true);
-        return found?.Definition.Name ?? clientOrganisationId;
-    }
+    private Task<string> ResolveClientNameAsync(string? clientOrganisationId) =>
+        QuotationSheetModelBuilder.ResolveClientNameAsync(_organisations, clientOrganisationId, CancellationToken.None);
 
     private void OnWorkspaceChanged(WorkspaceChange change)
     {
