@@ -40,7 +40,9 @@ namespace Tempest.Desktop.Views;
 /// drawn by <see cref="CalculationDiagramView"/> in a fixed panel, redrawn
 /// as any field changes; focusing a field highlights its shapes, and
 /// pointing at or clicking a shape marks or focuses its field. Not to
-/// scale, inputs only; "No diagram yet" where there is none.
+/// scale, inputs only. Where the Inputs section is narrower than
+/// <see cref="DiagramBesideMinimumWidth"/> (a laptop window), the panel
+/// stacks under the inputs instead, so no value box is squeezed.
 /// </para>
 /// <para>
 /// <b>This view decides nothing.</b> It collects text, raises intent and
@@ -77,6 +79,14 @@ public sealed class CalculationModulesView : UserControl
 
     /// <summary>The fixed width of the reference diagram panel beside the inputs (`PO-2`).</summary>
     public const double DiagramPanelWidth = 380;
+
+    /// <summary>
+    /// The narrowest Inputs section that keeps the diagram beside the
+    /// inputs: a 220 px label, a value box of 200 px or more, a 120 px
+    /// unit picker, the gap and the panel. Narrower, the panel stacks
+    /// under the inputs (the board's F1, a 1180 x 760 window).
+    /// </summary>
+    public const double DiagramBesideMinimumWidth = 220 + 200 + 120 + DesignTokens.SpaceLg + DiagramPanelWidth;
 
     /// <summary>What the surface says before a calculation is chosen.</summary>
     public const string PickModuleGuidance = "Choose a calculation from the catalogue on the left. Its inputs, with their units and limits, appear here.";
@@ -700,11 +710,8 @@ public sealed class CalculationModulesView : UserControl
         inputs.Children.Add(_problems);
         inputs.Children.Add(_status);
 
-        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`).
-        var inputsBeside = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        _diagram.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
-        Grid.SetColumn(inputs, 0);
-        Grid.SetColumn(_diagram, 1);
+        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`), or under them where that would squeeze them.
+        var inputsBeside = new BesideOrBelowPanel(DiagramBesideMinimumWidth, DesignTokens.SpaceLg);
         inputsBeside.Children.Add(inputs);
         inputsBeside.Children.Add(_diagram);
         right.Children.Add(Section("Inputs", inputsBeside));
@@ -853,4 +860,55 @@ public sealed class CalculationModulesView : UserControl
         MinHeight = DesignTokens.MinControlSize,
         HorizontalAlignment = HorizontalAlignment.Stretch,
     };
+    /// <summary>
+    /// Two children: the first fills the width, the second (a fixed-width
+    /// panel) sits beside it on the right while the width allows at least
+    /// <c>minimumBeside</c>, and under it otherwise.
+    /// </summary>
+    private sealed class BesideOrBelowPanel(double minimumBeside, double gap) : Panel
+    {
+        private bool Beside(double width) => double.IsInfinity(width) || width >= minimumBeside;
+
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            if (Children.Count != 2)
+                return base.MeasureOverride(availableSize);
+
+            var (main, side) = (Children[0], Children[1]);
+            if (Beside(availableSize.Width))
+            {
+                side.Measure(availableSize);
+                var mainWidth = Math.Max(0, availableSize.Width - side.DesiredSize.Width - gap);
+                main.Measure(availableSize.WithWidth(mainWidth));
+                return new Size(
+                    double.IsInfinity(availableSize.Width) ? main.DesiredSize.Width + gap + side.DesiredSize.Width : availableSize.Width,
+                    Math.Max(main.DesiredSize.Height, side.DesiredSize.Height));
+            }
+
+            main.Measure(availableSize);
+            side.Measure(availableSize);
+            return new Size(Math.Max(main.DesiredSize.Width, side.DesiredSize.Width), main.DesiredSize.Height + gap + side.DesiredSize.Height);
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            if (Children.Count != 2)
+                return base.ArrangeOverride(finalSize);
+
+            var (main, side) = (Children[0], Children[1]);
+            var sideWidth = Math.Min(side.DesiredSize.Width, finalSize.Width);
+            if (Beside(finalSize.Width))
+            {
+                main.Arrange(new Rect(0, 0, Math.Max(0, finalSize.Width - sideWidth - gap), finalSize.Height));
+                side.Arrange(new Rect(finalSize.Width - sideWidth, 0, sideWidth, side.DesiredSize.Height));
+            }
+            else
+            {
+                main.Arrange(new Rect(0, 0, finalSize.Width, main.DesiredSize.Height));
+                side.Arrange(new Rect(0, main.DesiredSize.Height + gap, sideWidth, side.DesiredSize.Height));
+            }
+
+            return finalSize;
+        }
+    }
 }

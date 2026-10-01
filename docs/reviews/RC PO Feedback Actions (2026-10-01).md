@@ -61,7 +61,7 @@ No earlier written record of this was found; this entry records it.
 |---|---|---|
 | A | Spec model, variants, coverage test | Done |
 | B | Diagram control: shapes, dimension arrows, labels, theming, fallback, screen-reader text | Done |
-| C | Wire into the calculator page: live redraw, two-way highlight, layout | Done |
+| C | Wire into the calculator page: live redraw, two-way highlight, layout (stacked under the inputs on a narrow window) | Done |
 | D1 | Simple diagrams: beam bending/deflection, column buckling, bolt shear, bearing at a hole, thermal expansion, shaft, pressure vessel (plus plane wall, resistance chain, tolerance stack) | Done |
 | D2 | Hard diagrams: bolt group, lifting lug, fillet weld, thick cylinder, bolted-joint preload | Done |
 | D3 | Charts not geometry: bearing life, Miner S-N, material margin | Done |

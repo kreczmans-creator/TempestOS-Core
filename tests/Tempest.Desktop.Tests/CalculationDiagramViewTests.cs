@@ -268,10 +268,46 @@ public sealed class CalculationDiagramViewTests
         });
     }
 
-    private static void WithCalculators(string calculationId, Action<Window, CalculationModulesView> body)
+    [AvaloniaTheory]
+    [InlineData(1180, 760)]
+    [InlineData(1050, 760)]
+    public void OnALaptopWindow_EveryValueBoxStaysReadable_AndTheDiagramOverlapsNothing(double width, double height)
+    {
+        // The board's F1: at 1180 x 760 the fixed panel beside the inputs squeezed every value box to ~64 px, under its unit picker.
+        WithCalculators(BeamDeflectionCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            DesktopTestHelpers.AssertPlaced(diagram, "the reference diagram");
+            var diagramBox = Box(diagram, window);
+            Assert.True(diagramBox.Right <= width + 0.5, $"The diagram ends at x={diagramBox.Right}, past the {width} px window.");
+
+            foreach (var name in new[] { "Span", "Load", "YoungsModulus", "SecondMomentOfArea", "DeflectionLimit" })
+            {
+                var box = view.FieldControl(name)!;
+                var unit = view.UnitPicker(name)!;
+                var label = ((Grid)view.FieldRow(name)!).Children.OfType<TextBlock>().First();
+                var boxRect = Box(box, window);
+                var labelRect = Box(label, window);
+                var unitRect = Box(unit, window);
+
+                Assert.True(boxRect.Width >= 120, $"{name}: the value box is {boxRect.Width:0} px wide at {width} x {height}; it must be at least 120 px to be read.");
+                Assert.True(boxRect.Left >= labelRect.Right - 0.5, $"{name}: the value box (x={boxRect.Left:0}) overlaps its label (ends x={labelRect.Right:0}).");
+                Assert.True(unitRect.Left >= boxRect.Right - 0.5, $"{name}: the unit picker (x={unitRect.Left:0}) covers the value box (ends x={boxRect.Right:0}).");
+                Assert.False(boxRect.Intersects(diagramBox), $"{name}: the value box {boxRect} overlaps the diagram {diagramBox}.");
+            }
+        }, width, height);
+    }
+
+    private static Rect Box(Control control, Visual relativeTo)
+    {
+        var origin = control.TranslatePoint(new Point(0, 0), relativeTo)!.Value;
+        return new Rect(origin, control.Bounds.Size);
+    }
+
+    private static void WithCalculators(string calculationId, Action<Window, CalculationModulesView> body, double width = 1600, double height = 1000)
     {
         var view = new CalculationModulesView();
-        var window = new Window { Width = 1600, Height = 1000, Content = view };
+        var window = new Window { Width = width, Height = height, Content = view };
         try
         {
             window.Show();
@@ -292,8 +328,8 @@ public sealed class CalculationDiagramViewTests
         for (var pass = 0; pass < 2; pass++)
         {
             Dispatcher.UIThread.RunJobs();
-            window.Measure(new Size(1600, 1000));
-            window.Arrange(new Rect(0, 0, 1600, 1000));
+            window.Measure(new Size(window.Width, window.Height));
+            window.Arrange(new Rect(0, 0, window.Width, window.Height));
         }
     }
 
