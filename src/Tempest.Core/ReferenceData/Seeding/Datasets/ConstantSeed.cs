@@ -41,6 +41,10 @@ public sealed class ConstantSeed : IReferenceSeed<ConstantDefinition>
     }
 
     /// <inheritdoc />
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
+
+    /// <inheritdoc />
     public string DatasetName => "NIST CODATA 2022 — representable fundamental constants";
 
     /// <inheritdoc />

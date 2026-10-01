@@ -4,17 +4,22 @@ using Tempest.Core.UnitsAndQuantities;
 namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 
 /// <summary>
-/// A seed set of engineering materials spanning structural steel,
-/// austenitic stainless steel, wrought aluminium and copper.
+/// The shipped materials library: 77 engineering materials across
+/// structural, engineering and stainless steels, aluminium, copper, cast
+/// iron, titanium, nickel and magnesium alloys and thermoplastics, every
+/// value traced to a named, addressable source (PO decision 2026-10-01).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Six grades, chosen to be different from each other.</b> The point of
-/// a seed is not coverage, it is exercise: a selection routine that can
-/// tell 6082-T6 from S355J2 from 1.4404 is being asked a real question,
-/// because those three differ in density, stiffness, strength, corrosion
-/// behaviour and cost in ways that actually decide designs. Six grades
-/// that disagree teach the platform more than sixty that cluster.
+/// <b>Usable from day one, and honest about how.</b> The Product Owner ruled
+/// that the libraries must be fully usable from day one. Every record
+/// therefore carries every property the calculators read — density,
+/// Young's modulus, yield or 0.2% proof strength, tensile strength and
+/// thermal expansion — except where no source read publishes one; those
+/// gaps are named in the record's own notes and pinned by
+/// <c>DayOneReferenceLibraryTests</c>, so a calculator refuses rather than
+/// using a borrowed figure. The dataset is released at seed
+/// (<see cref="ReleaseAtSeed"/>) through the governed review path.
 /// </para>
 /// <para>
 /// <b>Every property carries the condition it holds under.</b> A minimum
@@ -32,17 +37,23 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// A datasheet's mechanical minima are the cited standard's
 /// (<see cref="ReferenceValueOrigin.Standard"/>); its density and modulus
 /// are typical figures the stockholder published on its own authority
-/// (<see cref="ReferenceValueOrigin.EngineeringReference"/>). Collapsing
-/// the two would overstate the second.
+/// (<see cref="ReferenceValueOrigin.EngineeringReference"/>); a
+/// manufacturer's own product figures are
+/// <see cref="ReferenceValueOrigin.ManufacturerCatalogue"/>. A value taken
+/// from a document other than the record's principal source begins
+/// "SUPPLEMENTARY SOURCE:" and names that document and its address.
 /// </para>
 /// <para>
-/// <b>One published value is deliberately absent.</b> See
-/// <c>mat-5083-o-h111</c>: its source states a density that is physically
-/// impossible, and the record omits it and says so rather than quietly
-/// substituting the value the source evidently meant.
+/// <b>Source defects are recorded, not repaired.</b> See
+/// <c>mat-5083-o-h111</c>: its own datasheet states a density that is
+/// physically impossible; the record carries the same publisher's figure
+/// for the same alloy from another of its datasheets, cited on the value,
+/// and says why. The Seed Data Sources Register
+/// (<c>docs/governance/Data/Seed Data Sources Register.md</c>) lists every
+/// source and every defect.
 /// </para>
 /// </remarks>
-public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
+public sealed partial class MaterialSeed : IReferenceSeed<MaterialDefinition>
 {
     /// <summary>The identity of the S355J2 structural steel record.</summary>
     public const string S355J2 = "mat-s355j2";
@@ -70,13 +81,32 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
     }
 
     /// <inheritdoc />
-    public string DatasetName => "Representative engineering materials — steel, stainless, aluminium, copper";
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
 
     /// <inheritdoc />
-    public int DatasetRevision => 1;
+    public string DatasetName => "Engineering materials — day-one library (PO decision 2026-10-01)";
+
+    /// <inheritdoc />
+    /// <remarks>Revision 2 is the day-one expansion; revision 1 was the six-grade representative set.</remarks>
+    public int DatasetRevision => 2;
 
     /// <inheritdoc />
     public IReadOnlyList<ReferenceSeedRecord<MaterialDefinition>> Records { get; } =
+    [
+        .. FirstAcquisition(),
+        .. StructuralSteels(),
+        .. EngineeringSteels(),
+        .. StainlessSteels(),
+        .. AluminiumAlloys(),
+        .. CopperAlloys(),
+        .. CastIrons(),
+        .. TitaniumAndNickelAlloys(),
+        .. MagnesiumAlloys(),
+        .. Polymers(),
+    ];
+
+    private static IEnumerable<ReferenceSeedRecord<MaterialDefinition>> FirstAcquisition() =>
     [
         new(S355J2,
             new MaterialDefinition
@@ -118,13 +148,39 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
                         new Quantity<Pressure>(210.0, PressureUnits.Gigapascal)),
                     [MaterialPropertyNames.ThermalExpansionCoefficient] = Typical(
                         new Quantity<ThermalExpansion>(12e-6, ThermalExpansionUnits.PerKelvin)),
+                    [MaterialPropertyNames.ShearModulus] = Design(
+                        new Quantity<Pressure>(81.0, PressureUnits.Gigapascal),
+                        "Shear modulus G as the source tabulates it, citing EN 1993-1-1."),
+                    [MaterialPropertyNames.ThermalConductivity] = Design(
+                        new Quantity<ThermalConductivity>(53.3, ThermalConductivityUnits.WattPerMetreKelvin),
+                        "At 20 degC, as the source tabulates it, citing EN 1993-1-2. Falls with temperature."),
+                    [MaterialPropertyNames.SpecificHeatCapacity] = Design(
+                        new Quantity<SpecificHeatCapacity>(440.0, SpecificHeatCapacityUnits.JoulePerKilogramKelvin),
+                        "At 20 degC, as the source tabulates it, citing EN 1993-1-2."),
+                    [MaterialPropertyNames.PoissonsRatio] = SupplementaryValue(
+                        new Quantity<Dimensionless>(0.3, DimensionlessUnits.One),
+                        "Siderticino SA, S235JR steel datasheet (https://siderticino.it/en/steel-datasheets/s235jr/), "
+                        + "which gives nu ~ 0.3 for hot-rolled non-alloy structural steels; the S355J2 page itself "
+                        + "states no Poisson's ratio.",
+                        ReferenceValueOrigin.EngineeringReference),
+                    [MaterialPropertyNames.FatigueStrength] = SupplementaryValue(
+                        new Quantity<Pressure>(160.0, PressureUnits.Megapascal),
+                        "Siderticino SA, S355 steel datasheet (https://siderticino.it/en/steel-datasheets/s355j2/, "
+                        + "retrieved 2026-10-01): base-material fatigue limit 'of about 160-180 MPa' "
+                        + "for alternating stress at 2x10^6 cycles, citing EN 1993-1-9. Lower end of the stated range. "
+                        + "Unwelded parent metal only: welded and notched details are governed by the EN 1993-1-9 "
+                        + "detail categories, which are far lower.",
+                        ReferenceValueOrigin.EngineeringReference),
                 },
                 EnvironmentalNotes = "No corrosion resistance. Requires protective coating or an allowance for "
                     + "corrosion loss in any exposed application. The source datasheet gives no corrosion data.",
                 Notes = "Chemical composition limits stated by the source and not modelled here (the material "
                     + "record holds properties, not composition): C <= 0.22%, Mn <= 1.60%, Si <= 0.55%, "
                     + "P <= 0.025%, S <= 0.025%, CEV <= 0.45% for t <= 30 mm. Delivery condition is not stated "
-                    + "by the source and is therefore not recorded.",
+                    + "by the source and is therefore not recorded. Shear modulus, thermal conductivity, specific heat, "
+                    + "Poisson's ratio and fatigue limit were added from a re-read of the same publisher's pages on "
+                    + "2026-10-01 (day-one acquisition, PO decision 2026-10-01); the S355 page tabulates the first three "
+                    + "against EN 1993-1-1/-1-2.",
             },
             SeedSources.Siderticino(
                 "S355J2 (S355) technical specifications - Non-alloy structural steels",
@@ -339,6 +395,13 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
                         + "a limit qualifier. Stored as the bare number the source quotes."),
                     [MaterialPropertyNames.MeltingPoint] = Typical(
                         new Quantity<Temperature>(570.0, TemperatureUnits.DegreeCelsius)),
+                    [MaterialPropertyNames.Density] = SupplementaryValue(
+                        new Quantity<MassDensity>(2.65, MassDensityUnits.GramPerCubicCentimetre),
+                        "Aalco Metals Limited, 'Aluminium Alloy - Commercial Alloy - 5083 - H32 Sheet' datasheet "
+                        + "(https://www.aalco.co.uk/datasheets/Aluminium-Alloy-5083-H32-Sheet_140.ashx), physical "
+                        + "properties table. Density is a property of alloy 5083, not of its temper; this record's own "
+                        + "O/H111 datasheet misprints it (see Notes), so the same publisher's H32 sheet is cited instead.",
+                        ReferenceValueOrigin.EngineeringReference),
                     [MaterialPropertyNames.YoungsModulus] = Typical(
                         new Quantity<Pressure>(72.0, PressureUnits.Gigapascal)),
                     [MaterialPropertyNames.ThermalExpansionCoefficient] = Typical(
@@ -349,12 +412,13 @@ public sealed class MaterialSeed : IReferenceSeed<MaterialDefinition>
                 EnvironmentalNotes = "A marine-grade magnesium alloy, non-heat-treatable, chosen for seawater "
                     + "corrosion resistance and weldability rather than strength. The source states no "
                     + "quantified corrosion data, so none is recorded.",
-                Notes = "DENSITY DELIBERATELY NOT RECORDED. The source datasheet prints 'Density 265 g/cm3', "
-                    + "which is physically impossible — some twelve times the density of osmium — and is "
-                    + "evidently a misplaced decimal point for 2.65 g/cm3. Two independent reads of the page "
-                    + "returned the same figure, so this is the source's own error and not a transcription "
-                    + "fault. Correcting it here would mean publishing a number no source states, so the "
-                    + "property is omitted and this note records why. Elongation is recorded only for the "
+                Notes = "DENSITY NOT TAKEN FROM THIS RECORD'S OWN DATASHEET. The O/H111 datasheet prints "
+                    + "'Density 265 g/cm3', which is physically impossible — some twelve times the density of osmium — "
+                    + "and is evidently a misplaced decimal point. Two independent reads of the page returned the "
+                    + "same figure, so it is the source's own error and not a transcription fault. Rather than "
+                    + "correcting it by assumption, the density recorded is the 2.65 g/cm3 the same publisher prints "
+                    + "for the same alloy on its 5083-H32 sheet datasheet, which is cited on the value itself "
+                    + "(day-one acquisition, 2026-10-01). Elongation is recorded only for the "
                     + "80 to 120 mm band by the source (12% min) and so is not recorded against this 6.3 to "
                     + "80 mm record. Electrical resistivity 0.058e-6 ohm.m is published but not recorded: this "
                     + "platform models no electrical resistivity dimension.",

@@ -617,8 +617,16 @@ public sealed class TempestHost : ITempestHost
         // composition root every real launch goes through
         // (`EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync`):
         // a library still holding no record at all is populated from its
-        // shipped seed, Draft only; a library a person has already
-        // touched — populated, edited, or seeded before — is left alone.
+        // shipped seed; a library a person has already put a record of their
+        // own into is left alone.
+        //
+        // PO decision 2026-10-01: shipped reference data must be usable from
+        // day one, so the host's seeder carries the release-at-seed policy.
+        // Every record it registers is verified and released through
+        // ReferenceReviewService as the named seed principal
+        // ('tempest.reference-seed'), with the ordinary permission checks and
+        // audit rows — never a direct write of a validation state.
+        services.Singleton<ReferenceSeedReleasePolicy>();
         services.Singleton<ReferenceSeedService>();
 
         services.Singleton<IStandardCatalog, StandardCatalog>();

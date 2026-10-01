@@ -511,7 +511,7 @@ public sealed class CalculationModulesViewTests
 
     private static async Task InCalculatorsAsync(Func<WorkspaceHost, MainWindow, CalculationModulesView, Task> body)
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();

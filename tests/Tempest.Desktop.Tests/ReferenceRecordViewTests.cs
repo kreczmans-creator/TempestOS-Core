@@ -27,7 +27,7 @@ public sealed class ReferenceRecordViewTests
     [AvaloniaFact]
     public async Task OpeningFstM10Coarse_ShowsDefinitionHistoryAndCitation_VerifyReleaseAndCitedByAllWork()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();
@@ -137,7 +137,7 @@ public sealed class ReferenceRecordViewTests
     [AvaloniaFact]
     public async Task OpeningARecord_SitsBesideTheListWhenWide_AndReplacesItWithBackWhenNarrow()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();

@@ -361,14 +361,18 @@ public static class EngineeringWorkspaceComposer
     /// <para>
     /// Also populates the five shipped reference libraries (`WP 18.0B-R1`,
     /// `TD-163`) — Standards, Materials, Constants, Fasteners, Bearings —
-    /// each only if that library is still holding no record at all
-    /// (<see cref="ReferenceSeedService.ApplyIfEmptyAsync{TDefinition}"/>).
-    /// A library a person has already populated, edited or seeded is never
-    /// touched again, so a re-launch adds nothing and the shipped corpus
-    /// never overrides a value a person corrected. Every record this seeds
-    /// lands <see cref="ReferenceValidationState.Draft"/>, carrying its
-    /// dataset's own <see cref="SourceCitation"/> — nothing is verified or
-    /// released by starting the application.
+    /// each only if that library holds nothing a person put there
+    /// (<see cref="ReferenceSeedService.ApplyAtStartupAsync{TDefinition}"/>):
+    /// an empty library is seeded, a library of shipped records only is
+    /// topped up to the current dataset, and a library holding any record
+    /// of a person's own is never touched. A re-launch adds nothing new, and
+    /// the shipped corpus never overrides a value a person corrected. Under
+    /// the PO decision of 2026-10-01 every record the host's seeder writes is
+    /// released at seed through <see cref="ReferenceSeedReleasePolicy"/> —
+    /// verified and released as the named seed principal through the
+    /// ordinary review path, carrying its dataset's own
+    /// <see cref="SourceCitation"/> — so the libraries are usable by every
+    /// calculator from the first launch.
     /// </para>
     /// </remarks>
     /// <returns>A full account of what was recovered, and of anything that could not be.</returns>
@@ -410,19 +414,19 @@ public static class EngineeringWorkspaceComposer
         // Citation order: Standards first, because the other libraries
         // cite it — the same order `SeedHarness.SeedEverythingAsync`
         // already establishes for the test-only equivalent of this pass.
-        await seeder.ApplyIfEmptyAsync(
+        await seeder.ApplyAtStartupAsync(
             (IStandardCatalog)services.GetService(typeof(IStandardCatalog)), StandardSeed.Instance, cancellationToken)
             .ConfigureAwait(false);
-        await seeder.ApplyIfEmptyAsync(
+        await seeder.ApplyAtStartupAsync(
             (IMaterialCatalog)services.GetService(typeof(IMaterialCatalog)), MaterialSeed.Instance, cancellationToken)
             .ConfigureAwait(false);
-        await seeder.ApplyIfEmptyAsync(
+        await seeder.ApplyAtStartupAsync(
             (IConstantCatalog)services.GetService(typeof(IConstantCatalog)), ConstantSeed.Instance, cancellationToken)
             .ConfigureAwait(false);
-        await seeder.ApplyIfEmptyAsync(
+        await seeder.ApplyAtStartupAsync(
             (IFastenerCatalog)services.GetService(typeof(IFastenerCatalog)), FastenerSeed.Instance, cancellationToken)
             .ConfigureAwait(false);
-        await seeder.ApplyIfEmptyAsync(
+        await seeder.ApplyAtStartupAsync(
             (IBearingCatalog)services.GetService(typeof(IBearingCatalog)), BearingSeed.Instance, cancellationToken)
             .ConfigureAwait(false);
     }

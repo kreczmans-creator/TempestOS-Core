@@ -52,7 +52,7 @@ public sealed class StartupReferenceLibrarySeedingTests
     }
 
     [Fact]
-    public async Task AFreshHostOverAnEmptyRoot_Seeds41RecordsAcrossTheFiveLibraries_AllDraftWithTheirCitation()
+    public async Task AFreshHostOverAnEmptyRoot_SeedsEveryShippedRecordAcrossTheFiveLibraries_AllReleasedWithTheirCitation()
     {
         using var temp = new TempDirectory();
 
@@ -73,26 +73,28 @@ public sealed class StartupReferenceLibrarySeedingTests
             var fastenerRecords = await fasteners.ListAsync();
             var bearingRecords = await bearings.ListAsync();
 
-            Assert.Equal(14, standardRecords.Count);
-            Assert.Equal(6, materialRecords.Count);
-            Assert.Equal(12, constantRecords.Count);
-            Assert.Equal(7, fastenerRecords.Count);
-            Assert.Equal(2, bearingRecords.Count);
+            Assert.Equal(StandardSeed.Instance.Records.Count, standardRecords.Count);
+            Assert.Equal(MaterialSeed.Instance.Records.Count, materialRecords.Count);
+            Assert.Equal(ConstantSeed.Instance.Records.Count, constantRecords.Count);
+            Assert.Equal(FastenerSeed.Instance.Records.Count, fastenerRecords.Count);
+            Assert.Equal(BearingSeed.Instance.Records.Count, bearingRecords.Count);
 
             var total = standardRecords.Count + materialRecords.Count + constantRecords.Count
                 + fastenerRecords.Count + bearingRecords.Count;
-            Assert.Equal(41, total);
+            Assert.Equal(29 + 77 + 12 + 131 + 39, total);
 
-            // Every one of the 41 landed Draft, and every one carries the
-            // structured citation its own dataset gives it (`ADR-0149`) -
-            // seeding is population, not verification. Five separate,
-            // typed calls rather than one shared loop, because the five
-            // libraries have five different definition types.
-            AssertAllDraftWithCitation(standardRecords);
-            AssertAllDraftWithCitation(materialRecords);
-            AssertAllDraftWithCitation(constantRecords);
-            AssertAllDraftWithCitation(fastenerRecords);
-            AssertAllDraftWithCitation(bearingRecords);
+            // PO decision 2026-10-01: every shipped record is released at
+            // seed — verified and released through the review path as the
+            // named seed principal — and every one still carries the
+            // structured citation its own dataset gives it (`ADR-0149`).
+            // Five separate, typed calls rather than one shared loop,
+            // because the five libraries have five different definition
+            // types.
+            AssertAllReleasedWithCitation(standardRecords);
+            AssertAllReleasedWithCitation(materialRecords);
+            AssertAllReleasedWithCitation(constantRecords);
+            AssertAllReleasedWithCitation(fastenerRecords);
+            AssertAllReleasedWithCitation(bearingRecords);
         }
         finally
         {
@@ -101,10 +103,11 @@ public sealed class StartupReferenceLibrarySeedingTests
         }
     }
 
-    private static void AssertAllDraftWithCitation<TDefinition>(IReadOnlyList<IReferenceRecord<TDefinition>> records)
+    private static void AssertAllReleasedWithCitation<TDefinition>(IReadOnlyList<IReferenceRecord<TDefinition>> records)
         where TDefinition : class
     {
-        Assert.All(records, r => Assert.Equal(ReferenceValidationState.Draft, r.ValidationState));
+        Assert.All(records, r => Assert.Equal(ReferenceValidationState.Released, r.ValidationState));
+        Assert.All(records, r => Assert.Equal(ReferenceSeedReleasePolicy.SeedPrincipalId, r.Provenance.ReviewerPrincipalId));
         Assert.All(records, r => Assert.NotNull(r.Source));
     }
 
@@ -138,15 +141,22 @@ public sealed class StartupReferenceLibrarySeedingTests
                 var fasteners = (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog))!;
                 var bearings = (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog))!;
 
-                // Still exactly 41 - the second launch's own pass found
-                // every library already holding records and left every one
-                // of them alone, per ReferenceSeedService.ApplyIfEmptyAsync's
-                // own whole-library gate.
-                Assert.Equal(14, (await standards.ListAsync()).Count);
-                Assert.Equal(6, (await materials.ListAsync()).Count);
-                Assert.Equal(12, (await constants.ListAsync()).Count);
-                Assert.Equal(7, (await fasteners.ListAsync()).Count);
-                Assert.Equal(2, (await bearings.ListAsync()).Count);
+                // Still exactly the shipped counts - the second launch's own
+                // pass found every shipped record already present and
+                // released, and changed nothing
+                // (ReferenceSeedService.ApplyAtStartupAsync is additive).
+                Assert.Equal(StandardSeed.Instance.Records.Count, (await standards.ListAsync()).Count);
+                Assert.Equal(MaterialSeed.Instance.Records.Count, (await materials.ListAsync()).Count);
+                Assert.Equal(ConstantSeed.Instance.Records.Count, (await constants.ListAsync()).Count);
+                Assert.Equal(FastenerSeed.Instance.Records.Count, (await fasteners.ListAsync()).Count);
+                Assert.Equal(BearingSeed.Instance.Records.Count, (await bearings.ListAsync()).Count);
+
+                // And nothing was revised again: S355J2 is at the revision the
+                // first launch's release left it at.
+                var s355 = (await materials.FindAsync(MaterialSeed.S355J2))!;
+                Assert.Equal(ReferenceValidationState.Released, s355.ValidationState);
+                // Registered (1), verified (2), Checked (3), Validated (4), Released (5).
+                Assert.Equal(5, s355.RevisionNumber);
             }
             finally
             {
@@ -210,10 +220,59 @@ public sealed class StartupReferenceLibrarySeedingTests
 
                 // The other four libraries had nothing of their own in
                 // them, so they still seeded in full.
-                Assert.Equal(14, (await standards.ListAsync()).Count);
-                Assert.Equal(12, (await constants.ListAsync()).Count);
-                Assert.Equal(7, (await fasteners.ListAsync()).Count);
-                Assert.Equal(2, (await bearings.ListAsync()).Count);
+                Assert.Equal(StandardSeed.Instance.Records.Count, (await standards.ListAsync()).Count);
+                Assert.Equal(ConstantSeed.Instance.Records.Count, (await constants.ListAsync()).Count);
+                Assert.Equal(FastenerSeed.Instance.Records.Count, (await fasteners.ListAsync()).Count);
+                Assert.Equal(BearingSeed.Instance.Records.Count, (await bearings.ListAsync()).Count);
+            }
+            finally
+            {
+                await manager.ShutdownAsync();
+                await host.DisposeAsync();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ARootSeededBeforeThePoDecision_IsToppedUpAndReleased_OnTheNextLaunch()
+    {
+        using var temp = new TempDirectory();
+
+        // An installation seeded Draft-only by the earlier six-grade dataset:
+        // reproduced by registering just the six first-acquisition records,
+        // Draft, the way the earlier seeder left them.
+        {
+            var (host, manager) = await StartHostAsync(temp.Path);
+            try
+            {
+                var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog))!;
+                var firstSix = new[]
+                {
+                    MaterialSeed.S355J2, MaterialSeed.Stainless1Point4301, MaterialSeed.Stainless1Point4404,
+                    MaterialSeed.Aluminium6082T6, MaterialSeed.Aluminium5083OH111, MaterialSeed.CopperCw004A,
+                };
+
+                foreach (var record in MaterialSeed.Instance.Records.Where(r => firstSix.Contains(r.RecordId)))
+                    await materials.RegisterAsync(record.RecordId, record.Definition, record.Provenance, record.Source);
+            }
+            finally
+            {
+                await manager.ShutdownAsync();
+                await host.DisposeAsync();
+            }
+        }
+
+        {
+            var (host, manager) = await StartHostAsync(temp.Path);
+            try
+            {
+                await EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync(host);
+
+                var materials = (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog))!;
+                var records = await materials.ListAsync();
+
+                Assert.Equal(MaterialSeed.Instance.Records.Count, records.Count);
+                Assert.All(records, r => Assert.Equal(ReferenceValidationState.Released, r.ValidationState));
             }
             finally
             {
