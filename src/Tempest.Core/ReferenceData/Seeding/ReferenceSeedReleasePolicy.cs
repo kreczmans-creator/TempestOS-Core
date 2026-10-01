@@ -67,24 +67,32 @@ public sealed class ReferenceSeedReleasePolicy
     public const string EnabledConfigurationKey = "ReferenceData:ReleaseAtSeed";
 
     private readonly IAuditRecorder? _auditRecorder;
+    private readonly CurrentPrincipalAccessor? _principals;
     private readonly ILogger? _logger;
-    private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="ReferenceSeedReleasePolicy"/> class.</summary>
     /// <param name="auditRecorder">Where the verify and release rows go; the same recorder a person's review writes to.</param>
     /// <param name="logger">An optional logger.</param>
     /// <param name="configuration">Where <see cref="EnabledConfigurationKey"/> is read from; absent means enabled.</param>
-    public ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder = null, ILogger? logger = null, IConfigurationProvider? configuration = null)
-        : this(auditRecorder, logger, TimeProvider.System, ReadEnabled(configuration))
-    {
-    }
-
-    private ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder, ILogger? logger, TimeProvider time, bool enabled)
+    /// <param name="principals">
+    /// The host's ambient principal accessor — the one the audit recorder
+    /// and the document store attribute their writes through. When it is
+    /// the host's own <see cref="CurrentPrincipalAccessor"/>, a seed pass
+    /// that releases acts as <see cref="SeedPrincipalId"/> on it for its
+    /// whole duration (<see cref="ActAsSeed"/>), so the audit actor and the
+    /// revision author of every write it makes name the seed identity, not
+    /// the person signed in (colour review board v0.23.0, B3).
+    /// </param>
+    public ReferenceSeedReleasePolicy(
+        IAuditRecorder? auditRecorder = null,
+        ILogger? logger = null,
+        IConfigurationProvider? configuration = null,
+        ICurrentPrincipalAccessor? principals = null)
     {
         _auditRecorder = auditRecorder;
+        _principals = principals as CurrentPrincipalAccessor;
         _logger = logger;
-        _time = time;
-        IsEnabled = enabled;
+        IsEnabled = ReadEnabled(configuration);
     }
 
     /// <summary>Whether this policy releases at seed (see <see cref="EnabledConfigurationKey"/>).</summary>
@@ -94,16 +102,6 @@ public sealed class ReferenceSeedReleasePolicy
         configuration is null
         || !configuration.TryGetValue(EnabledConfigurationKey, out var value)
         || !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>Creates a policy whose verification date is taken from <paramref name="time"/> — for tests that pin the clock.</summary>
-    /// <param name="time">The clock the verification date is read from.</param>
-    /// <param name="auditRecorder">An optional audit recorder.</param>
-    /// <returns>A policy reading its date from <paramref name="time"/>.</returns>
-    public static ReferenceSeedReleasePolicy WithClock(TimeProvider time, IAuditRecorder? auditRecorder = null)
-    {
-        ArgumentNullException.ThrowIfNull(time);
-        return new ReferenceSeedReleasePolicy(auditRecorder, null, time, enabled: true);
-    }
 
     /// <summary>
     /// The statement recorded against a record released at seed — the words
@@ -128,7 +126,13 @@ public sealed class ReferenceSeedReleasePolicy
     /// <param name="recordId">The record to release.</param>
     /// <param name="cancellationToken">A token observed while writing.</param>
     /// <returns>The released record.</returns>
-    public async Task<IReferenceRecord<TDefinition>> ReleaseAsync<TDefinition>(
+    /// <remarks>
+    /// Internal (colour review board v0.23.0, M16): its only caller is
+    /// <see cref="ReferenceSeedService"/>, and a public method on a
+    /// container-resolvable singleton would let any component release any
+    /// record under the privileged seed identity.
+    /// </remarks>
+    internal async Task<IReferenceRecord<TDefinition>> ReleaseAsync<TDefinition>(
         IReferenceDataCatalog<TDefinition> catalog,
         string recordId,
         CancellationToken cancellationToken = default)
@@ -159,8 +163,19 @@ public sealed class ReferenceSeedReleasePolicy
         return released;
     }
 
+    /// <summary>
+    /// Opens a scope in which the host's ambient principal reads as
+    /// <see cref="SeedPrincipalId"/> on the calling async flow, so every
+    /// audit row and document revision a seed pass writes is attributed to
+    /// the seed identity; disposing it restores whatever was current. Returns
+    /// <see langword="null"/> when this policy was built without the host's
+    /// accessor (a test's bare policy), in which case nothing changes.
+    /// </summary>
+    /// <returns>The scope to dispose, or <see langword="null"/>.</returns>
+    internal IDisposable? ActAsSeed() => _principals?.BeginActingAs(SeedPrincipal);
+
     private ReferenceReviewService CreateReviewer() =>
-        new(new FixedPrincipalAccessor(SeedPrincipal), _time, _logger, _auditRecorder, new PermissionEvaluator());
+        new(new FixedPrincipalAccessor(SeedPrincipal), TimeProvider.System, _logger, _auditRecorder, new PermissionEvaluator());
 
     private static readonly IPrincipal SeedPrincipal = new PlatformPrincipal(
         new PlatformIdentity(SeedPrincipalId, SeedPrincipalDisplayName),

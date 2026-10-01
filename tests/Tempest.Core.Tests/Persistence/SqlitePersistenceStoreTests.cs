@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Data.Sqlite;
 using Tempest.Core.Configuration;
+using Tempest.Core.Logging;
 using Tempest.Core.Persistence;
 using Tempest.Core.Tests.Plugins;
 using Xunit.Abstractions;
@@ -136,12 +137,22 @@ public sealed class SqlitePersistenceStoreTests : IDisposable
         if (configured is not null)
             values.Add(new(SqlitePersistenceStore.SynchronousConfigurationKey, configured));
 
-        var store = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(values)).Build());
+        var logger = new RecordingLevelLogger();
+        var store = new SqlitePersistenceStore(new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(values)).Build(), logger);
         _stores.Add(store);
         await store.WriteAsync("collection", "key", "value");
 
         Assert.Equal(expected, store.SynchronousLevel);
         Assert.Equal("value", await store.ReadAsync("collection", "key"));
+
+        // N4: what the store's own connections actually run at, not the
+        // string it composed — 1 is NORMAL, 2 is FULL.
+        Assert.Equal(expected == "NORMAL" ? 1L : 2L, await store.ReadSynchronousPragmaAsync());
+
+        // M14: NORMAL is never silent.
+        Assert.Equal(
+            expected == "NORMAL",
+            logger.HasEntryAt(LogLevel.Warning, "PRAGMA synchronous = NORMAL"));
     }
 
     [Fact]

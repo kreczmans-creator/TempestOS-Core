@@ -88,6 +88,13 @@ public sealed class ReferenceSeedService
 
         var entries = new List<ReferenceSeedEntry>(seed.Records.Count);
 
+        // Colour review board v0.23.0, B3: a pass that releases is the seed
+        // process's work from first write to last — the registration, any
+        // refresh, and the verify and release rows — so the audit actor and
+        // the revision author are the seed identity for its whole duration,
+        // restored when the pass ends (or throws).
+        using var actingAsSeed = ReleasesAtSeed && seed.ReleaseAtSeed ? _releasePolicy!.ActAsSeed() : null;
+
         foreach (var record in seed.Records)
         {
             cancellationToken.ThrowIfCancellationRequested();

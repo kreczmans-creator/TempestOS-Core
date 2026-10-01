@@ -63,12 +63,60 @@ namespace Tempest.Core.Identity;
 public sealed class CurrentPrincipalAccessor : ICurrentPrincipalAccessor
 {
     private readonly object _gate = new();
+    private readonly AsyncLocal<IPrincipal?> _actingAs = new();
     private IPrincipal? _current;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Inside a <see cref="BeginActingAs"/> scope, and only on the async
+    /// flow that opened it, the scope's principal is reported instead of
+    /// the ambient one.
+    /// </remarks>
     public IPrincipal? Current
     {
-        get { lock (_gate) return _current; }
+        get
+        {
+            var actingAs = _actingAs.Value;
+            if (actingAs is not null)
+                return actingAs;
+
+            lock (_gate) return _current;
+        }
+    }
+
+    /// <summary>
+    /// Reports <paramref name="principal"/> as <see cref="Current"/> for the
+    /// calling async flow only, until the returned scope is disposed — the
+    /// actor override release at seed uses so that every audit row and
+    /// document revision its pass writes is attributed to the seed identity
+    /// rather than to whoever happened to be signed in (colour review board
+    /// v0.23.0, B3). Scoped to the async flow, not the instance, so a
+    /// person's own concurrent work on another flow is never attributed to
+    /// the override, and the ambient principal is untouched throughout.
+    /// </summary>
+    /// <param name="principal">The principal to act as.</param>
+    /// <returns>A scope that restores the previous value when disposed.</returns>
+    internal IDisposable BeginActingAs(IPrincipal principal)
+    {
+        ArgumentNullException.ThrowIfNull(principal);
+
+        var previous = _actingAs.Value;
+        _actingAs.Value = principal;
+        return new ActingAsScope(this, previous);
+    }
+
+    private sealed class ActingAsScope(CurrentPrincipalAccessor owner, IPrincipal? previous) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            owner._actingAs.Value = previous;
+        }
     }
 
     /// <summary>

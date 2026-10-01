@@ -320,6 +320,20 @@ and pushed the Desktop shards past their 45-minute job timeout. Under WAL,
 power loss, which a test run does not need. A real launch never sets the
 key, so a person's data keeps the durability this ADR decided.
 
+*Revised 2026-10-01 (colour review board v0.23.0, M14).* The key stays an
+ordinary configuration key rather than an internal constructor seam,
+because the Desktop test assembly can only reach the store through the
+host's configuration (the `TEMPEST_Persistence__Synchronous` environment
+variable its module initialiser sets). That means production configuration
+can set it too, so the relaxation is made visible instead of being
+invisible by construction: every `SqlitePersistenceStore` opened at
+`NORMAL` logs a Warning naming the key, the root and the durability given
+up, each time it opens. An installation that picked the key up by accident
+says so in its own log. The level the store's own connections actually
+run at is asserted through an internal hook that runs `PRAGMA synchronous`
+on a store connection (`ReadSynchronousPragmaAsync`), not through the
+pragma string the store composes.
+
 ## Related Documents
 
 - `docs/adr/ADR-0041-shared-persistence-abstraction.md` — superseded in
