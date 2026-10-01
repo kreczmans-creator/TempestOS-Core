@@ -28,7 +28,7 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// infer coverage from a count of records.
 /// </para>
 /// </remarks>
-public sealed class BearingSeed : IReferenceSeed<BearingDefinition>
+public sealed partial class BearingSeed : IReferenceSeed<BearingDefinition>
 {
     /// <summary>The identity of the 6205 deep groove ball bearing record.</summary>
     public const string Rhd6205 = "brg-rhd-6205";
@@ -49,10 +49,17 @@ public sealed class BearingSeed : IReferenceSeed<BearingDefinition>
     public string DatasetName => "Deep groove ball bearings — RHD Bearings published specifications";
 
     /// <inheritdoc />
-    public int DatasetRevision => 1;
+    /// <remarks>Revision 2 adds the full 6000, 6200 and 6300 series to size 12 (PO decision 2026-10-01).</remarks>
+    public int DatasetRevision => 2;
 
     /// <inheritdoc />
     public IReadOnlyList<ReferenceSeedRecord<BearingDefinition>> Records { get; } =
+    [
+        .. FirstAcquisition(),
+        .. DeepGrooveSeries(),
+    ];
+
+    private static IEnumerable<ReferenceSeedRecord<BearingDefinition>> FirstAcquisition() =>
     [
         new(Rhd6205,
             new BearingDefinition

@@ -30,7 +30,7 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// that needs strength can detect its absence rather than reading a zero.
 /// </para>
 /// </remarks>
-public sealed class FastenerSeed : IReferenceSeed<FastenerDefinition>
+public sealed partial class FastenerSeed : IReferenceSeed<FastenerDefinition>
 {
     /// <summary>The single instance of this dataset.</summary>
     public static FastenerSeed Instance { get; } = new();
@@ -40,13 +40,21 @@ public sealed class FastenerSeed : IReferenceSeed<FastenerDefinition>
     }
 
     /// <inheritdoc />
-    public string DatasetName => "ISO metric coarse thread hexagon head bolts — geometry only";
+    public string DatasetName => "ISO metric coarse thread fasteners — geometry and ISO 898-1 / ISO 3506-1 property classes";
 
     /// <inheritdoc />
-    public int DatasetRevision => 1;
+    /// <remarks>Revision 2 adds the property-class records (PO decision 2026-10-01); revision 1 was geometry only.</remarks>
+    public int DatasetRevision => 2;
 
     /// <inheritdoc />
     public IReadOnlyList<ReferenceSeedRecord<FastenerDefinition>> Records { get; } =
+    [
+        .. GeometryOnly(),
+        .. CarbonSteelPropertyClasses(),
+        .. StainlessPropertyClasses(),
+    ];
+
+    private static IEnumerable<ReferenceSeedRecord<FastenerDefinition>> GeometryOnly() =>
     [
         Bolt("fst-m5-coarse", 5.0, 0.8),
         Bolt("fst-m6-coarse", 6.0, 1.0),

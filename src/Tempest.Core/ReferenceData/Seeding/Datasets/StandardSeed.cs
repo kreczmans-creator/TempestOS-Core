@@ -35,7 +35,7 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// title.
 /// </para>
 /// </remarks>
-public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
+public sealed partial class StandardSeed : IReferenceSeed<StandardDefinition>
 {
     /// <summary>The identity of the ISO rolling-bearing boundary dimension standard.</summary>
     public const string Iso15 = "std-iso-15";
@@ -79,10 +79,10 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
     /// <summary>The identity of the European copper rod, bar and section standard.</summary>
     public const string En13601 = "std-en-13601";
 
-    private static readonly StandardsBody Iso =
+    private static StandardsBody Iso =>
         new("ISO", "International Organization for Standardization", StandardsBodyKind.International);
 
-    private static readonly StandardsBody Cen =
+    private static StandardsBody Cen =>
         new("EN", "European Committee for Standardization (CEN)", StandardsBodyKind.Regional);
 
     /// <summary>The single instance of this dataset.</summary>
@@ -96,10 +96,17 @@ public sealed class StandardSeed : IReferenceSeed<StandardDefinition>
     public string DatasetName => "Citation index for the TempestOS seed corpus";
 
     /// <inheritdoc />
-    public int DatasetRevision => 1;
+    /// <remarks>Revision 2 adds the standards the day-one materials, fasteners and bearings cite.</remarks>
+    public int DatasetRevision => 2;
 
     /// <inheritdoc />
     public IReadOnlyList<ReferenceSeedRecord<StandardDefinition>> Records { get; } =
+    [
+        .. FirstAcquisition(),
+        .. DayOneCitations(),
+    ];
+
+    private static IEnumerable<ReferenceSeedRecord<StandardDefinition>> FirstAcquisition() =>
     [
         // --- ISO, with titles obtained from a readable tertiary index ---
         Titled(Iso15, Iso, "15", "2017",
