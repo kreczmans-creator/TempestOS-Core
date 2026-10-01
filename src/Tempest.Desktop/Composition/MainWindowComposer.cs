@@ -662,6 +662,10 @@ internal sealed partial class MainWindowComposer
         };
         projectQuoteView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // Runbook C3: each quote line's rate is chosen from the project's
+        // own pinned rate card.
+        projectQuoteView.RateCards = rateCardCatalog;
+
         // PO decision 2026-10-01: each project's own Windows Explorer
         // folder (`<root>\<customer>\<project>\<standard subfolders>`,
         // root `Projects:FolderRoot`, default `D:\01 Projects` on Windows)

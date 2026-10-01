@@ -90,6 +90,20 @@ public sealed class QuotationWorkspaceTests : IAsyncLifetime
         Assert.Equal(CommandOutcome.Executed, addLine.Outcome);
         Assert.True(addLine.Result!.Succeeded, addLine.Result.Message);
 
+        // Runbook C3: only an approved revision sends — submitted, then
+        // approved by a second person, through the commands themselves.
+        var refusedSend = await registry.InvokeAsync(QuotationCommandIds.Send, context, Answering());
+        Assert.False(refusedSend.Result!.Succeeded);
+
+        var submit = await registry.InvokeAsync(QuotationCommandIds.SubmitForReview, context, Answering());
+        Assert.True(submit.Result!.Succeeded, submit.Result.Message);
+
+        var approve = await QuotationReviewTestSupport.AsAsync(
+            QuotationTestHost.Principals(_host), QuotationReviewTestSupport.ReviewerId,
+            () => registry.InvokeAsync(QuotationCommandIds.Approve, context, Answering()));
+        Assert.True(approve.Result!.Succeeded, approve.Result.Message);
+        Assert.Contains("R1", approve.Result.Message, StringComparison.Ordinal);
+
         var send = await registry.InvokeAsync(QuotationCommandIds.Send, context, Answering());
         Assert.Equal(CommandOutcome.Executed, send.Outcome);
         Assert.True(send.Result!.Succeeded, send.Result.Message);
@@ -107,7 +121,7 @@ public sealed class QuotationWorkspaceTests : IAsyncLifetime
         // A second quotation, declined instead.
         var declineCreated = await quotations.CreateAsync(projectId);
         await quotations.AddLineAsync(declineCreated.Quotation!.Id, "Another line", 1m, new Core.BusinessGovernance.Money(1m, Core.BusinessGovernance.CurrencyCode.Gbp), null);
-        await quotations.SendAsync(declineCreated.Quotation.Id);
+        await QuotationReviewTestSupport.ApproveAndSendAsync(quotations, QuotationTestHost.Principals(_host), declineCreated.Quotation.Id);
         var declineContext = CommandContext.For(declineCreated.Quotation.Id, Quotation.CanonicalKind);
 
         var decline = await registry.InvokeAsync(QuotationCommandIds.Decline, declineContext, Answering());

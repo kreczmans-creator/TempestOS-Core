@@ -124,6 +124,7 @@ public sealed class ChangeOrderServiceTests
         Assert.True(lineAdded.Succeeded, lineAdded.Reason);
         Assert.Equal(deliverable.Id, lineAdded.Quotation!.Lines[0].DeliverableId);
 
+        await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), changeOrder.Quotation.Id);
         Assert.True((await quotations.SendAsync(changeOrder.Quotation.Id)).Succeeded);
         var accepted = await quotations.AcceptAsync(changeOrder.Quotation.Id);
         Assert.True(accepted.Succeeded, accepted.Reason);

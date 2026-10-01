@@ -4,8 +4,8 @@ namespace Tempest.Core.Tests.Quotations;
 
 /// <summary>
 /// Exhaustively pins <c>QuotationStatusTransitions</c>' own permitted table
-/// (`WP 19.5A`, `ADR-0152`) — every one of the sixteen (from, to) pairs
-/// across the four-value vocabulary, mirroring
+/// (`WP 19.5A`, `ADR-0152`) — every one of the thirty-six (from, to) pairs
+/// across the six-value vocabulary (runbook C3 added In review and Approved), mirroring
 /// <c>Invoicing.InvoiceRequestStatusTransitionsTests</c>' own exhaustive-
 /// table discipline. <c>QuotationStatusTransitions</c> is <c>internal</c>;
 /// this project sees it directly via <c>InternalsVisibleTo</c>.
@@ -16,8 +16,16 @@ public sealed class QuotationStatusTransitionsTests
     {
         var permitted = new HashSet<(QuotationStatus, QuotationStatus)>
         {
-            // Draft: SendAsync.
-            (QuotationStatus.Draft, QuotationStatus.Sent),
+            // Runbook C3: Draft → In review (SubmitForReviewAsync).
+            (QuotationStatus.Draft, QuotationStatus.InReview),
+
+            // In review: ReturnToDraftAsync or ApproveAsync.
+            (QuotationStatus.InReview, QuotationStatus.Draft),
+            (QuotationStatus.InReview, QuotationStatus.Approved),
+
+            // Approved: SendAsync, or a line edit reopening a new draft.
+            (QuotationStatus.Approved, QuotationStatus.Sent),
+            (QuotationStatus.Approved, QuotationStatus.Draft),
 
             // Sent: AcceptAsync or DeclineAsync.
             (QuotationStatus.Sent, QuotationStatus.Accepted),
@@ -63,9 +71,11 @@ public sealed class QuotationStatusTransitionsTests
     }
 
     [Fact]
-    public void AllStatuses_IsExactlyTheFourDeclaredValues()
+    public void AllStatuses_IsExactlyTheSixDeclaredValues()
     {
-        Assert.Equal(4, QuotationStatusTransitions.AllStatuses.Count);
+        // Runbook C3 added In review and Approved.
+        Assert.Equal(6, QuotationStatusTransitions.AllStatuses.Count);
+        Assert.Equal(Enum.GetValues<QuotationStatus>().Length, QuotationStatusTransitions.AllStatuses.Count);
         Assert.Equal(
             QuotationStatusTransitions.AllStatuses.Count,
             QuotationStatusTransitions.AllStatuses.Distinct().Count());

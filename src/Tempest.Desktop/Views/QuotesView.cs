@@ -178,7 +178,11 @@ public sealed class QuotesView : UserControl
 
         var asOf = _time.GetUtcNow();
 
-        var draft = rows.Where(r => r.Quotation.Status == QuotationStatus.Draft).OrderByDescending(r => r.Quotation.QuoteDate).ToList();
+        // Runbook C3: "New" is everything not yet sent — a draft, one in
+        // review, and an approved revision waiting to go.
+        var draft = rows
+            .Where(r => r.Quotation.Status is QuotationStatus.Draft or QuotationStatus.InReview or QuotationStatus.Approved)
+            .OrderByDescending(r => r.Quotation.QuoteDate).ToList();
         var sent = rows.Where(r => r.Quotation.Status == QuotationStatus.Sent).OrderByDescending(r => r.Quotation.SentOn).ToList();
         var outstanding = sent.Where(r => IsOutstanding(r.Quotation, asOf)).ToList();
 
@@ -252,7 +256,7 @@ public sealed class QuotesView : UserControl
 
         rows.Children.Add(new TextBlock
         {
-            Text = $"{referenceLabel} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
+            Text = $"{referenceLabel} {QuotationExport.RevisionText(quote)} — {QuotationExport.StatusText(quote)} — {row.ProjectName} — Client {row.ClientName} — {MoneyDisplay.Format(quote.Total)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
             TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -331,7 +335,7 @@ public sealed class QuotesView : UserControl
             return;
 
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", $"{SanitiseFileNameSegment(quote.Reference)}-quote.pdf"), CancellationToken.None)
+            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", QuotationExport.FileName(quote)), CancellationToken.None)
             .ConfigureAwait(true);
 
         if (destination is null)
@@ -363,7 +367,8 @@ public sealed class QuotesView : UserControl
             Terms: quote.Terms,
             Status: quote.Status.ToString(),
             GeneratedAtUtc: _time.GetUtcNow(),
-            ApplicationVersionText: _applicationVersionText());
+            ApplicationVersionText: _applicationVersionText(),
+            Revision: QuotationExport.RevisionText(quote));
 
         var bytes = _sheetRenderer.Render(model).ToArray();
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
@@ -410,13 +415,6 @@ public sealed class QuotesView : UserControl
     {
         _status.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(succeeded));
-    }
-
-    private static string SanitiseFileNameSegment(string value)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = value.Select(c => invalid.Contains(c) ? '-' : c).ToArray();
-        return new string(chars);
     }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();

@@ -361,7 +361,7 @@ public sealed class DashboardsTests
         var freshQuote = await quotations.CreateAsync(projectA.Id);
         Assert.True(freshQuote.Succeeded, freshQuote.Reason);
         await quotations.AddLineAsync(freshQuote.Quotation!.Id, "DASH-A own quote", 4m, new Money(100m, CurrencyCode.Gbp), null).ConfigureAwait(true);
-        await quotations.SendAsync(freshQuote.Quotation.Id).ConfigureAwait(true);
+        await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotations, freshQuote.Quotation.Id).ConfigureAwait(true);
 
         // ---- DASH-B: On hold ----
         var projectB = await projectDirectory.CreateAsync("DASH-B", "Held Bridge");
@@ -374,7 +374,7 @@ public sealed class DashboardsTests
         var blockedQuote = await quotations.CreateAsync(projectC.Id);
         Assert.True(blockedQuote.Succeeded, blockedQuote.Reason);
         await quotations.AddLineAsync(blockedQuote.Quotation!.Id, "Detailed design", 8m, new Money(120m, CurrencyCode.Gbp), null).ConfigureAwait(true);
-        await quotations.SendAsync(blockedQuote.Quotation.Id).ConfigureAwait(true);
+        await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotations, blockedQuote.Quotation.Id).ConfigureAwait(true);
         var acceptedQuote = await quotations.AcceptAsync(blockedQuote.Quotation.Id);
         Assert.True(acceptedQuote.Succeeded, acceptedQuote.Reason);
 

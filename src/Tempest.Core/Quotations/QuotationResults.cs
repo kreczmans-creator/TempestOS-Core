@@ -40,6 +40,18 @@ public enum QuotationRefusal
 
     /// <summary>A line's own carried deliverable id does not identify a live <c>Deliverable</c> (`WP 20.10E`).</summary>
     DeliverableNotFound,
+
+    /// <summary>Approval needs a signed-in person, and nobody is (runbook C3).</summary>
+    NoPrincipalSignedIn,
+
+    /// <summary>The person approving is the one who opened or submitted the quotation — a review needs a second person (runbook C3).</summary>
+    ReviewerMustDifferFromAuthor,
+
+    /// <summary>Returning a quotation to draft needs the reviewer's own comment (runbook C3).</summary>
+    CommentRequired,
+
+    /// <summary>A line's rate-card service code does not name an hourly entry on the project's own pinned rate card (runbook C3).</summary>
+    RateCardEntryNotFound,
 }
 
 /// <summary>The outcome of an <see cref="IQuotationService"/> act: either it happened, or a refusal that says why it did not.</summary>
