@@ -106,7 +106,14 @@ public sealed record QuotationLine(
 /// <param name="SubmittedBy">The identity id of whoever submitted the draft for review.</param>
 /// <param name="ApprovedBy">The identity id of the second person who approved it — never the same as <paramref name="SubmittedBy"/>, nor as the quotation's own author.</param>
 /// <param name="ApprovedAt">When it was approved.</param>
-public sealed record QuotationRevision(int Number, string SubmittedBy, string ApprovedBy, DateTimeOffset ApprovedAt)
+/// <param name="LinesHash">
+/// <see cref="Quotation.ComputeLinesHash"/> of the lines this revision
+/// approved (colour review board M18) — what lets an exported
+/// <c>R&lt;n&gt;</c> sheet be matched to the stored content it printed
+/// rather than only by timestamp. <see langword="null"/> for a revision
+/// approved before it was recorded; such a revision still reads back.
+/// </param>
+public sealed record QuotationRevision(int Number, string SubmittedBy, string ApprovedBy, DateTimeOffset ApprovedAt, string? LinesHash = null)
 {
     /// <summary>The revision as printed: <c>R1</c>, <c>R2</c>, ….</summary>
     public string Label => QuotationReview.LabelFor(Number);
@@ -125,6 +132,12 @@ public sealed record QuotationRevision(int Number, string SubmittedBy, string Ap
 /// <param name="SubmittedAt">When the current review was submitted.</param>
 /// <param name="ReturnedBy">Who last returned this quotation to draft.</param>
 /// <param name="ReturnComment">The reviewer's own comment when they last returned it to draft — cleared on the next submission.</param>
+/// <param name="LineEditors">
+/// The identity id of everyone who added, changed or removed a line since
+/// the last approval (colour review board B1) — none of them may approve
+/// the next revision. Cleared by an approval. Never <see langword="null"/>
+/// once read; a review stored before it was recorded reads as empty.
+/// </param>
 public sealed record QuotationReview(
     int RevisionNumber = 0,
     IReadOnlyList<QuotationRevision>? Revisions = null,
@@ -132,10 +145,14 @@ public sealed record QuotationReview(
     string? SubmittedBy = null,
     DateTimeOffset? SubmittedAt = null,
     string? ReturnedBy = null,
-    string? ReturnComment = null)
+    string? ReturnComment = null,
+    IReadOnlyList<string>? LineEditors = null)
 {
     /// <summary>Every approved revision, oldest first.</summary>
     public IReadOnlyList<QuotationRevision> Revisions { get; init; } = Revisions ?? [];
+
+    /// <summary>Everyone who changed a line since the last approval, in the order they first did.</summary>
+    public IReadOnlyList<string> LineEditors { get; init; } = LineEditors ?? [];
 
     /// <summary>The printed label for revision <paramref name="number"/>: <c>R1</c>, <c>R2</c>, ….</summary>
     public static string LabelFor(int number) => $"R{number.ToString(CultureInfo.InvariantCulture)}";
@@ -257,7 +274,7 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     /// <summary>When this quotation was accepted or declined. <see langword="null"/> while still <see cref="QuotationStatus.Draft"/> or <see cref="QuotationStatus.Sent"/>.</summary>
     public DateOnly? DecidedOn => _decidedOn;
 
-    /// <summary>The identity id of whoever opened this quotation (runbook C3) — the person a second-person approval must differ from. <see langword="null"/> for a quotation opened before runbook C3, or with nobody signed in.</summary>
+    /// <summary>The identity id of whoever opened this quotation (runbook C3) — the person a second-person approval must differ from. <see langword="null"/> for a quotation opened before runbook C3 (a quotation can no longer be opened with nobody signed in, colour review board B1).</summary>
     public string? AuthorIdentityId => _authorIdentityId;
 
     /// <summary>This quotation's own draft-and-review state (runbook C3).</summary>
@@ -280,27 +297,43 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     /// <summary>The revision this quotation prints as — <c>R1</c>, <c>R2</c>, … — or <see langword="null"/> while it is a draft (see <see cref="IsApprovedRevision"/>).</summary>
     public string? RevisionLabel => IsApprovedRevision ? QuotationReview.LabelFor(_review.RevisionNumber) : null;
 
+    /// <summary>
+    /// A stable fingerprint of <paramref name="lines"/> — the SHA-256 of
+    /// their stored JSON, as <c>sha256:&lt;hex&gt;</c> (colour review board
+    /// M18). Recorded on every <see cref="QuotationRevision"/> at approval.
+    /// </summary>
+    public static string ComputeLinesHash(IEnumerable<QuotationLine> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        var json = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(lines.ToList());
+        return "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(json));
+    }
+
+    /// <summary><see cref="ComputeLinesHash"/> of this quotation's own lines as they stand.</summary>
+    public string LinesHash => ComputeLinesHash(_lines);
+
     /// <summary>Adds a new line. <see cref="QuotationService"/> decides whether this quotation's lines may change before this ever runs; an <see cref="QuotationStatus.Approved"/> one reopens as a new draft.</summary>
-    internal Task AddLineAsync(QuotationLine line, DateTimeOffset savedAt, CancellationToken cancellationToken = default)
+    internal Task AddLineAsync(QuotationLine line, string editedBy, DateTimeOffset savedAt, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(line);
 
         return PersistLinesAsync(
-            new List<QuotationLine>(_lines) { line }, savedAt, $"Line added: '{line.Description}' ({line.Amount}).", cancellationToken);
+            new List<QuotationLine>(_lines) { line }, editedBy, savedAt, $"Line added: '{line.Description}' ({line.Amount}).", cancellationToken);
     }
 
     /// <summary>Replaces the line whose <see cref="QuotationLine.Id"/> matches <paramref name="line"/>'s own. <see cref="QuotationService"/> has already confirmed the line exists.</summary>
-    internal Task UpdateLineAsync(QuotationLine line, DateTimeOffset savedAt, CancellationToken cancellationToken = default)
+    internal Task UpdateLineAsync(QuotationLine line, string editedBy, DateTimeOffset savedAt, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(line);
 
         return PersistLinesAsync(
-            _lines.Select(l => l.Id == line.Id ? line : l).ToList(), savedAt, $"Line updated: '{line.Description}' ({line.Amount}).", cancellationToken);
+            _lines.Select(l => l.Id == line.Id ? line : l).ToList(), editedBy, savedAt, $"Line updated: '{line.Description}' ({line.Amount}).", cancellationToken);
     }
 
     /// <summary>Removes the line identified by <paramref name="lineId"/>. <see cref="QuotationService"/> has already confirmed it exists.</summary>
-    internal Task RemoveLineAsync(Guid lineId, string removedDescription, DateTimeOffset savedAt, CancellationToken cancellationToken = default) =>
-        PersistLinesAsync(_lines.Where(l => l.Id != lineId).ToList(), savedAt, $"Line removed: '{removedDescription}'.", cancellationToken);
+    internal Task RemoveLineAsync(Guid lineId, string removedDescription, string editedBy, DateTimeOffset savedAt, CancellationToken cancellationToken = default) =>
+        PersistLinesAsync(_lines.Where(l => l.Id != lineId).ToList(), editedBy, savedAt, $"Line removed: '{removedDescription}'.", cancellationToken);
 
     /// <summary>
     /// Writes <paramref name="next"/> as this quotation's lines and stamps
@@ -308,15 +341,22 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
     /// <see cref="QuotationStatus.Approved"/> quotation moves back to
     /// <see cref="QuotationStatus.Draft"/> in that same transaction: an
     /// edit after approval starts a new draft, and the next approval
-    /// issues the next revision (runbook C3).
+    /// issues the next revision (runbook C3). <paramref name="editedBy"/>
+    /// joins <see cref="QuotationReview.LineEditors"/>, so they cannot
+    /// approve that next revision (colour review board B1).
     /// </summary>
-    private Task PersistLinesAsync(List<QuotationLine> next, DateTimeOffset savedAt, string auditDetail, CancellationToken cancellationToken)
+    private Task PersistLinesAsync(List<QuotationLine> next, string editedBy, DateTimeOffset savedAt, string auditDetail, CancellationToken cancellationToken)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(editedBy);
+
         var reopens = _status == QuotationStatus.Approved;
         var detail = reopens
             ? $"{auditDetail} Approved {QuotationReview.LabelFor(_review.RevisionNumber)} reopened as a new draft."
             : auditDetail;
-        var review = _review with { DraftSavedAt = savedAt };
+        var editors = _review.LineEditors.Contains(editedBy, StringComparer.Ordinal)
+            ? _review.LineEditors
+            : [.. _review.LineEditors, editedBy];
+        var review = _review with { DraftSavedAt = savedAt, LineEditors = editors };
 
         return MutateTypeStateAndPersistAsync(
             () =>
@@ -359,14 +399,14 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
             _review with { ReturnedBy = returnedBy, ReturnComment = comment, SubmittedBy = null, SubmittedAt = null, DraftSavedAt = returnedAt },
             $"Returned to draft by '{returnedBy}' at {returnedAt:u}: {comment}", WorkspaceChangeType.StatusChanged, cancellationToken);
 
-    /// <summary>Approves this quotation's current review as the next revision — <c>R1</c>, then <c>R2</c>, … (runbook C3). <see cref="QuotationService.ApproveAsync"/> has already refused an approver who is not a second person.</summary>
+    /// <summary>Approves this quotation's current review as the next revision — <c>R1</c>, then <c>R2</c>, … (runbook C3), recording the approved lines' own <see cref="LinesHash"/> (M18) and clearing <see cref="QuotationReview.LineEditors"/>. <see cref="QuotationService.ApproveAsync"/> has already refused an approver who is not a second person.</summary>
     internal Task MarkApprovedAsync(string approvedBy, DateTimeOffset approvedAt, CancellationToken cancellationToken = default)
     {
-        var revision = new QuotationRevision(_review.RevisionNumber + 1, _review.SubmittedBy ?? string.Empty, approvedBy, approvedAt);
+        var revision = new QuotationRevision(_review.RevisionNumber + 1, _review.SubmittedBy ?? string.Empty, approvedBy, approvedAt, LinesHash);
 
         return PersistReviewAsync(
             QuotationStatus.Approved,
-            _review with { RevisionNumber = revision.Number, Revisions = [.. _review.Revisions, revision] },
+            _review with { RevisionNumber = revision.Number, Revisions = [.. _review.Revisions, revision], LineEditors = [] },
             $"Approved as {revision.Label} by '{approvedBy}' at {approvedAt:u} (submitted by '{revision.SubmittedBy}').",
             WorkspaceChangeType.StatusChanged, cancellationToken);
     }

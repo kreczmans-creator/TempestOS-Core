@@ -23,7 +23,7 @@ public interface IQuotationService
     /// <param name="reference">A reference to use verbatim, or <see langword="null"/> to generate <c>Q-&lt;yyyy&gt;-&lt;nnn&gt;</c> (or <c>CO-&lt;yyyy&gt;-&lt;nnn&gt;</c> for a <see cref="QuotationKind.ChangeOrder"/>) from a per-year count of existing quotations of that same kind's own prefix.</param>
     /// <param name="clientOrganisationId">The client to quote, or <see langword="null"/> to default to the project's own client (which may itself be unset).</param>
     /// <param name="kind">Whether this is an ordinary quotation or a change order (`WP 20.10E`). Defaults to <see cref="QuotationKind.Quotation"/> — unchanged behaviour.</param>
-    /// <remarks>Refused, as a result, when <paramref name="projectId"/> does not identify a live project.</remarks>
+    /// <remarks>Refused, as a result, when <paramref name="projectId"/> does not identify a live project, or when nobody is signed in to record as its author (colour review board B1).</remarks>
     Task<QuotationResult> CreateAsync(
         Guid projectId, string? reference = null, string? clientOrganisationId = null, QuotationKind kind = QuotationKind.Quotation,
         CancellationToken cancellationToken = default);
@@ -80,7 +80,7 @@ public interface IQuotationService
     Task<QuotationResult> SaveDraftAsync(Guid quotationId, CancellationToken cancellationToken = default);
 
     /// <summary>Submits <paramref name="quotationId"/>'s own draft for review by a second person — Draft → In review (runbook C3).</summary>
-    /// <remarks>Refused, as a result, when the quotation is not Draft, or carries no lines.</remarks>
+    /// <remarks>Refused, as a result, when the quotation is not Draft, carries no lines, or nobody is signed in to record as its submitter (colour review board B1).</remarks>
     Task<QuotationResult> SubmitForReviewAsync(Guid quotationId, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -88,7 +88,7 @@ public interface IQuotationService
     /// Approved, issuing the next revision (<c>R1</c>, then <c>R2</c>
     /// after a later edit and review, …) (runbook C3).
     /// </summary>
-    /// <remarks>Refused, as a result, when the quotation is not in review, when nobody is signed in, or when the signed-in person is the one who opened or submitted it — Evidence's own "checker must differ from author" rule.</remarks>
+    /// <remarks>Refused, as a result, when the quotation is not in review, when nobody is signed in, when the submitter or the author is not on record (<see cref="QuotationRefusal.AuthorUnknown"/>; a quotation from before runbook C3 takes its author from its first document revision), or when the signed-in person is the one who opened or submitted it or changed a line since the last approval — Evidence's own "checker must differ from author" rule (colour review board B1).</remarks>
     Task<QuotationResult> ApproveAsync(Guid quotationId, CancellationToken cancellationToken = default);
 
     /// <summary>Returns <paramref name="quotationId"/>'s own review to draft, with the reviewer's <paramref name="comment"/> (runbook C3).</summary>
