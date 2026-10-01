@@ -183,6 +183,12 @@ duration: three weeks.
 | `WP RC.0E` | **Physical review on a clean machine, recorded.** A person who did not build it follows `PHYSICAL_REVIEW.md` from a fresh Windows install through the five sentences in "What v1.0.0 is", using the installer, in under thirty minutes; every finding is fixed or filed in `BACKLOG.md` before tagging; the recording (screenshots and the reviewer's notes) is committed under `docs/releases/v1.0.0/`. | Verification | — | 2 |
 | `WP RC.0F` | **Release.** `VERSION` → `1.0.0`; Release Notes summarising `v0.17.0` to `v1.0.0`; root `CHANGELOG.md`; tag via `new-release.ps1`; `release.yml` publishes the installer and the harness; Product Approval recorded as one line in the Release Notes by the Product Owner. | Release | — | 1 |
 
+### v1.0.0 release blockers (must be closed before `WP RC.0F` tags)
+
+| ID | Blocker | Raised | Closes when |
+|---|---|---|---|
+| `V1-BLOCKER-01` | **BLOCKER for v1.0.0 — Define the standard project subfolder set (PO decision 2026-10-01).** Project folders are generated in `D:\01 Projects` (`Projects:FolderRoot`): customer folder found or created, then the project folder found or created (`ProjectFolderService`, `src/Tempest.Core/Projects/`). The PO's "then a standard set of folders within that" is **TBC**, so `ProjectFolderOptions.DefaultStandardSubfolders` ships empty with a TODO marker, and the quote export's own subfolder (`Projects:QuoteSubfolder`) defaults to the project folder itself. | Product Owner, 2026-10-01 | The Product Owner names the standard subfolder set (and which one is "the quote section"); `DefaultStandardSubfolders` and the `Projects:QuoteSubfolder` default are set to it, with a test pinning the set. Also tracked in `BACKLOG.md`. |
+
 **Release total: 14 developer-days.**
 
 ---

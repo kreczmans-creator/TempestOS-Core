@@ -1,0 +1,47 @@
+using Tempest.Core.Projects;
+using Tempest.Core.Tests.BusinessOperations;
+using Tempest.Core.Tests.Plugins;
+using Tempest.Workspace.Projects;
+
+namespace Tempest.Core.Tests.Projects;
+
+/// <summary>
+/// <see cref="ProjectFolderLocator"/> against a real host (PO decision
+/// 2026-10-01): a real project's own identifier and name, and its client
+/// read from the real Organisation catalogue, become the folder tree — and
+/// a project with no client is still filed.
+/// </summary>
+public sealed class ProjectFolderLocatorTests
+{
+    [Fact]
+    public async Task EnsureAsync_FilesARealProject_UnderItsCatalogueCustomer_ThenUnderNoCustomerWithoutOne()
+    {
+        using var temp = new TempDirectory();
+        using var folderRoot = new TempDirectory();
+        var (host, manager) = await ProjectCommercialTestHost.StartAsync(temp.Path);
+        ProjectCommercialTestHost.SignIn(host);
+
+        var directory = new ProjectDirectory(ProjectCommercialTestHost.Domain(host));
+        var organisations = ProjectCommercialTestHost.Organisations(host);
+        var locator = new ProjectFolderLocator(new ProjectFolderService(new ProjectFolderOptions(folderRoot.Path, [])), directory, organisations);
+
+        var withClient = await directory.CreateAsync("LOC-0001", "Located project");
+        await organisations.RegisterAsync("ACMEX", OperationsFixtures.Organisation("ACMEX"), OperationsFixtures.Verified());
+        Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(withClient.Id, "ACMEX")).Succeeded);
+
+        var filed = await locator.EnsureAsync(withClient.Id);
+        Assert.Equal(ProjectFolderStatus.Created, filed.Status);
+        Assert.Equal(Path.Combine(folderRoot.Path, "ACMEX Fictional Client Ltd", "LOC-0001 Located project"), filed.ProjectFolder);
+        Assert.Equal(filed.ProjectFolder, await locator.QuoteFolderForAsync(withClient.Id));
+
+        var withoutClient = await directory.CreateAsync("LOC-0002", "Internal project");
+        var unfiled = await locator.EnsureAsync(withoutClient.Id);
+        Assert.Equal(Path.Combine(folderRoot.Path, ProjectFolderService.NoCustomerFolderName, "LOC-0002 Internal project"), unfiled.ProjectFolder);
+
+        var missing = await locator.EnsureAsync(Guid.NewGuid());
+        Assert.Equal(ProjectFolderStatus.Failed, missing.Status);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+}
