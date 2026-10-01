@@ -605,6 +605,9 @@ internal sealed partial class MainWindowComposer
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
+            // Runbook G2: Settings → Timesheets → Timesheet export folder,
+            // default `D:\11 Business Admin\02 Timesheets` on Windows.
+            ExportFolder = () => Tempest.Desktop.Documents.Timesheets.TimesheetExportFolder.Resolve(session.UserSettings.TimesheetExportFolder, configurationProvider),
         };
         timesheetWeekView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 

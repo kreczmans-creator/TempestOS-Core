@@ -597,6 +597,9 @@ public sealed class RailSurfaceContractTests
             Assert.True((await commercial.SetClientAsync(project.Id, organisationId)).Succeeded);
             Assert.True((await commercial.PinRateCardAsync(project.Id, rateCardId)).Succeeded);
 
+            // Runbook G1: the task is one of the project's own deliverables.
+            var railTask = await TimesheetTaskTestSupport.AddDeliverableAsync(host, project.Id, "Rail contract test task");
+
             // 1. Click it -> something real renders: `WP 19.7A` moved
             // Timesheets under Business.
             await navigator.GoToModuleAsync(ShellArea.Business);
@@ -623,7 +626,7 @@ public sealed class RailSurfaceContractTests
             recordButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             var prompt = GetPrivateField<TimesheetEntryPrompt>(window, "_timesheetEntryPrompt");
             await RenderUntilAsync(window, () => prompt.IsVisible);
-            Assert.NotEmpty(prompt.GetLogicalDescendants().OfType<TextBox>());
+            Assert.NotNull(TimesheetTaskTestSupport.TaskCombo(prompt));
 
             // 4. Edit it -> state changes, through its own command: Record.
             var projectCombo = prompt.GetLogicalDescendants().OfType<ComboBox>().First();
@@ -637,8 +640,7 @@ public sealed class RailSurfaceContractTests
             var hoursUpDown = prompt.GetLogicalDescendants().OfType<NumericUpDown>().First();
             hoursUpDown.Value = 4m;
 
-            var taskBox = prompt.GetLogicalDescendants().OfType<TextBox>().First();
-            taskBox.Text = "Rail contract test task";
+            await TimesheetTaskTestSupport.SelectTaskAsync(prompt, railTask.Id, condition => RenderUntilAsync(window, condition));
 
             var recordConfirm = prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
             recordConfirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -676,7 +678,7 @@ public sealed class RailSurfaceContractTests
             await second.StartAsync();
             var timesheets = (ITimesheetService)second.Services!.GetService(typeof(ITimesheetService));
             var entries = await timesheets.ListForPrincipalWeekAsync(second.SessionPrincipal!.IdentityId, monday);
-            Assert.Contains(entries, e => e.TaskDescription == "Rail contract test task");
+            Assert.Contains(entries, e => e.TaskDescription.EndsWith("Rail contract test task", StringComparison.Ordinal) && e.DeliverableId is not null);
         }
         finally
         {

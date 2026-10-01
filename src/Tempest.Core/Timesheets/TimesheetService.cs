@@ -27,13 +27,54 @@ public sealed class TimesheetService : ITimesheetService
         _time = timeProvider ?? TimeProvider.System;
     }
 
+    /// <summary>How far up a deliverable's own parent chain (deliverable → milestone → project) <see cref="BelongsToProject"/> walks before giving up.</summary>
+    private const int MaxParentDepth = 16;
+
     /// <inheritdoc />
-    public async Task<TimesheetResult> RecordAsync(
+    public Task<TimesheetResult> RecordAsync(
         Guid projectId, DateOnly date, decimal hours, bool billable, string grade, string task, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(grade);
         ArgumentException.ThrowIfNullOrWhiteSpace(task);
 
+        return RecordCoreAsync(projectId, date, hours, billable, grade, task, deliverableId: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<TimesheetResult> RecordAgainstDeliverableAsync(
+        Guid projectId, Guid deliverableId, DateOnly date, decimal hours, bool billable, string grade, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(grade);
+
+        if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project)
+            throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
+
+        if (await _context.Repository.FindAsync(deliverableId, cancellationToken).ConfigureAwait(false) is not Deliverable deliverable
+            || !IsLive(deliverable)
+            || !BelongsToProject(deliverableId, projectId))
+        {
+            return new TimesheetResult(
+                TimesheetRefusal.DeliverableNotOnProject,
+                $"'{deliverableId}' is not a live deliverable of project '{projectId}'; time can only be booked against the project's own deliverables.",
+                null);
+        }
+
+        return await RecordCoreAsync(projectId, date, hours, billable, grade, DeliverableTaskLabel(deliverable), deliverableId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The task text an entry booked against <paramref name="deliverable"/> carries: "identifier — title", or the title alone when it has no identifier yet.</summary>
+    public static string DeliverableTaskLabel(Deliverable deliverable)
+    {
+        ArgumentNullException.ThrowIfNull(deliverable);
+
+        return string.IsNullOrWhiteSpace(deliverable.Identifier)
+            ? deliverable.DisplayName
+            : $"{deliverable.Identifier} — {deliverable.DisplayName}";
+    }
+
+    private async Task<TimesheetResult> RecordCoreAsync(
+        Guid projectId, DateOnly date, decimal hours, bool billable, string grade, string task, Guid? deliverableId, CancellationToken cancellationToken)
+    {
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
             throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
 
@@ -66,7 +107,7 @@ public sealed class TimesheetService : ITimesheetService
             _context,
             (doc, rev) => new TimesheetEntry(
                 doc, rev, _context, identifier: null, $"{task} — {date:yyyy-MM-dd}", EngineeringObjectMetadata.Empty,
-                principalId, projectId, task, date, hours, billable, grade, resolution.Billing!.Value, resolution.Cost))
+                principalId, projectId, task, date, hours, billable, grade, resolution.Billing!.Value, resolution.Cost, deliverableId: deliverableId))
             .CreateAsync($"Timesheet entry recorded — {task}.", cancellationToken)
             .ConfigureAwait(false);
 
@@ -160,6 +201,22 @@ public sealed class TimesheetService : ITimesheetService
             .Where(e => IsLive(e) && e.Billable && e.InvoicedBy is null)
             .OrderBy(e => e.Date)
             .ToList();
+    }
+
+    /// <summary>Whether <paramref name="objectId"/>'s own parent chain, read from the index alone, reaches <paramref name="projectId"/>.</summary>
+    private bool BelongsToProject(Guid objectId, Guid projectId)
+    {
+        var current = _context.Repository.PeekIndexEntry(objectId)?.ParentId;
+
+        for (var depth = 0; current is { } parentId && depth < MaxParentDepth; depth++)
+        {
+            if (parentId == projectId)
+                return true;
+
+            current = _context.Repository.PeekIndexEntry(parentId)?.ParentId;
+        }
+
+        return false;
     }
 
     private async Task<TimesheetEntry?> FindEntryAsync(Guid entryId, CancellationToken cancellationToken) =>

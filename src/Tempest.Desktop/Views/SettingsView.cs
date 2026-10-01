@@ -20,6 +20,7 @@ using Tempest.Core.Settings;
 using Tempest.Core.Timesheets;
 using Tempest.Desktop.Startup;
 using Tempest.Desktop.Theming;
+using Tempest.Desktop.Documents.Timesheets;
 using Tempest.Workspace.Files;
 using Tempest.Workspace.Projects;
 
@@ -155,6 +156,9 @@ public sealed class SettingsView : UserControl
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly CheckBox _confirmBeforeDelete = new() { Content = "Confirm before deleting an object" };
     private readonly CheckBox _independentCheckRequired = new() { Content = "Independent check required (checker must differ from the evidence's own author)" };
+    // Runbook G2: where Business → Timesheets → Export week saves by default.
+    private readonly TextBox _timesheetExportFolder = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
+    private readonly Button _browseTimesheetExportFolder = new() { Content = "Browse…", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly NumericUpDown _workingPatternHours = new() { Minimum = 0, Maximum = 168, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly ComboBox _invoicingConnectorSelector = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
     private readonly TextBox _invoicingClientId = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
@@ -361,6 +365,19 @@ public sealed class SettingsView : UserControl
         // `WP 19.0A` (`ADR-0150`): unchanged from `SettingsDialog`.
         var timesheets = BuildSection("Working pattern", LabeledRow("Hours per week", _workingPatternHours));
 
+        // Runbook G2 (Product Owner: "give me a place in settings to set
+        // where this goes. By default make it D:\11 Business Admin\02
+        // Timesheets"). Browse… is offered only when a folder picker is
+        // threaded through; the path box alone always works.
+        var exportFolderRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        exportFolderRow.Children.Add(_timesheetExportFolder);
+        if (_filePicker is not null)
+            exportFolderRow.Children.Add(_browseTimesheetExportFolder);
+        var timesheetExport = BuildSection("Timesheets", LabeledRow("Timesheet export folder", exportFolderRow));
+        AutomationProperties.SetName(_timesheetExportFolder, "Timesheet export folder");
+        AutomationProperties.SetName(_browseTimesheetExportFolder, "Browse for timesheet export folder");
+        ToolTip.SetTip(_timesheetExportFolder, "Export week opens its save dialog here; the folder is created if missing. Leave blank for the default.");
+
         // `WP 19.1A` part 3 (`ADR-0151`): unchanged from `SettingsDialog`.
         var invoicingAuthoriseRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
         invoicingAuthoriseRow.Children.Add(_invoicingAuthoriseButton);
@@ -438,6 +455,8 @@ public sealed class SettingsView : UserControl
         if (_workingPatterns is not null && _principals is not null)
             body.Children.Add(timesheets);
 
+        body.Children.Add(timesheetExport);
+
         if (_invoicingConnector is not null && _secretStore is not null)
             body.Children.Add(invoicing);
 
@@ -466,6 +485,8 @@ public sealed class SettingsView : UserControl
         _checkForUpdatesNowButton.Click += async (_, _) => await OnCheckForUpdatesNowAsync().ConfigureAwait(true);
         _applyUpdateButton.Click += async (_, _) => await OnApplyUpdateAsync().ConfigureAwait(true);
         _switchPersonButton.Click += async (_, _) => await OnSwitchPersonAsync().ConfigureAwait(true);
+        _browseTimesheetExportFolder.Classes.Add(ChromeStyles.Subtle);
+        _browseTimesheetExportFolder.Click += async (_, _) => await OnBrowseTimesheetExportFolderAsync().ConfigureAwait(true);
 
         AutomationProperties.SetName(this, "Settings");
         Content = new ScrollViewer { Content = body };
@@ -492,6 +513,8 @@ public sealed class SettingsView : UserControl
 
         _toastDuration.Value = (decimal)_settings.ToastDurationSeconds;
         _confirmBeforeDelete.IsChecked = _settings.ConfirmBeforeDelete;
+        _timesheetExportFolder.Text = TimesheetExportFolder.Resolve(_settings.TimesheetExportFolder, _configuration) ?? string.Empty;
+        _timesheetExportFolder.Watermark = TimesheetExportFolder.Fallback(_configuration) ?? "Not set — Export week asks where to save";
 
         _independentCheckRequired.IsChecked = bool.TryParse(
             await _settingsProvider.GetValueAsync(EvidenceService.IndependentCheckSettingKey).ConfigureAwait(true), out var required) && required;
@@ -816,6 +839,21 @@ public sealed class SettingsView : UserControl
         }
     }
 
+    /// <summary>Browse… (runbook G2): picks the timesheet export folder through the shared <see cref="IFilePicker"/>; the choice applies on Save, like every other field here.</summary>
+    private async Task OnBrowseTimesheetExportFolderAsync()
+    {
+        if (_filePicker is null)
+            return;
+
+        var current = _timesheetExportFolder.Text?.Trim();
+        var picked = await _filePicker
+            .PickFolderAsync("Timesheet export folder", string.IsNullOrEmpty(current) ? null : current)
+            .ConfigureAwait(true);
+
+        if (!string.IsNullOrWhiteSpace(picked))
+            _timesheetExportFolder.Text = picked;
+    }
+
     private async Task SaveAsync()
     {
         if (_themeSelector.SelectedItem is ComboBoxItem { Tag: ThemeVariant selectedTheme } && selectedTheme != _theme.Current)
@@ -824,6 +862,15 @@ public sealed class SettingsView : UserControl
         _settings.ToastDurationSeconds = (double)(_toastDuration.Value ?? 4.5m);
         _settings.ConfirmBeforeDelete = _confirmBeforeDelete.IsChecked ?? true;
         _settings.CheckForUpdatesOnLaunch = _checkForUpdatesOnLaunch.IsChecked ?? false;
+
+        // Runbook G2: a blank box, or one still holding the default, stores
+        // nothing — so the default (and its configuration override) keeps
+        // applying rather than being frozen in as an explicit choice.
+        var exportFolder = _timesheetExportFolder.Text?.Trim();
+        _settings.TimesheetExportFolder = string.IsNullOrEmpty(exportFolder)
+            || string.Equals(exportFolder, TimesheetExportFolder.Fallback(_configuration), StringComparison.OrdinalIgnoreCase)
+            ? null
+            : exportFolder;
         await _settings.SaveAsync().ConfigureAwait(true);
 
         await _settingsProvider.SetValueAsync(

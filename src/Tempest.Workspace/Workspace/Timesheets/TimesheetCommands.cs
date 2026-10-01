@@ -13,7 +13,15 @@ namespace Tempest.Workspace.Timesheets;
 public sealed class RecordTimesheetCommand : ICommand
 {
     /// <summary>Initialises a new instance of the <see cref="RecordTimesheetCommand"/> class.</summary>
-    public RecordTimesheetCommand(Guid? projectId, DateOnly date, decimal hours, bool billable, string grade, string task)
+    /// <param name="deliverableId">
+    /// The project deliverable this time is booked against (runbook G1).
+    /// When set, the handler records through
+    /// <see cref="ITimesheetService.RecordAgainstDeliverableAsync"/> and the
+    /// stored task text is the deliverable's own label; <paramref name="task"/>
+    /// is then only what the caller displayed. <see langword="null"/> (the
+    /// Ribbon/Command Palette's free-text path) records exactly as before.
+    /// </param>
+    public RecordTimesheetCommand(Guid? projectId, DateOnly date, decimal hours, bool billable, string grade, string task, Guid? deliverableId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(grade);
         ArgumentException.ThrowIfNullOrWhiteSpace(task);
@@ -24,7 +32,11 @@ public sealed class RecordTimesheetCommand : ICommand
         Billable = billable;
         Grade = grade;
         Task = task;
+        DeliverableId = deliverableId;
     }
+
+    /// <summary>Gets the project deliverable this time is booked against, or <see langword="null"/> for a free-text task.</summary>
+    public Guid? DeliverableId { get; }
 
     /// <summary>Gets where the new entry goes — the open project, or a chosen container (`CreationPlacement`). <see langword="null"/> when neither resolves.</summary>
     public Guid? ProjectId { get; }
@@ -67,9 +79,13 @@ public sealed class RecordTimesheetCommandHandler : ICommandHandler<RecordTimesh
 
         try
         {
-            result = await _service
-                .RecordAsync(projectId, command.Date, command.Hours, command.Billable, command.Grade, command.Task, cancellationToken)
-                .ConfigureAwait(false);
+            result = command.DeliverableId is { } deliverableId
+                ? await _service
+                    .RecordAgainstDeliverableAsync(projectId, deliverableId, command.Date, command.Hours, command.Billable, command.Grade, cancellationToken)
+                    .ConfigureAwait(false)
+                : await _service
+                    .RecordAsync(projectId, command.Date, command.Hours, command.Billable, command.Grade, command.Task, cancellationToken)
+                    .ConfigureAwait(false);
         }
         catch (ArgumentException ex)
         {
