@@ -44,7 +44,7 @@ public enum QuotationRefusal
     /// <summary>Opening, editing, submitting or approving a quotation needs a signed-in person, and nobody is (runbook C3, colour review board B1).</summary>
     NoPrincipalSignedIn,
 
-    /// <summary>The person approving is the one who opened or submitted the quotation, or changed its lines since the last approval — a review needs a second person (runbook C3, colour review board B1).</summary>
+    /// <summary>The person approving is the one who opened or submitted the quotation, or changed its lines since the last approval — a review needs a second person (runbook C3, colour review board B1). Only while second-person sign-off is on (`ADR-0161`).</summary>
     ReviewerMustDifferFromAuthor,
 
     /// <summary>Returning a quotation to draft needs the reviewer's own comment (runbook C3).</summary>
@@ -58,7 +58,8 @@ public enum QuotationRefusal
     /// submission or a pre-runbook-C3 quotation with no author and no
     /// attributable first revision), so no approver can be shown to be a
     /// second person — the approval is refused rather than assumed
-    /// (colour review board B1).
+    /// (colour review board B1). Only while second-person sign-off is on
+    /// (`ADR-0161`): with it off nobody needs to be shown to differ.
     /// </summary>
     AuthorUnknown,
 }

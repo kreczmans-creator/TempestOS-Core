@@ -221,7 +221,8 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
                 _check = check;
                 _status = EvidenceStatus.Checked;
             },
-            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}.",
+            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}."
+            + (check.SelfCheck ? $" Checked by its own author — {Governance.SignOffPolicy.SelfApprovalNote}." : string.Empty),
             cancellationToken);
     }
 

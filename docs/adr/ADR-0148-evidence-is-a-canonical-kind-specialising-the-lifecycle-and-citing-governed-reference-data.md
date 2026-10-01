@@ -95,6 +95,17 @@ two more near-identical copies. `evidence.revise` carries a confirmation:
 it is a genuine status move, so it does not join `ADR-0098`'s macro-safe
 set.
 
+**4a. Amendment (`v0.23.0`, Product Owner decision 2026-10-01).** Whether
+the checker must be somebody other than the author is now the one global
+"Second-person sign-off" switch (`ISignOffPolicy`, `ADR-0161`), off by
+default. With the independent-check rule on and that switch **on**, §4
+applies exactly (`CheckerMustDifferFromAuthor`). With it **off**, the
+author may check their own evidence: somebody must still be signed in
+(`NoPrincipalSignedIn`), `CheckerIdentityId` names them, and the check
+records `CheckRecord.SelfCheck = true` with an audit row ending
+"self-approval: second-person sign-off is off". With the independent-check
+rule off, §4's "off" behaviour is unchanged.
+
 ## Consequences
 
 **Positive:** a citation can never point at reference data nobody has
@@ -116,4 +127,4 @@ already-accepted shape, repeated rather than generalised for one caller.
 transaction, one audit row); `ADR-0147` (`Quantity`);
 `GovernedBracketCheckService` (refusal-as-result precedent);
 `RequirementStatusTransitions` (independent-status-vocabulary precedent);
-`docs/releases/v1.0.0/WorkPackages.md` (`WP 18.0A` row).
+`ADR-0161` (second-person sign-off switch); `docs/releases/v1.0.0/WorkPackages.md` (`WP 18.0A` row).

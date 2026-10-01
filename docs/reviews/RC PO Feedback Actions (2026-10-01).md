@@ -17,6 +17,12 @@ follow-up messages on 1 Oct. Score: 46/64 scored — 37 PASS, 2 FAIL
 | F (Xero) | Needs a line-by-line guide | `docs/guides/Xero Setup - Step by Step.md` |
 | PO-5 | "Create XXX" Kind was a typed, restricted field | Every fixed-list command parameter (Create Document's Kind and every other `Choice`/`EnumChoice`) is now a dropdown |
 
+## Decided and built: second-person sign-off (PO, 2026-10-01)
+
+| Ref | PO decision | Change |
+|---|---|---|
+| PO-SO | "This software is initially for a single-user consultancy, so EVERYTHING needing a second person to verify/approve cannot be the case. Add into the settings a switch to flick second-person sign-off on/off globally." | One global switch, Settings → **Sign-off** → *Second-person sign-off*, **off by default** (`ISignOffPolicy`, `ADR-0161`; amends `ADR-0152` and `ADR-0148`). Off: the author may approve their own quote and check their own evidence; somebody must still be signed in, and the revision/check/audit row says it was a self-approval. On: every colour review board B1 rule exactly as before. Every change of the switch is audited (who, when, old → new); the Quote tab shows the current state. Survey: the only separation-of-duty rules in the code were the quote approval and the evidence independent check; reference-data verify/release, timesheets, calculations, requirements and documents had none, so nothing changes there. |
+
 ## Already in hand elsewhere (do not duplicate)
 
 | Ref | Item | Where |

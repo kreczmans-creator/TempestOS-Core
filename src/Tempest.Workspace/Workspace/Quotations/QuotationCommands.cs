@@ -439,12 +439,16 @@ public sealed class QuotationReviewCommand : IWorkspaceCommand
 public sealed class QuotationReviewCommandHandler : ICommandHandler<QuotationReviewCommand>
 {
     private readonly IQuotationService _service;
+    private readonly Tempest.Core.Governance.ISignOffPolicy? _signOff;
 
     /// <summary>Initialises a new instance of the <see cref="QuotationReviewCommandHandler"/> class.</summary>
-    public QuotationReviewCommandHandler(IQuotationService service)
+    /// <param name="service">The quotation service the acts run through.</param>
+    /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`), read for the submit message only. <see langword="null"/> keeps the second-person wording.</param>
+    public QuotationReviewCommandHandler(IQuotationService service, Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         _service = service;
+        _signOff = signOffPolicy;
     }
 
     /// <inheritdoc />
@@ -465,11 +469,18 @@ public sealed class QuotationReviewCommandHandler : ICommandHandler<QuotationRev
             return CommandResult.Failure(result.Reason ?? "The quotation review act was refused.");
 
         var quote = result.Quotation!;
+        var secondPersonRequired = _signOff is null
+            || await _signOff.IsSecondPersonRequiredAsync(cancellationToken).ConfigureAwait(false);
+        var selfApproved = quote.Review.Revisions.Count > 0 && quote.Review.Revisions[^1].SelfApproved;
         var message = command.Act switch
         {
             QuotationReviewAct.SaveDraft => $"Draft saved — {quote.Lines.Count} line(s), total {quote.Total}.",
-            QuotationReviewAct.SubmitForReview => $"'{quote.Reference}' submitted for review — a second person approves it.",
-            QuotationReviewAct.Approve => $"'{quote.Reference}' approved as {quote.RevisionLabel} — ready to export and send.",
+            QuotationReviewAct.SubmitForReview => secondPersonRequired
+                ? $"'{quote.Reference}' submitted for review — a second person approves it."
+                : $"'{quote.Reference}' submitted for review — approve it when ready (second-person sign-off is off).",
+            QuotationReviewAct.Approve => selfApproved
+                ? $"'{quote.Reference}' approved as {quote.RevisionLabel} (self-approved — second-person sign-off is off) — ready to export and send."
+                : $"'{quote.Reference}' approved as {quote.RevisionLabel} — ready to export and send.",
             _ => $"'{quote.Reference}' returned to draft.",
         };
 

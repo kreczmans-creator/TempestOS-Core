@@ -353,7 +353,8 @@ internal sealed partial class MainWindowComposer
             people: peopleDirectory, confirmationDialog: confirmationDialog, switchPrincipal: SwitchPrincipal,
             organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
-            prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker);
+            prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
+            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)));
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
@@ -686,6 +687,7 @@ internal sealed partial class MainWindowComposer
 
         // Colour review board M4: the review line names people, not SIDs.
         projectQuoteView.Principals = principals;
+        projectQuoteView.SignOffPolicy = (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy));
 
         // PO decision 2026-10-01: each project's own Windows Explorer
         // folder (`<root>\<customer>\<project>\<standard subfolders>`,

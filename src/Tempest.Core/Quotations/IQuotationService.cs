@@ -88,7 +88,7 @@ public interface IQuotationService
     /// Approved, issuing the next revision (<c>R1</c>, then <c>R2</c>
     /// after a later edit and review, …) (runbook C3).
     /// </summary>
-    /// <remarks>Refused, as a result, when the quotation is not in review, when nobody is signed in, when the submitter or the author is not on record (<see cref="QuotationRefusal.AuthorUnknown"/>; a quotation from before runbook C3 takes its author from its first document revision), or when the signed-in person is the one who opened or submitted it or changed a line since the last approval — Evidence's own "checker must differ from author" rule (colour review board B1).</remarks>
+    /// <remarks>Refused, as a result, when the quotation is not in review, when nobody is signed in, when the submitter or the author is not on record (<see cref="QuotationRefusal.AuthorUnknown"/>; a quotation from before runbook C3 takes its author from its first document revision), or when the signed-in person is the one who opened or submitted it or changed a line since the last approval — Evidence's own "checker must differ from author" rule (colour review board B1). The last two apply only while the global "Second-person sign-off" switch is on (`ADR-0161`, off by default): with it off the same person may author, submit and approve, and the issued revision records <see cref="QuotationRevision.SelfApproved"/>.</remarks>
     Task<QuotationResult> ApproveAsync(Guid quotationId, CancellationToken cancellationToken = default);
 
     /// <summary>Returns <paramref name="quotationId"/>'s own review to draft, with the reviewer's <paramref name="comment"/> (runbook C3).</summary>

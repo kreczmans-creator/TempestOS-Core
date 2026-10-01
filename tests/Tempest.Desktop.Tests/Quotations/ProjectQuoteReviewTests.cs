@@ -131,6 +131,9 @@ public sealed class ProjectQuoteReviewTests
         {
             await host.StartAsync();
             var project = await host.ProjectDirectory!.CreateAsync("P-QR-REVIEW", "Review Project");
+            // ADR-0161: second-person sign-off is off by default (a one-person
+            // consultancy); the same-person refusal below is the ON rule.
+            await Resolve<Tempest.Core.Governance.ISignOffPolicy>(host).SetSecondPersonRequiredAsync(true);
             await PinCardAsync(host, project.Id);
             (var view, window, var quoteId) = await OpenQuoteViewAsync(host, project.Id);
             var domain = Resolve<EngineeringDomainContext>(host);

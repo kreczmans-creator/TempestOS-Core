@@ -375,6 +375,30 @@ only as strong as the one session principal it reads (`ADR-0146`,
 not a hash of the approved lines, so an exported `Rn` is matched to stored
 content by revision number and time.
 
+## Amendment (`v0.23.0`, Product Owner decision 2026-10-01): second-person sign-off is switchable, off by default
+
+The Product Owner: *"This software is initially for a single-user
+consultancy, so EVERYTHING needing a second person to verify/approve
+cannot be the case. Add into the settings a switch to flick second-person
+sign-off on/off globally."* The review amendment's §2 said the rule had
+"no setting to turn it off"; that sentence is superseded. `ApproveAsync`
+now consults the one global switch, `ISignOffPolicy` (`ADR-0161`), **off
+by default**:
+
+- **Off:** the author, submitter or a line editor may approve, and an
+  unattributed submission or author is not refused (`AuthorUnknown` does
+  not apply). Somebody must still be signed in (`NoPrincipalSignedIn`).
+  The revision records `QuotationRevision.SelfApproved = true` and its
+  audit row ends "self-approval: second-person sign-off is off" whenever
+  the approver was not shown to be a second person.
+- **On:** §2 as written, with every exclusion the colour review board
+  added (B1: author, submitter, line editors since the last approval,
+  `AuthorUnknown`, legacy first-revision author resolution), unchanged.
+
+Every change of the switch is itself audited (`ADR-0161` §5). The review
+amendment's Consequences sentence "a quote cannot reach a client without a
+second person's approval" now holds only with the switch on.
+
 ## Related Documents
 
 `D-028`; `ADR-0145` (one object, one transaction); `ADR-0150` (the
@@ -382,5 +406,5 @@ project's own commercial core, read here for client and rate card);
 `ADR-0151` (`InvoiceRequest`, the shape repeated again, and the identical
 non-atomic-orchestration disclosure this ADR's §5 mirrors); `ADR-0134`
 (the frozen `CustomerQuotation` this Kind is deliberately not);
-`WorkPackages.md` (`WP 19.5A` row); Product Owner comment item 4
+`ADR-0161` (second-person sign-off switch); `WorkPackages.md` (`WP 19.5A` row); Product Owner comment item 4
 (2026-09-14) and item 9 (the export decision `WP 19.5B` implements).

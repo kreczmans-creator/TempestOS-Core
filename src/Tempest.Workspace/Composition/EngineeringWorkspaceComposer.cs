@@ -263,7 +263,9 @@ public static class EngineeringWorkspaceComposer
         // `ProjectCommercialWorkspaceRegistration` (needs the project to
         // exist) and after `RequirementsWorkspaceRegistration` (`AcceptAsync`
         // needs `IRequirementsService`, already resolved above).
-        QuotationWorkspaceRegistration.Register(manager, domainContext, quotationService, commandDispatcher, commandRegistry);
+        QuotationWorkspaceRegistration.Register(
+            manager, domainContext, quotationService, commandDispatcher, commandRegistry,
+            (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)));
 
         // `WP 19.5C`. Manual tasks — a small, standalone to-do Kind, the
         // Home dashboard's own task tiles and task list. No dependency on

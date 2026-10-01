@@ -3,6 +3,7 @@ using Tempest.Core.Configuration;
 using Tempest.Core.Constants;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Fasteners;
+using Tempest.Core.Governance;
 using Tempest.Core.Identity;
 using Tempest.Core.Materials;
 using Tempest.Core.Projects;
@@ -31,6 +32,15 @@ namespace Tempest.Core.Evidence;
 /// (`WP 18.2A`) can read and write it without knowing this key exists
 /// anywhere else.
 /// </para>
+/// <para>
+/// <b>Whether the checker must be somebody else</b> is no longer this
+/// service's own question: it is the global "Second-person sign-off" switch
+/// (<see cref="ISignOffPolicy"/>, `ADR-0161`, Product Owner decision
+/// 2026-10-01), off by default. With the independent-check rule on and
+/// that switch off, the author may check their own evidence; the check
+/// still needs somebody signed in, still names them, and records
+/// <see cref="CheckRecord.SelfCheck"/>.
+/// </para>
 /// </remarks>
 public sealed class EvidenceService : IEvidenceService
 {
@@ -49,6 +59,7 @@ public sealed class EvidenceService : IEvidenceService
     private readonly ICurrentPrincipalAccessor _principals;
     private readonly IConfigurationProvider _configuration;
     private readonly ISettingsProvider? _settings;
+    private readonly ISignOffPolicy? _signOff;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="EvidenceService"/> class.</summary>
@@ -62,7 +73,8 @@ public sealed class EvidenceService : IEvidenceService
         ICurrentPrincipalAccessor principals,
         IConfigurationProvider configuration,
         ISettingsProvider? settings = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(materials);
@@ -82,6 +94,7 @@ public sealed class EvidenceService : IEvidenceService
         _principals = principals;
         _configuration = configuration;
         _settings = settings;
+        _signOff = signOffPolicy;
         _time = timeProvider ?? TimeProvider.System;
 
         if (_settings is not null)
@@ -251,6 +264,7 @@ public sealed class EvidenceService : IEvidenceService
 
         var principal = _principals.Current;
         string? checkerIdentityId = null;
+        var selfCheck = false;
 
         if (await IsIndependentCheckRequiredAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -262,7 +276,12 @@ public sealed class EvidenceService : IEvidenceService
                     evidence);
             }
 
-            if (string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal))
+            selfCheck = string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal);
+
+            // `ADR-0161`: whether the checker must be a second person is the
+            // global second-person sign-off switch (off by default). Off,
+            // the author's own check is recorded — and marked as one.
+            if (selfCheck && await IsSecondPersonRequiredAsync(cancellationToken).ConfigureAwait(false))
             {
                 // `WP 21.3B`: the second principal "Switch person…" now
                 // actually builds is what this refusal was always asking
@@ -278,7 +297,7 @@ public sealed class EvidenceService : IEvidenceService
         }
 
         var recordedBy = principal?.Identity.Id ?? _context.ResolveCurrentPrincipalId();
-        var check = new CheckRecord(checkerName, checkerOrganisation, checkerIdentityId, recordedBy, _time.GetUtcNow(), statement, outcome);
+        var check = new CheckRecord(checkerName, checkerOrganisation, checkerIdentityId, recordedBy, _time.GetUtcNow(), statement, outcome, selfCheck);
 
         await evidence.RecordCheckAsync(check, cancellationToken).ConfigureAwait(false);
 
@@ -456,6 +475,10 @@ public sealed class EvidenceService : IEvidenceService
 
     private async Task<Evidence?> FindEvidenceAsync(Guid evidenceId, CancellationToken cancellationToken) =>
         await _context.Repository.FindAsync(evidenceId, cancellationToken).ConfigureAwait(false) as Evidence;
+
+    /// <summary>Whether the global second-person sign-off switch is on (`ADR-0161`) — on, as before the switch existed, when no policy is composed.</summary>
+    private Task<bool> IsSecondPersonRequiredAsync(CancellationToken cancellationToken) =>
+        _signOff?.IsSecondPersonRequiredAsync(cancellationToken) ?? Task.FromResult(true);
 
     private async Task<bool> IsIndependentCheckRequiredAsync(CancellationToken cancellationToken)
     {

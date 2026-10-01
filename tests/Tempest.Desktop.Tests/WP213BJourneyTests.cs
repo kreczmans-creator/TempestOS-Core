@@ -213,6 +213,9 @@ public sealed class WP213BJourneyTests
             _ = host.EvidenceService;
             var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             await settingsProvider.SetValueAsync(EvidenceService.IndependentCheckSettingKey, bool.TrueString);
+            // ADR-0161: second-person sign-off is off by default (a one-person
+            // consultancy); the refusal this journey proves is the ON rule.
+            await ((Tempest.Core.Governance.ISignOffPolicy)host.Services!.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy))).SetSecondPersonRequiredAsync(true);
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);

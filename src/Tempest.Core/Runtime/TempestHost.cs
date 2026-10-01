@@ -464,6 +464,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
 
+        // `ADR-0161` (Product Owner decision 2026-10-01): the one global
+        // "Second-person sign-off" switch every separation-of-duty rule
+        // consults (quotation approval, evidence's independent check).
+        // Registered once here, over Settings (durable, so it survives a
+        // restart) and Audit (so every change of it is recorded), so it is
+        // the same answer for every module. Off by default.
+        services.Singleton<Tempest.Core.Governance.ISignOffPolicy, Tempest.Core.Governance.SignOffPolicy>();
+
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
         // public interface, never IPersistenceStore directly - registered
