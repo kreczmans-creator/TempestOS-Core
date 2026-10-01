@@ -62,7 +62,11 @@ including items waiting on a decision, is
 ## Gate (Linux, this branch's head)
 
 - Build: Desktop, Core and RealShell test projects build with 0 errors.
-- Core tests (invoicing, OAuth and Xero subset): 263/267. The 4
-  failures are the known Windows-only DPAPI tests.
-- Desktop tests: GATE_PENDING.
+- Core tests: 5,447/5,457 — the same 10 known Windows-only failures
+  as `v0.22.0` (DPAPI secret store, PowerShell scripts).
+- Desktop tests: 903/906 on the full run. Two of the failures came from
+  the new dropdown: a test helper that typed into the prompt, and a
+  missing automation name. Both are fixed, and those tests pass
+  (13/13). The third is the known Linux-only `StatusBarCollapseTests`
+  failure, unchanged from `v0.22.0`.
 - Not run here: the Windows real-shell journey and the installer.

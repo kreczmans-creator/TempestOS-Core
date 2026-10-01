@@ -84,6 +84,7 @@ public sealed class InputDialog : Border
         // construction, not only from the first real `PromptAsync` call
         // that sets it to that call's own label below.
         AutomationProperties.SetName(_input, "Value");
+        AutomationProperties.SetName(_choice, "Value");
         _title.FontFamily = DesignTokens.TitleFont;
         _title.FontSize = DesignTokens.FontSizeTitle;
         _cancelButton.Click += (_, _) => Complete(null);
