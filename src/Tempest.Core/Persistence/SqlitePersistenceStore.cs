@@ -111,6 +111,11 @@ public sealed class SqlitePersistenceStore
     /// costs milliseconds. Under WAL, <c>NORMAL</c> is still crash
     /// consistent; it only gives up the durability of the last commits on
     /// power loss, which a test run does not need and a person's data does.
+    /// The key is reachable from ordinary configuration (the Desktop test
+    /// assembly sets it through the <c>TEMPEST_Persistence__Synchronous</c>
+    /// environment variable), so a store opened at <c>NORMAL</c> logs a
+    /// Warning saying so every time — a production install that picked it up
+    /// by accident is visible in its own log (colour review board v0.23.0, M14).
     /// </summary>
     public const string SynchronousConfigurationKey = "Persistence:Synchronous";
 
@@ -215,6 +220,14 @@ public sealed class SqlitePersistenceStore
         _databasePath = Path.Combine(_rootPath, DatabaseFileName);
         _lockFilePath = Path.Combine(_rootPath, LockFileName);
         _logger = logger;
+
+        if (SynchronousLevel == "NORMAL")
+        {
+            _logger?.Warning(
+                $"Persistence is running at PRAGMA synchronous = NORMAL ({SynchronousConfigurationKey} = {RelaxedSynchronousValue}) "
+                + $"for '{_rootPath}'. This setting is for test runs only: the last commits before a power loss may be lost. "
+                + "Remove it from any installation that holds a person's data.");
+        }
 
         _connectionString = new SqliteConnectionStringBuilder
         {
@@ -1204,6 +1217,27 @@ public sealed class SqlitePersistenceStore
         command.CommandText = "SELECT value FROM store_sequence WHERE id = 1;";
         var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
         return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Test hook (colour review board v0.23.0, N4): opens a connection exactly
+    /// as the store's own reads and writes do and returns what
+    /// <c>PRAGMA synchronous</c> reports on it — <c>1</c> for NORMAL,
+    /// <c>2</c> for FULL — so a test asserts the level the store's own
+    /// connections run at, not the string it composed.
+    /// </summary>
+    /// <param name="cancellationToken">A token observed while reading.</param>
+    /// <returns>The connection's <c>synchronous</c> level.</returns>
+    internal async Task<long> ReadSynchronousPragmaAsync(CancellationToken cancellationToken = default)
+    {
+        var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "PRAGMA synchronous;";
+            var value = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+            return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
     }
 
     private async Task<SqliteConnection> OpenConnectionAsync(CancellationToken cancellationToken)
