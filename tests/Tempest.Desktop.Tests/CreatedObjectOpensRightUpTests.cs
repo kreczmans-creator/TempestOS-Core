@@ -72,7 +72,10 @@ public sealed class CreatedObjectOpensRightUpTests
             Assert.Equal(project.Id, created!.ParentId);
 
             // The build is in the title bar, so a stale executable can never pass as the current one again.
-            Assert.StartsWith("TempestOS 0.23.0 (", window.Title, StringComparison.Ordinal);
+            // The version comes from the root VERSION file, never a literal
+            // that goes stale at every release (v0.23.0 board N10).
+            var version = File.ReadAllText(Path.Combine(DesktopTestHelpers.RepositoryRoot, "VERSION")).Trim();
+            Assert.StartsWith($"TempestOS {version} (", window.Title, StringComparison.Ordinal);
 
             // Revealed: selected, with every ancestor expanded, in the tree
             // that lists it, which is the mechanical one, not the one that

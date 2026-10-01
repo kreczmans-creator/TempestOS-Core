@@ -54,6 +54,9 @@ public sealed class LibrariesView : UserControl
     private readonly IProcessCatalog _manufacturing;
     private readonly IComponentCatalog _components;
     private readonly ReferenceLibraryCatalogues _catalogues;
+
+    /// <summary>The catalogue set this view reads, shared with Business → Staff and Rate cards rather than rebuilt for each (v0.23.0 board N9).</summary>
+    internal ReferenceLibraryCatalogues Catalogues => _catalogues;
     private readonly ReferenceReviewService _review;
     private readonly BracketCalculationWorkbench _bracketCalculations;
 

@@ -118,10 +118,8 @@ public sealed class TimesheetService : ITimesheetService
     }
 
     /// <inheritdoc />
-    public async Task<TimesheetResult> AmendAsync(Guid entryId, decimal hours, string task, bool billable, CancellationToken cancellationToken = default)
+    public async Task<TimesheetResult> AmendAsync(Guid entryId, decimal hours, string? task, bool billable, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(task);
-
         var entry = await FindEntryAsync(entryId, cancellationToken).ConfigureAwait(false);
         if (entry is null)
             return NotFound(entryId);
@@ -132,7 +130,18 @@ public sealed class TimesheetService : ITimesheetService
         if (await ArchivedAsync(entry, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        await entry.AmendAsync(hours, task, billable, cancellationToken).ConfigureAwait(false);
+        // v0.23.0 board M3: blank keeps the current task; an entry tied to a
+        // deliverable keeps the deliverable's own task text.
+        var amendedTask = string.IsNullOrWhiteSpace(task) ? entry.TaskDescription : task.Trim();
+        if (entry.DeliverableId is not null && !string.Equals(amendedTask, entry.TaskDescription, StringComparison.Ordinal))
+        {
+            return new TimesheetResult(
+                TimesheetRefusal.TaskLockedToDeliverable,
+                $"This entry was recorded against a deliverable, so its task stays '{entry.TaskDescription}'. Leave Task blank to keep it; to book the time elsewhere, delete the entry and record it again.",
+                entry);
+        }
+
+        await entry.AmendAsync(hours, amendedTask, billable, cancellationToken).ConfigureAwait(false);
 
         return new TimesheetResult(TimesheetRefusal.None, null, entry);
     }

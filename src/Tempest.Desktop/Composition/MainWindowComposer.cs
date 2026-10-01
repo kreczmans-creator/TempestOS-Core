@@ -86,7 +86,6 @@ internal sealed record ComposedViews(
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
     InvoicingView InvoicingView,
-    ReportsView ReportsView,
     SettingsView SettingsView,
     NewProjectPrompt NewProjectPrompt,
     ProjectPicker ProjectPicker,
@@ -576,11 +575,9 @@ internal sealed partial class MainWindowComposer
         };
         projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        // `WP 19.2B`: the Reports area's own "Export"/document-row "Open"
-        // — opening a file never navigates, exactly as
-        // `OpenProjectAttachmentAsync`'s own remarks already establish for
-        // `ProjectWorkspaceView`'s identical Documents-tab callback.
-        Action<Guid, Guid> openAttachmentRightUp = (ownerId, attachmentId) => _ = callbacks.OpenProjectAttachmentAsync(ownerId, attachmentId, default);
+        // v0.23.0 board N9: the withdrawn Reports view (`WP 19.2B`; see
+        // `EngineeringAreaView`'s remarks) is no longer built here. The
+        // class stays, and is tested, for when reports return.
 
         // `WP 21.2A`, scope item 1/2: one `DocumentExporter` (the same
         // `evidenceFilePicker` every export button in this shell already
@@ -741,14 +738,6 @@ internal sealed partial class MainWindowComposer
         };
         purchaseOrdersView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        // `WP 19.2B`: the Reports area — issued evidence sheets and
-        // project documents, across every live project, filterable to one.
-        var reportsView = new ReportsView(
-            composition.DomainContext, projectDirectory, host.ProjectDocuments!, openObjectRightUp, openAttachmentRightUp)
-        {
-            WorkspaceChanges = composition.WorkspaceChanges,
-        };
-
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
         // `WP 21.7B`: the Engineering Calculators — every product
@@ -878,10 +867,10 @@ internal sealed partial class MainWindowComposer
         // Product Owner runbook B1 (2026-10-01): people are business
         // reference data — Business → Staff, moved from Engineering →
         // Reference data.
+        // v0.23.0 board N9: Staff and Rate cards share the one catalogue set
+        // the Libraries view already built over the same catalogues.
         var staffView = new StaffView(
-            new ReferenceLibraryCatalogues(
-                host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-                componentCatalog, rateCardCatalog, personCatalog),
+            librariesView.Catalogues,
             host.ReferenceReview!, referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -892,9 +881,7 @@ internal sealed partial class MainWindowComposer
         // — Business → Rate cards, moved from Engineering → Reference data
         // the same way People moved to Business → Staff.
         var rateCardsView = new RateCardsView(
-            new ReferenceLibraryCatalogues(
-                host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
-                componentCatalog, rateCardCatalog, personCatalog),
+            librariesView.Catalogues,
             host.ReferenceReview!, referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
@@ -919,7 +906,7 @@ internal sealed partial class MainWindowComposer
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
             engineeringCalculation, calculationModules, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
-            timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
+            timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,

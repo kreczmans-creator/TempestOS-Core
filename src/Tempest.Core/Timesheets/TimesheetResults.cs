@@ -31,6 +31,13 @@ public enum TimesheetRefusal
 
     /// <summary>The deliverable named is not a live deliverable of the project the time is recorded against (runbook G1).</summary>
     DeliverableNotOnProject,
+
+    /// <summary>
+    /// The entry was recorded against a deliverable (<see cref="TimesheetEntry.DeliverableId"/>),
+    /// so its task text is the deliverable's own and cannot be retyped by an
+    /// amendment (v0.23.0 board M3) — the text and the link would drift apart.
+    /// </summary>
+    TaskLockedToDeliverable,
 }
 
 /// <summary>The outcome of an <see cref="ITimesheetService"/> act: either it happened, or a refusal that says why it did not.</summary>

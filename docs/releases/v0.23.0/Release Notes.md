@@ -52,7 +52,7 @@ including items waiting on a decision, is
   action.
 
 - **People, customers and suppliers are separate lists (PO decisions
-  2026-10-01).** Internal staff (Reference data → People) keep contact
+  2026-10-01).** Internal staff (Business → Staff) keep contact
   details only, now with a phone number. Business → **Customers &
   Suppliers** holds organisations with full company details, a
   Customer/Supplier/Both type and their own contacts. New Project's client

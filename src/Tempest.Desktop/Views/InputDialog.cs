@@ -96,7 +96,13 @@ public sealed class InputDialog : Border
             else if (e.Key == Key.Escape)
                 Complete(null);
         };
-        _choice.KeyDown += (_, e) =>
+        // Tunnel, not `KeyDown +=` (v0.23.0 board B5): `ComboBox.OnKeyDown`
+        // handles Enter itself (opens the dropdown, marks it handled)
+        // before any bubbling instance handler runs, so Enter could never
+        // confirm a Choice prompt. Previewing on the tunnel lets Enter
+        // submit while the dropdown is closed; with it open, the ComboBox
+        // keeps Enter to commit the highlighted item.
+        _choice.AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key == Key.Enter && !_choice.IsDropDownOpen)
             {
@@ -108,7 +114,7 @@ public sealed class InputDialog : Border
                 Complete(null);
                 e.Handled = true;
             }
-        };
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
         // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
         // `DialogModality`'s own remarks.

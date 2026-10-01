@@ -427,7 +427,7 @@ public sealed class EvidenceWorkspaceJourneyTests
             // that row: a control inside a `TabControl`'s own selected tab
             // is reachable via two logical-tree paths.
             var releaseButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Release mat-lib-release");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Release mat-lib-release");
             releaseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             IReferenceRecord<MaterialDefinition>? record = null;

@@ -24,6 +24,28 @@ namespace Tempest.Desktop.Tests;
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class ReferenceRecordViewTests
 {
+    /// <summary>
+    /// v0.23.0 board N12: a record row's Open and Release buttons are
+    /// announced by the visible title, not the record id; the id stays on
+    /// the AutomationId, unique where titles need not be.
+    /// </summary>
+    [AvaloniaFact]
+    public void RecordRow_AnnouncesTheTitle_AndKeepsTheIdAsAutomationId()
+    {
+        var row = ReferenceRecordListBuilder.BuildRow(
+            "fst-m10-coarse", "M10 x 1.5 coarse", Tempest.Core.ReferenceData.ReferenceValidationState.Draft,
+            () => Task.CompletedTask, () => Task.CompletedTask);
+        var buttons = row.Children.OfType<Button>().ToList();
+
+        var open = buttons.Single(b => Equals(b.Content, "Open"));
+        Assert.Equal("Open M10 x 1.5 coarse", Avalonia.Automation.AutomationProperties.GetName(open));
+        Assert.Equal("Open fst-m10-coarse", Avalonia.Automation.AutomationProperties.GetAutomationId(open));
+
+        var release = buttons.Single(b => Equals(b.Content, "Release"));
+        Assert.Equal("Release M10 x 1.5 coarse", Avalonia.Automation.AutomationProperties.GetName(release));
+        Assert.Equal("Release fst-m10-coarse", Avalonia.Automation.AutomationProperties.GetAutomationId(release));
+    }
+
     [AvaloniaFact]
     public async Task OpeningFstM10Coarse_ShowsDefinitionHistoryAndCitation_VerifyReleaseAndCitedByAllWork()
     {
@@ -49,7 +71,7 @@ public sealed class ReferenceRecordViewTests
             // Runbook F1: rows show the title and status only; the record
             // Id is carried by the row's own automation names.
             var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Open fst-m10-coarse");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open fst-m10-coarse");
             var recordRow = (Grid)openButton.Parent!;
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
@@ -160,7 +182,7 @@ public sealed class ReferenceRecordViewTests
             // Runbook F1: rows show the title and status only; the record
             // Id is carried by the row's own automation names.
             var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Open fst-m10-coarse");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open fst-m10-coarse");
             var recordRow = (Grid)openButton.Parent!;
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 

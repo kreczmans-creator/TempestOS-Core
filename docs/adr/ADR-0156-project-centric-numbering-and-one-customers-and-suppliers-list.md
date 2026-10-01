@@ -13,8 +13,9 @@ Builds on `ADR-0142` (the `P04` Organisation and Contact catalogues),
 The Product Owner made three decisions on 2026-10-01:
 
 1. **People and client contacts are different things.** The
-   consultancy's own staff (Libraries → People, `Person`) need contact
-   details only. A client is an organisation with company details and its
+   consultancy's own staff (`Person`, kept under Business → Staff since
+   runbook B1, 2026-10-01; Libraries → People when this decision was
+   made) need contact details only. A client is an organisation with company details and its
    own list of contacts.
 2. **Customers and suppliers share one organisation model** and one level
    of detail, told apart by a type (Customer / Supplier / Both), kept in

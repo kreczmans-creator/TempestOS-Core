@@ -190,7 +190,8 @@ public sealed class HomeDashboardView : UserControl
         var projectsTask = _projectStatusReadModel.ReadAsync();
         var accountsTask = _accountsReadModel.ReadAsync();
         var quotesTask = ReadOpenQuotationsAsync();
-        await Task.WhenAll(tasksTask, projectsTask, accountsTask, quotesTask).ConfigureAwait(true);
+        var continueTask = ReadContinueProjectsAsync();
+        await Task.WhenAll(tasksTask, projectsTask, accountsTask, quotesTask, continueTask).ConfigureAwait(true);
         await _cockpit.PrimeAsync().ConfigureAwait(true);
 
         RenderTiles(tasksTask.Result);
@@ -198,7 +199,7 @@ public sealed class HomeDashboardView : UserControl
         RenderProjectStatus(projectsTask.Result);
         RenderMilestones(tasksTask.Result);
         RenderTaskList(tasksTask.Result);
-        RenderRightRail();
+        RenderRightRail(continueTask.Result);
     }
 
     private void RenderTiles(TasksSnapshot snapshot)
@@ -308,12 +309,9 @@ public sealed class HomeDashboardView : UserControl
         }
     }
 
-    private void RenderRightRail()
+    private void RenderRightRail(IReadOnlyList<Project> recentProjects)
     {
         _continueList.Children.Clear();
-        // `ProjectHealth` lists exactly the projects `RecentProjects`
-        // names, with each one's Id, so Continue can open it.
-        var recentProjects = _cockpit.ProjectHealth.Take(3).ToList();
         if (recentProjects.Count == 0)
         {
             _continueList.Children.Add(Muted("No projects yet."));
@@ -322,7 +320,7 @@ public sealed class HomeDashboardView : UserControl
         {
             foreach (var project in recentProjects)
             {
-                var projectId = project.ProjectId;
+                var projectId = project.Id;
                 _continueList.Children.Add(_onOpenProject is { } open
                     ? ActionRow(project.DisplayName, () => open(projectId))
                     : new TextBlock { Text = project.DisplayName, FontSize = DesignTokens.FontSizeBody });
@@ -422,6 +420,33 @@ public sealed class HomeDashboardView : UserControl
         ThemeReactiveBrush.Bind(block, TextBlock.ForegroundProperty, BrandPalette.HeadingTextBrushKey);
         return block;
     }
+
+    /// <summary>
+    /// Continue's own entries (v0.23.0 board M1): the three most recently
+    /// created live projects that are still Open — never a Closed or
+    /// Archive one (<see cref="Tempest.Core.Projects.ProjectArchival.IsClosed"/>),
+    /// newest first. Until v0.23.0 Continue read the Cockpit's
+    /// <c>ProjectHealth</c> in repository insertion order, so it showed
+    /// the three oldest projects, closed ones included.
+    /// </summary>
+    private async Task<IReadOnlyList<Project>> ReadContinueProjectsAsync()
+    {
+        var entries = await _domainContext.Repository.ListByKindAsync("Project").ConfigureAwait(true);
+        var live = entries.Where(e => !e.IsDeleted).ToList();
+        var projects = await _domainContext.Repository.MaterialiseAsync<Project>(live).ConfigureAwait(true);
+        // Ties on CreatedAt (same clock tick) fall back to the later index entry.
+        return projects
+            .Select((project, index) => (project, index))
+            .Where(p => !Tempest.Core.Projects.ProjectArchival.IsClosed(p.project))
+            .OrderByDescending(p => p.project.CreatedAt)
+            .ThenByDescending(p => p.index)
+            .Take(ContinueLimit)
+            .Select(p => p.project)
+            .ToList();
+    }
+
+    /// <summary>How many projects Continue lists.</summary>
+    internal const int ContinueLimit = 3;
 
     private async Task<IReadOnlyList<Quotation>> ReadOpenQuotationsAsync()
     {
