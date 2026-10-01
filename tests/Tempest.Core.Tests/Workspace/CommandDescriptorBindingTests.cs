@@ -101,6 +101,11 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         "verification.request-review", "verification.approve", "verification.archive",
         "mechanical.validate-configuration",
         "task.complete",
+
+        // Runbook C3: Save draft, Submit for review and Approve take no
+        // value and need no confirmation — Approve's own second-person rule
+        // is enforced by the service whoever (or whatever) invokes it.
+        "quotation.save-draft", "quotation.submit-for-review", "quotation.approve",
     ];
 
     private static readonly IReadOnlyList<string> CalculationKinds = ["Calculation", "CalculationSet"];
@@ -273,9 +278,11 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
         // this platform's prompt already collects). So 108 becomes 120 and
         // 105 becomes 117; 3 is unchanged.
                 // Over that: 111 becomes 123 and 108 becomes 120; 3 is unchanged.
-        Assert.Equal(123, ProductionDescriptors.Count);
+        // Runbook C3 adds four quotation review descriptors, none
+        // unavailable: 123 becomes 127 and 120 becomes 124.
+        Assert.Equal(127, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(120, bindable.Count);
+        Assert.Equal(124, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();

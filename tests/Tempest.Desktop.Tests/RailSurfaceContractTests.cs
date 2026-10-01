@@ -847,7 +847,7 @@ public sealed class RailSurfaceContractTests
             Assert.True(created.Succeeded, created.Reason);
             quoteId = created.Quotation!.Id;
             Assert.True((await quotationService.AddLineAsync(quoteId, "Rail Contract Quote Line", 5m, new Tempest.Core.BusinessGovernance.Money(100m, Tempest.Core.BusinessGovernance.CurrencyCode.Gbp), null)).Succeeded);
-            Assert.True((await quotationService.SendAsync(quoteId)).Succeeded);
+            Assert.True((await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotationService, quoteId)).Succeeded);
 
             // 1. Click it -> something real renders: `WP 19.7A` moved
             // Quotes under Business.

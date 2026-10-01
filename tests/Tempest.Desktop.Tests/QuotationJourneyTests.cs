@@ -129,9 +129,34 @@ public sealed class QuotationJourneyTests
                 quoteView.GetLogicalDescendants().OfType<TextBlock>(),
                 t => (t.Text ?? string.Empty).Contains("Draft", StringComparison.Ordinal));
 
-            // ---- Two lines: one hourly, one fixed price ----
-            await AddLineAsync(window, quoteView, domain, quoteId, "Concept design", hours: 10m, rate: 100m, fixedPrice: null, expectedLineCount: 1);
-            await AddLineAsync(window, quoteView, domain, quoteId, "Detailed calculation pack", hours: null, rate: null, fixedPrice: 2500m, expectedLineCount: 2);
+            // ---- Runbook C3: a pinned rate card prices the hourly line ----
+            await PinRateCardAsync(host, projectId);
+            await quoteView.RefreshAsync().ConfigureAwait(true);
+
+            // ---- Two lines: one hourly (from the card), one fixed price ----
+            await AddLineAsync(window, quoteView, domain, quoteId, "Concept design", hours: 10m, fixedPrice: null, expectedLineCount: 1);
+            await AddLineAsync(window, quoteView, domain, quoteId, "Detailed calculation pack", hours: null, fixedPrice: 2500m, expectedLineCount: 2);
+            var pricedFromCard = ((Quotation)(await domain.Repository.FindAsync(quoteId))!).Lines[0];
+            Assert.Equal(new Tempest.Core.BusinessGovernance.Money(100m, Tempest.Core.BusinessGovernance.CurrencyCode.Gbp), pricedFromCard.Rate);
+            Assert.Equal("ENG-1", pricedFromCard.RateCardServiceCode);
+
+            // ---- Runbook C3: Save draft, Submit for review, approved as R1 by a second person ----
+            LayOut(window);
+            Assert.DoesNotContain(quoteView.GetLogicalDescendants().OfType<Button>(), b => Equals(b.Content, "Send"));
+            quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Save draft")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                quoteView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("Draft — saved", StringComparison.Ordinal)));
+            quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Submit for review")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => quoteView.GetLogicalDescendants().OfType<Button>().Any(b => Equals(b.Content, "Approve")));
+            await QuotationReviewSupport.AsReviewerAsync(host, async () =>
+            {
+                quoteView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Approve")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                await RenderUntilAsync(window, () =>
+                    domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Status == QuotationStatus.Approved);
+                return true;
+            });
+            Assert.Equal("R1", ((Quotation)(await domain.Repository.FindAsync(quoteId))!).RevisionLabel);
+            await RenderUntilAsync(window, () => quoteView.GetLogicalDescendants().OfType<Button>().Any(b => Equals(b.Content, "Send")));
 
             // ---- Send: status Sent, a PDF sheet attached, SentOn set ----
             LayOut(window);
@@ -160,6 +185,7 @@ public sealed class QuotationJourneyTests
 
             var attachmentsAfterSend = await ((IHasAttachments)sentQuote).GetAttachmentsAsync();
             var sheetAttachment = Assert.Single(attachmentsAfterSend, a => a.ContentType == "application/pdf");
+            Assert.EndsWith("-R1-quote.pdf", sheetAttachment.FileName, StringComparison.Ordinal);
             var sheetContent = await ((IHasAttachments)sentQuote).ReadAttachmentContentAsync(sheetAttachment.Id);
             Assert.True(sheetContent.IsAvailable, $"The attached quote sheet's own stored bytes must verify; status was {sheetContent.Status}.");
             Assert.StartsWith("%PDF-", System.Text.Encoding.ASCII.GetString(sheetContent.Bytes, 0, Math.Min(8, sheetContent.Bytes.Length)), StringComparison.Ordinal);
@@ -301,6 +327,10 @@ public sealed class QuotationJourneyTests
 
                 var text = PdfTextExtractor.ExtractText(bytes);
                 Assert.Contains(acceptedQuote.Reference, text, StringComparison.Ordinal);
+
+                // Runbook C3: the approved revision, on the sheet and in the file name.
+                Assert.Contains("Revision: R1", text, StringComparison.Ordinal);
+                Assert.Equal($"{acceptedQuote.Reference}-R1-quote.pdf", filePicker.SaveRequests[^1].SuggestedFileName);
             }
             finally
             {
@@ -498,23 +528,30 @@ public sealed class QuotationJourneyTests
         }
     }
 
+    /// <summary>
+    /// Adds one line through the form: an hourly one takes the rate
+    /// dropdown's first (pinned rate card) entry and its hours — the rate
+    /// itself is never typed (runbook C3); a fixed one chooses Fixed and
+    /// fills the fixed price box.
+    /// </summary>
     private static async Task AddLineAsync(
         MainWindow window, ProjectQuoteView quoteView, EngineeringDomainContext domain, Guid quoteId,
-        string description, decimal? hours, decimal? rate, decimal? fixedPrice, int expectedLineCount)
+        string description, decimal? hours, decimal? fixedPrice, int expectedLineCount)
     {
         LayOut(window);
         var descriptionBox = quoteView.GetLogicalDescendants().OfType<TextBox>().First(t => AutomationProperties.GetName(t) == "Line description");
         descriptionBox.Text = description;
+        var rateChoice = quoteView.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == ProjectQuoteView.RateChoiceName);
 
         if (hours is not null)
         {
+            rateChoice.SelectedItem = rateChoice.Items.OfType<ComboBoxItem>().First();
             var hoursBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line hours");
             hoursBox.Value = hours;
-            var rateBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line rate");
-            rateBox.Value = rate;
         }
         else
         {
+            rateChoice.SelectedItem = rateChoice.Items.OfType<ComboBoxItem>().Single(i => Equals(i.Content, ProjectQuoteView.FixedChoiceLabel));
             var fixedPriceBox = quoteView.GetLogicalDescendants().OfType<NumericUpDown>().First(n => AutomationProperties.GetName(n) == "Line fixed price");
             fixedPriceBox.Value = fixedPrice;
         }
@@ -524,6 +561,32 @@ public sealed class QuotationJourneyTests
 
         await RenderUntilAsync(window, () =>
             domain.Repository.FindAsync(quoteId).GetAwaiter().GetResult() is Quotation q && q.Lines.Count == expectedLineCount);
+    }
+
+    private static async Task PinRateCardAsync(WorkspaceHost host, Guid projectId)
+    {
+        const string cardId = "QJ-CARD";
+        var rateCards = (Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog)host.Services!.GetService(typeof(Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog));
+        var card = new Tempest.Core.BusinessGovernance.Pricing.RateCard
+        {
+            Code = cardId,
+            Name = "Quotation Journey Rate Card",
+            EffectivePeriod = new Tempest.Core.BusinessGovernance.EffectivePeriod(new DateOnly(2020, 1, 1), null),
+            Currency = Tempest.Core.BusinessGovernance.CurrencyCode.Gbp,
+            Governance = new Tempest.Core.BusinessGovernance.BusinessGovernanceFacts { Ownership = new Tempest.Core.BusinessGovernance.BusinessOwnership("owner-1", "Owner") },
+            Entries =
+            [
+                new Tempest.Core.BusinessGovernance.Pricing.RateCardEntry(
+                    "ENG-1", "Senior Engineering", Tempest.Core.BusinessGovernance.Pricing.PricingBasis.Hourly,
+                    new Tempest.Core.BusinessGovernance.Money(100m, Tempest.Core.BusinessGovernance.CurrencyCode.Gbp), Grade: "Senior"),
+            ],
+        };
+        await rateCards.RegisterAsync(cardId, card, new Tempest.Core.ReferenceData.ReferenceProvenance(SourceOrganisation: "Test Org", SourceDocument: "Test Doc"));
+        await host.ReferenceReview!.VerifyAsync(rateCards, cardId, new Tempest.Core.ReferenceData.Review.ReferenceReviewStatement("Consulted for the quotation journey."));
+        await host.ReferenceReview!.ReleaseAsync(rateCards, cardId, "Released for the quotation journey.");
+
+        var commercial = (Tempest.Core.Projects.IProjectCommercialService)host.Services!.GetService(typeof(Tempest.Core.Projects.IProjectCommercialService));
+        Assert.True((await commercial.PinRateCardAsync(projectId, cardId)).Succeeded);
     }
 
     private static Border? FindQuoteRow(Control root, Guid quoteId) =>

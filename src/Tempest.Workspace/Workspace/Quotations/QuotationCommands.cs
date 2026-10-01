@@ -58,7 +58,8 @@ public sealed class CreateQuotationCommandHandler : ICommandHandler<CreateQuotat
 public sealed class AddQuotationLineCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="AddQuotationLineCommand"/> class.</summary>
-    public AddQuotationLineCommand(Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice)
+    public AddQuotationLineCommand(
+        Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -69,6 +70,7 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
         Hours = hours;
         Rate = rate;
         FixedPrice = fixedPrice;
+        RateCardServiceCode = rateCardServiceCode;
     }
 
     /// <inheritdoc />
@@ -88,6 +90,9 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>The line's own fixed price. <see langword="null"/> for an hourly line.</summary>
     public Money? FixedPrice { get; }
+
+    /// <summary>Runbook C3: the pinned rate card's own hourly entry this line's rate is taken from, or <see langword="null"/> for a fixed-price line or a rate given directly.</summary>
+    public string? RateCardServiceCode { get; }
 }
 
 /// <summary>Handles <see cref="AddQuotationLineCommand"/>.</summary>
@@ -106,7 +111,9 @@ public sealed class AddQuotationLineCommandHandler : ICommandHandler<AddQuotatio
     public async Task<CommandResult> HandleAsync(AddQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .AddLineAsync(command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
+            .AddLineAsync(
+                command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice,
+                rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
@@ -219,7 +226,8 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="UpdateQuotationLineCommand"/> class.</summary>
     public UpdateQuotationLineCommand(
-        Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice)
+        Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
+        string? rateCardServiceCode = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -231,6 +239,7 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
         Hours = hours;
         Rate = rate;
         FixedPrice = fixedPrice;
+        RateCardServiceCode = rateCardServiceCode;
     }
 
     /// <inheritdoc />
@@ -253,6 +262,9 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>The line's own fixed price. <see langword="null"/> for an hourly line.</summary>
     public Money? FixedPrice { get; }
+
+    /// <summary>Runbook C3: the pinned rate card's own hourly entry this line's rate is taken from, or <see langword="null"/> for a fixed-price line or a rate given directly.</summary>
+    public string? RateCardServiceCode { get; }
 }
 
 /// <summary>Handles <see cref="UpdateQuotationLineCommand"/>.</summary>
@@ -271,7 +283,9 @@ public sealed class UpdateQuotationLineCommandHandler : ICommandHandler<UpdateQu
     public async Task<CommandResult> HandleAsync(UpdateQuotationLineCommand command, CancellationToken cancellationToken)
     {
         var result = await _service
-            .UpdateLineAsync(command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice, cancellationToken: cancellationToken)
+            .UpdateLineAsync(
+                command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice,
+                rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
@@ -366,5 +380,99 @@ public sealed class DeclineQuotationCommandHandler : ICommandHandler<DeclineQuot
         return result.Succeeded
             ? CommandResult.Success($"Declined on {result.Quotation!.DecidedOn:O}.", command.TargetObjectId, command.TargetKind)
             : CommandResult.Failure(result.Reason ?? "The quotation could not be declined.");
+    }
+}
+
+
+/// <summary>
+/// The four draft-and-review acts on a <see cref="Quotation"/> (runbook C3,
+/// PO: "save the quote without exporting or sending, save it as a draft
+/// and then review by second person, then export becomes R1").
+/// </summary>
+public enum QuotationReviewAct
+{
+    /// <summary>Saves the draft explicitly (<see cref="IQuotationService.SaveDraftAsync"/>).</summary>
+    SaveDraft,
+
+    /// <summary>Draft → In review (<see cref="IQuotationService.SubmitForReviewAsync"/>).</summary>
+    SubmitForReview,
+
+    /// <summary>In review → Approved, issuing the next revision (<see cref="IQuotationService.ApproveAsync"/>).</summary>
+    Approve,
+
+    /// <summary>In review → Draft, with a comment (<see cref="IQuotationService.ReturnToDraftAsync"/>).</summary>
+    ReturnToDraft,
+}
+
+/// <summary>Runs one <see cref="QuotationReviewAct"/> on the selected <see cref="Quotation"/> (runbook C3).</summary>
+public sealed class QuotationReviewCommand : IWorkspaceCommand
+{
+    /// <summary>Initialises a new instance of the <see cref="QuotationReviewCommand"/> class.</summary>
+    /// <param name="targetObjectId">The quotation.</param>
+    /// <param name="targetKind">Its Kind.</param>
+    /// <param name="act">Which act to run.</param>
+    /// <param name="comment">The reviewer's comment — required by <see cref="QuotationReviewAct.ReturnToDraft"/>, ignored otherwise.</param>
+    public QuotationReviewCommand(Guid targetObjectId, string targetKind, QuotationReviewAct act, string? comment = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        Act = act;
+        Comment = comment;
+    }
+
+    /// <inheritdoc />
+    public Guid TargetObjectId { get; }
+
+    /// <inheritdoc />
+    public string TargetKind { get; }
+
+    /// <summary>Which act to run.</summary>
+    public QuotationReviewAct Act { get; }
+
+    /// <summary>The reviewer's comment, for <see cref="QuotationReviewAct.ReturnToDraft"/>.</summary>
+    public string? Comment { get; }
+}
+
+/// <summary>Handles <see cref="QuotationReviewCommand"/>.</summary>
+public sealed class QuotationReviewCommandHandler : ICommandHandler<QuotationReviewCommand>
+{
+    private readonly IQuotationService _service;
+
+    /// <summary>Initialises a new instance of the <see cref="QuotationReviewCommandHandler"/> class.</summary>
+    public QuotationReviewCommandHandler(IQuotationService service)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        _service = service;
+    }
+
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(QuotationReviewCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        var result = command.Act switch
+        {
+            QuotationReviewAct.SaveDraft => await _service.SaveDraftAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false),
+            QuotationReviewAct.SubmitForReview => await _service.SubmitForReviewAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false),
+            QuotationReviewAct.Approve => await _service.ApproveAsync(command.TargetObjectId, cancellationToken).ConfigureAwait(false),
+            QuotationReviewAct.ReturnToDraft => await _service.ReturnToDraftAsync(command.TargetObjectId, command.Comment ?? string.Empty, cancellationToken).ConfigureAwait(false),
+            _ => throw new ArgumentOutOfRangeException(nameof(command), command.Act, "Unknown quotation review act."),
+        };
+
+        if (!result.Succeeded)
+            return CommandResult.Failure(result.Reason ?? "The quotation review act was refused.");
+
+        var quote = result.Quotation!;
+        var message = command.Act switch
+        {
+            QuotationReviewAct.SaveDraft => $"Draft saved — {quote.Lines.Count} line(s), total {quote.Total}.",
+            QuotationReviewAct.SubmitForReview => $"'{quote.Reference}' submitted for review — a second person approves it.",
+            QuotationReviewAct.Approve => $"'{quote.Reference}' approved as {quote.RevisionLabel} — ready to export and send.",
+            _ => $"'{quote.Reference}' returned to draft.",
+        };
+
+        return CommandResult.Success(message, command.TargetObjectId, command.TargetKind);
     }
 }

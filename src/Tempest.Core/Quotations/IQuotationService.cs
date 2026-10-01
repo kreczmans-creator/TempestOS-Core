@@ -49,22 +49,54 @@ public interface IQuotationService
     /// change it.
     /// </param>
     /// <remarks>Refused, as a result, when the quotation is not Draft, when neither pricing shape (nor both) is given, when a supplied rate/fixed price is not in the quotation's own currency, when <paramref name="carriedDeliverableId"/> is given on a quotation that is not a change order, or when it does not identify a live deliverable.</remarks>
+    /// <param name="rateCardServiceCode">
+    /// Runbook C3: the <c>ServiceCode</c> of an hourly entry on the
+    /// project's own pinned rate card — the line's rate is then taken from
+    /// that entry (a given <paramref name="rate"/> must match it, or be
+    /// <see langword="null"/>), and the code is recorded on the line.
+    /// <see langword="null"/> (the default) keeps the rate as given.
+    /// </param>
     Task<QuotationResult> AddLineAsync(
         Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, Guid? carriedDeliverableId = null,
-        VatRate? vatRate = null, CancellationToken cancellationToken = default);
+        VatRate? vatRate = null, string? rateCardServiceCode = null, CancellationToken cancellationToken = default);
 
     /// <summary>Replaces the line identified by <paramref name="lineId"/> — the same rules as <see cref="AddLineAsync"/>, including <paramref name="vatRate"/>'s own default.</summary>
     /// <remarks>Refused, as a result, when the quotation is not Draft, when <paramref name="lineId"/> does not identify a line on it, or for the same pricing-shape/currency reasons as <see cref="AddLineAsync"/>.</remarks>
     Task<QuotationResult> UpdateLineAsync(
         Guid quotationId, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
-        VatRate? vatRate = null, CancellationToken cancellationToken = default);
+        VatRate? vatRate = null, string? rateCardServiceCode = null, CancellationToken cancellationToken = default);
 
     /// <summary>Removes the line identified by <paramref name="lineId"/>.</summary>
     /// <remarks>Refused, as a result, when the quotation is not Draft, or when <paramref name="lineId"/> does not identify a line on it.</remarks>
     Task<QuotationResult> RemoveLineAsync(Guid quotationId, Guid lineId, CancellationToken cancellationToken = default);
 
-    /// <summary>Sends <paramref name="quotationId"/>'s own quotation — records <see cref="Quotation.SentOn"/> as today.</summary>
+    /// <summary>
+    /// Saves <paramref name="quotationId"/>'s own draft explicitly — no
+    /// export, no send: stamps <see cref="QuotationReview.DraftSavedAt"/>
+    /// and writes its own audit row (runbook C3). Every line change already
+    /// saves; this makes the state explicit.
+    /// </summary>
+    /// <remarks>Refused, as a result, when the quotation is not Draft.</remarks>
+    Task<QuotationResult> SaveDraftAsync(Guid quotationId, CancellationToken cancellationToken = default);
+
+    /// <summary>Submits <paramref name="quotationId"/>'s own draft for review by a second person — Draft → In review (runbook C3).</summary>
     /// <remarks>Refused, as a result, when the quotation is not Draft, or carries no lines.</remarks>
+    Task<QuotationResult> SubmitForReviewAsync(Guid quotationId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Approves <paramref name="quotationId"/>'s own review — In review →
+    /// Approved, issuing the next revision (<c>R1</c>, then <c>R2</c>
+    /// after a later edit and review, …) (runbook C3).
+    /// </summary>
+    /// <remarks>Refused, as a result, when the quotation is not in review, when nobody is signed in, or when the signed-in person is the one who opened or submitted it — Evidence's own "checker must differ from author" rule.</remarks>
+    Task<QuotationResult> ApproveAsync(Guid quotationId, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns <paramref name="quotationId"/>'s own review to draft, with the reviewer's <paramref name="comment"/> (runbook C3).</summary>
+    /// <remarks>Refused, as a result, when the quotation is not in review, or <paramref name="comment"/> is blank.</remarks>
+    Task<QuotationResult> ReturnToDraftAsync(Guid quotationId, string comment, CancellationToken cancellationToken = default);
+
+    /// <summary>Sends <paramref name="quotationId"/>'s own quotation — records <see cref="Quotation.SentOn"/> as today.</summary>
+    /// <remarks>Refused, as a result, unless the quotation is an Approved revision (runbook C3), or when it carries no lines.</remarks>
     Task<QuotationResult> SendAsync(Guid quotationId, CancellationToken cancellationToken = default);
 
     /// <summary>
