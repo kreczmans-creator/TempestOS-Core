@@ -31,12 +31,16 @@ public sealed class CreateRequirementGroupCommand : ICommand
 public sealed class CreateRequirementGroupCommandHandler : ICommandHandler<CreateRequirementGroupCommand>
 {
     private readonly IRequirementsService _requirementsService;
+    private readonly ICommandDispatcher? _dispatcher;
 
-    public CreateRequirementGroupCommandHandler(IRequirementsService requirementsService)
+    /// <param name="requirementsService">Where the group is created.</param>
+    /// <param name="dispatcher">Dispatches this create's own compensation (`v1.0.0` RC) — optional.</param>
+    public CreateRequirementGroupCommandHandler(IRequirementsService requirementsService, ICommandDispatcher? dispatcher = null)
     {
         ArgumentNullException.ThrowIfNull(requirementsService);
 
         _requirementsService = requirementsService;
+        _dispatcher = dispatcher;
     }
 
     public async Task<CommandResult> HandleAsync(CreateRequirementGroupCommand command, CancellationToken cancellationToken)
@@ -45,7 +49,15 @@ public sealed class CreateRequirementGroupCommandHandler : ICommandHandler<Creat
         {
             var created = await _requirementsService.CreateGroupAsync(command.Name, command.ParentGroupId, cancellationToken).ConfigureAwait(false);
 
-            return CommandResult.Success($"Created Requirement Group '{created.Name}'.", created.Id, RequirementsService.RequirementGroupDocumentKind);
+            // Undo soft-deletes the group this call created (refused, with the
+            // reason, if it has since gained live children); redo restores it —
+            // the same inversion `CreateRequirementCommandHandler` uses.
+            var compensation = _dispatcher is null ? null : new CommandCompensation(
+                $"Create group '{created.Name}'",
+                undo: ct => _dispatcher.DispatchAsync(new DeleteRequirementGroupCommand(created.Id), ct),
+                redo: ct => _dispatcher.DispatchAsync(new UndeleteRequirementGroupCommand(created.Id), ct));
+
+            return CommandResult.Success($"Created Requirement Group '{created.Name}'.", created.Id, RequirementsService.RequirementGroupDocumentKind, compensation);
         }
         catch (EngineeringDocumentNotFoundException ex)
         {

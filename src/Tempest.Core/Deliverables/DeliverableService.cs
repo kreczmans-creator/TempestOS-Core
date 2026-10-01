@@ -64,7 +64,7 @@ public sealed class DeliverableService : IDeliverableService
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project)
             throw new ArgumentException($"'{projectId}' does not identify a live project.", nameof(projectId));
 
-        if (await _context.Repository.FindAsync(deliverableId, cancellationToken).ConfigureAwait(false) is not Deliverable)
+        if (await _context.Repository.FindAsync(deliverableId, cancellationToken).ConfigureAwait(false) is not Deliverable deliverable)
             throw new ArgumentException($"'{deliverableId}' does not identify a live deliverable.", nameof(deliverableId));
 
         if (Archived(project) is { } archived)
@@ -75,7 +75,7 @@ public sealed class DeliverableService : IDeliverableService
         {
             return new DeliverableCompletionResult(
                 DeliverableCompletionRefusal.AlreadyCompleted,
-                $"Deliverable '{deliverableId}' was already completed on {existing.CompletedOn:O} (completion '{existing.Id}'). A deliverable can be completed once.",
+                $"Deliverable '{deliverable.DisplayName}' was already completed on {existing.CompletedOn:O}. A deliverable can be completed once.",
                 existing);
         }
 
@@ -101,7 +101,9 @@ public sealed class DeliverableService : IDeliverableService
             (doc, rev) => new DeliverableCompletion(
                 doc, rev, _context, identifier: null, $"Deliverable completed — {completedOn:yyyy-MM-dd}", EngineeringObjectMetadata.Empty,
                 deliverableId, completedOn, principalId, evidenceIds, documentIds ?? [], fixedPriceValue))
-            .CreateAsync($"Deliverable '{deliverableId}' completed.", cancellationToken)
+            // `TD-186`: the operator reads this content in the editor that
+            // opens on completion, so it names the deliverable, never its id.
+            .CreateAsync($"Deliverable '{deliverable.DisplayName}' completed.", cancellationToken)
             .ConfigureAwait(false);
 
         if (created is IHasParent hasParent)

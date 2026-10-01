@@ -43,6 +43,9 @@ public static class RequirementsAuditActions
     /// <summary>A requirement collection was soft-deleted.</summary>
     public const string CollectionDeleted = "requirements.collection-deleted";
 
+    /// <summary>A soft-deleted collection was restored — the Undo of its Delete (`v1.0.0` RC).</summary>
+    public const string CollectionUndeleted = "requirements.collection-undeleted";
+
     /// <summary>A requirement was added to a collection.</summary>
     public const string AddedToCollection = "requirements.added-to-collection";
 
@@ -54,4 +57,7 @@ public static class RequirementsAuditActions
 
     /// <summary>A requirement group was soft-deleted.</summary>
     public const string GroupDeleted = "requirements.group-deleted";
+
+    /// <summary>A soft-deleted group was restored — the Undo of its Delete (`v1.0.0` RC).</summary>
+    public const string GroupUndeleted = "requirements.group-undeleted";
 }

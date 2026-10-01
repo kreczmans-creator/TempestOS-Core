@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Commands;
 using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
@@ -129,9 +130,19 @@ public sealed class QuotationJourneyTests
                 quoteView.GetLogicalDescendants().OfType<TextBlock>(),
                 t => (t.Text ?? string.Empty).Contains("Draft", StringComparison.Ordinal));
 
-            // ---- Two lines: one hourly, one fixed price ----
+            // ---- Two lines: one hourly, one fixed price — and, `TD-188`, each
+            // with its own VAT treatment: the first left to the Settings
+            // default, the second picked on the line itself ----
             await AddLineAsync(window, quoteView, domain, quoteId, "Concept design", hours: 10m, rate: 100m, fixedPrice: null, expectedLineCount: 1);
-            await AddLineAsync(window, quoteView, domain, quoteId, "Detailed calculation pack", hours: null, rate: null, fixedPrice: 2500m, expectedLineCount: 2);
+            await AddLineAsync(window, quoteView, domain, quoteId, "Detailed calculation pack", hours: null, rate: null, fixedPrice: 2500m, expectedLineCount: 2, vatRate: VatRate.Standard);
+
+            var linedQuote = Assert.IsType<Quotation>(await domain.Repository.FindAsync(quoteId));
+            Assert.Equal(VatRate.OutOfScope, linedQuote.Lines[0].VatRate); // no Settings default set in this host
+            Assert.Equal(VatRate.Standard, linedQuote.Lines[1].VatRate);
+            Assert.Equal(500m, linedQuote.Lines[1].VatAmount.Amount);
+            await RenderUntilAsync(window, () =>
+                quoteView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Detailed calculation pack", StringComparison.Ordinal)
+                    && t.Text!.Contains("VAT Standard (20%)", StringComparison.Ordinal)));
 
             // ---- Send: status Sent, a PDF sheet attached, SentOn set ----
             LayOut(window);
@@ -500,9 +511,15 @@ public sealed class QuotationJourneyTests
 
     private static async Task AddLineAsync(
         MainWindow window, ProjectQuoteView quoteView, EngineeringDomainContext domain, Guid quoteId,
-        string description, decimal? hours, decimal? rate, decimal? fixedPrice, int expectedLineCount)
+        string description, decimal? hours, decimal? rate, decimal? fixedPrice, int expectedLineCount, VatRate? vatRate = null)
     {
         LayOut(window);
+        if (vatRate is { } chosenRate)
+        {
+            var vatRateBox = quoteView.GetLogicalDescendants().OfType<ComboBox>().First(c => AutomationProperties.GetName(c) == "Line VAT rate");
+            vatRateBox.SelectedItem = vatRateBox.Items.OfType<ComboBoxItem>().First(i => Equals(i.Tag, chosenRate));
+        }
+
         var descriptionBox = quoteView.GetLogicalDescendants().OfType<TextBox>().First(t => AutomationProperties.GetName(t) == "Line description");
         descriptionBox.Text = description;
 

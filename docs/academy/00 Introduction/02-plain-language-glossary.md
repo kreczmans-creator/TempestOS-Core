@@ -190,7 +190,7 @@ matters, the entry says so rather than implying it has shipped.
   (`127.0.0.1`) that catches the one-time reply once the person has approved
   access in their browser. In TempestOS: connecting Xero or QuickBooks Online
   opens the operator's own browser to sign in, and `OAuthAuthoriser` catches
-  the reply on a fixed local port (`49301`), registered ahead of time with
+  the reply on a fixed local port (`48131`), registered ahead of time with
   the provider. See: `66-outbound-invoicing-and-the-connector-seam.md`.
 - **offensive security audit / dependency scan.** An offensive security audit
   is a deliberate attempt to break a system's own defences with real

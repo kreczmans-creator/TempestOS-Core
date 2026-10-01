@@ -110,11 +110,13 @@ public static class RequirementsWorkspaceRegistration
         commandDispatcher.RegisterHandler<MoveRequirementCommand>(new MoveRequirementCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<DuplicateRequirementCommand>(new DuplicateRequirementCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<LinkRequirementCommand>(new LinkRequirementCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<CreateRequirementGroupCommand>(new CreateRequirementGroupCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<CreateRequirementGroupCommand>(new CreateRequirementGroupCommandHandler(requirementsService, commandDispatcher));
         commandDispatcher.RegisterHandler<MoveRequirementGroupCommand>(new MoveRequirementGroupCommandHandler(requirementsService, commandDispatcher));
-        commandDispatcher.RegisterHandler<DeleteRequirementGroupCommand>(new DeleteRequirementGroupCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<CreateRequirementCollectionCommand>(new CreateRequirementCollectionCommandHandler(requirementsService));
-        commandDispatcher.RegisterHandler<DeleteRequirementCollectionCommand>(new DeleteRequirementCollectionCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<DeleteRequirementGroupCommand>(new DeleteRequirementGroupCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteRequirementGroupCommand>(new UndeleteRequirementGroupCommandHandler(requirementsService));
+        commandDispatcher.RegisterHandler<CreateRequirementCollectionCommand>(new CreateRequirementCollectionCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<DeleteRequirementCollectionCommand>(new DeleteRequirementCollectionCommandHandler(requirementsService, commandDispatcher));
+        commandDispatcher.RegisterHandler<UndeleteRequirementCollectionCommand>(new UndeleteRequirementCollectionCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<AddRequirementToCollectionCommand>(new AddRequirementToCollectionCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<BulkSetRequirementStatusCommand>(new BulkSetRequirementStatusCommandHandler(requirementsService));
         commandDispatcher.RegisterHandler<BulkSetRequirementOwnerCommand>(new BulkSetRequirementOwnerCommandHandler(requirementsService));

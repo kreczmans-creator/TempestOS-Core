@@ -62,8 +62,19 @@ public sealed class OAuthAuthoriser
     /// </summary>
     public const string LoopbackPortConfigurationKey = "Invoicing:OAuth:LoopbackPort";
 
-    /// <summary>The loopback port used when <see cref="LoopbackPortConfigurationKey"/> is not configured — also the port <c>docs/adr/ADR-0151-addendum.md</c> and the release notes name as the one to register.</summary>
-    public const int DefaultLoopbackPort = 49301;
+    /// <summary>
+    /// The loopback port used when <see cref="LoopbackPortConfigurationKey"/>
+    /// is not configured — also the port `ADR-0151`'s addendum and
+    /// `PHYSICAL_REVIEW.md` §7k X1 name as the one to register. <c>48131</c>
+    /// since the `v1.0.0` candidate (`TD-183`, Product Owner 2026-10-01): the
+    /// earlier <c>49301</c> sat inside Windows' dynamic port range
+    /// (49152–65535), where any process's outbound socket could hold it past
+    /// <see cref="OAuthLoopbackListener"/>'s retry budget; this one sits below
+    /// that range and inside no registered-port assignment TempestOS knows of.
+    /// Changed before any Xero or QuickBooks app was registered, so no
+    /// redirect URI had to move with it.
+    /// </summary>
+    public const int DefaultLoopbackPort = 48131;
 
     private static readonly TimeSpan RefreshSkew = TimeSpan.FromMinutes(2);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

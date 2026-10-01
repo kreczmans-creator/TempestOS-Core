@@ -41,7 +41,7 @@ public sealed class TimesheetService : ITimesheetService
         {
             return new TimesheetResult(
                 TimesheetRefusal.NoRateCardPinned,
-                $"Project '{projectId}' has no Released rate-card pin; time cannot be priced against it.",
+                $"Project '{project.DisplayName}' has no Released rate-card pin; time cannot be priced against it.",
                 null);
         }
 
@@ -54,7 +54,7 @@ public sealed class TimesheetService : ITimesheetService
         if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
         {
             return new TimesheetResult(
-                TimesheetRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new time can be recorded against it.", null);
+                TimesheetRefusal.ProjectArchived, $"Project '{project.DisplayName}' is archived (closed {project.ClosedOn:O}); no new time can be recorded against it.", null);
         }
 
         var principalId = _context.ResolveCurrentPrincipalId();
@@ -175,7 +175,7 @@ public sealed class TimesheetService : ITimesheetService
         }
 
         return ProjectArchival.IsArchived(project, _time.GetUtcNow())
-            ? new TimesheetResult(TimesheetRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this entry is read-only.", entry)
+            ? new TimesheetResult(TimesheetRefusal.ProjectArchived, $"Project '{project.DisplayName}' is archived (closed {project.ClosedOn:O}); this entry is read-only.", entry)
             : null;
     }
 

@@ -565,10 +565,17 @@ internal static class MainJourney
                 if (!Ui.WaitForText(CalculationName, 20_000))
                     return Act.Failed($"'{CalculationName}' is not listed");
 
-                var row = Ui.FirstTextContaining(CalculationName)!;
-                return row.Contains(ProjectName, StringComparison.Ordinal)
-                    ? Act.Verified($"\"{Trim(row)}\"")
-                    : Act.Failed($"\"{Trim(row)}\" does not name its project");
+                // Since TD-186 the status bar also names the selection
+                // ("Selected: Calculation <name>"), so look at every text
+                // naming the calculation, not only the first one found.
+                var rows = Ui.VisibleText()
+                    .Where(text => text.Contains(CalculationName, StringComparison.Ordinal))
+                    .Select(Trim)
+                    .ToList();
+                var row = rows.FirstOrDefault(text => text.Contains(ProjectName, StringComparison.Ordinal));
+                return row is not null
+                    ? Act.Verified($"\"{row}\"")
+                    : Act.Failed($"none of \"{string.Join("\" / \"", rows)}\" names its project");
             });
     }
 

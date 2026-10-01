@@ -293,7 +293,7 @@ public sealed class InvoicingView : UserControl
             "Sent", $"Sent ({sentRows.Count})", "Nothing has been sent yet.", sentRows.Select(BuildSentRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
             "Outstanding / Overdue",
-            $"Outstanding / Overdue ({outstandingRows.Count}) — unpaid past its own due date (`TD-180`), or needing attention (Reauthorise, Unknown)",
+            $"Outstanding / Overdue ({outstandingRows.Count}) — unpaid past its due date, or needing attention (Reauthorise, Unknown)",
             "Nothing is outstanding or overdue.",
             outstandingRows.Select(r => BuildOutstandingRow(r, asOf)).ToList()));
         _groups.Children.Add(BuildClosedGroup(
