@@ -70,6 +70,14 @@ public sealed class ProjectFolderExportTests
             Assert.Equal(expected, filePicker.SaveRequests[^1].StartFolder);
             Assert.True(Directory.Exists(expected));
 
+            // Close the window and drain its queued render work while the
+            // headless session is still whole: a layout pass left queued
+            // (the export's status/toast report) otherwise runs inside the
+            // session's own teardown, after its font collections are gone
+            // (CI, Windows: KeyNotFoundException 'fonts:SystemFonts').
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
+
             await host.ShutdownAsync();
         }
         finally
@@ -118,6 +126,14 @@ public sealed class ProjectFolderExportTests
             Assert.True(Directory.Exists(expected));
             Assert.Equal($"Project folder created: {expected}", reports.Single().Message);
             Assert.True(reports.Single().Outcome.Succeeded);
+
+            // Close the window and drain its queued render work while the
+            // headless session is still whole: a layout pass left queued
+            // (the export's status/toast report) otherwise runs inside the
+            // session's own teardown, after its font collections are gone
+            // (CI, Windows: KeyNotFoundException 'fonts:SystemFonts').
+            window.Close();
+            Dispatcher.UIThread.RunJobs();
 
             await host.ShutdownAsync();
         }
