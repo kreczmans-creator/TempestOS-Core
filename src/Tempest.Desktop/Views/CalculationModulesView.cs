@@ -35,6 +35,14 @@ namespace Tempest.Desktop.Views;
 /// cited on its record. Nothing is offered that has not been released.
 /// </para>
 /// <para>
+/// <b>A reference diagram beside the inputs</b> (`PO-2`, `ADR-0156`): the
+/// calculation's own <see cref="Tempest.Core.Calculations.Modules.Diagrams.CalculationDiagramSpec"/>,
+/// drawn by <see cref="CalculationDiagramView"/> in a fixed panel, redrawn
+/// as any field changes; focusing a field highlights its shapes, and
+/// pointing at or clicking a shape marks or focuses its field. Not to
+/// scale, inputs only; "No diagram yet" where there is none.
+/// </para>
+/// <para>
 /// <b>This view decides nothing.</b> It collects text, raises intent and
 /// renders what comes back. A refusal is shown as the outcome the
 /// definition reported, not as an error; Re-run and Compare are the
@@ -66,6 +74,9 @@ public sealed class CalculationModulesView : UserControl
 
     /// <summary>Automation name of the right column (about, inputs, results, working, comparison).</summary>
     public const string RightColumnAutomationName = "Engineering calculators right column";
+
+    /// <summary>The fixed width of the reference diagram panel beside the inputs (`PO-2`).</summary>
+    public const double DiagramPanelWidth = 380;
 
     /// <summary>What the surface says before a calculation is chosen.</summary>
     public const string PickModuleGuidance = "Choose a calculation from the catalogue on the left. Its inputs, with their units and limits, appear here.";
@@ -99,11 +110,16 @@ public sealed class CalculationModulesView : UserControl
     private readonly Expander _workingSection;
     private readonly Expander _comparisonSection;
 
+    private readonly CalculationDiagramView _diagram = new() { Width = DiagramPanelWidth, VerticalAlignment = VerticalAlignment.Top, IsVisible = false };
     private readonly Dictionary<ReferenceLibrary, IReadOnlyList<ReleasedRecordOption>> _released = new();
     private readonly Dictionary<string, FieldControls> _fields = new(StringComparer.Ordinal);
     private bool _replacingPickers;
 
-    private sealed record FieldControls(CalculationInputDescriptor Descriptor, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, TextBox? Rows, ComboBox? Picker);
+    private sealed record FieldControls(CalculationInputDescriptor Descriptor, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, TextBox? Rows, ComboBox? Picker, Grid? Row = null)
+    {
+        /// <summary>Every control of the field that can take focus or change its value.</summary>
+        public IEnumerable<Control> Controls => new Control?[] { Text, Unit, Choice, Flag, Rows, Picker }.OfType<Control>();
+    }
 
     /// <summary>Initialises a new instance of the <see cref="CalculationModulesView"/> class.</summary>
     public CalculationModulesView()
@@ -131,6 +147,9 @@ public sealed class CalculationModulesView : UserControl
             ClearResult();
             _status.Text = "Left the recorded calculation; the next Calculate records a new one.";
         };
+
+        _diagram.InputActivated += name => FieldControl(name)?.Focus();
+        _diagram.InputHovered += MarkHoveredRow;
 
         _resultsSection = Section("Results", BuildResultsPanel());
         _workingSection = Section("Working", BuildWorkingPanel());
@@ -251,15 +270,16 @@ public sealed class CalculationModulesView : UserControl
     }
 
     /// <summary>The form as typed, one field per input the form shows; a reference field carries its picked record id.</summary>
-    public IReadOnlyList<CalculationFormField> ReadForm() =>
-        _fields.Values.Select(f => new CalculationFormField(
-            f.Descriptor.Name,
-            f.Text?.Text,
-            f.Unit?.SelectedItem as string,
-            f.Choice?.SelectedItem as string,
-            f.Flag?.IsChecked ?? false,
-            f.Rows is { } rows ? (rows.Text ?? string.Empty).Split('\n').Select(r => r.TrimEnd('\r')).ToList() : null,
-            (f.Picker?.SelectedItem as ReleasedRecordOption)?.RecordId)).ToList();
+    public IReadOnlyList<CalculationFormField> ReadForm() => _fields.Values.Select(Read).ToList();
+
+    /// <summary>The reference diagram beside the inputs (`PO-2`): drawn from the chosen calculation's own diagram, redrawn as the form changes.</summary>
+    public CalculationDiagramView Diagram => _diagram;
+
+    /// <summary>The form row of <paramref name="inputName"/> (its label and its controls), or <see langword="null"/>.</summary>
+    public Control? FieldRow(string inputName) => _fields.TryGetValue(inputName, out var f) ? f.Row : null;
+
+    /// <summary>Whether the row of <paramref name="inputName"/> is marked because the pointer is on its shape in the diagram.</summary>
+    public bool IsRowMarked(string inputName) => _fields.TryGetValue(inputName, out var f) && f.Row?.Background is not null;
 
     /// <summary>Sets one field of the form, as a test or a fill would.</summary>
     /// <exception cref="ArgumentException">The form shows no input named <paramref name="inputName"/>.</exception>
@@ -433,10 +453,71 @@ public sealed class CalculationModulesView : UserControl
         _specification.Text = module.SpecificationPath is { } path ? $"Specification: {path}" : "Specification: the definition's own metadata (this calculation predates the written specifications).";
 
         foreach (var input in module.Inputs)
-            _form.Children.Add(BuildRow(input));
+        {
+            var row = BuildRow(input);
+            _form.Children.Add(row);
+            if (_fields.TryGetValue(input.Name, out var field))
+                _fields[input.Name] = Bind(field with { Row = row as Grid });
+        }
 
         _calculateButton.IsEnabled = true;
+        _diagram.IsVisible = true;
+        _diagram.Show(module, name => _fields.TryGetValue(name, out var f) ? Read(f) : null);
     }
+
+    // ---- The reference diagram, bound both ways ----
+
+    private FieldControls Bind(FieldControls field)
+    {
+        var name = field.Descriptor.Name;
+        foreach (var control in field.Controls)
+        {
+            control.GotFocus += (_, _) => _diagram.Highlight(name);
+            control.LostFocus += (_, _) =>
+            {
+                if (string.Equals(_diagram.HighlightedInput, name, StringComparison.Ordinal))
+                    _diagram.Highlight(null);
+            };
+
+            switch (control)
+            {
+                case TextBox box:
+                    box.PropertyChanged += (_, e) =>
+                    {
+                        if (e.Property == TextBox.TextProperty)
+                            _diagram.Refresh();
+                    };
+                    break;
+                case ComboBox combo:
+                    combo.SelectionChanged += (_, _) => _diagram.Refresh();
+                    break;
+                case CheckBox check:
+                    check.IsCheckedChanged += (_, _) => _diagram.Refresh();
+                    break;
+            }
+        }
+
+        return field;
+    }
+
+    private void MarkHoveredRow(string? inputName)
+    {
+        IBrush? mark = null;
+        if (inputName is not null && Application.Current?.TryGetResource(ApplicationPalette.AccentPanelBackgroundBrushKey, ActualThemeVariant, out var value) == true)
+            mark = value as IBrush ?? Brushes.LightBlue;
+
+        foreach (var field in _fields.Values.Where(f => f.Row is not null))
+            field.Row!.Background = field.Descriptor.Name == inputName ? mark ?? Brushes.LightBlue : null;
+    }
+
+    private static CalculationFormField Read(FieldControls f) => new(
+        f.Descriptor.Name,
+        f.Text?.Text,
+        f.Unit?.SelectedItem as string,
+        f.Choice?.SelectedItem as string,
+        f.Flag?.IsChecked ?? false,
+        f.Rows is { } rows ? (rows.Text ?? string.Empty).Split('\n').Select(r => r.TrimEnd('\r')).ToList() : null,
+        (f.Picker?.SelectedItem as ReleasedRecordOption)?.RecordId);
 
     private Control BuildRow(CalculationInputDescriptor input)
     {
@@ -618,7 +699,15 @@ public sealed class CalculationModulesView : UserControl
         inputs.Children.Add(_calculateButton);
         inputs.Children.Add(_problems);
         inputs.Children.Add(_status);
-        right.Children.Add(Section("Inputs", inputs));
+
+        // The reference diagram sits in a fixed panel beside the inputs (`PO-2`).
+        var inputsBeside = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        _diagram.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        Grid.SetColumn(inputs, 0);
+        Grid.SetColumn(_diagram, 1);
+        inputsBeside.Children.Add(inputs);
+        inputsBeside.Children.Add(_diagram);
+        right.Children.Add(Section("Inputs", inputsBeside));
 
         right.Children.Add(_resultsSection);
         right.Children.Add(_workingSection);

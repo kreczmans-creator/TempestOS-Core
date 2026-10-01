@@ -247,11 +247,11 @@ public static class CalculationDiagrams
                 new DiagramLabel("temperature", new(150, 50), "TemperatureChange", "ΔT"),
                 new DiagramDimension("length", new(40, 110), new(260, 110), 40, "Length", "L"),
                 new DiagramDimension("gap", new(260, 110), new(290, 110), 40, "Gap", "g", new(285, 162)),
-                new DiagramSpring("restraint", new(290, 110), new(350, 110), "RestraintStiffness", "k_s", new(320, 84)),
+                new DiagramSpring("restraint", new(290, 110), new(350, 110), "RestraintStiffness", "k_s", new(312, 76)),
                 new DiagramSupport("restraint-wall", new(350, 110), DiagramSupportKind.Fixed, DiagramDirection.Right),
-                new DiagramLabel("modulus", new(80, 206), "YoungsModulus", "E"),
+                new DiagramLabel("modulus", new(75, 206), "YoungsModulus", "E"),
                 new DiagramLabel("expansion", new(200, 206), "ExpansionCoefficient", "α"),
-                new DiagramLabel("allowable", new(320, 206), "AllowableStress", "σ_allow"),
+                new DiagramLabel("allowable", new(325, 206), "AllowableStress", "σ_allow"),
             ]),
         ]);
 }
