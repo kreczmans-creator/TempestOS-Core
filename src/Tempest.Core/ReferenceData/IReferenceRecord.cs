@@ -58,6 +58,22 @@ public interface IReferenceRecord<out TDefinition>
     /// <summary>The Id of the <see cref="EngineeringData.IEngineeringDocument"/> this record is backed by — use it directly with <see cref="EngineeringData.IEngineeringDocumentStore"/> for revision history and typed document references the catalogue does not itself duplicate.</summary>
     Guid UnderlyingDocumentId { get; }
 
-    /// <summary>The underlying document's current revision number — advances on every catalogue write that changes this record.</summary>
+    /// <summary>
+    /// The underlying document's current revision number — advances on
+    /// every catalogue write that changes this record, lifecycle moves
+    /// included. An internal version stamp: it is what a
+    /// <see cref="ReferencePin"/> pins and what audit rows cite, never what
+    /// a user is shown as "the revision" (see <see cref="ContentRevision"/>).
+    /// </summary>
     int RevisionNumber { get; }
+
+    /// <summary>
+    /// The record's user-visible revision: 1 when registered, advancing
+    /// only when its content — definition, source citation, or the source
+    /// identity in its provenance — is revised. Verifying, checking,
+    /// validating, releasing and superseding are lifecycle moves on the
+    /// same content and leave it unchanged (Product Owner runbook B2,
+    /// 2026-10-01: "a release shouldn't change the revision of the data").
+    /// </summary>
+    int ContentRevision { get; }
 }

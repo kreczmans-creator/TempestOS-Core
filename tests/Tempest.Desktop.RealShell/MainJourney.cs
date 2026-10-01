@@ -93,18 +93,26 @@ internal static class MainJourney
     {
         journal.Step(
             "refdata", "Engineering → Reference data", "mouse",
-            "Every library has its own heading, and the seeded records list as Draft",
+            "Every library has its own heading, records group under collapsible families, and the seeded records list as Draft",
             () =>
             {
                 if (!Act.Click("Engineering", settleMs: 900) || !Act.ClickRow("Reference data", settleMs: 2_000))
                     return Act.Failed(Act.LastProblem);
 
+                // Runbook F1: records list as title + status rows under
+                // collapsible family groups (collapsed until opened).
+                if (!Ui.WaitUntil(() => Ui.ByName("Steels group") is not null, 20_000))
+                    return Act.Failed("the Materials library never listed a Steels group");
+
+                if (Ui.ByName("Release mat-s355j2") is null && !Act.Click("Steels group", settleMs: 1_000))
+                    return Act.Failed(Act.LastProblem);
+
                 if (!Ui.WaitUntil(() => Ui.ByName("Release mat-s355j2") is not null, 20_000))
-                    return Act.Failed("the Materials library never listed mat-s355j2");
+                    return Act.Failed("the Steels group never listed mat-s355j2");
 
                 var rateCards = Ui.FirstTextContaining("Rate cards (") ?? "(no Rate cards heading)";
-                var people = Ui.FirstTextContaining("People (") ?? "(no People heading)";
-                return Act.Verified($"libraries listed; \"{rateCards}\"; \"{people}\"");
+                var steels = Ui.FirstTextContaining("Steels (") ?? "(no Steels group heading)";
+                return Act.Verified($"libraries listed; \"{rateCards}\"; \"{steels}\"");
             });
 
         journal.Step(
@@ -118,34 +126,40 @@ internal static class MainJourney
                 if (!Ui.WaitUntil(() => Ui.ShowsText("Released 'mat-s355j2'"), 20_000))
                     return Act.Failed($"nothing reported the release; the status bar reads \"{Act.Status()}\"");
 
-                var row = Ui.FirstTextContaining("mat-s355j2 — S355J2") ?? "(row not found)";
-                return row.Contains("Released", StringComparison.Ordinal)
-                    ? Act.Verified($"status \"{Act.Status()}\"; row reads \"{Trim(row)}\"")
-                    : Act.Failed($"the row still reads \"{Trim(row)}\"");
+                // The row's own Release action goes once the record is
+                // released; its status badge reads Released.
+                return Ui.WaitUntil(() => Ui.ByName("Release mat-s355j2") is null, 10_000)
+                    ? Act.Verified($"status \"{Act.Status()}\"; the row no longer offers Release")
+                    : Act.Failed("the row still offers Release");
             });
 
         journal.Step(
-            "add-person", "Add a second person to the People library and release them", "keyboard + mouse",
-            "The person is registered from the library's own form, opens right up, and releases",
+            "add-person", "Business → Staff: add a second person and release them", "keyboard + mouse",
+            "The person is added and released in one act from Staff's own form, opens right up at rev 1",
             () =>
             {
+                // Runbook B1: people are business reference data, under
+                // Business → Staff (no longer Engineering → Reference data).
+                if (!Act.Click("Business", settleMs: 1_200) || !Act.ClickRow("Staff", settleMs: 2_000))
+                    return Act.Failed(Act.LastProblem);
+
                 if (!Act.TypeInto("Display name", "Dana Whitfield")
                     || !Act.TypeInto("Role", "Principal Engineer")
-                    || !Act.TypeInto("Email", "dana@tempest-engineering.co.uk"))
+                    || !Act.TypeInto("Email", "dana@tempest-engineering.co.uk")
+                    || !Act.TypeInto("Phone", "01632 960123"))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Act.Click("Add Person", settleMs: 2_500))
+                if (!Act.Click("Add & Release", settleMs: 2_500))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => Ui.ShowsText("Added person 'Dana Whitfield'"), 20_000))
+                if (!Ui.WaitUntil(() => Ui.ShowsText("Added and released 'Dana Whitfield'"), 20_000))
                     return Act.Failed($"nothing reported the person; the status bar reads \"{Act.Status()}\"");
 
-                if (!Act.Click("Release person-dana-whitfield", settleMs: 2_500))
-                    return Act.Failed($"the new person's own Release button was not reachable ({Act.LastProblem})");
-
-                return Ui.WaitUntil(() => Ui.ShowsText("Released 'person-dana-whitfield'"), 20_000)
-                    ? Act.Verified($"status \"{Act.Status()}\"")
-                    : Act.Failed($"the status bar reads \"{Act.Status()}\"");
+                // Runbook B2: a release is not a revision — still rev 1.
+                var identity = Ui.FirstTextContaining("Dana Whitfield (Principal Engineer)  •  rev") ?? "(no identity)";
+                return identity.Contains("rev 1  •  Released", StringComparison.Ordinal)
+                    ? Act.Verified($"status \"{Act.Status()}\"; \"{Trim(identity)}\"")
+                    : Act.Failed($"the record reads \"{Trim(identity)}\"");
             });
 
         // The consultancy's own rates. Until 2026-09-16 nothing in the shipped
@@ -160,6 +174,9 @@ internal static class MainJourney
             "One graded hourly rate is registered from the library's own form, opens right up, and releases",
             () =>
             {
+                if (!Act.Click("Engineering", settleMs: 900) || !Act.ClickRow("Reference data", settleMs: 2_000))
+                    return Act.Failed(Act.LastProblem);
+
                 if (!Act.TypeInto("Rate card name", "Consultancy standard rates")
                     || !Act.TypeInto("Rate card grade", "Engineer")
                     || !Act.TypeInto("Rate card hourly rate", "95"))

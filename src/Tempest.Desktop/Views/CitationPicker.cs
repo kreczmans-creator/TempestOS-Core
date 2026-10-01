@@ -124,7 +124,7 @@ public sealed class CitationPicker : Border
 
         _list.ItemsSource = matches.Select(r => new ListBoxItem
         {
-            Content = $"{r.Library} — {r.RecordId} — {r.DisplayName} (rev {r.RevisionNumber}) — {r.Source?.ToString() ?? "(no source citation)"}",
+            Content = $"{r.Library} — {r.RecordId} — {r.DisplayName} (rev {r.ContentRevision}) — {r.Source?.ToString() ?? "(no source citation)"}",
             Tag = r,
         }).ToList();
     }

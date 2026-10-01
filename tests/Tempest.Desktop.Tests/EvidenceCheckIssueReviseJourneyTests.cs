@@ -335,9 +335,16 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
-            var reviseButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
+            // Runbook F1: a row is title and status only — Revise lives on
+            // the open record.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Open {recordId}");
+            openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } opened
+                && opened.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
+            var reviseButton = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First()
+                .GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
             reviseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             var reviseEntry = GetPrivateField<ReviseReferenceRecordEntry>(window, "_reviseReferenceRecordEntry");

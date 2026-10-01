@@ -95,7 +95,7 @@ public static class PersonProvenance
     /// <summary>The fixed provenance every hand-added person is registered with.</summary>
     public static ReferenceProvenance Default { get; } = new(
         SourceOrganisation: "TempestOS",
-        SourceDocument: "Entered directly in the People library.",
+        SourceDocument: "Entered directly in Business → Staff.",
         ExtractionMethod: ReferenceExtractionMethod.ManualTranscription,
         Notes: "Added by hand; not verified against any external source until reviewed.");
 }

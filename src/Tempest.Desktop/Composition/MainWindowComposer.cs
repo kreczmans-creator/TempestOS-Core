@@ -498,9 +498,25 @@ internal sealed partial class MainWindowComposer
             ct => rateCardPicker.PickAsync(ct),
             () => host.SessionPrincipal?.IdentityId,
             async (organisationId, ct) => (await organisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
-            async (pin, ct) => await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
-                ? (card.Definition.Code, card.Definition.Name)
-                : null);
+            async (pin, ct) =>
+            {
+                if (await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is not { } card)
+                    return ((string Code, string Name, int Revision)?)null;
+
+                // Runbook B2: show the content revision the pin holds, not
+                // the pin's own internal version stamp.
+                int revision;
+                try
+                {
+                    revision = (await rateCardCatalog.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, ct).ConfigureAwait(false)).ContentRevision;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    revision = card.ContentRevision;
+                }
+
+                return ((string Code, string Name, int Revision)?)(card.Definition.Code, card.Definition.Name, revision);
+            });
 
         // `WP 20.10A` (D12): Open Details, from the Record dialog's own
         // inline "no rate card pinned" note — closes that dialog (already
@@ -848,12 +864,26 @@ internal sealed partial class MainWindowComposer
 
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 
+        // Product Owner runbook B1 (2026-10-01): people are business
+        // reference data — Business → Staff, moved from Engineering →
+        // Reference data.
+        var staffView = new StaffView(
+            new ReferenceLibraryCatalogues(
+                host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
+                componentCatalog, rateCardCatalog, personCatalog),
+            host.ReferenceReview!, referenceCitationIndex, openObjectRightUp)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
+        staffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
         var businessAreaView = new BusinessAreaView(
             quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
             new CustomersSuppliersView(
                 organisationCatalog,
-                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))))
+                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))),
+            staffView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
