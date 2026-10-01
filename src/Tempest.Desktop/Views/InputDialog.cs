@@ -29,6 +29,9 @@ public sealed class InputDialog : Border
     private readonly TextBlock _title = new() { FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _label = new() { FontSize = DesignTokens.FontSizeBody, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, DesignTokens.SpaceXs) };
     private readonly TextBox _input = new() { MinHeight = DesignTokens.ControlSizeMedium };
+    // A fixed option list is picked, never typed (PO request: "Create
+    // XXX should give a drop down rather than a text input for kind").
+    private readonly ComboBox _choice = new() { MinHeight = DesignTokens.ControlSizeMedium, HorizontalAlignment = HorizontalAlignment.Stretch, IsVisible = false };
     // A real severity row (glyph + colour, `ObjectEditorView.BuildSeverityRow`
     // — the same reusable row `PropertyInspectorView`'s own Validation
     // section already shares), not a bare-coloured string: colour alone is
@@ -64,6 +67,7 @@ public sealed class InputDialog : Border
         body.Children.Add(_title);
         body.Children.Add(_label);
         body.Children.Add(_input);
+        body.Children.Add(_choice);
         body.Children.Add(_validationSlot);
         body.Children.Add(buttons);
         Child = body;
@@ -91,6 +95,19 @@ public sealed class InputDialog : Border
             else if (e.Key == Key.Escape)
                 Complete(null);
         };
+        _choice.KeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Enter && !_choice.IsDropDownOpen)
+            {
+                TryComplete();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape && !_choice.IsDropDownOpen)
+            {
+                Complete(null);
+                e.Handled = true;
+            }
+        };
 
         // Real modal behaviour (`WP 16.5A`, `TD-65`) — see
         // `DialogModality`'s own remarks.
@@ -112,7 +129,8 @@ public sealed class InputDialog : Border
     /// identical "a second call cancels the first" discipline.
     /// </summary>
     public Task<string?> PromptAsync(
-        string title, string label, string initialValue = "", Func<string, string?>? validate = null, bool allowBlank = false)
+        string title, string label, string initialValue = "", Func<string, string?>? validate = null, bool allowBlank = false,
+        IReadOnlyList<string>? choices = null)
     {
         ArgumentNullException.ThrowIfNull(title);
         ArgumentNullException.ThrowIfNull(label);
@@ -128,9 +146,27 @@ public sealed class InputDialog : Border
         _allowBlank = allowBlank;
         _validationSlot.IsVisible = false;
         _validationSlot.Content = null;
+        var isChoice = choices is { Count: > 0 };
+        _input.IsVisible = !isChoice;
+        _choice.IsVisible = isChoice;
+        _choice.ItemsSource = isChoice ? choices : null;
+        if (isChoice)
+        {
+            AutomationProperties.SetName(_choice, label);
+            var index = choices!.ToList().FindIndex(c => string.Equals(c, initialValue, StringComparison.OrdinalIgnoreCase));
+            _choice.SelectedIndex = index >= 0 ? index : 0;
+        }
+
         IsVisible = true;
-        _input.Focus();
-        _input.SelectAll();
+        if (isChoice)
+        {
+            _choice.Focus();
+        }
+        else
+        {
+            _input.Focus();
+            _input.SelectAll();
+        }
 
         _pending = new TaskCompletionSource<string?>();
         return _pending.Task;
@@ -138,7 +174,9 @@ public sealed class InputDialog : Border
 
     private void TryComplete()
     {
-        var value = _input.Text?.Trim() ?? string.Empty;
+        var value = _choice.IsVisible
+            ? _choice.SelectedItem as string ?? string.Empty
+            : _input.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(value) && !_allowBlank)
         {
             ShowValidationError("A value is required.");
