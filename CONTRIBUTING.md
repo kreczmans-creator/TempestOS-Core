@@ -50,7 +50,9 @@ Configured in GitHub under **Settings → Branches → Branch protection
 rules** for `main`:
 
 - Required status check: `CI Gate`, strict (branch must be up to date
-  before merging).
+  before merging). CI runs on a pull request, not on a push to a
+  feature branch: open the PR (a draft is fine) or run the workflow by
+  hand to get a CI result for a branch.
 - Pull request required before merging.
 - **0 required approvals** — this is a solo-owner repository, and an
   owner cannot approve their own PR; the required `CI Gate` check and

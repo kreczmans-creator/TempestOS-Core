@@ -104,7 +104,8 @@ satisfying it.
    errors. Non-negotiable, checked before every commit and before every
    completion report. **Machine-verified from `WP 11.1A` onward** —
    `.github/workflows/ci.yml` builds both Debug and Release with warnings
-   promoted to errors on every push, pull request, and manual dispatch; see
+   promoted to errors on every pull request, on pushes to `main`,
+   `release/**` and version tags, and on manual dispatch; see
    `docs/academy/06 Engineering Standards/04-continuous-integration.md`. A
    local run before pushing remains expected, not replaced.
 2. **Test Gate.** `dotnet test` against the full solution: every test passes,

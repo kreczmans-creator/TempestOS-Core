@@ -67,14 +67,24 @@ Governance registers, applied here to its own CI output.
 
 ## Build Pipeline
 
-`.github/workflows/ci.yml` runs on every push, every pull request, and
-on manual dispatch. One job, `build-and-test`, runs as a two-leg matrix
-(`configuration: [Debug, Release]`) so both configurations are built and
-fully tested independently, on separate runners, with `fail-fast: false`
-so one configuration's failure never hides the other's result. A second
-job, `gate`, depends on the matrix and gives branch-protection rules one
-unambiguous, named status check to require, rather than needing to
-enumerate both matrix legs individually.
+`.github/workflows/ci.yml` runs on:
+
+- every **pull request**, whatever its branch;
+- a **push** to `main`, to a `release/**` branch, or of a `v*.*.*` tag,
+  and to nothing else: since 2026-10-01 a push to any other branch starts
+  no run, because its pull request already runs the same workflow;
+- **manual dispatch** (`workflow_dispatch`), which is how to run CI on a
+  branch that has no pull request yet.
+
+One job, `build-and-test`, runs as a 2 × 4 matrix: two configurations
+(`Debug`, `Release`) times four test shards (`core`, the whole
+`Tempest.Core.Tests` project, and `desktop-1`/`desktop-2`/`desktop-3`,
+`Tempest.Desktop.Tests` split by the first letter of each test's
+namespace segment, A–D, E–P and Q–Z). That makes eight legs on separate
+runners, with `fail-fast: false` so one leg's failure never hides
+another's result. The `gate` job (named `CI Gate`) depends on every leg,
+on the governance health check and on the dependency scan, and gives
+branch protection one named status check to require rather than eight.
 
 Each matrix leg:
 
@@ -86,17 +96,20 @@ Each matrix leg:
    contributor's machine and CI.
 3. Restores, then builds `src/TempestOS.slnx` for its own configuration,
    with warnings promoted to errors (above).
-4. Runs the complete test suite (`dotnet test` against the same
-   solution — both `Tempest.Core.Tests` and `Tempest.Desktop.Tests`,
-   the latter exercising real Avalonia headless UI, not a mock) with TRX
-   results written per configuration.
+4. Runs its own shard of the test suite (`Tempest.Core.Tests`, or one
+   third of `Tempest.Desktop.Tests`, which exercises real Avalonia
+   headless UI, not a mock) with TRX results written per configuration
+   and shard. Across the eight legs every test runs once per
+   configuration; `CiShardCoverageTests` fails if a Desktop test falls
+   outside the shard filters or inside two of them.
 5. Publishes a Markdown build/test summary to the run's own Job Summary,
    and uploads the build log and TRX results as downloadable artifacts —
    always, even on failure, so a failing run is diagnosable from the
    Actions UI alone, without needing to reproduce it locally first.
-6. The Release leg additionally uploads the built `Tempest.App`/
-   `Tempest.Desktop` output as a downloadable artifact — a smoke-testable
-   build of the exact commit, not a promise of one.
+6. The Release `core` leg additionally uploads the built
+   `Tempest.Desktop` and `Tempest.Harness` output as two downloadable
+   artifacts — a smoke-testable build of the exact commit, not a promise
+   of one.
 
 The runner image (`windows-2022`) is pinned explicitly rather than using
 the floating `windows-latest` alias, for the same reason this project
@@ -126,9 +139,11 @@ Gate result locally a final time.
 
 ## Engineering Workflow
 
-**For a contributor:** push to any branch, or open a pull request — the
-pipeline runs automatically, no configuration required. A failing run's
-Job Summary names which configuration failed and shows the build-error
+**For a contributor:** open a pull request and the pipeline runs on it
+automatically, again on every push to its branch. A push to a branch
+with no pull request runs nothing; to run CI on such a branch, start the
+workflow by hand (**Actions → CI → Run workflow**). A failing run's
+Job Summary names which configuration and shard failed and shows the build-error
 or test-failure count directly, before anyone needs to open a log file.
 The same commands the pipeline runs are exactly what to run locally
 first:
@@ -154,10 +169,8 @@ one platform (`windows-2022`) — this project has never verified
 cross-platform correctness despite `Tempest.Desktop` depending on a
 cross-platform framework (Avalonia); extending the matrix to Linux/macOS
 runners is a genuine future enhancement, not silently assumed to already
-work. The pipeline also does not yet gate merges via a required branch-
-protection rule — the `gate` job exists so that configuration is a
-one-line addition whenever the Product Owner chooses to make it
-mandatory, not because it is mandatory today.
+work. Merges to `main` are gated: `CI Gate` is a required status check on
+`main`'s branch protection (see `CONTRIBUTING.md`).
 
 ## Related Documents
 
