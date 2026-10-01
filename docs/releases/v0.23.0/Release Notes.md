@@ -99,8 +99,9 @@ including items waiting on a decision, is
     check, validate and release no longer bump the revision (B2).
   - Customer codes are 5 characters and project references 6, letters or
     digits (`ACME1-BRIDG1`) (C1).
-  - Quotes: **Save draft**, **Submit for review**, approval by a different
-    person issues **R1** (then R2 after an edit); Send only after approval;
+  - Quotes: **Save draft**, **Submit for review**, approval issues **R1**
+    (then R2 after an edit) — by a different person when second-person
+    sign-off is on (`ADR-0161`); Send only after approval;
     each line's rate is picked from the project's pinned rate card, or
     **Fixed** (C3).
   - Project folders are `<root>\ACME1\ACME1-BRIDG1` (C6).
@@ -109,6 +110,15 @@ including items waiting on a decision, is
   - Timesheet task is a dropdown of the project's deliverables (G1); a
     Settings → Timesheets export folder, default
     `D:\11 Business Admin\02 Timesheets` (G2).
+- **Second-person sign-off is a Settings switch, off by default (PO
+  decision 2026-10-01, `ADR-0161`).** Settings → **Sign-off** →
+  *Second-person sign-off*. Off (the default, for a one-person
+  consultancy): you may approve your own quote and check your own
+  evidence. Somebody must still be signed in, and the quote revision,
+  evidence check and audit row record it as a self-approval. On: a
+  different person must approve or check, exactly as before. Every change
+  of the switch is audited (who, when, old → new). The Quote tab shows
+  which applies.
 - **CI runs once per commit**, with one exception. Push builds run for
   `main`, release branches and tags only; other branches are gated by
   their pull request, or run by hand. A push to a release branch with an
