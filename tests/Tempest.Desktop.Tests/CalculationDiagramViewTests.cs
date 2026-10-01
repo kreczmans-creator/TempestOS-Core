@@ -17,7 +17,7 @@ namespace Tempest.Desktop.Tests;
 
 /// <summary>
 /// The calculator reference diagram (`PO-2`, work packages B and C,
-/// `ADR-0156`) on the calculator page itself: a panel beside the inputs,
+/// `ADR-0158`) on the calculator page itself: a panel beside the inputs,
 /// redrawn as a field is edited (<c>L = 2000 mm</c>, <c>L = ?</c>), a
 /// choice redrawing the variant, a focused field highlighting its shapes
 /// and a shape marking or focusing its field, and an honest "No diagram
@@ -118,6 +118,41 @@ public sealed class CalculationDiagramViewTests
             Dispatcher.UIThread.RunJobs();
             Assert.True(span.IsFocused);
             Assert.Equal("Span", diagram.HighlightedInput);
+        });
+    }
+
+    [AvaloniaFact]
+    public void ARowListInput_RedrawsItsLabelAsRowsAreTyped_AndFocusHighlightsEveryLayer()
+    {
+        WithCalculators(PlaneWallHeatTransferCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            Assert.True(diagram.HasDiagram);
+            Assert.Equal("Layers = ?", diagram.LabelFor("Layers"));
+
+            view.SetField("Layers", rows: ["Glass, 8 mm, 0.78 W/(m.K)", "Air, 10 mm, 0.026 W/(m.K)"]);
+            Assert.Equal("Layers = 2 rows", diagram.LabelFor("Layers"));
+            AssertDrawn(window, diagram, "Layers = 2 rows");
+
+            view.SetField("HotSideTemperature", "20", "degC");
+            Assert.Equal("T_1 = 20 degC", diagram.LabelFor("HotSideTemperature"));
+
+            Assert.True(view.FieldControl("Layers")!.Focus());
+            Dispatcher.UIThread.RunJobs();
+            var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
+            var layers = diagram.ShapesFor("Layers").OfType<Rectangle>().ToList();
+            Assert.Equal(3, layers.Count);
+            Assert.All(layers, layer => Assert.Same(focusRing, layer.Stroke));
+
+            view.SelectModule(ToleranceStackCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("MinimumResult", "0.1", "mm");
+            Assert.Equal("min gap = 0.1 mm", diagram.LabelFor("MinimumResult"));
+
+            view.SelectModule(ThermalResistanceChainCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("Stages", rows: ["Junction to case, 0.5 K/W"]);
+            Assert.Equal("R stages = 1 row", diagram.LabelFor("Stages"));
         });
     }
 

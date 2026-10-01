@@ -35,7 +35,7 @@ namespace Tempest.Desktop.Views;
 /// cited on its record. Nothing is offered that has not been released.
 /// </para>
 /// <para>
-/// <b>A reference diagram beside the inputs</b> (`PO-2`, `ADR-0156`): the
+/// <b>A reference diagram beside the inputs</b> (`PO-2`, `ADR-0158`): the
 /// calculation's own <see cref="Tempest.Core.Calculations.Modules.Diagrams.CalculationDiagramSpec"/>,
 /// drawn by <see cref="CalculationDiagramView"/> in a fixed panel, redrawn
 /// as any field changes; focusing a field highlights its shapes, and

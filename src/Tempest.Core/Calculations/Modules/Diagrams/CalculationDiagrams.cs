@@ -53,6 +53,9 @@ public static class CalculationDiagrams
         ColumnBuckling(),
         Shaft(),
         ThermalExpansion(),
+        PlaneWall(),
+        ThermalResistanceChain(),
+        ToleranceStack(),
     ];
 
     /// <summary>The diagram of <paramref name="calculationId"/>, or <see langword="null"/> where it has none yet.</summary>
@@ -252,6 +255,69 @@ public static class CalculationDiagrams
                 new DiagramLabel("modulus", new(75, 206), "YoungsModulus", "E"),
                 new DiagramLabel("expansion", new(200, 206), "ExpansionCoefficient", "α"),
                 new DiagramLabel("allowable", new(325, 206), "AllowableStress", "σ_allow"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec PlaneWall() =>
+        new(PlaneWallHeatTransferCalculationDefinition.Id,
+        [
+            new DiagramVariant("A composite plane wall, hot side left: a fluid film, the layers as listed (three drawn), a film on the cold side", Always,
+            [
+                new DiagramLabel("layers-note", new(200, 22), Symbol: "t, k per layer"),
+                new DiagramDimension("thickness", new(150, 50), new(250, 50), -14, "Layers"),
+                new DiagramPlate("layer-1", 150, 50, 34, 130, "Layers", "Layers", new(200, 198)),
+                new DiagramPlate("layer-2", 184, 50, 33, 130, "Layers"),
+                new DiagramPlate("layer-3", 217, 50, 33, 130, "Layers"),
+                new DiagramLabel("hot-temperature", new(75, 70), "HotSideTemperature", "T_1"),
+                new DiagramLabel("hot-film", new(75, 104), "HotSideFilmCoefficient", "h_1"),
+                new DiagramPointLoad("hot-convection", new(146, 140), DiagramDirection.Right, 40, "HotSideFilmCoefficient"),
+                new DiagramLabel("cold-temperature", new(325, 70), "ColdSideTemperature", "T_2"),
+                new DiagramLabel("cold-film", new(325, 104), "ColdSideFilmCoefficient", "h_2"),
+                new DiagramPointLoad("cold-convection", new(294, 140), DiagramDirection.Right, 40, "ColdSideFilmCoefficient"),
+                new DiagramLabel("area", new(200, 222), "Area", "A"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec ThermalResistanceChain() =>
+        new(ThermalResistanceChainCalculationDefinition.Id,
+        [
+            new DiagramVariant("Thermal resistances in series from the source to ambient, hottest first (three drawn; the stages as listed)", Always,
+            [
+                new DiagramPointLoad("power", new(60, 94), DiagramDirection.Down, 40, "PowerDissipation", "P"),
+                new DiagramSpring("stage-1", new(60, 100), new(140, 100), "Stages"),
+                new DiagramSpring("stage-2", new(140, 100), new(220, 100), "Stages", "R stages", new(180, 70)),
+                new DiagramSpring("stage-3", new(220, 100), new(300, 100), "Stages"),
+                new DiagramCircle("source", new(60, 100), 6, Filled: true, "MaximumSourceTemperature", "T_max", new(60, 128)),
+                new DiagramCircle("node-1", new(140, 100), 4, Filled: true),
+                new DiagramCircle("node-2", new(220, 100), 4, Filled: true),
+                new DiagramCircle("ambient", new(300, 100), 6, Filled: true, "AmbientTemperature", "T_a", new(300, 128)),
+                new DiagramLabel("source-note", new(60, 152), Symbol: "source"),
+                new DiagramLabel("ambient-note", new(300, 152), Symbol: "ambient"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec ToleranceStack() =>
+        new(ToleranceStackCalculationDefinition.Id,
+        [
+            new DiagramVariant("A linear stack (representative; the contributors as listed): the bore adds, the parts subtract, the gap closes the loop", Always,
+            [
+                new DiagramPlate("base", 40, 140, 300, 16),
+                new DiagramPlate("wall-left", 40, 70, 20, 70),
+                new DiagramPlate("wall-right", 320, 70, 20, 70),
+                new DiagramPlate("part-a", 60, 100, 120, 40, "Contributors"),
+                new DiagramPlate("part-b", 180, 100, 110, 40, "Contributors"),
+                new DiagramDimension("bore", new(60, 70), new(320, 70), -16, "Contributors"),
+                new DiagramLabel("bore-note", new(190, 40), Symbol: "+ bore ± t"),
+                new DiagramDimension("part-a-length", new(60, 100), new(180, 100), -12, "Contributors"),
+                new DiagramLabel("part-a-note", new(120, 76), Symbol: "− A ± t"),
+                new DiagramDimension("part-b-length", new(180, 100), new(290, 100), -12, "Contributors"),
+                new DiagramLabel("part-b-note", new(235, 76), Symbol: "− B ± t"),
+                new DiagramDimension("gap", new(290, 120), new(320, 120), 0, "MinimumResult"),
+                new DiagramLabel("gap-note", new(305, 170), Symbol: "gap"),
+                new DiagramLabel("contributors", new(110, 192), "Contributors", "Contributors"),
+                new DiagramLabel("sigma", new(110, 216), "SigmaPerTolerance", "σ per ½ tol"),
+                new DiagramLabel("minimum", new(290, 192), "MinimumResult", "min gap"),
+                new DiagramLabel("maximum", new(290, 216), "MaximumResult", "max gap"),
             ]),
         ]);
 }

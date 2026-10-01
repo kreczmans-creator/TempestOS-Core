@@ -24,6 +24,7 @@ public sealed record CalculationDiagramReading(CalculationDiagramSpec Spec, Diag
 /// variant its choices select and what each bound shape's label says.
 /// A value the calculation could not read (blank, not a number, a unit
 /// the dimension does not have) is labelled <c>?</c>, never guessed.
+/// A row list is labelled with how many rows the form lists.
 /// </summary>
 public static class CalculationDiagramReader
 {
@@ -90,6 +91,13 @@ public static class CalculationDiagramReader
 
             case CalculationInputKind.Boolean:
                 return field?.Flag == true ? "yes" : "no";
+
+            case CalculationInputKind.List:
+            {
+                // A drawing is representative; its label says how many rows the form lists.
+                var rows = field?.Rows?.Count(r => !string.IsNullOrWhiteSpace(r)) ?? 0;
+                return rows == 0 ? Unknown : rows == 1 ? "1 row" : $"{rows} rows";
+            }
 
             default:
                 return Unknown;

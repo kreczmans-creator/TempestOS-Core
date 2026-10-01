@@ -62,6 +62,7 @@ public class CalculationDiagramsTests
             BeamBendingStressCalculationDefinition.Id, BeamDeflectionCalculationDefinition.Id, ColumnBucklingCalculationDefinition.Id,
             BoltShearCapacityCalculationDefinition.Id, BearingLoadCapacityCalculationDefinition.Id, ThermalExpansionStressCalculationDefinition.Id,
             ShaftCombinedStressCalculationDefinition.Id, PressureVesselWallThicknessCalculationDefinition.Id,
+            PlaneWallHeatTransferCalculationDefinition.Id, ThermalResistanceChainCalculationDefinition.Id, ToleranceStackCalculationDefinition.Id,
         ];
 
         Assert.All(simple, id => Assert.NotNull(CalculationDiagrams.For(id)));
@@ -168,6 +169,43 @@ public class CalculationDiagramsTests
         Assert.StartsWith("Double shear", twin.Caption, StringComparison.Ordinal);
         Assert.StartsWith("Single shear", single.Caption, StringComparison.Ordinal);
         Assert.Equal(3, twin.Elements.Count(e => e is DiagramPlate p && p.Id.StartsWith("plate", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void AListInput_IsLabelledWithHowManyRowsTheFormLists_AndTheRepresentativeShapesHighlightWithIt()
+    {
+        var spec = CalculationDiagrams.For(PlaneWallHeatTransferCalculationDefinition.Id)!;
+        var module = CalculationModuleDescriptors.For(PlaneWallHeatTransferCalculationDefinition.Id)!;
+
+        var typed = new Dictionary<string, CalculationFormField>
+        {
+            ["Layers"] = new("Layers", Rows: ["Glass, 8 mm, 0.78 W/(m.K)", "", "Air, 10 mm, 0.026 W/(m.K)"]),
+            ["HotSideTemperature"] = Field("HotSideTemperature", "20", "degC"),
+        };
+        var reading = CalculationDiagramReader.Read(spec, module, name => typed.GetValueOrDefault(name));
+
+        Assert.Equal("Layers = 2 rows", reading.LabelFor("Layers"));
+        Assert.Equal("T_1 = 20 degC", reading.LabelFor("HotSideTemperature"));
+        Assert.Equal("h_1 = not given", reading.LabelFor("HotSideFilmCoefficient"));
+        Assert.Equal("T_2 = ?", reading.LabelFor("ColdSideTemperature"));
+        Assert.True(reading.Shapes.Count(s => s.Element.InputName == "Layers") >= 3);
+
+        Assert.Equal("1 row", CalculationDiagramReader.ValueText(module, "Layers", new("Layers", Rows: ["Glass, 8 mm, 0.78 W/(m.K)"])));
+        Assert.Equal(CalculationDiagramReader.Unknown, CalculationDiagramReader.ValueText(module, "Layers", new("Layers", Rows: [" "])));
+
+        var stack = CalculationDiagramReader.Read(
+            CalculationDiagrams.For(ToleranceStackCalculationDefinition.Id)!,
+            CalculationModuleDescriptors.For(ToleranceStackCalculationDefinition.Id)!,
+            name => name == "MinimumResult" ? Field(name, "0.1", "mm") : null);
+        Assert.Equal("min gap = 0.1 mm", stack.LabelFor("MinimumResult"));
+        Assert.Equal("Contributors = ?", stack.LabelFor("Contributors"));
+
+        var chain = CalculationDiagramReader.Read(
+            CalculationDiagrams.For(ThermalResistanceChainCalculationDefinition.Id)!,
+            CalculationModuleDescriptors.For(ThermalResistanceChainCalculationDefinition.Id)!,
+            name => name == "PowerDissipation" ? Field(name, "40", "W") : null);
+        Assert.Equal("P = 40 W", chain.LabelFor("PowerDissipation"));
+        Assert.Equal("T_a = ?", chain.LabelFor("AmbientTemperature"));
     }
 
     [Fact]
