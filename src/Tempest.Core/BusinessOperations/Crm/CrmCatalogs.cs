@@ -47,10 +47,10 @@ public interface IOrganisationCatalog : IReferenceDataCatalog<Organisation>
     Task<IReferenceRecord<Organisation>?> FindByCustomerCodeAsync(string customerCode, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// A five-letter customer code derived from <paramref name="name"/>
+    /// A five-character customer code derived from <paramref name="name"/>
     /// that no registered organisation (other than
     /// <paramref name="excludingRecordId"/>) already holds —
-    /// <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCode"/>
+    /// <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode"/>
     /// over the library's own current codes.
     /// </summary>
     Task<string> SuggestCustomerCodeAsync(string? name, string? excludingRecordId = null, CancellationToken cancellationToken = default);
@@ -127,7 +127,7 @@ public sealed class OrganisationCatalog : ReferenceDataCatalog<Organisation>, IO
             .Where(r => !string.Equals(r.Id, excludingRecordId, StringComparison.Ordinal))
             .Select(r => r.Definition.CustomerCode);
 
-        return Tempest.Core.Projects.ProjectNumbering.SuggestCode(name, taken);
+        return Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode(name, taken);
     }
 
     /// <inheritdoc />

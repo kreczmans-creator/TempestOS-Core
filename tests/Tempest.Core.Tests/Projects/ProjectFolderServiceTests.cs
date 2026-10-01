@@ -14,14 +14,14 @@ namespace Tempest.Core.Tests.Projects;
 public sealed class ProjectFolderServiceTests
 {
     [Fact]
-    public void Ensure_WithNoExistingFolders_CreatesCustomerThenProject_AndReportsCreated()
+    public void Ensure_WithNoExistingFolders_CreatesTheCustomerCodeThenTheProjectIdentifier_AndReportsCreated()
     {
         using var temp = new TempDirectory();
         var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
 
-        var outcome = service.Ensure(new ProjectFolderRequest("P-0027", "Apollo Pump Redesign", "ACMEX", "Acme Engineering Ltd"));
+        var outcome = service.Ensure(new ProjectFolderRequest("ACME1-BRIDG1", "Apollo Pump Redesign", "ACME1", "Acme Engineering Ltd"));
 
-        var expected = Path.Combine(temp.Path, "ACMEX Acme Engineering Ltd", "P-0027 Apollo Pump Redesign");
+        var expected = Path.Combine(temp.Path, "ACME1", "ACME1-BRIDG1");
         Assert.Equal(ProjectFolderStatus.Created, outcome.Status);
         Assert.Equal(expected, outcome.ProjectFolder);
         Assert.True(Directory.Exists(expected));
@@ -29,17 +29,50 @@ public sealed class ProjectFolderServiceTests
     }
 
     [Fact]
-    public void Ensure_FindsAnExistingCustomerFolderByCode_IgnoringCase_RatherThanCreatingASecond()
+    public void Ensure_FindsAnExistingCustomerFolderInTheOldCodeAndNameForm_IgnoringCase_RatherThanCreatingASecond()
     {
         using var temp = new TempDirectory();
-        Directory.CreateDirectory(Path.Combine(temp.Path, "acmex - Acme (old name)"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "acmex Acme (old name)"));
         Directory.CreateDirectory(Path.Combine(temp.Path, "ACMEXY Someone Else"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "ACMEX-2 Not this one"));
         var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
 
         var outcome = service.Ensure(new ProjectFolderRequest("P-0001", "Pump", "ACMEX", "Acme Engineering Ltd"));
 
-        Assert.Equal(Path.Combine(temp.Path, "acmex - Acme (old name)", "P-0001 Pump"), outcome.ProjectFolder);
-        Assert.Equal(2, Directory.GetDirectories(temp.Path).Length);
+        Assert.Equal(Path.Combine(temp.Path, "acmex Acme (old name)", "P-0001"), outcome.ProjectFolder);
+        Assert.Equal(3, Directory.GetDirectories(temp.Path).Length);
+    }
+
+    [Fact]
+    public void Ensure_PrefersACustomerFolderNamedExactlyTheCode_OverTheOldCodeAndNameForm()
+    {
+        using var temp = new TempDirectory();
+        Directory.CreateDirectory(Path.Combine(temp.Path, "ACME1 Acme Engineering Ltd"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "acme1"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "ACME12"));
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        var outcome = service.Ensure(new ProjectFolderRequest("ACME1-BRIDG1", "Bridge", "ACME1", "Acme Engineering Ltd"));
+
+        Assert.Equal(Path.Combine(temp.Path, "acme1", "ACME1-BRIDG1"), outcome.ProjectFolder);
+        Assert.Equal(3, Directory.GetDirectories(temp.Path).Length);
+    }
+
+    [Fact]
+    public void Ensure_ReusesTheOldIdentifierAndNameProjectFolder_ButNeverALongerIdentifier()
+    {
+        using var temp = new TempDirectory();
+        var customer = Path.Combine(temp.Path, "ACME1");
+        Directory.CreateDirectory(Path.Combine(customer, "ACME1-BRIDG12"));
+        Directory.CreateDirectory(Path.Combine(customer, "ACME1-BRIDG1-old"));
+        var existing = Path.Combine(customer, "ACME1-BRIDG1 Bridge refurbishment");
+        Directory.CreateDirectory(existing);
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        var outcome = service.Ensure(new ProjectFolderRequest("ACME1-BRIDG1", "Bridge", "ACME1", "Acme Engineering Ltd"));
+
+        Assert.Equal(ProjectFolderStatus.AlreadyExisted, outcome.Status);
+        Assert.Equal(existing, outcome.ProjectFolder);
     }
 
     [Fact]
@@ -51,7 +84,7 @@ public sealed class ProjectFolderServiceTests
 
         var outcome = service.Ensure(new ProjectFolderRequest("P-0002", "Valve", "ACMEX", "Acme Engineering Ltd"));
 
-        Assert.Equal(Path.Combine(temp.Path, "ACME ENGINEERING LTD", "P-0002 Valve"), outcome.ProjectFolder);
+        Assert.Equal(Path.Combine(temp.Path, "ACME ENGINEERING LTD", "P-0002"), outcome.ProjectFolder);
         Assert.Single(Directory.GetDirectories(temp.Path));
     }
 
@@ -86,7 +119,7 @@ public sealed class ProjectFolderServiceTests
         Assert.Equal(first.ProjectFolder, second.ProjectFolder);
         Assert.True(Directory.Exists(Path.Combine(first.ProjectFolder!, "01 Quotes")));
         Assert.True(Directory.Exists(Path.Combine(first.ProjectFolder!, "02 Design", "CAD")));
-        Assert.Equal(Path.Combine(temp.Path, "Bloggs & Co", "P-0003 Frame"), first.ProjectFolder);
+        Assert.Equal(Path.Combine(temp.Path, "Bloggs & Co", "P-0003"), first.ProjectFolder);
     }
 
     [Fact]
@@ -109,7 +142,7 @@ public sealed class ProjectFolderServiceTests
 
         var outcome = service.Ensure(new ProjectFolderRequest("P-0005", "Internal tooling"));
 
-        Assert.Equal(Path.Combine(temp.Path, ProjectFolderService.NoCustomerFolderName, "P-0005 Internal tooling"), outcome.ProjectFolder);
+        Assert.Equal(Path.Combine(temp.Path, ProjectFolderService.NoCustomerFolderName, "P-0005"), outcome.ProjectFolder);
     }
 
     [Fact]
@@ -118,9 +151,9 @@ public sealed class ProjectFolderServiceTests
         using var temp = new TempDirectory();
         var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, [@"..\..\escape", "Drawings?"]));
 
-        var outcome = service.Ensure(new ProjectFolderRequest("P-0006", "Pump: stage 2 / \"final\"?", "AC|ME", "Acme <UK>."));
+        var outcome = service.Ensure(new ProjectFolderRequest(string.Empty, "Pump: stage 2 / \"final\"?", null, "Acme <UK>."));
 
-        var expected = Path.Combine(temp.Path, "AC-ME Acme -UK-", "P-0006 Pump- stage 2 - -final--");
+        var expected = Path.Combine(temp.Path, "Acme -UK-", "Pump- stage 2 - -final--");
         Assert.Equal(expected, outcome.ProjectFolder);
         Assert.True(Directory.Exists(Path.Combine(expected, "escape")));
         Assert.True(Directory.Exists(Path.Combine(expected, "Drawings-")));
@@ -197,7 +230,7 @@ public sealed class ProjectFolderServiceTests
         var plain = new ProjectFolderService(new ProjectFolderOptions(temp.Path, [])).QuoteFolderFor(request);
         var withSubfolder = new ProjectFolderService(new ProjectFolderOptions(temp.Path, [], @"01 Commercial\Quotes")).QuoteFolderFor(request);
 
-        var projectFolder = Path.Combine(temp.Path, "ACMEX Acme", "P-0011 Quoted");
+        var projectFolder = Path.Combine(temp.Path, "ACMEX", "P-0011");
         Assert.Equal(projectFolder, plain);
         Assert.Equal(Path.Combine(projectFolder, "01 Commercial", "Quotes"), withSubfolder);
         Assert.True(Directory.Exists(withSubfolder));

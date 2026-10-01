@@ -17,15 +17,19 @@ namespace Tempest.Core.Projects;
 /// <b>Find first, create only what is missing.</b> The PO's own words:
 /// "It should first search for the customer, if none then make new,
 /// likewise project ref". The customer folder is matched, ignoring case, on
-/// a folder name that <i>starts with</i> the customer's code (the code
-/// followed by the end of the name or a non-alphanumeric character, so
-/// <c>ACME</c> never matches <c>ACMEX Ltd</c>), or failing that one that
-/// <i>equals</i> the customer's name; only when neither exists is
-/// <c>&lt;CODE&gt; &lt;Name&gt;</c> (or <c>&lt;Name&gt;</c> with no code)
+/// a folder name that <i>equals</i> the customer's code, or failing that
+/// one that starts with the code followed by a space (the
+/// <c>&lt;CODE&gt; &lt;Name&gt;</c> form the first build created, so
+/// <c>ACME1</c> never matches <c>ACME12 Ltd</c>), or failing that one that
+/// <i>equals</i> the customer's name; only when none exists is a folder
+/// named just the code (runbook feedback C6: "make the company folder just
+/// the 5 letter ID") — or the customer's name when it has no code —
 /// created. The project folder is found the same way on the project's own
-/// identifier, and created as <c>&lt;identifier&gt; &lt;project name&gt;</c>.
-/// This is what lets the service adopt a folder tree that already exists
-/// on the PO's own D: drive rather than creating a duplicate beside it.
+/// identifier (equal to it, or it followed by a space), and created as
+/// just the identifier (C6: "make the project just the project ID") —
+/// for example <c>ACME1\ACME1-BRIDG1</c>. This is what lets the service
+/// adopt a folder tree that already exists on the PO's own D: drive
+/// rather than creating a duplicate beside it.
 /// </para>
 /// <para>
 /// <b>Never throws into the UI.</b> Every refusal — generation switched
@@ -224,7 +228,7 @@ public sealed class ProjectFolderService
         if (code.Length == 0 && name.Length == 0)
             return Match(root, existing, n => string.Equals(n, NoCustomerFolderName, StringComparison.OrdinalIgnoreCase));
 
-        if (code.Length > 0 && Match(root, existing, n => StartsWithToken(n, code)) is { } byCode)
+        if (code.Length > 0 && MatchToken(root, existing, code) is { } byCode)
             return byCode;
 
         return name.Length > 0 ? Match(root, existing, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) : null;
@@ -236,7 +240,7 @@ public sealed class ProjectFolderService
         var identifier = SanitiseSegment(request.ProjectIdentifier);
 
         if (identifier.Length > 0)
-            return Match(customerFolder, existing, n => StartsWithToken(n, identifier));
+            return MatchToken(customerFolder, existing, identifier);
 
         var name = SanitiseSegment(request.ProjectName);
         return name.Length > 0 ? Match(customerFolder, existing, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) : null;
@@ -247,16 +251,8 @@ public sealed class ProjectFolderService
         var code = SanitiseSegment(request.CustomerCode);
         var name = SanitiseSegment(request.CustomerName);
 
-        var combined = (code.Length > 0, name.Length > 0) switch
-        {
-            (true, true) when !StartsWithToken(name, code) => $"{code} {name}",
-            (true, true) => name,
-            (true, false) => code,
-            (false, true) => name,
-            _ => NoCustomerFolderName,
-        };
-
-        return SanitiseSegment(combined) is { Length: > 0 } safe ? safe : NoCustomerFolderName;
+        var chosen = code.Length > 0 ? code : name.Length > 0 ? name : NoCustomerFolderName;
+        return SanitiseSegment(chosen) is { Length: > 0 } safe ? safe : NoCustomerFolderName;
     }
 
     private static string ProjectFolderName(ProjectFolderRequest request)
@@ -264,8 +260,8 @@ public sealed class ProjectFolderService
         var identifier = SanitiseSegment(request.ProjectIdentifier);
         var name = SanitiseSegment(request.ProjectName);
 
-        var combined = identifier.Length > 0 && name.Length > 0 ? $"{identifier} {name}" : identifier.Length > 0 ? identifier : name;
-        return SanitiseSegment(combined) is { Length: > 0 } safe ? safe : "_Unnamed project";
+        var chosen = identifier.Length > 0 ? identifier : name;
+        return SanitiseSegment(chosen) is { Length: > 0 } safe ? safe : "_Unnamed project";
     }
 
     private static string? SanitiseRelativePath(string? relative)
@@ -292,10 +288,18 @@ public sealed class ProjectFolderService
     private static string? Match(string parent, List<string> names, Func<string, bool> predicate) =>
         names.FirstOrDefault(predicate) is { } found ? Path.Combine(parent, found) : null;
 
-    /// <summary>Whether <paramref name="name"/> starts with <paramref name="token"/> as a whole token — followed by the end of the name or a non-alphanumeric character.</summary>
-    private static bool StartsWithToken(string name, string token) =>
-        name.StartsWith(token, StringComparison.OrdinalIgnoreCase)
-        && (name.Length == token.Length || !char.IsLetterOrDigit(name[token.Length]));
+    /// <summary>
+    /// The folder named exactly <paramref name="token"/> (ignoring case), or
+    /// failing that the first named <paramref name="token"/> followed by a
+    /// space — the <c>&lt;CODE&gt; &lt;Name&gt;</c> and
+    /// <c>&lt;identifier&gt; &lt;project name&gt;</c> forms earlier builds
+    /// created, reused rather than duplicated.
+    /// </summary>
+    private static string? MatchToken(string parent, List<string> names, string token) =>
+        Match(parent, names, n => string.Equals(n, token, StringComparison.OrdinalIgnoreCase))
+        ?? Match(parent, names, n => n.Length > token.Length
+                                     && n.StartsWith(token, StringComparison.OrdinalIgnoreCase)
+                                     && n[token.Length] == ' ');
 
     private static string CreateFolder(string parent, string name, List<string> created)
     {

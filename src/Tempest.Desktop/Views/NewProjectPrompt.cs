@@ -21,7 +21,7 @@ namespace Tempest.Desktop.Views;
 /// <param name="PurchaseOrderReference">The client's own purchase-order reference. <see langword="null"/> when left blank.</param>
 /// <param name="Identifier">
 /// The project-centric identifier to create the project under —
-/// <c>CUSTOMER-PROJECTREF</c>, for example <c>ACMEE-BRIDG</c> (Product Owner
+/// <c>CUSTOMER-PROJECTREF</c>, for example <c>ACME1-BRIDG1</c> (Product Owner
 /// decision 2026-10-01 §3, `ADR-0156`) — when the chosen client has a
 /// customer code. <see langword="null"/> otherwise (no client, or a client
 /// recorded before customer codes existed): the caller falls back to the
@@ -64,9 +64,9 @@ public sealed record NewProjectPromptResult(
 /// </para>
 /// <para>
 /// <b>Project reference (Product Owner decision 2026-10-01 §3,
-/// `ADR-0156`).</b> A five-letter code, suggested from the project's own
+/// `ADR-0156`).</b> A six-character code (letters A–Z, digits 0–9), suggested from the project's own
 /// name as it is typed (until edited by hand), upper-cased, and refused
-/// unless it is five letters A–Z held by no other project. With a client
+/// unless it is six characters A–Z or 0–9 held by no other project. With a client
 /// that has a customer code it makes the new project's identifier
 /// <c>CUSTOMER-PROJECTREF</c> (shown live beneath it); with no client, or
 /// a client with no code yet, the old <c>P-NNNN</c> identifier is used and
@@ -112,7 +112,7 @@ public sealed class NewProjectPrompt : Border
     private readonly ComboBox _client = new() { MinHeight = DesignTokens.ControlSizeMedium, HorizontalAlignment = HorizontalAlignment.Stretch };
 
     private readonly TextBlock _projectReferenceLabel = FieldLabel("Project reference");
-    private readonly TextBox _projectReferenceBox = new() { MinHeight = DesignTokens.ControlSizeMedium, Watermark = "Five letters, e.g. BRIDG", MaxLength = ProjectNumbering.CodeLength };
+    private readonly TextBox _projectReferenceBox = new() { MinHeight = DesignTokens.ControlSizeMedium, Watermark = "Six characters, e.g. BRIDG1", MaxLength = ProjectNumbering.ProjectReferenceLength };
     private readonly TextBlock _identifierPreview = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), TextWrapping = Avalonia.Media.TextWrapping.Wrap };
 
     private readonly TextBlock _rateCardLabel = FieldLabel("Rate card");
@@ -302,7 +302,7 @@ public sealed class NewProjectPrompt : Border
 
     /// <summary>The selected client's own customer code, or <see langword="null"/> when no client is chosen or it has none yet.</summary>
     private string? SelectedCustomerCode =>
-        _client.SelectedItem is ComboBoxItem { Tag: string id } && _customerCodes.TryGetValue(id, out var code) && ProjectNumbering.IsValidCode(code)
+        _client.SelectedItem is ComboBoxItem { Tag: string id } && _customerCodes.TryGetValue(id, out var code) && ProjectNumbering.IsValidCustomerCode(code)
             ? code
             : null;
 
@@ -327,7 +327,7 @@ public sealed class NewProjectPrompt : Border
 
         SetProjectReference(string.IsNullOrWhiteSpace(_nameBox.Text)
             ? null
-            : ProjectNumbering.SuggestCode(_nameBox.Text, _takenProjectReferences));
+            : ProjectNumbering.SuggestProjectReference(_nameBox.Text, _takenProjectReferences));
         UpdateIdentifierPreview();
     }
 
@@ -347,9 +347,9 @@ public sealed class NewProjectPrompt : Border
             return;
         }
 
-        _identifierPreview.Text = ProjectNumbering.IsValidCode(reference)
+        _identifierPreview.Text = ProjectNumbering.IsValidProjectReference(reference)
             ? $"Identifier: {customerCode}-{reference}"
-            : $"Identifier: {customerCode}-????? (enter a five-letter project reference)";
+            : $"Identifier: {customerCode}-?????? (enter a six-character project reference)";
     }
 
     /// <summary>Re-reads every Released rate card into the Rate card drop-down, defaulting to the most recently released one — "None" if there are none.</summary>
@@ -431,11 +431,11 @@ public sealed class NewProjectPrompt : Border
 
         // Product Owner decision 2026-10-01 §3: a client with a customer
         // code makes the identifier CUSTOMER-PROJECTREF, and the project
-        // reference is then required, five letters, and unique.
+        // reference is then required, six characters, and unique.
         string? identifier = null;
         if (SelectedCustomerCode is { } customerCode)
         {
-            if (ProjectNumbering.Validate(_projectReferenceBox.Text, _takenProjectReferences, "Project reference") is { } refusal)
+            if (ProjectNumbering.ValidateProjectReference(_projectReferenceBox.Text, _takenProjectReferences) is { } refusal)
             {
                 ShowValidationError(refusal);
                 return;

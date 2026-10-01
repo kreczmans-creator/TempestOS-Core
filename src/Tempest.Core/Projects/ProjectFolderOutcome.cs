@@ -3,7 +3,7 @@ namespace Tempest.Core.Projects;
 /// <summary>Which project <see cref="ProjectFolderService.Ensure"/> should find or create a folder for (PO decision 2026-10-01).</summary>
 /// <param name="ProjectIdentifier">The project's own reference/identifier (for example <c>P-0027</c>). Required.</param>
 /// <param name="ProjectName">The project's own display name. Required.</param>
-/// <param name="CustomerCode">The customer's own short code, if it has one; matched against the start of existing customer folder names. <see langword="null"/> when none.</param>
+/// <param name="CustomerCode">The customer's own short code, if it has one; the customer folder is named after it, and matched on a folder equal to it or starting with it followed by a space. <see langword="null"/> when none.</param>
 /// <param name="CustomerName">The customer's own name. <see langword="null"/> (with no code either) files the project under <see cref="ProjectFolderService.NoCustomerFolderName"/>.</param>
 public sealed record ProjectFolderRequest(string ProjectIdentifier, string ProjectName, string? CustomerCode = null, string? CustomerName = null);
 

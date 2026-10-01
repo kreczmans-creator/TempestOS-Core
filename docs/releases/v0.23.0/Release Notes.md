@@ -58,16 +58,19 @@ including items waiting on a decision, is
   Customer/Supplier/Both type and their own contacts. New Project's client
   and a purchase order's supplier are dropdowns from that list.
 - **Project-centric numbering (`ADR-0156`).** An organisation has a
-  unique 5-letter customer code and a project a unique 5-letter project
-  reference, both suggested from the name and editable. A new project with
-  a coded client is identified `CUSTOMER-PROJECTREF`; its documents are
+  unique 5-character customer code and a project a unique 6-character
+  project reference — letters A–Z and digits 0–9 — both suggested from the
+  name and editable. A new project with a coded client is identified
+  `CUSTOMER-PROJECTREF` (for example `ACME1-BRIDG1`); its documents are
   `CUSTOMER-PROJECTREF-DOCTYPE-NNN` (Q, CO, PO, INV, DOC, DWG, CAD; CALC
   reserved), counted per project per type from 001. Existing projects and
   records keep their numbers.
 - **Project folders on disk.** Opening or creating a project finds or
-  creates `D:\01 Projects\<customer>\<project>\` (configurable as
-  `Projects:FolderRoot`), and quote export starts in that folder. The
-  standard subfolder set is not yet defined (`V1-BLOCKER-01`).
+  creates `D:\01 Projects\<customer code>\<project identifier>\` (for
+  example `ACME1\ACME1-BRIDG1`; configurable as `Projects:FolderRoot`),
+  and quote export starts in that folder. A customer with no code is
+  filed under its name. The standard subfolder set is not yet defined
+  (`V1-BLOCKER-01`).
 - **Documents use the light-ground logo.** Every generated PDF carries the
   design system's ink lockup (dark text, transparent ground) instead of
   the white-on-navy box. The timesheet heading shows the person's name,

@@ -21,7 +21,7 @@ The Product Owner made three decisions on 2026-10-01:
    one list. Wherever an organisation is chosen it is picked from that
    list, never typed.
 3. **Numbering is project-centric**, like document numbering:
-   `CUSTOMER-PROJECTREF-DOCTYPE-NNN`, for example `ACMEE-BRIDG-Q-001`.
+   `CUSTOMER-PROJECTREF-DOCTYPE-NNN`, for example `ACME1-BRIDG1-Q-001`.
 
 Until now a project was `P-NNNN`, a quotation `Q-<year>-NNN` (one
 sequence for the whole store), a change order `CO-<year>-NNN`, a purchase
@@ -52,16 +52,20 @@ code). A purchase order's supplier is chosen through
 and invoice requests take their client from the project, so they need no
 picker of their own.
 
-**3. Codes.** A *customer code* (on the organisation) and a *project
-reference* (per project) are each exactly five letters A–Z, suggested
-from the name (`ProjectNumbering.SuggestCode`: the first five letters,
-padded with `X`; on a clash the last letter, then the last two, step
-through A–Z), editable, upper-cased and unique — customer codes across
-the organisation library (`IOrganisationCatalog.FindByCustomerCodeAsync`),
+**3. Codes.** A *customer code* (on the organisation) is exactly five
+characters and a *project reference* (per project) exactly six, each an
+upper-case letter A–Z or a digit 0–9 (amended by runbook feedback C1:
+"doesn't allow numbers in the reference … also make the project ID 6
+letters long, not 5"). Both are suggested from the name
+(`ProjectNumbering.SuggestCustomerCode` / `SuggestProjectReference`: the
+first five or six letters and digits of the name, padded with `X`; on a
+clash the last character, then the last two, step through A–Z then 0–9),
+editable, upper-cased and unique — customer codes across the
+organisation library (`IOrganisationCatalog.FindByCustomerCodeAsync`),
 project references across every project-centric project identifier.
 
-**4. The project identifier is `CUSTOMER-PROJECTREF`** when the chosen
-client has a customer code. Every generated number inside the project is
+**4. The project identifier is `CUSTOMER-PROJECTREF`** (for example
+`ACME1-BRIDG1`) when the chosen client has a customer code. Every generated number inside the project is
 `<project identifier>-<DOCTYPE>-<NNN>`: one past the highest suffix any
 record of that type (live or not) already uses under that prefix, so a
 sequence per project per document type, starting at 001 — the first
@@ -88,13 +92,29 @@ reference, a document identifier) is always kept as given.
 
 **6. No migration; the old scheme is the fallback.** Existing projects
 and records keep their identifiers. A project whose identifier is not of
-the `AAAAA-BBBBB` shape — every project created before this decision,
+the `XXXXX-XXXXXX` shape (five then six characters A–Z or 0–9) — every
+project created before this decision,
 and any new project created with no client or with a client that has no
 customer code yet — gets `P-NNNN`, and inside it quotations, change
 orders and purchase orders keep `Q-`/`CO-`/`PO-<year>-NNN`; invoice
 requests and documents stay unnumbered. Records stored before the new
 fields existed deserialise with them `null` (they are optional
-`init` properties on the persisted JSON).
+`init` properties on the persisted JSON). The all-letter `AAAAA-BBBBB`
+identifiers the first build of this decision issued (a five-letter
+project reference, before runbook feedback C1) are still recognised as
+project-centric (`ProjectNumbering.TryParseProjectIdentifier`), so
+numbering keeps working inside projects created with them.
+
+**7. Project folders are named on the codes** (runbook feedback C6:
+"make the company folder just the 5 letter ID. make the project just the
+project ID"). `ProjectFolderService` files a project under
+`<root>\<customer code>\<project identifier>` — for example
+`D:\01 Projects\ACME1\ACME1-BRIDG1`. A customer with no code is filed
+under its sanitised name, a project with no customer under
+`_No customer`. Existing folders are reused, never duplicated: a folder
+equal to the code (or identifier), ignoring case, or one starting with it
+followed by a space — the `<CODE> <Name>` and `<identifier> <project
+name>` forms the first build created.
 
 ## Consequences
 

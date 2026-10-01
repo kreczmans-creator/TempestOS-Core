@@ -22,9 +22,10 @@ namespace Tempest.Workspace.Projects;
 /// </para>
 /// <para>
 /// <b>The customer code is <see cref="Organisation.CustomerCode"/></b> — the
-/// 5-letter code project numbers start with (ADR-0156), falling back to
-/// <see cref="Organisation.Reference"/> for an organisation recorded before
-/// customer codes existed.
+/// five-character code project numbers start with (ADR-0156), and the
+/// customer folder's whole name (runbook feedback C6). An organisation
+/// recorded before customer codes existed has none, so its folder is
+/// named after its own name instead.
 /// </para>
 /// <para>
 /// <b>Never throws for an unreadable catalogue or a refusing file
@@ -84,12 +85,12 @@ public sealed class ProjectFolderLocator
         return request is null ? null : await Task.Run(() => _service.QuoteFolderFor(request), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>The customer code a project's folder is matched and named on — <see cref="Organisation.CustomerCode"/>, else <see cref="Organisation.Reference"/> (see this class's own remarks).</summary>
+    /// <summary>The customer code a project's folder is matched and named on — <see cref="Organisation.CustomerCode"/>, trimmed; <see langword="null"/> when it has none, so the folder falls back to the customer's name (see this class's own remarks).</summary>
     /// <param name="organisation">The customer.</param>
     public static string? CustomerCodeOf(Organisation organisation)
     {
         ArgumentNullException.ThrowIfNull(organisation);
-        return string.IsNullOrWhiteSpace(organisation.CustomerCode) ? organisation.Reference : organisation.CustomerCode;
+        return string.IsNullOrWhiteSpace(organisation.CustomerCode) ? null : organisation.CustomerCode.Trim();
     }
 
     private async Task<ProjectFolderRequest?> RequestForAsync(Guid projectId, CancellationToken cancellationToken)

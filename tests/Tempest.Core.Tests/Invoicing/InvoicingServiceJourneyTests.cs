@@ -119,9 +119,9 @@ public sealed class InvoicingServiceJourneyTests
         InvoicingTestHost.SignIn(host);
         var domain = InvoicingTestHost.Domain(host);
 
-        var numbered = await SetUpBillableProjectAsync(host, "NUM", PaymentTerms.UpFront, projectIdentifier: "ACMEE-BRIDG");
+        var numbered = await SetUpBillableProjectAsync(host, "NUM", PaymentTerms.UpFront, projectIdentifier: "ACME1-BRIDG1");
         var numberedRequest = await RaiseSingleLineDraftRequestAsync(host, numbered, domain, "NUM");
-        Assert.Equal("ACMEE-BRIDG-INV-001", numberedRequest.Identifier);
+        Assert.Equal("ACME1-BRIDG1-INV-001", numberedRequest.Identifier);
 
         var legacy = await SetUpBillableProjectAsync(host, "LEG");
         var legacyRequest = await RaiseSingleLineDraftRequestAsync(host, legacy, domain, "LEG");

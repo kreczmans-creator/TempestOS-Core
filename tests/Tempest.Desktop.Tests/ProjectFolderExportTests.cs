@@ -66,7 +66,7 @@ public sealed class ProjectFolderExportTests
                 new ProjectFolderService(new ProjectFolderOptions(folderRoot, [], "Quotes")), host.ProjectDirectory!, organisations);
             await ExportAsync(window, quoteView, filePicker);
 
-            var expected = Path.Combine(folderRoot, ProjectFolderService.NoCustomerFolderName, "P-PF-EXPORT Folder Export Project", "Quotes");
+            var expected = Path.Combine(folderRoot, ProjectFolderService.NoCustomerFolderName, "P-PF-EXPORT", "Quotes");
             Assert.Equal(expected, filePicker.SaveRequests[^1].StartFolder);
             Assert.True(Directory.Exists(expected));
 
@@ -113,7 +113,7 @@ public sealed class ProjectFolderExportTests
             var project = await host.ProjectDirectory!.CreateAsync("P-PF-OPEN", "Folder Open Project");
             await host.ShellNavigator!.OpenProjectAsync(project.Id);
 
-            var expected = Path.Combine(folderRoot, ProjectFolderService.NoCustomerFolderName, "P-PF-OPEN Folder Open Project");
+            var expected = Path.Combine(folderRoot, ProjectFolderService.NoCustomerFolderName, "P-PF-OPEN");
             await RenderUntilAsync(window, () => reports.Count > 0);
             Assert.True(Directory.Exists(expected));
             Assert.Equal($"Project folder created: {expected}", reports.Single().Message);
