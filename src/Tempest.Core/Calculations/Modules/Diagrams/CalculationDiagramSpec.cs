@@ -161,7 +161,8 @@ public sealed record DiagramLabel(string Id, DiagramPoint At, string? InputName 
 /// <summary>
 /// One drawing of a calculation: the variant drawn when every input named
 /// in <paramref name="When"/> holds the value given there (a choice's
-/// member name, or a number exactly as typed).
+/// member name, a number exactly as typed, or <c>true</c> / <c>false</c>
+/// for a yes-or-no input).
 /// </summary>
 /// <param name="Caption">What the variant shows, in words: "Simply supported, point load at mid-span".</param>
 /// <param name="When">The input values that select this variant; empty for the variant drawn otherwise.</param>

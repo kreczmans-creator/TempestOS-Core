@@ -24,7 +24,8 @@ members, plates, circles, supports (pinned, roller, fixed), point and
 distributed loads, moments, springs, dimensions and labels — each bound
 by name to the input it stands for. A variant is selected by the form's
 own values (`Support`/`Loading` for the beam, `ShearPlanes = 2` for the
-bolt). `CalculationDiagrams.All` holds the diagrams.
+bolt, a ticked yes-or-no as `true` — `ClosedEnds` for the thick
+cylinder). `CalculationDiagrams.All` holds the diagrams.
 
 **2. A label reads the form as typed.** `CalculationDiagramReader` labels
 a bound shape `L = 2000 mm`, or `L = ?` when the value cannot be read
@@ -60,6 +61,12 @@ grow.
   label says how many rows the form lists (`Layers = 2 rows`).
 - A new calculation must either ship a diagram or join the list — the
   test names it either way.
+- The D2 geometry is drawn too: the bolt group (six bolts drawn, the
+  load at its point from one origin), the fillet weld (plan and
+  section), the lifting lug (front and through the pin), the thick
+  cylinder (open or closed ends) and the bolted-joint preload (the joint
+  and its two springs in parallel). An input the method does not take is
+  not drawn as one: no grip length, weld leg, eccentricity or load angle.
 - Showing the diagram on the recorded run and the calc-sheet export (WP
   E) is not done; the spec is in Core so that surface can reuse it.
 

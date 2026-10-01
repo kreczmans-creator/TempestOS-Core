@@ -157,6 +157,44 @@ public sealed class CalculationDiagramViewTests
     }
 
     [AvaloniaFact]
+    public void TickingAYesOrNoInput_RedrawsTheVariant_AndTheHarderGeometryDiagramsAreDrawn()
+    {
+        WithCalculators(ThickWalledCylinderCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            Assert.True(diagram.HasDiagram);
+            Assert.Contains("open ends", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
+            Assert.Equal("closed ends = no", diagram.LabelFor("ClosedEnds"));
+            Assert.Single(diagram.ShapesFor("ClosedEnds"));
+
+            view.SetField("ClosedEnds", flag: true);
+            Assert.Contains("closed ends", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
+            Assert.Equal("closed ends = yes", diagram.LabelFor("ClosedEnds"));
+            Assert.Equal(2, diagram.ShapesFor("ClosedEnds").OfType<Rectangle>().Count());
+            AssertDrawn(window, diagram, "closed ends = yes");
+
+            view.SetField("InnerRadius", "50", "mm");
+            Assert.Equal("a = 50 mm", diagram.LabelFor("InnerRadius"));
+
+            view.SelectModule(BoltGroupEccentricShearCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("Bolts", rows: ["0 mm, 0 mm", "75 mm, 0 mm", "0 mm, 75 mm"]);
+            Assert.Equal("Bolts = 3 rows", diagram.LabelFor("Bolts"));
+            AssertDrawn(window, diagram, "Bolts = 3 rows");
+
+            view.SelectModule(BoltedJointPreloadCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("Preload", "20", "kN");
+            Assert.Equal("F_i = 20 kN", diagram.LabelFor("Preload"));
+
+            view.SelectModule(FilletWeldThroatStressCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SelectModule(LiftingLugPinJointCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+        });
+    }
+
+    [AvaloniaFact]
     public void ACalculationWithNoDiagram_SaysSoHonestly_AndDrawsNothing()
     {
         WithCalculators(FatigueMinerCalculationDefinition.Id, (window, view) =>

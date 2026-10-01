@@ -34,6 +34,12 @@ public static class CalculationDiagramReader
     /// <summary>The words every summary opens with after the title: the diagram is never to scale, and shows inputs only.</summary>
     public const string NotToScale = "Reference diagram, not to scale, inputs only.";
 
+    /// <summary>The condition value a ticked yes-or-no input matches.</summary>
+    public const string BooleanTrue = "true";
+
+    /// <summary>The condition value an unticked (or absent) yes-or-no input matches.</summary>
+    public const string BooleanFalse = "false";
+
     /// <summary>Reads <paramref name="spec"/> for <paramref name="module"/> against the form, as <paramref name="field"/> answers each input by name.</summary>
     public static CalculationDiagramReading Read(CalculationDiagramSpec spec, CalculationModuleDescriptor module, Func<string, CalculationFormField?> field)
     {
@@ -115,6 +121,11 @@ public static class CalculationDiagramReader
     private static string? ConditionValue(CalculationModuleDescriptor module, string inputName, CalculationFormField? field)
     {
         var kind = module.Inputs.FirstOrDefault(i => i.Name == inputName)?.Kind;
-        return kind == CalculationInputKind.Choice ? field?.Choice : field?.Text?.Trim();
+        return kind switch
+        {
+            CalculationInputKind.Choice => field?.Choice,
+            CalculationInputKind.Boolean => field?.Flag == true ? BooleanTrue : BooleanFalse,
+            _ => field?.Text?.Trim(),
+        };
     }
 }
