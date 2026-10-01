@@ -92,6 +92,25 @@ including items waiting on a decision, is
   the 2026-09-05 knowledge foundation under
   `archive/knowledge-foundation-2026-09-05/`.
 
+- **Runbook round 1 fixes (PO comments, 2026-10-01).**
+  - Staff moved to Business → **Staff** (B1).
+  - A reference record is rev 1 until its content is revised; verify,
+    check, validate and release no longer bump the revision (B2).
+  - Customer codes are 5 characters and project references 6, letters or
+    digits (`ACME1-BRIDG1`) (C1).
+  - Quotes: **Save draft**, **Submit for review**, approval by a different
+    person issues **R1** (then R2 after an edit); Send only after approval;
+    each line's rate is picked from the project's pinned rate card, or
+    **Fixed** (C3).
+  - Project folders are `<root>\ACME1\ACME1-BRIDG1` (C6).
+  - Library lists show title and status only, grouped under collapsible
+    family headings (F1).
+  - Timesheet task is a dropdown of the project's deliverables (G1); a
+    Settings → Timesheets export folder, default
+    `D:\11 Business Admin\02 Timesheets` (G2).
+- **CI runs once per commit.** Push builds run for `main`, release
+  branches and tags only; other branches are gated by their pull request.
+
 ## Documentation
 
 - `scripts/install-test-build.ps1` — every test build is installed with
@@ -116,13 +135,14 @@ including items waiting on a decision, is
 - The standard project subfolder set (`V1-BLOCKER-01`) and full
   reference-library coverage (`WP RC.0G`) are firm v1.0.0 blockers.
 
-## Gate (Linux, this branch's head, every v0.23.0 branch merged)
+## Gate (Linux, this branch's head, runbook round 1 fixes merged)
 
 - Build: Desktop, Core and RealShell test projects build with 0 errors.
-- Core tests: 5,608/5,618 — the same 10 known Windows-only failures as
-  `v0.22.0` (DPAPI secret store, PowerShell scripts).
-- Desktop tests: 922/923 — the one failure is the known Linux-only
+- Core tests: 5,679/5,690 — the 10 known Windows-only failures (DPAPI
+  secret store, PowerShell scripts) plus the new install-script syntax
+  check, which also needs Windows PowerShell.
+- Desktop tests: 929/930 — the one failure is the known Linux-only
   `StatusBarCollapseTests`, unchanged from `v0.22.0`.
-- Tempest-Dashboard (`claude/focused-dirac-k0qilf`): `npm test` 126/126,
-  lint clean; the Awaiting review card checked rendered in demo mode.
-- Not run here: the Windows real-shell journey and the installer.
+- Tempest-Dashboard 0.1.2 (`main`): `npm test` 126/126, lint clean.
+- Not run here: the Windows real-shell journey and the installer
+  (`scripts/install-test-build.ps1`, runbook A0).
