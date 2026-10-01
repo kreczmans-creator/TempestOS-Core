@@ -1,8 +1,9 @@
 # TempestOS v0.23.0 — Release Notes
 
 **Status: draft.** Awaiting the Product Owner's verdict. This draft lives
-on `claude/focused-dirac-k0qilf`, five commits on top of `main`
-(`v0.22.0`).
+on `claude/focused-dirac-k0qilf`, on top of `main` (`v0.22.0`). The
+Product Owner's acceptance runbook for this build is the "TempestOS
+v0.23.0 Runbook" page (80 steps, sections A–J).
 
 ## Summary
 
@@ -50,6 +51,44 @@ including items waiting on a decision, is
   on the Engineering view and counts it on Home. There is no approve
   action.
 
+- **People, customers and suppliers are separate lists (PO decisions
+  2026-10-01).** Internal staff (Reference data → People) keep contact
+  details only, now with a phone number. Business → **Customers &
+  Suppliers** holds organisations with full company details, a
+  Customer/Supplier/Both type and their own contacts. New Project's client
+  and a purchase order's supplier are dropdowns from that list.
+- **Project-centric numbering (`ADR-0156`).** An organisation has a
+  unique 5-letter customer code and a project a unique 5-letter project
+  reference, both suggested from the name and editable. A new project with
+  a coded client is identified `CUSTOMER-PROJECTREF`; its documents are
+  `CUSTOMER-PROJECTREF-DOCTYPE-NNN` (Q, CO, PO, INV, DOC, DWG, CAD; CALC
+  reserved), counted per project per type from 001. Existing projects and
+  records keep their numbers.
+- **Project folders on disk.** Opening or creating a project finds or
+  creates `D:\01 Projects\<customer>\<project>\` (configurable as
+  `Projects:FolderRoot`), and quote export starts in that folder. The
+  standard subfolder set is not yet defined (`V1-BLOCKER-01`).
+- **Documents use the light-ground logo.** Every generated PDF carries the
+  design system's ink lockup (dark text, transparent ground) instead of
+  the white-on-navy box. The timesheet heading shows the person's name,
+  never a raw Windows SID.
+- **Day-one reference libraries.** Materials 6 → 77, fasteners 7 → 131,
+  bearings 2 → 39, standards 14 → 29, every value cited to a recognised
+  public source (`docs/governance/Data/Seed Data Sources Register.md`).
+  Shipped records are released at seed through the normal review path, so
+  calculators work on a fresh install; `ReferenceData:ReleaseAtSeed=false`
+  restores Draft seeding. 60 of the 89 materials in the recovered
+  knowledge foundation are seeded; the register lists the rest.
+- **Three calculators recovered from v0.16.0 (16 → 19).** Tolerance
+  stack-up (worst case, plus RSS, Cpk and ppm when a statistical basis is
+  stated; asymmetric limits), thermal resistance chain (any number of
+  stages, heatsink budget) and plane-wall heat transfer (conduction with
+  surface films), each with textbook worked examples (Shigley, Çengel).
+- **Recovered work archived.** Five branches deleted unmerged before this
+  release are kept as git bundles under `archive/recovered-branches/`, and
+  the 2026-09-05 knowledge foundation under
+  `archive/knowledge-foundation-2026-09-05/`.
+
 ## Documentation
 
 - `docs/guides/Xero Setup - Step by Step.md` — a numbered, one-action-
@@ -66,7 +105,8 @@ including items waiting on a decision, is
 - The Xero loopback port moves from 49301 to 48131 (`TD-183`) on
   `claude/next-stretch-j1fqz2`, which is not part of this release. Until
   that branch merges, register `http://127.0.0.1:49301/callback/`.
-- Runbook items D10–D13, E5–E12 and F1–F7 are still to be run.
+- The standard project subfolder set (`V1-BLOCKER-01`) and full
+  reference-library coverage (`WP RC.0G`) are firm v1.0.0 blockers.
 
 ## Gate (Linux, this branch's head)
 
