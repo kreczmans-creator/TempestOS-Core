@@ -1271,7 +1271,13 @@ public sealed class TempestHost : ITempestHost
             Provider: "Xero",
             AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
             TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
-            Scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
+            // Xero's granular scopes: an app created on or after 2 March
+            // 2026 can never be granted the broad `accounting.transactions`
+            // or `accounting.reports.read`, so asking for them fails the
+            // consent outright. One scope per endpoint `XeroConnector`
+            // calls: Invoices/RepeatingInvoices (invoices), Contacts (read
+            // only), Reports/BankSummary.
+            Scopes: ["openid", "profile", "email", "accounting.invoices", "accounting.contacts.read", "accounting.reports.banksummary.read", "offline_access"],
             TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
 
         var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
