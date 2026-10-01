@@ -96,7 +96,7 @@ public sealed class PersonLibraryJourneyTests
 
             // The list row is the person's own title and release status only.
             Assert.Contains(staffView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == PersonLabel);
-            Assert.NotNull(staffView.GetLogicalDescendants().OfType<Button>().SingleOrDefault(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Open person-wp-20-10f-journey-person"));
+            Assert.NotNull(staffView.GetLogicalDescendants().OfType<Button>().SingleOrDefault(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open person-wp-20-10f-journey-person"));
 
             // Moved, not duplicated: Engineering → Reference data no longer
             // lists People.

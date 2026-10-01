@@ -119,7 +119,7 @@ public sealed class LibrariesTabLoadsOnEntryTests
             // The row: title and status badge only — no id, revision or
             // source citation in the list.
             var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Open {recordId}");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
             var row = (Grid)openButton.Parent!;
             var rowTexts = row.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).Where(t => t.Length > 0).ToList();
             Assert.Contains("Runbook F1 Stainless", rowTexts);
@@ -232,7 +232,7 @@ public sealed class LibrariesTabLoadsOnEntryTests
             // Runbook F1: a row is title and status only — Revise lives on
             // the open record.
             var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Open {recordId}");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } opened

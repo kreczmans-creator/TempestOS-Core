@@ -338,7 +338,7 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             // Runbook F1: a row is title and status only — Revise lives on
             // the open record.
             var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
-                .First(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Open {recordId}");
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
             openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } opened

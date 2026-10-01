@@ -79,8 +79,14 @@ internal static class ReferenceRecordListBuilder
         return section;
     }
 
+    /// <summary>The AutomationId of a record row's own Open button — unique per record, where the announced name (the title) need not be.</summary>
+    public static string OpenAutomationId(string recordId) => $"Open {recordId}";
+
+    /// <summary>The AutomationId of a record row's own Release button.</summary>
+    public static string ReleaseAutomationId(string recordId) => $"Release {recordId}";
+
     /// <summary>One compact record row: title, release-status badge, Release (while unreleased) and Open.</summary>
-    /// <param name="recordId">The record's own Id — carried by the automation names and the title's tooltip.</param>
+    /// <param name="recordId">The record's own Id — carried by the buttons' AutomationIds and the title's tooltip; the announced names use <paramref name="title"/>.</param>
     /// <param name="title">The record's own title or designation.</param>
     /// <param name="state">The record's validation state.</param>
     /// <param name="open">Opens the record.</param>
@@ -119,7 +125,8 @@ internal static class ReferenceRecordListBuilder
             };
             releaseButton.Classes.Add(ChromeStyles.Subtle);
             releaseButton.Click += async (_, _) => await release().ConfigureAwait(true);
-            AutomationProperties.SetName(releaseButton, $"Release {recordId}");
+            AutomationProperties.SetName(releaseButton, $"Release {title}");
+            AutomationProperties.SetAutomationId(releaseButton, ReleaseAutomationId(recordId));
             Grid.SetColumn(releaseButton, 2);
             grid.Children.Add(releaseButton);
         }
@@ -127,7 +134,11 @@ internal static class ReferenceRecordListBuilder
         var openButton = new Button { Content = "Open", Padding = new Thickness(10, 2) };
         openButton.Classes.Add(ChromeStyles.Flat);
         openButton.Click += async (_, _) => await open().ConfigureAwait(true);
-        AutomationProperties.SetName(openButton, $"Open {recordId}");
+        // v0.23.0 board N12: a screen reader announces the visible title,
+        // not the record id; the id stays on the AutomationId, which is
+        // unique where titles need not be.
+        AutomationProperties.SetName(openButton, $"Open {title}");
+        AutomationProperties.SetAutomationId(openButton, OpenAutomationId(recordId));
         Grid.SetColumn(openButton, 3);
         grid.Children.Add(openButton);
 
