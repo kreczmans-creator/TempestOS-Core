@@ -43,12 +43,16 @@ public sealed class HomeRightRailLinksTests
             var continueButton = RailButton(home, "Rail Links Project");
             continueButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => navigator.Current.ProjectId == project.Id);
+            Assert.Equal(project.Id, navigator.Current.ProjectId);
 
-            // Recent → Engineering, with the object opened.
+            // Recent → Engineering, with the object opened. `LastOpenPhase`
+            // carries a time-stamp prefix, so the phase is matched with
+            // Contains (a StartsWith here never held and only passed while
+            // the wait timed out silently — v0.23.0 board B9).
             home = await ShowHomeAsync(window, navigator);
             var phaseBefore = window.LastOpenPhase;
             RailButton(home, "Rail Links Doc").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase != phaseBefore && window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            await RenderUntilAsync(window, () => window.LastOpenPhase != phaseBefore && window.LastOpenPhase.Contains(" opened (", StringComparison.Ordinal));
             Assert.Equal(ShellArea.Engineering, navigator.Current.Area);
             Assert.Contains(created.SubjectId!.Value.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
         }
@@ -70,7 +74,7 @@ public sealed class HomeRightRailLinksTests
         return home;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
+    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
     {
         var deadline = Deadline(20);
         while (!condition() && DateTime.UtcNow < deadline)
@@ -79,6 +83,10 @@ public sealed class HomeRightRailLinksTests
             Dispatcher.UIThread.RunJobs();
             LayOut(window);
         }
+
+        // v0.23.0 board B9: a wait that times out is a failure, never a
+        // silent fall-through to whatever the test checks next.
+        Assert.True(condition(), $"Timed out waiting for: {what}");
     }
 
     private static void LayOut(Window window)
