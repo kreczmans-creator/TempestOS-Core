@@ -191,6 +191,22 @@ public sealed class ProjectFolderServiceTests
         Assert.Equal(["P-0014"], Directory.GetDirectories(Path.GetDirectoryName(byName.ProjectFolder)!).Select(Path.GetFileName));
     }
 
+    [Theory]
+    [InlineData("Smith Ltd")]
+    [InlineData("Tesco")]
+    public void Ensure_ACustomerWithNoCode_AdoptsTheFolderAlreadyNamedForIt(string customer)
+    {
+        using var temp = new TempDirectory();
+        var existing = Path.Combine(temp.Path, customer);
+        Directory.CreateDirectory(existing);
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        var outcome = service.Ensure(new ProjectFolderRequest("P-0015", "Frame", null, customer));
+
+        Assert.Equal(Path.Combine(existing, "P-0015"), outcome.ProjectFolder);
+        Assert.Single(Directory.GetDirectories(temp.Path));
+    }
+
     [Fact]
     public void Ensure_SanitisesInvalidCharacters_AndNeverClimbsOutOfTheProjectFolder()
     {

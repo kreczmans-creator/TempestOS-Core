@@ -246,8 +246,13 @@ public sealed class ProjectFolderService
         if (name.Length == 0)
             return null;
 
-        var byName = NameFolderName(name);
-        return Match(root, existing, n => string.Equals(n, byName, StringComparison.OrdinalIgnoreCase));
+        // The prefixed form first (a name shaped like a code), then a folder
+        // already named exactly for the customer — the PO's own folders on
+        // D: are adopted, never duplicated — but never a folder whose name
+        // is itself a customer code, which belongs to a coded customer.
+        var prefixed = NameFolderName(name);
+        return Match(root, existing, n => string.Equals(n, prefixed, StringComparison.OrdinalIgnoreCase))
+            ?? Match(root, existing, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase) && !IsCodeFolderName(n));
     }
 
     /// <summary>
@@ -303,6 +308,11 @@ public sealed class ProjectFolderService
         var firstWord = space < 0 ? name : name[..space];
         return ProjectNumbering.IsValidCustomerCode(ProjectNumbering.Normalise(firstWord)) ? "_" + name : name;
     }
+
+    /// <summary>Whether a folder's name is exactly a customer code as the service writes one (upper case), i.e. a coded customer's folder.</summary>
+    private static bool IsCodeFolderName(string folderName) =>
+        string.Equals(folderName, ProjectNumbering.Normalise(folderName), StringComparison.Ordinal)
+        && ProjectNumbering.IsValidCustomerCode(folderName);
 
     private static string? FindProjectFolder(string customerFolder, ProjectFolderRequest request)
     {
@@ -365,10 +375,10 @@ public sealed class ProjectFolderService
     /// <c>&lt;identifier&gt; &lt;project name&gt;</c> forms earlier builds
     /// created, reused rather than duplicated.
     /// </summary>
-    private static string? MatchToken(string parent, List<string> names, string token) =>
-        Match(parent, names, n => string.Equals(n, token, StringComparison.OrdinalIgnoreCase))
+    private static string? MatchToken(string parent, List<string> names, string token, StringComparison comparison = StringComparison.OrdinalIgnoreCase) =>
+        Match(parent, names, n => string.Equals(n, token, comparison))
         ?? Match(parent, names, n => n.Length > token.Length
-                                     && n.StartsWith(token, StringComparison.OrdinalIgnoreCase)
+                                     && n.StartsWith(token, comparison)
                                      && n[token.Length] == ' ');
 
     private static string CreateFolder(string parent, string name, List<string> created)
