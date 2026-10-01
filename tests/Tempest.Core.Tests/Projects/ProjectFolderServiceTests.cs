@@ -146,6 +146,52 @@ public sealed class ProjectFolderServiceTests
     }
 
     [Fact]
+    public void Ensure_FindsTheProjectUnderAnotherCustomerFolder_ByItsIdentifier_BeforeCreatingASecondTree()
+    {
+        using var temp = new TempDirectory();
+        var existing = Path.Combine(temp.Path, ProjectFolderService.NoCustomerFolderName, "P-0011");
+        Directory.CreateDirectory(existing);
+        Directory.CreateDirectory(Path.Combine(temp.Path, "ACME1", "P-0012"));
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        // The client was set after the project was first filed under "_No customer".
+        var outcome = service.Ensure(new ProjectFolderRequest("P-0011", "Pump", "BRAV1", "Bravo Engineering"));
+
+        Assert.Equal(ProjectFolderStatus.AlreadyExisted, outcome.Status);
+        Assert.Equal(existing, outcome.ProjectFolder);
+        Assert.Empty(outcome.CreatedFolders);
+        Assert.False(Directory.Exists(Path.Combine(temp.Path, "BRAV1")));
+    }
+
+    [Fact]
+    public void Ensure_ACustomerWithNoCode_NeverAdoptsACodedCustomersFolder_ByName()
+    {
+        using var temp = new TempDirectory();
+        var coded = Path.Combine(temp.Path, "BRAVO");
+        Directory.CreateDirectory(coded);
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        var outcome = service.Ensure(new ProjectFolderRequest("P-0013", "Frame", null, "Bravo"));
+
+        Assert.Equal(Path.Combine(temp.Path, "_Bravo", "P-0013"), outcome.ProjectFolder);
+        Assert.Empty(Directory.GetDirectories(coded));
+    }
+
+    [Fact]
+    public void Ensure_ACodedCustomer_NeverAdoptsTheFolderOfACustomerFiledByAName_StartingWithItsCode()
+    {
+        using var temp = new TempDirectory();
+        var service = new ProjectFolderService(new ProjectFolderOptions(temp.Path, []));
+
+        var byName = service.Ensure(new ProjectFolderRequest("P-0014", "Frame", null, "Bravo Ltd"));
+        var byCode = service.Ensure(new ProjectFolderRequest("BRAVO-FRAME1", "Frame", "BRAVO", "Bravo Holdings"));
+
+        Assert.Equal(Path.Combine(temp.Path, "_Bravo Ltd", "P-0014"), byName.ProjectFolder);
+        Assert.Equal(Path.Combine(temp.Path, "BRAVO", "BRAVO-FRAME1"), byCode.ProjectFolder);
+        Assert.Equal(["P-0014"], Directory.GetDirectories(Path.GetDirectoryName(byName.ProjectFolder)!).Select(Path.GetFileName));
+    }
+
+    [Fact]
     public void Ensure_SanitisesInvalidCharacters_AndNeverClimbsOutOfTheProjectFolder()
     {
         using var temp = new TempDirectory();

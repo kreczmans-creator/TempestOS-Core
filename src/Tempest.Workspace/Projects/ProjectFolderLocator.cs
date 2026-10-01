@@ -18,14 +18,19 @@ namespace Tempest.Workspace.Projects;
 /// <see cref="ProjectSummary.ClientOrganisationId"/> (`WP 19.0A`,
 /// `ADR-0150`). A project with no client, or whose client record has
 /// gone, is still filed — under <see cref="ProjectFolderService.NoCustomerFolderName"/>,
-/// or under the raw client id respectively.
+/// or under the raw client id respectively. A catalogue that cannot be
+/// read is reported as <see cref="ProjectFolderStatus.Failed"/> instead,
+/// never filed under the raw id.
 /// </para>
 /// <para>
-/// <b>The customer code is <see cref="Organisation.CustomerCode"/></b> — the
+/// <b>The customer code is the one frozen in the project's identifier</b>
+/// (<see cref="ProjectNumbering.TryParseProjectIdentifier"/>) — the
 /// five-character code project numbers start with (ADR-0156), and the
-/// customer folder's whole name (runbook feedback C6). An organisation
-/// recorded before customer codes existed has none, so its folder is
-/// named after its own name instead.
+/// customer folder's whole name (runbook feedback C6) — and only for an
+/// identifier of another shape the client's current
+/// <see cref="Organisation.CustomerCode"/>. An organisation recorded
+/// before customer codes existed has none, so its folder is named after
+/// its own name instead.
 /// </para>
 /// <para>
 /// <b>Never throws for an unreadable catalogue or a refusing file
@@ -64,9 +69,9 @@ public sealed class ProjectFolderLocator
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     public async Task<ProjectFolderOutcome> EnsureAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var request = await RequestForAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var (request, failure) = await RequestForAsync(projectId, cancellationToken).ConfigureAwait(false);
         if (request is null)
-            return new ProjectFolderOutcome(ProjectFolderStatus.Failed, "Project folder: the project could not be found.", null, []);
+            return new ProjectFolderOutcome(ProjectFolderStatus.Failed, failure ?? "Project folder: the project could not be found.", null, []);
 
         return await Task.Run(() => _service.Ensure(request), cancellationToken).ConfigureAwait(false);
     }
@@ -81,7 +86,7 @@ public sealed class ProjectFolderLocator
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     public async Task<string?> QuoteFolderForAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var request = await RequestForAsync(projectId, cancellationToken).ConfigureAwait(false);
+        var (request, _) = await RequestForAsync(projectId, cancellationToken).ConfigureAwait(false);
         return request is null ? null : await Task.Run(() => _service.QuoteFolderFor(request), cancellationToken).ConfigureAwait(false);
     }
 
@@ -93,7 +98,7 @@ public sealed class ProjectFolderLocator
         return string.IsNullOrWhiteSpace(organisation.CustomerCode) ? null : organisation.CustomerCode.Trim();
     }
 
-    private async Task<ProjectFolderRequest?> RequestForAsync(Guid projectId, CancellationToken cancellationToken)
+    private async Task<(ProjectFolderRequest? Request, string? Failure)> RequestForAsync(Guid projectId, CancellationToken cancellationToken)
     {
         ProjectSummary? project;
         try
@@ -102,13 +107,19 @@ public sealed class ProjectFolderLocator
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return null;
+            return (null, null);
         }
 
         if (project is null)
-            return null;
+            return (null, null);
 
-        string? customerCode = null;
+        // The customer code frozen in the project's own identifier comes
+        // first (ADR-0156: a document number's prefix is never re-derived
+        // from the client's current code, and neither is its folder), so
+        // editing a customer's code never starts a second tree.
+        string? customerCode = ProjectNumbering.TryParseProjectIdentifier(project.Identifier, out var frozenCode, out _)
+            ? frozenCode
+            : null;
         string? customerName = null;
 
         if (!string.IsNullOrWhiteSpace(project.ClientOrganisationId))
@@ -118,17 +129,19 @@ public sealed class ProjectFolderLocator
             {
                 if (await _organisations.FindAsync(project.ClientOrganisationId, cancellationToken).ConfigureAwait(false) is { } record)
                 {
-                    customerCode = CustomerCodeOf(record.Definition);
+                    customerCode ??= CustomerCodeOf(record.Definition);
                     customerName = record.Definition.Name;
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                // An unreadable catalogue still files the project — under
-                // the raw client id — rather than refusing the folder.
+                // Refuse rather than file the project under its raw client
+                // id — a folder created there would be orphaned the moment
+                // the catalogue reads again.
+                return (null, $"Project folder: the customer '{project.ClientOrganisationId}' could not be read ({ex.Message}).");
             }
         }
 
-        return new ProjectFolderRequest(project.Identifier ?? string.Empty, project.DisplayName, customerCode, customerName);
+        return (new ProjectFolderRequest(project.Identifier ?? string.Empty, project.DisplayName, customerCode, customerName), null);
     }
 }
