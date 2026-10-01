@@ -35,8 +35,12 @@ public interface ITimesheetService
     /// <remarks>Refused, as a result, with <see cref="TimesheetRefusal.DeliverableNotOnProject"/> when <paramref name="deliverableId"/> is not a live deliverable of <paramref name="projectId"/>; otherwise refused exactly as <see cref="RecordAsync"/> is.</remarks>
     Task<TimesheetResult> RecordAgainstDeliverableAsync(Guid projectId, Guid deliverableId, DateOnly date, decimal hours, bool billable, string grade, CancellationToken cancellationToken = default);
 
-    /// <summary>Amends <paramref name="entryId"/>'s own hours, task and billable flag. Refused, as a result, once the entry carries an <see cref="TimesheetEntry.InvoicedBy"/> link.</summary>
-    Task<TimesheetResult> AmendAsync(Guid entryId, decimal hours, string task, bool billable, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Amends <paramref name="entryId"/>'s own hours, task and billable flag. Refused, as a result, once the entry carries an <see cref="TimesheetEntry.InvoicedBy"/> link.
+    /// A <see langword="null"/> or blank <paramref name="task"/> keeps the entry's current task. An entry recorded against a deliverable keeps its
+    /// deliverable's task text: a different <paramref name="task"/> is refused with <see cref="TimesheetRefusal.TaskLockedToDeliverable"/> (v0.23.0 board M3).
+    /// </summary>
+    Task<TimesheetResult> AmendAsync(Guid entryId, decimal hours, string? task, bool billable, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-deletes <paramref name="entryId"/>'s own entry. Refused, as a result, once the entry carries an <see cref="TimesheetEntry.InvoicedBy"/> link.</summary>
     Task<TimesheetResult> DeleteAsync(Guid entryId, CancellationToken cancellationToken = default);

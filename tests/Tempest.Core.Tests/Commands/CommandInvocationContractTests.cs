@@ -530,7 +530,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // the due date — but a non-date, non-blank string is still
         // refused, so it too has a rejectable value) - so 89 becomes 91.
         // Runbook C3: `quotation.return-to-draft.comment` is Required, so a blank is refused — 91 becomes 92.
-        Assert.Equal(92, refused);
+        // v0.23.0 board M3: `timesheet.amend.task` is free text (blank keeps the current task) — 92 becomes 91.
+        Assert.Equal(91, refused);
     }
 
     [Fact]
@@ -560,6 +561,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "quotation.create.reference",
                 "requirements.bulk-set-owner.owner",
                 "requirements.set-owner.owner",
+                "timesheet.amend.task",
                 "verification.edit.newContent",
             ],
             freeText);

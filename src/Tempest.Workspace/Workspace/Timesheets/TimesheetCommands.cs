@@ -102,10 +102,14 @@ public sealed class RecordTimesheetCommandHandler : ICommandHandler<RecordTimesh
 public sealed class AmendTimesheetCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="AmendTimesheetCommand"/> class.</summary>
-    public AmendTimesheetCommand(Guid targetObjectId, string targetKind, decimal hours, string task, bool billable)
+    /// <param name="targetObjectId">The entry to amend.</param>
+    /// <param name="targetKind">The entry's Kind.</param>
+    /// <param name="hours">The amended hours.</param>
+    /// <param name="task">The amended task; <see langword="null"/> or blank keeps the entry's current task (v0.23.0 board M3).</param>
+    /// <param name="billable">The amended billable flag.</param>
+    public AmendTimesheetCommand(Guid targetObjectId, string targetKind, decimal hours, string? task, bool billable)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
-        ArgumentException.ThrowIfNullOrWhiteSpace(task);
 
         TargetObjectId = targetObjectId;
         TargetKind = targetKind;
@@ -123,8 +127,8 @@ public sealed class AmendTimesheetCommand : IWorkspaceCommand
     /// <summary>Gets the amended hours.</summary>
     public decimal Hours { get; }
 
-    /// <summary>Gets the amended task.</summary>
-    public string Task { get; }
+    /// <summary>Gets the amended task; <see langword="null"/> keeps the entry's current task.</summary>
+    public string? Task { get; }
 
     /// <summary>Gets the amended billable flag.</summary>
     public bool Billable { get; }

@@ -149,6 +149,65 @@ public sealed class TimesheetDeliverableTaskTests
         }
     }
 
+    /// <summary>
+    /// v0.23.0 board M3: an entry recorded against a deliverable keeps the
+    /// deliverable's task text — Amend cannot retype it (the text and the
+    /// link would drift apart) — and a blank task keeps the current one, so
+    /// Amend need not retype it at all.
+    /// </summary>
+    [Fact]
+    public async Task Amend_DeliverableEntry_KeepsTheDeliverableTask_AndBlankKeepsTheCurrentTask()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await ProjectCommercialTestHost.StartAsync(temp.Path);
+        try
+        {
+            ProjectCommercialTestHost.SignIn(host);
+            var projectId = await CreatePricedProjectAsync(host, "TS-DEL-E");
+            var deliverable = await ProjectCommercialTestHost.Deliverables(host).AddDeliverableAsync(projectId, "Site survey");
+            var timesheets = ProjectCommercialTestHost.Timesheets(host);
+            var label = TimesheetService.DeliverableTaskLabel(deliverable);
+
+            var recorded = await timesheets.RecordAgainstDeliverableAsync(projectId, deliverable.Id, Monday, 2m, billable: true, Grade);
+            Assert.True(recorded.Succeeded, recorded.Reason);
+            var entryId = recorded.Entry!.Id;
+
+            var retyped = await timesheets.AmendAsync(entryId, 3m, "Something else entirely", billable: true);
+            Assert.Equal(TimesheetRefusal.TaskLockedToDeliverable, retyped.Refusal);
+            Assert.Equal(label, retyped.Entry!.TaskDescription);
+            Assert.Equal(2m, retyped.Entry.Hours);
+
+            var keep = await timesheets.AmendAsync(entryId, 3m, task: null, billable: false);
+            Assert.True(keep.Succeeded, keep.Reason);
+            Assert.Equal(label, keep.Entry!.TaskDescription);
+            Assert.Equal(3m, keep.Entry.Hours);
+
+            var same = await timesheets.AmendAsync(entryId, 4m, label, billable: false);
+            Assert.True(same.Succeeded, same.Reason);
+
+            // Through the palette's own command: blank task keeps it.
+            var dispatcher = (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
+            var viaCommand = await dispatcher.DispatchAsync(
+                new AmendTimesheetCommand(entryId, TimesheetEntry.CanonicalKind, 5m, task: null, billable: true), CancellationToken.None);
+            Assert.True(viaCommand.Succeeded, viaCommand.Message);
+            var reread = (TimesheetEntry)(await ProjectCommercialTestHost.Domain(host).Repository.FindAsync(entryId))!;
+            Assert.Equal(label, reread.TaskDescription);
+            Assert.Equal(5m, reread.Hours);
+
+            // A free-text entry still takes a retyped task, and blank keeps it.
+            var free = await timesheets.RecordAsync(projectId, Monday, 1m, billable: true, Grade, "Free text");
+            Assert.True((await timesheets.AmendAsync(free.Entry!.Id, 1m, "Free text revised", billable: true)).Succeeded);
+            var blank = await timesheets.AmendAsync(free.Entry.Id, 1.5m, "  ", billable: true);
+            Assert.True(blank.Succeeded, blank.Reason);
+            Assert.Equal("Free text revised", blank.Entry!.TaskDescription);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     private static async Task<Guid> CreatePricedProjectAsync(Core.Runtime.ITempestHost host, string cardId)
     {
         var projectId = await ProjectCommercialTestHost.CreateProjectAsync(host);

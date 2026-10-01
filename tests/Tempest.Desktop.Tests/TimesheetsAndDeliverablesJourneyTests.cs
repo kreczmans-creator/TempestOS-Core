@@ -184,8 +184,15 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
                 .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Amend {designWork.Label}");
             amendButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
+            // v0.23.0 board M3: an entry recorded against a deliverable keeps
+            // the deliverable's task text, so Amend changes the hours and
+            // leaves Task blank (blank keeps the current task).
             await RenderUntilAsync(window, () =>
-                ((TimesheetEntry)domain.Repository.FindAsync(designWorkEntryId).GetAwaiter().GetResult()!).TaskDescription == "Amended design work");
+                domain.Repository.FindAsync(designWorkEntryId).GetAwaiter().GetResult() is TimesheetEntry { Hours: 5m } amended
+                && amended.TaskDescription == designWork.Label);
+            var amendedDesign = (TimesheetEntry)(await domain.Repository.FindAsync(designWorkEntryId))!;
+            Assert.Equal(5m, amendedDesign.Hours);
+            Assert.Equal(designWork.Label, amendedDesign.TaskDescription);
 
             // ---- Delete "Admin" ----
             var deleteButton = week.GetLogicalDescendants().OfType<Button>()
@@ -259,11 +266,12 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             LayOut(window);
 
             var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
+            // Amended Design work 5h + Review 3h + Feed test 1h; Admin deleted.
             await RenderUntilAsync(window, () =>
-                week.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("Amended design work", StringComparison.Ordinal)));
+                week.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("9h total", StringComparison.Ordinal)));
 
             var recovered = week.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).ToList();
-            Assert.Contains(recovered, t => t.Contains("Amended design work", StringComparison.Ordinal));
+            Assert.Contains(recovered, t => t.Contains("Design work", StringComparison.Ordinal));
             Assert.DoesNotContain(recovered, t => t.Contains("Admin", StringComparison.Ordinal));
         }
         finally
@@ -505,7 +513,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
         await host.ReferenceReview!.ReleaseAsync(rateCards, rateCardId, "Released for the journey test.").ConfigureAwait(true);
     }
 
-    /// <summary>A stub prompt for <c>timesheet.amend</c>/<c>timesheet.delete</c>: amend retitles to "Amended design work"; delete just confirms.</summary>
+    /// <summary>A stub prompt for <c>timesheet.amend</c>/<c>timesheet.delete</c>: amend sets 5 hours and keeps the task (blank); delete just confirms.</summary>
     private static Tempest.Core.Commands.CommandParameterPrompt StubAmendDeletePrompt() =>
         (descriptor, parameters, confirmationMessage, cancellationToken) =>
         {
@@ -514,7 +522,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
                 return Task.FromResult<IReadOnlyDictionary<string, string>?>(new Dictionary<string, string>
                 {
                     ["hours"] = "5",
-                    ["task"] = "Amended design work",
+                    ["task"] = string.Empty,
                     ["billable"] = "True",
                 });
             }
