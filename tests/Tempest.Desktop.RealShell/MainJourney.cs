@@ -832,19 +832,18 @@ internal static class MainJourney
             });
 
         journal.Step(
-            "header-search", "Type into the header's own search field and press Enter", "keyboard only",
-            "The Command Palette opens with the query already seeded",
+            "header-search", "Click the header's own search field and type", "mouse, then keyboard",
+            "The Command Palette opens on the click and the typing lands in its query",
             () =>
             {
                 if (!Act.Click("Search or run a command", settleMs: 800))
                     return Act.Failed(Act.LastProblem);
 
+                if (!Ui.WaitUntil(() => Ui.ByName("Command palette query") is not null, 10_000))
+                    return Act.Unknown("clicking the header search opened no palette");
+
                 OsInput.Type("Apollo");
                 Thread.Sleep(500);
-                OsInput.Key("Return");
-
-                if (!Ui.WaitUntil(() => Ui.ByName("Command palette query") is not null, 10_000))
-                    return Act.Unknown("pressing Enter in the header search opened no palette");
 
                 var seeded = Ui.ByName("Command palette query")?.Text ?? string.Empty;
                 var objects = Ui.VisibleText().FirstOrDefault(text => text.Contains(ProjectName, StringComparison.Ordinal));
