@@ -440,7 +440,8 @@ public static class ProductCalculationCatalogue
     /// is derived from it, and a surface listing the catalogue reads the
     /// name and description from here rather than restating either, so a
     /// module added to <see cref="RegisterAll"/> and to this list appears
-    /// everywhere at once. The eleven `WP 21.7A` modules live in
+    /// everywhere at once. The eleven `WP 21.7A` modules, and the three
+    /// tolerance and thermal modules recovered from the v0.16.0 suite, live in
     /// <c>Tempest.Core.Calculations.Modules</c>, each specified under
     /// <c>docs/engineering/calculations/</c>.
     /// </remarks>
@@ -462,6 +463,9 @@ public static class ProductCalculationCatalogue
         (Modules.ThickWalledCylinderCalculationDefinition.Id, new Modules.ThickWalledCylinderCalculationDefinition().Metadata),
         (Modules.ThermalExpansionStressCalculationDefinition.Id, new Modules.ThermalExpansionStressCalculationDefinition().Metadata),
         (Modules.FatigueMinerCalculationDefinition.Id, new Modules.FatigueMinerCalculationDefinition().Metadata),
+        (Modules.ToleranceStackCalculationDefinition.Id, new Modules.ToleranceStackCalculationDefinition().Metadata),
+        (Modules.ThermalResistanceChainCalculationDefinition.Id, new Modules.ThermalResistanceChainCalculationDefinition().Metadata),
+        (Modules.PlaneWallHeatTransferCalculationDefinition.Id, new Modules.PlaneWallHeatTransferCalculationDefinition().Metadata),
     ];
 
     // Declared after Descriptions, which it is derived from: static
@@ -499,6 +503,9 @@ public static class ProductCalculationCatalogue
         Register(() => engine.RegisterDefinition(new Modules.ThickWalledCylinderCalculationDefinition()));
         Register(() => engine.RegisterDefinition(new Modules.ThermalExpansionStressCalculationDefinition()));
         Register(() => engine.RegisterDefinition(new Modules.FatigueMinerCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ToleranceStackCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.ThermalResistanceChainCalculationDefinition()));
+        Register(() => engine.RegisterDefinition(new Modules.PlaneWallHeatTransferCalculationDefinition()));
     }
 
     private static void Register(Action register)

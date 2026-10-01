@@ -56,7 +56,7 @@ public sealed record CalculationSurfaceComparison(CalculationComparison Comparis
 /// commands execute through <see cref="CalculationTemplateRegistry"/>,
 /// which knows a calculation only once it is registered as a template;
 /// this class registers every product calculation the registry does not
-/// already hold, so the commands work for all sixteen.
+/// already hold, so the commands work for all nineteen.
 /// </para>
 /// </remarks>
 public sealed class CalculationModuleWorkbench
