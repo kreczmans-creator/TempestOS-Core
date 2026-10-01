@@ -29,7 +29,13 @@ namespace Tempest.Core.Projects;
 /// just the identifier (C6: "make the project just the project ID") —
 /// for example <c>ACME1\ACME1-BRIDG1</c>. This is what lets the service
 /// adopt a folder tree that already exists on the PO's own D: drive
-/// rather than creating a duplicate beside it.
+/// rather than creating a duplicate beside it. When the customer's
+/// folder holds no folder for the project, every other customer folder
+/// is searched for its identifier before anything is created, so a
+/// project whose customer changed keeps its one tree. A customer filed
+/// by name whose name's first word is shaped like a customer code is
+/// filed as <c>_</c> + the name, so it never collides with a coded
+/// customer's folder.
 /// </para>
 /// <para>
 /// <b>Never throws into the UI.</b> Every refusal — generation switched
@@ -107,8 +113,14 @@ public sealed class ProjectFolderService
                 created.Add(root);
             }
 
-            var customerFolder = FindCustomerFolder(root, request) ?? CreateFolder(root, CustomerFolderName(request), created);
-            var projectFolder = FindProjectFolder(customerFolder, request) ?? CreateFolder(customerFolder, ProjectFolderName(request), created);
+            var customerFolder = FindCustomerFolder(root, request);
+            var projectFolder = (customerFolder is null ? null : FindProjectFolder(customerFolder, request))
+                                ?? FindProjectFolderUnderAnyCustomer(root, customerFolder, request);
+            if (projectFolder is null)
+            {
+                customerFolder ??= CreateFolder(root, CustomerFolderName(request), created);
+                projectFolder = CreateFolder(customerFolder, ProjectFolderName(request), created);
+            }
 
             foreach (var subfolder in Options.StandardSubfolders.Append(Options.QuoteSubfolder))
             {
@@ -231,8 +243,76 @@ public sealed class ProjectFolderService
         if (code.Length > 0 && MatchToken(root, existing, code) is { } byCode)
             return byCode;
 
-        return name.Length > 0 ? Match(root, existing, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase)) : null;
+        if (name.Length == 0)
+            return null;
+
+        // The prefixed form first (a name shaped like a code), then a folder
+        // already named exactly for the customer — the PO's own folders on
+        // D: are adopted, never duplicated — but never a folder whose name
+        // is itself a customer code, which belongs to a coded customer.
+        var prefixed = NameFolderName(name);
+        return Match(root, existing, n => string.Equals(n, prefixed, StringComparison.OrdinalIgnoreCase))
+            ?? Match(root, existing, n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase) && !IsCodeFolderName(n));
     }
+
+    /// <summary>
+    /// The project's folder under any customer folder other than
+    /// <paramref name="customerFolder"/>, found on the project's own
+    /// identifier — so a project whose customer changed (a code edited, or
+    /// a client set on a project first filed under
+    /// <see cref="NoCustomerFolderName"/>) keeps the one tree it already
+    /// has rather than gaining a second. Never matched on the project's
+    /// name: two projects may share one, never an identifier.
+    /// </summary>
+    private static string? FindProjectFolderUnderAnyCustomer(string root, string? customerFolder, ProjectFolderRequest request)
+    {
+        var identifier = SanitiseSegment(request.ProjectIdentifier);
+        if (identifier.Length == 0)
+            return null;
+
+        foreach (var name in ChildFolderNames(root))
+        {
+            var candidate = Path.Combine(root, name);
+            if (customerFolder is not null && string.Equals(candidate, customerFolder, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            List<string> projects;
+            try
+            {
+                projects = ChildFolderNames(candidate);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                continue;
+            }
+
+            if (MatchToken(candidate, projects, identifier) is { } found)
+                return found;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The folder name a customer is filed under by its name (no code, or
+    /// no folder for its code): the name itself, or <c>_</c> + the name
+    /// when its first word is shaped like a customer code — so a customer
+    /// named "Bravo" never takes, or is taken by, the folder of the
+    /// customer whose code is <c>BRAVO</c> (neither the exact nor the
+    /// code-and-space match of <see cref="MatchToken"/> can reach a name
+    /// that starts with <c>_</c>, which a code never does).
+    /// </summary>
+    private static string NameFolderName(string name)
+    {
+        var space = name.IndexOf(' ', StringComparison.Ordinal);
+        var firstWord = space < 0 ? name : name[..space];
+        return ProjectNumbering.IsValidCustomerCode(ProjectNumbering.Normalise(firstWord)) ? "_" + name : name;
+    }
+
+    /// <summary>Whether a folder's name is exactly a customer code as the service writes one (upper case), i.e. a coded customer's folder.</summary>
+    private static bool IsCodeFolderName(string folderName) =>
+        string.Equals(folderName, ProjectNumbering.Normalise(folderName), StringComparison.Ordinal)
+        && ProjectNumbering.IsValidCustomerCode(folderName);
 
     private static string? FindProjectFolder(string customerFolder, ProjectFolderRequest request)
     {
@@ -251,7 +331,7 @@ public sealed class ProjectFolderService
         var code = SanitiseSegment(request.CustomerCode);
         var name = SanitiseSegment(request.CustomerName);
 
-        var chosen = code.Length > 0 ? code : name.Length > 0 ? name : NoCustomerFolderName;
+        var chosen = code.Length > 0 ? code : name.Length > 0 ? NameFolderName(name) : NoCustomerFolderName;
         return SanitiseSegment(chosen) is { Length: > 0 } safe ? safe : NoCustomerFolderName;
     }
 
@@ -295,10 +375,10 @@ public sealed class ProjectFolderService
     /// <c>&lt;identifier&gt; &lt;project name&gt;</c> forms earlier builds
     /// created, reused rather than duplicated.
     /// </summary>
-    private static string? MatchToken(string parent, List<string> names, string token) =>
-        Match(parent, names, n => string.Equals(n, token, StringComparison.OrdinalIgnoreCase))
+    private static string? MatchToken(string parent, List<string> names, string token, StringComparison comparison = StringComparison.OrdinalIgnoreCase) =>
+        Match(parent, names, n => string.Equals(n, token, comparison))
         ?? Match(parent, names, n => n.Length > token.Length
-                                     && n.StartsWith(token, StringComparison.OrdinalIgnoreCase)
+                                     && n.StartsWith(token, comparison)
                                      && n[token.Length] == ' ');
 
     private static string CreateFolder(string parent, string name, List<string> created)

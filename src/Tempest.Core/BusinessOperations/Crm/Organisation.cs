@@ -250,11 +250,14 @@ public sealed record Organisation
     /// <summary>
     /// <see cref="Roles"/> with the customer/supplier roles replaced to
     /// state <paramref name="type"/>, every other role kept — the one way
-    /// the Customers &amp; Suppliers editor writes a type.
+    /// the Customers &amp; Suppliers editor writes a type. A
+    /// <see cref="PartyKind.Prospect"/> role is replaced too, since
+    /// <see cref="TradingType"/> reads it as a customer: a prospect saved as
+    /// Supplier must read back as Supplier, not Both.
     /// </summary>
     public IReadOnlyList<PartyKind> RolesFor(OrganisationTradingType type)
     {
-        var kept = Roles.Where(r => r is not (PartyKind.Customer or PartyKind.Supplier)).ToList();
+        var kept = Roles.Where(r => r is not (PartyKind.Customer or PartyKind.Supplier or PartyKind.Prospect)).ToList();
         if (type is OrganisationTradingType.Customer or OrganisationTradingType.Both)
             kept.Insert(0, PartyKind.Customer);
         if (type is OrganisationTradingType.Supplier or OrganisationTradingType.Both)

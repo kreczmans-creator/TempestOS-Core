@@ -1,3 +1,5 @@
+using System.Reflection;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Projects;
 using Tempest.Core.Tests.BusinessOperations;
 using Tempest.Core.Tests.Plugins;
@@ -49,5 +51,81 @@ public sealed class ProjectFolderLocatorTests
 
         await manager.ShutdownAsync();
         await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task EnsureAsync_FilesUnderTheCodeFrozenInTheIdentifier_AndKeepsTheTreeWhenAClientIsSetLater()
+    {
+        using var temp = new TempDirectory();
+        using var folderRoot = new TempDirectory();
+        var (host, manager) = await ProjectCommercialTestHost.StartAsync(temp.Path);
+        ProjectCommercialTestHost.SignIn(host);
+
+        var directory = new ProjectDirectory(ProjectCommercialTestHost.Domain(host));
+        var organisations = ProjectCommercialTestHost.Organisations(host);
+        var locator = new ProjectFolderLocator(new ProjectFolderService(new ProjectFolderOptions(folderRoot.Path, [])), directory, organisations);
+
+        // The client's code has since been edited from ACME1 to ACME2.
+        var frozen = await directory.CreateAsync("ACME1-FROZE1", "Frozen code project");
+        await organisations.RegisterAsync("ACMEX", OperationsFixtures.Organisation("ACMEX") with { CustomerCode = "ACME2" }, OperationsFixtures.Verified());
+        Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(frozen.Id, "ACMEX")).Succeeded);
+
+        var filed = await locator.EnsureAsync(frozen.Id);
+        Assert.Equal(Path.Combine(folderRoot.Path, "ACME1", "ACME1-FROZE1"), filed.ProjectFolder);
+        Assert.False(Directory.Exists(Path.Combine(folderRoot.Path, "ACME2")));
+
+        // Filed under "_No customer" first, then given a client.
+        var late = await directory.CreateAsync("LOC-0009", "Client set later");
+        var first = await locator.EnsureAsync(late.Id);
+        Assert.Equal(Path.Combine(folderRoot.Path, ProjectFolderService.NoCustomerFolderName, "LOC-0009"), first.ProjectFolder);
+        Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(late.Id, "ACMEX")).Succeeded);
+
+        var second = await locator.EnsureAsync(late.Id);
+        Assert.Equal(ProjectFolderStatus.AlreadyExisted, second.Status);
+        Assert.Equal(first.ProjectFolder, second.ProjectFolder);
+        Assert.Equal(first.ProjectFolder, await locator.QuoteFolderForAsync(late.Id));
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task EnsureAsync_WhenTheCatalogueCannotBeRead_Fails_AndNeverFilesUnderTheRawClientId()
+    {
+        using var temp = new TempDirectory();
+        using var folderRoot = new TempDirectory();
+        var (host, manager) = await ProjectCommercialTestHost.StartAsync(temp.Path);
+        ProjectCommercialTestHost.SignIn(host);
+
+        var directory = new ProjectDirectory(ProjectCommercialTestHost.Domain(host));
+        var organisations = ProjectCommercialTestHost.Organisations(host);
+        var project = await directory.CreateAsync("LOC-0010", "Unreadable client");
+        await organisations.RegisterAsync("RAWID", OperationsFixtures.Organisation("RAWID"), OperationsFixtures.Verified());
+        Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(project.Id, "RAWID")).Succeeded);
+
+        var locator = new ProjectFolderLocator(
+            new ProjectFolderService(new ProjectFolderOptions(folderRoot.Path, [])), directory, UnreadableOrganisationCatalog.Create());
+
+        var outcome = await locator.EnsureAsync(project.Id);
+
+        Assert.Equal(ProjectFolderStatus.Failed, outcome.Status);
+        Assert.Contains("RAWID", outcome.Message, StringComparison.Ordinal);
+        Assert.Null(outcome.ProjectFolder);
+        Assert.Empty(Directory.GetDirectories(folderRoot.Path));
+        Assert.Null(await locator.QuoteFolderForAsync(project.Id));
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
+    /// <summary>An Organisation catalogue every call to which throws, as a corrupt or locked store would.</summary>
+    public class UnreadableOrganisationCatalog : DispatchProxy
+    {
+        /// <summary>Creates the throwing catalogue.</summary>
+        public static IOrganisationCatalog Create() => Create<IOrganisationCatalog, UnreadableOrganisationCatalog>();
+
+        /// <inheritdoc />
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args) =>
+            throw new IOException("The organisation catalogue could not be read.");
     }
 }

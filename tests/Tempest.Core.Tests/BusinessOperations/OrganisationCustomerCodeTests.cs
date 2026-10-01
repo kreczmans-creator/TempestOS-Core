@@ -40,6 +40,18 @@ public sealed class OrganisationCustomerCodeTests
         Assert.Equal("ACMEE", await catalog.SuggestCustomerCodeAsync("Acme Engineering", excludingRecordId: "org-1"));
     }
 
+    [Fact]
+    public async Task SuggestCustomerCodeAsync_NeverSuggestsACodeStillHeldAsAnotherRecordsIdOrReference()
+    {
+        var catalog = OperationsFixtures.BuildOrganisationCatalog();
+
+        // Registered as ACMEE, then its code edited to ACME2: the id and reference keep ACMEE.
+        await OperationsFixtures.RegisterAsync(catalog, "ACMEE", OperationsFixtures.Organisation("ACMEE") with { CustomerCode = "ACME2" });
+
+        Assert.NotEqual("ACMEE", await catalog.SuggestCustomerCodeAsync("Acme Engineering"));
+        Assert.Equal("ACMEE", await catalog.SuggestCustomerCodeAsync("Acme Engineering", excludingRecordId: "ACMEE"));
+    }
+
     [Theory]
     [InlineData(new PartyKind[0], OrganisationTradingType.Customer)]
     [InlineData(new[] { PartyKind.Customer }, OrganisationTradingType.Customer)]
@@ -60,6 +72,21 @@ public sealed class OrganisationCustomerCodeTests
         var roles = organisation.RolesFor(type);
 
         Assert.Equal(type, (organisation with { Roles = roles }).TradingType);
+        Assert.Contains(PartyKind.Partner, roles);
+    }
+
+    [Theory]
+    [InlineData(OrganisationTradingType.Customer)]
+    [InlineData(OrganisationTradingType.Supplier)]
+    [InlineData(OrganisationTradingType.Both)]
+    public void RolesFor_AProspect_ReadsBackAsTheTypeWritten(OrganisationTradingType type)
+    {
+        var prospect = OperationsFixtures.Organisation() with { Roles = [PartyKind.Prospect, PartyKind.Partner] };
+
+        var roles = prospect.RolesFor(type);
+
+        Assert.Equal(type, (prospect with { Roles = roles }).TradingType);
+        Assert.DoesNotContain(PartyKind.Prospect, roles);
         Assert.Contains(PartyKind.Partner, roles);
     }
 

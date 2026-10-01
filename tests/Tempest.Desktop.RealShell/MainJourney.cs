@@ -221,7 +221,7 @@ internal static class MainJourney
                 if (!Ui.WaitUntil(() => Ui.ByName("Name") is not null && Ui.ByName("Client") is not null, 10_000))
                     return Act.Failed("the New Project prompt never appeared");
 
-                var heading = Ui.FirstTextContaining("Name for P-") ?? "(no identifier line)";
+                var heading = Ui.FirstTextContaining("Identifier: ") ?? "(no identifier line)";
                 var rateCard = Ui.ByName("Rate card")?.Text ?? "(none)";
                 var warning = Ui.FirstTextContaining("Time cannot be recorded") ?? string.Empty;
                 return Act.Verified($"\"{heading}\"; Rate card reads '{rateCard}'; inline note \"{Trim(warning)}\"");
@@ -240,16 +240,16 @@ internal static class MainJourney
 
                 // The picker must be usable, not merely present: a control
                 // that the prompt above it covers cannot be clicked at all.
-                if (!Act.TypeInto("Reference", "ORG-NWM") || !Act.TypeInto("New organisation name", ClientName))
+                if (!Act.TypeInto("Customer code", "NWMAR") || !Act.TypeInto("New organisation name", ClientName))
                     return Act.Failed($"the picker's own fields could not be typed into — {Act.LastProblem}");
 
                 if (!Act.Click("Add organisation", settleMs: 1_500))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitForText($"{ClientName} (ORG-NWM)", 8_000))
+                if (!Ui.WaitForText($"{ClientName} [NWMAR] (NWMAR)", 8_000))
                     return Act.Failed("the registered organisation did not appear in the picker's own list");
 
-                if (!Act.Click($"{ClientName} (ORG-NWM)", settleMs: 800) || !Act.Click("Choose", settleMs: 1_200))
+                if (!Act.Click($"{ClientName} [NWMAR] (NWMAR)", settleMs: 800) || !Act.Click("Choose", settleMs: 1_200))
                     return Act.Failed(Act.LastProblem);
 
                 var client = Ui.ByName("Client")?.Text ?? string.Empty;

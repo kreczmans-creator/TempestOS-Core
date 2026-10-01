@@ -15,7 +15,7 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The Project editor's own client picker (`WP 19.0A`, `ADR-0150`): lists
 /// every registered organisation, with a text filter, and an inline
-/// <b>Add organisation</b> row (name, reference) that registers a new
+/// <b>Add organisation</b> row (customer code, name) that registers a new
 /// record on the spot — a project's own client, unlike a rate card, needs
 /// no governance gate before it can be named
 /// (<c>IProjectCommercialService.SetClientAsync</c>'s own remarks: "a
@@ -38,9 +38,10 @@ namespace Tempest.Desktop.Views;
 /// 2026-10-01 §2).</b> The list is the same <see cref="IOrganisationCatalog"/>
 /// Business → Customers &amp; Suppliers (<see cref="CustomersSuppliersView"/>)
 /// edits, and <b>Add organisation</b> creates a record in it — a customer,
-/// always given a customer code (§3, `ADR-0156`): the typed reference
-/// itself when it is five free letters, otherwise one suggested from the
-/// name — so a project created for it is numbered <c>CUSTOMER-PROJECTREF</c>
+/// always given a customer code (§3, `ADR-0156`), which is also its record
+/// id and reference: the typed code, refused (never quietly replaced) when
+/// it is malformed or taken, or one suggested from the name when the box
+/// is left blank — so a project created for it is numbered <c>CUSTOMER-PROJECTREF</c>
 /// straight away. Fuller company details and contacts are added there.
 /// </para>
 /// </remarks>
@@ -56,7 +57,7 @@ public sealed class OrganisationPicker : Border
     private readonly Button _clearButton = new() { Content = "Clear", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
 
-    private readonly TextBox _newReference = new() { Watermark = "Reference", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0) };
+    private readonly TextBox _newReference = new() { Watermark = "Customer code, e.g. ACME1", MaxLength = ProjectNumbering.CustomerCodeLength, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0) };
     private readonly TextBox _newName = new() { Watermark = "New organisation name", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, 0, DesignTokens.SpaceSm, 0) };
     private readonly Button _addButton = new() { Content = "Add organisation", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _addStatus = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -137,7 +138,7 @@ public sealed class OrganisationPicker : Border
         AutomationProperties.SetName(_chooseButton, "Choose");
         AutomationProperties.SetName(_clearButton, "Clear");
         AutomationProperties.SetName(_cancelButton, "Cancel");
-        AutomationProperties.SetName(_newReference, "Reference");
+        AutomationProperties.SetName(_newReference, "Customer code");
         AutomationProperties.SetName(_newName, "New organisation name");
         AutomationProperties.SetName(_addButton, "Add organisation");
         AutomationProperties.SetName(_paymentTerms, "Payment terms");
@@ -212,7 +213,9 @@ public sealed class OrganisationPicker : Border
     {
         var all = await _organisations.ListAsync(cancellationToken).ConfigureAwait(true);
         _candidates = [.. all.Where(r => !_supplierMode || r.Definition.TradingType != OrganisationTradingType.Customer).Select(r => (RecordId: r.Id, Name: DescribeName(r.Definition), r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
-        _status.Text = _candidates.Count == 0 ? "No organisations registered yet — add one below." : string.Empty;
+        _status.Text = _candidates.Count > 0 ? string.Empty
+            : _supplierMode ? "No suppliers registered yet — add one below (customers are not listed here)."
+            : "No organisations registered yet — add one below.";
         ApplyFilter();
     }
 
@@ -284,27 +287,42 @@ public sealed class OrganisationPicker : Border
 
     private async Task OnAddAsync()
     {
-        var reference = _newReference.Text?.Trim();
         var name = _newName.Text?.Trim();
-
-        if (string.IsNullOrWhiteSpace(reference) || string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(name))
         {
-            _addStatus.Text = "Both a reference and a name are required.";
+            _addStatus.Text = "A name is required.";
             return;
         }
 
+        string code;
         try
         {
-            var typed = ProjectNumbering.Normalise(reference);
-            var customerCode = ProjectNumbering.IsValidCustomerCode(typed)
-                               && await _organisations.FindByCustomerCodeAsync(typed!, CancellationToken.None).ConfigureAwait(true) is null
-                ? typed
-                : await _organisations.SuggestCustomerCodeAsync(name, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+            // The customer code is the organisation's record id and
+            // reference too, exactly as Business → Customers & Suppliers
+            // registers one: typed, it is checked and used as typed (never
+            // quietly swapped); left blank, one is suggested from the name.
+            var typed = ProjectNumbering.Normalise(_newReference.Text);
+            if (typed is null)
+            {
+                code = await _organisations.SuggestCustomerCodeAsync(name, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+            }
+            else
+            {
+                var all = await _organisations.ListAsync(CancellationToken.None).ConfigureAwait(true);
+                var taken = all.SelectMany(r => new[] { r.Definition.CustomerCode, r.Id, r.Definition.Reference });
+                if (ProjectNumbering.ValidateCustomerCode(typed, taken) is { } refusal)
+                {
+                    _addStatus.Text = refusal;
+                    return;
+                }
+
+                code = typed;
+            }
 
             await _organisations
                 .RegisterAsync(
-                    reference,
-                    new Organisation { Reference = reference, Name = name, Roles = [_supplierMode ? PartyKind.Supplier : PartyKind.Customer], CustomerCode = customerCode },
+                    code,
+                    new Organisation { Reference = code, Name = name, Roles = [_supplierMode ? PartyKind.Supplier : PartyKind.Customer], CustomerCode = code },
                     ReferenceProvenance.Unknown,
                     CancellationToken.None)
                 .ConfigureAwait(true);
@@ -318,7 +336,7 @@ public sealed class OrganisationPicker : Border
         await ReloadAsync(CancellationToken.None).ConfigureAwait(true);
         _newReference.Text = string.Empty;
         _newName.Text = string.Empty;
-        _addStatus.Text = $"Added '{name}'.";
+        _addStatus.Text = $"Added '{name}' with customer code {code}.";
     }
 
     /// <summary>"Acme Engineering Ltd [ACMEE]": the name, with the customer code where one is set.</summary>

@@ -113,7 +113,9 @@ internal sealed record ComposedViews(
     // this phase already built, rather than standing up a second one.
     Tempest.Workspace.Tasks.ITasksReadModel TasksReadModel,
     Tempest.Workspace.Projects.IProjectStatusReadModel ProjectStatusReadModel,
-    Tempest.Core.Invoicing.IAccountsReadModel AccountsReadModel);
+    Tempest.Core.Invoicing.IAccountsReadModel AccountsReadModel,
+    // Board M11: stopped (in-flight folder work cancelled and awaited) as the window closes.
+    ProjectFolderCoordinator ProjectFolders);
 
 /// <summary>
 /// <see cref="MainWindow"/>'s own methods, threaded into
@@ -697,7 +699,8 @@ internal sealed partial class MainWindowComposer
             new Tempest.Core.Projects.ProjectFolderService(Tempest.Core.Projects.ProjectFolderOptions.FromConfiguration(configurationProvider), composition.Logger),
             projectDirectory, organisationCatalog);
         projectQuoteView.ProjectFolders = projectFolderLocator;
-        composition.EventBus.Subscribe(new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome)));
+        var projectFolderCoordinator = new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome));
+        composition.EventBus.Subscribe(projectFolderCoordinator);
 
         // Opens a specific quotation's own project, right up in its Quote
         // tab (`WP 17.9.4`) — specialised from the generic `openObjectRightUp`
@@ -920,7 +923,7 @@ internal sealed partial class MainWindowComposer
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
-            tasksReadModel, projectStatusReadModel, accountsReadModel);
+            tasksReadModel, projectStatusReadModel, accountsReadModel, projectFolderCoordinator);
     }
 
     /// <summary>
