@@ -181,10 +181,19 @@ internal sealed partial class MainWindowComposer
         // `cockpit`/`views.Session.FavouriteObjects` data and open
         // callbacks `cockpitView`'s own equivalent cards already use,
         // rearranged into a right rail rather than reimplemented.
+        //
+        // RC: every rail entry opens through `callbacks.OpenEvidenceRecordAsync`
+        // (see below), which navigates to Engineering first. Opening
+        // straight into `views.DocumentArea` (as `cockpitView` does) left
+        // Home showing, so a click looked like it did nothing.
         async Task OpenRecentAsync(int index)
         {
-            var view = await cockpit.OpenRecentAsync(index).ConfigureAwait(true);
-            views.DocumentArea.ShowTab(view);
+            var items = cockpit.RecentActivity;
+            if (index < 1 || index > items.Count)
+                return;
+
+            var item = items[index - 1];
+            await callbacks.OpenEvidenceRecordAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
         }
 
         // `openObjectRightUp` here is `callbacks.OpenEvidenceRecordAsync` —
@@ -202,7 +211,7 @@ internal sealed partial class MainWindowComposer
             openObjectRightUp: callbacks.OpenEvidenceRecordAsync,
             openTasks: () => _ = OpenTasksAsync(),
             onOpenRecent: OpenRecentAsync,
-            onOpenFavourite: viewCoordinator.NavigateToObject,
+            onOpenFavourite: (id, kind) => _ = callbacks.OpenEvidenceRecordAsync(id, kind),
             onOpenRecentlyChanged: async index =>
             {
                 var items = cockpit.RecentlyChanged;
@@ -210,9 +219,14 @@ internal sealed partial class MainWindowComposer
                     return;
 
                 var item = items[index - 1];
-                await callbacks.OpenObjectAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
+                await callbacks.OpenEvidenceRecordAsync(item.ObjectId, item.Kind).ConfigureAwait(true);
             },
-            onNewProject: () => _ = CreateNewProjectFromHomeAsync())
+            onNewProject: () => _ = CreateNewProjectFromHomeAsync(),
+            onOpenProject: async projectId =>
+            {
+                await host.ShellNavigator!.OpenProjectAsync(projectId).ConfigureAwait(true);
+                await callbacks.RenderCurrentModuleAsync().ConfigureAwait(true);
+            })
         { WorkspaceChanges = composition.WorkspaceChanges };
 
         async Task OpenTasksAsync()

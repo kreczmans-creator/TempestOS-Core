@@ -59,6 +59,7 @@ public sealed class HomeDashboardView : UserControl
     private readonly Action<Guid, string>? _onOpenFavourite;
     private readonly Func<int, Task>? _onOpenRecentlyChanged;
     private readonly Action? _onNewProject;
+    private readonly Func<Guid, Task>? _onOpenProject;
 
     // `WP 20.10A` (Product Owner finding D1: "Lets add a 'New Project'
     // button on the home page").
@@ -93,11 +94,15 @@ public sealed class HomeDashboardView : UserControl
     /// honestly unavailable" discipline every other optional collaborator
     /// across this platform's Desktop views already follows.
     /// </param>
+    /// <param name="onOpenProject">
+    /// Opens a Continue entry's project (RC: every right-rail entry is a
+    /// working link). <see langword="null"/> leaves Continue as plain text.
+    /// </param>
     public HomeDashboardView(
         ITasksReadModel tasksReadModel, IProjectStatusReadModel projectStatusReadModel, IAccountsReadModel accountsReadModel,
         EngineeringDomainContext domainContext, EngineeringCockpit cockpit, FavouriteObjectsState? favourites,
         Func<Guid, string, Task> openObjectRightUp, Action openTasks, Func<int, Task> onOpenRecent,
-        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null, Action? onNewProject = null)
+        Action<Guid, string>? onOpenFavourite = null, Func<int, Task>? onOpenRecentlyChanged = null, Action? onNewProject = null, Func<Guid, Task>? onOpenProject = null)
     {
         ArgumentNullException.ThrowIfNull(tasksReadModel);
         ArgumentNullException.ThrowIfNull(projectStatusReadModel);
@@ -120,6 +125,7 @@ public sealed class HomeDashboardView : UserControl
         _onOpenFavourite = onOpenFavourite;
         _onOpenRecentlyChanged = onOpenRecentlyChanged;
         _onNewProject = onNewProject;
+        _onOpenProject = onOpenProject;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -305,12 +311,23 @@ public sealed class HomeDashboardView : UserControl
     private void RenderRightRail()
     {
         _continueList.Children.Clear();
-        var recentProjects = _cockpit.RecentProjects.Take(3).ToList();
+        // `ProjectHealth` lists exactly the projects `RecentProjects`
+        // names, with each one's Id, so Continue can open it.
+        var recentProjects = _cockpit.ProjectHealth.Take(3).ToList();
         if (recentProjects.Count == 0)
+        {
             _continueList.Children.Add(Muted("No projects yet."));
+        }
         else
-            foreach (var name in recentProjects)
-                _continueList.Children.Add(new TextBlock { Text = name, FontSize = DesignTokens.FontSizeBody });
+        {
+            foreach (var project in recentProjects)
+            {
+                var projectId = project.ProjectId;
+                _continueList.Children.Add(_onOpenProject is { } open
+                    ? ActionRow(project.DisplayName, () => open(projectId))
+                    : new TextBlock { Text = project.DisplayName, FontSize = DesignTokens.FontSizeBody });
+            }
+        }
 
         _recentList.Children.Clear();
         var recentActivity = _cockpit.RecentActivity.Take(5).ToList();
