@@ -4,7 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessOperations;
 using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Theming;
 
@@ -31,6 +33,16 @@ namespace Tempest.Desktop.Views;
 /// data catalogue's own generic edit path, exactly the way every other
 /// Organisation field would be, with its own audit-carrying document
 /// revision.
+/// <para>
+/// <b>A shortcut into Customers &amp; Suppliers (Product Owner decision
+/// 2026-10-01 §2).</b> The list is the same <see cref="IOrganisationCatalog"/>
+/// Business → Customers &amp; Suppliers (<see cref="CustomersSuppliersView"/>)
+/// edits, and <b>Add organisation</b> creates a record in it — a customer,
+/// always given a customer code (§3, `ADR-0156`): the typed reference
+/// itself when it is five free letters, otherwise one suggested from the
+/// name — so a project created for it is numbered <c>CUSTOMER-PROJECTREF</c>
+/// straight away. Fuller company details and contacts are added there.
+/// </para>
 /// </remarks>
 public sealed class OrganisationPicker : Border
 {
@@ -57,6 +69,7 @@ public sealed class OrganisationPicker : Border
 
     private IReadOnlyList<(string RecordId, string Name, PaymentTerms PaymentTerms)> _candidates = [];
     private TaskCompletionSource<string?>? _pending;
+    private bool _supplierMode;
 
     /// <summary>Initialises a new instance of the <see cref="OrganisationPicker"/> class, initially hidden.</summary>
     public OrganisationPicker(IOrganisationCatalog organisations)
@@ -159,9 +172,23 @@ public sealed class OrganisationPicker : Border
     /// (removes the project's own client), or <see langword="null"/> if
     /// the user cancelled.
     /// </summary>
-    public async Task<string?> PickAsync(CancellationToken cancellationToken = default)
+    public Task<string?> PickAsync(CancellationToken cancellationToken = default) => PickCoreAsync(supplierMode: false, cancellationToken);
+
+    /// <summary>
+    /// <see cref="PickAsync"/> for a supplier (Product Owner decision
+    /// 2026-10-01 §2): the same Customers &amp; Suppliers list, narrowed to
+    /// organisations that are suppliers (or both), and <b>Add
+    /// organisation</b> registers a supplier — a purchase order's supplier
+    /// is chosen from the list, never typed.
+    /// </summary>
+    public Task<string?> PickSupplierAsync(CancellationToken cancellationToken = default) => PickCoreAsync(supplierMode: true, cancellationToken);
+
+    private async Task<string?> PickCoreAsync(bool supplierMode, CancellationToken cancellationToken)
     {
         _pending?.TrySetResult(null);
+
+        _supplierMode = supplierMode;
+        _title.Text = supplierMode ? "Choose a supplier organisation" : "Choose a client organisation";
 
         _filter.Text = string.Empty;
         _newReference.Text = string.Empty;
@@ -184,7 +211,7 @@ public sealed class OrganisationPicker : Border
     private async Task ReloadAsync(CancellationToken cancellationToken)
     {
         var all = await _organisations.ListAsync(cancellationToken).ConfigureAwait(true);
-        _candidates = [.. all.Select(r => (RecordId: r.Id, r.Definition.Name, r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
+        _candidates = [.. all.Where(r => !_supplierMode || r.Definition.TradingType != OrganisationTradingType.Customer).Select(r => (RecordId: r.Id, Name: DescribeName(r.Definition), r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
         _status.Text = _candidates.Count == 0 ? "No organisations registered yet — add one below." : string.Empty;
         ApplyFilter();
     }
@@ -268,8 +295,18 @@ public sealed class OrganisationPicker : Border
 
         try
         {
+            var typed = ProjectNumbering.Normalise(reference);
+            var customerCode = ProjectNumbering.IsValidCode(typed)
+                               && await _organisations.FindByCustomerCodeAsync(typed!, CancellationToken.None).ConfigureAwait(true) is null
+                ? typed
+                : await _organisations.SuggestCustomerCodeAsync(name, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+
             await _organisations
-                .RegisterAsync(reference, new Organisation { Reference = reference, Name = name }, ReferenceProvenance.Unknown, CancellationToken.None)
+                .RegisterAsync(
+                    reference,
+                    new Organisation { Reference = reference, Name = name, Roles = [_supplierMode ? PartyKind.Supplier : PartyKind.Customer], CustomerCode = customerCode },
+                    ReferenceProvenance.Unknown,
+                    CancellationToken.None)
                 .ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is DuplicateReferenceRecordException or ArgumentException)
@@ -283,6 +320,10 @@ public sealed class OrganisationPicker : Border
         _newName.Text = string.Empty;
         _addStatus.Text = $"Added '{name}'.";
     }
+
+    /// <summary>"Acme Engineering Ltd [ACMEE]": the name, with the customer code where one is set.</summary>
+    private static string DescribeName(Organisation organisation) =>
+        string.IsNullOrWhiteSpace(organisation.CustomerCode) ? organisation.Name : $"{organisation.Name} [{organisation.CustomerCode}]";
 
     private void TryComplete()
     {

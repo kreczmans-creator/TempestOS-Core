@@ -58,6 +58,17 @@ public sealed class PurchaseOrdersView : UserControl
     /// <summary>Collects Issue/Receive/Close/Cancel/Record-as-expenses' own confirmation.</summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
 
+    /// <summary>
+    /// Chooses the new order's supplier from Business → Customers &amp;
+    /// Suppliers (Product Owner decision 2026-10-01 §2: "nice to auto
+    /// populate from a dropdown") — <see cref="OrganisationPicker.PickSupplierAsync"/>
+    /// in the real shell — returning its record id, an empty string for no
+    /// supplier, or <see langword="null"/> if cancelled.
+    /// <see langword="null"/> (a host that composes no picker) keeps the
+    /// plain text prompt this view always had.
+    /// </summary>
+    public Func<CancellationToken, Task<string?>>? PickSupplierAsync { get; set; }
+
     /// <summary>The change feed this view reloads its own list from.</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -352,11 +363,15 @@ public sealed class PurchaseOrdersView : UserControl
         }
 
         // The supplier is a tag, never validated (exactly `Quotation.ClientOrganisationId`'s
-        // own rule) — a plain text prompt, not a catalogue picker, matches
-        // what the model actually stores.
-        var supplier = await _inputDialog
-            .PromptAsync("New Purchase Order", "Supplier (organisation id — blank if unknown)", allowBlank: true)
-            .ConfigureAwait(true);
+        // own rule). Product Owner decision 2026-10-01 §2: it is now chosen
+        // from Business → Customers & Suppliers through `PickSupplierAsync`
+        // (the real shell's `OrganisationPicker`); the plain text prompt
+        // remains only for a host that composes no picker.
+        var supplier = PickSupplierAsync is { } pickSupplier
+            ? await pickSupplier(CancellationToken.None).ConfigureAwait(true)
+            : await _inputDialog
+                .PromptAsync("New Purchase Order", "Supplier (organisation id — blank if unknown)", allowBlank: true)
+                .ConfigureAwait(true);
 
         if (supplier is null)
         {

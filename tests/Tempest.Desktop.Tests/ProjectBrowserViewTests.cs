@@ -35,12 +35,12 @@ public sealed class ProjectBrowserViewTests
 
             // Mirrors MainWindow.PromptForNewProjectAsync's own real shape:
             // creates the project with the suggested identifier and returns
-            // whether it was created, never touching navigation itself —
-            // navigating into it is ProjectBrowserView's own job.
-            Func<string, string, Task<bool>> promptForNewProject = async (identifier, _) =>
+            // the identifier it was created under, never touching navigation
+            // itself — navigating into it is ProjectBrowserView's own job.
+            Func<string, string, Task<string?>> promptForNewProject = async (identifier, _) =>
             {
                 await directory.CreateAsync(identifier, "New From Test").ConfigureAwait(true);
-                return true;
+                return identifier;
             };
 
             var browser = new ProjectBrowserView(directory, navigator, promptForNewProject);

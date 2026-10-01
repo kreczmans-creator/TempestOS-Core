@@ -382,7 +382,11 @@ public sealed class InvoicingView : UserControl
         var request = row.Request;
         return new TextBlock
         {
-            Text = $"{row.ProjectName} — {request.DisplayName} — Client {request.ClientOrganisationId}"
+            // Product Owner decision 2026-10-01 §3 (`ADR-0156`): a request
+            // raised inside a CUSTOMER-PROJECTREF project leads with its
+            // own CUSTOMER-PROJECTREF-INV-NNN number.
+            Text = (request.Identifier is { } number ? $"{number} — " : string.Empty)
+                + $"{row.ProjectName} — {request.DisplayName} — Client {request.ClientOrganisationId}"
                 + (request.PurchaseOrderReference is { } po ? $" — PO {po}" : string.Empty)
                 + $" — {MoneyDisplay.Format(request.Total)}"
                 + $" — Terms {request.PaymentTerms.DisplayName()}"

@@ -21,9 +21,10 @@ namespace Tempest.Workspace.Projects;
 /// or under the raw client id respectively.
 /// </para>
 /// <para>
-/// <b>The customer code is <see cref="Organisation.Reference"/> today</b> —
-/// the short reference the organisation is known by. <see cref="CustomerCodeOf"/>
-/// is the one place to change if a dedicated customer code is introduced.
+/// <b>The customer code is <see cref="Organisation.CustomerCode"/></b> — the
+/// 5-letter code project numbers start with (ADR-0156), falling back to
+/// <see cref="Organisation.Reference"/> for an organisation recorded before
+/// customer codes existed.
 /// </para>
 /// <para>
 /// <b>Never throws for an unreadable catalogue or a refusing file
@@ -83,12 +84,12 @@ public sealed class ProjectFolderLocator
         return request is null ? null : await Task.Run(() => _service.QuoteFolderFor(request), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>The customer code a project's folder is matched and named on — <see cref="Organisation.Reference"/> today (see this class's own remarks).</summary>
+    /// <summary>The customer code a project's folder is matched and named on — <see cref="Organisation.CustomerCode"/>, else <see cref="Organisation.Reference"/> (see this class's own remarks).</summary>
     /// <param name="organisation">The customer.</param>
     public static string? CustomerCodeOf(Organisation organisation)
     {
         ArgumentNullException.ThrowIfNull(organisation);
-        return organisation.Reference;
+        return string.IsNullOrWhiteSpace(organisation.CustomerCode) ? organisation.Reference : organisation.CustomerCode;
     }
 
     private async Task<ProjectFolderRequest?> RequestForAsync(Guid projectId, CancellationToken cancellationToken)

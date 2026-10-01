@@ -688,7 +688,8 @@ public sealed class MainWindow : Window
     /// D1/D2/D12), and, `WP 19.5B` (`ADR-0152`, Product Owner comment item
     /// 4), whether to open a quotation with it, checked by default —
     /// creating the project and writing every collected commercial field
-    /// on confirmation. Returns whether a project was created.
+    /// on confirmation. Returns the identifier the project was created under,
+    /// or <see langword="null"/> if none was created.
     /// </summary>
     /// <remarks>
     /// Each commercial field is written through the identical
@@ -704,26 +705,33 @@ public sealed class MainWindow : Window
     /// dispatch running, say) is reported as a warning — the project still
     /// exists and opens, exactly as an equivalent quotation failure just
     /// below already reports.
+    /// <para>
+    /// <b>Identifier (Product Owner decision 2026-10-01 §3, `ADR-0156`).</b>
+    /// A client with a customer code makes the project
+    /// <c>CUSTOMER-PROJECTREF</c> (<see cref="NewProjectPromptResult.Identifier"/>);
+    /// otherwise <paramref name="suggestedIdentifier"/>, the old
+    /// <c>P-NNNN</c>, is used unchanged.
+    /// </para>
     /// </remarks>
-    private async Task<bool> PromptForNewProjectAsync(string suggestedIdentifier, string _)
+    private async Task<string?> PromptForNewProjectAsync(string suggestedIdentifier, string _)
     {
-        var input = await _newProjectPrompt.PromptAsync("New Project", $"Name for {suggestedIdentifier}:").ConfigureAwait(true);
+        var input = await _newProjectPrompt.PromptAsync("New Project", $"Name for {suggestedIdentifier}:", suggestedIdentifier).ConfigureAwait(true);
 
         if (input is null)
-            return false;
+            return null;
 
         Tempest.Workspace.Projects.ProjectSummary created;
 
         try
         {
-            created = await _projectDirectory.CreateAsync(suggestedIdentifier, input.Name).ConfigureAwait(true);
+            created = await _projectDirectory.CreateAsync(input.Identifier ?? suggestedIdentifier, input.Name).ConfigureAwait(true);
             _toastHost.Show($"Created {created.Label}.", FeedbackSeverity.Success);
             RecordHistory($"Created project {created.Label}.");
         }
         catch (DuplicateProjectIdentifierException ex)
         {
             _toastHost.Show(ex.Message, FeedbackSeverity.Error);
-            return false;
+            return null;
         }
 
         const string projectKind = Tempest.Workspace.Mechanical.MechanicalObjectFactoryRegistry.Project;
@@ -775,7 +783,7 @@ public sealed class MainWindow : Window
             }
         }
 
-        return true;
+        return created.Identifier;
     }
 
     private void RefreshOutputPanelExtras()

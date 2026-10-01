@@ -89,7 +89,7 @@ public sealed class WorkspaceChangesReattachTests
         {
             await host.StartAsync();
             var domainContext = Resolve<EngineeringDomainContext>(host);
-            var projectBrowser = new ProjectBrowserView(host.ProjectDirectory!, host.ShellNavigator!, (_, _) => Task.FromResult(true));
+            var projectBrowser = new ProjectBrowserView(host.ProjectDirectory!, host.ShellNavigator!, (_, _) => Task.FromResult<string?>(null));
             var dashboard = new ProjectsDashboardView(new ProjectStatusReadModel(Resolve<IQueryablePersistenceStore>(host)));
             var view = new ProjectsAreaView(domainContext, projectBrowser, dashboard);
 
@@ -158,7 +158,9 @@ public sealed class WorkspaceChangesReattachTests
                 domainContext, commandDispatcher, commandRegistry, () => null, new ProjectPicker(host.ProjectDirectory!),
                 new InputDialog(), new PurchaseOrderLinePrompt(), (_, _) => { });
 
-            var view = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView);
+            var view = new BusinessAreaView(
+                quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
+                new CustomersSuppliersView(organisationCatalog, Resolve<IContactCatalog>(host)));
 
             await AssertReattachAsync(view, f => view.WorkspaceChanges = f, () => view.RefreshCount);
         }

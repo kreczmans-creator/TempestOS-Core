@@ -244,8 +244,8 @@ internal sealed partial class MainWindowComposer
         // both open right up.
         async Task CreateNewProjectFromHomeAsync()
         {
-            var identifier = await views.ProjectBrowser.NextIdentifierAsync().ConfigureAwait(true);
-            if (!await callbacks.PromptForNewProjectAsync(identifier, string.Empty).ConfigureAwait(true))
+            var suggested = await views.ProjectBrowser.NextIdentifierAsync().ConfigureAwait(true);
+            if (await callbacks.PromptForNewProjectAsync(suggested, string.Empty).ConfigureAwait(true) is not { } identifier)
                 return;
 
             var everyProject = await host.ProjectDirectory!.ListAsync().ConfigureAwait(true);

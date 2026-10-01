@@ -81,10 +81,13 @@ public sealed class CreateDocumentObjectCommandHandler : ICommandHandler<CreateD
     {
         IEngineeringObject created;
 
+        var identifier = command.Identifier
+            ?? await ProjectCentricIdentifierAsync(command.Kind, command.ParentId, cancellationToken).ConfigureAwait(false);
+
         try
         {
             created = await _registry.CreateAsync(
-                command.Kind, command.Identifier, command.DisplayName, command.InitialContent, command.ParentId,
+                command.Kind, identifier, command.DisplayName, command.InitialContent, command.ParentId,
                 command.Classification, command.DrawingNumber, command.ModelFormat, cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -104,5 +107,48 @@ public sealed class CreateDocumentObjectCommandHandler : ICommandHandler<CreateD
             buildUndelete: () => new UndeleteDocumentObjectCommand(created.Id, command.Kind));
 
         return CommandResult.Success($"Created {command.Kind} '{displayName}'.", created.Id, command.Kind, compensation);
+    }
+
+    /// <summary>
+    /// The document number a new Document, Drawing or CAD model created
+    /// with no identifier of its own receives (Product Owner decision
+    /// 2026-10-01 §3, `ADR-0156`): <c>CUSTOMER-PROJECTREF-DOC-NNN</c>
+    /// (<c>DWG</c> for a drawing, <c>CAD</c> for a CAD model) when its
+    /// parent resolves — through <see cref="Tempest.Workspace.Projects.ProjectMembership"/> —
+    /// to a project whose own identifier is project-centric; one past the
+    /// highest suffix any object of that Kind already uses under that
+    /// prefix. <see langword="null"/> otherwise — standalone, an older
+    /// <c>P-NNNN</c> project, no domain context composed, or a Kind outside
+    /// the table — leaving the identifier unset exactly as before.
+    /// </summary>
+    private async Task<string?> ProjectCentricIdentifierAsync(string kind, Guid? parentId, CancellationToken cancellationToken)
+    {
+        if (_context is null || parentId is not { } parent)
+            return null;
+
+        var documentType = kind switch
+        {
+            DocumentObjectFactoryRegistry.Document => Tempest.Core.Projects.ProjectNumbering.Document,
+            DocumentObjectFactoryRegistry.Drawing => Tempest.Core.Projects.ProjectNumbering.Drawing,
+            DocumentObjectFactoryRegistry.CadModel => Tempest.Core.Projects.ProjectNumbering.CadModel,
+            _ => null,
+        };
+        if (documentType is null)
+            return null;
+
+        var projectId = await Tempest.Workspace.Projects.ProjectMembership
+            .ResolveOwningProjectAsync(_context.Repository, parent, cancellationToken).ConfigureAwait(false);
+        if (projectId is not { } id
+            || await _context.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false) is not IProject project
+            || !Tempest.Core.Projects.ProjectNumbering.TryGetDocumentPrefix(project.Identifier, documentType, out var prefix))
+        {
+            return null;
+        }
+
+        var entries = await _context.Repository.ListByKindAsync(kind, cancellationToken).ConfigureAwait(false);
+        var existing = await _context.Repository.MaterialiseAsync<IEngineeringObject>(entries, cancellationToken).ConfigureAwait(false);
+
+        return Tempest.Core.Projects.ProjectNumbering.NextNumber(
+            prefix, existing.Select(o => (o as IHasBusinessIdentifier)?.Identifier));
     }
 }
