@@ -59,7 +59,9 @@ public sealed class CalculationTaskJourneyTests
             var openInTasks = engineeringArea.GetLogicalDescendants().OfType<Button>()
                 .Single(b => AutomationName(b) == "Open Bracket capacity check");
             openInTasks.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(calculation.Id.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(calculation.Id.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
 
             // ---------------------------------------------------------
@@ -124,16 +126,8 @@ public sealed class CalculationTaskJourneyTests
 
     private static string AutomationName(Control control) => AutomationProperties.GetName(control) ?? string.Empty;
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

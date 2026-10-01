@@ -89,15 +89,6 @@ public sealed class OrganisationPickerAddTests
     private static List<string> Texts(Control root) =>
         [.. root.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty)];
 
-    private static async Task RenderUntilAsync(Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-
-        Assert.True(condition(), "The picker never reached the expected state.");
-    }
+    private static Task RenderUntilAsync(Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, what: what);
 }

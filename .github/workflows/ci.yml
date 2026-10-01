@@ -10,7 +10,9 @@ name: CI
 # Work Package retrospectives was a manually-run, self-reported
 # assertion — see docs/releases/v0.11.0/WP11.0A Platform Architecture
 # Review.md, finding R-1. This workflow closes that gap: the claim is now
-# machine-verified on every push, every pull request, and on demand.
+# machine-verified on every pull request, on pushes to main, release/**
+# and version tags, and on demand (see `on:` below for why other pushes
+# are not built).
 #
 # See docs/academy/06 Engineering Standards/04-continuous-integration.md
 # for the philosophy this workflow implements, and
@@ -58,6 +60,16 @@ on:
   # refs/heads/<branch> and the PR run under refs/pull/<n>/merge, separate
   # concurrency groups, so neither cancelled the other) - PO, 2026-10-01.
   # A branch without a PR can still be run by hand (workflow_dispatch).
+  #
+  # One known double run remains, deliberately: a push to a release/**
+  # branch that has an open PR (release -> main) starts both a push run and
+  # a PR run, in different concurrency groups. It is not filtered out with
+  # `branches-ignore: [release/**]` under pull_request because that filter
+  # matches the PR's *base* branch, not its head: it would stop CI on every
+  # PR *into* a release branch (the normal way work reaches one) and would
+  # not touch the release -> main PR at all. The push run gates the branch
+  # head, the PR run gates the merge result; for release branches both are
+  # wanted (v0.23.0 CI board G-08).
   push:
     branches:
       - main
@@ -76,18 +88,19 @@ on:
   schedule:
     - cron: "0 6 * * 1"
 
-# cancel-in-progress is off for release/* branches. A release branch takes
-# merges every five to fifteen minutes during a tranche, and a full run of
-# this workflow takes thirteen to fifteen; with cancellation on, runs #420
-# to #427 on release/v0.21.0 (2026-09-15) were each cancelled by the next
-# push, so seven consecutive heads - three of them carrying the fix for
-# the previous head's red run - were never gated at all. On every other
-# ref a superseded run is still cancelled: a feature branch's intermediate
-# heads are not release candidates and the runner minutes are better spent
-# on the head that will be merged.
+# cancel-in-progress applies to pull request runs only. A pushed ref
+# (main, release/**, a tag) is a commit that has landed, and each one is
+# gated in its own right: with cancellation on for release branches, runs
+# #420 to #427 on release/v0.21.0 (2026-09-15) were each cancelled by the
+# next push, so seven consecutive heads - three of them carrying the fix
+# for the previous head's red run - were never gated at all, and main's
+# runs #478 and #479 were cancelled the same way (v0.23.0 CI board G-22).
+# A pull request's intermediate heads are not release candidates, so a
+# superseded PR run is still cancelled and the runner minutes go to the
+# head that will be merged.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -120,15 +133,19 @@ jobs:
     # growing with the suite. `matrix.shard` below now splits that one
     # invocation into four independent, parallel legs per configuration —
     # `core` (the whole Core.Tests project, unsharded, fast) and three
-    # roughly-equal Desktop shards (`desktop-1`/`2`/`3`, ~200 tests each,
+    # roughly-equal Desktop shards (`desktop-1`/`2`/`3`, about 220 tests each,
     # see the Test Desktop shard steps' own remarks for the split) — so no
     # single leg should approach even half of the old combined figure.
-    # The lead has not yet re-measured the split on a hosted runner as of
-    # this Work Package (no push access from this worktree); the first
-    # real figures belong in this remark once the lead records them on the
-    # release candidate, alongside a decision on whether 45 needs revising
-    # again. This is the whole-leg ceiling; the per-test backstop
-    # (`--blame-hang-timeout`) is unchanged.
+    # Measured on a hosted runner, run 36901461548 (v0.23.0, green in about
+    # 15 min end to end): the Release test steps took about 10 min (core),
+    # 11 (desktop-1), 8 (desktop-2) and 6 (desktop-3). Earlier v0.23.0 runs
+    # overran 45 when every test host began seeding 276 reference records
+    # at synchronous=FULL, an fsync per commit; the Desktop suite now runs
+    # at NORMAL (ADR-0144, amended 2026-10-01, TestPersistenceDurability).
+    # This is the whole-leg ceiling. Each test step also has its own
+    # 25-minute `timeout-minutes`, so a broad slowdown fails that step
+    # while the summary and artefact steps still have time to publish its
+    # .trx, and the per-test backstop (`--blame-hang-timeout`) is unchanged.
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -143,18 +160,23 @@ jobs:
         # segment (its sub-folder name for a nested class — `Layout`,
         # `Dashboards`, `Evidence`, `Quotations` — or the class's own leaf
         # name otherwise): `desktop-1` is A-D, `desktop-2` is E-P,
-        # `desktop-3` is Q-Z. Measured on this Work Package's own worktree
-        # (`--list-tests`, not run) at 628 Desktop tests: 195 / 219 / 214 —
+        # `desktop-3` is Q-Z. Counts at v0.23.0 (test cases in a
+        # local run's .trx, theory rows included): 361 / 284 / 300 of 945 —
         # every future class this alphabet range can ever describe still
-        # lands in exactly one shard with no filter list to maintain, at
-        # the cost of a split that tracks test *count*, not measured
-        # *time*, per class (no per-class timing exists to split on
-        # instead). `desktop-2` (E-P) carries `Category=LayoutWalk`
-        # entirely (`Layout.LayoutWalkTests`, `Layout.ShellCollapseLayoutWalkTests`
+        # lands in exactly one shard with no filter list to maintain
+        # (`CiShardCoverageTests` reads these filters and fails if a test
+        # falls in none or two), at the cost of a split that tracks test
+        # *count*, not time. Run 36901461548's Release test steps took
+        # about 11 / 8 / 6 min for desktop-1/2/3, desktop-1's including
+        # about 4 min of waits that could never succeed (fixed by v0.23.0
+        # CI board G-01, so expect it to drop); each shard's summary now
+        # lists its ten slowest tests, which is the data to rebalance on.
+        # `desktop-2` (E-P) carries `Category=LayoutWalk` entirely
+        # (`Layout.LayoutWalkTests`, `Layout.ShellCollapseLayoutWalkTests`
         # — both classes live under the `Layout` sub-namespace, so both
-        # fall in the `L` letter regardless of their own leaf class name)
-        # — see the Layout verification walk step's own remark for why
-        # that matters. Rebalance by moving a boundary letter (not by
+        # fall in the `L` letter regardless of their own leaf class name),
+        # and its Release step publishes the walk's screenshots — see that
+        # step's own remark. Rebalance by moving a boundary letter (not by
         # hand-listing classes) if a future suite addition skews one
         # shard heavily; each shard's own filter is spelled out in its
         # own step below, not centralised, so a moved boundary is a
@@ -203,16 +225,14 @@ jobs:
 
       # `--blame-hang`/`--blame-hang-timeout` (`WP16.4A-R1`): without these,
       # a test that hangs — a gated seam that stops being reached, for
-      # instance — has no backstop but this job's own 45-minute
-      # `timeout-minutes`, which kills the whole matrix leg with no
-      # indication of which test caused it. 5 minutes is comfortably above
-      # any single test's real run time (the whole Desktop assembly takes
-      # roughly fifteen minutes and the Core assembly five, measured `WP 17.0A`,
-      # and `WP 20.3D` splits the Desktop figure three ways again; no
-      # individual test approaches a minute) and comfortably below even a
-      # single un-sharded leg's old 45-minute timeout, so a genuine hang is
-      # caught and named — with a hang dump collected — long before the
-      # job itself would otherwise be killed with no diagnostic at all.
+      # instance — has no backstop but the step's own 25-minute
+      # `timeout-minutes`, which kills the whole step with no indication of
+      # which test caused it. 5 minutes is well above any single test's
+      # real run time (the slowest Desktop journeys take well under a few
+      # minutes at TEMPEST_TEST_TIMEOUT_FACTOR 3; each shard's summary
+      # lists its ten slowest) and well below the step timeout, so a
+      # genuine hang is caught and named — with a hang dump collected and
+      # uploaded with the test results — before the step itself is killed.
       # --collect:"XPlat Code Coverage" (WP 17.0C): coverlet.collector is
       # already referenced by both test projects: this only switches the
       # collector on. Writes one coverage.cobertura.xml per test project
@@ -233,6 +253,7 @@ jobs:
       # command is still written out in full rather than assembled.
       - name: Test Core (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Core.Tests `
@@ -251,6 +272,7 @@ jobs:
 
       - name: Test Core (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'core'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Core.Tests `
@@ -266,12 +288,12 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 1 (A-D): 195 of 628 Desktop tests, --list-tests
-      # counted on this Work Package's own worktree at the branch head —
+      # Desktop shard 1 (A-D): 361 of 945 Desktop test cases at v0.23.0 —
       # see the matrix's own `shard` remark above for the split's full
       # rationale and each boundary letter.
       - name: Test Desktop shard 1 (A-D) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-1'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
@@ -291,6 +313,7 @@ jobs:
 
       - name: Test Desktop shard 1 (A-D) (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-1'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
@@ -307,16 +330,34 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 2 (E-P): 219 of 628 Desktop tests, including all
-      # five `Category=LayoutWalk` tests entire (`Layout.LayoutWalkTests`,
+      # Desktop shard 2 (E-P): 284 of 945 Desktop test cases at
+      # v0.23.0, including
+      # every `Category=LayoutWalk` test (`Layout.LayoutWalkTests`,
       # `Layout.ShellCollapseLayoutWalkTests` — both under the `Layout`
-      # sub-namespace, so both fall in the `L` letter) — the dedicated
-      # Layout verification walk rerun below is pinned to this shard so it
-      # reruns tests this shard's own normal pass already covers once, not
-      # tests a different shard owns.
+      # sub-namespace, so both fall in the `L` letter).
+      #
+      # `WP 19.3A` — the layout verification walk (`TD-83`, the `WP 17.0A`
+      # overlap class) is part of this shard: it launches the real, built
+      # Desktop in-process (Avalonia.Headless with real Skia rendering) and
+      # walks every rail entry and every project tab at two window sizes,
+      # screenshotting each and failing on any intersecting sibling
+      # `Bounds` or any control outside its parent. The Release step sets
+      # `TEMPEST_LAYOUT_OUTPUT` so those screenshots land where the upload
+      # step below reads them. Until v0.23.0 a separate Release-only step
+      # re-ran `Category=LayoutWalk` just to set that variable, so the walk
+      # ran twice in this leg (v0.23.0 CI board G-31); the same tests, the
+      # same build and the same variable now produce the same screenshots
+      # in one pass. The Debug step leaves it unset (screenshots stay under
+      # the test output folder and are not uploaded).
       - name: Test Desktop shard 2 (E-P) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
+        timeout-minutes: 25
         shell: pwsh
+        env:
+          # Absolute: the test host's working directory is the test project's
+          # own output folder, so a relative path landed the PNGs under bin/
+          # and the first run's upload found nothing (a warning, not a failure).
+          TEMPEST_LAYOUT_OUTPUT: ${{ github.workspace }}/TestResults/layout
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
             --configuration Release `
@@ -335,6 +376,7 @@ jobs:
 
       - name: Test Desktop shard 2 (E-P) (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-2'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
@@ -351,9 +393,10 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 3 (Q-Z): 214 of 628 Desktop tests.
+      # Desktop shard 3 (Q-Z): 300 of 945 Desktop test cases at v0.23.0.
       - name: Test Desktop shard 3 (Q-Z) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-3'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
@@ -373,6 +416,7 @@ jobs:
 
       - name: Test Desktop shard 3 (Q-Z) (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-3'
+        timeout-minutes: 25
         shell: pwsh
         run: |
           dotnet test tests/Tempest.Desktop.Tests `
@@ -389,57 +433,13 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # `WP 19.3A` — the layout verification walk (`TD-83`, the `WP 17.0A`
-      # overlap class): launches the real, built Desktop in-process
-      # (Avalonia.Headless with real Skia rendering — this repository has
-      # no OS-level automation dependency, so the walk cannot run as a
-      # separate, already-built-exe step) and walks every rail entry and
-      # every project tab at two window sizes, screenshotting each and
-      # failing on any intersecting sibling `Bounds` or any control outside
-      # its parent. It already ran once, as part of the Desktop shard 2
-      # (E-P) step above, in both configurations — `Category=LayoutWalk`
-      # lives entirely in that shard (`WP 20.3D`, see the matrix's own
-      # `shard` remark) — this dedicated, Release-only rerun exists only so
-      # `TEMPEST_LAYOUT_OUTPUT` can pin the screenshot output to a
-      # repository-root-relative path the upload step below can find, and
-      # so its own `--results-directory` is separate from shard 2's own
-      # .trx above. Pinned to `desktop-2` as well as Release: any other
-      # shard's own job never produces a `TestResults/layout` at all, and
-      # the upload step below fails outright (`if-no-files-found: error`)
-      # rather than warn, so running this rerun on every Release shard
-      # would fail three of the four for a screenshot walk they were never
-      # meant to produce. Release-only to keep the Debug leg's own time:
-      # the walk needs only one real run to matter to the physical review,
-      # and Release is the configuration that review actually uses. No
-      # `continue-on-error` — the walk is part of the gate, exactly like
-      # Build and Test above: a failure here fails this leg.
-      - name: Layout verification walk screenshots (Release)
-        if: matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
-        shell: pwsh
-        env:
-          # Absolute: the test host's working directory is the test project's
-          # own output folder, so a relative path landed the PNGs under bin/
-          # and the first run's upload found nothing (a warning, not a failure).
-          TEMPEST_LAYOUT_OUTPUT: ${{ github.workspace }}/TestResults/layout
-        run: |
-          dotnet test tests/Tempest.Desktop.Tests `
-            --configuration Release `
-            --no-build `
-            --filter "Category=LayoutWalk" `
-            --logger trx `
-            --logger "console;verbosity=normal" `
-            --results-directory "TestResults/Release/layout"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "The layout verification walk failed (exit code $LASTEXITCODE) - see TestResults/Release/layout and the layout-screenshots artefact."
-            exit $LASTEXITCODE
-          }
-
       # Diagnostic-shaped like every other artefact upload in this
       # workflow (`if: always()`, `continue-on-error: true`,
       # `if-no-files-found: warn`) — publishing the screenshots is never
       # itself the gate; the Test step above already is. Pinned to the
       # `desktop-2` shard as well as Release, matching the step that
-      # produces them (`WP 20.3D`): no other shard, and no Debug leg, ever
+      # produces them (the shard 2 Release test step, which sets
+      # `TEMPEST_LAYOUT_OUTPUT`): no other shard, and no Debug leg, ever
       # writes to `TestResults/layout`, so uploading there on any of them
       # would trip `if-no-files-found: error` below for a path that job
       # was never meant to populate. One artefact, not one per shard — a
@@ -452,7 +452,7 @@ jobs:
           name: layout-screenshots
           path: TestResults/layout/**
           if-no-files-found: error
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       # Runs even if Build or Test failed above (if: always()), so a
       # failing run still publishes exactly what it got through — the
@@ -467,8 +467,8 @@ jobs:
       # untouched and remain hard gates. `WP 20.3D`: this step already runs
       # once per matrix job, so sharding needs no new aggregation logic —
       # each shard's own job produces its own step summary, scoped below to
-      # that shard's own `TestResults/$config/$shard` directory (each of
-      # the four groups writes exactly one .trx there, though the loop
+      # that shard's own `TestResults/$config/$shard` directory (each
+      # shard step writes exactly one .trx there, though the loop
       # below still tolerates more than one, same as it always did), and
       # GitHub renders every job's summary as its own section under the one
       # workflow run — so the run's overall summary page already reads as
@@ -510,6 +510,7 @@ jobs:
           # Diagnostic output only: the Test step above remains the gate and
           # its exit code is untouched.
           $failedResults = @()
+          $allResults = @()
 
           $trxFiles = Get-ChildItem -Path $resultsDir -Filter "*.trx" -ErrorAction SilentlyContinue
           if ($trxFiles) {
@@ -544,6 +545,28 @@ jobs:
               $lines.Add("| $($file.Name) | $($counters.total) | $($counters.passed) | $($counters.failed) | $duration |")
               $failedResults += $trx.TestRun.Results.UnitTestResult |
                 Where-Object { $_.outcome -eq "Failed" }
+              $allResults += $trx.TestRun.Results.UnitTestResult
+            }
+
+            # The ten slowest tests in this shard (v0.23.0 CI board G-12):
+            # the per-test data a rebalance or a slowdown investigation
+            # needs, without downloading the .trx. Diagnostic only.
+            try {
+              $slowest = $allResults |
+                Where-Object { $_.duration } |
+                Sort-Object { [TimeSpan]::Parse($_.duration) } -Descending |
+                Select-Object -First 10
+              if ($slowest) {
+                $lines.Add("")
+                $lines.Add("| Slowest tests | Duration |")
+                $lines.Add("|---|---|")
+                foreach ($result in $slowest) {
+                  $lines.Add("| ``$($result.testName)`` | $(([TimeSpan]::Parse($result.duration)).ToString('mm\:ss\.f')) |")
+                }
+              }
+            } catch {
+              $lines.Add("")
+              $lines.Add("_Could not rank the slowest tests: $($_.Exception.Message)_")
             }
           } else {
             $lines.Add("_No test results found - the test step did not complete._")
@@ -615,7 +638,7 @@ jobs:
           name: build-log-${{ matrix.configuration }}-${{ matrix.shard }}
           path: build-${{ matrix.configuration }}.log
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       - name: Upload test results (${{ matrix.configuration }} / ${{ matrix.shard }})
         if: always()
@@ -623,9 +646,12 @@ jobs:
         continue-on-error: true
         with:
           name: test-results-${{ matrix.configuration }}-${{ matrix.shard }}
-          path: TestResults/${{ matrix.configuration }}/${{ matrix.shard }}/*.trx
+          # Recursive (v0.23.0 CI board G-11): the .trx sits at the top, but
+          # hang dumps, the blame Sequence file and coverage.cobertura.xml
+          # are written to a GUID subfolder and were being left behind.
+          path: TestResults/${{ matrix.configuration }}/${{ matrix.shard }}/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       # Two separate artefacts, deliberately not one — ADR-0101 (`WP 11.3B`,
       # amended `WP 17.2B`): Tempest.Desktop is TempestOS's shipped
@@ -643,7 +669,9 @@ jobs:
       # only quadruple identical bytes against the same account-level
       # storage quota this remark already names as a real, previously-hit
       # limit. One producer, so neither artefact name carries a shard
-      # suffix.
+      # suffix. Kept 3 days for a pull request (about 145 MB per run, only
+      # useful while the PR is under review) and 14 otherwise (v0.23.0 CI
+      # board G-31); every upload in this job does the same.
       - name: Upload Tempest.Desktop build output (shipped application)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -652,7 +680,7 @@ jobs:
           name: tempestos-desktop-release
           path: src/Tempest.Desktop/bin/Release/net10.0/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       - name: Upload Tempest.Harness build output (Internal Engineering Harness)
         if: matrix.configuration == 'Release' && matrix.shard == 'core'
@@ -662,22 +690,19 @@ jobs:
           name: tempestos-engineering-harness
           path: src/Tempest.Harness/bin/Release/net10.0/**
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
-  # WP 11.2A — Governance Health-Check. Runs after build-and-test
-  # completes (not gated on its success — a governance-document
-  # inconsistency is orthogonal to whether the code itself compiles, and
-  # this project's own "disclose what actually happened" instinct favours
-  # always producing this report over silently skipping it because an
-  # unrelated build step failed). Read-only: scripts/governance-
+  # WP 11.2A — Governance Health-Check. Independent of build-and-test: a
+  # governance-document inconsistency is orthogonal to whether the code
+  # compiles, so this job needs nothing the matrix produces and runs in
+  # parallel with it (until v0.23.0 it waited for the whole matrix through
+  # `needs: build-and-test` + `if: always()`, which only delayed the report
+  # - v0.23.0 CI board G-31). Read-only: scripts/governance-
   # healthcheck.ps1 never writes inside the repository it validates.
-  # WP 16.1A: this job's result is now a required input to the CI Gate
-  # job below; the if: always() here is unchanged so the report is still
-  # produced on a red build.
+  # WP 16.1A: this job's result is a required input to the CI Gate job
+  # below, which still waits for both.
   governance-health-check:
     name: Governance Health Check
-    needs: build-and-test
-    if: always()
     runs-on: windows-2022
     timeout-minutes: 10
     steps:
@@ -733,7 +758,7 @@ jobs:
   # per-project, mirroring how Restore already treats the solution as the
   # unit of work everywhere else in this pipeline. Independent of
   # build-and-test (needs nothing it produces — only a restore of its own),
-  # so it runs in parallel exactly as governance-health-check does.
+  # so it runs in parallel, as governance-health-check does.
   dependency-scan:
     name: Dependency Scan
     runs-on: windows-2022
@@ -1012,12 +1037,13 @@ jobs:
   # it worth confirming rather than assuming.
   #
   # WP 16.1A (v0.16.0): the gate now also requires governance-health-check
-  # to succeed. WP 11.2A deliberately left it advisory ("machine-detectable
+  # to succeed (that job no longer waits for the matrix; the gate waits
+  # for both). WP 11.2A deliberately left it advisory ("machine-detectable
   # but not machine-enforced", FCR-0005) until the tool had demonstrated
   # itself on real drift; five releases and one further undocumented
   # 20-commit range later (WP 15.1A), a governance Fail is treated exactly
   # like a build Fail: red at the gate, not beside it. The
-  # governance-health-check job itself still runs with if: always(), so the
+  # governance-health-check job does not depend on the build, so the
   # report is produced even when the build is red.
   #
   # WP 21.5E / WP RC.0C: the gate now also requires dependency-scan to
@@ -1027,26 +1053,32 @@ jobs:
   #
   # linux-launch-smoke (WP 16.5B) is deliberately NOT in the needs list:
   # advisory for this release — see the comment above that job for why.
+  #
+  # Each failure is reported with `Write-Host "::error::..."`, not
+  # `Write-Error`: pwsh on the runner runs with ErrorActionPreference=Stop,
+  # so the first Write-Error threw and the remaining failures were never
+  # printed (v0.23.0 CI board G-23).
   gate:
     name: CI Gate
     needs: [build-and-test, governance-health-check, dependency-scan]
     if: always()
     runs-on: windows-2022
+    timeout-minutes: 5
     steps:
       - name: Confirm every configuration and the governance check passed
         shell: pwsh
         run: |
           $failed = $false
           if ("${{ needs.build-and-test.result }}" -ne "success") {
-            Write-Error "One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
+            Write-Host "::error::One or more Build & Test configurations did not succeed - see the build-and-test job matrix for details."
             $failed = $true
           }
           if ("${{ needs.governance-health-check.result }}" -ne "success") {
-            Write-Error "Governance Health Check did not succeed - see that job's step summary for the failing check(s)."
+            Write-Host "::error::Governance Health Check did not succeed - see that job's step summary for the failing check(s)."
             $failed = $true
           }
           if ("${{ needs.dependency-scan.result }}" -ne "success") {
-            Write-Error "Dependency Scan did not succeed - see that job's log for the finding."
+            Write-Host "::error::Dependency Scan did not succeed - see that job's log for the finding."
             $failed = $true
           }
           if ($failed) { exit 1 }

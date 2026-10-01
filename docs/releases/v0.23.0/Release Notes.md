@@ -109,8 +109,24 @@ including items waiting on a decision, is
   - Timesheet task is a dropdown of the project's deliverables (G1); a
     Settings → Timesheets export folder, default
     `D:\11 Business Admin\02 Timesheets` (G2).
-- **CI runs once per commit.** Push builds run for `main`, release
-  branches and tags only; other branches are gated by their pull request.
+- **CI runs once per commit**, with one exception. Push builds run for
+  `main`, release branches and tags only; other branches are gated by
+  their pull request, or run by hand. A push to a release branch with an
+  open pull request still runs twice (push and PR), deliberately. Only
+  superseded pull request runs are cancelled; every `main` and release
+  branch commit is gated. Each test step has a 25-minute limit, each
+  shard's summary lists its ten slowest tests, and a test that could not
+  finish in time now fails, naming what it waited for.
+- **Desktop tests write at `synchronous=NORMAL`.** A new configuration
+  key, `Persistence:Synchronous=Normal`, opens the SQLite store at
+  `synchronous=NORMAL` instead of `FULL`. Only the Desktop test suite sets
+  it (`TEMPEST_Persistence__Synchronous`), to keep its shards inside the CI
+  timeout. A store opened that way logs a Warning naming the key; a normal
+  launch keeps `FULL` (`ADR-0144`, amended).
+- **Release assets are all checksummed.** `SHA256SUMS.txt` now covers the
+  installer and its update feed, not just the two zips, and the release
+  job re-runs the tests with the same timeout scaling and hang detection
+  as CI.
 
 ## Documentation
 

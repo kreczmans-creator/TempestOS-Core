@@ -173,8 +173,9 @@ dotnet test src/TempestOS.slnx
 ```
 
 TempestOS also has a CI pipeline (`.github/workflows/ci.yml`) that builds
-Debug and Release and runs the complete test suite on every push, pull
-request, and manual dispatch — see
+Debug and Release and runs the complete test suite on every pull request,
+on pushes to `main`, `release/**` branches and version tags, and on manual
+dispatch — see
 [`docs/academy/06 Engineering Standards/04-continuous-integration.md`](docs/academy/06%20Engineering%20Standards/04-continuous-integration.md).
 
 ## Archive

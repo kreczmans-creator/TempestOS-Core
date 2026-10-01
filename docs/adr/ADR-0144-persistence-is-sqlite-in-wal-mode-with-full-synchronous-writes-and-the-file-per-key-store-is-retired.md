@@ -9,6 +9,12 @@ and the dual-backend test fixture are gone; `SqlitePersistenceStore` is
 the platform's only store, exactly as this ADR's own Decision said it
 would be.
 
+**Amended** — a test-only relaxation: `Persistence:Synchronous=Normal` opens
+the store at `synchronous=NORMAL`, set only by the Desktop test suite, and
+every store opened that way logs a Warning; the decision that a person's
+data is written at `synchronous=FULL` stands. Recorded 2026-10-01 (`v0.23.0`);
+see the Amendment section below.
+
 Supersedes `ADR-0041` in part (the storage backend it chose; the
 `IPersistenceStore` shape it drafted stands unchanged) and `ADR-0053` in
 part (its premise that the one persistence abstraction has no query and

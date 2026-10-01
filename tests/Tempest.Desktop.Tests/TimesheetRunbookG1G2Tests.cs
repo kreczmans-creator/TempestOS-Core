@@ -233,20 +233,8 @@ public sealed class TimesheetRunbookG1G2Tests
     private static void Select(ComboBox projectCombo, Guid projectId) =>
         projectCombo.SelectedItem = projectCombo.ItemsSource!.Cast<ComboBoxItem>().First(i => (Guid)i.Tag! == projectId);
 
-    private static async Task RenderUntilAsync(Window window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
-    {
-        var deadline = Deadline(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-
-        // v0.23.0 board B9: a wait that times out is a failure, never a
-        // silent fall-through to whatever the test checks next.
-        Assert.True(condition(), $"Timed out waiting for: {what}");
-    }
+    private static Task RenderUntilAsync(Window window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), null, what);
 
     private static void LayOut(Window window)
     {

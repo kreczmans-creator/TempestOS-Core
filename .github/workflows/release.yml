@@ -50,15 +50,37 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
   SOLUTION_PATH: src/TempestOS.slnx
+  # The same render-deadline scaling ci.yml applies (DesktopTestHelpers.
+  # Deadline). Without it this job ran every Desktop wait at 1x on the same
+  # hosted runner CI needs 3x on, so a deadline that is fine in CI could
+  # refuse a tag, and a refused tag cannot be moved (Engineering Governance
+  # §7.4) - v0.23.0 CI board G-03.
+  TEMPEST_TEST_TIMEOUT_FACTOR: "3"
 
 jobs:
   publish:
     name: Build, Verify & Publish Release
     runs-on: windows-2022
+    # Measured: the v0.22.0 release job took about 21 min, its unsharded
+    # Release test step 18:16 (CI's Release Desktop shards summed to 25:46
+    # for the same commit, so shard sums overstate this job). v0.23.0's
+    # Release Desktop shards sum to 25:14, so expect about 18-21 min of
+    # testing here. 30 leaves about 9 min of headroom; `--blame-hang`
+    # below names a hung test long before that runs out.
     timeout-minutes: 30
     steps:
       - name: Checkout tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history and real tags, as ci.yml's governance job has: the
+          # Governance Health Check below needs the tags to know which
+          # release folders have shipped, and skipped them on the shallow,
+          # tagless default checkout (v0.23.0 CI board G-09). By SHA, not by
+          # the tag ref, so fetch-tags does not collide with checkout's own
+          # write of refs/tags/<name> (see ci.yml's governance checkout).
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.sha }}
 
       - name: Set up .NET SDK (from global.json)
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -93,7 +115,9 @@ jobs:
             --no-build `
             --logger trx `
             --logger "console;verbosity=normal" `
-            --results-directory "TestResults/Release"
+            --results-directory "TestResults/Release" `
+            --blame-hang `
+            --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
             Write-Error "One or more tests failed for tag '${{ github.ref_name }}' - this tag will not be published."
             exit $LASTEXITCODE
@@ -205,17 +229,37 @@ jobs:
       # nothing here lets a user notice a corrupted or substituted
       # download before running it. Computed after packaging and before
       # publishing, so the checksums describe exactly the bytes attached
-      # to the release, not a separately-fetched copy.
+      # to the release, not a separately-fetched copy. Every uploaded asset
+      # is hashed, the installer and its update feed included (until
+      # v0.23.0 only the two zips were - CI board G-04); the list is written
+      # once here and the publish step below uploads exactly that list plus
+      # SHA256SUMS.txt itself. Each line names the asset as it appears on
+      # the Release page (its file name, no folder), so `sha256sum -c`
+      # works in a folder of downloads.
       - name: Compute release asset checksums
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          $files = @("TempestOS-$tag.zip", "TempestOS-$tag-engineering-harness.zip")
+          $semver = $tag -replace '^v', ''
+          $files = @(
+            "TempestOS-$tag.zip",
+            "TempestOS-$tag-engineering-harness.zip",
+            "artifacts/installer/TempestOS-$tag-Setup.exe",
+            "artifacts/installer/TempestOS-$semver-full.nupkg",
+            "artifacts/installer/releases.win.json",
+            "artifacts/installer/assets.win.json",
+            "artifacts/installer/RELEASES"
+          )
           $lines = foreach ($file in $files) {
-            $hash = (Get-FileHash -Path $file -Algorithm SHA256).Hash.ToLowerInvariant()
-            "$hash  $file"
+            if (-not (Test-Path -LiteralPath $file)) {
+              Write-Error "Release asset '$file' is missing - this tag will not be published."
+              exit 1
+            }
+            $hash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $(Split-Path -Leaf $file)"
           }
           $lines | Set-Content -Path "SHA256SUMS.txt" -Encoding ascii
+          $files | Set-Content -Path "release-assets.txt" -Encoding ascii
           Get-Content "SHA256SUMS.txt"
 
       # `gh` is preinstalled on GitHub-hosted runners - no third-party
@@ -227,21 +271,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = "${{ github.ref_name }}"
-          $semver = $tag -replace '^v', ''
           $isPrerelease = $tag -match '-rc\.\d+$'
+          # Exactly the assets the checksum step hashed, plus the checksum
+          # file itself, so nothing is uploaded without a published hash.
+          $assets = @(Get-Content -Path "release-assets.txt") + "SHA256SUMS.txt"
           $args = @(
             "release", "create", $tag,
             "--title", "TempestOS $tag",
-            "--notes-file", "${{ steps.notes.outputs.path }}",
-            "TempestOS-$tag.zip",
-            "TempestOS-$tag-engineering-harness.zip",
-            "artifacts/installer/TempestOS-$tag-Setup.exe",
-            "artifacts/installer/TempestOS-$semver-full.nupkg",
-            "artifacts/installer/releases.win.json",
-            "artifacts/installer/assets.win.json",
-            "artifacts/installer/RELEASES",
-            "SHA256SUMS.txt"
-          )
+            "--notes-file", "${{ steps.notes.outputs.path }}"
+          ) + $assets
           if ($isPrerelease) {
             $args += "--prerelease"
           }

@@ -18,7 +18,8 @@ Work Package that actually touched its subject, and each time the only
 thing that caught it was a human's manual audit, usually during a
 release-closing review. `WP 11.2A` closes that gap: `scripts/governance-
 healthcheck.ps1` is TempestOS's first automated check for exactly this
-class of drift, run on every push, pull request, and manual dispatch.
+class of drift, run by CI on every pull request, on pushes to `main`,
+`release/**` and version tags, and on manual dispatch.
 
 `TD-57` named a second, structurally identical instance of the same
 pattern at `v0.13.x`: six *further* governance registers (Interface,

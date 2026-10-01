@@ -14,7 +14,9 @@
       1. Optionally pulls the current branch (-Pull).
       2. Packages the installer with scripts/package-installer.ps1 (the same
          command release.yml runs), at the version in the root VERSION file.
-      3. Closes any running TempestOS, then runs the Setup.exe it just built.
+      3. Closes the installed TempestOS if it is running (only processes run
+         from the install folder; a build started from a source checkout is
+         left alone), then runs the Setup.exe it just built.
          Velopack installs per user to %LOCALAPPDATA%\TempestOS and replaces
          whatever version was installed before, so the existing "TempestOS"
          Start menu and desktop shortcuts now open this build too.
@@ -79,11 +81,37 @@ if (-not (Test-Path $setup)) {
     throw "The installer was not produced at $setup."
 }
 
-Write-Host "Closing any running TempestOS..."
-Get-Process Tempest.Desktop, Tempest.Harness -ErrorAction SilentlyContinue | Stop-Process -Force
+$installedData = Join-Path $env:LOCALAPPDATA "TempestOS"
+
+# Only the installed copy is closed: a TempestOS run from a source checkout
+# (dotnet run, a test host) is a different program as far as the installer
+# is concerned, and killing it would lose that session's unsaved work
+# (v0.23.0 CI board G-28). Each window is asked to close first, the way a
+# person closing it would, and only a process still running after that is
+# stopped.
+function Stop-InstalledTempest {
+    $installPrefix = [System.IO.Path]::GetFullPath($installedData).TrimEnd('\') + '\'
+    $running = @(Get-Process Tempest.Desktop, Tempest.Harness -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -and $_.Path.StartsWith($installPrefix, [StringComparison]::OrdinalIgnoreCase) })
+    if ($running.Count -eq 0) {
+        return
+    }
+    foreach ($process in $running) {
+        Write-Host "Closing $($process.ProcessName) (PID $($process.Id)) from $($process.Path)..."
+        [void]$process.CloseMainWindow()
+    }
+    foreach ($process in $running) {
+        if (-not $process.WaitForExit(10000)) {
+            Write-Host "PID $($process.Id) did not close within 10 seconds; stopping it."
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Write-Host "Closing the installed TempestOS, if it is running..."
+Stop-InstalledTempest
 Start-Sleep -Seconds 2
 
-$installedData = Join-Path $env:LOCALAPPDATA "TempestOS"
 $marker = Join-Path $installedData "first-run.json"
 if (-not (Test-Path $marker)) {
     New-Item -ItemType Directory -Path $installedData -Force | Out-Null
@@ -99,7 +127,8 @@ if ($process.ExitCode -ne 0) {
     throw "Setup exited with code $($process.ExitCode)."
 }
 Start-Sleep -Seconds 3
-Get-Process Tempest.Desktop -ErrorAction SilentlyContinue | Stop-Process -Force
+# Velopack starts the app after a silent install; close that instance too.
+Stop-InstalledTempest
 
 $exe = Join-Path $installedData "current\Tempest.Desktop.exe"
 if (-not (Test-Path $exe)) {

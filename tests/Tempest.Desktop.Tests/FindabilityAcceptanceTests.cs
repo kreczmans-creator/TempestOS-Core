@@ -225,16 +225,8 @@ public sealed class FindabilityAcceptanceTests
         }
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(10);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 10, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

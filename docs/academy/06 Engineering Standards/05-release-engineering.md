@@ -22,16 +22,18 @@ article summarises; nothing below overrides that document.
 ## Branching Strategy
 
 `main` is the only permanent branch, always reflecting the latest
-release. Each minor release gets its own branch,
-`feature/vX.Y.0-<slug>`, cut from `main` at the prior release's tag —
-confirmed against this project's own history, `feature/v0.5.0-developer-experience`
-through `feature/v0.10.0-user-experience`. Every Work Package for that
-release lands as its own commit directly on the branch; the branch
-merges into `main` once, as a single non-fast-forward merge, at release
-close. Branches are never deleted. A hotfix gets its own branch,
-`hotfix/vX.Y.Z-<slug>` — see "Emergency Hotfix Process," below. There is
+release. A release is integrated on a `release/vX.Y.Z` branch (for
+example `release/v0.21.0`), cut from `main`; CI runs on every push to it.
+Work Packages reach it, or `main` directly, as pull requests from
+short-lived working branches, which have no required naming scheme (CI
+runs on their pull request, not on a push to them — see
+`04-continuous-integration.md`). The release branch merges into `main`
+at release close. A hotfix is an ordinary pull request branched from the
+affected release's tag — see "Emergency Hotfix Process," below. There is
 no permanent `develop`/`staging` branch — deliberately not adopted; this
-project has never needed one.
+project has never needed one. (Through `v0.10.0` release branches were
+named `feature/vX.Y.0-<slug>` and a hotfix branch
+`hotfix/vX.Y.Z-<slug>`; those names are historical.)
 
 ## Pull Request Workflow
 
@@ -73,8 +75,8 @@ an annotated tag. Pushing that tag triggers
 Gate run against the tagged commit itself, which then publishes a GitHub
 Release with **two separate assets attached, never one** — `Tempest.Desktop`'s
 own build (TempestOS's shipped application) and, separately,
-`Tempest.App`'s own build (the Internal Engineering Harness, `ADR-0101`,
-`WP 11.3B`) — so it is never ambiguous on the Release page which
+`Tempest.Harness`'s own build (the Internal Engineering Harness, `ADR-0101`,
+amended `WP 17.2B`), plus the Velopack installer and its update feed — so it is never ambiguous on the Release page which
 download *is* TempestOS. A release is not considered shipped until this
 second verification passes, not merely on the strength of an earlier CI
 run or a local script's own printed success message.

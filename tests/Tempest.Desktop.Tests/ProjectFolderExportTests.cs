@@ -330,20 +330,8 @@ public sealed class ProjectFolderExportTests
         return (T)field.GetValue(instance)!;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null)
-    {
-        var deadline = Deadline(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-
-        // v0.23.0 board B9: a wait that times out is a failure, never a
-        // silent fall-through to whatever the test checks next.
-        Assert.True(condition(), $"Timed out waiting for: {what}");
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

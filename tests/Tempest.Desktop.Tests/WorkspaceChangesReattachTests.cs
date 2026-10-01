@@ -438,15 +438,8 @@ public sealed class WorkspaceChangesReattachTests
         Assert.True(getRefreshCount() > beforeReattachRaise, "Expected a refresh again after reattaching — WP 19.7C.");
     }
 
-    private static async Task PumpUntilAsync(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-    }
+    private static Task PumpUntilAsync(Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 10, what: what);
 
     /// <summary>Pumps the dispatcher for a short, bounded window with nothing to wait for — used to prove a re-read did <em>not</em> happen, where waiting for a condition would mean waiting out the full timeout every time.</summary>
     private static async Task PumpBrieflyAsync()

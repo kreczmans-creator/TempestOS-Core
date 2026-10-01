@@ -719,21 +719,8 @@ public sealed class EngineeringCalculationJourneyTests
     }
 
     /// <summary>Re-renders until <paramref name="condition"/> holds, or a deadline expires. `TD-119`: no fixed wait.</summary>
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DesktopTestHelpers.Deadline(5);
-        while (true)
-        {
-            if (condition())
-                return;
-
-            if (DateTime.UtcNow >= deadline)
-                return;
-
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 5, null, DesktopTestHelpers.OpenPhaseOf(window), what);
 
     /// <summary>Asserts the text is genuinely on screen at a real laid-out size, not merely in the logical tree.</summary>
     private static void AssertRenderedContains(MainWindow window, Control surface, string fragment)
