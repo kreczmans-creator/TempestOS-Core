@@ -159,6 +159,34 @@ public sealed record DiagramLabel(string Id, DiagramPoint At, string? InputName 
 }
 
 /// <summary>
+/// An open line through <paramref name="Points"/>, in order: a curve drawn
+/// as straight runs (an S-N line), a guide back to an axis, a slope triangle.
+/// <paramref name="Dashed"/> draws it as a construction or limit line.
+/// </summary>
+public sealed record DiagramPolyline(string Id, IReadOnlyList<DiagramPoint> Points, bool Dashed = false, double Thickness = 2, string? InputName = null, string? Symbol = null, DiagramPoint? LabelAt = null)
+    : DiagramElement(Id, InputName, Symbol)
+{
+    /// <inheritdoc />
+    public override DiagramPoint LabelAnchor => LabelAt ?? (Points.Count == 0
+        ? new(0, 0)
+        : new((Points.Min(p => p.X) + Points.Max(p => p.X)) / 2, Points.Min(p => p.Y) - 12));
+}
+
+/// <summary>
+/// A pair of chart axes from <paramref name="Origin"/>: one across to
+/// <paramref name="XEnd"/>, one up to <paramref name="YEnd"/>, each ending
+/// in an arrowhead. Context only, never bound to an input, and never
+/// graduated: a chart-like diagram is as schematic as any other.
+/// Its titles are <see cref="DiagramLabel"/>s.
+/// </summary>
+public sealed record DiagramAxes(string Id, DiagramPoint Origin, double XEnd, double YEnd)
+    : DiagramElement(Id, null, null)
+{
+    /// <inheritdoc />
+    public override DiagramPoint LabelAnchor => Origin;
+}
+
+/// <summary>
 /// One drawing of a calculation: the variant drawn when every input named
 /// in <paramref name="When"/> holds the value given there (a choice's
 /// member name, or a number exactly as typed).

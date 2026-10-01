@@ -63,6 +63,17 @@ grow.
 - Showing the diagram on the recorded run and the calc-sheet export (WP
   E) is not done; the spec is in Core so that surface can reuse it.
 
+## Amendment: chart-like diagrams (D3)
+
+The bearing life, Miner fatigue and material margin calculations are
+drawn with two more shapes: a polyline (solid, or dashed for a guide or
+a limit line) and a pair of plain axes with arrowheads and no
+graduations. A chart-like diagram is as schematic as any other: the S-N
+line, the loading blocks and the stress bars are drawn representatively,
+labelled with the values as typed, and never place a result. A label
+too long for its box ends in an ellipsis; the screen-reader summary
+keeps the full text.
+
 ## Alternatives Considered
 
 **Images per calculation.** Rejected: cannot label live values or

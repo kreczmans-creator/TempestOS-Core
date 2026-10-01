@@ -21,14 +21,11 @@ public class CalculationDiagramsTests
     /// </summary>
     private static readonly string[] NoDiagramCeiling =
     [
-        MaterialSelectionMarginCalculationDefinition.Id,
         BoltedJointPreloadCalculationDefinition.Id,
         BoltGroupEccentricShearCalculationDefinition.Id,
         FilletWeldThroatStressCalculationDefinition.Id,
         LiftingLugPinJointCalculationDefinition.Id,
-        BearingRatingLifeCalculationDefinition.Id,
         ThickWalledCylinderCalculationDefinition.Id,
-        FatigueMinerCalculationDefinition.Id,
     ];
 
     public static TheoryData<string> EveryDiagram() => [.. CalculationDiagrams.All.Select(d => d.CalculationId)];
@@ -66,7 +63,7 @@ public class CalculationDiagramsTests
         ];
 
         Assert.All(simple, id => Assert.NotNull(CalculationDiagrams.For(id)));
-        Assert.Null(CalculationDiagrams.For(FatigueMinerCalculationDefinition.Id));
+        Assert.All(CalculationDiagrams.NoDiagramYet, id => Assert.Null(CalculationDiagrams.For(id)));
     }
 
     [Theory]
@@ -214,6 +211,88 @@ public class CalculationDiagramsTests
         var module = CalculationModuleDescriptors.For(ThermalExpansionStressCalculationDefinition.Id)!;
         Assert.Equal("not given", CalculationDiagramReader.ValueText(module, "RestraintStiffness", null));
         Assert.Equal(CalculationDiagramReader.Unknown, CalculationDiagramReader.ValueText(module, "Length", null));
+    }
+
+    [Fact]
+    public void TheChartLikeDiagrams_AreDrawn_OnAxesAndLines_BoundToTheirInputs()
+    {
+        string[] charts = [BearingRatingLifeCalculationDefinition.Id, FatigueMinerCalculationDefinition.Id, MaterialSelectionMarginCalculationDefinition.Id];
+        Assert.All(charts, id => Assert.NotNull(CalculationDiagrams.For(id)));
+        Assert.All(charts, id => Assert.DoesNotContain(id, CalculationDiagrams.NoDiagramYet));
+
+        // The S-N diagram: axes, the line bound to its slope, the reference point, the cut-off, the blocks drawn representatively.
+        var fatigue = CalculationDiagrams.For(FatigueMinerCalculationDefinition.Id)!;
+        var module = CalculationModuleDescriptors.For(FatigueMinerCalculationDefinition.Id)!;
+        var elements = fatigue.Variants.Single().Elements;
+        Assert.Single(elements.OfType<DiagramAxes>());
+        Assert.Contains(elements, e => e is DiagramPolyline { InputName: "Slope" });
+        Assert.Contains(elements, e => e is DiagramPolyline { InputName: "EnduranceLimit", Dashed: true });
+        Assert.True(elements.Count(e => e.InputName == "Blocks") >= 3);
+        Assert.Contains("representatively", fatigue.Variants.Single().Caption, StringComparison.Ordinal);
+        Assert.All(new[] { "CurveReference", "ReferenceStressRange", "ReferenceCycles", "Slope", "EnduranceLimit", "Blocks" }, name => Assert.Contains(name, fatigue.BoundInputNames));
+
+        var typed = new Dictionary<string, CalculationFormField>
+        {
+            ["ReferenceStressRange"] = Field("ReferenceStressRange", "71", "MPa"),
+            ["ReferenceCycles"] = Field("ReferenceCycles", "2000000"),
+            ["Slope"] = Field("Slope", "3"),
+            ["Blocks"] = new("Blocks", Rows: ["100 MPa, 100000", "60 MPa, 2000000"]),
+        };
+        var reading = CalculationDiagramReader.Read(fatigue, module, name => typed.GetValueOrDefault(name));
+        Assert.Equal("Δσ_C = 71 MPa", reading.LabelFor("ReferenceStressRange"));
+        Assert.Equal("N_C = 2000000", reading.LabelFor("ReferenceCycles"));
+        Assert.Equal("m = 3", reading.LabelFor("Slope"));
+        Assert.Equal("Δσ_L = not given", reading.LabelFor("EnduranceLimit"));
+        Assert.Equal("blocks = 2 rows", reading.LabelFor("Blocks"));
+        Assert.Equal("curve = ?", reading.LabelFor("CurveReference"));
+
+        // The bearing: the rolling element follows the bearing type; loads and speed are labelled as typed.
+        var bearing = CalculationDiagrams.For(BearingRatingLifeCalculationDefinition.Id)!;
+        var bearingModule = CalculationModuleDescriptors.For(BearingRatingLifeCalculationDefinition.Id)!;
+        var ball = CalculationDiagramReader.SelectVariant(bearing, bearingModule, name => name == "BearingType" ? Field(name, choice: nameof(RollingBearingType.Ball)) : null);
+        var roller = CalculationDiagramReader.SelectVariant(bearing, bearingModule, name => name == "BearingType" ? Field(name, choice: nameof(RollingBearingType.Roller)) : null);
+        Assert.Contains(ball.Elements, e => e is DiagramCircle { InputName: "BearingType" });
+        Assert.Contains(roller.Elements, e => e is DiagramPlate { InputName: "BearingType" });
+        Assert.DoesNotContain(roller.Elements, e => e is DiagramCircle { InputName: "BearingType" });
+        var loads = CalculationDiagramReader.Read(bearing, bearingModule, name => name switch
+        {
+            "RadialLoad" => Field(name, "2", "kN"),
+            "Speed" => Field(name, "1500", "r/min"),
+            _ => null,
+        });
+        Assert.Equal("F_r = 2 kN", loads.LabelFor("RadialLoad"));
+        Assert.Equal("F_a = ?", loads.LabelFor("AxialLoad"));
+        Assert.Equal("n = 1500 r/min", loads.LabelFor("Speed"));
+        Assert.Contains(loads.Shapes, s => s.Element is DiagramPointLoad { InputName: "AxialLoad", Direction: DiagramDirection.Right });
+
+        // The margin: one stress on the piece and on its bar, the allowable on its own bar.
+        var margin = CalculationDiagrams.For(MaterialSelectionMarginCalculationDefinition.Id)!;
+        var marginModule = CalculationModuleDescriptors.For(MaterialSelectionMarginCalculationDefinition.Id)!;
+        var stresses = CalculationDiagramReader.Read(margin, marginModule, name => name switch
+        {
+            "MaterialId" => Field(name, "S355"),
+            "AppliedStress" => Field(name, "120", "MPa"),
+            _ => null,
+        });
+        Assert.Equal("material = S355", stresses.LabelFor("MaterialId"));
+        Assert.Equal("σ = 120 MPa", stresses.LabelFor("AppliedStress"));
+        Assert.Equal("σ_allow = ?", stresses.LabelFor("MaterialAllowableStress"));
+        Assert.Contains(stresses.Shapes, s => s.Element is DiagramPlate { InputName: "MaterialAllowableStress" });
+        Assert.Contains(stresses.Shapes, s => s.Element is DiagramPlate { InputName: "AppliedStress" });
+    }
+
+    [Fact]
+    public void APolyline_IsLabelledAboveItsMiddle_AndAxesAreNeverBound()
+    {
+        var line = new DiagramPolyline("line", [new(10, 50), new(110, 20), new(210, 80)]);
+        Assert.Equal(new DiagramPoint(110, 8), line.LabelAnchor);
+        Assert.Equal(new DiagramPoint(5, 6), (line with { LabelAt = new(5, 6) }).LabelAnchor);
+        Assert.Equal(new DiagramPoint(0, 0), new DiagramPolyline("empty", []).LabelAnchor);
+
+        var axes = new DiagramAxes("axes", new(40, 200), 380, 20);
+        Assert.Null(axes.InputName);
+        Assert.Null(axes.Symbol);
+        Assert.Equal(new DiagramPoint(40, 200), axes.LabelAnchor);
     }
 
     private static CalculationFormField Field(string name, string? text = null, string? unit = null, string? choice = null) =>
