@@ -296,7 +296,7 @@ public sealed class OrganisationPicker : Border
         try
         {
             var typed = ProjectNumbering.Normalise(reference);
-            var customerCode = ProjectNumbering.IsValidCode(typed)
+            var customerCode = ProjectNumbering.IsValidCustomerCode(typed)
                                && await _organisations.FindByCustomerCodeAsync(typed!, CancellationToken.None).ConfigureAwait(true) is null
                 ? typed
                 : await _organisations.SuggestCustomerCodeAsync(name, cancellationToken: CancellationToken.None).ConfigureAwait(true);

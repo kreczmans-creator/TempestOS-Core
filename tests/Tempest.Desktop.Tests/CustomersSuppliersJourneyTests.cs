@@ -110,8 +110,14 @@ public sealed class CustomersSuppliersJourneyTests
 
             code.Text = "ACM";
             ClickButton(view, "Save organisation");
-            await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("exactly 5 letters", StringComparison.Ordinal) == true));
+            await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("exactly 5 characters", StringComparison.Ordinal) == true));
             Assert.Single(await organisations.ListAsync());
+
+            // ---- Digits are allowed in a customer code (runbook feedback C1) ----
+            code.Text = "acme2";
+            ClickButton(view, "Save organisation");
+            await RenderUntilAsync(window, () => organisations.FindByCustomerCodeAsync("ACME2").GetAwaiter().GetResult() is not null);
+            Assert.Equal("Acme Engineering Group", (await organisations.FindByCustomerCodeAsync("ACME2"))!.Definition.Name);
         }
         finally
         {
@@ -129,7 +135,7 @@ public sealed class CustomersSuppliersJourneyTests
             await host.StartAsync();
             var organisations = (IOrganisationCatalog)host.Services!.GetService(typeof(IOrganisationCatalog));
             await organisations.RegisterAsync(
-                "ACMEE", new Organisation { Reference = "ACMEE", Name = "Acme Engineering Ltd", CustomerCode = "ACMEE", Roles = [PartyKind.Customer] },
+                "ACMEE", new Organisation { Reference = "ACMEE", Name = "Acme Engineering Ltd", CustomerCode = "ACME1", Roles = [PartyKind.Customer] },
                 ReferenceProvenance.Unknown);
             await organisations.RegisterAsync(
                 "SUPPL", new Organisation { Reference = "SUPPL", Name = "Steel Supplies Ltd", CustomerCode = "STEEL", Roles = [PartyKind.Supplier] },
@@ -144,7 +150,7 @@ public sealed class CustomersSuppliersJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            // ---- A coded client: ACMEE-BRIDG, and its first quote is 001 ----
+            // ---- A coded client: ACME1-BRIDGE (five + six characters), and its first quote is 001 ----
             var browser = GetPrivateField<ProjectBrowserView>(window, "_projectBrowser");
             browser.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "New Project…"))
                 .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -155,7 +161,7 @@ public sealed class CustomersSuppliersJourneyTests
             var clientCombo = prompt.GetLogicalDescendants().OfType<ComboBox>().First();
             await RenderUntilAsync(window, () => clientCombo.ItemsSource is not null);
             var clientItems = clientCombo.ItemsSource!.Cast<ComboBoxItem>().ToList();
-            Assert.Contains(clientItems, i => Equals(i.Tag, "ACMEE") && Equals(i.Content, "Acme Engineering Ltd (ACMEE)"));
+            Assert.Contains(clientItems, i => Equals(i.Tag, "ACMEE") && Equals(i.Content, "Acme Engineering Ltd (ACME1)"));
             Assert.Contains(clientItems, i => Equals(i.Tag, "OLD-1"));
             Assert.DoesNotContain(clientItems, i => Equals(i.Tag, "SUPPL"));
             Assert.Contains(clientItems, i => Equals(i.Content, "Add organisation…"));
@@ -165,16 +171,17 @@ public sealed class CustomersSuppliersJourneyTests
 
             var reference = prompt.GetLogicalDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == "Project reference");
             var preview = prompt.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "Project identifier");
-            await RenderUntilAsync(window, () => reference.Text == "BRIDG" && preview.Text == "Identifier: ACMEE-BRIDG");
-            Assert.Equal("BRIDG", reference.Text);
-            Assert.Equal("Identifier: ACMEE-BRIDG", preview.Text);
+            await RenderUntilAsync(window, () => reference.Text == "BRIDGE" && preview.Text == "Identifier: ACME1-BRIDGE");
+            Assert.Equal("BRIDGE", reference.Text);
+            Assert.Equal("Identifier: ACME1-BRIDGE", preview.Text);
+            Assert.Equal("Six characters, e.g. BRIDG1", reference.Watermark);
 
             prompt.GetLogicalDescendants().OfType<CheckBox>().Single().IsChecked = true;
             prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => !prompt.IsVisible && navigator.Current.ProjectId is not null);
 
             var projectId = navigator.Current.ProjectId!.Value;
-            Assert.Equal("ACMEE-BRIDG", (await host.ProjectDirectory!.FindAsync(projectId))!.Identifier);
+            Assert.Equal("ACME1-BRIDGE", (await host.ProjectDirectory!.FindAsync(projectId))!.Identifier);
 
             var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
             IReadOnlyList<Quotation> quotations = [];
@@ -184,7 +191,7 @@ public sealed class CustomersSuppliersJourneyTests
                 quotations = domain.Repository.MaterialiseAsync<Quotation>(entries).GetAwaiter().GetResult();
                 return quotations.Count == 1;
             });
-            Assert.Equal("ACMEE-BRIDG-Q-001", quotations.Single().Reference);
+            Assert.Equal("ACME1-BRIDGE-Q-001", quotations.Single().Reference);
 
             // ---- An uncoded client: the old P-NNNN scheme, a reused reference is refused first ----
             await navigator.GoToProjectsAsync();
@@ -199,6 +206,11 @@ public sealed class CustomersSuppliersJourneyTests
             clientCombo.SelectedItem = clientCombo.ItemsSource!.Cast<ComboBoxItem>().Single(i => Equals(i.Tag, "ACMEE"));
             reference.Text = "BRIDG";
             prompt.GetLogicalDescendants().OfType<CheckBox>().Single().IsChecked = false;
+            prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () => prompt.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("exactly 6 characters", StringComparison.Ordinal) == true));
+            Assert.True(prompt.IsVisible);
+
+            reference.Text = "bridge";
             prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () => prompt.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("already in use", StringComparison.Ordinal) == true));
             Assert.True(prompt.IsVisible);

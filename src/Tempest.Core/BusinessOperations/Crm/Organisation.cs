@@ -172,11 +172,11 @@ public sealed record Organisation
     public string? Website { get; init; }
 
     /// <summary>
-    /// Its unique five-letter <b>customer code</b> (Product Owner decision
-    /// 2026-10-01 §3, `ADR-0156`) — upper-case A–Z, the <c>CUSTOMER</c> in
-    /// every project-centric identifier (<c>ACMEE-BRIDG</c>) and document
-    /// number (<c>ACMEE-BRIDG-Q-001</c>). Suggested from <see cref="Name"/>
-    /// by <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCode"/>,
+    /// Its unique five-character <b>customer code</b> (Product Owner decision
+    /// 2026-10-01 §3, `ADR-0156`) — upper-case A–Z or digits 0–9, the <c>CUSTOMER</c> in
+    /// every project-centric identifier (<c>ACME1-BRIDG1</c>) and document
+    /// number (<c>ACME1-BRIDG1-Q-001</c>). Suggested from <see cref="Name"/>
+    /// by <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode"/>,
     /// editable, and unique across the library
     /// (<see cref="IOrganisationCatalog.FindByCustomerCodeAsync"/>).
     /// <see langword="null"/> for an organisation recorded before this

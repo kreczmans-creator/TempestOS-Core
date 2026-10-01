@@ -28,14 +28,16 @@ public sealed class ProjectCentricNumberingJourneyTests
             QuotationTestHost.SignIn(host);
             var quotations = QuotationTestHost.Quotations(host);
 
-            bridge = await QuotationTestHost.CreateProjectAsync(host, "ACMEE-BRIDG", "Bridge");
+            bridge = await QuotationTestHost.CreateProjectAsync(host, "ACME1-BRIDG1", "Bridge");
+            // An all-letter five-plus-five identifier from the first build of
+            // ADR-0156 is still numbered inside its own identifier.
             var tower = await QuotationTestHost.CreateProjectAsync(host, "ACMEE-TOWER", "Tower");
             var legacy = await QuotationTestHost.CreateProjectAsync(host, "P-0001", "Legacy");
 
-            Assert.Equal("ACMEE-BRIDG-Q-001", (await quotations.CreateAsync(bridge)).Quotation!.Reference);
-            Assert.Equal("ACMEE-BRIDG-Q-002", (await quotations.CreateAsync(bridge)).Quotation!.Reference);
+            Assert.Equal("ACME1-BRIDG1-Q-001", (await quotations.CreateAsync(bridge)).Quotation!.Reference);
+            Assert.Equal("ACME1-BRIDG1-Q-002", (await quotations.CreateAsync(bridge)).Quotation!.Reference);
             Assert.Equal("ACMEE-TOWER-Q-001", (await quotations.CreateAsync(tower)).Quotation!.Reference);
-            Assert.Equal("ACMEE-BRIDG-CO-001", (await quotations.CreateAsync(bridge, kind: QuotationKind.ChangeOrder)).Quotation!.Reference);
+            Assert.Equal("ACME1-BRIDG1-CO-001", (await quotations.CreateAsync(bridge, kind: QuotationKind.ChangeOrder)).Quotation!.Reference);
 
             var legacyQuote = (await quotations.CreateAsync(legacy)).Quotation!;
             Assert.Equal($"Q-{legacyQuote.QuoteDate.Year}-001", legacyQuote.Reference);
@@ -56,7 +58,7 @@ public sealed class ProjectCentricNumberingJourneyTests
 
             var next = await QuotationTestHost.Quotations(host).CreateAsync(bridge);
             Assert.True(next.Succeeded, next.Reason);
-            Assert.Equal("ACMEE-BRIDG-Q-003", next.Quotation!.Reference);
+            Assert.Equal("ACME1-BRIDG1-Q-003", next.Quotation!.Reference);
 
             await manager.ShutdownAsync();
             await host.DisposeAsync();
@@ -71,12 +73,12 @@ public sealed class ProjectCentricNumberingJourneyTests
         PurchaseOrderTestHost.SignIn(host);
         var orders = PurchaseOrderTestHost.PurchaseOrders(host);
 
-        var bridge = await PurchaseOrderTestHost.CreateProjectAsync(host, "ACMEE-BRIDG", "Bridge");
+        var bridge = await PurchaseOrderTestHost.CreateProjectAsync(host, "ACME1-BRIDG1", "Bridge");
         var tower = await PurchaseOrderTestHost.CreateProjectAsync(host, "OTHER-TOWER", "Tower");
         var legacy = await PurchaseOrderTestHost.CreateProjectAsync(host, "P-0002", "Legacy");
 
-        Assert.Equal("ACMEE-BRIDG-PO-001", (await orders.CreateAsync(bridge)).Order!.Reference);
-        Assert.Equal("ACMEE-BRIDG-PO-002", (await orders.CreateAsync(bridge)).Order!.Reference);
+        Assert.Equal("ACME1-BRIDG1-PO-001", (await orders.CreateAsync(bridge)).Order!.Reference);
+        Assert.Equal("ACME1-BRIDG1-PO-002", (await orders.CreateAsync(bridge)).Order!.Reference);
         Assert.Equal("OTHER-TOWER-PO-001", (await orders.CreateAsync(tower)).Order!.Reference);
 
         var legacyOrder = (await orders.CreateAsync(legacy)).Order!;

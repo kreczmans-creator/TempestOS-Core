@@ -25,18 +25,24 @@ public sealed class ProjectFolderLocatorTests
         var organisations = ProjectCommercialTestHost.Organisations(host);
         var locator = new ProjectFolderLocator(new ProjectFolderService(new ProjectFolderOptions(folderRoot.Path, [])), directory, organisations);
 
-        var withClient = await directory.CreateAsync("LOC-0001", "Located project");
-        await organisations.RegisterAsync("ACMEX", OperationsFixtures.Organisation("ACMEX"), OperationsFixtures.Verified());
+        var withClient = await directory.CreateAsync("ACME1-LOCAT1", "Located project");
+        await organisations.RegisterAsync("ACMEX", OperationsFixtures.Organisation("ACMEX") with { CustomerCode = "ACME1" }, OperationsFixtures.Verified());
         Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(withClient.Id, "ACMEX")).Succeeded);
 
         var filed = await locator.EnsureAsync(withClient.Id);
         Assert.Equal(ProjectFolderStatus.Created, filed.Status);
-        Assert.Equal(Path.Combine(folderRoot.Path, "ACMEX Fictional Client Ltd", "LOC-0001 Located project"), filed.ProjectFolder);
+        Assert.Equal(Path.Combine(folderRoot.Path, "ACME1", "ACME1-LOCAT1"), filed.ProjectFolder);
         Assert.Equal(filed.ProjectFolder, await locator.QuoteFolderForAsync(withClient.Id));
+
+        var withUncodedClient = await directory.CreateAsync("LOC-0003", "Uncoded client project");
+        await organisations.RegisterAsync("NOCODE", OperationsFixtures.Organisation("NOCODE"), OperationsFixtures.Verified());
+        Assert.True((await ProjectCommercialTestHost.ProjectCommercial(host).SetClientAsync(withUncodedClient.Id, "NOCODE")).Succeeded);
+        var byName = await locator.EnsureAsync(withUncodedClient.Id);
+        Assert.Equal(Path.Combine(folderRoot.Path, "Fictional Client Ltd", "LOC-0003"), byName.ProjectFolder);
 
         var withoutClient = await directory.CreateAsync("LOC-0002", "Internal project");
         var unfiled = await locator.EnsureAsync(withoutClient.Id);
-        Assert.Equal(Path.Combine(folderRoot.Path, ProjectFolderService.NoCustomerFolderName, "LOC-0002 Internal project"), unfiled.ProjectFolder);
+        Assert.Equal(Path.Combine(folderRoot.Path, ProjectFolderService.NoCustomerFolderName, "LOC-0002"), unfiled.ProjectFolder);
 
         var missing = await locator.EnsureAsync(Guid.NewGuid());
         Assert.Equal(ProjectFolderStatus.Failed, missing.Status);

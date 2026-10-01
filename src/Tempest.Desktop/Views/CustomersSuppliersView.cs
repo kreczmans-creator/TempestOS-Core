@@ -32,10 +32,11 @@ namespace Tempest.Desktop.Views;
 /// </para>
 /// <para>
 /// <b>Customer code (§3, `ADR-0156`).</b> Every organisation added here
-/// gets a unique five-letter code, suggested from its name by
+/// gets a unique five-character code, suggested from its name by
 /// <see cref="IOrganisationCatalog.SuggestCustomerCodeAsync"/> as the name
 /// is typed (until the code box is edited by hand), upper-cased and
-/// refused unless it is exactly five letters A–Z and held by no other
+/// refused unless it is exactly five characters (letters A–Z or digits
+/// 0–9) and held by no other
 /// organisation. A new organisation's record id and
 /// <see cref="Organisation.Reference"/> are its code at the moment it is
 /// added; the code itself stays editable afterwards, and changing it
@@ -69,7 +70,7 @@ public sealed class CustomersSuppliersView : UserControl
 
     private readonly TextBlock _formHeading = SectionHeading("New organisation");
     private readonly TextBox _name = Field("Legal name");
-    private readonly TextBox _code = Field("Customer code");
+    private readonly TextBox _code = CodeField();
     private readonly ComboBox _type = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
     private readonly TextBox _addressLine1 = Field("Address line 1");
     private readonly TextBox _addressLine2 = Field("Address line 2");
@@ -183,7 +184,7 @@ public sealed class CustomersSuppliersView : UserControl
         var body = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceMd, MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Left };
         body.Children.Add(PageHeading.Label("BUSINESS · CUSTOMERS & SUPPLIERS"));
         body.Children.Add(PageHeading.Title("Customers & Suppliers"));
-        body.Children.Add(PageHeading.Lead("Every organisation the business sells to or buys from — company details, a unique five-letter customer code used in project and document numbers, and the people to contact there."));
+        body.Children.Add(PageHeading.Lead("Every organisation the business sells to or buys from — company details, a unique five-character customer code (letters and digits) used in project and document numbers, and the people to contact there."));
         body.Children.Add(listHeader);
         body.Children.Add(_list);
         body.Children.Add(_status);
@@ -361,7 +362,7 @@ public sealed class CustomersSuppliersView : UserControl
         var all = await _organisations.ListAsync().ConfigureAwait(true);
         var code = ProjectNumbering.Normalise(_code.Text);
         var takenElsewhere = all.Where(r => !string.Equals(r.Id, _editingRecordId, StringComparison.Ordinal)).Select(r => r.Definition.CustomerCode);
-        if (ProjectNumbering.Validate(code, takenElsewhere, "Customer code") is { } refusal)
+        if (ProjectNumbering.ValidateCustomerCode(code, takenElsewhere) is { } refusal)
         {
             _status.Text = refusal;
             return;
@@ -531,6 +532,14 @@ public sealed class CustomersSuppliersView : UserControl
     }
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    private static TextBox CodeField()
+    {
+        var box = Field("Customer code");
+        box.Watermark = "Customer code — five characters, e.g. ACME1";
+        box.MaxLength = ProjectNumbering.CustomerCodeLength;
+        return box;
+    }
 
     private static TextBox Field(string label)
     {

@@ -14,13 +14,14 @@ public sealed record ProjectDocumentType(string Code, string Description);
 
 /// <summary>
 /// Project-centric numbering (Product Owner decision 2026-10-01 §3,
-/// `ADR-0156`): every customer organisation carries a unique five-letter
-/// <b>customer code</b>, every project a unique five-letter <b>project
-/// reference</b>, a new project is identified as
-/// <c>CUSTOMER-PROJECTREF</c> (for example <c>ACMEE-BRIDG</c>), and every
+/// `ADR-0156`, amended by runbook feedback C1): every customer
+/// organisation carries a unique five-character <b>customer code</b>, every
+/// project a unique six-character <b>project reference</b> — both upper-case
+/// letters A–Z and digits 0–9 — a new project is identified as
+/// <c>CUSTOMER-PROJECTREF</c> (for example <c>ACME1-BRIDG1</c>), and every
 /// generated document number inside it reads
 /// <c>CUSTOMER-PROJECTREF-DOCTYPE-NNN</c> (for example
-/// <c>ACMEE-BRIDG-Q-001</c>) — a sequence per project per document type,
+/// <c>ACME1-BRIDG1-Q-001</c>) — a sequence per project per document type,
 /// starting at 001, so the first quote in every project is 001.
 /// </summary>
 /// <remarks>
@@ -44,18 +45,30 @@ public sealed record ProjectDocumentType(string Code, string Description);
 /// <para>
 /// <b>No migration; the old scheme is the fallback.</b> Projects and
 /// records that pre-date this decision keep their identifiers. A project
-/// whose identifier is not of the <c>AAAAA-BBBBB</c> shape (an older
+/// whose identifier is not of the <c>XXXXX-XXXXXX</c> shape (an older
 /// <c>P-0001</c>, or a new project created with no client, or whose
 /// client has no customer code) is numbered exactly as before:
 /// <c>Q-&lt;year&gt;-&lt;nnn&gt;</c>, <c>CO-&lt;year&gt;-&lt;nnn&gt;</c>,
 /// <c>PO-&lt;year&gt;-&lt;nnn&gt;</c>, and no identifier at all on an
-/// invoice request or a document.
+/// invoice request or a document. The all-letter <c>AAAAA-BBBBB</c> shape
+/// the first build of this decision issued (a five-letter project
+/// reference) is still recognised as project-centric, so projects created
+/// with it keep numbering inside their own identifier.
 /// </para>
 /// </remarks>
 public static class ProjectNumbering
 {
-    /// <summary>The fixed length of a customer code and of a project reference.</summary>
-    public const int CodeLength = 5;
+    /// <summary>The fixed length of a customer code — five characters A–Z or 0–9.</summary>
+    public const int CustomerCodeLength = 5;
+
+    /// <summary>The fixed length of a project reference — six characters A–Z or 0–9.</summary>
+    public const int ProjectReferenceLength = 6;
+
+    /// <summary>The length of a project reference issued by the first build of this decision (five letters A–Z) — still recognised inside an existing identifier, never issued.</summary>
+    private const int LegacyProjectReferenceLength = 5;
+
+    /// <summary>The characters a code may hold, in the order a suggestion steps through them.</summary>
+    private const string CodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     /// <summary>A quotation (<c>Tempest.Core.Quotations.Quotation</c>, <c>QuotationKind.Quotation</c>).</summary>
     public const string Quotation = "Q";
@@ -98,110 +111,131 @@ public static class ProjectNumbering
         new(Calculation, "Calculation (reserved)"),
     ];
 
-    /// <summary>Whether <paramref name="code"/> is exactly five upper-case letters A–Z — the shape of a customer code and of a project reference.</summary>
-    public static bool IsValidCode(string? code)
-    {
-        if (code is null || code.Length != CodeLength)
-            return false;
+    /// <summary>Whether <paramref name="code"/> is exactly five characters, each an upper-case letter A–Z or a digit 0–9 — the shape of a customer code.</summary>
+    public static bool IsValidCustomerCode(string? code) => IsCode(code, CustomerCodeLength, allowDigits: true);
 
-        foreach (var c in code)
-        {
-            if (c is < 'A' or > 'Z')
-                return false;
-        }
+    /// <summary>Whether <paramref name="code"/> is exactly six characters, each an upper-case letter A–Z or a digit 0–9 — the shape of a new project reference.</summary>
+    public static bool IsValidProjectReference(string? code) => IsCode(code, ProjectReferenceLength, allowDigits: true);
 
-        return true;
-    }
-
-    /// <summary>Trims and upper-cases what a person typed — <c>" acmee "</c> → <c>"ACMEE"</c> — without otherwise validating it; <see langword="null"/> stays <see langword="null"/>.</summary>
+    /// <summary>Trims and upper-cases what a person typed — <c>" acme1 "</c> → <c>"ACME1"</c> — without otherwise validating it; <see langword="null"/> stays <see langword="null"/>.</summary>
     public static string? Normalise(string? code) =>
         string.IsNullOrWhiteSpace(code) ? null : code.Trim().ToUpperInvariant();
 
     /// <summary>
-    /// Suggests a five-letter code derived from <paramref name="name"/>
-    /// that is not already in <paramref name="taken"/> (compared
-    /// case-insensitively).
+    /// Suggests a five-character customer code derived from
+    /// <paramref name="name"/> that is not already in
+    /// <paramref name="taken"/> (compared case-insensitively) — see
+    /// <see cref="SuggestCode"/>.
+    /// </summary>
+    public static string SuggestCustomerCode(string? name, IEnumerable<string?> taken) =>
+        SuggestCode(name, taken, CustomerCodeLength);
+
+    /// <summary>
+    /// Suggests a six-character project reference derived from
+    /// <paramref name="name"/> that is not already in
+    /// <paramref name="taken"/> (compared case-insensitively) — see
+    /// <see cref="SuggestCode"/>.
+    /// </summary>
+    public static string SuggestProjectReference(string? name, IEnumerable<string?> taken) =>
+        SuggestCode(name, taken, ProjectReferenceLength);
+
+    /// <summary>
+    /// Suggests a <paramref name="length"/>-character code derived from
+    /// <paramref name="name"/> that is not already in
+    /// <paramref name="taken"/> (compared case-insensitively).
     /// </summary>
     /// <remarks>
-    /// The first five letters of <paramref name="name"/> (accents folded,
-    /// everything that is not A–Z dropped), padded with <c>X</c> — "Acme
-    /// Engineering" → <c>ACMEE</c>, "Bridge" → <c>BRIDG</c>, "Ox" →
-    /// <c>OXXXX</c>. Where that is taken, the last letter steps through
-    /// A–Z, then the last two, until a free code is found — deterministic,
-    /// so the same name over the same taken set always suggests the same
-    /// code. A person may always overwrite the suggestion.
+    /// The first <paramref name="length"/> letters and digits of
+    /// <paramref name="name"/> (accents folded, everything that is not A–Z
+    /// or 0–9 dropped), padded with <c>X</c> — at five characters "Acme
+    /// Engineering" → <c>ACMEE</c>, "Acme 1" → <c>ACME1</c>, "Ox" →
+    /// <c>OXXXX</c>; at six "Bridge" → <c>BRIDGE</c>. Where that is taken,
+    /// the last character steps through A–Z then 0–9, then the last two,
+    /// until a free code is found — deterministic, so the same name over
+    /// the same taken set always suggests the same code. A person may
+    /// always overwrite the suggestion.
     /// </remarks>
-    public static string SuggestCode(string? name, IEnumerable<string?> taken)
+    public static string SuggestCode(string? name, IEnumerable<string?> taken, int length)
     {
         ArgumentNullException.ThrowIfNull(taken);
+        ArgumentOutOfRangeException.ThrowIfLessThan(length, 1);
 
         var takenSet = new HashSet<string>(
             taken.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t!.Trim().ToUpperInvariant()),
             StringComparer.Ordinal);
 
-        var stem = LettersOf(name);
+        var stem = CodeCharactersOf(name);
         if (stem.Length == 0)
             stem = "X";
 
-        var baseCode = stem.Length >= CodeLength ? stem[..CodeLength] : stem.PadRight(CodeLength, 'X');
+        var baseCode = stem.Length >= length ? stem[..length] : stem.PadRight(length, 'X');
         if (!takenSet.Contains(baseCode))
             return baseCode;
 
-        // Step the last letter, then the last two, through A–Z.
-        for (var suffixLength = 1; suffixLength <= CodeLength; suffixLength++)
+        // Step the last character, then the last two, through A–Z then 0–9.
+        for (var suffixLength = 1; suffixLength <= length; suffixLength++)
         {
-            var head = baseCode[..(CodeLength - suffixLength)];
-            var combinations = (int)Math.Pow(26, suffixLength);
-            for (var i = 0; i < combinations; i++)
+            var head = baseCode[..(length - suffixLength)];
+            var combinations = (long)Math.Pow(CodeAlphabet.Length, suffixLength);
+            for (long i = 0; i < combinations; i++)
             {
-                var candidate = head + EncodeLetters(i, suffixLength);
+                var candidate = head + EncodeCharacters(i, suffixLength);
                 if (!takenSet.Contains(candidate))
                     return candidate;
             }
         }
 
-        throw new InvalidOperationException("Every five-letter code is already taken.");
+        throw new InvalidOperationException($"Every {length}-character code is already taken.");
     }
 
     /// <summary>
-    /// Why <paramref name="code"/> cannot be used as a code, or
-    /// <see langword="null"/> when it can: it must be exactly five letters
-    /// A–Z (after <see cref="Normalise"/>) and not in <paramref name="taken"/>.
+    /// Why <paramref name="code"/> cannot be used as a customer code, or
+    /// <see langword="null"/> when it can: it must be exactly five
+    /// characters A–Z or 0–9 (after <see cref="Normalise"/>) and not in
+    /// <paramref name="taken"/>.
     /// </summary>
     /// <param name="code">The candidate, as typed.</param>
     /// <param name="taken">Every code already in use elsewhere — the caller excludes the record being edited.</param>
-    /// <param name="what">How the message names the code ("Customer code", "Project reference").</param>
-    public static string? Validate(string? code, IEnumerable<string?> taken, string what)
-    {
-        ArgumentNullException.ThrowIfNull(taken);
-        ArgumentException.ThrowIfNullOrWhiteSpace(what);
+    public static string? ValidateCustomerCode(string? code, IEnumerable<string?> taken) =>
+        Validate(code, taken, "Customer code", CustomerCodeLength);
 
-        var normalised = Normalise(code);
-        if (!IsValidCode(normalised))
-            return $"{what} must be exactly {CodeLength} letters A–Z.";
+    /// <summary>
+    /// Why <paramref name="code"/> cannot be used as a new project
+    /// reference, or <see langword="null"/> when it can: it must be exactly
+    /// six characters A–Z or 0–9 (after <see cref="Normalise"/>) and not in
+    /// <paramref name="taken"/>.
+    /// </summary>
+    /// <param name="code">The candidate, as typed.</param>
+    /// <param name="taken">Every project reference already in use.</param>
+    public static string? ValidateProjectReference(string? code, IEnumerable<string?> taken) =>
+        Validate(code, taken, "Project reference", ProjectReferenceLength);
 
-        if (taken.Any(t => string.Equals(Normalise(t), normalised, StringComparison.Ordinal)))
-            return $"{what} '{normalised}' is already in use.";
-
-        return null;
-    }
-
-    /// <summary>Composes a project-centric project identifier — <c>ACMEE</c> + <c>BRIDG</c> → <c>ACMEE-BRIDG</c>.</summary>
-    /// <exception cref="ArgumentException">Either part is not a valid five-letter code.</exception>
+    /// <summary>Composes a project-centric project identifier — <c>ACME1</c> + <c>BRIDG1</c> → <c>ACME1-BRIDG1</c>.</summary>
+    /// <exception cref="ArgumentException">The customer code is not five characters, or the project reference not six, A–Z or 0–9.</exception>
     public static string ComposeProjectIdentifier(string customerCode, string projectReference)
     {
         var customer = Normalise(customerCode);
         var project = Normalise(projectReference);
 
-        if (!IsValidCode(customer))
-            throw new ArgumentException($"'{customerCode}' is not a five-letter customer code.", nameof(customerCode));
-        if (!IsValidCode(project))
-            throw new ArgumentException($"'{projectReference}' is not a five-letter project reference.", nameof(projectReference));
+        if (!IsValidCustomerCode(customer))
+            throw new ArgumentException($"'{customerCode}' is not a five-character customer code.", nameof(customerCode));
+        if (!IsValidProjectReference(project))
+            throw new ArgumentException($"'{projectReference}' is not a six-character project reference.", nameof(projectReference));
 
         return $"{customer}-{project}";
     }
 
-    /// <summary>Splits a project-centric identifier (<c>ACMEE-BRIDG</c>) into its customer code and project reference; <see langword="false"/> for any other shape (<c>P-0001</c>, blank, <see langword="null"/>).</summary>
+    /// <summary>
+    /// Splits a project-centric identifier (<c>ACME1-BRIDG1</c>) into its
+    /// customer code and project reference; <see langword="false"/> for
+    /// any other shape (<c>P-0001</c>, blank, <see langword="null"/>).
+    /// </summary>
+    /// <remarks>
+    /// The all-letter <c>AAAAA-BBBBB</c> identifiers the first build of
+    /// this decision issued (a five-letter project reference) are still
+    /// recognised, so numbering keeps working inside projects created with
+    /// them.
+    /// </remarks>
     public static bool TryParseProjectIdentifier(string? identifier, out string customerCode, out string projectReference)
     {
         customerCode = string.Empty;
@@ -211,12 +245,18 @@ public static class ProjectNumbering
             return false;
 
         var trimmed = identifier.Trim();
-        if (trimmed.Length != (CodeLength * 2) + 1 || trimmed[CodeLength] != '-')
+        if (trimmed.Length <= CustomerCodeLength || trimmed[CustomerCodeLength] != '-')
             return false;
 
-        var customer = trimmed[..CodeLength];
-        var project = trimmed[(CodeLength + 1)..];
-        if (!IsValidCode(customer) || !IsValidCode(project))
+        var customer = trimmed[..CustomerCodeLength];
+        var project = trimmed[(CustomerCodeLength + 1)..];
+        if (!IsValidCustomerCode(customer))
+            return false;
+
+        var isCurrent = IsValidProjectReference(project);
+        var isLegacy = IsCode(customer, CustomerCodeLength, allowDigits: false)
+                       && IsCode(project, LegacyProjectReferenceLength, allowDigits: false);
+        if (!isCurrent && !isLegacy)
             return false;
 
         customerCode = customer;
@@ -284,7 +324,38 @@ public static class ProjectNumbering
         return $"{prefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
     }
 
-    private static string LettersOf(string? name)
+    private static string? Validate(string? code, IEnumerable<string?> taken, string what, int length)
+    {
+        ArgumentNullException.ThrowIfNull(taken);
+
+        var normalised = Normalise(code);
+        if (!IsCode(normalised, length, allowDigits: true))
+            return $"{what} must be exactly {length} characters, letters A–Z or digits 0–9.";
+
+        if (taken.Any(t => string.Equals(Normalise(t), normalised, StringComparison.Ordinal)))
+            return $"{what} '{normalised}' is already in use.";
+
+        return null;
+    }
+
+    private static bool IsCode(string? code, int length, bool allowDigits)
+    {
+        if (code is null || code.Length != length)
+            return false;
+
+        foreach (var c in code)
+        {
+            if (c is >= 'A' and <= 'Z')
+                continue;
+            if (allowDigits && c is >= '0' and <= '9')
+                continue;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static string CodeCharactersOf(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
             return string.Empty;
@@ -293,20 +364,20 @@ public static class ProjectNumbering
         foreach (var c in name.Normalize(NormalizationForm.FormD))
         {
             var upper = char.ToUpperInvariant(c);
-            if (upper is >= 'A' and <= 'Z')
+            if (upper is (>= 'A' and <= 'Z') or (>= '0' and <= '9'))
                 builder.Append(upper);
         }
 
         return builder.ToString();
     }
 
-    private static string EncodeLetters(int value, int length)
+    private static string EncodeCharacters(long value, int length)
     {
         var chars = new char[length];
         for (var i = length - 1; i >= 0; i--)
         {
-            chars[i] = (char)('A' + (value % 26));
-            value /= 26;
+            chars[i] = CodeAlphabet[(int)(value % CodeAlphabet.Length)];
+            value /= CodeAlphabet.Length;
         }
 
         return new string(chars);
