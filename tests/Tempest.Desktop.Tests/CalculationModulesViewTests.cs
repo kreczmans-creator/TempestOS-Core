@@ -41,7 +41,7 @@ public sealed class CalculationModulesViewTests
             LayOut(window);
 
             Assert.Equal(ProductCalculationCatalogue.CalculationIds.Count, view.Catalogue.Sum(g => g.Modules.Count));
-            Assert.Equal(16, view.Catalogue.Sum(g => g.Modules.Count));
+            Assert.Equal(19, view.Catalogue.Sum(g => g.Modules.Count));
 
             var columns = view.GetLogicalDescendants().OfType<ScrollViewer>()
                 .Where(s => AutomationProperties.GetName(s) is CalculationModulesView.LeftColumnAutomationName or CalculationModulesView.RightColumnAutomationName)
@@ -68,6 +68,52 @@ public sealed class CalculationModulesViewTests
             AssertRendered(window, view, "Libraries");
             AssertRendered(window, view, "Inputs");
             await Task.CompletedTask;
+        });
+    }
+
+    [AvaloniaFact]
+    public async Task TheRecoveredToleranceAndThermalModules_AreInTheCatalogue_AndTheToleranceStackRunsFromItsForm()
+    {
+        await InCalculatorsAsync(async (host, window, view) =>
+        {
+            LayOut(window);
+
+            var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalculationModulesView.CatalogueAutomationName);
+            Assert.Contains(view.Catalogue, g => g.Category == "Tolerancing" && g.Modules.Any(m => m.Id == ToleranceStackCalculationDefinition.Id));
+            var thermal = view.Catalogue.Single(g => g.Category == "Thermal");
+            Assert.Contains(thermal.Modules, m => m.Id == ThermalResistanceChainCalculationDefinition.Id);
+            Assert.Contains(thermal.Modules, m => m.Id == PlaneWallHeatTransferCalculationDefinition.Id);
+            Assert.Contains(tree.Items.OfType<TreeViewItem>(), c => Equals(c.Header, "Tolerancing"));
+
+            // The thermal chain's form: a temperature in degrees Celsius, and a rows box.
+            view.SelectModule(ThermalResistanceChainCalculationDefinition.Id);
+            LayOut(window);
+            Assert.Equal("degC", view.UnitPicker("AmbientTemperature")!.SelectedItem);
+            Assert.Contains("degF", view.UnitPicker("AmbientTemperature")!.Items.OfType<string>());
+            Assert.IsType<TextBox>(view.FieldControl("Stages"));
+            AssertRendered(window, view, "calc.thermal-resistance-chain.md");
+
+            // The tolerance stack, typed one contributor per line.
+            view.SelectModule(ToleranceStackCalculationDefinition.Id);
+            LayOut(window);
+            var rows = Assert.IsType<TextBox>(view.FieldControl("Contributors"));
+            AssertUsable(window, rows, "the contributors box");
+            Assert.Equal("Contributors", AutomationProperties.GetName(rows));
+
+            view.SetField("Contributors", rows: ["Housing bore depth, Adds, 40 mm, 0.1 mm, 0 mm", "Bearing width, Subtracts, 20 mm, 0 mm, -0.12 mm", "Spacer, Subtracts, 19.5 mm, 0.02 mm, -0.02 mm"]);
+            view.SetField("MinimumResult", "0.40", "mm");
+            view.SetField("MaximumResult", "0.80", "mm");
+            view.SetField("SigmaPerTolerance", "3");
+            view.SetField("StatisticalBasis", "capable, centred and independent");
+
+            await ClickAsync(window, view, CalculationModulesView.CalculateCaption);
+            await RenderUntilAsync(window, () => SurfaceOf(window).LastRun is not null);
+            view = SurfaceOf(window);
+
+            Assert.Equal("Meets its criteria", view.LastRun!.OutcomeSummary);
+            Assert.Contains(view.LastRun.Results, r => r.Label == "Worst case minimum" && r.Display == "0.48 mm");
+            AssertRendered(window, view, "Meets its criteria");
+            AssertRendered(window, view, "0.74 mm");
         });
     }
 

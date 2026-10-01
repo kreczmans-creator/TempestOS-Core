@@ -56,6 +56,13 @@ public static class CalculationInputUnits
         [nameof(TemperatureDelta)] = Register(TemperatureDeltaUnits.All),
         [nameof(MassDensity)] = Register(MassDensityUnits.All),
         [nameof(Mass)] = Register(MassUnits.All),
+
+        // The recovered tolerance and thermal modules.
+        [nameof(Power)] = Register(PowerUnits.All),
+        [nameof(Temperature)] = Register(TemperatureUnits.All),
+        [nameof(ThermalResistance)] = Register(ThermalResistanceUnits.All),
+        [nameof(ThermalConductivity)] = Register(ThermalConductivityUnits.All),
+        [nameof(HeatTransferCoefficient)] = Register(HeatTransferCoefficientUnits.All),
     };
 
     /// <summary>Every dimension name this registry knows.</summary>

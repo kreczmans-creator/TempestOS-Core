@@ -153,9 +153,11 @@ public static class CalculationModuleForm
         {
             var value = property.GetValue(record.Result);
 
-            if (value is EngineeringCheckOutcome checkOutcome && property.Name == "Outcome")
+            // An optional outcome (no criterion was stated) is no outcome:
+            // the run is simply computed, and no "Outcome: —" row is shown.
+            if (property.Name == "Outcome" && (Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType) == typeof(EngineeringCheckOutcome))
             {
-                outcome = checkOutcome;
+                outcome = value as EngineeringCheckOutcome?;
                 continue;
             }
 
@@ -450,6 +452,30 @@ public static class CalculationModuleForm
                     }
 
                     arguments[c] = number;
+                }
+                else if (cellType == typeof(string))
+                {
+                    // A row's own name: a tolerance contributor, a thermal stage.
+                    if (parts[c].Length == 0)
+                    {
+                        problem($"row {r + 1}, {cells[c].Name}: nothing was entered");
+                        return null;
+                    }
+
+                    arguments[c] = parts[c];
+                }
+                else if (cellType.IsEnum)
+                {
+                    // By member name only, ignoring case: a number would
+                    // parse to an undefined member and is refused.
+                    if (!Enum.TryParse(cellType, parts[c], ignoreCase: true, out var member) || !Enum.IsDefined(cellType, member!)
+                        || parts[c].Length == 0 || char.IsDigit(parts[c][0]) || parts[c][0] is '-' or '+')
+                    {
+                        problem($"row {r + 1}, {cells[c].Name}: '{parts[c]}' is not one of {string.Join(", ", Enum.GetNames(cellType))}");
+                        return null;
+                    }
+
+                    arguments[c] = member;
                 }
                 else
                 {

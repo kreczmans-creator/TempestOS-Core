@@ -126,7 +126,7 @@ public static class CalculationModuleDescriptors
     private const string Docs = "docs/engineering/calculations/";
     private const string Material = "MaterialPin";
 
-    /// <summary>Every module descriptor, in registration order: the five original definitions, then the eleven `WP 21.7A` modules.</summary>
+    /// <summary>Every module descriptor, in registration order: the five original definitions, the eleven `WP 21.7A` modules, then the three tolerance and thermal modules recovered from the v0.16.0 suite.</summary>
     public static IReadOnlyList<CalculationModuleDescriptor> All { get; } =
     [
         new(BoltShearCapacityCalculationDefinition.Id, "Bolt shear capacity", "Structural",
@@ -345,6 +345,40 @@ public static class CalculationModuleDescriptors
                 Q("EnduranceLimit", "Endurance limit", nameof(Pressure), "MPa", "> 0 when given; empty for none", "Ranges at or below it cause no damage.", optional: true),
                 List("Blocks", "Loading spectrum", "At least one block; range > 0, cycles >= 0", "One block per line: its stress range with a unit and its cycles, for example '100 MPa, 100000'.", "StressRange", "Cycles"),
             ]),
+
+        // Recovered from the v0.16.0 release-candidate calculation suite.
+        new(ToleranceStackCalculationDefinition.Id, "Linear tolerance stack-up (worst case and RSS)", "Tolerancing",
+            "The arithmetic (worst-case) and root-sum-square stacks of every tolerancing text: Shigley's Mechanical Engineering Design (dimensions and tolerances, the shouldered-screw gap); Fortini, Dimensioning for Interchangeable Manufacture; Spotts, Dimensioning and Tolerancing for Quantity Production.",
+            Docs + "calc.tolerance-stack.md", typeof(ToleranceStackCalculationDefinition),
+            [
+                List("Contributors", "Contributors", "At least one; named; lower deviation not above upper", "One dimension per line: name, Adds or Subtracts, nominal, upper deviation and lower deviation with units, for example 'Housing bore, Adds, 40 mm, 0.1 mm, 0 mm'.", "Name", "Direction", "Nominal", "UpperDeviation", "LowerDeviation"),
+                Q("MinimumResult", "Minimum result (e.g. minimum gap)", nameof(Length), "mm", "Not above the maximum; empty for none", "The smallest acceptable result.", optional: true),
+                Q("MaximumResult", "Maximum result", nameof(Length), "mm", "Not below the minimum; empty for none", "The largest acceptable result.", optional: true),
+                Number("SigmaPerTolerance", "Standard deviations per half-tolerance", "> 0", "How many standard deviations each half-band represents: 3 for a capable, centred process."),
+                Text("StatisticalBasis", "Statistical basis", "Empty for worst case only", "What makes a statistical result valid, for example 'all processes capable, centred and independent'. Left empty, no RSS figure is produced.", optional: true),
+            ]),
+
+        new(ThermalResistanceChainCalculationDefinition.Id, "Heat sink thermal resistance chain", "Thermal",
+            "The series thermal-resistance (thermal Ohm's law) model of every heat-sink sizing method: Mohan, Undeland & Robbins, Power Electronics (heat sinks and thermal management); Çengel & Ghajar, Heat and Mass Transfer (thermal resistance networks; heat sink selection).",
+            Docs + "calc.thermal-resistance-chain.md", typeof(ThermalResistanceChainCalculationDefinition),
+            [
+                Q("PowerDissipation", "Power dissipation P", nameof(Power), "W", ">= 0", "The steady power the component dissipates."),
+                Q("AmbientTemperature", "Ambient temperature T_a", nameof(Temperature), "degC", "Any", "The temperature the last stage rejects heat to."),
+                List("Stages", "Thermal resistances (hottest first)", "At least one; each >= 0; total > 0", "One stage per line: its name and resistance with a unit, for example 'Junction to case, 0.5 K/W'.", "Name", "Resistance"),
+                Q("MaximumSourceTemperature", "Maximum junction (source) temperature", nameof(Temperature), "degC", "> ambient", "The highest temperature the hottest node is permitted."),
+            ]),
+
+        new(PlaneWallHeatTransferCalculationDefinition.Id, "Plane wall heat transfer (conduction layers and convection films)", "Thermal",
+            "The thermal-circuit method for a composite plane wall: Incropera & DeWitt, Fundamentals of Heat and Mass Transfer, chapter 3 (the plane wall, thermal resistance, the composite wall); Çengel & Ghajar, Heat and Mass Transfer, chapter 3 (steady heat conduction; the window examples).",
+            Docs + "calc.plane-wall-heat-transfer.md", typeof(PlaneWallHeatTransferCalculationDefinition),
+            [
+                Q("HotSideTemperature", "Hot-side temperature T₁", nameof(Temperature), "degC", "Any", "The hot fluid's temperature, or the hot surface's where no film coefficient is given."),
+                Q("HotSideFilmCoefficient", "Hot-side film coefficient h₁", nameof(HeatTransferCoefficient), "W/(m².K)", "> 0 when given; empty for a surface temperature", "The hot side's convection coefficient.", optional: true),
+                List("Layers", "Layers (hot side first)", "At least one; thickness and conductivity > 0", "One layer per line: its name, thickness and conductivity with units, for example 'Glass, 8 mm, 0.78 W/(m.K)'.", "Name", "Thickness", "Conductivity"),
+                Q("ColdSideFilmCoefficient", "Cold-side film coefficient h₂", nameof(HeatTransferCoefficient), "W/(m².K)", "> 0 when given; empty for a surface temperature", "The cold side's convection coefficient.", optional: true),
+                Q("ColdSideTemperature", "Cold-side temperature T₂", nameof(Temperature), "degC", "Any", "The cold fluid's temperature, or the cold surface's where no film coefficient is given."),
+                Q("Area", "Wall area A", nameof(Area), "m²", "> 0", "The area normal to the heat flow."),
+            ]),
     ];
 
     /// <summary>The descriptor for <paramref name="calculationId"/>, or <see langword="null"/> where no product calculation has that Id.</summary>
@@ -357,8 +391,8 @@ public static class CalculationModuleDescriptors
     private static CalculationInputDescriptor Number(string name, string label, string limits, string description) =>
         new(name, label, CalculationInputKind.Number, null, null, limits, description);
 
-    private static CalculationInputDescriptor Text(string name, string label, string limits, string description, string? source = null, string? property = null) =>
-        new(name, label, CalculationInputKind.Text, null, null, limits, description, SourceInputName: source, SourcePropertyName: property);
+    private static CalculationInputDescriptor Text(string name, string label, string limits, string description, string? source = null, string? property = null, bool optional = false) =>
+        new(name, label, CalculationInputKind.Text, null, null, limits, description, IsOptional: optional, SourceInputName: source, SourcePropertyName: property);
 
     private static CalculationInputDescriptor Boolean(string name, string label, string description) =>
         new(name, label, CalculationInputKind.Boolean, null, null, "Yes or no", description);

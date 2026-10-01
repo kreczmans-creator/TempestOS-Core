@@ -112,6 +112,15 @@ public static class Dimensions
     /// <summary>M L T⁻³ Θ⁻¹.</summary>
     public static readonly Dimension ThermalConductivity = Power / (Length * Temperature);
 
+    /// <summary>Θ M⁻¹ L⁻² T³ — kelvin per watt: a temperature difference per unit of heat flow.</summary>
+    public static readonly Dimension ThermalResistance = Temperature / Power;
+
+    /// <summary>M T⁻³ Θ⁻¹ — watts per square metre kelvin: a convection film coefficient or an overall U-value.</summary>
+    public static readonly Dimension HeatTransferCoefficient = Power / (Area * Temperature);
+
+    /// <summary>M T⁻³ — watts per square metre.</summary>
+    public static readonly Dimension HeatFlux = Power / Area;
+
     /// <summary>Θ⁻¹.</summary>
     public static readonly Dimension ThermalExpansion = Temperature.Pow(-1);
 

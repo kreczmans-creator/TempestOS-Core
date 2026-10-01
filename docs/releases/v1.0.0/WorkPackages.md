@@ -189,6 +189,28 @@ duration: three weeks.
 |---|---|---|---|
 | `V1-BLOCKER-01` | **BLOCKER for v1.0.0 — Define the standard project subfolder set (PO decision 2026-10-01).** Project folders are generated in `D:\01 Projects` (`Projects:FolderRoot`): customer folder found or created, then the project folder found or created (`ProjectFolderService`, `src/Tempest.Core/Projects/`). The PO's "then a standard set of folders within that" is **TBC**, so `ProjectFolderOptions.DefaultStandardSubfolders` ships empty with a TODO marker, and the quote export's own subfolder (`Projects:QuoteSubfolder`) defaults to the project folder itself. | Product Owner, 2026-10-01 | The Product Owner names the standard subfolder set (and which one is "the quote section"); `DefaultStandardSubfolders` and the `Projects:QuoteSubfolder` default are set to it, with a test pinning the set. Also tracked in `BACKLOG.md`. |
 
+### Recovered into v1.0.0: tolerance stack-up and thermal calculators (PO request 2026-10-01)
+
+The v0.16.0 release-candidate calculation suite's Tolerance Analysis and
+Heat Sink / Thermal calculators were lost when `feature/v0.16.0-integration`
+was deleted unmerged; they were recovered from the archived ref and ported
+into the `WP 21.7A` module architecture, bringing the product catalogue to
+**nineteen** calculations (five original, eleven `WP 21.7A`, three recovered),
+all listed in Engineering → Modules → Calculators:
+
+| Module | Id | Specification |
+|---|---|---|
+| Linear tolerance stack-up (worst case and RSS) | `calc.tolerance-stack` | `docs/engineering/calculations/calc.tolerance-stack.md` |
+| Heat sink thermal resistance chain | `calc.thermal-resistance-chain` | `docs/engineering/calculations/calc.thermal-resistance-chain.md` |
+| Plane wall heat transfer (conduction layers and convection films) | `calc.plane-wall-heat-transfer` | `docs/engineering/calculations/calc.plane-wall-heat-transfer.md` |
+
+New unit dimensions: `ThermalResistance` (K/W), `HeatTransferCoefficient`
+(W/(m²·K)) and `HeatFlux` (W/m²); `Power`, `Temperature`,
+`ThermalResistance`, `ThermalConductivity` and `HeatTransferCoefficient`
+are now offered by the generated calculator form. A list input's row may now
+carry a text cell (a contributor's or stage's name) and a choice cell (a
+contributor's direction).
+
 **Release total: 14 developer-days.**
 
 ---
