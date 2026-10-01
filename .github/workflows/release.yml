@@ -181,8 +181,14 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      # Locked, as in ci.yml (ADR-0160): the release is built from exactly
+      # the packages the tagged commit's packages.lock.json files name, and
+      # the step fails rather than resolve anything else. The installer's
+      # `dotnet publish -r win-x64` is locked too (RestoreLockedMode when
+      # CI=true, Directory.Build.props), and matches the same lock because
+      # every project declares RuntimeIdentifiers win-x64;linux-x64.
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Build (Release)
         shell: pwsh

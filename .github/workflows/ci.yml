@@ -208,8 +208,19 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      # ADR-0160: every restore in this workflow is locked. Each project's
+      # committed packages.lock.json pins every direct and transitive
+      # package by version and content hash; --locked-mode fails the step
+      # (NU1004) instead of resolving anything the lock does not name, so a
+      # stale lock or a package that changed on the feed stops CI here.
+      # Directory.Build.props also sets RestoreLockedMode when CI=true, so
+      # the implicit restores of later steps are locked too. The locks
+      # carry win-x64 and linux-x64 (Directory.Build.props explains why),
+      # so the same lock restores on these Windows legs and on the Linux
+      # smoke job. Regenerate with `dotnet restore src/TempestOS.slnx
+      # --force-evaluate` after changing a PackageReference (CONTRIBUTING.md).
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       # TreatWarningsAsErrors is applied here, at the CI build step only —
       # Directory.Build.props itself is deliberately left unchanged
@@ -791,8 +802,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Scan for vulnerable packages
         shell: pwsh
@@ -869,8 +880,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Build Tempest.Desktop (Release)
         run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
@@ -1012,8 +1023,8 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore "${{ env.SOLUTION_PATH }}"
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
 
       - name: Restore dotnet tools (dotnet-stryker)
         run: dotnet tool restore
