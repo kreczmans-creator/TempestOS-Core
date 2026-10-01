@@ -694,6 +694,7 @@ internal sealed partial class MainWindowComposer
             projectPicker, inputDialog, purchaseOrderLinePrompt, openObjectRightUp)
         {
             ParameterPrompt = commandPrompt.Prompt,
+            PickSupplierAsync = organisationPicker.PickSupplierAsync,
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         purchaseOrdersView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);

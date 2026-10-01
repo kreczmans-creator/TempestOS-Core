@@ -69,6 +69,7 @@ public sealed class OrganisationPicker : Border
 
     private IReadOnlyList<(string RecordId, string Name, PaymentTerms PaymentTerms)> _candidates = [];
     private TaskCompletionSource<string?>? _pending;
+    private bool _supplierMode;
 
     /// <summary>Initialises a new instance of the <see cref="OrganisationPicker"/> class, initially hidden.</summary>
     public OrganisationPicker(IOrganisationCatalog organisations)
@@ -171,9 +172,23 @@ public sealed class OrganisationPicker : Border
     /// (removes the project's own client), or <see langword="null"/> if
     /// the user cancelled.
     /// </summary>
-    public async Task<string?> PickAsync(CancellationToken cancellationToken = default)
+    public Task<string?> PickAsync(CancellationToken cancellationToken = default) => PickCoreAsync(supplierMode: false, cancellationToken);
+
+    /// <summary>
+    /// <see cref="PickAsync"/> for a supplier (Product Owner decision
+    /// 2026-10-01 §2): the same Customers &amp; Suppliers list, narrowed to
+    /// organisations that are suppliers (or both), and <b>Add
+    /// organisation</b> registers a supplier — a purchase order's supplier
+    /// is chosen from the list, never typed.
+    /// </summary>
+    public Task<string?> PickSupplierAsync(CancellationToken cancellationToken = default) => PickCoreAsync(supplierMode: true, cancellationToken);
+
+    private async Task<string?> PickCoreAsync(bool supplierMode, CancellationToken cancellationToken)
     {
         _pending?.TrySetResult(null);
+
+        _supplierMode = supplierMode;
+        _title.Text = supplierMode ? "Choose a supplier organisation" : "Choose a client organisation";
 
         _filter.Text = string.Empty;
         _newReference.Text = string.Empty;
@@ -196,7 +211,7 @@ public sealed class OrganisationPicker : Border
     private async Task ReloadAsync(CancellationToken cancellationToken)
     {
         var all = await _organisations.ListAsync(cancellationToken).ConfigureAwait(true);
-        _candidates = [.. all.Select(r => (RecordId: r.Id, Name: DescribeName(r.Definition), r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
+        _candidates = [.. all.Where(r => !_supplierMode || r.Definition.TradingType != OrganisationTradingType.Customer).Select(r => (RecordId: r.Id, Name: DescribeName(r.Definition), r.Definition.PaymentTerms)).OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)];
         _status.Text = _candidates.Count == 0 ? "No organisations registered yet — add one below." : string.Empty;
         ApplyFilter();
     }
@@ -289,7 +304,7 @@ public sealed class OrganisationPicker : Border
             await _organisations
                 .RegisterAsync(
                     reference,
-                    new Organisation { Reference = reference, Name = name, Roles = [PartyKind.Customer], CustomerCode = customerCode },
+                    new Organisation { Reference = reference, Name = name, Roles = [_supplierMode ? PartyKind.Supplier : PartyKind.Customer], CustomerCode = customerCode },
                     ReferenceProvenance.Unknown,
                     CancellationToken.None)
                 .ConfigureAwait(true);

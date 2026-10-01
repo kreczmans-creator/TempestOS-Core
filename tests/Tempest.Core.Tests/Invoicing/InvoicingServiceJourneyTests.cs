@@ -104,6 +104,33 @@ public sealed class InvoicingServiceJourneyTests
         await host.DisposeAsync();
     }
 
+    /// <summary>
+    /// Product Owner decision 2026-10-01 §3 (`ADR-0156`): an invoice
+    /// request raised inside a <c>CUSTOMER-PROJECTREF</c> project is
+    /// identified <c>CUSTOMER-PROJECTREF-INV-001</c>; one raised inside a
+    /// project with any other identifier carries no identifier, exactly as
+    /// before.
+    /// </summary>
+    [Fact]
+    public async Task RaisedRequest_IsNumberedInsideAProjectCentricProject_AndUnnumberedOtherwise()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await InvoicingTestHost.StartAsync(temp.Path);
+        InvoicingTestHost.SignIn(host);
+        var domain = InvoicingTestHost.Domain(host);
+
+        var numbered = await SetUpBillableProjectAsync(host, "NUM", PaymentTerms.UpFront, projectIdentifier: "ACMEE-BRIDG");
+        var numberedRequest = await RaiseSingleLineDraftRequestAsync(host, numbered, domain, "NUM");
+        Assert.Equal("ACMEE-BRIDG-INV-001", numberedRequest.Identifier);
+
+        var legacy = await SetUpBillableProjectAsync(host, "LEG");
+        var legacyRequest = await RaiseSingleLineDraftRequestAsync(host, legacy, domain, "LEG");
+        Assert.Null(legacyRequest.Identifier);
+
+        await manager.ShutdownAsync();
+        await host.DisposeAsync();
+    }
+
     [Fact]
     public async Task RaiseFromCompletionAsync_Refuses_WhenTheProjectHasNoClient()
     {
@@ -472,7 +499,8 @@ public sealed class InvoicingServiceJourneyTests
     private static Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix) =>
         SetUpBillableProjectAsync(host, suffix, PaymentTerms.UpFront);
 
-    private static async Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix, PaymentTerms paymentTerms)
+    private static async Task<Guid> SetUpBillableProjectAsync(
+        ITempestHost host, string suffix, PaymentTerms paymentTerms, string? projectIdentifier = null)
     {
         var organisationId = $"INV-CLIENT-{suffix}";
         var rateCardId = $"INV-CARD-{suffix}";
@@ -488,7 +516,7 @@ public sealed class InvoicingServiceJourneyTests
         await rateCards.RegisterAsync(rateCardId, card, BusinessGovernanceFixtures.Verified());
         await BusinessGovernanceFixtures.ReleaseAsync((RateCardCatalog)rateCards, rateCardId);
 
-        var projectId = await InvoicingTestHost.CreateProjectAsync(host, $"INV-PRJ-{suffix}");
+        var projectId = await InvoicingTestHost.CreateProjectAsync(host, projectIdentifier ?? $"INV-PRJ-{suffix}");
 
         Assert.True((await commercial.PinRateCardAsync(projectId, rateCardId)).Succeeded);
         Assert.True((await commercial.SetClientAsync(projectId, organisationId)).Succeeded);

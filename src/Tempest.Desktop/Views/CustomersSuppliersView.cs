@@ -280,7 +280,12 @@ public sealed class CustomersSuppliersView : UserControl
 
         _name.Text = o.Name;
         SetCode(o.CustomerCode);
-        _codeEditedByHand = true;
+
+        // An organisation recorded before customer codes existed is offered
+        // one, suggested from its name, the moment it is opened.
+        _codeEditedByHand = !string.IsNullOrWhiteSpace(o.CustomerCode);
+        if (!_codeEditedByHand)
+            await SuggestCodeAsync().ConfigureAwait(true);
         _type.SelectedItem = _type.Items.OfType<ComboBoxItem>().First(i => Equals(i.Tag, o.TradingType));
         _addressLine1.Text = o.Address?.Line1;
         _addressLine2.Text = o.Address?.Line2;
