@@ -52,7 +52,18 @@ name: CI
 # Posture.md.
 
 on:
+  # Push runs only main, release branches and tags; every other branch is
+  # gated by its pull request. With both triggers unfiltered, one push to a
+  # branch with an open PR started two complete runs (the push run under
+  # refs/heads/<branch> and the PR run under refs/pull/<n>/merge, separate
+  # concurrency groups, so neither cancelled the other) - PO, 2026-10-01.
+  # A branch without a PR can still be run by hand (workflow_dispatch).
   push:
+    branches:
+      - main
+      - "release/**"
+    tags:
+      - "v*.*.*"
   pull_request:
   workflow_dispatch: {}
   # WP 17.0C: the mutation job below (Stryker.NET) is deliberately scoped
