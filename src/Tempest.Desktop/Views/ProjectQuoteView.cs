@@ -144,6 +144,28 @@ public sealed class ProjectQuoteView : UserControl
     /// </summary>
     public Tempest.Core.Identity.IPrincipalDirectory? Principals { get; set; }
 
+    /// <summary>
+    /// The global "Second-person sign-off" switch (`ADR-0161`, Product Owner
+    /// decision 2026-10-01) — read on every render so the review panel says
+    /// whether the author may approve their own quote. <see langword="null"/>
+    /// (a test that constructs this view directly) shows no sign-off line
+    /// and keeps the second-person wording, the rule's own default before
+    /// the switch existed.
+    /// </summary>
+    public Tempest.Core.Governance.ISignOffPolicy? SignOffPolicy { get; set; }
+
+    /// <summary>The automation name of the review panel's own sign-off line (`ADR-0161`).</summary>
+    public const string SignOffStateName = "Second-person sign-off state";
+
+    /// <summary>The sign-off line's own text while second-person sign-off is off (`ADR-0161`).</summary>
+    public const string SelfApprovalAllowedText = "Self-approval allowed (second-person sign-off is off).";
+
+    /// <summary>The sign-off line's own text while second-person sign-off is on (`ADR-0161`).</summary>
+    public const string SecondPersonRequiredText = "A second person must approve (second-person sign-off is on).";
+
+    /// <summary>Whether the last render found second-person sign-off on — <see langword="true"/> when no policy is composed.</summary>
+    private bool _secondPersonRequired = true;
+
     /// <summary>The automation name of the line form's own rate dropdown (runbook C3).</summary>
     public const string RateChoiceName = "Line rate basis";
 
@@ -326,6 +348,8 @@ public sealed class ProjectQuoteView : UserControl
         }
 
         var clientName = await ResolveClientNameAsync(quote.ClientOrganisationId).ConfigureAwait(true);
+        _secondPersonRequired = SignOffPolicy is null
+            || await SignOffPolicy.IsSecondPersonRequiredAsync(CancellationToken.None).ConfigureAwait(true);
 
         var identity = new StackPanel { Spacing = DesignTokens.SpaceXs };
         identity.Children.Add(new TextBlock
@@ -360,6 +384,21 @@ public sealed class ProjectQuoteView : UserControl
         };
         AutomationProperties.SetName(reviewState, "Quote review state");
         identity.Children.Add(reviewState);
+
+        // `ADR-0161`: where the quote is reviewed, say whether its author may
+        // approve it — the one global switch, read fresh on every render.
+        if (SignOffPolicy is not null && quote.Status is QuotationStatus.Draft or QuotationStatus.InReview or QuotationStatus.Approved)
+        {
+            var signOffState = new TextBlock
+            {
+                Text = _secondPersonRequired ? SecondPersonRequiredText : SelfApprovalAllowedText,
+                FontSize = DesignTokens.FontSizeCaption,
+                Opacity = 0.85,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            };
+            AutomationProperties.SetName(signOffState, SignOffStateName);
+            identity.Children.Add(signOffState);
+        }
         _detailPanel.Children.Add(identity);
 
         var rateCard = await LoadRateCardAsync(quote).ConfigureAwait(true);
@@ -704,26 +743,31 @@ public sealed class ProjectQuoteView : UserControl
                 var saved = review.DraftSavedAt is { } at
                     ? $"Draft — saved {at.ToLocalTime():yyyy-MM-dd HH:mm}"
                     : "Draft — not saved yet";
-                var after = quote.RevisionNumber > 0 ? $" A new draft after {quote.Review.Revisions.LastOrDefault()?.Label ?? QuotationReview.LabelFor(quote.RevisionNumber)}; the next approval issues {nextLabel}." : $" Approval by a second person issues {nextLabel}.";
+                var after = quote.RevisionNumber > 0 ? $" A new draft after {quote.Review.Revisions.LastOrDefault()?.Label ?? QuotationReview.LabelFor(quote.RevisionNumber)}; the next approval issues {nextLabel}." : (_secondPersonRequired ? $" Approval by a second person issues {nextLabel}." : $" Approval issues {nextLabel}.");
                 var returned = review.ReturnComment is { Length: > 0 } comment ? $" Returned by {PersonLabel(review.ReturnedBy)}: \"{comment}\"" : string.Empty;
                 return saved + "." + after + returned;
 
             case QuotationStatus.InReview:
-                return $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. A second person approves it as {nextLabel}, or returns it to draft with a comment.";
+                return _secondPersonRequired
+                    ? $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. A second person approves it as {nextLabel}, or returns it to draft with a comment."
+                    : $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. Approve it as {nextLabel}, or return it to draft with a comment.";
 
             case QuotationStatus.Approved:
                 var approved = review.Revisions.LastOrDefault();
                 return approved is null
                     ? $"Approved {quote.RevisionLabel} — ready to export and send."
-                    : $"Approved {approved.Label} by {PersonLabel(approved.ApprovedBy)} at {approved.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm} — ready to export and send.";
+                    : $"Approved {approved.Label} by {PersonLabel(approved.ApprovedBy)}{SelfApprovedSuffix(approved)} at {approved.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm} — ready to export and send.";
 
             default:
                 var issued = review.Revisions.LastOrDefault();
                 return issued is null
                     ? $"Issued as {quote.RevisionLabel}."
-                    : $"Issued as {issued.Label}, approved by {PersonLabel(issued.ApprovedBy)} at {issued.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm}.";
+                    : $"Issued as {issued.Label}, approved by {PersonLabel(issued.ApprovedBy)}{SelfApprovedSuffix(issued)} at {issued.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm}.";
         }
     }
+
+    /// <summary>" (self-approved)" for a revision its own author approved with second-person sign-off off (`ADR-0161`); empty otherwise.</summary>
+    private static string SelfApprovedSuffix(QuotationRevision revision) => revision.SelfApproved ? " (self-approved)" : string.Empty;
 
     /// <summary>Whether <paramref name="quote"/>'s own lines can be changed here — a draft, or an approved revision (the change then starts a new draft, runbook C3).</summary>
     private static bool LinesEditable(Quotation quote) => quote.Status is QuotationStatus.Draft or QuotationStatus.Approved;

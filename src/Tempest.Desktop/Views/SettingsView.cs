@@ -89,6 +89,13 @@ public sealed class SettingsView : UserControl
     /// <summary>The <see cref="ISecretStore"/> key the authoriser reads a provider's client secret from — <c>Invoicing:&lt;Provider&gt;:ClientSecret</c>.</summary>
     public static string ClientSecretSecretKeyFor(string provider) => $"Invoicing:{provider}:ClientSecret";
 
+    /// <summary>The Settings → Sign-off switch's own wording (`ADR-0161`).</summary>
+    public const string SecondPersonSignOffLabel =
+        "Second-person sign-off — require a different person to approve quotes and verify/release records. Off for a one-person consultancy.";
+
+    /// <summary>The Settings → Sign-off switch's own automation name (`ADR-0161`).</summary>
+    public const string SecondPersonSignOffName = "Second-person sign-off";
+
     /// <summary>How long <em>Authorise</em> waits for the operator to finish signing in at the provider before giving up (`WP 21.6P`).</summary>
     public static readonly TimeSpan AuthorisationTimeout = TimeSpan.FromMinutes(5);
 
@@ -156,6 +163,11 @@ public sealed class SettingsView : UserControl
     private readonly NumericUpDown _toastDuration = new() { Minimum = 1, Maximum = 30, Increment = 0.5m, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 100 };
     private readonly CheckBox _confirmBeforeDelete = new() { Content = "Confirm before deleting an object" };
     private readonly CheckBox _independentCheckRequired = new() { Content = "Independent check required (checker must differ from the evidence's own author)" };
+
+    // `ADR-0161` (Product Owner decision 2026-10-01): the one global switch
+    // every separation-of-duty rule consults. Off by default.
+    private readonly CheckBox _secondPersonSignOff = new() { Content = new TextBlock { Text = SecondPersonSignOffLabel, TextWrapping = TextWrapping.Wrap } };
+    private readonly Tempest.Core.Governance.ISignOffPolicy? _signOffPolicy;
     // Runbook G2: where Business → Timesheets → Export week saves by default.
     private readonly TextBox _timesheetExportFolder = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _browseTimesheetExportFolder = new() { Content = "Browse…", MinHeight = DesignTokens.ControlSizeMedium };
@@ -206,6 +218,7 @@ public sealed class SettingsView : UserControl
     /// <param name="people">Where "Switch person…" reads every switchable person from (`WP 21.3B`). <see langword="null"/> leaves the action honestly unavailable.</param>
     /// <param name="confirmationDialog">The shared Dialog Framework overlay "Switch person…" confirms through (`WP 21.3B`). <see langword="null"/> leaves the action honestly unavailable.</param>
     /// <param name="switchPrincipal">Publishes the confirmed person as this session's own principal (`WP 21.3B`) — <see cref="Tempest.Desktop.WorkspaceHost.SwitchPrincipal"/>. <see langword="null"/> leaves the action honestly unavailable.</param>
+    /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`). <see langword="null"/> hides the Sign-off section.</param>
     public SettingsView(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
@@ -216,7 +229,8 @@ public sealed class SettingsView : UserControl
         IProjectContext? projectContext = null, Func<Task>? prepareForRestartAsync = null,
         IUpdateService? updateService = null, UpdateAvailability? updateAvailability = null,
         IFilePicker? filePicker = null,
-        IPeopleDirectory? people = null, ConfirmationDialog? confirmationDialog = null, Action<ISessionPrincipal>? switchPrincipal = null)
+        IPeopleDirectory? people = null, ConfirmationDialog? confirmationDialog = null, Action<ISessionPrincipal>? switchPrincipal = null,
+        Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -245,6 +259,7 @@ public sealed class SettingsView : UserControl
         _people = people;
         _confirmationDialog = confirmationDialog;
         _switchPrincipal = switchPrincipal;
+        _signOffPolicy = signOffPolicy;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -282,6 +297,9 @@ public sealed class SettingsView : UserControl
         AutomationProperties.SetName(_saveButton, "Save settings");
         AutomationProperties.SetName(_confirmBeforeDelete, "Confirm before deleting an object");
         AutomationProperties.SetName(_independentCheckRequired, "Independent check required");
+        AutomationProperties.SetName(_secondPersonSignOff, SecondPersonSignOffName);
+        _secondPersonSignOff.MaxWidth = 720;
+        ToolTip.SetTip(_secondPersonSignOff, "On: nobody may approve a quote, or check evidence, that they authored, submitted or changed. Off: they may, and the record says it was a self-approval. Every change of this switch is audited.");
         AutomationProperties.SetName(_invoicingAuthoriseButton, "Authorise invoicing connector");
         AutomationProperties.SetName(_orgLegalName, "Organisation legal name");
         AutomationProperties.SetName(_orgCompanyNumber, "Organisation company number");
@@ -361,6 +379,9 @@ public sealed class SettingsView : UserControl
 
         // `WP 18.2A` (`ADR-0148`, decision 1): unchanged from `SettingsDialog`.
         var evidence = BuildSection("Evidence", _independentCheckRequired);
+
+        // `ADR-0161`: one switch for every module's separation-of-duty rule.
+        var signOff = BuildSection("Sign-off", _secondPersonSignOff);
 
         // `WP 19.0A` (`ADR-0150`): unchanged from `SettingsDialog`.
         var timesheets = BuildSection("Working pattern", LabeledRow("Hours per week", _workingPatternHours));
@@ -450,6 +471,10 @@ public sealed class SettingsView : UserControl
         body.Children.Add(appearance);
         body.Children.Add(notifications);
         body.Children.Add(workflow);
+
+        if (_signOffPolicy is not null)
+            body.Children.Add(signOff);
+
         body.Children.Add(evidence);
 
         if (_workingPatterns is not null && _principals is not null)
@@ -518,6 +543,9 @@ public sealed class SettingsView : UserControl
 
         _independentCheckRequired.IsChecked = bool.TryParse(
             await _settingsProvider.GetValueAsync(EvidenceService.IndependentCheckSettingKey).ConfigureAwait(true), out var required) && required;
+
+        if (_signOffPolicy is not null)
+            _secondPersonSignOff.IsChecked = await _signOffPolicy.IsSecondPersonRequiredAsync().ConfigureAwait(true);
 
         if (_workingPatterns is not null && _principals?.Current?.Identity.Id is { } identityId)
         {
@@ -876,6 +904,11 @@ public sealed class SettingsView : UserControl
         await _settingsProvider.SetValueAsync(
             EvidenceService.IndependentCheckSettingKey,
             (_independentCheckRequired.IsChecked ?? false) ? bool.TrueString : bool.FalseString).ConfigureAwait(true);
+
+        // `ADR-0161`: through the policy, never the raw setting, so the
+        // change is audited (who, when, old → new).
+        if (_signOffPolicy is not null)
+            await _signOffPolicy.SetSecondPersonRequiredAsync(_secondPersonSignOff.IsChecked ?? false).ConfigureAwait(true);
 
         if (_workingPatterns is not null && _principals?.Current?.Identity.Id is { } identityId)
         {

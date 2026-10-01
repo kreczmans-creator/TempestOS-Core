@@ -79,9 +79,10 @@ public static class QuotationWorkspaceRegistration
     private static readonly IReadOnlyList<string> ProjectKind = [MechanicalObjectFactoryRegistry.Project];
 
     /// <summary>Registers every Quotations Workspace extension point this Work Package owns.</summary>
+    /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`) the review command's own messages read. <see langword="null"/> keeps the second-person wording.</param>
     public static void Register(
         IWorkspaceManager manager, EngineeringDomainContext domainContext, IQuotationService quotationService,
-        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry)
+        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(domainContext);
@@ -100,7 +101,7 @@ public static class QuotationWorkspaceRegistration
         commandDispatcher.RegisterHandler<SendQuotationCommand>(new SendQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<AcceptQuotationCommand>(new AcceptQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<DeclineQuotationCommand>(new DeclineQuotationCommandHandler(quotationService));
-        commandDispatcher.RegisterHandler<QuotationReviewCommand>(new QuotationReviewCommandHandler(quotationService));
+        commandDispatcher.RegisterHandler<QuotationReviewCommand>(new QuotationReviewCommandHandler(quotationService, signOffPolicy));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.Create, displayName: "Create Quotation", category: "Quotations",
@@ -197,7 +198,7 @@ public static class QuotationWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.Send, displayName: "Send Quotation", category: "Quotations",
-            description: "Sends the selected, approved quotation revision to its client — refused unless a second person has approved it.")
+            description: "Sends the selected, approved quotation revision to its client — refused unless it has been approved.")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
@@ -251,7 +252,7 @@ public static class QuotationWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.SubmitForReview, displayName: "Submit Quotation for Review", category: "Quotations",
-            description: "Submits the selected draft quotation for review — a second person approves it before it can be sent.")
+            description: "Submits the selected draft quotation for review — it is approved (by a second person when second-person sign-off is on) before it can be sent.")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
