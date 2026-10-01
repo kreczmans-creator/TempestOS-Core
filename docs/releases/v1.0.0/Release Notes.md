@@ -39,11 +39,15 @@ tranche of 2026-10-01 (`claude/next-stretch-j1fqz2`, PR #14):
 
 ## Exit stability (SIGABRT) — 2026-10-01
 
-_Filled in from the three real-shell journey runs under Xvfb on this
-branch once they complete; see PR #14._
+Three real-shell journey runs (`scripts/run-realshell-linux.sh`, Xvfb,
+36 journey + 8 verify steps each) on this branch: six application
+starts, six orderly exits, exit code 0 every time, no `SIGABRT`. The
+`WP 21.5C` report stands as 1 of 9 runs, never reproduced since;
+carried as a disclosed limitation, not a blocker.
 
 ## Gate
 
-_Re-derived on the `v1.0.0` head before tagging: build (0/0, both
-configurations), Core and Desktop test counts, architecture invariants,
-governance health check. Linux figures from PR #14; Windows from CI._
+Linux, Debug, PR #14 head (2026-10-01): build 0 warnings, 0 errors;
+Core 5,455/5,465 (10 known Windows-only); Desktop 902/903 (1 known
+Linux-only); real-shell journey 44/44. Windows figures: PR #14 CI.
+Re-derive on the tagged head before release.
