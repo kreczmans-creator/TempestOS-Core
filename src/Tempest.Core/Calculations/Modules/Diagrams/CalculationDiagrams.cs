@@ -452,7 +452,7 @@ public static class CalculationDiagrams
                 new DiagramPointLoad("external-top", new(130, 30), DiagramDirection.Down, 26, "ExternalPressure", "p_o", new(205, 20)),
                 new DiagramPointLoad("external-left", new(40, 120), DiagramDirection.Right, 28, "ExternalPressure"),
                 new DiagramPointLoad("external-right", new(220, 120), DiagramDirection.Left, 28, "ExternalPressure"),
-                new DiagramDimension("inner-radius", new(130, 120), new(190, 120), 0, "InnerRadius", "a", new(150, 140)),
+                new DiagramDimension("inner-radius", new(130, 120), new(190, 120), 0, "InnerRadius", "a", new(158, 136)),
                 new DiagramDimension("outer-radius", new(130, 120), new(66.4, 183.6), 0, "OuterRadius", "b", new(46, 222)),
                 new DiagramLabel("side-note", new(330, 50), Symbol: "Side"),
                 new DiagramPlate("side-wall-top", 290, 70, 80, 12),
