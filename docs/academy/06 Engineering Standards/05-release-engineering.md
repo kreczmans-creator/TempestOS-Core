@@ -89,6 +89,25 @@ disclosed exception to "tag only from `main`") publishes a pre-release
 build for smoke-testing before the real merge and tag happen — see
 `WP11.1B Engineering Workflow.md` §8.
 
+## Handing a Build Over for Testing
+
+Every build handed to the Product Owner for testing ships with its own
+installer and a versioned desktop shortcut (PO decision 2026-10-01). An
+old shortcut once opened v0.22.0 and its data folder during a v0.23.0
+test, which looked like lost projects.
+
+1. On the test PC, from the branch under test, run
+   `pwsh -NoProfile -File scripts/install-test-build.ps1 -Pull`. It
+   packages the installer (`scripts/package-installer.ps1`), installs it
+   over any earlier version, removes older `TempestOS * (test)` shortcuts
+   and adds `TempestOS <version> (test)` on the desktop, opening the
+   version's own data folder (`C:\TempestOS-rc<minor>-data` by default).
+2. The runbook's first step (A0) is running that script; its last line
+   prints the title-bar build to record.
+3. Test only from that shortcut. The plain `TempestOS` shortcut also opens
+   the newly installed build, but on whatever data folder was chosen at
+   first run.
+
 ## Versioning Policy
 
 `VERSION` (repository root) remains the single source of truth,

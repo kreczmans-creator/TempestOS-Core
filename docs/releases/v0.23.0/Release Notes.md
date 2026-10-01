@@ -91,6 +91,11 @@ including items waiting on a decision, is
 
 ## Documentation
 
+- `scripts/install-test-build.ps1` — every test build is installed with
+  its own `TempestOS <version> (test)` desktop shortcut (PO decision
+  2026-10-01; Release Engineering standard, "Handing a Build Over for
+  Testing"). Runbook step A0.
+
 - `docs/guides/Xero Setup - Step by Step.md` — a numbered, one-action-
   per-step guide to the first live Xero connection, with a
   troubleshooting table.

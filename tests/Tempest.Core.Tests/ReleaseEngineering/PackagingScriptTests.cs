@@ -61,7 +61,7 @@ public sealed class PackagingScriptTests
     /// package reference this Work Package's brief does not name, purely
     /// to parse one file in-process.
     /// </summary>
-    private static (int ExitCode, string Output) RunPowerShellSyntaxCheck(string scriptPath)
+    internal static (int ExitCode, string Output) RunPowerShellSyntaxCheck(string scriptPath)
     {
         var command =
             "$parseErrors = $null; " +
