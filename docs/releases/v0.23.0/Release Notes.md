@@ -129,6 +129,15 @@ including items waiting on a decision, is
   installer and its update feed, not just the two zips, and the release
   job re-runs the tests with the same timeout scaling and hang detection
   as CI.
+- **A release publishes only when CI is green on its tag, and packages
+  are locked.** `release.yml` waits for `CI Gate` on the tagged commit
+  and publishes nothing unless it passed; building and testing run with
+  a read-only token, and a separate publish job, the only one that can
+  write, checks every asset against `SHA256SUMS.txt` first. `vpk` is
+  pinned in the tool manifest. Every project commits a
+  `packages.lock.json` and CI and the release restore in locked mode;
+  after a package change run
+  `dotnet restore src/TempestOS.slnx --force-evaluate` (`ADR-0160`).
 
 ## Documentation
 
