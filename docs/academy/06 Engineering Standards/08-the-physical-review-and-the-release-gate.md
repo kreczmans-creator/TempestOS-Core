@@ -199,7 +199,9 @@ that the product works, it is where certain defects can only be found.**
   `Build & Test (Release)`, `Governance Health Check`, the advisory
   `Linux Launch Smoke`, a scheduled `Mutation Testing` job, and
   `CI Gate`; `release.yml` triggers only on a pushed version tag and
-  runs `Build, Verify & Publish Release` on `windows-2022`.
+  runs `Build, Test & Package Release` on `windows-2022` (read-only
+  token) and `Wait for CI Gate on the tagged commit` side by side, then
+  `Publish GitHub Release`, the only job that can write (`ADR-0160`).
 
 ## What to take away
 
