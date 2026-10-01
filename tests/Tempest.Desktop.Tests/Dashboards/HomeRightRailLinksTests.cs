@@ -5,6 +5,8 @@ using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Tempest.Core.Commands;
+using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Projects;
 using Tempest.Desktop.Views.Dashboards;
 using Tempest.Workspace.Documents;
 using Tempest.Workspace.Shell;
@@ -58,6 +60,53 @@ public sealed class HomeRightRailLinksTests
         }
         finally
         {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// v0.23.0 board M1: Continue lists the most recent Open projects,
+    /// newest first — never the three oldest in insertion order, and never
+    /// a Closed (signed-off) one.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task Continue_ListsTheNewestOpenProjects_NewestFirst_AndSkipsClosedOnes()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        MainWindow? window = null;
+        try
+        {
+            await host.StartAsync();
+            window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await RenderUntilAsync(window, () => window.Ready.IsCompleted);
+            var navigator = host.ShellNavigator!;
+
+            var created = new List<Guid>();
+            for (var i = 1; i <= 5; i++)
+            {
+                created.Add((await host.ProjectDirectory!.CreateAsync($"CONT-{i}", $"Continue Project {i}")).Id);
+                await Task.Delay(5); // distinct CreatedAt ticks
+            }
+
+            // The newest project is signed off: Closed, so not "continued".
+            var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext))!;
+            var closed = await new ProjectLifecycleService(domain).SignOffAsync(created[4], "Closed for the Continue ordering test.");
+            Assert.True(closed.Succeeded, closed.Reason);
+
+            var home = await ShowHomeAsync(window, navigator);
+            var continueEntries = home.GetLogicalDescendants().OfType<Button>()
+                .Select(b => b.Content as string)
+                .Where(t => t is not null && System.Text.RegularExpressions.Regex.IsMatch(t, "^Continue Project [0-9]$"))
+                .ToList();
+
+            Assert.Equal(["Continue Project 4", "Continue Project 3", "Continue Project 2"], continueEntries);
+        }
+        finally
+        {
+            window?.Close();
+            Dispatcher.UIThread.RunJobs();
             await host.ShutdownAsync();
             await host.DisposeAsync();
         }
