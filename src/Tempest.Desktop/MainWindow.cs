@@ -715,7 +715,7 @@ public sealed class MainWindow : Window
     /// </remarks>
     private async Task<string?> PromptForNewProjectAsync(string suggestedIdentifier, string _)
     {
-        var input = await _newProjectPrompt.PromptAsync("New Project", $"Name for {suggestedIdentifier}:", suggestedIdentifier).ConfigureAwait(true);
+        var input = await _newProjectPrompt.PromptAsync("New Project", "Project name:", suggestedIdentifier).ConfigureAwait(true);
 
         if (input is null)
             return null;

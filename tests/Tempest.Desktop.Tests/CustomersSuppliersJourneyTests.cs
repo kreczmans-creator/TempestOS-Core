@@ -127,6 +127,71 @@ public sealed class CustomersSuppliersJourneyTests
     }
 
     [AvaloniaFact]
+    public async Task CustomersAndSuppliers_ACodeFreedByAnEdit_IsRefusedUpFront_FieldsKeepVisibleLabels_AnEmptyFilterSaysSo()
+    {
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        MainWindow? window = null;
+        try
+        {
+            await host.StartAsync();
+            var organisations = (IOrganisationCatalog)host.Services!.GetService(typeof(IOrganisationCatalog));
+
+            // Registered as ACMEE, then its code edited to ACME3: ACMEE is
+            // no longer anybody's code, but is still this record's id and reference.
+            await organisations.RegisterAsync(
+                "ACMEE", new Organisation { Reference = "ACMEE", Name = "Acme Engineering Ltd", CustomerCode = "ACME3", Roles = [PartyKind.Customer] },
+                ReferenceProvenance.Unknown);
+
+            window = new MainWindow(host, new StubFilePicker());
+            LayOut(window);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
+            await window.RenderCurrentModuleAsync();
+            LayOut(window);
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Customers & Suppliers");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<CustomersSuppliersView>().Any(v => v.IsVisible));
+            var view = window.GetLogicalDescendants().OfType<CustomersSuppliersView>().Single();
+            await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<ListBoxItem>().Any());
+
+            // ---- M9: every field keeps a visible label once filled in ----
+            var name = Box(view, "Legal name");
+            name.Text = "Acme Engineering Group";
+            var labels = view.GetLogicalDescendants().OfType<TextBlock>()
+                .Where(t => t.Classes.Contains(CustomersSuppliersView.FieldLabelClass) && t.IsEffectivelyVisible)
+                .Select(t => t.Text)
+                .ToList();
+            foreach (var expected in new[] { "Legal name", "Customer code", "Type", "Postcode", "Email" })
+                Assert.Contains(expected, labels);
+
+            // ---- M5: the freed code is refused before registering, not by a duplicate-record error ----
+            var code = Box(view, "Customer code");
+            await RenderUntilAsync(window, () => !string.IsNullOrEmpty(code.Text));
+            Assert.NotEqual("ACMEE", code.Text);
+            code.Text = "ACMEE";
+            ClickButton(view, "Save organisation");
+            await RenderUntilAsync(window, () => view.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("already in use", StringComparison.Ordinal) == true));
+            Assert.Contains(view.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Customer code 'ACMEE' is already in use.");
+            Assert.Single(await organisations.ListAsync());
+
+            // ---- M9: a filter that matches nothing says so ----
+            var empty = view.GetLogicalDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == "No matching organisations");
+            Assert.False(empty.IsVisible);
+            var show = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "Show");
+            show.SelectedItem = show.Items.OfType<ComboBoxItem>().Single(i => Equals(i.Tag, OrganisationTradingType.Supplier));
+            await RenderUntilAsync(window, () => empty.IsVisible);
+            Assert.True(empty.IsVisible);
+            Assert.StartsWith("No suppliers registered", empty.Text, StringComparison.Ordinal);
+            Assert.Empty(view.GetLogicalDescendants().OfType<ListBox>().Single(l => AutomationProperties.GetName(l) == "Organisations").ItemsSource!.Cast<object>());
+        }
+        finally
+        {
+            window?.Close();
+            Dispatcher.UIThread.RunJobs();
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task NewProject_ClientDropDownListsCustomers_CodedClientGivesProjectCentricIdentifier_FirstQuoteIs001()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
@@ -157,6 +222,10 @@ public sealed class CustomersSuppliersJourneyTests
 
             var prompt = GetPrivateField<NewProjectPrompt>(window, "_newProjectPrompt");
             await RenderUntilAsync(window, () => prompt.IsVisible);
+
+            // Board M7: the label names the field, not the P-NNNN fallback the preview may not use.
+            Assert.Contains(prompt.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "Project name:");
+            Assert.DoesNotContain(prompt.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text?.StartsWith("Name for", StringComparison.Ordinal) == true);
 
             var clientCombo = prompt.GetLogicalDescendants().OfType<ComboBox>().First();
             await RenderUntilAsync(window, () => clientCombo.ItemsSource is not null);

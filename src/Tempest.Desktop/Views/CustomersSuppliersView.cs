@@ -67,6 +67,7 @@ public sealed class CustomersSuppliersView : UserControl
     private readonly ListBox _list = new() { MaxHeight = 260 };
     private readonly Button _newButton = new() { Content = "New organisation", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBlock _emptyList = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap, IsVisible = false };
 
     private readonly TextBlock _formHeading = SectionHeading("New organisation");
     private readonly TextBox _name = Field("Legal name");
@@ -128,7 +129,7 @@ public sealed class CustomersSuppliersView : UserControl
                  {
                      (_typeFilter, "Show"), (_list, "Organisations"), (_newButton, "New organisation"), (_type, "Type"),
                      (_saveButton, "Save organisation"), (_contactList, "Contacts"), (_saveContactButton, "Add contact"),
-                     (_newContactButton, "New contact"),
+                     (_newContactButton, "New contact"), (_emptyList, "No matching organisations"),
                  })
             AutomationProperties.SetName(control, name);
 
@@ -165,16 +166,16 @@ public sealed class CustomersSuppliersView : UserControl
                      _name, _code, _type, _addressLine1, _addressLine2, _town, _postcode, _country,
                      _companyNumber, _vatNumber, _phone, _email, _website,
                  })
-        {
-            field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
-            form.Children.Add(field);
-        }
+            form.Children.Add(Labelled(field));
 
         var contactForm = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var field in new Control[] { _contactName, _contactRole, _contactEmail, _contactPhone, _saveContactButton, _newContactButton })
+        foreach (var field in new Control[] { _contactName, _contactRole, _contactEmail, _contactPhone })
+            contactForm.Children.Add(Labelled(field));
+        foreach (var button in new Control[] { _saveContactButton, _newContactButton })
         {
-            field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
-            contactForm.Children.Add(field);
+            button.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
+            button.VerticalAlignment = VerticalAlignment.Bottom;
+            contactForm.Children.Add(button);
         }
 
         _contactsSection.Children.Add(SectionHeading("Contacts"));
@@ -187,6 +188,7 @@ public sealed class CustomersSuppliersView : UserControl
         body.Children.Add(PageHeading.Lead("Every organisation the business sells to or buys from — company details, a unique five-character customer code (letters and digits) used in project and document numbers, and the people to contact there."));
         body.Children.Add(listHeader);
         body.Children.Add(_list);
+        body.Children.Add(_emptyList);
         body.Children.Add(_status);
         body.Children.Add(_formHeading);
         body.Children.Add(form);
@@ -246,6 +248,16 @@ public sealed class CustomersSuppliersView : UserControl
 
         if (_all.Count == 0)
             _status.Text = "No organisations yet — add the first one below.";
+
+        // A filter that matches nothing says so, rather than showing an
+        // empty box that reads as "nothing is registered".
+        _emptyList.IsVisible = _all.Count > 0 && rows.Count == 0;
+        _emptyList.Text = filter switch
+        {
+            OrganisationTradingType.Customer => "No customers registered — choose Show: All to see every organisation.",
+            OrganisationTradingType.Supplier => "No suppliers registered — choose Show: All to see every organisation.",
+            _ => string.Empty,
+        };
     }
 
     /// <summary>"Acme Engineering Ltd — ACMEE — Customer": the one-line form both this list and <see cref="NewProjectPrompt"/>'s own drop-down use.</summary>
@@ -361,7 +373,12 @@ public sealed class CustomersSuppliersView : UserControl
 
         var all = await _organisations.ListAsync().ConfigureAwait(true);
         var code = ProjectNumbering.Normalise(_code.Text);
-        var takenElsewhere = all.Where(r => !string.Equals(r.Id, _editingRecordId, StringComparison.Ordinal)).Select(r => r.Definition.CustomerCode);
+        // A new organisation is registered under its code as both record id
+        // and reference, so a code freed by another record's edit (whose id
+        // and reference are still the old code) is taken as well.
+        var takenElsewhere = all
+            .Where(r => !string.Equals(r.Id, _editingRecordId, StringComparison.Ordinal))
+            .SelectMany(r => new[] { r.Definition.CustomerCode, r.Id, r.Definition.Reference });
         if (ProjectNumbering.ValidateCustomerCode(code, takenElsewhere) is { } refusal)
         {
             _status.Text = refusal;
@@ -547,6 +564,22 @@ public sealed class CustomersSuppliersView : UserControl
         AutomationProperties.SetName(box, label);
         return box;
     }
+
+    /// <summary>
+    /// <paramref name="field"/> under a visible caption — its accessible
+    /// name — so the label stays on screen once the field is filled in (a
+    /// watermark alone vanishes with the first character).
+    /// </summary>
+    private static StackPanel Labelled(Control field)
+    {
+        var panel = new StackPanel { Spacing = 2, Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm) };
+        panel.Children.Add(new TextBlock { Text = AutomationProperties.GetName(field), FontSize = DesignTokens.FontSizeCaption, Classes = { FieldLabelClass } });
+        panel.Children.Add(field);
+        return panel;
+    }
+
+    /// <summary>The style class every visible field caption carries.</summary>
+    internal const string FieldLabelClass = "field-label";
 
     private static TextBlock SectionHeading(string text) => new()
     {

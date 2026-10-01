@@ -49,7 +49,9 @@ public interface IOrganisationCatalog : IReferenceDataCatalog<Organisation>
     /// <summary>
     /// A five-character customer code derived from <paramref name="name"/>
     /// that no registered organisation (other than
-    /// <paramref name="excludingRecordId"/>) already holds —
+    /// <paramref name="excludingRecordId"/>) already holds as its code,
+    /// its record id or its reference (a new organisation is registered
+    /// under its code as both, and an edit frees only the code) —
     /// <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode"/>
     /// over the library's own current codes.
     /// </summary>
@@ -125,7 +127,7 @@ public sealed class OrganisationCatalog : ReferenceDataCatalog<Organisation>, IO
         var all = await ListAsync(cancellationToken).ConfigureAwait(false);
         var taken = all
             .Where(r => !string.Equals(r.Id, excludingRecordId, StringComparison.Ordinal))
-            .Select(r => r.Definition.CustomerCode);
+            .SelectMany(r => new[] { r.Definition.CustomerCode, r.Id, r.Definition.Reference });
 
         return Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode(name, taken);
     }
