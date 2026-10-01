@@ -929,6 +929,8 @@ jobs:
           # (the true end of that composition, on the same real
           # construction path every Desktop test drives) is now required
           # too, and can only appear after "Host -> Running." does.
+          # $LOGS is unquoted on purpose: it is a list of log files.
+          # shellcheck disable=SC2086
           if [ "$code" -eq 124 ] || [ "$code" -eq 137 ]; then
             if grep -qs "Host -> Running." launch.log $LOGS && grep -qs "Desktop -> Composed." launch.log $LOGS; then
               echo "Still running when the timeout fired, and startup reached 'Host -> Running.' and 'Desktop -> Composed.' - launched successfully."
