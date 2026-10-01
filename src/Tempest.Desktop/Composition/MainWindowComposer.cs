@@ -600,7 +600,8 @@ internal sealed partial class MainWindowComposer
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
             () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp,
-            documentExporter, timesheetRenderer, ApplicationVersionText, expenseEntryPrompt)
+            documentExporter, timesheetRenderer, ApplicationVersionText, expenseEntryPrompt,
+            () => host.SessionPrincipal?.DisplayName)
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,

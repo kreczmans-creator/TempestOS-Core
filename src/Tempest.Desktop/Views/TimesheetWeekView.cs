@@ -53,6 +53,7 @@ public sealed class TimesheetWeekView : UserControl
     private readonly DocumentExporter? _documentExporter;
     private readonly TimesheetDocumentRenderer? _timesheetRenderer;
     private readonly Func<string>? _applicationVersionText;
+    private readonly Func<string?>? _currentPrincipalDisplayName;
 
     private readonly TextBlock _weekLabel = new() { FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -101,12 +102,13 @@ public sealed class TimesheetWeekView : UserControl
     /// other optional collaborator across this platform's Desktop views
     /// already follows.
     /// </param>
+    /// <param name="currentPrincipalDisplayName">The signed-in principal's display name, for the exported document's own heading. <see langword="null"/> falls back to the identity id only when that is itself a readable name — never a raw SID or GUID (<see cref="TimesheetPrincipalLabel"/>).</param>
     public TimesheetWeekView(
         EngineeringDomainContext domainContext, ITimesheetService timesheetService, IWorkingPatternProvider workingPatterns,
         ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Func<string?> currentPrincipalId,
         TimesheetEntryPrompt recordPrompt, Action<Guid, string> openObject,
         DocumentExporter? documentExporter = null, TimesheetDocumentRenderer? timesheetRenderer = null, Func<string>? applicationVersionText = null,
-        ExpenseEntryPrompt? recordExpensePrompt = null)
+        ExpenseEntryPrompt? recordExpensePrompt = null, Func<string?>? currentPrincipalDisplayName = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(timesheetService);
@@ -129,6 +131,7 @@ public sealed class TimesheetWeekView : UserControl
         _timesheetRenderer = timesheetRenderer;
         _applicationVersionText = applicationVersionText;
         _recordExpensePrompt = recordExpensePrompt;
+        _currentPrincipalDisplayName = currentPrincipalDisplayName;
 
         _weekStart = TimesheetWeek.WeekOf(DateOnly.FromDateTime(DateTime.Now));
 
@@ -326,8 +329,7 @@ public sealed class TimesheetWeekView : UserControl
             return;
         }
 
-        var identityId = _currentPrincipalId();
-        var principalName = identityId ?? "(no principal signed in)";
+        var principalName = TimesheetPrincipalLabel.Resolve(_currentPrincipalDisplayName?.Invoke(), _currentPrincipalId());
 
         var rows = _currentRows
             .Select(r => new Tempest.Desktop.Documents.Timesheets.TimesheetDocumentRow(r.Entry.Date, r.ProjectName, r.Entry.TaskDescription, r.Hours, r.Billable))
