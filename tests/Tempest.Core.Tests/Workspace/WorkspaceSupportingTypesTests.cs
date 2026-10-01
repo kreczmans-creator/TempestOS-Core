@@ -111,6 +111,34 @@ public class WorkspaceSupportingTypesTests
         Assert.Contains(selection.ObjectId.ToString(), statusBar.StatusText);
     }
 
+    /// <summary>`TD-186`: the operator reads a name on the Selected segment, never a GUID, once a resolver is wired.</summary>
+    [Fact]
+    public async Task WorkspaceStatusBar_HandleAsync_WithResolver_ShowsTheObjectsNameNotItsId()
+    {
+        var statusBar = new WorkspaceStatusBar();
+        var selection = new WorkspaceSelection(Guid.NewGuid(), "Calculation");
+        statusBar.UseDisplayNameResolver((id, _) => Task.FromResult<string?>(id == selection.ObjectId ? "Bracket check B-01" : null));
+
+        await statusBar.HandleAsync(new WorkspaceSelectionChangedEvent(null, selection), CancellationToken.None);
+
+        Assert.Equal("Selected: Calculation Bracket check B-01", statusBar.StatusText);
+        Assert.DoesNotContain(selection.ObjectId.ToString(), statusBar.StatusText);
+    }
+
+    [Fact]
+    public async Task WorkspaceStatusBar_HandleAsync_ResolverFindsNothingOrThrows_FallsBackToTheId()
+    {
+        var statusBar = new WorkspaceStatusBar();
+        var unknown = new WorkspaceSelection(Guid.NewGuid(), "Requirement");
+        statusBar.UseDisplayNameResolver((_, _) => Task.FromResult<string?>(null));
+        await statusBar.HandleAsync(new WorkspaceSelectionChangedEvent(null, unknown), CancellationToken.None);
+        Assert.Equal($"Selected: Requirement {unknown.ObjectId}", statusBar.StatusText);
+
+        statusBar.UseDisplayNameResolver((_, _) => throw new InvalidOperationException("store offline"));
+        await statusBar.HandleAsync(new WorkspaceSelectionChangedEvent(unknown, unknown), CancellationToken.None);
+        Assert.Equal($"Selected: Requirement {unknown.ObjectId}", statusBar.StatusText);
+    }
+
     [Fact]
     public async Task WorkspaceStatusBar_HandleAsync_SelectionCleared_ResetsToReady()
     {

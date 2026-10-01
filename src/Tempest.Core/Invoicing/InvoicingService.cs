@@ -193,20 +193,22 @@ public sealed class InvoicingService : IInvoicingService
         if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
         {
             return new InvoiceRequestResult(
-                InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); no new invoice request can be raised against it.", null);
+                InvoiceRequestRefusal.ProjectArchived, $"Project '{project.DisplayName}' is archived (closed {project.ClosedOn:O}); no new invoice request can be raised against it.", null);
         }
 
         if (string.IsNullOrWhiteSpace(project.ClientOrganisationId))
         {
             return new InvoiceRequestResult(
-                InvoiceRequestRefusal.NoClient, $"Project '{projectId}' has no client recorded; an invoice cannot be raised.", null);
+                InvoiceRequestRefusal.NoClient, $"Project '{project.DisplayName}' has no client recorded; an invoice cannot be raised.", null);
         }
 
         if (project.RateCardPin is not { } pin)
         {
             return new InvoiceRequestResult(
                 InvoiceRequestRefusal.NoRateCardPinned,
-                $"Project '{projectId}' has no Released rate-card pin; an invoice request cannot be priced or currencied without one.",
+                // `TD-186`: this refusal reaches the operator verbatim, so it
+                // names the project as every other refusal on the surface does.
+                $"Project '{project.DisplayName}' has no Released rate-card pin; an invoice request cannot be priced or currencied without one.",
                 null);
         }
 
@@ -546,7 +548,7 @@ public sealed class InvoicingService : IInvoicingService
         }
 
         return ProjectArchival.IsArchived(project, _time.GetUtcNow())
-            ? new InvoiceRequestResult(InvoiceRequestRefusal.ProjectArchived, $"Project '{projectId}' is archived (closed {project.ClosedOn:O}); this request is read-only.", request)
+            ? new InvoiceRequestResult(InvoiceRequestRefusal.ProjectArchived, $"Project '{project.DisplayName}' is archived (closed {project.ClosedOn:O}); this request is read-only.", request)
             : null;
     }
 

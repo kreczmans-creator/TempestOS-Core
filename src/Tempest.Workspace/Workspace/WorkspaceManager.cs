@@ -147,6 +147,11 @@ public sealed class WorkspaceManager : IWorkspaceManager, IAsyncDisposable
 
         var workspace = new Workspace(state, navigationService, selectionService, projectExplorer, propertyInspector, cockpit);
 
+        // `TD-186`: the Status Bar's Selected segment names the object, not
+        // its id — the same repository every explorer node is read from.
+        _statusBar.UseDisplayNameResolver(async (id, ct) =>
+            (await domainContext.Repository.FindAsync(id, ct).ConfigureAwait(false) as IHasBusinessIdentifier)?.DisplayName);
+
         eventBus.Subscribe(propertyInspector);
         eventBus.Subscribe(_statusBar);
 
