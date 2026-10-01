@@ -197,11 +197,14 @@ public sealed class CalculationDiagramViewTests
     [AvaloniaFact]
     public void ACalculationWithNoDiagram_SaysSoHonestly_AndDrawsNothing()
     {
-        WithCalculators(FatigueMinerCalculationDefinition.Id, (window, view) =>
+        WithCalculators(ThermalExpansionStressCalculationDefinition.Id, (window, view) =>
         {
-            Assert.Contains(FatigueMinerCalculationDefinition.Id, CalculationDiagrams.NoDiagramYet);
+            // A calculation no diagram is declared for (whatever NoDiagramYet holds today).
+            var undrawn = CalculationModuleDescriptors.For(FatigueMinerCalculationDefinition.Id)! with { Id = "calc.not-yet-drawn", Title = "Not yet drawn" };
+            Assert.Null(CalculationDiagrams.For(undrawn.Id));
 
             var diagram = view.Diagram;
+            diagram.Show(undrawn, _ => null);
             Assert.False(diagram.HasDiagram);
             Assert.False(diagram.Draws("Slope"));
             AssertDrawn(window, diagram, CalculationDiagramView.NoDiagramYetText);
@@ -209,9 +212,59 @@ public sealed class CalculationDiagramViewTests
             Assert.DoesNotContain(diagram.GetVisualDescendants().OfType<Shape>(), s => s.IsEffectivelyVisible);
 
             // Choosing a diagrammed calculation afterwards draws it.
+            view.SelectModule(FatigueMinerCalculationDefinition.Id);
             view.SelectModule(ThermalExpansionStressCalculationDefinition.Id);
             Assert.True(diagram.HasDiagram);
             Assert.Equal("k_s = not given", diagram.LabelFor("RestraintStiffness"));
+        });
+    }
+
+    [AvaloniaFact]
+    public void TheChartLikeDiagrams_DrawAxesAndLines_AndHighlightThemWithTheirInputs()
+    {
+        WithCalculators(FatigueMinerCalculationDefinition.Id, (window, view) =>
+        {
+            var diagram = view.Diagram;
+            Assert.True(diagram.HasDiagram);
+            Assert.Equal("m = ?", diagram.LabelFor("Slope"));
+
+            view.SetField("Slope", "3");
+            view.SetField("ReferenceStressRange", "71", "MPa");
+            view.SetField("Blocks", rows: ["100 MPa, 100000", "60 MPa, 2000000"]);
+            Assert.Equal("m = 3", diagram.LabelFor("Slope"));
+            Assert.Equal("Δσ_C = 71 MPa", diagram.LabelFor("ReferenceStressRange"));
+            Assert.Equal("blocks = 2 rows", diagram.LabelFor("Blocks"));
+            AssertDrawn(window, diagram, "Δσ_C = 71 MPa");
+            AssertDrawn(window, diagram, "log N");
+
+            var limit = diagram.ShapesFor("EnduranceLimit").OfType<Polyline>().Single();
+            Assert.NotNull(limit.StrokeDashArray);
+            Assert.Equal(3, diagram.ShapesFor("Blocks").OfType<Ellipse>().Count());
+
+            Assert.True(view.FieldControl("Slope")!.Focus());
+            Dispatcher.UIThread.RunJobs();
+            var focusRing = ResolveBrush(diagram, ApplicationPalette.FocusRingBrushKey);
+            Assert.All(diagram.ShapesFor("Slope").OfType<Polyline>(), line => Assert.Same(focusRing, line.Stroke));
+            Assert.Equal(2, diagram.ShapesFor("Slope").OfType<Polyline>().Count());
+
+            // The axes are context: drawn in ink, never hit-tested, never highlighted.
+            var ink = ResolveBrush(diagram, BrandPalette.HeadingTextBrushKey);
+            var unbound = diagram.GetVisualDescendants().OfType<Line>().Where(l => !l.IsHitTestVisible).ToList();
+            Assert.Contains(unbound, l => ReferenceEquals(l.Stroke, ink));
+
+            view.SelectModule(BearingRatingLifeCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("RadialLoad", "2", "kN");
+            view.SetField("BearingType", choice: nameof(RollingBearingType.Roller));
+            Assert.Equal("F_r = 2 kN", diagram.LabelFor("RadialLoad"));
+            Assert.StartsWith("A roller bearing", diagram.Reading!.Variant.Caption, StringComparison.Ordinal);
+            Assert.Equal(2, diagram.ShapesFor("BearingType").OfType<Rectangle>().Count());
+
+            view.SelectModule(MaterialSelectionMarginCalculationDefinition.Id);
+            Assert.True(diagram.HasDiagram);
+            view.SetField("AppliedStress", "120", "MPa");
+            Assert.Equal("σ = 120 MPa", diagram.LabelFor("AppliedStress"));
+            AssertDrawn(window, diagram, "σ_allow = ?");
         });
     }
 

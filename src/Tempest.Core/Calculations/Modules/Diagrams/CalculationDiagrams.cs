@@ -32,9 +32,6 @@ public static class CalculationDiagrams
     /// </summary>
     public static IReadOnlyList<string> NoDiagramYet { get; } =
     [
-        MaterialSelectionMarginCalculationDefinition.Id,
-        BearingRatingLifeCalculationDefinition.Id,
-        FatigueMinerCalculationDefinition.Id,
     ];
 
     /// <summary>Every diagram, one per calculation that has one.</summary>
@@ -56,6 +53,9 @@ public static class CalculationDiagrams
         LiftingLugPinJoint(),
         ThickWalledCylinder(),
         BoltedJointPreload(),
+        BearingRatingLife(),
+        FatigueMiner(),
+        MaterialSelectionMargin(),
     ];
 
     /// <summary>The diagram of <paramref name="calculationId"/>, or <see langword="null"/> where it has none yet.</summary>
@@ -463,6 +463,88 @@ public static class CalculationDiagrams
                 new DiagramSpring("member-spring", new(346, 70), new(346, 160), "MemberStiffness", "k_m", new(338, 180)),
                 new DiagramLabel("stress-area", new(110, 214), "TensileStressArea", "A_t"),
                 new DiagramLabel("proof-strength", new(290, 214), "ProofStrength", "S_p"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec BearingRatingLife()
+    {
+        static DiagramVariant Variant(string caption, string type)
+        {
+            var roller = type == nameof(RollingBearingType.Roller);
+            var elements = new List<DiagramElement>
+            {
+                new DiagramPlate("shaft", 50, 110, 180, 30),
+                new DiagramPolyline("centreline", [new(40, 125), new(240, 125)], Dashed: true, Thickness: 1),
+                new DiagramPlate("outer-ring-top", 125, 54, 50, 16, "BearingDesignation"),
+                new DiagramPlate("inner-ring-top", 125, 94, 50, 16, "BearingDesignation"),
+                new DiagramPlate("inner-ring-bottom", 125, 140, 50, 16, "BearingDesignation"),
+                new DiagramPlate("outer-ring-bottom", 125, 180, 50, 16, "BearingDesignation", "bearing", new(150, 214)),
+            };
+            if (roller)
+            {
+                elements.Add(new DiagramPlate("element-top", 138, 70, 24, 24, "BearingType", "type", new(226, 74)));
+                elements.Add(new DiagramPlate("element-bottom", 138, 156, 24, 24, "BearingType"));
+            }
+            else
+            {
+                elements.Add(new DiagramCircle("element-top", new(150, 82), 12, Filled: true, "BearingType", "type", new(226, 74)));
+                elements.Add(new DiagramCircle("element-bottom", new(150, 168), 12, Filled: true, "BearingType"));
+            }
+
+            elements.AddRange(
+            [
+                new DiagramPointLoad("radial-load", new(150, 52), DiagramDirection.Down, 30, "RadialLoad", "F_r"),
+                new DiagramPointLoad("axial-load", new(50, 125), DiagramDirection.Right, 36, "AxialLoad", "F_a", new(62, 96)),
+                new DiagramMoment("speed", new(246, 125), 16, Clockwise: true, "Speed", "n", new(246, 160)),
+                new DiagramLabel("rating", new(340, 36), "BasicDynamicLoadRating", "C"),
+                new DiagramLabel("radial-factor", new(340, 60), "RadialFactor", "X"),
+                new DiagramLabel("axial-factor", new(340, 84), "AxialFactor", "Y"),
+                new DiagramLabel("reliability", new(340, 108), "ReliabilityFactor", "a1"),
+                new DiagramLabel("required-life", new(340, 132), "RequiredLife", "L_req"),
+            ]);
+            return new DiagramVariant(caption, new Dictionary<string, string> { ["BearingType"] = type }, elements);
+        }
+
+        return new(BearingRatingLifeCalculationDefinition.Id,
+        [
+            Variant("A ball bearing on its shaft in section, radial and axial load, running speed n", nameof(RollingBearingType.Ball)),
+            Variant("A roller bearing on its shaft in section, radial and axial load, running speed n", nameof(RollingBearingType.Roller)),
+        ]);
+    }
+
+    private static CalculationDiagramSpec FatigueMiner() =>
+        new(FatigueMinerCalculationDefinition.Id,
+        [
+            new DiagramVariant("A single-slope S-N line on log axes through its reference point, the endurance limit as a cut-off, and the loading blocks as listed (three drawn, representatively)", Always,
+            [
+                new DiagramAxes("axes", new(60, 200), 380, 22),
+                new DiagramLabel("y-title", new(96, 24), Symbol: "log Δσ"),
+                new DiagramLabel("x-title", new(362, 214), Symbol: "log N"),
+                new DiagramLabel("curve-reference", new(250, 14), "CurveReference", "curve"),
+                new DiagramPolyline("sn-line", [new(70, 40), new(320, 165)], InputName: "Slope"),
+                new DiagramPolyline("slope-triangle", [new(230, 120), new(270, 120), new(270, 140)], Thickness: 1.2, InputName: "Slope", Symbol: "m", LabelAt: new(290, 112)),
+                new DiagramPolyline("reference-range", [new(60, 95), new(180, 95)], Dashed: true, Thickness: 1, InputName: "ReferenceStressRange", Symbol: "Δσ_C", LabelAt: new(112, 107)),
+                new DiagramPolyline("reference-cycles", [new(180, 95), new(180, 200)], Dashed: true, Thickness: 1, InputName: "ReferenceCycles", Symbol: "N_C", LabelAt: new(180, 214)),
+                new DiagramCircle("reference-point", new(180, 95), 4, Filled: true, "ReferenceStressRange"),
+                new DiagramPolyline("endurance-limit", [new(320, 165), new(370, 165)], Dashed: true, InputName: "EnduranceLimit", Symbol: "Δσ_L", LabelAt: new(330, 180)),
+                new DiagramCircle("block-1", new(100, 150), 4, Filled: true, "Blocks"),
+                new DiagramCircle("block-2", new(135, 165), 4, Filled: true, "Blocks"),
+                new DiagramCircle("block-3", new(160, 182), 4, Filled: true, "Blocks", "blocks", new(119, 135)),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec MaterialSelectionMargin() =>
+        new(MaterialSelectionMarginCalculationDefinition.Id,
+        [
+            new DiagramVariant("A piece of the candidate material under the applied stress, and the two stresses as bars (drawn representatively, not compared)", Always,
+            [
+                new DiagramPlate("specimen", 40, 96, 110, 36, "MaterialId", "material", new(95, 80)),
+                new DiagramPointLoad("stress-left", new(8, 114), DiagramDirection.Left, 28, "AppliedStress"),
+                new DiagramPointLoad("stress-right", new(182, 114), DiagramDirection.Right, 28, "AppliedStress", "σ", new(95, 152)),
+                new DiagramAxes("axes", new(200, 170), 390, 46),
+                new DiagramLabel("x-title", new(386, 184), Symbol: "σ"),
+                new DiagramPlate("allowable-bar", 200, 74, 150, 22, "MaterialAllowableStress", "σ_allow", new(275, 62)),
+                new DiagramPlate("applied-bar", 200, 124, 90, 22, "AppliedStress", "σ", new(260, 112)),
             ]),
         ]);
 }

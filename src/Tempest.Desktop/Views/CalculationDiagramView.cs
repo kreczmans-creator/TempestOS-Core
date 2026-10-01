@@ -302,6 +302,14 @@ public sealed class CalculationDiagramView : UserControl
                 DrawDimension(dim);
                 break;
 
+            case DiagramPolyline pl:
+                DrawPolyline(pl);
+                break;
+
+            case DiagramAxes ax:
+                DrawAxes(ax);
+                break;
+
             case DiagramLabel:
                 break; // the label alone; drawn with the others.
         }
@@ -441,7 +449,7 @@ public sealed class CalculationDiagramView : UserControl
     {
         var normal = new Vector(-unit.Y, unit.X);
         var basePoint = tip - unit * size;
-        Add(new Polygon { Points = [tip, basePoint + normal * (size / 2), basePoint - normal * (size / 2)], StrokeThickness = 0 }, input, role == Role.Dimension ? Role.Dimension : Role.Load, filledHead: true);
+        Add(new Polygon { Points = [tip, basePoint + normal * (size / 2), basePoint - normal * (size / 2)], StrokeThickness = 0 }, input, role is Role.Dimension or Role.Ink ? role : Role.Load, filledHead: true);
     }
 
     private void DrawLabel(DiagramElement element, string text)
@@ -455,6 +463,7 @@ public sealed class CalculationDiagramView : UserControl
             FontFamily = DesignTokens.MonoFont,
             Width = LabelBoxWidth,
             TextAlignment = leftAligned ? TextAlignment.Left : TextAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis, // a long text input ends in "…", never cut mid-glyph
         };
         Canvas.SetLeft(block, leftAligned ? anchor.X : anchor.X - LabelBoxWidth / 2);
         Canvas.SetTop(block, anchor.Y - LabelFontSize * 0.75);
@@ -540,4 +549,22 @@ public sealed class CalculationDiagramView : UserControl
         Application.Current?.TryGetResource(key, ActualThemeVariant, out var value) == true && value is IBrush brush ? brush : fallback;
 
     private static Point P(DiagramPoint point) => new(point.X, point.Y);
+
+    private void DrawPolyline(DiagramPolyline line)
+    {
+        if (line.Points.Count < 2)
+            return;
+
+        var polyline = new Polyline { Points = line.Points.Select(P).ToList(), StrokeThickness = line.Thickness, StrokeJoin = PenLineJoin.Round };
+        if (line.Dashed)
+            polyline.StrokeDashArray = [4, 3];
+        Add(polyline, line.InputName, Role.Ink);
+    }
+
+    private void DrawAxes(DiagramAxes axes)
+    {
+        var origin = P(axes.Origin);
+        Arrow(origin, new Point(axes.XEnd, origin.Y), null, Role.Ink, 1.5);
+        Arrow(origin, new Point(origin.X, axes.YEnd), null, Role.Ink, 1.5);
+    }
 }
