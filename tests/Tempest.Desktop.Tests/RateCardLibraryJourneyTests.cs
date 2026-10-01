@@ -19,7 +19,8 @@ namespace Tempest.Desktop.Tests;
 /// project could pin one, no timesheet entry could be priced and no
 /// invoice request could be raised (`PHYSICAL_REVIEW.md` §7c C2, D10–D12
 /// were unperformable on a clean machine). Through the real window: the
-/// Libraries area's new "Add a rate card" form registers a Draft card with
+/// "Add a rate card" form — under Business → Rate cards since the Product
+/// Owner decision of 2026-10-01 (rate cards are business data) — registers a Draft card with
 /// one graded hourly rate, opens it right up, and the row's own Verify and
 /// Release take it to Released — the state <c>RateCardPicker</c> offers
 /// and <c>TimesheetService</c> prices against. The released card prices
@@ -32,7 +33,7 @@ public sealed class RateCardLibraryJourneyTests
     private const string Grade = "Senior Engineer";
 
     [AvaloniaFact]
-    public async Task AddingARateCard_ThroughTheLibrariesForm_ReleasingIt_PricesTheGradeItWasGiven()
+    public async Task AddingARateCard_ThroughBusinessRateCards_ReleasingIt_PricesTheGradeItWasGiven()
     {
         var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
         try
@@ -42,32 +43,39 @@ public sealed class RateCardLibraryJourneyTests
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
 
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
-            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Rate cards");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<RateCardsView>().Any());
             LayOut(window);
 
-            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
+            var rateCardsView = window.GetLogicalDescendants().OfType<RateCardsView>().Single();
 
-            var textBoxes = librariesView.GetLogicalDescendants().OfType<TextBox>().ToList();
+            // Product Owner decision (2026-10-01): Rate cards sits in the
+            // Business tree straight after Staff.
+            var businessNodes = window.GetLogicalDescendants().OfType<BusinessAreaView>().Single()
+                .GetLogicalDescendants().OfType<TreeViewItem>()
+                .Select(i => Avalonia.Automation.AutomationProperties.GetName(i)).ToList();
+            Assert.Equal(businessNodes.IndexOf("Staff") + 1, businessNodes.IndexOf("Rate cards"));
+
+            var textBoxes = rateCardsView.GetLogicalDescendants().OfType<TextBox>().ToList();
             textBoxes.First(t => t.Watermark == "Rate card name").Text = CardName;
             textBoxes.First(t => t.Watermark == "Grade (e.g. Engineer)").Text = Grade;
             textBoxes.First(t => t.Watermark == "Hourly rate (GBP)").Text = "95.50";
 
-            var addButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Rate Card"));
+            var addButton = rateCardsView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Rate Card"));
             addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             // Add opens the new record right up (the Product Owner guard,
             // `po-comments.md` item 5), the way Add Material and Add Person do.
             await RenderUntilAsync(window, () =>
-                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } d
+                rateCardsView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } d
                 && d.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(CardName, StringComparison.Ordinal)));
             LayOut(window);
 
-            var detail = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
+            var detail = rateCardsView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
             Assert.Contains(detail.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).Contains(CardName, StringComparison.Ordinal));
 
             var rateCards = (IRateCardCatalog)host.Services!.GetService(typeof(IRateCardCatalog));
@@ -119,26 +127,26 @@ public sealed class RateCardLibraryJourneyTests
             await host.StartAsync();
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
-            await host.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await host.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
-            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Rate cards");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<RateCardsView>().Any());
             LayOut(window);
 
-            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
-            var textBoxes = librariesView.GetLogicalDescendants().OfType<TextBox>().ToList();
-            var addButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Rate Card"));
+            var rateCardsView = window.GetLogicalDescendants().OfType<RateCardsView>().Single();
+            var textBoxes = rateCardsView.GetLogicalDescendants().OfType<TextBox>().ToList();
+            var addButton = rateCardsView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Rate Card"));
 
             addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => librariesView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("Enter a rate card name", StringComparison.Ordinal)));
-            Assert.Contains(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Enter a rate card name", StringComparison.Ordinal));
+            await RenderUntilAsync(window, () => rateCardsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("Enter a rate card name", StringComparison.Ordinal)));
+            Assert.Contains(rateCardsView.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Enter a rate card name", StringComparison.Ordinal));
 
             textBoxes.First(t => t.Watermark == "Rate card name").Text = "Bad rate";
             textBoxes.First(t => t.Watermark == "Hourly rate (GBP)").Text = "ninety";
             addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => librariesView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("Enter the hourly rate as a number", StringComparison.Ordinal)));
-            Assert.Contains(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Enter the hourly rate as a number", StringComparison.Ordinal));
+            await RenderUntilAsync(window, () => rateCardsView.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).StartsWith("Enter the hourly rate as a number", StringComparison.Ordinal)));
+            Assert.Contains(rateCardsView.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Enter the hourly rate as a number", StringComparison.Ordinal));
 
             var rateCards = (IRateCardCatalog)host.Services!.GetService(typeof(IRateCardCatalog));
             Assert.Null(await rateCards.FindByCodeAsync("ratecard-bad-rate"));

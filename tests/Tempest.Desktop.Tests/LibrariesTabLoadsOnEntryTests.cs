@@ -57,22 +57,24 @@ public sealed class LibrariesTabLoadsOnEntryTests
                 Assert.True(count >= 1, $"{library} lists no records.");
             }
 
-            // `WP 19.10P` (D15): every one of the eight governed libraries
+            // `WP 19.10P` (D15): every one of the seven governed libraries
             // gets its own heading, whether or not it currently holds a
-            // record — Manufacturing, Components, the rate-card library
-            // (its own routing key stays "BusinessRateCards"; its screen
-            // name is "Rate cards") carry no baseline seed (only the five
-            // above do), so on a genuinely fresh root they are the three
-            // that read "(0)" with "No records yet" beneath, rather than
-            // being missing entirely. People moved to Business → Staff
-            // (Product Owner runbook B1) and is not listed here at all.
-            foreach (var library in new[] { "Manufacturing", "Components", "Rate cards" })
+            // record — Manufacturing and Components carry no baseline seed
+            // (only the five above do), so on a genuinely fresh root they
+            // are the two that read "(0)" with "No records yet" beneath,
+            // rather than being missing entirely. People moved to Business →
+            // Staff (Product Owner runbook B1) and rate cards to Business →
+            // Rate cards (Product Owner decision 2026-10-01); neither is
+            // listed here at all.
+            foreach (var library in new[] { "Manufacturing", "Components" })
                 Assert.Contains(headings, h => h == $"{library} (0)");
             Assert.DoesNotContain(headings, h => h.StartsWith("People (", StringComparison.Ordinal));
+            Assert.DoesNotContain(headings, h => h.StartsWith("Rate cards (", StringComparison.Ordinal));
+            Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<Button>(), b => Equals(b.Content, "Add Rate Card"));
 
             var emptyLibraryTexts = librariesView.GetLogicalDescendants().OfType<TextBlock>()
                 .Count(t => t.Text == "No records yet");
-            Assert.Equal(3, emptyLibraryTexts);
+            Assert.Equal(2, emptyLibraryTexts);
 
             Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "No reference records are seeded.");
         }

@@ -110,9 +110,11 @@ internal static class MainJourney
                 if (!Ui.WaitUntil(() => Ui.ByName("Release mat-s355j2") is not null, 20_000))
                     return Act.Failed("the Steels group never listed mat-s355j2");
 
-                var rateCards = Ui.FirstTextContaining("Rate cards (") ?? "(no Rate cards heading)";
+                // Rate cards are business data, under Business → Rate cards
+                // (Product Owner decision 2026-10-01), not listed here.
+                var manufacturing = Ui.FirstTextContaining("Manufacturing (") ?? "(no Manufacturing heading)";
                 var steels = Ui.FirstTextContaining("Steels (") ?? "(no Steels group heading)";
-                return Act.Verified($"libraries listed; \"{rateCards}\"; \"{steels}\"");
+                return Act.Verified($"libraries listed; \"{manufacturing}\"; \"{steels}\"");
             });
 
         journal.Step(
@@ -166,15 +168,17 @@ internal static class MainJourney
         // application could create a rate card, so on a clean root the
         // New Project prompt offered none, no timesheet entry could be
         // priced and no invoice request raised (this journey's own
-        // raise-invoice step pinned that defect). The Libraries area's
-        // "Add a rate card" form closes it; this step drives it the way a
-        // user would and releases the card from its own row.
+        // raise-invoice step pinned that defect). The "Add a rate card"
+        // form closes it — under Business → Rate cards since the Product
+        // Owner decision of 2026-10-01 (rate cards are business data); this
+        // step drives it the way a user would and releases the card from
+        // its own row.
         journal.Step(
-            "add-rate-card", "Add the consultancy's rate card to the Rate cards library and release it", "keyboard + mouse",
-            "One graded hourly rate is registered from the library's own form, opens right up, and releases",
+            "add-rate-card", "Business → Rate cards: add the consultancy's rate card and release it", "keyboard + mouse",
+            "One graded hourly rate is registered from Rate cards' own form, opens right up, and releases",
             () =>
             {
-                if (!Act.Click("Engineering", settleMs: 900) || !Act.ClickRow("Reference data", settleMs: 2_000))
+                if (!Act.Click("Business", settleMs: 1_200) || !Act.ClickRow("Rate cards", settleMs: 2_000))
                     return Act.Failed(Act.LastProblem);
 
                 if (!Act.TypeInto("Rate card name", "Consultancy standard rates")

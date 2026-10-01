@@ -22,7 +22,10 @@ namespace Tempest.Desktop.Views;
 /// (Product Owner decision 2026-10-01 §2): the one organisation list every
 /// client/supplier drop-down reads. Staff is <see cref="StaffView"/>
 /// (Product Owner runbook B1, 2026-10-01): the consultancy's own people,
-/// moved here from Engineering → Reference data.
+/// moved here from Engineering → Reference data. Rate cards is
+/// <see cref="RateCardsView"/> (Product Owner decision 2026-10-01): the
+/// consultancy's own graded rates, likewise moved here from Engineering →
+/// Reference data.
 /// </summary>
 public sealed class BusinessAreaView : UserControl
 {
@@ -34,6 +37,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly BusinessDashboardView _dashboard;
     private readonly CustomersSuppliersView _customersSuppliers;
     private readonly StaffView? _staff;
+    private readonly RateCardsView? _rateCards;
 
     private readonly TreeView _tree = new();
     private readonly ContentControl _detail = new();
@@ -47,6 +51,7 @@ public sealed class BusinessAreaView : UserControl
     private readonly TreeViewItem _subscriptionsNode = new() { Header = "Subscriptions" };
     private readonly TreeViewItem _customersSuppliersNode = new() { Header = "Customers & Suppliers" };
     private readonly TreeViewItem _staffNode = new() { Header = "Staff" };
+    private readonly TreeViewItem _rateCardsNode = new() { Header = "Rate cards" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
@@ -61,7 +66,7 @@ public sealed class BusinessAreaView : UserControl
     public BusinessAreaView(
         QuotesView quotes, InvoicingView invoices, PurchaseOrdersView purchaseOrders, TimesheetWeekView timesheets,
         SubscriptionsView subscriptions, BusinessDashboardView dashboard, CustomersSuppliersView customersSuppliers,
-        StaffView? staff = null)
+        StaffView? staff = null, RateCardsView? rateCards = null)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         ArgumentNullException.ThrowIfNull(invoices);
@@ -79,6 +84,7 @@ public sealed class BusinessAreaView : UserControl
         _dashboard = dashboard;
         _customersSuppliers = customersSuppliers;
         _staff = staff;
+        _rateCards = rateCards;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
@@ -86,6 +92,8 @@ public sealed class BusinessAreaView : UserControl
         _tree.Items.Add(_customersSuppliersNode);
         if (staff is not null)
             _tree.Items.Add(_staffNode);
+        if (rateCards is not null)
+            _tree.Items.Add(_rateCardsNode);
         _tree.Items.Add(_quotesNode);
         _tree.Items.Add(_invoicesNode);
         _tree.Items.Add(_purchaseOrdersNode);
@@ -96,7 +104,7 @@ public sealed class BusinessAreaView : UserControl
                  {
                      (_dashboardNode, "Dashboard"), (_customersSuppliersNode, "Customers & Suppliers"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
                      (_purchaseOrdersNode, "Purchase orders"), (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
-                     (_staffNode, "Staff"),
+                     (_staffNode, "Staff"), (_rateCardsNode, "Rate cards"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Business tree");
@@ -117,13 +125,13 @@ public sealed class BusinessAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard", "Customers &amp; Suppliers", "Staff", "Quotes",
+    /// ("Dashboard", "Customers &amp; Suppliers", "Staff", "Rate cards", "Quotes",
     /// "Invoices", "Purchase orders", "Timesheets" or "Subscriptions") — the same name a screen
     /// reader announces, and what a journey test drives the tree by.
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _customersSuppliersNode, _staffNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
+        var item = new[] { _dashboardNode, _customersSuppliersNode, _staffNode, _rateCardsNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -190,6 +198,13 @@ public sealed class BusinessAreaView : UserControl
         {
             await _staff.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _staff;
+            return;
+        }
+
+        if (_rateCards is not null && ReferenceEquals(selected, _rateCardsNode))
+        {
+            await _rateCards.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _rateCards;
             return;
         }
 

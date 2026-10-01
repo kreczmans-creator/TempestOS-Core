@@ -94,6 +94,7 @@ including items waiting on a decision, is
 
 - **Runbook round 1 fixes (PO comments, 2026-10-01).**
   - Staff moved to Business → **Staff** (B1).
+  - Rate cards moved to Business → **Rate cards**.
   - A reference record is rev 1 until its content is revised; verify,
     check, validate and release no longer bump the revision (B2).
   - Customer codes are 5 characters and project references 6, letters or

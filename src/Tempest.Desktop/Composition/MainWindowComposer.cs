@@ -757,7 +757,7 @@ internal sealed partial class MainWindowComposer
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+            referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
@@ -785,7 +785,7 @@ internal sealed partial class MainWindowComposer
         var referenceDataLibrariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+            referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
@@ -881,13 +881,27 @@ internal sealed partial class MainWindowComposer
         };
         staffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
+        // Product Owner decision (2026-10-01): rate cards are business data
+        // — Business → Rate cards, moved from Engineering → Reference data
+        // the same way People moved to Business → Staff.
+        var rateCardsView = new RateCardsView(
+            new ReferenceLibraryCatalogues(
+                host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
+                componentCatalog, rateCardCatalog, personCatalog),
+            host.ReferenceReview!, referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
+        rateCardsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
         var businessAreaView = new BusinessAreaView(
             quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
             new CustomersSuppliersView(
                 organisationCatalog,
                 (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))),
-            staffView)
+            staffView,
+            rateCardsView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };

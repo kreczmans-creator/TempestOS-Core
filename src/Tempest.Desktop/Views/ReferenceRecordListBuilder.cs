@@ -19,7 +19,8 @@ namespace Tempest.Desktop.Views;
 /// <summary>
 /// The one compact list every reference-record surface shares
 /// (Engineering → Reference data's <see cref="LibrariesView"/> and
-/// Business → Staff's <see cref="StaffView"/>) — Product Owner runbook F1,
+/// Business → Staff's <see cref="StaffView"/> and Business → Rate cards'
+/// <see cref="RateCardsView"/>) — Product Owner runbook F1,
 /// 2026-10-01: "they should just show the title … a title and release
 /// status. Opening them gives the detail. Also make the titles/families
 /// collapsible."
