@@ -33,12 +33,7 @@ public static class CalculationDiagrams
     public static IReadOnlyList<string> NoDiagramYet { get; } =
     [
         MaterialSelectionMarginCalculationDefinition.Id,
-        BoltedJointPreloadCalculationDefinition.Id,
-        BoltGroupEccentricShearCalculationDefinition.Id,
-        FilletWeldThroatStressCalculationDefinition.Id,
-        LiftingLugPinJointCalculationDefinition.Id,
         BearingRatingLifeCalculationDefinition.Id,
-        ThickWalledCylinderCalculationDefinition.Id,
         FatigueMinerCalculationDefinition.Id,
     ];
 
@@ -56,6 +51,11 @@ public static class CalculationDiagrams
         PlaneWall(),
         ThermalResistanceChain(),
         ToleranceStack(),
+        BoltGroupEccentricShear(),
+        FilletWeldThroatStress(),
+        LiftingLugPinJoint(),
+        ThickWalledCylinder(),
+        BoltedJointPreload(),
     ];
 
     /// <summary>The diagram of <paramref name="calculationId"/>, or <see langword="null"/> where it has none yet.</summary>
@@ -318,6 +318,151 @@ public static class CalculationDiagrams
                 new DiagramLabel("sigma", new(110, 216), "SigmaPerTolerance", "σ per ½ tol"),
                 new DiagramLabel("minimum", new(290, 192), "MinimumResult", "min gap"),
                 new DiagramLabel("maximum", new(290, 216), "MaximumResult", "max gap"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec BoltGroupEccentricShear() =>
+        new(BoltGroupEccentricShearCalculationDefinition.Id,
+        [
+            new DiagramVariant("A bolt group (six drawn; the bolts as listed) under an in-plane load at the load point, x and y from one origin, + as drawn", Always,
+            [
+                new DiagramMember("x-axis", new(40, 200), new(372, 200), 1),
+                new DiagramLabel("x-note", new(384, 200), Symbol: "x"),
+                new DiagramMember("y-axis", new(40, 200), new(40, 40), 1),
+                new DiagramLabel("y-note", new(40, 30), Symbol: "y"),
+                new DiagramPlate("plate", 70, 40, 130, 132),
+                new DiagramCircle("bolt-1", new(100, 62), 8, Filled: true, "Bolts"),
+                new DiagramCircle("bolt-2", new(170, 62), 8, Filled: true, "Bolts"),
+                new DiagramCircle("bolt-3", new(100, 106), 8, Filled: true, "Bolts"),
+                new DiagramCircle("bolt-4", new(170, 106), 8, Filled: true, "Bolts", "Bolts", new(135, 26)),
+                new DiagramCircle("bolt-5", new(100, 150), 8, Filled: true, "Bolts"),
+                new DiagramCircle("bolt-6", new(170, 150), 8, Filled: true, "Bolts"),
+                new DiagramCircle("centroid", new(135, 106), 3, Filled: true, Symbol: "c.g.", LabelAt: new(135, 124)),
+                new DiagramDimension("load-point-y", new(320, 200), new(320, 80), 0, "LoadPointY", "y_P", new(268, 150)),
+                new DiagramDimension("load-point-x", new(40, 200), new(320, 200), 18, "LoadPointX", "x_P"),
+                new DiagramCircle("load-point", new(320, 80), 4, Filled: true, "LoadPointX"),
+                new DiagramPointLoad("load-y", new(320, 36), DiagramDirection.Up, 44, "LoadY", "F_y", new(320, 24)),
+                new DiagramPointLoad("load-x", new(372, 80), DiagramDirection.Right, 52, "LoadX", "F_x", new(362, 98)),
+                new DiagramLabel("allowable", new(135, 188), "AllowableShearPerBolt", "V_allow"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec FilletWeldThroatStress() =>
+        new(FilletWeldThroatStressCalculationDefinition.Id,
+        [
+            new DiagramVariant("A fillet weld of effective length L: in plan, the force along it; in section, the throat a and the forces across it and normal to the plate", Always,
+            [
+                new DiagramLabel("plan-note", new(110, 22), Symbol: "Plan"),
+                new DiagramPlate("plan-plate", 30, 40, 160, 80),
+                new DiagramPlate("plan-stem", 30, 72, 160, 10),
+                new DiagramMember("weld", new(40, 88), new(180, 88), 8, "EffectiveLength"),
+                new DiagramDimension("length", new(40, 92), new(180, 92), 42, "EffectiveLength", "L"),
+                new DiagramPointLoad("parallel", new(180, 168), DiagramDirection.Right, 80, "ParallelForce", "F_∥", new(110, 184)),
+                new DiagramLabel("section-note", new(345, 40), Symbol: "Section"),
+                new DiagramPlate("base", 222, 150, 166, 16),
+                new DiagramPlate("stem", 270, 50, 16, 100),
+                new DiagramMember("weld-leg-up", new(286, 110), new(286, 150), 2, "ThroatThickness"),
+                new DiagramMember("weld-leg-along", new(286, 150), new(326, 150), 2, "ThroatThickness"),
+                new DiagramMember("weld-face", new(286, 110), new(326, 150), 2, "ThroatThickness"),
+                new DiagramDimension("throat", new(286, 150), new(306, 130), 0, "ThroatThickness", "a", new(352, 134)),
+                new DiagramPointLoad("normal", new(278, 16), DiagramDirection.Up, 34, "NormalForce", "F_n", new(222, 28)),
+                new DiagramPointLoad("transverse", new(336, 76), DiagramDirection.Right, 50, "TransverseForce", "F_⊥", new(340, 92)),
+                new DiagramLabel("ultimate", new(80, 214), "UltimateStrength", "f_u"),
+                new DiagramLabel("correlation", new(200, 214), "CorrelationFactor", "β_w"),
+                new DiagramLabel("partial", new(320, 214), "PartialFactor", "γ_M2"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec LiftingLugPinJoint() =>
+        new(LiftingLugPinJointCalculationDefinition.Id,
+        [
+            new DiagramVariant("A lug and its pin, front view and section through the pin: the lug between two cheek plates, the load through the pin", Always,
+            [
+                new DiagramPlate("lug", 55, 44, 90, 120, "LugWidth"),
+                new DiagramCircle("hole", new(100, 86), 20, Filled: false, "HoleDiameter"),
+                new DiagramCircle("pin", new(100, 86), 17, Filled: true, "PinDiameter"),
+                new DiagramPointLoad("load", new(100, 12), DiagramDirection.Up, 30, "Load", "P", new(48, 24)),
+                new DiagramDimension("edge-distance", new(100, 44), new(100, 66), 60, "EdgeDistance", "a"),
+                new DiagramDimension("hole-diameter", new(80, 86), new(120, 86), 30, "HoleDiameter", "d_h"),
+                new DiagramDimension("width", new(55, 164), new(145, 164), 12, "LugWidth", "W"),
+                new DiagramPlate("cheek-left", 250, 30, 10, 80, "CheekPlateThickness"),
+                new DiagramPlate("cheek-right", 306, 30, 10, 80, "CheekPlateThickness"),
+                new DiagramPlate("lug-section", 270, 64, 26, 100, "LugThickness"),
+                new DiagramMember("pin-section", new(240, 86), new(326, 86), 16, "PinDiameter"),
+                new DiagramDimension("thickness", new(270, 164), new(296, 164), 12, "LugThickness", "t"),
+                new DiagramDimension("cheek-thickness", new(306, 30), new(316, 30), -10, "CheekPlateThickness", "t_s", new(360, 20)),
+                new DiagramDimension("clearance", new(260, 110), new(270, 110), 14, "Clearance", "g", new(226, 124)),
+                new DiagramDimension("pin-diameter", new(326, 78), new(326, 94), 14, "PinDiameter", "d_p", new(358, 110)),
+                new DiagramLabel("allowable-tension", new(70, 210), "AllowableTensileStress", "S_t"),
+                new DiagramLabel("allowable-bearing", new(200, 210), "AllowableBearingStress", "S_br"),
+                new DiagramLabel("allowable-shear", new(330, 210), "AllowableShearStress", "S_v"),
+                new DiagramLabel("pin-allowable-bending", new(120, 228), "PinAllowableBendingStress", "S_b,pin"),
+                new DiagramLabel("pin-allowable-shear", new(280, 228), "PinAllowableShearStress", "S_v,pin"),
+            ]),
+        ]);
+
+    private static CalculationDiagramSpec ThickWalledCylinder()
+    {
+        static DiagramVariant Variant(string caption, IReadOnlyDictionary<string, string> when, bool closedEnds)
+        {
+            var elements = new List<DiagramElement>
+            {
+                new DiagramCircle("wall", new(130, 120), 90, Filled: true, "OuterRadius"),
+                new DiagramCircle("bore", new(130, 120), 56, Filled: false, "InnerRadius"),
+                new DiagramPointLoad("internal-up", new(130, 64), DiagramDirection.Up, 24, "InternalPressure", "p_i", new(130, 53)),
+                new DiagramPointLoad("internal-left", new(74, 120), DiagramDirection.Left, 24, "InternalPressure"),
+                new DiagramPointLoad("external-top", new(130, 30), DiagramDirection.Down, 26, "ExternalPressure", "p_o", new(205, 20)),
+                new DiagramPointLoad("external-left", new(40, 120), DiagramDirection.Right, 28, "ExternalPressure"),
+                new DiagramPointLoad("external-right", new(220, 120), DiagramDirection.Left, 28, "ExternalPressure"),
+                new DiagramDimension("inner-radius", new(130, 120), new(186, 120), 0, "InnerRadius", "a", new(130, 146)),
+                new DiagramDimension("outer-radius", new(130, 120), new(66.4, 56.4), 0, "OuterRadius", "b", new(40, 36)),
+                new DiagramLabel("side-note", new(330, 50), Symbol: "Side"),
+                new DiagramPlate("side-wall-top", 290, 70, 80, 12),
+                new DiagramPlate("side-wall-bottom", 290, 158, 80, 12),
+            };
+            if (closedEnds)
+            {
+                elements.Add(new DiagramPlate("end-left", 282, 70, 8, 100, "ClosedEnds"));
+                elements.Add(new DiagramPlate("end-right", 370, 70, 8, 100, "ClosedEnds"));
+            }
+
+            elements.AddRange(
+            [
+                new DiagramLabel("closed-ends", new(330, 196), "ClosedEnds", "closed ends"),
+                new DiagramLabel("allowable", new(330, 222), "AllowableStress", "S"),
+            ]);
+            return new DiagramVariant(caption, when, elements);
+        }
+
+        return new(ThickWalledCylinderCalculationDefinition.Id,
+        [
+            Variant("A thick-walled cylinder in section, bore radius a, outer radius b, pressure inside and out; closed ends carry the pressures axially", new Dictionary<string, string> { ["ClosedEnds"] = CalculationDiagramReader.BooleanTrue }, closedEnds: true),
+            Variant("A thick-walled cylinder in section, bore radius a, outer radius b, pressure inside and out; open ends, no axial load", Always, closedEnds: false),
+        ]);
+    }
+
+    private static CalculationDiagramSpec BoltedJointPreload() =>
+        new(BoltedJointPreloadCalculationDefinition.Id,
+        [
+            new DiagramVariant("A preloaded bolt clamping two members, the external load pulling them apart; beside it, bolt and members as two springs in parallel", Always,
+            [
+                new DiagramPlate("member-top", 30, 80, 160, 30, "MemberStiffness"),
+                new DiagramPlate("member-bottom", 30, 110, 160, 30, "MemberStiffness"),
+                new DiagramPlate("shank", 100, 66, 20, 96, "BoltStiffness"),
+                new DiagramPlate("head", 86, 66, 48, 14),
+                new DiagramPlate("nut", 86, 140, 48, 14),
+                new DiagramPointLoad("preload-head", new(110, 66), DiagramDirection.Down, 26, "Preload", "F_i", new(110, 28)),
+                new DiagramPointLoad("preload-nut", new(110, 162), DiagramDirection.Up, 26, "Preload"),
+                new DiagramPointLoad("external-top-left", new(45, 50), DiagramDirection.Up, 30, "ExternalLoad"),
+                new DiagramPointLoad("external-bottom-left", new(45, 170), DiagramDirection.Down, 30, "ExternalLoad", "P", new(45, 184)),
+                new DiagramPointLoad("external-top-right", new(175, 50), DiagramDirection.Up, 30, "ExternalLoad"),
+                new DiagramPointLoad("external-bottom-right", new(175, 170), DiagramDirection.Down, 30, "ExternalLoad"),
+                new DiagramMember("model-top", new(232, 70), new(372, 70), 4),
+                new DiagramMember("model-bottom", new(232, 160), new(372, 160), 4),
+                new DiagramSpring("bolt-spring", new(256, 70), new(256, 160), "BoltStiffness", "k_b", new(262, 52)),
+                new DiagramSpring("member-spring", new(346, 70), new(346, 160), "MemberStiffness", "k_m", new(338, 180)),
+                new DiagramLabel("stress-area", new(110, 214), "TensileStressArea", "A_t"),
+                new DiagramLabel("proof-strength", new(290, 214), "ProofStrength", "S_p"),
             ]),
         ]);
 }
