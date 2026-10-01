@@ -4,30 +4,22 @@ using Tempest.Core.UnitsAndQuantities;
 namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 
 /// <summary>
-/// A seed set of ISO metric coarse-thread hexagon head bolts, carrying
-/// thread geometry only.
+/// The shipped fasteners library: seven geometry-only ISO metric
+/// coarse-thread records from the first acquisition, and — from the day-one
+/// acquisition (PO decision 2026-10-01) — one record per size and property
+/// class for ISO 898-1 classes 4.6 to 12.9 (M3 to M36) and ISO 3506-1
+/// A2-70, A4-70 and A4-80 (M3 to M24). See
+/// <c>FastenerSeed.PropertyClasses.cs</c>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Dimension-only, deliberately and visibly.</b> Every record here
-/// leaves <see cref="FastenerDefinition.Mechanical"/> empty. No property
-/// class, no proof load, no tensile strength. Those values live in
-/// ISO 898-1, which is paywalled; the two fastener manufacturers whose
-/// technical libraries restate it serve the tables only inside downloadable
-/// PDFs that were not retrievable, and no other readable source stated
-/// them. Writing "8.8" and a proof stress from memory would have produced
-/// a library that looks complete and cannot be traced to anything, which
-/// is the single most damaging thing a reference dataset can be.
-/// </para>
-/// <para>
-/// <b>What it is good for as it stands.</b> Thread designation, nominal
-/// diameter and coarse pitch are enough to reason about hole sizes,
-/// clearance, spanner sizes and thread engagement, and enough for a
-/// bill of materials to name a fastener unambiguously. It is not enough to
-/// size a joint, and nothing here pretends otherwise:
-/// <see cref="FastenerMechanicalProperties.IsRecorded"/> answers
-/// <see langword="false"/> for every one of these records, so a consumer
-/// that needs strength can detect its absence rather than reading a zero.
+/// <b>The geometry-only records are kept as they were.</b> They name a
+/// thread, not a fastener: <see cref="FastenerMechanicalProperties.IsRecorded"/>
+/// answers <see langword="false"/> for them, so a consumer that needs
+/// strength can detect its absence rather than reading a zero. The first
+/// acquisition found no readable restatement of ISO 898-1; the day-one
+/// acquisition did (Würth's technical handbook extracts), and the property
+/// class records carry those values.
 /// </para>
 /// </remarks>
 public sealed partial class FastenerSeed : IReferenceSeed<FastenerDefinition>
@@ -38,6 +30,10 @@ public sealed partial class FastenerSeed : IReferenceSeed<FastenerDefinition>
     private FastenerSeed()
     {
     }
+
+    /// <inheritdoc />
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
 
     /// <inheritdoc />
     public string DatasetName => "ISO metric coarse thread fasteners — geometry and ISO 898-1 / ISO 3506-1 property classes";

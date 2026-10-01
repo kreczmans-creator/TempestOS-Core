@@ -93,6 +93,10 @@ public sealed partial class StandardSeed : IReferenceSeed<StandardDefinition>
     }
 
     /// <inheritdoc />
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
+
+    /// <inheritdoc />
     public string DatasetName => "Citation index for the TempestOS seed corpus";
 
     /// <inheritdoc />

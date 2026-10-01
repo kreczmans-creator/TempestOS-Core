@@ -1,4 +1,5 @@
 using Tempest.Core.Audit;
+using Tempest.Core.Configuration;
 using Tempest.Core.Identity;
 using Tempest.Core.Logging;
 using Tempest.Core.ReferenceData.Review;
@@ -54,6 +55,17 @@ public sealed class ReferenceSeedReleasePolicy
     /// <summary>The decision this policy carries out, as recorded on every record it releases.</summary>
     public const string DecisionReference = "PO decision 2026-10-01";
 
+    /// <summary>
+    /// The configuration key that switches release-at-seed off. Absent, or any
+    /// value other than <c>false</c>, leaves it on — the Product Owner's
+    /// default. Setting it to <c>false</c> is the stricter choice: every
+    /// shipped record then lands Draft and waits for a person's review, as it
+    /// did before the decision (for example
+    /// <c>--ReferenceData:ReleaseAtSeed=false</c> on the command line, or
+    /// <c>TEMPEST_ReferenceData__ReleaseAtSeed=false</c>).
+    /// </summary>
+    public const string EnabledConfigurationKey = "ReferenceData:ReleaseAtSeed";
+
     private readonly IAuditRecorder? _auditRecorder;
     private readonly ILogger? _logger;
     private readonly TimeProvider _time;
@@ -61,17 +73,27 @@ public sealed class ReferenceSeedReleasePolicy
     /// <summary>Initialises a new instance of the <see cref="ReferenceSeedReleasePolicy"/> class.</summary>
     /// <param name="auditRecorder">Where the verify and release rows go; the same recorder a person's review writes to.</param>
     /// <param name="logger">An optional logger.</param>
-    public ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder = null, ILogger? logger = null)
-        : this(auditRecorder, logger, TimeProvider.System)
+    /// <param name="configuration">Where <see cref="EnabledConfigurationKey"/> is read from; absent means enabled.</param>
+    public ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder = null, ILogger? logger = null, IConfigurationProvider? configuration = null)
+        : this(auditRecorder, logger, TimeProvider.System, ReadEnabled(configuration))
     {
     }
 
-    private ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder, ILogger? logger, TimeProvider time)
+    private ReferenceSeedReleasePolicy(IAuditRecorder? auditRecorder, ILogger? logger, TimeProvider time, bool enabled)
     {
         _auditRecorder = auditRecorder;
         _logger = logger;
         _time = time;
+        IsEnabled = enabled;
     }
+
+    /// <summary>Whether this policy releases at seed (see <see cref="EnabledConfigurationKey"/>).</summary>
+    public bool IsEnabled { get; }
+
+    private static bool ReadEnabled(IConfigurationProvider? configuration) =>
+        configuration is null
+        || !configuration.TryGetValue(EnabledConfigurationKey, out var value)
+        || !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Creates a policy whose verification date is taken from <paramref name="time"/> — for tests that pin the clock.</summary>
     /// <param name="time">The clock the verification date is read from.</param>
@@ -80,7 +102,7 @@ public sealed class ReferenceSeedReleasePolicy
     public static ReferenceSeedReleasePolicy WithClock(TimeProvider time, IAuditRecorder? auditRecorder = null)
     {
         ArgumentNullException.ThrowIfNull(time);
-        return new ReferenceSeedReleasePolicy(auditRecorder, null, time);
+        return new ReferenceSeedReleasePolicy(auditRecorder, null, time, enabled: true);
     }
 
     /// <summary>

@@ -267,7 +267,7 @@ public sealed class EngineeringCalculationWorkspaceTests
 
     private static async Task InWorkspaceAsync(Func<WorkspaceHost, MainWindow, EngineeringCalculationView, Task> body)
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), commandLineArgs: WorkspacePersistenceCollection.PersonReviewsSeededRecordsArgs);
         try
         {
             await host.StartAsync();

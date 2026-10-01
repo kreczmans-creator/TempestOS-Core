@@ -38,7 +38,9 @@ namespace Tempest.Core.ReferenceData.Seeding;
 /// record lands <see cref="ReferenceValidationState.Draft"/> exactly as
 /// before. The running host registers the policy (PO decision 2026-10-01:
 /// shipped libraries must be usable from day one), and with it every record
-/// this service registers is verified and released through
+/// this service registers from a dataset marked
+/// <see cref="IReferenceSeed{TDefinition}.ReleaseAtSeed"/> is verified and
+/// released through
 /// <see cref="Review.ReferenceReviewService"/> as the named seed principal —
 /// the ordinary governed path, with its permission checks and audit rows,
 /// never a direct write of a validation state.
@@ -63,7 +65,7 @@ public sealed class ReferenceSeedService
     }
 
     /// <summary>Whether this service releases what it seeds.</summary>
-    public bool ReleasesAtSeed => _releasePolicy is not null;
+    public bool ReleasesAtSeed => _releasePolicy is { IsEnabled: true };
 
     /// <summary>
     /// Registers every record in <paramref name="seed"/> that
@@ -122,7 +124,7 @@ public sealed class ReferenceSeedService
                 continue;
             }
 
-            var released = await ReleaseIfPolicyAsync(catalog, record.RecordId, cancellationToken).ConfigureAwait(false);
+            var released = await ReleaseIfPolicyAsync(catalog, seed, record.RecordId, cancellationToken).ConfigureAwait(false);
             entries.Add(new ReferenceSeedEntry(record.RecordId, ReferenceSeedAction.Registered, released));
         }
 
@@ -210,7 +212,7 @@ public sealed class ReferenceSeedService
         CancellationToken cancellationToken)
         where TDefinition : class
     {
-        if (_releasePolicy is null || !IsUntouchedShippedRecord(existing, record))
+        if (!ReleasesAtSeed || !seed.ReleaseAtSeed || !IsUntouchedShippedRecord(existing, record))
             return new ReferenceSeedEntry(record.RecordId, ReferenceSeedAction.AlreadyPresent);
 
         try
@@ -232,7 +234,7 @@ public sealed class ReferenceSeedService
             return new ReferenceSeedEntry(record.RecordId, ReferenceSeedAction.KeyConflict);
         }
 
-        var released = await ReleaseIfPolicyAsync(catalog, record.RecordId, cancellationToken).ConfigureAwait(false);
+        var released = await ReleaseIfPolicyAsync(catalog, seed, record.RecordId, cancellationToken).ConfigureAwait(false);
         return new ReferenceSeedEntry(record.RecordId, ReferenceSeedAction.Refreshed, released);
     }
 
@@ -245,14 +247,15 @@ public sealed class ReferenceSeedService
 
     private async Task<bool> ReleaseIfPolicyAsync<TDefinition>(
         IReferenceDataCatalog<TDefinition> catalog,
+        IReferenceSeed<TDefinition> seed,
         string recordId,
         CancellationToken cancellationToken)
         where TDefinition : class
     {
-        if (_releasePolicy is null)
+        if (!ReleasesAtSeed || !seed.ReleaseAtSeed)
             return false;
 
-        await _releasePolicy.ReleaseAsync(catalog, recordId, cancellationToken).ConfigureAwait(false);
+        await _releasePolicy!.ReleaseAsync(catalog, recordId, cancellationToken).ConfigureAwait(false);
         return true;
     }
 }

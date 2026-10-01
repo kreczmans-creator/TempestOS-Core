@@ -20,12 +20,12 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// <para>
 /// <b>One family only, which is a real gap.</b> Deep groove ball bearings
 /// are all that was obtainable: the two large manufacturers' catalogues
-/// serve their data only to a scripted browser, and the tapered roller
-/// pages of the manufacturer that does publish static specifications were
-/// not present. Rolling-element selection genuinely turns on the choice
-/// between families, so this dataset cannot yet support that decision, and
-/// the deferred-datasets record says so rather than leaving a reader to
-/// infer coverage from a count of records.
+/// serve their data only to a scripted browser. The day-one acquisition
+/// (PO decision 2026-10-01) extends the family to the full 6000, 6200 and
+/// 6300 series to size 12 from the same manufacturer
+/// (<c>BearingSeed.Series.cs</c>); rolling-element selection between
+/// families remains unsupported, and the Seed Data Sources Register says
+/// so.
 /// </para>
 /// </remarks>
 public sealed partial class BearingSeed : IReferenceSeed<BearingDefinition>
@@ -44,6 +44,10 @@ public sealed partial class BearingSeed : IReferenceSeed<BearingDefinition>
     private BearingSeed()
     {
     }
+
+    /// <inheritdoc />
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
 
     /// <inheritdoc />
     public string DatasetName => "Deep groove ball bearings — RHD Bearings published specifications";

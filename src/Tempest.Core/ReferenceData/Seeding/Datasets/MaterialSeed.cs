@@ -4,17 +4,22 @@ using Tempest.Core.UnitsAndQuantities;
 namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 
 /// <summary>
-/// A seed set of engineering materials spanning structural steel,
-/// austenitic stainless steel, wrought aluminium and copper.
+/// The shipped materials library: 77 engineering materials across
+/// structural, engineering and stainless steels, aluminium, copper, cast
+/// iron, titanium, nickel and magnesium alloys and thermoplastics, every
+/// value traced to a named, addressable source (PO decision 2026-10-01).
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Six grades, chosen to be different from each other.</b> The point of
-/// a seed is not coverage, it is exercise: a selection routine that can
-/// tell 6082-T6 from S355J2 from 1.4404 is being asked a real question,
-/// because those three differ in density, stiffness, strength, corrosion
-/// behaviour and cost in ways that actually decide designs. Six grades
-/// that disagree teach the platform more than sixty that cluster.
+/// <b>Usable from day one, and honest about how.</b> The Product Owner ruled
+/// that the libraries must be fully usable from day one. Every record
+/// therefore carries every property the calculators read — density,
+/// Young's modulus, yield or 0.2% proof strength, tensile strength and
+/// thermal expansion — except where no source read publishes one; those
+/// gaps are named in the record's own notes and pinned by
+/// <c>DayOneReferenceLibraryTests</c>, so a calculator refuses rather than
+/// using a borrowed figure. The dataset is released at seed
+/// (<see cref="ReleaseAtSeed"/>) through the governed review path.
 /// </para>
 /// <para>
 /// <b>Every property carries the condition it holds under.</b> A minimum
@@ -32,14 +37,20 @@ namespace Tempest.Core.ReferenceData.Seeding.Datasets;
 /// A datasheet's mechanical minima are the cited standard's
 /// (<see cref="ReferenceValueOrigin.Standard"/>); its density and modulus
 /// are typical figures the stockholder published on its own authority
-/// (<see cref="ReferenceValueOrigin.EngineeringReference"/>). Collapsing
-/// the two would overstate the second.
+/// (<see cref="ReferenceValueOrigin.EngineeringReference"/>); a
+/// manufacturer's own product figures are
+/// <see cref="ReferenceValueOrigin.ManufacturerCatalogue"/>. A value taken
+/// from a document other than the record's principal source begins
+/// "SUPPLEMENTARY SOURCE:" and names that document and its address.
 /// </para>
 /// <para>
-/// <b>One published value is deliberately absent.</b> See
-/// <c>mat-5083-o-h111</c>: its source states a density that is physically
-/// impossible, and the record omits it and says so rather than quietly
-/// substituting the value the source evidently meant.
+/// <b>Source defects are recorded, not repaired.</b> See
+/// <c>mat-5083-o-h111</c>: its own datasheet states a density that is
+/// physically impossible; the record carries the same publisher's figure
+/// for the same alloy from another of its datasheets, cited on the value,
+/// and says why. The Seed Data Sources Register
+/// (<c>docs/governance/Data/Seed Data Sources Register.md</c>) lists every
+/// source and every defect.
 /// </para>
 /// </remarks>
 public sealed partial class MaterialSeed : IReferenceSeed<MaterialDefinition>
@@ -68,6 +79,10 @@ public sealed partial class MaterialSeed : IReferenceSeed<MaterialDefinition>
     private MaterialSeed()
     {
     }
+
+    /// <inheritdoc />
+    /// <remarks>Shipped reference data under the PO decision of 2026-10-01: released at seed by the host's seeder.</remarks>
+    public bool ReleaseAtSeed => true;
 
     /// <inheritdoc />
     public string DatasetName => "Engineering materials — day-one library (PO decision 2026-10-01)";
