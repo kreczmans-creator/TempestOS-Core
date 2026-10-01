@@ -24,8 +24,11 @@ members, plates, circles, supports (pinned, roller, fixed), point and
 distributed loads, moments, springs, dimensions and labels — each bound
 by name to the input it stands for. A variant is selected by the form's
 own values (`Support`/`Loading` for the beam, `ShearPlanes = 2` for the
-bolt, a ticked yes-or-no as `true` — `ClosedEnds` for the thick
-cylinder). `CalculationDiagrams.All` holds the diagrams.
+bolt, read by the form's own number rule so `+2` selects it too, a
+ticked yes-or-no as `true` — `ClosedEnds` for the thick cylinder — and
+an optional input left empty as `""`, so no restraint stiffness draws a
+rigid wall). A bolt, pin or point is a solid circle, never a hole.
+`CalculationDiagrams.All` holds the diagrams.
 
 **2. A label reads the form as typed.** `CalculationDiagramReader` labels
 a bound shape `L = 2000 mm`, or `L = ?` when the value cannot be read
