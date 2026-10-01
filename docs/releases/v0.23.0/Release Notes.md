@@ -108,14 +108,13 @@ including items waiting on a decision, is
 - The standard project subfolder set (`V1-BLOCKER-01`) and full
   reference-library coverage (`WP RC.0G`) are firm v1.0.0 blockers.
 
-## Gate (Linux, this branch's head)
+## Gate (Linux, this branch's head, every v0.23.0 branch merged)
 
 - Build: Desktop, Core and RealShell test projects build with 0 errors.
-- Core tests: 5,447/5,457 — the same 10 known Windows-only failures
-  as `v0.22.0` (DPAPI secret store, PowerShell scripts).
-- Desktop tests: 903/906 on the full run. Two of the failures came from
-  the new dropdown: a test helper that typed into the prompt, and a
-  missing automation name. Both are fixed, and those tests pass
-  (13/13). The third is the known Linux-only `StatusBarCollapseTests`
-  failure, unchanged from `v0.22.0`.
+- Core tests: 5,608/5,618 — the same 10 known Windows-only failures as
+  `v0.22.0` (DPAPI secret store, PowerShell scripts).
+- Desktop tests: 922/923 — the one failure is the known Linux-only
+  `StatusBarCollapseTests`, unchanged from `v0.22.0`.
+- Tempest-Dashboard (`claude/focused-dirac-k0qilf`): `npm test` 126/126,
+  lint clean; the Awaiting review card checked rendered in demo mode.
 - Not run here: the Windows real-shell journey and the installer.
