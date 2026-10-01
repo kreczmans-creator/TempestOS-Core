@@ -2,6 +2,7 @@ using System.Globalization;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Governance;
 using Tempest.Core.Projects;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
@@ -99,6 +100,7 @@ public sealed class QuotationService : IQuotationService
     private readonly IRateCardCatalog _rateCards;
     private readonly IRequirementsService _requirements;
     private readonly ISettingsProvider? _settings;
+    private readonly ISignOffPolicy? _signOff;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="QuotationService"/> class.</summary>
@@ -109,9 +111,15 @@ public sealed class QuotationService : IQuotationService
     /// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/> outright,
     /// for a caller (an older test host) with no settings provider composed.
     /// </param>
+    /// <param name="signOffPolicy">
+    /// The global "Second-person sign-off" switch (`ADR-0161`) <see cref="ApproveAsync"/>
+    /// consults. <see langword="null"/> — only a caller constructing this
+    /// service by hand; the host always composes one — keeps the
+    /// separation-of-duty rule on, exactly as it stood before the switch.
+    /// </param>
     public QuotationService(
         EngineeringDomainContext context, IRateCardCatalog rateCards, IRequirementsService requirements, TimeProvider? timeProvider = null,
-        ISettingsProvider? settings = null)
+        ISettingsProvider? settings = null, ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -122,6 +130,7 @@ public sealed class QuotationService : IQuotationService
         _requirements = requirements;
         _time = timeProvider ?? TimeProvider.System;
         _settings = settings;
+        _signOff = signOffPolicy;
 
         if (_settings is not null)
         {
@@ -491,15 +500,40 @@ public sealed class QuotationService : IQuotationService
             return archived;
 
         // Evidence's own independent-check rule (`EvidenceService.RecordCheckAsync`),
-        // applied to a quote without a setting to turn it off: the PO asked
-        // for "review by second person" outright (runbook C3).
+        // applied to a quote: the PO asked for "review by second person"
+        // (runbook C3). Since the PO's 2026-10-01 decision it is governed by
+        // the one global "Second-person sign-off" switch (`ADR-0161`), off
+        // by default for a one-person consultancy. Either way somebody must
+        // be signed in: an approval nobody can be held to is not a review.
         var approverId = CurrentPrincipalId();
         if (approverId is null)
         {
             return new QuotationResult(
                 QuotationRefusal.NoPrincipalSignedIn,
-                "Approving a quote needs a second person, and nobody is signed in; an approval nobody can be held to is not a review.",
+                "Approving a quote needs somebody signed in; an approval nobody can be held to is not a review.",
                 quote);
+        }
+
+        if (!await IsSecondPersonRequiredAsync(cancellationToken).ConfigureAwait(false))
+        {
+            // Second-person sign-off is off: the same person may author,
+            // submit and approve. The revision still records who submitted
+            // and who approved, and says so when they were not shown to be
+            // different people — the record never claims an independence it
+            // did not have.
+            var offAuthorId = await ResolveAuthorIdAsync(quote, cancellationToken).ConfigureAwait(false);
+            var offSubmittedBy = quote.Review.SubmittedBy;
+            var selfApproval =
+                offAuthorId is null
+                || string.IsNullOrWhiteSpace(offSubmittedBy)
+                || IsUnknownPrincipal(offSubmittedBy)
+                || string.Equals(approverId, offSubmittedBy, StringComparison.Ordinal)
+                || string.Equals(approverId, offAuthorId, StringComparison.Ordinal)
+                || quote.Review.LineEditors.Contains(approverId, StringComparer.Ordinal);
+
+            await quote.MarkApprovedAsync(approverId, _time.GetUtcNow(), selfApproval, cancellationToken).ConfigureAwait(false);
+
+            return new QuotationResult(QuotationRefusal.None, null, quote);
         }
 
         // Colour review board B1: the approver must be shown to differ from
@@ -535,7 +569,7 @@ public sealed class QuotationService : IQuotationService
                 quote);
         }
 
-        await quote.MarkApprovedAsync(approverId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await quote.MarkApprovedAsync(approverId, _time.GetUtcNow(), selfApproval: false, cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -589,6 +623,10 @@ public sealed class QuotationService : IQuotationService
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
+
+    /// <summary>Whether the global second-person sign-off switch is on (`ADR-0161`) — on, as before the switch existed, when no policy is composed.</summary>
+    private Task<bool> IsSecondPersonRequiredAsync(CancellationToken cancellationToken) =>
+        _signOff?.IsSecondPersonRequiredAsync(cancellationToken) ?? Task.FromResult(true);
 
     /// <summary>Whether <paramref name="quote"/>'s lines may change — while Draft, or once Approved (the edit then starts a new draft, runbook C3).</summary>
     private static bool LinesEditable(Quotation quote) => quote.Status is QuotationStatus.Draft or QuotationStatus.Approved;

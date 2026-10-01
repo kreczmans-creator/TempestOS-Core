@@ -104,7 +104,7 @@ public sealed record QuotationLine(
 /// </summary>
 /// <param name="Number">The revision number — 1 for <c>R1</c>, 2 for <c>R2</c>, ….</param>
 /// <param name="SubmittedBy">The identity id of whoever submitted the draft for review.</param>
-/// <param name="ApprovedBy">The identity id of the second person who approved it — never the same as <paramref name="SubmittedBy"/>, nor as the quotation's own author.</param>
+/// <param name="ApprovedBy">The identity id of whoever approved it. With second-person sign-off on (`ADR-0161`) never the same as <paramref name="SubmittedBy"/>, nor as the quotation's own author; with it off it may be — and <paramref name="SelfApproved"/> then says so.</param>
 /// <param name="ApprovedAt">When it was approved.</param>
 /// <param name="LinesHash">
 /// <see cref="Quotation.ComputeLinesHash"/> of the lines this revision
@@ -113,7 +113,15 @@ public sealed record QuotationLine(
 /// rather than only by timestamp. <see langword="null"/> for a revision
 /// approved before it was recorded; such a revision still reads back.
 /// </param>
-public sealed record QuotationRevision(int Number, string SubmittedBy, string ApprovedBy, DateTimeOffset ApprovedAt, string? LinesHash = null)
+/// <param name="SelfApproved">
+/// <see langword="true"/> when the approver was not shown to be a second
+/// person — the author, the submitter or a line editor approved it, allowed
+/// because second-person sign-off was off (`ADR-0161`, Product Owner
+/// decision 2026-10-01). A revision approved before the switch existed reads
+/// back <see langword="false"/>, which is true of it: the rule was then on.
+/// </param>
+public sealed record QuotationRevision(
+    int Number, string SubmittedBy, string ApprovedBy, DateTimeOffset ApprovedAt, string? LinesHash = null, bool SelfApproved = false)
 {
     /// <summary>The revision as printed: <c>R1</c>, <c>R2</c>, ….</summary>
     public string Label => QuotationReview.LabelFor(Number);
@@ -399,15 +407,16 @@ public sealed class Quotation : EngineeringObjectBase, IRehydratable<Quotation>
             _review with { ReturnedBy = returnedBy, ReturnComment = comment, SubmittedBy = null, SubmittedAt = null, DraftSavedAt = returnedAt },
             $"Returned to draft by '{returnedBy}' at {returnedAt:u}: {comment}", WorkspaceChangeType.StatusChanged, cancellationToken);
 
-    /// <summary>Approves this quotation's current review as the next revision — <c>R1</c>, then <c>R2</c>, … (runbook C3), recording the approved lines' own <see cref="LinesHash"/> (M18) and clearing <see cref="QuotationReview.LineEditors"/>. <see cref="QuotationService.ApproveAsync"/> has already refused an approver who is not a second person.</summary>
-    internal Task MarkApprovedAsync(string approvedBy, DateTimeOffset approvedAt, CancellationToken cancellationToken = default)
+    /// <summary>Approves this quotation's current review as the next revision — <c>R1</c>, then <c>R2</c>, … (runbook C3), recording the approved lines' own <see cref="LinesHash"/> (M18) and clearing <see cref="QuotationReview.LineEditors"/>. <see cref="QuotationService.ApproveAsync"/> has already refused an approver who is not a second person while second-person sign-off is on; <paramref name="selfApproval"/> records that it was off and they were not shown to be one (`ADR-0161`).</summary>
+    internal Task MarkApprovedAsync(string approvedBy, DateTimeOffset approvedAt, bool selfApproval, CancellationToken cancellationToken = default)
     {
-        var revision = new QuotationRevision(_review.RevisionNumber + 1, _review.SubmittedBy ?? string.Empty, approvedBy, approvedAt, LinesHash);
+        var revision = new QuotationRevision(_review.RevisionNumber + 1, _review.SubmittedBy ?? string.Empty, approvedBy, approvedAt, LinesHash, selfApproval);
 
         return PersistReviewAsync(
             QuotationStatus.Approved,
             _review with { RevisionNumber = revision.Number, Revisions = [.. _review.Revisions, revision], LineEditors = [] },
-            $"Approved as {revision.Label} by '{approvedBy}' at {approvedAt:u} (submitted by '{revision.SubmittedBy}').",
+            $"Approved as {revision.Label} by '{approvedBy}' at {approvedAt:u} (submitted by '{revision.SubmittedBy}')"
+            + (selfApproval ? $" — {Governance.SignOffPolicy.SelfApprovalNote}." : "."),
             WorkspaceChangeType.StatusChanged, cancellationToken);
     }
 

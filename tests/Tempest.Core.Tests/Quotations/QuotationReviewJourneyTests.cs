@@ -7,6 +7,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Quotations;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.BusinessGovernance;
+using Tempest.Core.Tests.Governance;
 using Tempest.Core.Tests.Plugins;
 
 namespace Tempest.Core.Tests.Quotations;
@@ -114,6 +115,7 @@ public sealed class QuotationReviewJourneyTests
         using var temp = new TempDirectory();
         var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
         QuotationTestHost.SignIn(host, AuthorId);
+        await SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
         var quotations = QuotationTestHost.Quotations(host);
         var principals = QuotationTestHost.Principals(host);
 
@@ -309,6 +311,7 @@ public sealed class QuotationReviewJourneyTests
         using var temp = new TempDirectory();
         var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
         QuotationTestHost.SignIn(host, AuthorId);
+        await SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
         var quotations = QuotationTestHost.Quotations(host);
         var principals = QuotationTestHost.Principals(host);
 
@@ -375,6 +378,7 @@ public sealed class QuotationReviewJourneyTests
         using var temp = new TempDirectory();
         var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
         QuotationTestHost.SignIn(host, AuthorId);
+        await SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
         var quotations = QuotationTestHost.Quotations(host);
         var principals = QuotationTestHost.Principals(host);
         var domain = QuotationTestHost.Domain(host);
@@ -402,6 +406,7 @@ public sealed class QuotationReviewJourneyTests
         using var temp = new TempDirectory();
         var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
         QuotationTestHost.SignIn(host, AuthorId);
+        await SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
         var quotations = QuotationTestHost.Quotations(host);
         var principals = QuotationTestHost.Principals(host);
 
@@ -439,6 +444,7 @@ public sealed class QuotationReviewJourneyTests
         using var temp = new TempDirectory();
         var (host, manager) = await QuotationTestHost.StartAsync(temp.Path);
         QuotationTestHost.SignIn(host, AuthorId);
+        await SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
         var quotations = QuotationTestHost.Quotations(host);
         var principals = QuotationTestHost.Principals(host);
 
