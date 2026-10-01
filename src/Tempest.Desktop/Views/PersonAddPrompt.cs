@@ -14,7 +14,7 @@ namespace Tempest.Desktop.Views;
 /// The requirement Owner picker's own <b>Add person…</b> affordance
 /// (`WP 20.10F`, Product Owner finding D8): a small modal that registers a
 /// new <see cref="Person"/> record, and — in the same action, since there is
-/// no reason to make an engineer visit Reference data separately just to
+/// no reason to make an engineer visit Business → Staff separately just to
 /// make their own new colleague pickable — verifies and releases it right
 /// away, mirroring <see cref="Views.LibrariesView"/>'s own established
 /// "Release from Draft verifies first, as one action" idiom

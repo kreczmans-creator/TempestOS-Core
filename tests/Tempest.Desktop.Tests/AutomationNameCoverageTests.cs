@@ -162,7 +162,7 @@ public sealed class AutomationNameCoverageTests
     {
         ShellArea.Projects => ["Dashboard", "Open", "Closed", "Archive"],
         ShellArea.EngineeringDepartment => ["Dashboard", "Tasks", "Mechanical", "Engineering Calculations", "Calculators", "Engineering Assets", "Reference data"],
-        ShellArea.Business => ["Dashboard", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
+        ShellArea.Business => ["Dashboard", "Staff", "Quotes", "Invoices", "Timesheets", "Subscriptions"],
         _ => [],
     };
 

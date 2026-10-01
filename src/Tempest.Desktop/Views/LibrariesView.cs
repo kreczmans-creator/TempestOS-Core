@@ -26,10 +26,14 @@ namespace Tempest.Desktop.Views;
 /// One reference-data record, as the Evidence workspace's own Libraries
 /// tab and Citation picker both need it — record id, name, revision,
 /// validation state and its structured source citation (`WP 18.2A`, §5).
+/// <see cref="RevisionNumber"/> is the stored version stamp a pin cites;
+/// <see cref="ContentRevision"/> is the revision a person reads (runbook
+/// B2). <see cref="Group"/> is the family the Libraries tab groups the
+/// record under (runbook F1).
 /// </summary>
 public sealed record EvidenceLibraryRow(
     string Library, string RecordId, string DisplayName, int RevisionNumber,
-    ReferenceValidationState ValidationState, SourceCitation? Source)
+    ReferenceValidationState ValidationState, SourceCitation? Source, int ContentRevision = 1, string? Group = null)
 {
     /// <summary>Whether evidence may cite this record — released, and only released (`ADR-0148`).</summary>
     public bool IsCitable => ValidationState == ReferenceValidationState.Released;
@@ -53,7 +57,6 @@ public sealed class LibrariesView : UserControl
     private readonly IProcessCatalog _manufacturing;
     private readonly IComponentCatalog _components;
     private readonly IRateCardCatalog _businessRateCards;
-    private readonly IPersonCatalog _persons;
     private readonly ReferenceLibraryCatalogues _catalogues;
     private readonly ReferenceReviewService _review;
     private readonly BracketCalculationWorkbench _bracketCalculations;
@@ -70,27 +73,13 @@ public sealed class LibrariesView : UserControl
     private readonly TextBox _newMaterialSourceDocument = new() { Watermark = "Source document", MinHeight = DesignTokens.MinControlSize };
     private readonly Button _addMaterialButton = new() { Content = "Add Material", MinHeight = DesignTokens.MinControlSize };
 
-    // `WP 20.10F` (Product Owner finding D8): a person needs no source
-    // organisation/document of their own typed in — see `OnAddPersonAsync`'s
-    // own remarks for the fixed provenance every added person is stamped
-    // with instead.
-    private readonly TextBox _newPersonDisplayName = new() { Watermark = "Display name", MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _newPersonRole = new() { Watermark = "Role", MinHeight = DesignTokens.MinControlSize };
-    private readonly TextBox _newPersonEmail = new() { Watermark = "Email", MinHeight = DesignTokens.MinControlSize };
-
-    // Product Owner decision 2026-10-01 §1: the consultancy's own people
-    // keep contact details only — name, role/grade, e-mail and phone. A
-    // client's people are contacts of an organisation instead, kept in
-    // Business → Customers & Suppliers (`CustomersSuppliersView`).
-    private readonly TextBox _newPersonPhone = new() { Watermark = "Phone", MinHeight = DesignTokens.MinControlSize };
-    private readonly Button _addPersonButton = new() { Content = "Add Person", MinHeight = DesignTokens.MinControlSize };
 
     // DEFECT-1 of the overnight real-shell journey (2026-09-16, `WP 21.5C`
     // Linux): nothing in the shipped application could create a rate card
     // — no form, no seed, no command — so on a clean install no project
     // could pin one, no timesheet entry could be priced and no invoice
     // request could be raised. The same inline-form pattern as "Add a
-    // material" and "Add a person": one graded hourly rate in the
+    // material": one graded hourly rate in the
     // consultancy's own currency (GBP, the product's base currency — the
     // record can be revised to add grades or change rates), registered as
     // Draft and released through the row's own Verify/Release like every
@@ -118,6 +107,10 @@ public sealed class LibrariesView : UserControl
     private readonly ReferenceRecordView _detail;
 
     private (string Library, string RecordId)? _openRecord;
+
+    // Runbook F1: the sections a record's own row sits in, so opening it
+    // (from the row, or after Add/Revise) reveals it in the list too.
+    private readonly Dictionary<(string Library, string RecordId), CollapsibleSection[]> _sectionsByRecord = [];
     private bool _compact;
     private Func<string, string, SourceCitation?, CancellationToken, Task<ReviseReferenceRecordInput?>>? _reviseRecordPrompt;
 
@@ -179,7 +172,6 @@ public sealed class LibrariesView : UserControl
         _manufacturing = manufacturing;
         _components = components;
         _businessRateCards = businessRateCards;
-        _persons = persons;
         _catalogues = new ReferenceLibraryCatalogues(materials, fasteners, bearings, standards, constants, manufacturing, components, businessRateCards, persons);
         _review = review;
         _bracketCalculations = bracketCalculations;
@@ -220,30 +212,6 @@ public sealed class LibrariesView : UserControl
         addMaterialSection.Children.Add(new TextBlock { Text = "Add a material", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
         addMaterialSection.Children.Add(addMaterialForm);
 
-        // `WP 20.10F` (Product Owner finding D8): the People library's own
-        // "Add a person" form — the identical inline-form pattern "Add a
-        // material" above already establishes, with no source
-        // organisation/document fields (`OnAddPersonAsync`'s own remarks).
-        _addPersonButton.Classes.Add(ChromeStyles.Primary);
-        _addPersonButton.Click += async (_, _) => await OnAddPersonAsync().ConfigureAwait(true);
-
-        AutomationProperties.SetName(_newPersonDisplayName, "Display name");
-        AutomationProperties.SetName(_newPersonRole, "Role");
-        AutomationProperties.SetName(_newPersonEmail, "Email");
-        AutomationProperties.SetName(_newPersonPhone, "Phone");
-        AutomationProperties.SetName(_addPersonButton, "Add Person");
-        ToolTip.SetTip(_addPersonButton, "Add Person");
-
-        var addPersonForm = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var field in new Control[] { _newPersonDisplayName, _newPersonRole, _newPersonEmail, _newPersonPhone, _addPersonButton })
-        {
-            field.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceSm);
-            addPersonForm.Children.Add(field);
-        }
-
-        var addPersonSection = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceLg) };
-        addPersonSection.Children.Add(new TextBlock { Text = "Add a person", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeHeading });
-        addPersonSection.Children.Add(addPersonForm);
 
         _addRateCardButton.Classes.Add(ChromeStyles.Primary);
         _addRateCardButton.Click += async (_, _) => await OnAddRateCardAsync().ConfigureAwait(true);
@@ -276,7 +244,6 @@ public sealed class LibrariesView : UserControl
         body.Children.Add(new TextBlock { Text = "Libraries", FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeTitle, FontWeight = DesignTokens.WeightHeading });
         body.Children.Add(_status);
         body.Children.Add(addMaterialSection);
-        body.Children.Add(addPersonSection);
         body.Children.Add(addRateCardSection);
         body.Children.Add(_rows);
 
@@ -328,6 +295,12 @@ public sealed class LibrariesView : UserControl
 
     private async Task OpenRecordAsync(string library, string recordId)
     {
+        if (_sectionsByRecord.TryGetValue((library, recordId), out var sections))
+        {
+            foreach (var section in sections.Where(s => !s.IsExpanded))
+                section.SetExpanded(true);
+        }
+
         _openRecord = (library, recordId);
         UpdateLayoutMode();
         await _detail.LoadAsync(library, recordId).ConfigureAwait(true);
@@ -341,12 +314,14 @@ public sealed class LibrariesView : UserControl
 
     /// <summary>Reloads every governed library's own records.</summary>
     /// <remarks>
-    /// `WP 19.10P` (D15): every one of the eight governed libraries gets
-    /// its own heading, whether or not it currently holds a record —
-    /// grouping only the records that exist (as this used to) leaves an
-    /// empty library invisible rather than listed-with-zero, which is
-    /// indistinguishable from "a library missing" (§7c's own named
-    /// failure condition for this surface).
+    /// `WP 19.10P` (D15): every governed library gets its own heading,
+    /// whether or not it currently holds a record — grouping only the
+    /// records that exist leaves an empty library invisible rather than
+    /// listed-with-zero, which is indistinguishable from "a library
+    /// missing" (§7c's own named failure condition for this surface).
+    /// Runbook F1 (2026-10-01): each record is one compact row — title and
+    /// release status — under a collapsible family group inside a
+    /// collapsible library heading (<see cref="ReferenceRecordListBuilder"/>).
     /// </remarks>
     public async Task RefreshAsync()
     {
@@ -354,40 +329,70 @@ public sealed class LibrariesView : UserControl
         var byLibrary = all.ToLookup(r => r.Library);
 
         _rows.Children.Clear();
+        _sectionsByRecord.Clear();
 
         foreach (var libraryName in AllLibraryNames.OrderBy(name => name, StringComparer.Ordinal))
         {
-            var records = byLibrary[libraryName].OrderBy(r => r.RecordId, StringComparer.Ordinal).ToList();
+            var records = byLibrary[libraryName].OrderBy(r => r.DisplayName, StringComparer.OrdinalIgnoreCase).ThenBy(r => r.RecordId, StringComparer.Ordinal).ToList();
+            var libraryBody = new StackPanel { Spacing = 0 };
 
-            _rows.Children.Add(new TextBlock
-            {
-                // `WP 19.10P` (D15): sorted and looked up by the routing
-                // key (unchanged, and shared with `EvidenceLibraryRow.Library`),
-                // but shown by its own display name — "Rate cards" for the
-                // one library whose key and screen text differ.
-                Text = $"{ReferenceLibraryAccess.DisplayNameFor(libraryName)} ({records.Count})",
-                FontWeight = DesignTokens.WeightHeading,
-                FontSize = DesignTokens.FontSizeHeading,
-                Margin = new Thickness(0, DesignTokens.SpaceMd, 0, DesignTokens.SpaceXs),
-            });
+            // `WP 19.10P` (D15): sorted and looked up by the routing key
+            // (unchanged, and shared with `EvidenceLibraryRow.Library`), but
+            // shown by its own display name — "Rate cards" for the one
+            // library whose key and screen text differ.
+            var librarySection = ReferenceRecordListBuilder.BuildSection(
+                ReferenceRecordListBuilder.LibraryKey(libraryName), ReferenceLibraryAccess.DisplayNameFor(libraryName), records.Count,
+                libraryBody, expandedByDefault: true, isLibrary: true);
+            _rows.Children.Add(librarySection);
 
             if (records.Count == 0)
             {
-                _rows.Children.Add(new TextBlock { Text = "No records yet", Opacity = 0.7 });
+                libraryBody.Children.Add(new TextBlock { Text = "No records yet", Opacity = 0.7, Margin = new Thickness(DesignTokens.SpaceMd, 0, 0, 0) });
                 continue;
             }
 
-            foreach (var row in records)
-                _rows.Children.Add(BuildRow(row));
+            // A library with no family of its own (rate cards) lists its
+            // rows straight under its heading.
+            if (records.All(r => r.Group is null))
+            {
+                foreach (var row in records)
+                {
+                    libraryBody.Children.Add(BuildRow(row));
+                    _sectionsByRecord[(row.Library, row.RecordId)] = [librarySection];
+                }
+
+                continue;
+            }
+
+            foreach (var family in records.GroupBy(r => r.Group ?? "Unclassified").OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var familyBody = new StackPanel { Spacing = 0 };
+                var familySection = ReferenceRecordListBuilder.BuildSection(
+                    ReferenceRecordListBuilder.FamilyKey(libraryName, family.Key), family.Key, family.Count(),
+                    familyBody, expandedByDefault: false, isLibrary: false);
+                libraryBody.Children.Add(familySection);
+
+                foreach (var row in family)
+                {
+                    familyBody.Children.Add(BuildRow(row));
+                    _sectionsByRecord[(row.Library, row.RecordId)] = [librarySection, familySection];
+                }
+            }
         }
     }
 
-    /// <summary>The nine governed libraries' own canonical names (People added `WP 20.10F`), straight from each catalog's own <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/> — never restated as a literal here, so this list can never drift from what each catalog actually reports.</summary>
+    /// <summary>
+    /// The eight governed libraries' own canonical names, straight from each
+    /// catalog's own <see cref="IReferenceDataCatalog{TDefinition}.LibraryName"/>
+    /// — never restated as a literal here, so this list can never drift from
+    /// what each catalog actually reports. People are not listed here: they
+    /// are business reference data, kept under Business → Staff
+    /// (<see cref="StaffView"/>, Product Owner runbook B1, 2026-10-01).
+    /// </summary>
     private IEnumerable<string> AllLibraryNames =>
     [
         _materials.LibraryName, _fasteners.LibraryName, _bearings.LibraryName, _standards.LibraryName,
         _constants.LibraryName, _manufacturing.LibraryName, _components.LibraryName, _businessRateCards.LibraryName,
-        _persons.LibraryName,
     ];
 
     /// <summary>
@@ -405,111 +410,43 @@ public sealed class LibrariesView : UserControl
     {
         var rows = new List<EvidenceLibraryRow>();
 
-        rows.AddRange(await ReadLibraryAsync(materials, d => d.Name, cancellationToken).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(fasteners, d => d.Designation, cancellationToken).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(bearings, d => $"{d.Identity.Manufacturer} {d.Identity.ManufacturerPartNumber}", cancellationToken).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(standards, d => d.FullDesignation, cancellationToken).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(constants, d => $"{d.Symbol} — {d.Name}", cancellationToken).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(materials, d => d.Name, ReferenceRecordListBuilder.GroupFor, cancellationToken).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(fasteners, d => d.Designation, ReferenceRecordListBuilder.GroupFor, cancellationToken).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(bearings, d => $"{d.Identity.Manufacturer} {d.Identity.ManufacturerPartNumber}", ReferenceRecordListBuilder.GroupFor, cancellationToken).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(standards, d => d.FullDesignation, ReferenceRecordListBuilder.GroupFor, cancellationToken).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(constants, d => $"{d.Symbol} — {d.Name}", ReferenceRecordListBuilder.GroupFor, cancellationToken).ConfigureAwait(false));
 
         return rows;
     }
 
-    /// <summary>Every record across all nine governed libraries — what the Libraries tab itself lists, wider than <see cref="ReadAllAsync"/>'s citable five (`WP 19.6A`; People added `WP 20.10F` — deliberately not part of <see cref="ReadAllAsync"/>'s own citable set: a person is picked as a requirement's owner, never cited by Evidence).</summary>
+    /// <summary>Every record across the eight engineering and commercial libraries — what the Libraries tab itself lists, wider than <see cref="ReadAllAsync"/>'s citable five (`WP 19.6A`). People moved to Business → Staff (runbook B1).</summary>
     private async Task<IReadOnlyList<EvidenceLibraryRow>> ReadAllLibrariesAsync()
     {
         var rows = new List<EvidenceLibraryRow>(await ReadAllAsync(_materials, _fasteners, _bearings, _standards, _constants).ConfigureAwait(false));
 
-        rows.AddRange(await ReadLibraryAsync(_manufacturing, d => d.Name, default).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(_components, d => d.Designation, default).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(_businessRateCards, d => d.Name, default).ConfigureAwait(false));
-        rows.AddRange(await ReadLibraryAsync(_persons, d => d.Role is { Length: > 0 } role ? $"{d.DisplayName} ({role})" : d.DisplayName, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_manufacturing, d => d.Name, ReferenceRecordListBuilder.GroupFor, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_components, d => d.Designation, ReferenceRecordListBuilder.GroupFor, default).ConfigureAwait(false));
+        rows.AddRange(await ReadLibraryAsync(_businessRateCards, d => d.Name, null, default).ConfigureAwait(false));
 
         return rows;
     }
 
     private static async Task<IReadOnlyList<EvidenceLibraryRow>> ReadLibraryAsync<TDefinition>(
-        IReferenceDataCatalog<TDefinition> catalog, Func<TDefinition, string> displayName, CancellationToken cancellationToken)
+        IReferenceDataCatalog<TDefinition> catalog, Func<TDefinition, string> displayName, Func<TDefinition, string>? group, CancellationToken cancellationToken)
         where TDefinition : class
     {
         var records = await catalog.ListAsync(cancellationToken).ConfigureAwait(false);
 
-        return [.. records.Select(r => new EvidenceLibraryRow(catalog.LibraryName, r.Id, displayName(r.Definition), r.RevisionNumber, r.ValidationState, r.Source))];
+        return [.. records.Select(r => new EvidenceLibraryRow(
+            catalog.LibraryName, r.Id, displayName(r.Definition), r.RevisionNumber, r.ValidationState, r.Source, r.ContentRevision, group?.Invoke(r.Definition)))];
     }
 
-    private Control BuildRow(EvidenceLibraryRow row)
-    {
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
-
-        var text = new TextBlock
-        {
-            Text = $"{row.RecordId} — {row.DisplayName}  •  rev {row.RevisionNumber}  •  {row.ValidationState}  •  {row.Source?.ToString() ?? "(no source citation)"}",
-            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-            FontSize = DesignTokens.FontSizeBody,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        Grid.SetColumn(text, 0);
-        grid.Children.Add(text);
-
-        // `WP 19.6A`: Open, and a double-tap on the row itself, show the
-        // record view — the row's text stays a plain label rather than a
-        // second clickable target, so the automation walk still sees
-        // exactly one named control per action.
-        grid.DoubleTapped += async (_, _) => await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
-
-        var verify = new Button { Content = "Verify", Padding = new Thickness(10, 2), IsVisible = row.ValidationState == ReferenceValidationState.Draft };
-        verify.Classes.Add(ChromeStyles.Subtle);
-        verify.Click += async (_, _) => await OnVerifyAsync(row).ConfigureAwait(true);
-        AutomationProperties.SetName(verify, $"Verify {row.RecordId}");
-        Grid.SetColumn(verify, 1);
-        grid.Children.Add(verify);
-
-        var release = new Button { Content = "Release", Padding = new Thickness(10, 2), IsVisible = row.ValidationState is ReferenceValidationState.Draft or ReferenceValidationState.Checked or ReferenceValidationState.Validated };
-        release.Classes.Add(ChromeStyles.Primary);
-        release.Click += async (_, _) => await OnReleaseAsync(row).ConfigureAwait(true);
-        AutomationProperties.SetName(release, $"Release {row.RecordId}");
-        Grid.SetColumn(release, 2);
-        grid.Children.Add(release);
-
-        // `WP 18.2B`: Revise carries the definition and provenance forward
-        // (only the definition, source citation and change summary are
-        // collected here) — offered wherever `ReviseAsync` itself would
-        // not refuse, i.e. everywhere but Released/Superseded
-        // (`ReferenceValidationStates.IsRevisable`).
-        var revise = new Button
-        {
-            Content = "Revise",
-            Padding = new Thickness(10, 2),
-            IsVisible = ReviseRecordPrompt is not null && ReferenceValidationStates.IsRevisable(row.ValidationState),
-        };
-        revise.Classes.Add(ChromeStyles.Subtle);
-        revise.Click += async (_, _) => await OnReviseAsync(row).ConfigureAwait(true);
-        AutomationProperties.SetName(revise, $"Revise {row.RecordId}");
-        Grid.SetColumn(revise, 3);
-        grid.Children.Add(revise);
-
-        var open = new Button { Content = "Open", Padding = new Thickness(10, 2) };
-        open.Classes.Add(ChromeStyles.Flat);
-        open.Click += async (_, _) => await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
-        AutomationProperties.SetName(open, $"Open {row.RecordId}");
-        Grid.SetColumn(open, 4);
-        grid.Children.Add(open);
-
-        return grid;
-    }
-
-    private async Task OnVerifyAsync(EvidenceLibraryRow row)
-    {
-        try
-        {
-            await VerifyAsync(row).ConfigureAwait(true);
-            await RefreshAsync().ConfigureAwait(true);
-            Report($"Verified '{row.RecordId}'.", succeeded: true);
-        }
-        catch (ReferenceReviewException ex)
-        {
-            Report(ex.Message, succeeded: false);
-        }
-    }
+    /// <summary>One compact row (runbook F1): title and release status; Release while unreleased; Open. Verify and Revise live on the open record (<see cref="ReferenceRecordView"/>).</summary>
+    private Grid BuildRow(EvidenceLibraryRow row) =>
+        ReferenceRecordListBuilder.BuildRow(
+            row.RecordId, row.DisplayName, row.ValidationState,
+            () => OpenRecordAsync(row.Library, row.RecordId),
+            () => OnReleaseAsync(row));
 
     private async Task OnReleaseAsync(EvidenceLibraryRow row)
     {
@@ -528,41 +465,6 @@ public sealed class LibrariesView : UserControl
             Report($"Released '{row.RecordId}'.", succeeded: true);
         }
         catch (ReferenceReviewException ex)
-        {
-            await RefreshAsync().ConfigureAwait(true);
-            Report(ex.Message, succeeded: false);
-        }
-    }
-
-    private async Task OnReviseAsync(EvidenceLibraryRow row)
-    {
-        if (ReviseRecordPrompt is null)
-            return;
-
-        try
-        {
-            var (definitionJson, source, provenance) = await ReferenceLibraryAccess.ReadDefinitionJsonAsync(_catalogues, row.Library, row.RecordId).ConfigureAwait(true);
-
-            var input = await ReviseRecordPrompt($"{row.Library} — {row.RecordId}", definitionJson, source, CancellationToken.None).ConfigureAwait(true);
-            if (input is null)
-            {
-                Report("Revise was cancelled.", succeeded: true);
-                return;
-            }
-
-            await ReferenceLibraryAccess.ReviseAsync(_catalogues, row.Library, row.RecordId, input.DefinitionJson, provenance, input.ChangeSummary, input.Source).ConfigureAwait(true);
-            await RefreshAsync().ConfigureAwait(true);
-            Report($"Revised '{row.RecordId}'.", succeeded: true);
-
-            // The Product Owner guard (`po-comments.md` item 5): Revise
-            // opens the new revision right up, exactly as Add does below.
-            await OpenRecordAsync(row.Library, row.RecordId).ConfigureAwait(true);
-        }
-        catch (System.Text.Json.JsonException ex)
-        {
-            Report($"The definition is not valid JSON for {row.Library}: {ex.Message}", succeeded: false);
-        }
-        catch (ReferenceDataException ex)
         {
             await RefreshAsync().ConfigureAwait(true);
             Report(ex.Message, succeeded: false);
@@ -621,59 +523,7 @@ public sealed class LibrariesView : UserControl
         }
     }
 
-    /// <summary>
-    /// Adds one person record of the user's own as Draft (`WP 20.10F`,
-    /// Product Owner finding D8) — mirrors <see cref="OnAddMaterialAsync"/>'s
-    /// own shape, minus a source organisation/document: a person is not
-    /// transcribed from a datasheet or a standard, so nothing outside
-    /// TempestOS itself could ever be named as the source of their own
-    /// name. The fixed provenance below still names <em>something</em>
-    /// (`IdentifiesASource`), which is what lets the record leave Draft at
-    /// all; Verify/Release afterwards is the same governed act every other
-    /// library's own row already offers, unchanged.
-    /// </summary>
-    private async Task OnAddPersonAsync()
-    {
-        if (string.IsNullOrWhiteSpace(_newPersonDisplayName.Text))
-        {
-            Report("Enter a display name before adding a person.", succeeded: false);
-            return;
-        }
-
-        try
-        {
-            var displayName = _newPersonDisplayName.Text.Trim();
-            var recordId = "person-" + new string(displayName.ToLowerInvariant().Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
-
-            var person = new Person
-            {
-                DisplayName = displayName,
-                Role = NullIfEmpty(_newPersonRole.Text),
-                Email = NullIfEmpty(_newPersonEmail.Text),
-                Phone = NullIfEmpty(_newPersonPhone.Text),
-            };
-
-            await _persons.RegisterAsync(recordId, person, PersonProvenance.Default).ConfigureAwait(true);
-
-            _newPersonDisplayName.Text = string.Empty;
-            _newPersonRole.Text = string.Empty;
-            _newPersonEmail.Text = string.Empty;
-            _newPersonPhone.Text = string.Empty;
-
-            await RefreshAsync().ConfigureAwait(true);
-            Report($"Added person '{displayName}'.", succeeded: true);
-
-            // The Product Owner guard (`po-comments.md` item 5): Add opens
-            // the new record right up.
-            await OpenRecordAsync(_persons.LibraryName, recordId).ConfigureAwait(true);
-        }
-        catch (Exception ex) when (ex is ArgumentException or DuplicateReferenceRecordException or DuplicateReferenceKeyException)
-        {
-            Report(ex.Message, succeeded: false);
-        }
-    }
-
-    /// <summary>The provenance every rate card added here is stamped with — the consultancy's own figures, entered by hand, unverified until reviewed (the same shape as <see cref="PersonProvenance.Default"/>).</summary>
+    /// <summary>The provenance every rate card added here is stamped with — the consultancy's own figures, entered by hand, unverified until reviewed (the same shape as <see cref="Tempest.Core.People.PersonProvenance.Default"/>).</summary>
     public static ReferenceProvenance RateCardProvenance { get; } = new(
         SourceOrganisation: "TempestOS",
         SourceDocument: "Entered directly in the Rate cards library.",

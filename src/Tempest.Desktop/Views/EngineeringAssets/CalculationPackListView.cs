@@ -139,7 +139,7 @@ public sealed class CalculationPackListView : UserControl
     {
         var rows = _all.Select(r => new AssetListRow(
             r.Id,
-            $"{r.Id} — {r.Definition.Reference} — {r.Definition.Title}  ·  {r.Definition.Method.Kind}  ·  rev {r.RevisionNumber}  ·  {r.ValidationState}"));
+            $"{r.Id} — {r.Definition.Reference} — {r.Definition.Title}  ·  {r.Definition.Method.Kind}  ·  rev {r.ContentRevision}  ·  {r.ValidationState}"));
 
         EngineeringAssetListBuilder.Render(_rows, rows, _filter.Text, id => _ = OpenRecordAsync(id));
     }
@@ -241,7 +241,7 @@ public sealed class CalculationPackListView : UserControl
     {
         _traceBody.Children.Clear();
 
-        Add(_traceBody, $"Definition: {record.Definition.Reference}  ·  revision {record.RevisionNumber}"
+        Add(_traceBody, $"Definition: {record.Definition.Reference}  ·  revision {record.ContentRevision}"
             + (record.Definition.Method.IsPlatformCalculation ? $"  ·  calculation definition {record.Definition.Method.CalculationDefinitionId}" : string.Empty), heading: true);
 
         if (trace is null)

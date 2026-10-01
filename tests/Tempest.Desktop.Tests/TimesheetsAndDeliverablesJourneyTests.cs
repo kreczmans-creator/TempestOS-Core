@@ -118,7 +118,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             // populated — proving the name (not the id) renders once a
             // caller supplies them, asynchronously and without blocking.
             await AssertCommercialSectionResolvesNamesAsync(
-                host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", afterCommercial.RateCardPin.RevisionNumber);
+                host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", expectedRateCardRevision: 1); // runbook B2: the released card is content revision 1, whatever its pin's version stamp
 
             // ---- rail → Business → Timesheets (`WP 19.7A`) ----
             await navigator.GoToModuleAsync(ShellArea.Business);
@@ -440,7 +440,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             ResolveRateCardAsync: async (pin, ct) =>
             {
                 var record = await rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, ct).ConfigureAwait(true);
-                return (record.Definition.Code, record.Definition.Name);
+                return (record.Definition.Code, record.Definition.Name, record.ContentRevision);
             });
 
         var editor = ObjectEditorView.TryCreate(
