@@ -1,0 +1,15 @@
+version: 0.29.0
+logical_workstreams: 12
+complete: 10
+substantially_complete: 2
+not_started: 0
+completion_percent: 83
+new_source_backed_or_literature_observations: 6
+new_test_method_records: 6
+deepened_grades:
+- 13-8 Mo
+- 15-5 PH
+- 17-4 PH
+- 440C
+verified: 0
+approved_for_design: 0

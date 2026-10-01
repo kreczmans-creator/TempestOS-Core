@@ -1,0 +1,53 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "cost_scale": {
+    "cheap": "commodity/high-volume forms",
+    "medium": "established engineering grades/forms",
+    "expensive": "specialist alloy/product/low-volume supply"
+  },
+  "availability_scale": {
+    "good": "multiple established suppliers",
+    "moderate": "specialist but established supply",
+    "specialist": "limited producers/product forms"
+  },
+  "records": [
+    {
+      "material": "commercially pure magnesium",
+      "cost": "medium",
+      "availability": "moderate"
+    },
+    {
+      "material": "AZ31B",
+      "cost": "medium",
+      "availability": "good"
+    },
+    {
+      "material": "AZ91D",
+      "cost": "medium",
+      "availability": "good"
+    },
+    {
+      "material": "WE43",
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    {
+      "material": "ZK60A",
+      "cost": "expensive",
+      "availability": "specialist"
+    }
+  ],
+  "rule": "Cost and availability are planning classifications, not quotations, lead-time commitments or procurement guarantees.",
+  "drivers": [
+    "form",
+    "section size",
+    "temper",
+    "volume",
+    "certification",
+    "supplier geography",
+    "machining",
+    "surface treatment",
+    "minimum order quantity"
+  ]
+}

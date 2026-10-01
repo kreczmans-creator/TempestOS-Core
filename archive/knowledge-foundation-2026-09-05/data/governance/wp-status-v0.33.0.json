@@ -1,0 +1,12 @@
+{
+  "version": "0.33.0",
+  "scope": "Mechanical core population",
+  "priority_grades": 16,
+  "mechanical_core_categories": 8,
+  "grades_with_screening_coverage": 16,
+  "new_records": 16,
+  "verified": 0,
+  "approved_for_design": 0,
+  "fundamental_ontology": "established",
+  "population_phase": "mechanical core"
+}

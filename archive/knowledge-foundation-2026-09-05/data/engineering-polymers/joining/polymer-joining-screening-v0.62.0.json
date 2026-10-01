@@ -1,0 +1,27 @@
+{
+  "version": "0.62.0",
+  "joining_methods": [
+    "mechanical fasteners",
+    "snap-fits",
+    "press/interference fits",
+    "ultrasonic welding",
+    "thermal welding",
+    "solvent bonding",
+    "adhesive bonding",
+    "insert moulding"
+  ],
+  "fundamental_design_controls": [
+    "creep and stress relaxation",
+    "joint stiffness",
+    "clamp-load retention",
+    "temperature",
+    "chemical compatibility",
+    "insertion/welding process",
+    "stress concentration",
+    "assembly tolerance",
+    "dissimilar-material CTE"
+  ],
+  "rule": "Joint design must consider polymer time dependence rather than treating the polymer as a metal substitute.",
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

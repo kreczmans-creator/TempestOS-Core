@@ -1,0 +1,37 @@
+{
+  "version": "0.61.0",
+  "family": "PEI",
+  "domain": "tribology",
+  "wear_screen": "moderate; grade dependent",
+  "critical_variables": [
+    "contact pressure",
+    "sliding speed",
+    "PV",
+    "counterface material/roughness",
+    "lubrication",
+    "temperature",
+    "debris",
+    "surface finish"
+  ],
+  "failure_modes": [
+    "creep rupture",
+    "excessive creep strain",
+    "stress relaxation causing loss of clamp load",
+    "fatigue crack initiation/growth",
+    "abrasive wear",
+    "adhesive wear",
+    "fretting",
+    "thermal softening",
+    "chemical/environmental degradation",
+    "counterface damage"
+  ],
+  "engineering_methods": [
+    "wear-rate testing",
+    "PV-limit testing",
+    "friction coefficient testing",
+    "application-specific tribological testing"
+  ],
+  "design_warning": "There is no universal polymer wear coefficient applicable to every contact.",
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

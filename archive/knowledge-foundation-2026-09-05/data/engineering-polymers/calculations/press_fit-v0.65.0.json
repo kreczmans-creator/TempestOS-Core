@@ -1,0 +1,21 @@
+{
+  "version": "0.65.0",
+  "purpose": "Screen thermal/interference effects in a polymer press fit.",
+  "equation": "Interference_total = manufacturing_interference + thermal_interference + time_dependent_change",
+  "inputs": [
+    "nominal dimensions",
+    "tolerances",
+    "CTE",
+    "temperature",
+    "creep data"
+  ],
+  "checks": [
+    "assembly stress",
+    "wall thickness",
+    "hoop stress",
+    "tolerance stack",
+    "long-term retention"
+  ],
+  "warning": "Final fit must be verified with exact grade and process data.",
+  "status": "screening calculation pattern"
+}

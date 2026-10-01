@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Structure coupled thermal and mechanical cyclic assessment.",
+  "workflow": [
+    "define temperature history",
+    "define mechanical load history",
+    "calculate free thermal strain",
+    "determine restraint/contact",
+    "combine thermal and mechanical response",
+    "assess yielding/fatigue",
+    "check environmental interaction"
+  ]
+}

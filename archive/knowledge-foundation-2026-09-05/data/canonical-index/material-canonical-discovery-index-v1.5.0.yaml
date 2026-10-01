@@ -1,0 +1,672 @@
+- canonical_key: 42crmo4
+  designations:
+  - 42CrMo4
+  record_ids:
+  - MAT-STEEL-42CRMO4
+  families:
+  - alloy_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: 90wheavyalloy
+  designations:
+  - 90W heavy alloy
+  record_ids:
+  - MAT-W-HEAVY-ALLOY-90
+  families:
+  - tungsten_heavy_alloy
+  catalogue_files:
+  - data/tungsten-refractory/tungsten-refractory-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: abs
+  designations:
+  - ABS
+  record_ids:
+  - MAT-POLY-ABS
+  families:
+  - general_thermoplastic
+  catalogue_files:
+  - data/general-polymers/general-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisi1008
+  designations:
+  - AISI 1008
+  record_ids:
+  - MAT-STEEL-1008
+  families:
+  - low_carbon_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisi1018
+  designations:
+  - AISI 1018
+  record_ids:
+  - MAT-STEEL-1018
+  families:
+  - low_carbon_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisi52100
+  designations:
+  - AISI 52100
+  record_ids:
+  - MAT-STEEL-52100
+  families:
+  - bearing_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisi8620
+  designations:
+  - AISI 8620
+  record_ids:
+  - MAT-STEEL-8620
+  families:
+  - case_hardening_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisisae4130
+  designations:
+  - AISI/SAE 4130
+  record_ids:
+  - MAT-STEEL-4130
+  families:
+  - chromium_molybdenum_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisisae4140
+  designations:
+  - AISI/SAE 4140
+  record_ids:
+  - MAT-STEEL-4140
+  families:
+  - alloy_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: aisisae4340
+  designations:
+  - AISI/SAE 4340
+  record_ids:
+  - MAT-STEEL-4340
+  families:
+  - nickel_chromium_molybdenum_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: az31b
+  designations:
+  - AZ31B
+  record_ids:
+  - MAT-MG-AZ31B
+  families:
+  - wrought_magnesium_alloy
+  catalogue_files:
+  - data/magnesium/magnesium-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: az61a
+  designations:
+  - AZ61A
+  record_ids:
+  - MAT-MG-AZ61A
+  families:
+  - wrought_magnesium_alloy
+  catalogue_files:
+  - data/magnesium/magnesium-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: az80a
+  designations:
+  - AZ80A
+  record_ids:
+  - MAT-MG-AZ80A
+  families:
+  - wrought_magnesium_alloy
+  catalogue_files:
+  - data/magnesium/magnesium-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: az91d
+  designations:
+  - AZ91D
+  record_ids:
+  - MAT-MG-AZ91D
+  families:
+  - cast_magnesium_alloy
+  catalogue_files:
+  - data/magnesium/magnesium-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: c10100ofhccopper
+  designations:
+  - C10100 OFHC copper
+  record_ids:
+  - MAT-CU-C101
+  families:
+  - oxygen_free_copper
+  catalogue_files:
+  - data/copper/copper-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: c11000
+  designations:
+  - C11000
+  record_ids:
+  - MAT-CU-C110
+  families:
+  - high_conductivity_copper
+  catalogue_files:
+  - data/copper/copper-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: c45
+  designations:
+  - C45
+  record_ids:
+  - MAT-STEEL-C45
+  families:
+  - medium_carbon_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: c63000aluminiumbronze
+  designations:
+  - C63000 aluminium bronze
+  record_ids:
+  - MAT-CU-C63000
+  families:
+  - nickel_aluminium_bronze
+  catalogue_files:
+  - data/copper/copper-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: c95400aluminiumbronze
+  designations:
+  - C95400 aluminium bronze
+  record_ids:
+  - MAT-CU-C95400
+  families:
+  - aluminium_bronze
+  catalogue_files:
+  - data/copper/copper-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: commerciallypuremolybdenum
+  designations:
+  - Commercially pure molybdenum
+  record_ids:
+  - MAT-MO-COMMERCIAL
+  families:
+  - refractory_metal
+  catalogue_files:
+  - data/tungsten-refractory/tungsten-refractory-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: commerciallypuretantalum
+  designations:
+  - Commercially pure tantalum
+  record_ids:
+  - MAT-TA-COMMERCIAL
+  families:
+  - refractory_metal
+  catalogue_files:
+  - data/tungsten-refractory/tungsten-refractory-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: commerciallypuretungsten
+  designations:
+  - Commercially pure tungsten
+  record_ids:
+  - MAT-W-COMMERCIAL
+  families:
+  - tungsten
+  catalogue_files:
+  - data/tungsten-refractory/tungsten-refractory-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: en19
+  designations:
+  - EN19
+  record_ids:
+  - MAT-STEEL-EN19
+  families:
+  - alloy_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: en24
+  designations:
+  - EN24
+  record_ids:
+  - MAT-STEEL-EN24
+  families:
+  - nickel_chromium_molybdenum_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: en8
+  designations:
+  - EN8
+  record_ids:
+  - MAT-STEEL-EN8
+  families:
+  - medium_carbon_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw1050a
+  designations:
+  - EN AW-1050A
+  record_ids:
+  - MAT-AL-1050A
+  families:
+  - commercial_purity_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw2014t6
+  designations:
+  - EN AW-2014-T6
+  record_ids:
+  - MAT-AL-2014-T6
+  families:
+  - high_strength_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw2024t3
+  designations:
+  - EN AW-2024-T3
+  record_ids:
+  - MAT-AL-2024-T3
+  families:
+  - aerospace_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw5083h111
+  designations:
+  - EN AW-5083-H111
+  record_ids:
+  - MAT-AL-5083-H111
+  families:
+  - marine_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw6061t6
+  designations:
+  - EN AW-6061-T6
+  record_ids:
+  - MAT-AL-6061-T6
+  families:
+  - heat_treatable_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw6082t6
+  designations:
+  - EN AW-6082-T6
+  record_ids:
+  - MAT-AL-6082-T6
+  families:
+  - heat_treatable_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw6082t651
+  designations:
+  - EN AW-6082-T651
+  record_ids:
+  - MAT-AL-6082-T651
+  families:
+  - stress_relieved_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: enaw7075t6
+  designations:
+  - EN AW-7075-T6
+  record_ids:
+  - MAT-AL-7075-T6
+  families:
+  - high_strength_aluminium
+  catalogue_files:
+  - data/aluminium/aluminium-catalogue-v0.7.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: hastelloyc276
+  designations:
+  - Hastelloy C-276
+  record_ids:
+  - MAT-NI-HASTELLOY-C276
+  families:
+  - nickel_molybdenum_chromium_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: hastelloyx
+  designations:
+  - Hastelloy X
+  record_ids:
+  - MAT-NI-HASTELLOY-X
+  families:
+  - nickel_chromium_iron_molybdenum_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: haynes25l605
+  designations:
+  - Haynes 25 / L-605
+  record_ids:
+  - MAT-CO-L605
+  families:
+  - cobalt_chromium_tungsten_nickel_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: hdpe
+  designations:
+  - HDPE
+  record_ids:
+  - MAT-POLY-HDPE
+  families:
+  - general_thermoplastic
+  catalogue_files:
+  - data/general-polymers/general-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: inconel600
+  designations:
+  - Inconel 600
+  record_ids:
+  - MAT-NI-INCONEL600
+  families:
+  - nickel_chromium_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: inconel625
+  designations:
+  - Inconel 625
+  record_ids:
+  - MAT-NI-INCONEL625
+  families:
+  - nickel_chromium_molybdenum_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: inconel718
+  designations:
+  - Inconel 718
+  record_ids:
+  - MAT-NI-INCONEL718
+  families:
+  - nickel_iron_chromium_precipitation_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: lanthanatedtungsten
+  designations:
+  - Lanthanated tungsten
+  record_ids:
+  - MAT-W-LANTHANATED
+  families:
+  - tungsten_electrode_material
+  catalogue_files:
+  - data/tungsten-refractory/tungsten-refractory-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: monel400
+  designations:
+  - Monel 400
+  record_ids:
+  - MAT-NI-MONEL400
+  families:
+  - nickel_copper_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: monelk500
+  designations:
+  - Monel K-500
+  record_ids:
+  - MAT-NI-MONELK500
+  families:
+  - age_hardenable_nickel_copper_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: nimonic80a
+  designations:
+  - Nimonic 80A
+  record_ids:
+  - MAT-NI-NIMONIC80A
+  families:
+  - nickel_chromium_age_hardening_alloy
+  catalogue_files:
+  - data/exotic-alloys/exotic-alloy-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: pa66gf30
+  designations:
+  - PA66 GF30
+  record_ids:
+  - MAT-POLY-PA66-GF30
+  families:
+  - glass_filled_polyamide
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: peekunfilled
+  designations:
+  - PEEK unfilled
+  record_ids:
+  - MAT-POLY-PEEK
+  families:
+  - engineering_thermoplastic
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: peiultem
+  designations:
+  - PEI / Ultem
+  record_ids:
+  - MAT-POLY-PEI
+  families:
+  - high_temperature_engineering_thermoplastic
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: pmma
+  designations:
+  - PMMA
+  record_ids:
+  - MAT-POLY-PMMA
+  families:
+  - general_thermoplastic
+  catalogue_files:
+  - data/general-polymers/general-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: polycarbonate
+  designations:
+  - Polycarbonate
+  record_ids:
+  - MAT-POLY-PC
+  families:
+  - engineering_thermoplastic
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: polypropylene
+  designations:
+  - Polypropylene
+  record_ids:
+  - MAT-POLY-PP
+  families:
+  - general_thermoplastic
+  catalogue_files:
+  - data/general-polymers/general-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: pomunfilled
+  designations:
+  - POM unfilled
+  record_ids:
+  - MAT-POLY-POM
+  families:
+  - engineering_thermoplastic
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: ppsunfilled
+  designations:
+  - PPS unfilled
+  record_ids:
+  - MAT-POLY-PPS
+  families:
+  - high_temperature_engineering_thermoplastic
+  catalogue_files:
+  - data/engineering-polymers/engineering-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: pvcu
+  designations:
+  - PVC-U
+  record_ids:
+  - MAT-POLY-PVC-U
+  families:
+  - rigid_thermoplastic
+  catalogue_files:
+  - data/general-polymers/general-polymer-catalogue-v0.9.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: s275jr
+  designations:
+  - S275JR
+  record_ids:
+  - MAT-STEEL-S275JR
+  families:
+  - carbon_structural_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: s355j2
+  designations:
+  - S355J2
+  record_ids:
+  - MAT-STEEL-S355J2
+  families:
+  - carbon_structural_steel
+  catalogue_files:
+  - data/materials/steel-catalogue-v0.6.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.
+- canonical_key: we43
+  designations:
+  - WE43
+  record_ids:
+  - MAT-MG-WE43
+  families:
+  - rare_earth_magnesium_alloy
+  catalogue_files:
+  - data/magnesium/magnesium-catalogue-v0.8.0.yaml
+  deduplication_status: unique_candidate
+  merge_policy: Do not merge until identity, condition, product form and provenance
+    are reconciled.

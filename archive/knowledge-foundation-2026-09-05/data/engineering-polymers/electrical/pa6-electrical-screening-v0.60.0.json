@@ -1,0 +1,35 @@
+{
+  "version": "0.60.0",
+  "family": "PA6",
+  "domain": "electrical",
+  "electrical_class": "insulating when dry; moisture-sensitive",
+  "volume_resistivity": "high when dry; decreases with moisture",
+  "dielectric_strength": "good when dry; conditioning dependent",
+  "relative_permittivity": "strongly moisture/frequency dependent",
+  "dissipation_factor": "increases with moisture",
+  "moisture_sensitivity": "high",
+  "key_controls": [
+    "conditioning",
+    "humidity",
+    "frequency",
+    "temperature"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

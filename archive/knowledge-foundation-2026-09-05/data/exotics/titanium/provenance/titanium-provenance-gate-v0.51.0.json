@@ -1,0 +1,19 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "mandatory_identity": [
+    "designation",
+    "specification",
+    "product_form",
+    "condition",
+    "heat_treatment"
+  ],
+  "mandatory_test_context": [
+    "temperature",
+    "orientation",
+    "test_method",
+    "environment"
+  ],
+  "evidence_state": "screening taxonomy populated; authoritative numerical evidence still open",
+  "no_go_rule": "Do not promote screening records to design-approved without traceable primary evidence."
+}

@@ -1,0 +1,37 @@
+version: 0.30.0
+properties:
+  fatigue_strength:
+    definition: Stress level associated with a stated fatigue life under a stated test configuration.
+    required_context:
+      - condition
+      - product_form
+      - test_method
+      - temperature
+      - cycles
+  fatigue_crack_growth:
+    definition: Crack propagation rate da/dN as a function of Delta K under specified conditions.
+    required_context:
+      - condition
+      - product_form
+      - orientation
+      - stress_ratio_R
+      - environment
+      - temperature
+      - test_method
+  fatigue_threshold:
+    definition: Reported threshold Delta K under the stated method and criterion.
+    required_context:
+      - condition
+      - stress_ratio_R
+      - environment
+      - frequency
+      - test_method
+  fracture_toughness:
+    definition: Resistance to crack extension according to the stated fracture-mechanics metric.
+    required_context:
+      - condition
+      - product_form
+      - orientation
+      - temperature
+      - test_method
+    do_not_equate_charpy: true

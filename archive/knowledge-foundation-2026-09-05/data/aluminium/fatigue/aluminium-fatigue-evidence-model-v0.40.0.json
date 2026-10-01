@@ -1,0 +1,36 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium fatigue evidence architecture",
+  "record_dimensions": [
+    "alloy",
+    "temper",
+    "product_form",
+    "thickness",
+    "orientation",
+    "surface_finish",
+    "stress_ratio_R",
+    "mean_stress",
+    "frequency",
+    "environment",
+    "temperature",
+    "detail_class",
+    "weld_condition",
+    "load_type",
+    "cycle_count"
+  ],
+  "required_outputs": [
+    "S-N curve",
+    "fatigue strength at specified cycle counts",
+    "test scatter/number of specimens",
+    "source/test standard"
+  ],
+  "screening_rules": [
+    "Never apply parent-material fatigue data directly to a welded joint without a justified detail-class treatment.",
+    "Do not assume an endurance-limit plateau for aluminium alloys.",
+    "Corrosion and surface condition can materially reduce fatigue performance.",
+    "Representative data must match alloy, temper, product form and loading mode closely enough for the intended engineering decision."
+  ],
+  "status": "evidence-model-ready",
+  "quantitative_records": 0,
+  "design_use": "not_for_allowables"
+}

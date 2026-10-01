@@ -1,0 +1,22 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "properties": {
+    "strength": "Retain temperature, product form, heat treatment and cold-work state.",
+    "ductility": "Do not infer from nominal alloy chemistry; processing history can dominate.",
+    "fracture": "Defect population, inclusions, surface condition and environmental exposure may be governing.",
+    "functional_materials": "Nitinol requires transformation and functional-fatigue characterisation rather than conventional yield-strength-only selection.",
+    "high_strength_corrosion_alloys": "MP35N selection requires explicit condition and thermomechanical history."
+  },
+  "required_quantitative_identity": [
+    "grade",
+    "specification",
+    "product form",
+    "condition",
+    "temperature",
+    "test method",
+    "orientation",
+    "environment",
+    "source"
+  ]
+}

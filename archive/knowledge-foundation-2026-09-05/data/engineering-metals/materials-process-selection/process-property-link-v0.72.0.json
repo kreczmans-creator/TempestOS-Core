@@ -1,0 +1,22 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "process_variables": [
+    "forming",
+    "casting",
+    "forging",
+    "machining",
+    "welding",
+    "heat treatment",
+    "surface treatment"
+  ],
+  "property_effects": [
+    "microstructure",
+    "grain flow",
+    "residual stress",
+    "surface integrity",
+    "defect population",
+    "anisotropy"
+  ],
+  "rule": "Allowables and failure behaviour must be traceable to the actual product form and process state."
+}

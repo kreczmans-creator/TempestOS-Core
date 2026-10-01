@@ -1,0 +1,41 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "routes": [
+    "injection moulding",
+    "extrusion",
+    "compression moulding",
+    "machining from semi-finished stock",
+    "additive manufacturing",
+    "thermoforming",
+    "casting where applicable"
+  ],
+  "critical_process_variables": [
+    "melt temperature",
+    "mould/tool temperature",
+    "cooling rate",
+    "fill/flow direction",
+    "fibre orientation",
+    "moisture conditioning",
+    "annealing",
+    "residual stress",
+    "weld lines",
+    "voids"
+  ],
+  "machining_controls": [
+    "tool geometry",
+    "heat generation",
+    "chip evacuation",
+    "clamping distortion",
+    "surface damage",
+    "dimensional recovery"
+  ],
+  "additive_controls": [
+    "feedstock condition",
+    "layer orientation",
+    "porosity",
+    "interlayer adhesion",
+    "thermal history",
+    "post-processing"
+  ]
+}

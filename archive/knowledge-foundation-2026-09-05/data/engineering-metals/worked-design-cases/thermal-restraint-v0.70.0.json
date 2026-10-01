@@ -1,0 +1,15 @@
+{
+  "version": "0.70.0",
+  "status": "worked-framework",
+  "problem": "Assess a metallic assembly constrained over temperature.",
+  "workflow": [
+    "define temperature envelope",
+    "identify CTE mismatch",
+    "calculate free thermal strain",
+    "map restraint/contact",
+    "screen thermal stress",
+    "check joint slip or yielding",
+    "assess thermal-cycle fatigue",
+    "verify alignment/clearance"
+  ]
+}

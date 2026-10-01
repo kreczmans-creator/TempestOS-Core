@@ -1,0 +1,23 @@
+{
+  "version": "0.65.0",
+  "purpose": "Screen polymer gear duty.",
+  "equation": "PV = contact pressure × sliding velocity (tribological screening quantity)",
+  "inputs": [
+    "torque",
+    "speed",
+    "geometry",
+    "contact pressure",
+    "sliding speed"
+  ],
+  "checks": [
+    "tooth bending",
+    "contact stress",
+    "wear",
+    "thermal balance",
+    "creep",
+    "fatigue",
+    "lubrication"
+  ],
+  "warning": "PV is a screening metric, not a universal allowable.",
+  "status": "screening calculation pattern"
+}

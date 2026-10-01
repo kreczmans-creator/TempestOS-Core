@@ -1,0 +1,29 @@
+{
+  "version": "0.68.0",
+  "purpose": "Screen Hertzian-type contact loading for metallic components.",
+  "concepts": [
+    "normal load",
+    "contact geometry",
+    "contact pressure",
+    "elastic deformation",
+    "subsurface stress"
+  ],
+  "applications": [
+    "bearings",
+    "gears",
+    "cams",
+    "rollers",
+    "rail contacts"
+  ],
+  "checks": [
+    "yielding",
+    "pitting",
+    "spalling",
+    "brinelling",
+    "fretting",
+    "lubrication",
+    "surface hardness"
+  ],
+  "boundary": "Use the applicable contact standard/model for the actual geometry and material pair.",
+  "status": "design-framework"
+}

@@ -1,0 +1,29 @@
+{
+  "version": "0.57.0",
+  "family": "PC (Polycarbonate)",
+  "examples": [
+    "general-purpose PC",
+    "glass-filled PC"
+  ],
+  "character": "tough engineering thermoplastic with high impact resistance",
+  "common_uses": [
+    "guards",
+    "transparent covers",
+    "housings",
+    "optical/mechanical components"
+  ],
+  "selection_drivers": [
+    "impact",
+    "transparency",
+    "dimensional stability",
+    "temperature"
+  ],
+  "watchouts": [
+    "solvent/environmental stress cracking",
+    "UV exposure",
+    "creep",
+    "scratching"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

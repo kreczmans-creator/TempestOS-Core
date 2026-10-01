@@ -1,0 +1,82 @@
+- id: SEL-FIX-001
+  name: Lightweight structural material
+  intent: screening
+  constraints:
+    density_max_kg_m3: 3000
+    yield_strength_min_MPa: 200
+  ranking:
+  - specific_strength
+  - cost_tier
+  - availability
+  expected_candidate_families:
+  - aluminium_alloys
+  - magnesium_alloys
+  expected_exclusions:
+  - steels
+  - tungsten_refractory
+  note: Do not use unverified screening values for release design.
+- id: SEL-FIX-002
+  name: High-temperature structural alloy
+  intent: screening
+  constraints:
+    temperature_service_C_min: 500
+    yield_strength_min_MPa: 400
+  ranking:
+  - temperature_capability
+  - yield_strength
+  - availability
+  - cost_tier
+  expected_candidate_families:
+  - nickel_superalloys
+  - cobalt_alloys
+  - refractory_metals
+  note: Temperature-dependent property observations are required before authoritative
+    ranking.
+- id: SEL-FIX-003
+  name: Electrical conductor
+  intent: screening
+  constraints:
+    electrical_resistivity_max_ohm_m: 2.0e-08
+  ranking:
+  - electrical_resistivity
+  - cost_tier
+  - availability
+  - density
+  expected_candidate_families:
+  - copper
+  - high_conductivity_copper_alloys
+  note: Electrical resistance is application- and temperature-dependent; contact resistance
+    is outside this fixture.
+- id: SEL-FIX-004
+  name: Chemical-resistant polymer component
+  intent: screening
+  constraints:
+    material_class: polymer
+    temperature_service_C_min: 80
+    environment: oils_and_fuels
+  ranking:
+  - chemical_compatibility
+  - temperature_capability
+  - dimensional_stability
+  - cost_tier
+  expected_candidate_families:
+  - engineering_polymers
+  note: Specific fluid, concentration and exposure temperature must be supplied for
+    a real compatibility decision.
+- id: SEL-FIX-005
+  name: Corrosion-conscious structural part
+  intent: screening
+  constraints:
+    yield_strength_min_MPa: 300
+    environment: marine_chloride
+  ranking:
+  - corrosion_resistance
+  - yield_strength
+  - density
+  - cost_tier
+  expected_candidate_families:
+  - stainless_steels
+  - nickel_alloys
+  - aluminium_alloys
+  note: Galvanic coupling, crevices, coating and actual chloride conditions must be
+    considered.

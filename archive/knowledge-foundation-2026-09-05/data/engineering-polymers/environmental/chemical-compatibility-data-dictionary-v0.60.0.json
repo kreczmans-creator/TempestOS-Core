@@ -1,0 +1,30 @@
+{
+  "version": "0.60.0",
+  "rule": "Chemical compatibility is not a universal material attribute; it is a system condition.",
+  "mandatory_context": [
+    "chemical",
+    "concentration",
+    "temperature",
+    "duration",
+    "stress state",
+    "surface condition",
+    "grade"
+  ],
+  "failure_modes": [
+    "mass change",
+    "swelling",
+    "softening",
+    "stress cracking",
+    "hydrolysis",
+    "oxidation",
+    "embrittlement",
+    "loss of mechanical/electrical performance"
+  ],
+  "screening_scale": [
+    "generally good",
+    "variable",
+    "generally vulnerable",
+    "requires validation"
+  ],
+  "promotion": "Only validated chemical-specific evidence may support a design decision."
+}

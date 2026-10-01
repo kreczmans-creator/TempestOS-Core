@@ -1,0 +1,38 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "screening": {
+    "Molybdenum": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "TZM": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "Niobium / Nb-1Zr": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "Tantalum / Ta-10W": {
+      "cost": "very expensive",
+      "availability": "specialist"
+    },
+    "Rhenium / Mo-Re": {
+      "cost": "very expensive",
+      "availability": "highly specialist"
+    }
+  },
+  "drivers": [
+    "raw material scarcity",
+    "alloying additions",
+    "purity requirements",
+    "product form",
+    "powder/metallurgical processing",
+    "machining",
+    "environmental protection",
+    "qualification",
+    "supplier concentration"
+  ],
+  "rule": "Relative classifications are planning data, not live market quotations."
+}

@@ -1,0 +1,21 @@
+{
+  "version": "0.74.0",
+  "status": "verification-framework",
+  "concepts": [
+    "initialisation",
+    "enabled state",
+    "normal operation",
+    "warning",
+    "fault",
+    "safe state",
+    "recovery"
+  ],
+  "checks": [
+    "deterministic transitions",
+    "invalid-state handling",
+    "loss of feedback",
+    "watchdog behaviour",
+    "fault latching/reset",
+    "power-cycle behaviour"
+  ]
+}

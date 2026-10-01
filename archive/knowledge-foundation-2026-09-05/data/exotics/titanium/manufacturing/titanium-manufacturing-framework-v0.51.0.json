@@ -1,0 +1,50 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "machining": {
+    "difficulty": "difficult relative to aluminium and conventional steels",
+    "drivers": [
+      "low thermal conductivity",
+      "high chemical reactivity at cutting temperatures",
+      "elastic recovery",
+      "work hardening"
+    ],
+    "controls": [
+      "sharp tooling",
+      "controlled cutting speed/feed",
+      "rigid fixturing",
+      "adequate chip evacuation",
+      "appropriate coolant",
+      "surface integrity inspection"
+    ]
+  },
+  "forming": {
+    "cold_forming": "Dependent on grade and section; alpha and CP grades generally more formable than high-strength alpha-beta conditions.",
+    "warm_forming": "Can materially improve formability for difficult shapes.",
+    "springback": "Must be considered in precision formed parts."
+  },
+  "forging": {
+    "controls": [
+      "forging temperature",
+      "reduction schedule",
+      "grain flow",
+      "alpha-case control",
+      "heat treatment",
+      "inspection"
+    ]
+  },
+  "additive": {
+    "advantages": [
+      "complex geometry",
+      "material efficiency"
+    ],
+    "risks": [
+      "porosity",
+      "lack of fusion",
+      "residual stress",
+      "anisotropy",
+      "surface condition"
+    ],
+    "rule": "AM material cards require process-specific qualification."
+  }
+}

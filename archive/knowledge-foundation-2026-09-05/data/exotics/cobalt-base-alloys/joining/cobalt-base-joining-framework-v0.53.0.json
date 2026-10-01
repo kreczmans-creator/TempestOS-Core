@@ -1,0 +1,46 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "methods": [
+    {
+      "method": "fusion welding",
+      "controls": [
+        "heat input",
+        "HAZ",
+        "carbide/precipitate response",
+        "cracking",
+        "shielding",
+        "filler compatibility"
+      ]
+    },
+    {
+      "method": "hardfacing",
+      "controls": [
+        "substrate compatibility",
+        "dilution",
+        "thermal gradients",
+        "cracking",
+        "post-deposition machining"
+      ]
+    },
+    {
+      "method": "brazing",
+      "controls": [
+        "filler chemistry",
+        "brazing temperature",
+        "wetting",
+        "microstructural change"
+      ]
+    },
+    {
+      "method": "bolting",
+      "controls": [
+        "preload",
+        "galling",
+        "thermal expansion",
+        "galvanic compatibility"
+      ]
+    }
+  ],
+  "rule": "Joint and deposition zones must be assessed separately when their microstructure differs from the parent material."
+}

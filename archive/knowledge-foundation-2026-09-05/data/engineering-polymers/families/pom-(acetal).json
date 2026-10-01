@@ -1,0 +1,31 @@
+{
+  "version": "0.57.0",
+  "family": "POM (Acetal)",
+  "examples": [
+    "POM-H",
+    "POM-C"
+  ],
+  "character": "low-friction, dimensionally stable engineering thermoplastic",
+  "common_uses": [
+    "gears",
+    "bearings",
+    "rollers",
+    "precision mechanisms",
+    "snap fits"
+  ],
+  "selection_drivers": [
+    "low friction",
+    "dimensional stability",
+    "fatigue",
+    "machinability",
+    "cost"
+  ],
+  "watchouts": [
+    "creep",
+    "temperature",
+    "chemical compatibility",
+    "combustion/decomposition behaviour"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

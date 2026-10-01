@@ -1,0 +1,16 @@
+version: 0.27.0
+logical_workstreams: 12
+complete: 10
+substantially_complete: 2
+not_started: 0
+completion_percent: 83
+new_source_backed_observations: 7
+deepened_grades:
+- '410'
+- '420'
+- '430'
+- 310S
+- '321'
+- 440C
+verified: 0
+approved_for_design: 0

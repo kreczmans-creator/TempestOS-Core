@@ -1,0 +1,40 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering Polymers",
+  "status": "FOUNDATION PASS",
+  "families_established": [
+    "PEEK",
+    "PA (Nylon)",
+    "POM (Acetal)",
+    "PC (Polycarbonate)",
+    "ABS",
+    "PBT",
+    "PPS",
+    "PEI",
+    "PPA",
+    "LCP"
+  ],
+  "coverage_complete_at_fundamentals_level": [
+    "taxonomy",
+    "mechanical",
+    "thermal",
+    "electrical",
+    "environmental",
+    "fatigue-creep",
+    "manufacturing",
+    "joining",
+    "standards",
+    "provenance",
+    "economics",
+    "applications"
+  ],
+  "open": [
+    "grade-specific quantitative datasets",
+    "exact standard numbers and editions",
+    "long-term creep/fatigue evidence by grade",
+    "chemical compatibility datasets",
+    "electrical property datasets by conditioning/frequency",
+    "processing-condition effects"
+  ],
+  "certification": "not certified"
+}

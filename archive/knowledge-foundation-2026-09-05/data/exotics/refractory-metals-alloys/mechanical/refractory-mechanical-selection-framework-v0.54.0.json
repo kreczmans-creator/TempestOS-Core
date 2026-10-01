@@ -1,0 +1,54 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "selection_framework": {
+    "high_temperature_strength": "Refractory-metal selection is governed by temperature, time, environment and microstructure rather than room-temperature strength alone.",
+    "ductile_brittle_transition": "Several refractory metals can show strong temperature-dependent ductility; transition behaviour must be considered for handling, assembly and low-temperature service.",
+    "creep": "Long-duration high-temperature exposure requires creep/rupture evidence matched to grade and processing route.",
+    "fracture": "Purity, grain size, fabrication history and environmental contamination can materially influence fracture behaviour.",
+    "density": "Density can be a major system-level discriminator, particularly for aerospace and moving components.",
+    "thermal": "Thermal conductivity and CTE can strongly influence thermal gradients, joint loads and transient response."
+  },
+  "screening_comparison": [
+    {
+      "need": "high-temperature Mo-based structural hardware",
+      "candidate": "TZM",
+      "watch": [
+        "oxidation",
+        "creep",
+        "fabrication",
+        "temperature"
+      ]
+    },
+    {
+      "need": "specialist Nb high-temperature/vacuum system",
+      "candidate": "Nb-1Zr",
+      "watch": [
+        "oxidation",
+        "contamination",
+        "environment"
+      ]
+    },
+    {
+      "need": "chemical corrosion resistance",
+      "candidate": "Tantalum / Ta-10W",
+      "watch": [
+        "temperature",
+        "environment",
+        "cost",
+        "density"
+      ]
+    },
+    {
+      "need": "extreme-temperature specialist system",
+      "candidate": "Rhenium / Mo-Re",
+      "watch": [
+        "cost",
+        "oxidation",
+        "supply",
+        "processing"
+      ]
+    }
+  ],
+  "rule": "Refractory-metal data must retain environment and processing condition; air-exposed high-temperature performance cannot be inferred from vacuum/inert-environment data."
+}

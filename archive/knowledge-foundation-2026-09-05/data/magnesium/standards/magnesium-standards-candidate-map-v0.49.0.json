@@ -1,0 +1,39 @@
+{
+  "version": "0.49.0",
+  "status": "candidate mapping layer",
+  "families": [
+    {
+      "designation": "AZ31B",
+      "mapping_target": "ASTM/AMS/EN/ISO product-specific specifications",
+      "verification": "exact edition and product form required"
+    },
+    {
+      "designation": "AZ91D",
+      "mapping_target": "ASTM/AMS/EN/ISO cast magnesium specifications",
+      "verification": "exact casting specification required"
+    },
+    {
+      "designation": "WE43",
+      "mapping_target": "aerospace/specialist material specifications",
+      "verification": "exact chemistry, product form and heat treatment required"
+    },
+    {
+      "designation": "ZK60A",
+      "mapping_target": "wrought magnesium alloy specifications",
+      "verification": "exact product form and temper required"
+    }
+  ],
+  "source_fields": [
+    "standard_number",
+    "edition",
+    "title",
+    "designation",
+    "product_form",
+    "temper",
+    "property",
+    "test_method",
+    "scope",
+    "source_url"
+  ],
+  "rule": "A standards family is not an evidence citation. TempestOS must store the exact applicable document and edition before claiming compliance."
+}

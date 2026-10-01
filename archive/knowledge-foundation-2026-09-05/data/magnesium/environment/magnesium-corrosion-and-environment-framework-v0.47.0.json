@@ -1,0 +1,21 @@
+{
+  "version": "0.47.0",
+  "corrosion_modes": [
+    "general aqueous corrosion",
+    "galvanic corrosion",
+    "pitting/localised corrosion",
+    "corrosion under deposits/coatings",
+    "environmental attack"
+  ],
+  "controls": [
+    "material pairing",
+    "electrical isolation",
+    "coating system",
+    "drainage",
+    "fastener selection",
+    "surface preparation",
+    "service environment"
+  ],
+  "rule": "Corrosion resistance must be assessed as a system property when magnesium is coupled to dissimilar materials.",
+  "high_temperature_note": "Common magnesium alloys experience significant strength loss with increasing temperature; temperature capability must be grade- and condition-specific."
+}

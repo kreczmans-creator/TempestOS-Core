@@ -1,0 +1,19 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "profiles": [
+    "trapezoidal velocity",
+    "S-curve",
+    "constant speed",
+    "point-to-point",
+    "continuous rotation"
+  ],
+  "checks": [
+    "peak acceleration",
+    "jerk",
+    "motor torque",
+    "inertia matching",
+    "resonance",
+    "thermal duty"
+  ]
+}

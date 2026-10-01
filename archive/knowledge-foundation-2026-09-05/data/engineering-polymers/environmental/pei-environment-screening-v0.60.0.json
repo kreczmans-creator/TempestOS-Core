@@ -1,0 +1,34 @@
+{
+  "version": "0.60.0",
+  "family": "PEI",
+  "domain": "environmental_chemical",
+  "compatibility_screen": {
+    "water": "low-to-moderate absorption",
+    "dilute_acids_alkalis": "variable",
+    "oils_fuels": "variable",
+    "organic_solvents": "chemical resistance must be checked carefully",
+    "UV": "can degrade without stabilisation",
+    "hydrolysis": "possible under severe conditions",
+    "vacuum_outgassing": "grade/application dependent"
+  },
+  "critical_variables": [
+    "chemical identity",
+    "concentration",
+    "temperature",
+    "exposure duration",
+    "stress state",
+    "surface condition"
+  ],
+  "failure_modes": [
+    "swelling",
+    "plasticisation",
+    "stress cracking",
+    "hydrolysis",
+    "oxidation",
+    "UV degradation",
+    "embrittlement",
+    "loss of strength"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

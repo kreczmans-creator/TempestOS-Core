@@ -1,0 +1,23 @@
+{
+  "version": "0.60.0",
+  "status": "screening-only",
+  "electrical_requirements": [
+    "exact grade",
+    "conditioning",
+    "frequency",
+    "temperature",
+    "test method",
+    "product form",
+    "source"
+  ],
+  "environmental_requirements": [
+    "exact grade",
+    "chemical identity",
+    "concentration",
+    "temperature",
+    "exposure duration",
+    "stress state",
+    "test method/source"
+  ],
+  "principle": "Qualitative screening information must never be silently promoted to grade-specific design evidence."
+}

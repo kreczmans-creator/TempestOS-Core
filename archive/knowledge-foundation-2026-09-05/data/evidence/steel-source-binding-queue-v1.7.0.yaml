@@ -1,0 +1,2016 @@
+- observation_id: OBS-STEEL-S235JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S235JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  designation: S235JR
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S275JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  designation: S275JR
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-S355JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  designation: S355JR
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10025-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-C45-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-C45
+  designation: C45
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10083-2
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-EN8-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  designation: EN8
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-42CRMO4-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10083-3
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4140-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-4340-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-304-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-304
+  designation: AISI 304 / UNS S30400
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: density
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: elongation
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: hardness
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-316L-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-316L
+  designation: AISI 316L / UNS S31603
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-EN10088-1
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: density
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: elongation
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: hardness
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-17-4PH-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH / UNS S17400
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: density
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: elongation
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: hardness
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-15-5PH-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-ASTM-A564
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-D2-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-D2
+  designation: D2 / X153CrMoV12
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-H13-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-H13
+  designation: H13 / X40CrMoV5-1
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: density
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: yield_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: elongation
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: hardness
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-M2-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-M2
+  designation: M2 / HS6-5-2C
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: null
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: density
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: youngs_modulus
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: poissons_ratio
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: yield_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: ultimate_tensile_strength
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: elongation
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: hardness
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: coefficient_of_thermal_expansion
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding
+- observation_id: OBS-STEEL-1008-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-1008
+  designation: AISI 1008
+  property: electrical_resistivity
+  candidate_sources:
+  - source_id: STD-ASTM-A1008
+    source_locator: null
+  applicability_to_verify:
+    condition: representative_screening_state
+    product_form: null
+    thickness_or_section: null
+    temperature_C: 20
+    test_method: null
+  promotion_status: awaiting_source_binding

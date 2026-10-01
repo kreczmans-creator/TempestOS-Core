@@ -1,0 +1,13 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "variables": [
+    "manufacturing tolerance",
+    "thermal expansion",
+    "centre distance",
+    "tooth thickness",
+    "housing distortion",
+    "lubrication"
+  ],
+  "rule": "Backlash must be selected against thermal, lubrication and functional requirements rather than treated as a purely manufacturing dimension."
+}

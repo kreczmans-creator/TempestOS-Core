@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "workflow": [
+    "define mass and stiffness representation",
+    "identify constraints",
+    "extract modes",
+    "compare forcing frequencies",
+    "identify modal participation",
+    "assess dynamic stress",
+    "validate model against test where critical"
+  ],
+  "rule": "A static strength pass does not establish dynamic adequacy."
+}

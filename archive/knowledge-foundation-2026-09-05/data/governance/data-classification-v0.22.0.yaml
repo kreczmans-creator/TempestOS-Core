@@ -1,0 +1,14 @@
+version: 0.22.0
+classes:
+- id: NORMATIVE_GRADE_REQUIREMENT
+  description: Value directly specified by applicable material/product standard.
+- id: SUPPLIER_PRODUCT_DATA
+  description: Manufacturer-published value tied to product/condition/form.
+- id: PROCESS_SPECIFIC_REFERENCE
+  description: Value tied to manufacturing process, parameter set, orientation or
+    post-processing; never silently generalised.
+- id: ENGINEERING_REFERENCE
+  description: Secondary/reference data used for comparison or screening.
+promotion_rule: Only NORMATIVE_GRADE_REQUIREMENT or reviewed SUPPLIER_PRODUCT_DATA
+  may be considered for verification; PROCESS_SPECIFIC_REFERENCE remains reference-only
+  unless a separate verification basis is established.

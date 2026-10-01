@@ -1,0 +1,41 @@
+{
+  "version": "0.42.0",
+  "purpose": "Authoritative provenance contract for future material-data verification",
+  "required_source_fields": [
+    "source_id",
+    "publisher",
+    "document_title",
+    "revision_or_edition",
+    "publication_date",
+    "url_or_document_reference",
+    "alloy_designation",
+    "temper",
+    "product_form",
+    "thickness_or_size",
+    "property_name",
+    "value",
+    "units",
+    "test_method_or_standard",
+    "orientation",
+    "temperature",
+    "environment",
+    "page_or_clause",
+    "retrieval_date",
+    "evidence_status"
+  ],
+  "preferred_source_order": [
+    "material/product specification",
+    "recognised standards organisation publication",
+    "manufacturer technical data with traceable revision",
+    "peer-reviewed technical literature",
+    "secondary engineering reference"
+  ],
+  "rules": [
+    "Generic web pages are not sufficient provenance for design-critical values.",
+    "Alloy, temper and product-form context must be retained where relevant.",
+    "Ranges must not be silently converted into single allowables.",
+    "Secondary values remain screening-only unless independently verified.",
+    "Conflicting sources must be preserved and adjudicated rather than silently overwritten."
+  ],
+  "status": "contract_established"
+}

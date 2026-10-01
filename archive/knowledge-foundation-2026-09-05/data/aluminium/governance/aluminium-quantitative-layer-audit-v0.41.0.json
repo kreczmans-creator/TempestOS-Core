@@ -1,0 +1,12 @@
+{
+  "version": "0.41.0",
+  "scope": "Aluminium quantitative-reference expansion",
+  "shear_bearing": "14/14 initial deepened records",
+  "fatigue": "5 family-level screening records",
+  "fracture": "5 family-level screening ranges",
+  "temperature": "4 family-level screening retention curves",
+  "verified_authoritative_records": 0,
+  "design_approved_records": 0,
+  "assessment": "PASS for library-development coverage; FAIL for design-approval evidence",
+  "reason": "Quantitative values are explicitly classified as screening references and require authoritative source linkage before design use."
+}

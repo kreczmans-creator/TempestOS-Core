@@ -1,0 +1,15 @@
+{
+  "version": "0.74.0",
+  "status": "worked-framework",
+  "problem": "Design a precision mechanism for practical inspection and maintenance.",
+  "workflow": [
+    "identify maintenance tasks",
+    "define access envelope",
+    "identify replaceable items",
+    "provide alignment features",
+    "define diagnostic points",
+    "define calibration procedure",
+    "perform maintenance task analysis",
+    "verify post-maintenance function"
+  ]
+}

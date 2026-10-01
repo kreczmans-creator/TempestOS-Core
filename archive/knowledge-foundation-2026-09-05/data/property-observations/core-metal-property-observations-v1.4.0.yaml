@@ -1,0 +1,3024 @@
+- id: OBS-STEEL-S235JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: yield_strength
+  value: 250000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: ultimate_tensile_strength
+  value: 360000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: elongation
+  value: 0.26
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: hardness
+  value: 51
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: coefficient_of_thermal_expansion
+  value: 1.4999999999999999e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S235JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S235JR
+  property: electrical_resistivity
+  value: 1.4e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: yield_strength
+  value: 275000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: ultimate_tensile_strength
+  value: 430000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: elongation
+  value: 0.23
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: hardness
+  value: 51
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: coefficient_of_thermal_expansion
+  value: 1.4999999999999999e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S275JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S275JR
+  property: electrical_resistivity
+  value: 1.4e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: yield_strength
+  value: 355000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: ultimate_tensile_strength
+  value: 510000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: elongation
+  value: 0.22
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: hardness
+  value: 51
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: coefficient_of_thermal_expansion
+  value: 1.4999999999999999e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-S355JR-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-S355JR
+  property: electrical_resistivity
+  value: 1.4e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: yield_strength
+  value: 370000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: ultimate_tensile_strength
+  value: 650000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: elongation
+  value: 0.16
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: hardness
+  value: 200
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: coefficient_of_thermal_expansion
+  value: 1.4999999999999999e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-C45-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-C45
+  property: electrical_resistivity
+  value: 1.6e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: yield_strength
+  value: 400000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: ultimate_tensile_strength
+  value: 600000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: elongation
+  value: 0.17
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: hardness
+  value: 190
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: coefficient_of_thermal_expansion
+  value: 1.4999999999999999e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-EN8-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-EN8
+  property: electrical_resistivity
+  value: 1.6e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: yield_strength
+  value: 800000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: ultimate_tensile_strength
+  value: 1000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: elongation
+  value: 0.11
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: hardness
+  value: 300
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: coefficient_of_thermal_expansion
+  value: 1.23e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-42CRMO4-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-42CRMO4
+  property: electrical_resistivity
+  value: 2.3e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: yield_strength
+  value: 850000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: ultimate_tensile_strength
+  value: 1050000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: hardness
+  value: 300
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: coefficient_of_thermal_expansion
+  value: 1.23e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4140-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-4140
+  property: electrical_resistivity
+  value: 2.3e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: poissons_ratio
+  value: 0.29
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: yield_strength
+  value: 1080000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: ultimate_tensile_strength
+  value: 1200000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: elongation
+  value: 0.12
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: hardness
+  value: 350
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: coefficient_of_thermal_expansion
+  value: 1.23e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-4340-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-4340
+  property: electrical_resistivity
+  value: 2.3e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: density
+  value: 8000
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: youngs_modulus
+  value: 193000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: poissons_ratio
+  value: 0.29
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: yield_strength
+  value: 215000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: ultimate_tensile_strength
+  value: 505000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: elongation
+  value: 0.4
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: hardness
+  value: 215
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: coefficient_of_thermal_expansion
+  value: 1.6e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-304-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-304
+  property: electrical_resistivity
+  value: 7.2e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: density
+  value: 8000
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: youngs_modulus
+  value: 193000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: yield_strength
+  value: 170000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: ultimate_tensile_strength
+  value: 485000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: elongation
+  value: 0.4
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: hardness
+  value: 150
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: coefficient_of_thermal_expansion
+  value: 1.59e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-316L-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-316L
+  property: electrical_resistivity
+  value: 7.4e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: density
+  value: 7780
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: youngs_modulus
+  value: 197000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: poissons_ratio
+  value: 0.27
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: yield_strength
+  value: 1170000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: ultimate_tensile_strength
+  value: 1310000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: hardness
+  value: 380
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: coefficient_of_thermal_expansion
+  value: 1.08e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-17-4PH-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-17-4PH
+  property: electrical_resistivity
+  value: 7.8e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: density
+  value: 7800
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: youngs_modulus
+  value: 197000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: poissons_ratio
+  value: 0.27
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: yield_strength
+  value: 1170000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: ultimate_tensile_strength
+  value: 1310000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: hardness
+  value: 380
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: coefficient_of_thermal_expansion
+  value: 1.08e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-15-5PH-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-15-5PH
+  property: electrical_resistivity
+  value: 7.8e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: density
+  value: 7700
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: yield_strength
+  value: 1400000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: ultimate_tensile_strength
+  value: 1600000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: elongation
+  value: 0.05
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: hardness
+  value: 600
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: coefficient_of_thermal_expansion
+  value: 1.05e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-D2-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-D2
+  property: electrical_resistivity
+  value: 5.5e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: density
+  value: 7800
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: youngs_modulus
+  value: 210000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: yield_strength
+  value: 1100000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: ultimate_tensile_strength
+  value: 1300000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: elongation
+  value: 0.08
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: hardness
+  value: 520
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: coefficient_of_thermal_expansion
+  value: 1.15e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-H13-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-H13
+  property: electrical_resistivity
+  value: 5.5e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: density
+  value: 8150
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: youngs_modulus
+  value: 220000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: poissons_ratio
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: yield_strength
+  value: 1800000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: ultimate_tensile_strength
+  value: 2200000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: elongation
+  value: 0.03
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: hardness
+  value: 650
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: coefficient_of_thermal_expansion
+  value: 9.999999999999999e-06
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-M2-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-M2
+  property: electrical_resistivity
+  value: 5.0e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-DENSITY-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: density
+  value: 7850
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: youngs_modulus
+  value: 205000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: poissons_ratio
+  value: 0.29
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: yield_strength
+  value: 250000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: ultimate_tensile_strength
+  value: 350000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-ELONGATION-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: elongation
+  value: 0.3
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-HARDNESS-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: hardness
+  value: 140
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: coefficient_of_thermal_expansion
+  value: 1.1699999999999998e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-STEEL-1008-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-STEEL-1008
+  property: electrical_resistivity
+  value: 1.5e-07
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-DENSITY-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: density
+  value: 2710
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: youngs_modulus
+  value: 69000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: yield_strength
+  value: 120000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: ultimate_tensile_strength
+  value: 150000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-ELONGATION-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: elongation
+  value: 0.04
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-HARDNESS-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: hardness
+  value: 40
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: coefficient_of_thermal_expansion
+  value: 2.36e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-1050A-H14-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-1050A-H14
+  property: electrical_resistivity
+  value: 2.9e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-DENSITY-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: density
+  value: 2660
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: youngs_modulus
+  value: 72000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: yield_strength
+  value: 215000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: ultimate_tensile_strength
+  value: 305000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-ELONGATION-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: elongation
+  value: 0.12
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-HARDNESS-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: hardness
+  value: 117
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: coefficient_of_thermal_expansion
+  value: 2.38e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5083-H116-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-5083-H116
+  property: electrical_resistivity
+  value: 6.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-DENSITY-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: density
+  value: 2670
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: youngs_modulus
+  value: 70000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: yield_strength
+  value: 130000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: ultimate_tensile_strength
+  value: 220000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-ELONGATION-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-HARDNESS-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: hardness
+  value: 80
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: coefficient_of_thermal_expansion
+  value: 2.3699999999999997e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-5754-H22-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-5754-H22
+  property: electrical_resistivity
+  value: 5.5e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-DENSITY-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: density
+  value: 2700
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: youngs_modulus
+  value: 69000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: yield_strength
+  value: 276000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: ultimate_tensile_strength
+  value: 310000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-ELONGATION-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: elongation
+  value: 0.12
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-HARDNESS-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: hardness
+  value: 167
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: coefficient_of_thermal_expansion
+  value: 2.36e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6061-T6-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-6061-T6
+  property: electrical_resistivity
+  value: 4.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-DENSITY-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: density
+  value: 2700
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: youngs_modulus
+  value: 70000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: yield_strength
+  value: 250000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: ultimate_tensile_strength
+  value: 310000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-ELONGATION-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-HARDNESS-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: hardness
+  value: 190
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: coefficient_of_thermal_expansion
+  value: 2.3199999999999998e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T6-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-6082-T6
+  property: electrical_resistivity
+  value: 4.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-DENSITY-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: density
+  value: 2700
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: youngs_modulus
+  value: 70000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: yield_strength
+  value: 260000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: ultimate_tensile_strength
+  value: 315000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-ELONGATION-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: elongation
+  value: 0.1
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-HARDNESS-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: hardness
+  value: 190
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: coefficient_of_thermal_expansion
+  value: 2.3199999999999998e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6082-T651-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-6082-T651
+  property: electrical_resistivity
+  value: 4.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-DENSITY-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: density
+  value: 2700
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: youngs_modulus
+  value: 69000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: yield_strength
+  value: 170000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: ultimate_tensile_strength
+  value: 215000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-ELONGATION-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: elongation
+  value: 0.12
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-HARDNESS-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: hardness
+  value: 150
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: coefficient_of_thermal_expansion
+  value: 2.35e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-6063-T6-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-6063-T6
+  property: electrical_resistivity
+  value: 5.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-DENSITY-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: density
+  value: 2780
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: youngs_modulus
+  value: 73000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: yield_strength
+  value: 325000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: ultimate_tensile_strength
+  value: 470000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-ELONGATION-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: elongation
+  value: 0.18
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-HARDNESS-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: hardness
+  value: 121
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: coefficient_of_thermal_expansion
+  value: 2.3199999999999998e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T3-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-2024-T3
+  property: electrical_resistivity
+  value: 5.5e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-DENSITY-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: density
+  value: 2780
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: youngs_modulus
+  value: 73000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: yield_strength
+  value: 325000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: ultimate_tensile_strength
+  value: 470000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-ELONGATION-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: elongation
+  value: 0.19
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-HARDNESS-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: hardness
+  value: 121
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: coefficient_of_thermal_expansion
+  value: 2.3199999999999998e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-2024-T351-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-2024-T351
+  property: electrical_resistivity
+  value: 5.5e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-DENSITY-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: density
+  value: 2810
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: youngs_modulus
+  value: 71700000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: yield_strength
+  value: 500000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: ultimate_tensile_strength
+  value: 570000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-ELONGATION-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: elongation
+  value: 0.11
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-HARDNESS-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: hardness
+  value: 130
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: coefficient_of_thermal_expansion
+  value: 2.36e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T6-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-7075-T6
+  property: electrical_resistivity
+  value: 5.1e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-DENSITY-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: density
+  value: 2810
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: youngs_modulus
+  value: 71700000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: yield_strength
+  value: 500000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: ultimate_tensile_strength
+  value: 570000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-ELONGATION-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: elongation
+  value: 0.11
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-HARDNESS-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: hardness
+  value: 130
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: coefficient_of_thermal_expansion
+  value: 2.36e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7075-T651-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-7075-T651
+  property: electrical_resistivity
+  value: 5.1e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-DENSITY-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: density
+  value: 2830
+  unit: kg/m^3
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-YOUNGS_MODULUS-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: youngs_modulus
+  value: 71000000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-POISSONS_RATIO-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: poissons_ratio
+  value: 0.33
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-YIELD_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: yield_strength
+  value: 430000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-ULTIMATE_TENSILE_STRENGTH-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: ultimate_tensile_strength
+  value: 510000000.0
+  unit: Pa
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-ELONGATION-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: elongation
+  value: 0.15
+  unit: '1'
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-HARDNESS-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: hardness
+  value: 150
+  unit: HB
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-COEFFICIENT_OF_THERMAL_EXPANSION-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: coefficient_of_thermal_expansion
+  value: 2.35e-05
+  unit: 1/K
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified
+- id: OBS-AL-7050-T7451-ELECTRICAL_RESISTIVITY-SCREEN
+  material_state_id: MAT-AL-7050-T7451
+  property: electrical_resistivity
+  value: 5.0e-08
+  unit: ohm*m
+  temperature_C: 20
+  evidence_status: candidate_reference
+  design_use: screening_only
+  source_id: SRC-TO-VERIFY
+  source_locator: Attach exact manufacturer/standard/reference observation before
+    promotion.
+  uncertainty: not yet quantified

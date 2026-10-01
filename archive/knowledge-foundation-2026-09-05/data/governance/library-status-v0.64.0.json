@@ -1,0 +1,7 @@
+{
+  "version": "0.64.0",
+  "engineering_polymers": "standards mapping, exact-grade schema, selection metadata and worked examples complete",
+  "general_polymers": "not started",
+  "next": "Engineering Polymers design calculations, compatibility matrices, manufacturing/inspection and evidence workflows",
+  "data_boundary": "reference and screening records; no uncontrolled design allowables"
+}

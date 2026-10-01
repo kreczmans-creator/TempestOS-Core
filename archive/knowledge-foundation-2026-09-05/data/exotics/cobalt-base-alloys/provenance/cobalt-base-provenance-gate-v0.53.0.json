@@ -1,0 +1,35 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "mandatory_identity": [
+    "designation",
+    "specification",
+    "product form",
+    "condition/heat treatment",
+    "processing route where applicable"
+  ],
+  "wear_context": [
+    "counterface",
+    "load",
+    "speed",
+    "temperature",
+    "lubrication",
+    "particle/environment",
+    "surface condition"
+  ],
+  "hot_service_context": [
+    "temperature",
+    "stress",
+    "time",
+    "environment",
+    "microstructure"
+  ],
+  "evidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "promotion_rule": "No cobalt-base record becomes a design allowable through family-level inference."
+}

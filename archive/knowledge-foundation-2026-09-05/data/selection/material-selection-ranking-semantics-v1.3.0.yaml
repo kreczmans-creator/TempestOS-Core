@@ -1,0 +1,28 @@
+schema_version: 1.0.0
+pipeline:
+- step: 1
+  name: scope_filter
+  rule: Apply explicit family/designation/scope restrictions.
+- step: 2
+  name: hard_constraints
+  rule: Every supplied hard constraint must be satisfied by evidence attached to the
+    candidate state.
+- step: 3
+  name: unknown_handling
+  rule: Missing required evidence produces evidence_required rather than eligibility
+    pass.
+- step: 4
+  name: exclusions
+  rule: Apply explicit material/state exclusions.
+- step: 5
+  name: soft_ranking
+  rule: Rank remaining eligible candidates using ordered ranking factors.
+- step: 6
+  name: evidence_report
+  rule: Return source/evidence state and warnings with each candidate.
+default_score_semantics:
+  direction: higher_is_better_after_normalisation
+  missing_factor: do_not_score
+  tie_break: stable_material_state_id
+normalisation: Implement as a deterministic function in the application layer; the
+  knowledge base supplies observations and metadata, not opaque scores.

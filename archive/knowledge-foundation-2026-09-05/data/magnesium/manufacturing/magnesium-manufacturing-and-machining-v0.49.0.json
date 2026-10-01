@@ -1,0 +1,45 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "machining": {
+    "assessment": "Generally highly machinable.",
+    "primary_controls": [
+      "chip accumulation prevention",
+      "tool condition",
+      "cutting parameters",
+      "coolant/lubrication compatibility",
+      "housekeeping",
+      "ignition-source control"
+    ],
+    "fire_risk": "Fine chips, turnings and dust can ignite readily. Fire response must be specifically designed for magnesium.",
+    "rule": "Do not treat magnesium swarf as ordinary steel/aluminium swarf."
+  },
+  "forming": {
+    "cold_forming": "Limited by alloy and temperature; wrought texture can create directional behaviour.",
+    "warm_forming": "Potentially useful for difficult shapes; process window is alloy-specific.",
+    "hot_working": "Requires alloy/process-specific temperature control."
+  },
+  "casting": {
+    "critical_controls": [
+      "melt protection",
+      "oxidation control",
+      "porosity",
+      "inclusions",
+      "solidification",
+      "heat treatment"
+    ],
+    "design_implication": "Casting process and defect population must remain attached to property evidence."
+  },
+  "additive_manufacturing": {
+    "status": "specialist",
+    "controls": [
+      "powder/feedstock condition",
+      "atmosphere",
+      "energy input",
+      "porosity",
+      "surface condition",
+      "post-processing"
+    ],
+    "rule": "Requires dedicated process qualification; conventional wrought/cast properties must not be substituted."
+  }
+}

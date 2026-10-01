@@ -1,0 +1,22 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "interfaces": [
+    "mechanical mounting",
+    "shaft/coupling",
+    "electrical power",
+    "signal/feedback",
+    "thermal path",
+    "EMI/EMC environment"
+  ],
+  "checks": [
+    "alignment",
+    "fasteners",
+    "cable routing",
+    "connector retention",
+    "grounding",
+    "heat rejection",
+    "serviceability",
+    "fault containment"
+  ]
+}

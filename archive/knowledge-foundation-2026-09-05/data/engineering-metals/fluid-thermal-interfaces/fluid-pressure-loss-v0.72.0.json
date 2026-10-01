@@ -1,0 +1,23 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "purpose": "Provide first-order flow and pressure-loss reasoning.",
+  "concepts": [
+    "continuity",
+    "pressure drop",
+    "friction factor",
+    "laminar/turbulent flow",
+    "minor losses",
+    "pump/system interaction"
+  ],
+  "workflow": [
+    "define fluid properties",
+    "define geometry",
+    "define flow rate",
+    "identify distributed and local losses",
+    "calculate pressure loss",
+    "check available pressure/head",
+    "validate against actual system data"
+  ],
+  "boundary": "Final fluid-system design requires validated properties, operating envelope and applicable standards."
+}

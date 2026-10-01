@@ -1,0 +1,32 @@
+{
+  "version": "0.63.0",
+  "application": "snap_fits",
+  "selection_rule": "Use ductile grades with sufficient strain capability and validate repeated assembly cycles; avoid sharp stress raisers.",
+  "principal_failure_modes": [
+    "root cracking",
+    "fatigue",
+    "creep",
+    "permanent set",
+    "assembly overload",
+    "environmental stress cracking"
+  ],
+  "engineering_controls": [
+    "strain",
+    "root radius",
+    "deflection",
+    "assembly speed",
+    "cycle count",
+    "temperature",
+    "chemical exposure",
+    "orientation"
+  ],
+  "candidate_families": [
+    "ABS",
+    "PA12",
+    "PC",
+    "POM",
+    "PEI"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

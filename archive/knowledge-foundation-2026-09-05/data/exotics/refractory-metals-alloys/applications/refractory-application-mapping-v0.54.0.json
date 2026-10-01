@@ -1,0 +1,62 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "mapping": [
+    {
+      "material": "Molybdenum / TZM",
+      "uses": [
+        "furnace hardware",
+        "thermal tooling",
+        "electrodes",
+        "high-temperature structures"
+      ],
+      "drivers": [
+        "temperature",
+        "strength",
+        "thermal conductivity",
+        "environment"
+      ]
+    },
+    {
+      "material": "Niobium / Nb-1Zr",
+      "uses": [
+        "vacuum systems",
+        "superconducting systems",
+        "specialist high-temperature hardware"
+      ],
+      "drivers": [
+        "temperature",
+        "vacuum compatibility",
+        "ductility",
+        "environment"
+      ]
+    },
+    {
+      "material": "Tantalum / Ta-10W",
+      "uses": [
+        "chemical processing",
+        "heat exchangers",
+        "specialist corrosion-resistant hardware"
+      ],
+      "drivers": [
+        "corrosion",
+        "temperature",
+        "fabricability",
+        "cost"
+      ]
+    },
+    {
+      "material": "Rhenium / Mo-Re",
+      "uses": [
+        "extreme-temperature aerospace/space systems",
+        "specialist electrical/thermal components"
+      ],
+      "drivers": [
+        "extreme-temperature strength",
+        "environment",
+        "cost",
+        "supply"
+      ]
+    }
+  ]
+}

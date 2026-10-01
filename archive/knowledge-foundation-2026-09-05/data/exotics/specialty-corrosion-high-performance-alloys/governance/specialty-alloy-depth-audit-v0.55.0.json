@@ -1,0 +1,39 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "status": "DEPTH PASS \u2014 specialty corrosion/high-performance exotic alloy foundation established",
+  "representative_systems": [
+    "Zr 702",
+    "Zr 705",
+    "Hafnium",
+    "Hastelloy C-276",
+    "Hastelloy C-22",
+    "Alloy 825",
+    "Alloy 59",
+    "MP35N",
+    "Nitinol"
+  ],
+  "complete": [
+    "taxonomy",
+    "material roles",
+    "mechanical selection",
+    "thermal framework",
+    "corrosion framework",
+    "fatigue framework",
+    "manufacturing",
+    "joining",
+    "standards mapping",
+    "provenance",
+    "economics",
+    "applications"
+  ],
+  "open": [
+    "authoritative quantitative datasets",
+    "exact standard editions",
+    "environment-specific corrosion allowables",
+    "condition-specific fatigue data",
+    "functional Nitinol datasets",
+    "specialist supply-chain data"
+  ],
+  "certification": "not certified"
+}

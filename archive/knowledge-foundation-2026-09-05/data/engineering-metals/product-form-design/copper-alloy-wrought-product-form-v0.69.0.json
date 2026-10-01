@@ -1,0 +1,31 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "forms": [
+    "plate",
+    "sheet",
+    "bar",
+    "rod",
+    "tube",
+    "pipe",
+    "forging",
+    "extrusion"
+  ],
+  "effects": [
+    "grain flow",
+    "texture",
+    "anisotropy",
+    "surface condition",
+    "section size",
+    "residual stress",
+    "inclusion orientation"
+  ],
+  "design_checks": [
+    "loading direction",
+    "material certification",
+    "heat-treatment condition",
+    "machining allowance",
+    "surface integrity"
+  ],
+  "status": "design-framework"
+}

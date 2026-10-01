@@ -1,0 +1,210 @@
+[
+  {
+    "designation": "CP Grade 1",
+    "family": "commercially pure titanium",
+    "class": "alpha",
+    "characteristics": [
+      "highest ductility among common CP grades",
+      "excellent corrosion resistance",
+      "lower strength"
+    ],
+    "typical_uses": [
+      "chemical processing",
+      "heat exchangers",
+      "marine/aqueous service",
+      "formed components"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "CP Grade 2",
+    "family": "commercially pure titanium",
+    "class": "alpha",
+    "characteristics": [
+      "general-purpose CP titanium",
+      "excellent corrosion resistance",
+      "higher strength than Grade 1"
+    ],
+    "typical_uses": [
+      "chemical processing",
+      "piping",
+      "heat exchangers",
+      "marine service"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "CP Grade 3",
+    "family": "commercially pure titanium",
+    "class": "alpha",
+    "characteristics": [
+      "higher strength than Grades 1 and 2",
+      "good corrosion resistance",
+      "lower ductility"
+    ],
+    "typical_uses": [
+      "chemical equipment",
+      "pressure-containing components",
+      "structural applications"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "CP Grade 4",
+    "family": "commercially pure titanium",
+    "class": "alpha",
+    "characteristics": [
+      "highest strength among common CP grades",
+      "good corrosion resistance",
+      "lower formability than lower grades"
+    ],
+    "typical_uses": [
+      "chemical processing",
+      "aerospace specialist components",
+      "pressure equipment"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Ti-6Al-4V",
+    "family": "alpha-beta titanium",
+    "class": "alpha-beta",
+    "characteristics": [
+      "high specific strength",
+      "widely qualified engineering alloy",
+      "good fatigue performance when appropriately processed"
+    ],
+    "typical_uses": [
+      "aerospace structures",
+      "rotating components",
+      "medical devices",
+      "high-performance mechanisms"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Ti-6Al-4V ELI",
+    "family": "alpha-beta titanium",
+    "class": "alpha-beta",
+    "characteristics": [
+      "extra-low interstitial variant",
+      "enhanced toughness/ductility relative to standard grades in appropriate conditions"
+    ],
+    "typical_uses": [
+      "medical implants",
+      "cryogenic/service-critical components",
+      "aerospace specialist applications"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Ti-5Al-2.5Sn",
+    "family": "alpha titanium",
+    "class": "alpha",
+    "characteristics": [
+      "good elevated-temperature capability",
+      "stable alpha microstructure",
+      "lower room-temperature strength than many alpha-beta grades"
+    ],
+    "typical_uses": [
+      "aerospace",
+      "cryogenic applications",
+      "elevated-temperature hardware"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Ti-6242",
+    "family": "near-alpha titanium",
+    "class": "near-alpha",
+    "characteristics": [
+      "higher temperature capability than Ti-6Al-4V",
+      "strong dependence on microstructure and heat treatment"
+    ],
+    "typical_uses": [
+      "aerospace engine structures",
+      "elevated-temperature rotating hardware"
+    ],
+    "evidence_status": "taxonomy/selection record",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "product form",
+      "temper/heat treatment",
+      "orientation where relevant",
+      "test temperature",
+      "test method",
+      "source"
+    ]
+  }
+]

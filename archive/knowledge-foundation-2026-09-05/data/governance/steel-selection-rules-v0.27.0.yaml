@@ -1,0 +1,21 @@
+version: 0.27.0
+selection_axes:
+- strength
+- hardness_wear
+- corrosion_environment
+- temperature
+- electrical
+- thermal
+- manufacturability
+- availability
+- cost
+rules:
+- Preserve material condition and product form in every comparison.
+- Do not use qualitative corrosion language as an environment-specific allowable.
+- For high-temperature service distinguish oxidation resistance, creep and short-term
+  strength.
+- Availability and cost are qualitative procurement context, not quotations.
+- Every numerical property retains source provenance.
+verification:
+  verified: 0
+  approved_for_design: 0

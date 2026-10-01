@@ -1,0 +1,379 @@
+[
+  {
+    "designation": "Zirconium 702",
+    "aliases": [
+      "Zr 702",
+      "UNS R60702"
+    ],
+    "class": "commercially pure zirconium",
+    "role": "exceptional corrosion resistance in selected chemical-process environments",
+    "strengthening": "primarily purity, interstitial content, grain structure and processing condition",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "forgings"
+    ],
+    "uses": [
+      "chemical processing",
+      "heat exchangers",
+      "reactor/process vessels",
+      "piping"
+    ],
+    "critical_constraints": [
+      "hydrogen pickup",
+      "oxidising/reducing environment dependence",
+      "temperature",
+      "contamination",
+      "fabrication"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Zirconium 705",
+    "aliases": [
+      "Zr 705",
+      "UNS R60705"
+    ],
+    "class": "zirconium alloy",
+    "role": "higher-strength zirconium system retaining corrosion resistance for demanding process applications",
+    "strengthening": "niobium-containing alloying and microstructural effects",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "forgings"
+    ],
+    "uses": [
+      "chemical processing",
+      "pressure-containing process equipment",
+      "heat exchangers"
+    ],
+    "critical_constraints": [
+      "environment",
+      "hydrogen pickup",
+      "welding",
+      "temperature",
+      "specification"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Hafnium",
+    "aliases": [
+      "Hf"
+    ],
+    "class": "refractory specialty metal",
+    "role": "specialist high-temperature, corrosion-resistant and nuclear/materials applications",
+    "strengthening": "purity and alloying/microstructure dependent",
+    "typical_product_forms": [
+      "sheet",
+      "bar",
+      "wire",
+      "specialist components"
+    ],
+    "uses": [
+      "nuclear systems",
+      "high-temperature components",
+      "specialist chemical equipment"
+    ],
+    "critical_constraints": [
+      "cost",
+      "density",
+      "oxidation",
+      "processing",
+      "supply"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Hastelloy C-276",
+    "aliases": [
+      "UNS N10276"
+    ],
+    "class": "Ni-Mo-Cr corrosion-resistant alloy",
+    "role": "broad severe-environment corrosion resistance, especially where localized corrosion and weld-zone performance matter",
+    "strengthening": "solid-solution strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "forgings"
+    ],
+    "uses": [
+      "chemical processing",
+      "pollution control",
+      "flue-gas systems",
+      "severe corrosion service"
+    ],
+    "critical_constraints": [
+      "environment chemistry",
+      "temperature",
+      "welding condition",
+      "localized corrosion",
+      "cost"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Hastelloy C-22",
+    "aliases": [
+      "UNS N06022"
+    ],
+    "class": "Ni-Cr-Mo-W corrosion-resistant alloy",
+    "role": "highly corrosion-resistant alloy for oxidising and mixed chemical environments",
+    "strengthening": "solid-solution strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "forgings"
+    ],
+    "uses": [
+      "chemical processing",
+      "pollution control",
+      "mixed oxidising/reducing environments",
+      "process equipment"
+    ],
+    "critical_constraints": [
+      "environment chemistry",
+      "temperature",
+      "welding",
+      "localized corrosion",
+      "cost"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Alloy 825",
+    "aliases": [
+      "UNS N08825",
+      "Incoloy 825"
+    ],
+    "class": "Ni-Fe-Cr corrosion-resistant alloy",
+    "role": "corrosion-resistant process and heat-transfer equipment across aggressive chemical environments",
+    "strengthening": "solid-solution strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube",
+      "forgings"
+    ],
+    "uses": [
+      "chemical processing",
+      "oil and gas",
+      "heat exchangers",
+      "pollution control",
+      "acid service"
+    ],
+    "critical_constraints": [
+      "environment",
+      "temperature",
+      "welding",
+      "chlorides",
+      "stress corrosion"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Alloy 59",
+    "aliases": [
+      "UNS N06059"
+    ],
+    "class": "Ni-Cr-Mo corrosion-resistant alloy",
+    "role": "specialist corrosion-resistant system for aggressive process environments",
+    "strengthening": "solid-solution strengthening",
+    "typical_product_forms": [
+      "sheet",
+      "plate",
+      "bar",
+      "tube"
+    ],
+    "uses": [
+      "chemical processing",
+      "scrubbers",
+      "acid service",
+      "heat exchangers"
+    ],
+    "critical_constraints": [
+      "environment",
+      "temperature",
+      "weld condition",
+      "localized corrosion"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "MP35N",
+    "aliases": [
+      "UNS R30035"
+    ],
+    "class": "Co-Ni-Cr-Mo high-strength corrosion-resistant alloy",
+    "role": "very high strength combined with corrosion resistance in demanding mechanical environments",
+    "strengthening": "cold-work and age-strengthening mechanisms",
+    "typical_product_forms": [
+      "bar",
+      "wire",
+      "strip",
+      "forgings"
+    ],
+    "uses": [
+      "aerospace fasteners",
+      "medical devices",
+      "high-strength springs",
+      "marine hardware"
+    ],
+    "critical_constraints": [
+      "heat treatment",
+      "cold work",
+      "stress state",
+      "environment",
+      "galling"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  },
+  {
+    "designation": "Nitinol",
+    "aliases": [
+      "NiTi",
+      "nickel-titanium"
+    ],
+    "class": "shape-memory/superelastic alloy",
+    "role": "functional alloy where reversible phase transformation provides shape memory or superelasticity",
+    "strengthening": "thermomechanical processing and transformation microstructure",
+    "typical_product_forms": [
+      "wire",
+      "tube",
+      "sheet",
+      "strip",
+      "specialist components"
+    ],
+    "uses": [
+      "medical devices",
+      "actuators",
+      "springs",
+      "deployable mechanisms"
+    ],
+    "critical_constraints": [
+      "transformation temperatures",
+      "functional fatigue",
+      "surface condition",
+      "composition",
+      "processing history"
+    ],
+    "evidence_status": "screening taxonomy",
+    "design_use": "screening_only",
+    "provenance_required": [
+      "exact specification",
+      "composition",
+      "product form",
+      "condition/heat treatment",
+      "processing route",
+      "temperature",
+      "environment",
+      "test method",
+      "source"
+    ]
+  }
+]

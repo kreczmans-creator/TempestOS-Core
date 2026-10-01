@@ -1,0 +1,20 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "resolution",
+    "quantisation",
+    "reference voltage",
+    "sampling rate",
+    "aliasing",
+    "conversion error"
+  ],
+  "checks": [
+    "signal bandwidth",
+    "sample rate",
+    "anti-alias filtering",
+    "input range",
+    "reference stability",
+    "quantisation relative to requirement"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "process capability",
+    "Cp",
+    "Cpk",
+    "common cause variation",
+    "special cause variation"
+  ],
+  "workflow": [
+    "define critical characteristic",
+    "identify process output",
+    "collect representative data",
+    "assess distribution assumptions",
+    "calculate capability where justified",
+    "identify special causes",
+    "improve/monitor process"
+  ],
+  "boundary": "Capability indices are meaningful only when the sampling, stability and distribution assumptions are appropriate."
+}

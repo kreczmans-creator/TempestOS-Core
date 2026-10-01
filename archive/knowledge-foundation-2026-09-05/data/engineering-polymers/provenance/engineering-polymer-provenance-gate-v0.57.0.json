@@ -1,0 +1,28 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "mandatory_identity": [
+    "resin family",
+    "exact grade",
+    "reinforcement/filler",
+    "additive/flame-retardant state where relevant",
+    "condition",
+    "product form",
+    "processing route"
+  ],
+  "conditioning": [
+    "temperature",
+    "humidity",
+    "conditioning duration",
+    "test direction",
+    "test method"
+  ],
+  "evidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "promotion_rule": "Quantitative polymer data cannot be promoted to design use without grade, condition, processing/conditioning and test-context provenance."
+}

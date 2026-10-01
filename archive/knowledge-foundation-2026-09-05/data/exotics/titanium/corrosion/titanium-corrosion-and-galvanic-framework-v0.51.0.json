@@ -1,0 +1,18 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "strengths": [
+    "strong passive oxide film",
+    "excellent resistance in many seawater and aqueous environments",
+    "strong resistance to many oxidising chemical environments"
+  ],
+  "controls": [
+    "reducing acids can be more aggressive",
+    "crevice conditions may alter behaviour",
+    "galvanic coupling to dissimilar metals requires assessment",
+    "surface contamination and deposits can affect local corrosion behaviour",
+    "temperature and chemistry must be specified"
+  ],
+  "galvanic": "Titanium can drive galvanic current against less noble metals; electrical isolation or compatible material pairing may be required.",
+  "design_rule": "Corrosion resistance is environment-specific and must not be represented as an unconditional material property."
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.71.0",
+  "status": "verification-framework",
+  "methods": [
+    "inspection",
+    "analysis",
+    "demonstration",
+    "test"
+  ],
+  "selection_rule": "Choose the least ambiguous method that directly demonstrates the requirement; safety-critical or highly uncertain behaviour generally requires stronger physical evidence."
+}

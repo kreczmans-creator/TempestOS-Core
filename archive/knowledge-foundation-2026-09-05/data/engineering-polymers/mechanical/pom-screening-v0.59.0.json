@@ -1,0 +1,22 @@
+{
+  "version": "0.59.0",
+  "family": "POM",
+  "density_g_cm3": 1.41,
+  "elastic_modulus_gpa": "2.5\u20133.5",
+  "tensile_strength_mpa": "55\u201380",
+  "elongation_percent": "10\u201340",
+  "evidence_status": "screening range",
+  "design_use": "not approved",
+  "required_context": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "warning": "Ranges are family-level engineering screening data, not design allowables."
+}

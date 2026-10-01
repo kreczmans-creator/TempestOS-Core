@@ -1,0 +1,57 @@
+- observation_id: OBS-S235JR-YIELD-TK-HOTSTRIP
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Source, grade, product form, thickness context and temperature are explicit;
+    standard minimum interpretation remains tied to the cited table.
+- observation_id: OBS-S235JR-UTS-TK-HOTSTRIP
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Same applicability envelope as the yield observation.
+- observation_id: OBS-S355JR-YIELD-TK-HOTSTRIP
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Source, grade, product form, thickness context and temperature are explicit.
+- observation_id: OBS-S355JR-UTS-TK-HOTSTRIP
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Same applicability envelope as the yield observation.
+- observation_id: OBS-42CRMO4-QT-YIELD-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Exact grade, +QT state, round-bar form, dimension range and temperature
+    are stated by source.
+- observation_id: OBS-42CRMO4-QT-UTS-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Exact grade, +QT state, round-bar form, dimension range and temperature
+    are stated by source.
+- observation_id: OBS-42CRMO4-QT-HARDNESS-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Exact grade, +QT state, round-bar form, dimension range and temperature
+    are stated by source.
+- observation_id: OBS-42CRMO4-QT-ELONG-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Exact grade, +QT state, round-bar form, dimension range and temperature
+    are stated by source.
+- observation_id: OBS-42CRMO4-QT-IMPACT-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Exact grade, +QT state, round-bar form, dimension range, temperature and
+    Charpy method are stated by source.
+- observation_id: OBS-C45-SB5081-QT-YIELD-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Supplier variant 5081, +QT state, round-bar form, dimension range and temperature
+    are explicit.
+- observation_id: OBS-C45-SB5081-QT-UTS-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Supplier variant 5081, +QT state, round-bar form, dimension range and temperature
+    are explicit.
+- observation_id: OBS-C45-SB5081-QT-HARDNESS-OVAKO
+  review_status: reviewed
+  verification_decision: retain_sourced
+  reason: Supplier variant 5081, +QT state, round-bar form, dimension range and temperature
+    are explicit.

@@ -1,0 +1,20 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "variables": [
+    "normal load",
+    "surface roughness",
+    "material pair",
+    "lubrication",
+    "speed",
+    "temperature",
+    "environment"
+  ],
+  "concepts": [
+    "static friction",
+    "kinetic friction",
+    "boundary lubrication",
+    "mixed lubrication",
+    "hydrodynamic lubrication"
+  ]
+}

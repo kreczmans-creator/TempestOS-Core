@@ -1,0 +1,29 @@
+{
+  "version": "0.57.0",
+  "family": "PBT",
+  "examples": [
+    "unfilled PBT",
+    "glass-filled PBT"
+  ],
+  "character": "engineering thermoplastic with good electrical insulation, dimensional stability and chemical resistance",
+  "common_uses": [
+    "electrical connectors",
+    "housings",
+    "automotive electrical components",
+    "precision mouldings"
+  ],
+  "selection_drivers": [
+    "electrical insulation",
+    "dimensional stability",
+    "temperature",
+    "processability"
+  ],
+  "watchouts": [
+    "moisture",
+    "hydrolysis in some environments",
+    "creep",
+    "glass-fibre orientation"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

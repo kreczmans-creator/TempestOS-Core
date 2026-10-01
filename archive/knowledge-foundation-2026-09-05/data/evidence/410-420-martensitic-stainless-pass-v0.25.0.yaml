@@ -1,0 +1,62 @@
+- observation_id: OBS-410-DURA-IDENTITY
+  material_state_id: MAT-STEEL-410
+  designation: EN 1.4006 / ASTM 410 / UNS S41000
+  microstructure: martensitic
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura range; 410/4006
+  source_url: https://www.outokumpu.com/en/products/product-ranges/dura
+  evidence_status: sourced
+  review_status: reviewed
+  applications:
+  - valves
+  - flanges
+  - axles
+  - pump parts
+  - brake discs
+  product_forms:
+  - press plate
+- observation_id: OBS-420-DURA-IDENTITY
+  material_state_id: MAT-STEEL-420
+  designation: EN 1.4021 / ASTM 420 / UNS S42000
+  microstructure: martensitic
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura range; 420/4021
+  source_url: https://www.outokumpu.com/en/products/product-ranges/dura
+  evidence_status: sourced
+  review_status: reviewed
+  applications:
+  - cutting utensils
+  - surgical instruments
+  - press plates
+  - brake discs
+  - mechanical parts
+  - flanges and valves
+  product_forms:
+  - cold rolled coil/strip/sheet
+  - hot rolled coil/strip/plate
+  - quarto plate
+  - precision strip
+- observation_id: OBS-410-WALLCHART-RM
+  material_state_id: MAT-STEEL-410
+  designation: EN 1.4006 / ASTM 410 / UNS S41000
+  property: ultimate_tensile_strength_typical
+  value: 540
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-WALLCHART
+  source_locator: Outokumpu product ranges wallchart; Dura 410/4006
+  source_url: https://otke-cdn.outokumpu.com/-/media/files/products/moda/wallchart_outokumpu-product-ranges.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-420-4021-WALLCHART-RM
+  material_state_id: MAT-STEEL-420
+  designation: EN 1.4021 / ASTM 420 / UNS S42000
+  property: ultimate_tensile_strength_typical
+  value: 580
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-WALLCHART
+  source_locator: Outokumpu product ranges wallchart; Dura 420/4021
+  source_url: https://otke-cdn.outokumpu.com/-/media/files/products/moda/wallchart_outokumpu-product-ranges.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

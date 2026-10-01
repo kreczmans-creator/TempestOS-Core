@@ -1,0 +1,20 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "conditions": [
+    "small-amplitude relative motion",
+    "high local contact pressure",
+    "cyclic loading",
+    "surface/interface contact"
+  ],
+  "controls": [
+    "contact pressure",
+    "surface hardness",
+    "coating",
+    "geometry",
+    "clamping",
+    "lubrication",
+    "relative motion"
+  ],
+  "status": "design-framework"
+}

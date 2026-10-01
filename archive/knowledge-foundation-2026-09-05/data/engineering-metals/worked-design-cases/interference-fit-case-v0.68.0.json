@@ -1,0 +1,22 @@
+{
+  "version": "0.68.0",
+  "problem": "Select an interference fit for a steel hub and shaft.",
+  "inputs": [
+    "diameters",
+    "tolerances",
+    "elastic properties",
+    "CTE",
+    "temperature",
+    "torque/load"
+  ],
+  "workflow": [
+    "calculate tolerance envelope",
+    "calculate thermal differential",
+    "determine required retention",
+    "check contact pressure and stresses",
+    "check assembly force",
+    "verify manufacturing capability"
+  ],
+  "output": "Fit-selection workflow; exact interference requires validated geometry/material data.",
+  "status": "worked-framework"
+}

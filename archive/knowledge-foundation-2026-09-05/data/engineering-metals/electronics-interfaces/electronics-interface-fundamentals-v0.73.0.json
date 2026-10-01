@@ -1,0 +1,23 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "interfaces": [
+    "power supply",
+    "digital I/O",
+    "analogue I/O",
+    "serial communications",
+    "encoder/position feedback",
+    "ground/reference",
+    "connector and harness"
+  ],
+  "checks": [
+    "voltage/current range",
+    "logic levels",
+    "polarity",
+    "inrush",
+    "protection",
+    "connector rating",
+    "cable length",
+    "EMI/EMC exposure"
+  ]
+}

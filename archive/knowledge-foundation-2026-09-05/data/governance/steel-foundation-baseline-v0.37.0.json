@@ -1,0 +1,39 @@
+{
+  "baseline_id": "STEEL-FUNDAMENTALS-BASELINE-0.37.0",
+  "status": "STRUCTURALLY_COMPLETE_REFERENCE_BASELINE",
+  "grades": [
+    "13-8 Mo",
+    "15-5 PH",
+    "17-4 PH",
+    "304",
+    "310S",
+    "316L",
+    "321",
+    "410",
+    "420",
+    "42CrMo4",
+    "430",
+    "440C",
+    "C45",
+    "H13",
+    "S235JR",
+    "S355JR"
+  ],
+  "required_layers": [
+    "identity",
+    "mechanical",
+    "thermal",
+    "electrical",
+    "magnetic",
+    "environmental",
+    "manufacturing",
+    "standards",
+    "commercial"
+  ],
+  "governance_controls": [
+    "evidence_class",
+    "design_use",
+    "provenance_requirement"
+  ],
+  "rule": "Presence of a reference value never implies approval for design use."
+}

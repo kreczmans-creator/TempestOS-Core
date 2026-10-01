@@ -1,0 +1,28 @@
+{
+  "version": "0.66.0",
+  "required_identity": [
+    "material designation",
+    "grade",
+    "temper/condition",
+    "product form",
+    "heat treatment",
+    "surface/coating state where relevant"
+  ],
+  "required_evidence": [
+    "property",
+    "value",
+    "unit",
+    "test method",
+    "specimen/product form",
+    "temperature",
+    "condition",
+    "source",
+    "revision/date"
+  ],
+  "promotion": [
+    "screening",
+    "verified grade data",
+    "qualified application evidence"
+  ],
+  "prohibition": "Family-level material knowledge must not be represented as a grade-specific design allowable."
+}

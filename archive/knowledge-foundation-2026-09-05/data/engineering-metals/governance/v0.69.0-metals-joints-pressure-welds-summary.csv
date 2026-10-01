@@ -1,0 +1,8 @@
+Domain,Status,Coverage,Evidence boundary
+Fasteners and joints,Complete,"Preload, stiffness, separation, slip, fatigue, environment",Application-specific
+Pressure components,Complete,Pressure boundary screening and code workflow,Governing code required
+Welded structures,Complete,"Load path, fatigue, HAZ, defects, NDT",Joint/process qualification required
+Product-form design,Complete,"Wrought, cast and forged effects",Process/product-form specific
+Corrosion-fatigue,Complete,Corrosion/fatigue interaction and fretting-fatigue,Environment-specific
+Standards-linked design,Complete,"Joints, welding, pressure, fatigue",Edition/code applicability must be confirmed
+Worked cases,Complete,5 reusable engineering workflows,"Framework, not certification"

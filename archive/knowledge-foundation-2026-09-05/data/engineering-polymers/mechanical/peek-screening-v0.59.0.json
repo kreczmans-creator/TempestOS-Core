@@ -1,0 +1,22 @@
+{
+  "version": "0.59.0",
+  "family": "PEEK",
+  "density_g_cm3": 1.3,
+  "elastic_modulus_gpa": "3.3\u20134.2",
+  "tensile_strength_mpa": "85\u2013105",
+  "elongation_percent": "15\u201340",
+  "evidence_status": "screening range",
+  "design_use": "not approved",
+  "required_context": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "warning": "Ranges are family-level engineering screening data, not design allowables."
+}

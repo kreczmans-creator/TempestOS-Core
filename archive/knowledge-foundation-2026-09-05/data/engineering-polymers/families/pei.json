@@ -1,0 +1,29 @@
+{
+  "version": "0.57.0",
+  "family": "PEI",
+  "examples": [
+    "unfilled PEI",
+    "glass-filled PEI"
+  ],
+  "character": "high-performance amorphous thermoplastic with elevated-temperature capability and inherent flame resistance",
+  "common_uses": [
+    "aerospace interiors",
+    "electrical components",
+    "housings",
+    "precision components"
+  ],
+  "selection_drivers": [
+    "temperature",
+    "flame performance",
+    "dimensional stability",
+    "electrical insulation"
+  ],
+  "watchouts": [
+    "notch sensitivity",
+    "creep",
+    "chemical exposure",
+    "processing"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

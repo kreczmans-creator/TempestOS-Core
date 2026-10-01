@@ -1,0 +1,15 @@
+{
+  "version": "0.72.0",
+  "status": "worked-framework",
+  "problem": "Size an electromechanical axis from a motion and load profile.",
+  "workflow": [
+    "define position/velocity/acceleration profile",
+    "calculate mechanism force/torque",
+    "reflect inertia through transmission",
+    "calculate peak/continuous actuator demand",
+    "check thermal duty",
+    "check transmission stiffness/backlash",
+    "check sensor/control bandwidth",
+    "verify end-to-end performance"
+  ]
+}

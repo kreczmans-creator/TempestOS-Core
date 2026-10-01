@@ -1,0 +1,12 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "checks": [
+    "drawing requirement is measurable",
+    "datum scheme is unambiguous",
+    "tolerance has functional justification",
+    "inspection method exists",
+    "measurement uncertainty is appropriate",
+    "critical characteristic is traceable"
+  ]
+}

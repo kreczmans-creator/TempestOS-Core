@@ -1,0 +1,74 @@
+{
+  "version": "0.46.0",
+  "baseline": "TUNGSTEN-FUNDAMENTALS-BASELINE-0.46",
+  "assessment": "PASS — fundamentals coverage baseline complete; design qualification remains evidence-gated",
+  "coverage": {
+    "designation_and_composition": "complete initial coverage",
+    "density": "complete initial coverage",
+    "mechanical_properties": "complete initial coverage",
+    "thermal_properties": "complete initial coverage",
+    "electrical_properties": "complete initial coverage",
+    "environment_and_oxidation": "framework complete",
+    "manufacturing_and_machinability": "complete initial coverage",
+    "joining": "qualitative foundation",
+    "standards": "framework complete; exact edition linkage open",
+    "cost": "complete initial relative classification",
+    "availability": "complete initial relative classification",
+    "common_uses": "complete initial coverage",
+    "high_temperature": "framework complete",
+    "creep": "schema/model complete; authoritative datasets open",
+    "recrystallisation": "schema/model complete; authoritative datasets open",
+    "fracture": "initial reference layer; grade-specific evidence open",
+    "provenance": "contract complete; source-level population open",
+    "carbide_grade_model": "initial grade-family layer",
+    "heavy_alloy_grade_model": "initial grade-family layer"
+  },
+  "record_count_observed": 26,
+  "authoritatively_verified_quantitative_records": 0,
+  "design_approved_records": 0,
+  "open_gaps": [
+    {
+      "id": "W-GAP-001",
+      "severity": "RED for design qualification, GREEN for library foundation",
+      "finding": "No quantitative tungsten record has authoritative source/page-level provenance attached.",
+      "disposition": "Do not promote any quantitative value to design-approved status.",
+      "action": "Populate source-linked records before design use."
+    },
+    {
+      "id": "W-GAP-002",
+      "severity": "AMBER",
+      "finding": "High-temperature creep and rupture datasets are not yet populated at grade level.",
+      "disposition": "Retain model schema; design creep calculations remain gated.",
+      "action": "Populate grade/temperature/stress/time evidence."
+    },
+    {
+      "id": "W-GAP-003",
+      "severity": "AMBER",
+      "finding": "Recrystallisation behaviour is represented conceptually but lacks source-linked grade/process data.",
+      "disposition": "Retain framework; no universal recrystallisation temperature assumption.",
+      "action": "Capture processing history and exposure condition with evidence."
+    },
+    {
+      "id": "W-GAP-004",
+      "severity": "AMBER",
+      "finding": "Oxidation kinetics are qualitative rather than source-linked quantitative data.",
+      "disposition": "Air-exposed high-temperature service remains specialist/evidence-gated.",
+      "action": "Populate oxidation-rate data by temperature and atmosphere."
+    },
+    {
+      "id": "W-GAP-005",
+      "severity": "AMBER",
+      "finding": "Cemented-carbide hot hardness, thermal shock and wear data are not yet grade-specific.",
+      "disposition": "Keep carbide records screening-only.",
+      "action": "Add grain-size/binder/grade-linked test evidence."
+    },
+    {
+      "id": "W-GAP-006",
+      "severity": "YELLOW",
+      "finding": "Exact standard editions and applicability mappings remain incomplete.",
+      "disposition": "Standards framework retained without claiming compliance.",
+      "action": "Link exact specifications during provenance population."
+    }
+  ],
+  "release_rule": "No screening/reference value may be presented by TempestOS as a certified design allowable without authoritative provenance and applicability checks."
+}

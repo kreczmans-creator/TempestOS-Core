@@ -1,0 +1,96 @@
+{
+  "version": "0.56.0",
+  "purpose": "Canonical schema for the Exotics engineering knowledge family.",
+  "required_sections": [
+    "grades",
+    "mechanical",
+    "thermal",
+    "corrosion",
+    "fatigue",
+    "manufacturing",
+    "joining",
+    "standards",
+    "provenance",
+    "economics",
+    "applications",
+    "governance"
+  ],
+  "required_record_identity": [
+    "designation",
+    "aliases",
+    "material_class",
+    "specification",
+    "composition",
+    "product_form",
+    "condition",
+    "processing_route",
+    "evidence_status",
+    "source"
+  ],
+  "property_domains": {
+    "mechanical": [
+      "density",
+      "elastic_modulus",
+      "poisson_ratio",
+      "yield_strength",
+      "ultimate_tensile_strength",
+      "elongation",
+      "hardness",
+      "fracture_toughness",
+      "fatigue",
+      "creep_where_applicable"
+    ],
+    "thermal": [
+      "melting_or_phase_limits",
+      "thermal_conductivity",
+      "specific_heat",
+      "cte",
+      "thermal_diffusivity_where_available"
+    ],
+    "electrical": [
+      "electrical_resistivity_or_conductivity",
+      "temperature_dependence",
+      "thermal_electrical_interactions_where_relevant"
+    ],
+    "environmental": [
+      "corrosion",
+      "oxidation",
+      "hydrogen_effects_where_applicable",
+      "galvanic_compatibility_where_applicable"
+    ],
+    "manufacturing": [
+      "wrought_processing",
+      "casting_where_applicable",
+      "powder_processing_where_applicable",
+      "machining",
+      "forming",
+      "heat_treatment",
+      "surface_treatment"
+    ],
+    "joining": [
+      "welding",
+      "brazing",
+      "diffusion_bonding",
+      "mechanical_fastening",
+      "adhesive_joining_where_applicable"
+    ],
+    "engineering_selection": [
+      "common_uses",
+      "selection_drivers",
+      "limitations",
+      "failure_modes",
+      "relative_cost",
+      "availability"
+    ]
+  },
+  "governance": {
+    "evidence_states": [
+      "unverified",
+      "source-linked",
+      "cross-checked",
+      "engineering-reviewed",
+      "design-approved"
+    ],
+    "promotion_rule": "Quantitative design-use data requires exact material identity, condition, environment/test context and source."
+  }
+}

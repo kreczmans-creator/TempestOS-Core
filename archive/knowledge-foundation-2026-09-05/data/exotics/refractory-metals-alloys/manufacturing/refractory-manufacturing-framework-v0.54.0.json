@@ -1,0 +1,44 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "routes": {
+    "powder_metallurgy": [
+      "powder purity",
+      "consolidation",
+      "porosity",
+      "grain structure",
+      "sintering atmosphere"
+    ],
+    "forging": [
+      "temperature window",
+      "reduction",
+      "grain structure",
+      "surface condition",
+      "heat treatment"
+    ],
+    "rolling": [
+      "temperature control",
+      "reduction",
+      "recrystallisation",
+      "texture",
+      "surface condition"
+    ],
+    "machining": [
+      "brittleness where applicable",
+      "tool wear",
+      "surface integrity",
+      "heat generation",
+      "rigidity"
+    ],
+    "additive": [
+      "powder/feedstock purity",
+      "oxygen control",
+      "porosity",
+      "anisotropy",
+      "residual stress",
+      "post-processing"
+    ]
+  },
+  "handling": "Maintain controlled atmospheres/vacuum where required to prevent contamination or oxidation.",
+  "rule": "Processing atmosphere and contamination history are part of the material record for many refractory systems."
+}

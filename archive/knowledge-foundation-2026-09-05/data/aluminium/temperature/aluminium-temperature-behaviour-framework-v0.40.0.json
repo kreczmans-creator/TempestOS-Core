@@ -1,0 +1,60 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium temperature-dependent engineering behaviour",
+  "temperature_bands_C": [
+    -196,
+    -80,
+    -40,
+    20,
+    100,
+    150,
+    200,
+    250,
+    300
+  ],
+  "property_behaviour": [
+    {
+      "property": "yield_strength",
+      "general_trend": "generally decreases as temperature rises; exact response is alloy/temper/product-form dependent",
+      "evidence_requirement": "specification- or test-linked temperature dataset"
+    },
+    {
+      "property": "ultimate_tensile_strength",
+      "general_trend": "generally decreases as temperature rises; exact response is alloy/temper/product-form dependent",
+      "evidence_requirement": "specification- or test-linked temperature dataset"
+    },
+    {
+      "property": "elastic_modulus",
+      "general_trend": "changes with temperature; use temperature-specific value when structural deflection/stability accuracy requires it",
+      "evidence_requirement": "temperature-specific authoritative data"
+    },
+    {
+      "property": "thermal_conductivity",
+      "general_trend": "temperature dependent and strongly alloy dependent",
+      "evidence_requirement": "temperature-specific authoritative data"
+    },
+    {
+      "property": "coefficient_of_thermal_expansion",
+      "general_trend": "temperature dependent; integrate over the actual temperature range for accurate thermal strain",
+      "evidence_requirement": "temperature-dependent CTE data"
+    },
+    {
+      "property": "specific_heat",
+      "general_trend": "temperature dependent",
+      "evidence_requirement": "temperature-dependent material data"
+    },
+    {
+      "property": "electrical_resistivity",
+      "general_trend": "temperature dependent; generally rises with temperature for aluminium alloys",
+      "evidence_requirement": "temperature-specific electrical data"
+    }
+  ],
+  "design_method_notes": [
+    "Do not extrapolate a room-temperature yield value to elevated-temperature design.",
+    "For thermal strain, use integral of CTE over the temperature interval when accuracy requires it.",
+    "For constrained structures, thermal expansion and temperature-dependent modulus must be considered together.",
+    "Cryogenic use requires alloy- and condition-specific toughness/ductility evidence rather than generic low-temperature assumptions."
+  ],
+  "status": "framework_established",
+  "design_use": "not_for_allowables"
+}

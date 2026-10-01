@@ -1,0 +1,17 @@
+{
+  "version": "0.73.0",
+  "status": "verification-framework",
+  "modes": [
+    "sensor bias",
+    "sensor failure",
+    "wrong feedback polarity",
+    "actuator saturation",
+    "loss of feedback",
+    "excessive gain",
+    "integrator windup",
+    "delay",
+    "sampling/quantisation effects",
+    "mechanical backlash or compliance"
+  ],
+  "principle": "Control performance must be assessed with realistic sensor, actuator and mechanism limitations."
+}

@@ -1,0 +1,24 @@
+{
+  "version": "0.73.0",
+  "status": "verification-framework",
+  "terms": [
+    "proportional gain",
+    "integral action",
+    "derivative action",
+    "setpoint",
+    "error",
+    "output saturation",
+    "integrator windup"
+  ],
+  "checks": [
+    "rise time",
+    "overshoot",
+    "settling time",
+    "steady-state error",
+    "noise sensitivity",
+    "saturation",
+    "windup",
+    "sampling effects"
+  ],
+  "boundary": "PID is a foundational control pattern; final tuning requires the actual plant, sampling, actuator limits and verification evidence."
+}

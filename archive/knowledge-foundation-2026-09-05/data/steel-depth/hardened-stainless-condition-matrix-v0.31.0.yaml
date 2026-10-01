@@ -1,0 +1,130 @@
+[
+  {
+    "id": "MAT-410-ANNEALED-ROOM",
+    "material": "AISI 410",
+    "state": "annealed",
+    "property": "tensile_strength",
+    "value_MPa": 485,
+    "source": "ASM/MatWeb-style reference compilation",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-410-HARDENED-ROOM",
+    "material": "AISI 410",
+    "state": "quenched_and_tempered",
+    "property": "tensile_strength_range",
+    "value_MPa": [
+      620,
+      1030
+    ],
+    "source": "AISI 410 material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-410-HARDENED-HARDNESS",
+    "material": "AISI 410",
+    "state": "quenched_and_tempered",
+    "property": "hardness",
+    "value_HRC": [
+      20,
+      45
+    ],
+    "source": "AISI 410 material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-420-ANNEALED-ROOM",
+    "material": "AISI 420",
+    "state": "annealed",
+    "property": "tensile_strength",
+    "value_MPa": [
+      655,
+      760
+    ],
+    "source": "AISI 420 material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-420-HARDENED-ROOM",
+    "material": "AISI 420",
+    "state": "hardened_and_tempered",
+    "property": "hardness",
+    "value_HRC": [
+      45,
+      55
+    ],
+    "source": "AISI 420 material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-440C-ANNEALED-ROOM",
+    "material": "AISI 440C",
+    "state": "annealed",
+    "property": "tensile_strength",
+    "value_MPa": [
+      760,
+      860
+    ],
+    "source": "AISI 440C material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-440C-HARDENED-ROOM",
+    "material": "AISI 440C",
+    "state": "hardened_and_tempered",
+    "property": "hardness",
+    "value_HRC": [
+      58,
+      62
+    ],
+    "source": "AISI 440C material data references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-440C-CORROSION",
+    "material": "AISI 440C",
+    "state": "hardened",
+    "property": "corrosion_resistance",
+    "value": "Moderate for stainless steel; materially below 316L in chloride service",
+    "source": "stainless/tool-steel technical references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-410-MAGNETIC",
+    "material": "AISI 410",
+    "state": "all_common heat-treated states",
+    "property": "magnetic_permeability",
+    "value": "Ferromagnetic",
+    "source": "stainless steel technical references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-420-MAGNETIC",
+    "material": "AISI 420",
+    "state": "all common heat-treated states",
+    "property": "magnetic_permeability",
+    "value": "Ferromagnetic",
+    "source": "stainless steel technical references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  },
+  {
+    "id": "MAT-440C-MAGNETIC",
+    "material": "AISI 440C",
+    "state": "all common heat-treated states",
+    "property": "magnetic_permeability",
+    "value": "Ferromagnetic",
+    "source": "stainless/tool-steel technical references",
+    "evidence_class": "reference_data",
+    "design_use": "screening_only"
+  }
+]

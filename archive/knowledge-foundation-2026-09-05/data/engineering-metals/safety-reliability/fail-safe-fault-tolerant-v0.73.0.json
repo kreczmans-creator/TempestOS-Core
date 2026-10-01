@@ -1,0 +1,14 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "concepts": [
+    "fail-safe state",
+    "fault detection",
+    "fault containment",
+    "redundancy",
+    "graceful degradation",
+    "single-fault tolerance",
+    "common-cause failure"
+  ],
+  "principle": "A fault-tolerant architecture must define what happens after a fault, not merely prevent the nominal fault."
+}

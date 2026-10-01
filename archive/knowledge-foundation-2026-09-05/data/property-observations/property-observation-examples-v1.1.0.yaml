@@ -1,0 +1,50 @@
+- id: OBS-6082-T6-YIELD-001
+  material_state_id: STATE-6082-T6
+  property: yield_strength
+  value: 250
+  unit: MPa
+  temperature_C: 20
+  source_id: SRC-TO-VERIFY
+  source_locator: EN 755 / product specification to verify
+  evidence_status: candidate_reference
+  design_use: screening_only
+- id: OBS-6082-T651-YIELD-001
+  material_state_id: STATE-6082-T651
+  property: yield_strength
+  value: 260
+  unit: MPa
+  temperature_C: 20
+  source_id: SRC-TO-VERIFY
+  source_locator: EN 485 / product specification to verify
+  evidence_status: candidate_reference
+  design_use: screening_only
+- id: OBS-42CRMO4-QT-YIELD-001
+  material_state_id: STATE-42CRMO4-QT
+  property: yield_strength
+  value: 800
+  unit: MPa
+  temperature_C: 20
+  source_id: SRC-TO-VERIFY
+  source_locator: EN 10083-3 / section size to verify
+  evidence_status: candidate_reference
+  design_use: screening_only
+- id: OBS-17-4-H900-YIELD-001
+  material_state_id: STATE-17-4-H900
+  property: yield_strength
+  value: 1170
+  unit: MPa
+  temperature_C: 20
+  source_id: SRC-TO-VERIFY
+  source_locator: ASTM A564 / H900 condition to verify
+  evidence_status: candidate_reference
+  design_use: screening_only
+- id: OBS-PEEK-E-001
+  material_state_id: STATE-PEEK-UNFILLED
+  property: youngs_modulus
+  value: 3.6
+  unit: GPa
+  temperature_C: 23
+  source_id: SRC-TO-VERIFY
+  source_locator: grade/manufacturer datasheet to verify
+  evidence_status: candidate_reference
+  design_use: screening_only

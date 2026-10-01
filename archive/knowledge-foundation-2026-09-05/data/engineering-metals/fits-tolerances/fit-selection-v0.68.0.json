@@ -1,0 +1,28 @@
+{
+  "version": "0.68.0",
+  "fit_types": [
+    "clearance",
+    "transition",
+    "interference"
+  ],
+  "selection_inputs": [
+    "functional requirement",
+    "temperature range",
+    "material pair",
+    "assembly method",
+    "load",
+    "rotation",
+    "maintenance",
+    "manufacturing capability"
+  ],
+  "checks": [
+    "minimum clearance",
+    "maximum interference",
+    "assembly force",
+    "contact pressure",
+    "thermal differential",
+    "creep/relaxation where relevant"
+  ],
+  "rule": "Fit class is selected from function and process capability, not copied from a metal-only table when the material system differs.",
+  "status": "design-framework"
+}

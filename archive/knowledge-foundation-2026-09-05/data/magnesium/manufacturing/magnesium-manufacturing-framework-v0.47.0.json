@@ -1,0 +1,59 @@
+{
+  "version": "0.47.0",
+  "routes": [
+    {
+      "route": "high-pressure die casting",
+      "controls": [
+        "fill",
+        "porosity",
+        "solidification",
+        "surface condition",
+        "heat treatment where applicable"
+      ],
+      "typical_use": "thin-wall complex castings"
+    },
+    {
+      "route": "sand/permanent mould casting",
+      "controls": [
+        "solidification",
+        "porosity",
+        "microstructure",
+        "heat treatment"
+      ],
+      "typical_use": "larger or lower-volume castings"
+    },
+    {
+      "route": "extrusion",
+      "controls": [
+        "billet condition",
+        "temperature",
+        "reduction",
+        "texture",
+        "temper"
+      ],
+      "typical_use": "profiles and structural sections"
+    },
+    {
+      "route": "forging",
+      "controls": [
+        "temperature",
+        "strain",
+        "texture",
+        "heat treatment"
+      ],
+      "typical_use": "higher-integrity wrought components"
+    },
+    {
+      "route": "machining",
+      "controls": [
+        "chip control",
+        "tool geometry",
+        "coolant/lubrication",
+        "spark prevention",
+        "housekeeping"
+      ],
+      "typical_use": "precision finished components"
+    }
+  ],
+  "fire_safety_rule": "Magnesium machining requires dedicated fire-risk controls; ordinary metal-chip assumptions are not sufficient."
+}

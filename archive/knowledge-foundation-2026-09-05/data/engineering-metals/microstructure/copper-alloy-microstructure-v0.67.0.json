@@ -1,0 +1,28 @@
+{
+  "version": "0.67.0",
+  "family": "copper-alloy",
+  "structures": [
+    "solid solution",
+    "second phases",
+    "precipitates",
+    "cold-worked structure"
+  ],
+  "engineering_links": [
+    "strength",
+    "hardness",
+    "toughness",
+    "fatigue",
+    "wear",
+    "corrosion",
+    "machinability",
+    "dimensional stability"
+  ],
+  "inspection_methods": [
+    "optical metallography",
+    "hardness mapping",
+    "fractography where required",
+    "non-destructive testing as appropriate"
+  ],
+  "rule": "Microstructure interpretation requires the alloy designation, processing history and applicable specification.",
+  "evidence_status": "foundation reference"
+}

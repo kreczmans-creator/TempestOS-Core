@@ -1,0 +1,25 @@
+{
+  "version": "0.46.0",
+  "baseline_id": "TUNGSTEN-FUNDAMENTALS-BASELINE-0.46",
+  "state": "FROZEN_FOUNDATION",
+  "included_systems": [
+    "commercially pure tungsten",
+    "tungsten-rhenium",
+    "tungsten heavy alloys",
+    "tungsten-copper composites",
+    "cemented tungsten carbide",
+    "lanthanated tungsten"
+  ],
+  "fundamentals_complete": true,
+  "quantitative_design_qualification_complete": false,
+  "authoritative_source_population_complete": false,
+  "frozen_principles": [
+    "Tungsten systems are not interchangeable.",
+    "Grade, composition and processing condition are first-class material identity attributes.",
+    "High-temperature behaviour requires temperature, time and atmosphere context.",
+    "Cemented carbide is modelled as a distinct composite material system.",
+    "Screening data and design-approved data are separate evidence states."
+  ],
+  "next_family": "magnesium",
+  "freeze_authority": "library engineering baseline only"
+}

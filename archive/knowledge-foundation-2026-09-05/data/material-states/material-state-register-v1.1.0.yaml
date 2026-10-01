@@ -1,0 +1,99 @@
+- id: STATE-42CRMO4-QT
+  material_id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  condition: quenched_and_tempered
+  condition_code: +QT
+  product_forms:
+  - bar
+  - forging
+  - plate
+  temperature_C: 20
+  status: reference_state
+- id: STATE-4140-QT
+  material_id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  condition: quenched_and_tempered
+  condition_code: Q&T
+  product_forms:
+  - bar
+  - forging
+  - plate
+  temperature_C: 20
+  status: reference_state
+- id: STATE-6082-T6
+  material_id: MAT-AL-6082-T6
+  designation: EN AW-6082-T6
+  condition: T6
+  condition_code: T6
+  product_forms:
+  - plate
+  - sheet
+  - bar
+  - extrusion
+  temperature_C: 20
+  status: reference_state
+- id: STATE-6082-T651
+  material_id: MAT-AL-6082-T651
+  designation: EN AW-6082-T651
+  condition: T651
+  condition_code: T651
+  product_forms:
+  - plate
+  - sheet
+  temperature_C: 20
+  status: reference_state
+- id: STATE-7075-T6
+  material_id: MAT-AL-7075-T6
+  designation: EN AW-7075-T6
+  condition: T6
+  condition_code: T6
+  product_forms:
+  - plate
+  - sheet
+  - bar
+  - extrusion
+  temperature_C: 20
+  status: reference_state
+- id: STATE-316L-ANNEALED
+  material_id: MAT-STEEL-316L
+  designation: 316L
+  condition: solution_annealed
+  condition_code: annealed
+  product_forms:
+  - sheet
+  - plate
+  - bar
+  - tube
+  temperature_C: 20
+  status: reference_state
+- id: STATE-17-4-H900
+  material_id: MAT-STEEL-17-4PH
+  designation: 17-4 PH
+  condition: precipitation_hardened
+  condition_code: H900
+  product_forms:
+  - bar
+  - plate
+  - forging
+  temperature_C: 20
+  status: reference_state
+- id: STATE-PEEK-UNFILLED
+  material_id: MAT-POLY-PEEK
+  designation: PEEK unfilled
+  condition: unfilled_as_moulded
+  condition_code: generic
+  product_forms:
+  - machined_stock
+  - moulding
+  temperature_C: 23
+  status: reference_state
+- id: STATE-PA66-GF30-DRY
+  material_id: MAT-POLY-PA66-GF30
+  designation: PA66 GF30
+  condition: 30_percent_glass_filled_dry_reference
+  condition_code: GF30-dry
+  product_forms:
+  - injection_moulding
+  - machined_stock
+  temperature_C: 23
+  status: reference_state

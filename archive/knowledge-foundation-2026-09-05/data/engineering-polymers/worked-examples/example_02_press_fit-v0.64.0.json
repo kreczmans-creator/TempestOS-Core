@@ -1,0 +1,20 @@
+{
+  "version": "0.64.0",
+  "problem": "Screen a polymer press-fit bushing.",
+  "inputs": [
+    "shaft diameter",
+    "housing diameter",
+    "temperature range",
+    "assembly force",
+    "required retention"
+  ],
+  "method": [
+    "establish tolerance stack",
+    "account for CTE",
+    "account for creep",
+    "check assembly stress",
+    "check long-term interference retention",
+    "validate actual process capability"
+  ],
+  "output": "Screening workflow; exact interference requires grade/process data."
+}

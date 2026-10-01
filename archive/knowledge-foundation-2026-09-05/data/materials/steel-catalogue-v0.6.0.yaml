@@ -1,0 +1,694 @@
+- id: MAT-STEEL-S275JR
+  designation: S275JR
+  family: carbon_structural_steel
+  standard_references:
+  - EN 10025-2
+  cost_tier: very_cheap
+  availability: very_high
+  uses:
+  - structural frames
+  - brackets
+  - plates
+  - general fabrication
+  notes: Structural carbon steel; JR impact designation. Mechanical properties depend
+    on product form and thickness.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 275000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 410000000.0
+      unit: Pa
+    elongation:
+      value: 0.23
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 54
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.5e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-S355J2
+  designation: S355J2
+  family: carbon_structural_steel
+  standard_references:
+  - EN 10025-2
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - structural frames
+  - machined plates
+  - fabrications
+  - welded structures
+  notes: Higher-strength structural steel; J2 impact designation.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 355000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 470000000.0
+      unit: Pa
+    elongation:
+      value: 0.22
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 50
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.5e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-C45
+  designation: C45
+  family: medium_carbon_steel
+  standard_references:
+  - EN 10083-2
+  cost_tier: cheap
+  availability: high
+  uses:
+  - shafts
+  - pins
+  - levers
+  - machined components
+  - general mechanical parts
+  notes: Heat-treatment condition materially affects strength and hardness.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 355000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 600000000.0
+      unit: Pa
+    elongation:
+      value: 0.16
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 49
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.6e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-42CRMO4
+  designation: 42CrMo4
+  family: alloy_steel
+  standard_references:
+  - EN 10083-3
+  cost_tier: medium
+  availability: high
+  uses:
+  - shafts
+  - gears
+  - high-load mechanical parts
+  - bolting
+  notes: Typical use involves quenched-and-tempered material; exact condition is essential.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 650000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 850000000.0
+      unit: Pa
+    elongation:
+      value: 0.13
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 42
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-4140
+  designation: AISI/SAE 4140
+  family: alloy_steel
+  standard_references:
+  - ASTM A29/A29M
+  - SAE J404
+  cost_tier: medium
+  availability: high
+  uses:
+  - shafts
+  - gears
+  - axles
+  - fixtures
+  - high-load components
+  notes: US designation broadly corresponding to 42CrMo4 chemistry, but equivalence
+    must not be assumed for certification.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 655000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 850000000.0
+      unit: Pa
+    elongation:
+      value: 0.16
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.2199999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 42.7
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.2e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-4340
+  designation: AISI/SAE 4340
+  family: nickel_chromium_molybdenum_steel
+  standard_references:
+  - ASTM A29/A29M
+  - SAE J404
+  cost_tier: medium_expensive
+  availability: medium
+  uses:
+  - high-strength shafts
+  - gears
+  - aircraft/mechanical components
+  - high-load fasteners
+  notes: Heat treatment and section size strongly influence properties.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 850000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1080000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 44
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.2e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-EN19
+  designation: EN19
+  family: alloy_steel
+  standard_references:
+  - BS 708A / legacy designation context
+  cost_tier: medium
+  availability: high
+  uses:
+  - shafts
+  - studs
+  - gears
+  - mechanical components
+  notes: Legacy UK designation; map to modern standards with certification rather
+    than relying on name equivalence.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 650000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 850000000.0
+      unit: Pa
+    elongation:
+      value: 0.13
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 42
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-EN24
+  designation: EN24
+  family: nickel_chromium_molybdenum_steel
+  standard_references:
+  - legacy BS designation context
+  cost_tier: medium_expensive
+  availability: medium
+  uses:
+  - high-strength shafts
+  - gears
+  - pins
+  - heavy-duty components
+  notes: Legacy designation; exact modern grade and condition must be confirmed.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 850000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1000000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.23e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 44
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.2e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-EN8
+  designation: EN8
+  family: medium_carbon_steel
+  standard_references:
+  - BS 970 legacy designation context
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - shafts
+  - studs
+  - axles
+  - general machined parts
+  notes: Common UK legacy designation; condition and modern equivalent should be verified.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 280000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 550000000.0
+      unit: Pa
+    elongation:
+      value: 0.16
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.15e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 49
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.6e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-1008
+  designation: AISI 1008
+  family: low_carbon_steel
+  standard_references:
+  - ASTM A29/A29M
+  cost_tier: very_cheap
+  availability: very_high
+  uses:
+  - sheet components
+  - formed parts
+  - welded fabrications
+  - general low-strength parts
+  notes: Low-carbon steel with good forming/welding characteristics.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 285000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 330000000.0
+      unit: Pa
+    elongation:
+      value: 0.3
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.1699999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 51
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.5e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-1018
+  designation: AISI 1018
+  family: low_carbon_steel
+  standard_references:
+  - ASTM A29/A29M
+  cost_tier: cheap
+  availability: very_high
+  uses:
+  - shafts
+  - pins
+  - fixtures
+  - general machined components
+  notes: Common low-carbon engineering steel.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 370000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 440000000.0
+      unit: Pa
+    elongation:
+      value: 0.15
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.1699999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 51
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.6e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-4130
+  designation: AISI/SAE 4130
+  family: chromium_molybdenum_steel
+  standard_references:
+  - ASTM A29/A29M
+  - SAE J404
+  cost_tier: medium
+  availability: high
+  uses:
+  - tubing
+  - frames
+  - pressure-related fabrications
+  - high-strength welded structures
+  notes: Often selected where strength-to-weight and weldability are important.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 435000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 670000000.0
+      unit: Pa
+    elongation:
+      value: 0.25
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.2199999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 42
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.9e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-52100
+  designation: AISI 52100
+  family: bearing_steel
+  standard_references:
+  - ISO 683-17
+  - ASTM A295
+  cost_tier: medium
+  availability: high
+  uses:
+  - rolling bearings
+  - precision wear components
+  - rollers
+  notes: High-carbon chromium bearing steel; cleanliness and heat treatment are critical.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 210000000000.0
+      unit: Pa
+    yield_strength:
+      value: 450000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 1570000000.0
+      unit: Pa
+    elongation:
+      value: 0.03
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.18e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 46
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.0e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-STEEL-8620
+  designation: AISI 8620
+  family: case_hardening_steel
+  standard_references:
+  - ASTM A29/A29M
+  - SAE J404
+  cost_tier: medium
+  availability: high
+  uses:
+  - gears
+  - splined shafts
+  - wear-resistant case-hardened components
+  notes: Designed for carburising/case hardening; core and case properties differ.
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline; exact heat treatment/product
+    form not fixed
+  properties:
+    density:
+      value: 7850
+      unit: kg/m^3
+    youngs_modulus:
+      value: 205000000000.0
+      unit: Pa
+    yield_strength:
+      value: 350000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 650000000.0
+      unit: Pa
+    elongation:
+      value: 0.2
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 1.2e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 43
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 1.9e-07
+      unit: ohm*m
+  provenance:
+    source_id: SRC-ASM-MATWEB-TO-VERIFY
+    verification_required: true
+    note: Seed engineering values require exact source, grade/condition and product-form
+      verification before authoritative calculation use.
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

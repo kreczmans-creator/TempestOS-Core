@@ -1,0 +1,18 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "behaviour": {
+    "conductivity": "Low relative to aluminium and copper; this increases thermal gradients during machining and thermal transients.",
+    "cte": "Relatively low for a structural metal; useful in precision/dissimilar-material design but still temperature dependent.",
+    "specific_heat": "Temperature dependent and alloy dependent.",
+    "high_temperature": "Near-alpha alloys are candidates where elevated-temperature strength and creep resistance are required."
+  },
+  "analysis_requirements": [
+    "temperature-dependent properties for thermal FEA",
+    "CTE over the actual temperature interval",
+    "thermal boundary conditions",
+    "surface/emissivity condition where radiation matters",
+    "microstructure/heat treatment for high-temperature mechanical properties"
+  ],
+  "warning": "Room-temperature datasheet values must not be silently extrapolated into elevated-temperature design."
+}

@@ -1,0 +1,30 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "modes": [
+    "HCF",
+    "LCF",
+    "thermal fatigue",
+    "fatigue crack growth"
+  ],
+  "drivers": [
+    "temperature",
+    "ductile-brittle transition",
+    "surface condition",
+    "grain structure",
+    "notches",
+    "thermal gradients",
+    "environment",
+    "fabrication defects"
+  ],
+  "required_evidence": [
+    "S-N or strain-life data",
+    "crack-growth data where relevant",
+    "test temperature",
+    "environment",
+    "surface condition",
+    "product form",
+    "processing condition"
+  ],
+  "rule": "Low-temperature brittleness and high-temperature environmental damage may create different fatigue-limiting regimes."
+}
