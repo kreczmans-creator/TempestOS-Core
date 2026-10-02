@@ -43,6 +43,17 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Quotes;
 /// contact and date as Xero holds them and never its lines.
 /// </para>
 /// <para>
+/// <b>A write that landed with its answer lost, then a change by hand.</b>
+/// Before any decision the handler records what Xero actually holds, never
+/// what an attempt count suggests: exactly this entry's content
+/// (<see cref="XeroQuoteMapper.HoldsContent"/>) records its hash — Succeeded,
+/// so its PDF follows — and otherwise a copy past <c>DRAFT</c> records the
+/// revision its <c>Reference</c> names, so a revision Xero holds is never
+/// called unsent; a deleted copy is reported deleted. A content update
+/// carries its own key (<see cref="ContentUpdateKey"/>), never the one an
+/// earlier attempt may have sent the create under.
+/// </para>
+/// <para>
 /// <b>Blocked</b> when the client is not linked to a Xero contact (X2) or a
 /// line's tax type or the sales account is missing from Xero (X1). Never
 /// throws for anything Xero or the network did (`ADR-0151`); never emails
@@ -149,10 +160,15 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 : contact.BlockedReason);
         }
 
+        // This entry's content as Xero would receive it — also the evidence
+        // that an earlier attempt's write landed (XeroQuoteMapper.HoldsContent).
+        // Not built for a stale entry: its content is no longer TempestOS's.
+        var (body, blocked) = stale ? (null, null) : await BuildAsync(quote, contact.ToContactRef(), cancellationToken).ConfigureAwait(false);
+
         var reconciledNow = false;
         if (link is null)
         {
-            var reconciled = await ReconcileByNumberAsync(tenantId, entry, quote, contact.ContactId!, cancellationToken).ConfigureAwait(false);
+            var reconciled = await ReconcileByNumberAsync(tenantId, entry, quote, contact.ContactId!, body, stale, cancellationToken).ConfigureAwait(false);
             if (reconciled.Result is { } answered)
                 return answered;
 
@@ -163,11 +179,10 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 if (stale)
                     return new XeroPushResult(XeroPushOutcome.NothingToDo, "The quotation changed after this write was queued; the newer write creates the Xero quote.");
 
-                var (createBody, blocked) = await BuildAsync(quote, contact.ToContactRef(), cancellationToken).ConfigureAwait(false);
-                if (createBody is null)
+                if (body is null)
                     return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
 
-                var created = await _api.CreateQuoteAsync(createBody, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+                var created = await _api.CreateQuoteAsync(body, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
                 if (created.Outcome != ConnectorOutcome.Ok)
                     return Failed(created);
 
@@ -182,7 +197,25 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         }
 
         if (stale)
+        {
+            // Sent before (Attempts > 1): this entry's own update may have
+            // landed with its answer lost, and the quote then been moved past
+            // DRAFT by hand — record the revision Xero now holds, so its PDF
+            // follows and the badge does not call it unsent; a newer entry
+            // may never come to do it (a quotation already Sent in TempestOS).
+            if (entry.Attempts > 1 && !reconciledNow)
+            {
+                var held = await _api.GetQuoteAsync(link.XeroId, cancellationToken).ConfigureAwait(false);
+                if (held.Outcome != ConnectorOutcome.Ok)
+                    return await FailedReadAsync(held, link, quote.Reference, cancellationToken).ConfigureAwait(false);
+
+                link = await RecordStatusAsync(link, held.Value!, cancellationToken).ConfigureAwait(false);
+                if (!string.Equals(Word(held.Value!.Status), XeroQuoteStatusWords.Draft, StringComparison.Ordinal))
+                    link = await RecordHeldRevisionAsync(link, held.Value!, cancellationToken).ConfigureAwait(false);
+            }
+
             return new XeroPushResult(XeroPushOutcome.NothingToDo, "The quotation changed after this write was queued; the newer write updates the Xero quote.", Link: link);
+        }
 
         // Linked: replace the content only while Xero holds the quote as DRAFT (Q1).
         var read = await _api.GetQuoteAsync(link.XeroId, cancellationToken).ConfigureAwait(false);
@@ -191,8 +224,36 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
 
         link = await RecordStatusAsync(link, read.Value!, cancellationToken).ConfigureAwait(false);
         var status = Word(read.Value!.Status);
+        var number = read.Value.QuoteNumber ?? quote.Reference;
+        if (string.Equals(status, XeroQuoteStatusWords.Deleted, StringComparison.Ordinal))
+            return new XeroPushResult(XeroPushOutcome.Rejected, DeletedNote(number), Link: link);
+
         if (!string.Equals(status, XeroQuoteStatusWords.Draft, StringComparison.Ordinal))
         {
+            // Xero already holds exactly this content: an earlier attempt's
+            // update landed and its answer was lost, then the quote was moved
+            // past DRAFT by hand. Record it, so the PDF follows its content.
+            if (body is not null && XeroQuoteMapper.HoldsContent(read.Value, body))
+            {
+                link = link with { LastPushedContentHash = entry.ContentHash };
+                await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+                return new XeroPushResult(XeroPushOutcome.Succeeded, Link: link);
+            }
+
+            // Otherwise the revision Xero's Reference names is what it holds
+            // (another entry's update that landed unseen — one this entry
+            // superseded — or a copy brought up to date by hand).
+            link = await RecordHeldRevisionAsync(link, read.Value, cancellationToken).ConfigureAwait(false);
+            if (string.Equals(XeroQuoteMapper.RevisionOf(link.LastPushedContentHash), XeroQuoteMapper.RevisionOf(entry.ContentHash), StringComparison.Ordinal))
+            {
+                // This revision reached Xero; only a change within it (a
+                // renamed client or project) did not. Not a revision unsent.
+                return new XeroPushResult(
+                    XeroPushOutcome.NothingToDo,
+                    $"Xero already holds quote {number} as {status} with revision {quote.RevisionLabel ?? "(unnumbered)"}; its content is not changed once past DRAFT (Q1), so this later change within that revision is not written to Xero.",
+                    Link: link);
+            }
+
             // Nothing left to push: TempestOS has sent (or answered) the
             // quotation, so its content is fixed, or the Xero quote was just
             // found by its number (keyed in by hand, or Send to Xero on an
@@ -205,21 +266,23 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 return new XeroPushResult(
                     XeroPushOutcome.NothingToDo,
                     XeroQuoteMapper.DriftNote(quote, link)
-                    ?? $"Xero already holds quote {read.Value.QuoteNumber ?? quote.Reference} as {status}; its content is not changed once past DRAFT (Q1).",
+                    ?? $"Xero already holds quote {number} as {status}; its content is not changed once past DRAFT (Q1).",
                     Link: link);
             }
 
             return new XeroPushResult(
                 XeroPushOutcome.Rejected,
-                XeroQuoteMapper.RevisionNotSentNote(read.Value.QuoteNumber ?? quote.Reference, status ?? "(unknown)", quote.RevisionLabel),
+                XeroQuoteMapper.RevisionNotSentNote(number, status ?? "(unknown)", quote.RevisionLabel),
                 Link: link);
         }
 
-        var (body, reason) = await BuildAsync(quote, contact.ToContactRef(), cancellationToken).ConfigureAwait(false);
         if (body is null)
-            return new XeroPushResult(XeroPushOutcome.Blocked, reason);
+            return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
 
-        var updated = await _api.UpdateQuoteContentAsync(link.XeroId, body, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+        // Its own key, never the entry's: an earlier attempt of this entry
+        // may have sent the create under that key (its answer lost), and a
+        // different body under a used key is refused by Xero (S7).
+        var updated = await _api.UpdateQuoteContentAsync(link.XeroId, body, ContentUpdateKey(entry), cancellationToken).ConfigureAwait(false);
         if (updated.Outcome != ConnectorOutcome.Ok)
             return Failed(updated);
 
@@ -236,14 +299,28 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
     }
 
     /// <summary>
+    /// The <c>Idempotency-Key</c> of a <see cref="XeroOperation.PushQuote"/>
+    /// entry's content update: derived from the entry's own key, so it is
+    /// fixed across the entry's attempts (a lost answer is replayed) yet
+    /// never the key an earlier attempt may have sent the create under.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    internal static string ContentUpdateKey(XeroOutboxEntry entry) =>
+        XeroIdempotencyKey.Create(entry.Document, entry.Operation, entry.IdempotencyKey, argument: "content-update");
+
+    /// <summary>
     /// Before a first create (§6.4 items 3–4): looks the number up. A live
     /// quote with the number and this client's contact is TempestOS's own
     /// (a create whose answer was lost) and is linked; a live quote with the
     /// number and another contact is someone else's — Rejected, never a
-    /// silent duplicate. Deleted quotes are ignored (Xero frees their number).
+    /// silent duplicate — unless this entry was sent before and that quote
+    /// carries exactly its content but for the contact (its own create,
+    /// whose contact was then changed in Xero by hand). Deleted quotes are
+    /// ignored (Xero frees their number).
     /// </summary>
     private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileByNumberAsync(
-        string tenantId, XeroOutboxEntry entry, XeroQuoteSnapshot quote, string contactId, CancellationToken cancellationToken)
+        string tenantId, XeroOutboxEntry entry, XeroQuoteSnapshot quote, string contactId, XeroWireQuoteWrite? body, bool stale,
+        CancellationToken cancellationToken)
     {
         var found = await _api.FindQuotesByNumberAsync(quote.Reference, cancellationToken).ConfigureAwait(false);
         if (found.Outcome != ConnectorOutcome.Ok)
@@ -256,7 +333,10 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         if (live.Count == 0)
             return (null, null);
 
-        var ours = live.FirstOrDefault(q => string.Equals(q.Contact?.ContactID, contactId, StringComparison.OrdinalIgnoreCase));
+        var ours = live.FirstOrDefault(q => string.Equals(q.Contact?.ContactID, contactId, StringComparison.OrdinalIgnoreCase))
+                   ?? (entry.Attempts > 1 && body is not null
+                       ? live.FirstOrDefault(q => XeroQuoteMapper.HoldsContent(q, body, includeContact: false))
+                       : null);
         if (ours is null)
         {
             var other = live[0];
@@ -266,16 +346,17 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 + "TempestOS never makes a second quote with the same number. Rename or delete that quote in Xero, then Retry."), null);
         }
 
-        // This entry's revision found after the entry was sent before: what
-        // it sent landed, so its content is what Xero holds — even when the
-        // quotation has moved on to a newer revision since (stale): the link
-        // then records the older revision Xero holds, not the current one.
-        // Otherwise (keyed in by hand, or Send to Xero on an older quote) the
-        // content is unknown; the link records the revision Xero's Reference
-        // names, so a copy past DRAFT showing another revision is never given
-        // this revision's PDF (XeroQuoteMapper.IsRevisionNotSent).
-        var landed = entry.Attempts > 1
-                     && string.Equals(XeroQuoteMapper.RevisionToken(ours.Reference), XeroQuoteMapper.RevisionOf(entry.ContentHash), StringComparison.Ordinal);
+        // What the link records Xero as holding. Exactly this entry's content
+        // (whoever wrote it — its own create whose answer was lost, or an
+        // identical copy): its hash, so it is not pushed again. Otherwise
+        // (changed by hand since, keyed in by hand, Send to Xero on an older
+        // quote, or a stale entry whose content is no longer TempestOS's to
+        // compare): only the revision Xero's Reference names, so a DRAFT copy
+        // is brought up to date and a copy past DRAFT showing another
+        // revision is never given this revision's PDF
+        // (XeroQuoteMapper.IsRevisionNotSent). Whether an earlier attempt
+        // reached the create is never assumed from the attempt count.
+        var landed = !stale && body is not null && XeroQuoteMapper.HoldsContent(ours, body);
 
         var link = NewLink(
             tenantId, entry.Document, ours, landed ? entry.ContentHash : XeroQuoteMapper.ReconciledHash(ours.Reference), XeroQuoteMapper.LinkedByReconciled);
@@ -394,7 +475,34 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
 
         var gone = link with { LastKnownXeroStatus = XeroQuoteStatusWords.Deleted, LastReadAtUtc = _time.GetUtcNow() };
         await _links.SaveAsync(gone, cancellationToken).ConfigureAwait(false);
-        return new XeroPushResult(XeroPushOutcome.Rejected, $"Quote {number} was deleted in Xero; unlink it to send the quotation again.", Link: gone);
+        return new XeroPushResult(XeroPushOutcome.Rejected, DeletedNote(number), Link: gone);
+    }
+
+    private static string DeletedNote(string number) => $"Quote {number} was deleted in Xero; unlink it to send the quotation again.";
+
+    /// <summary>
+    /// For a quote Xero holds past <c>DRAFT</c>: when its <c>Reference</c>
+    /// names a revision (<see cref="XeroQuoteMapper.RevisionToken"/>) other
+    /// than the one the link records, records that revision
+    /// (<see cref="XeroQuoteMapper.ReconciledHash"/>, no content claimed) —
+    /// a write whose answer was lost landed, or the copy was brought up to
+    /// date by hand — so the PDF follows the content Xero holds and the
+    /// badge does not call a revision Xero holds unsent. A reference that
+    /// names no revision changes nothing.
+    /// </summary>
+    private async Task<XeroLink> RecordHeldRevisionAsync(XeroLink link, XeroWireQuote held, CancellationToken cancellationToken)
+    {
+        var heldHash = XeroQuoteMapper.ReconciledHash(held.Reference);
+        var heldRevision = XeroQuoteMapper.RevisionOf(heldHash);
+        if (string.Equals(heldRevision, XeroQuoteMapper.UnknownRevision, StringComparison.Ordinal)
+            || string.Equals(heldRevision, XeroQuoteMapper.RevisionOf(link.LastPushedContentHash), StringComparison.Ordinal))
+        {
+            return link;
+        }
+
+        var updated = link with { LastPushedContentHash = heldHash };
+        await _links.SaveAsync(updated, cancellationToken).ConfigureAwait(false);
+        return updated;
     }
 
     private XeroLink NewLink(string tenantId, XeroDocumentRef document, XeroWireQuote quote, string? contentHash, string linkedBy)

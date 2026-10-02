@@ -279,6 +279,28 @@ internal sealed class QuoteSyncTestKit : IDisposable
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>
+    /// A person edits the quote in Xero by hand (outside TempestOS's pipeline): its body as Xero holds it,
+    /// changed by <paramref name="edit"/>, sent back as <c>POST Quotes/{id}</c>.
+    /// </summary>
+    public async Task EditQuoteInXeroByHandAsync(string quoteId, Action<System.Text.Json.Nodes.JsonObject> edit)
+    {
+        var quote = Simulator.Find("Quotes", quoteId)!.Body.DeepClone().AsObject();
+        edit(quote);
+        using var client = Simulator.CreateClient();
+        var body = new System.Text.Json.Nodes.JsonObject { ["Quotes"] = new System.Text.Json.Nodes.JsonArray { quote } };
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"Quotes/{quoteId}?summarizeErrors=true")
+        {
+            Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Simulator.Options.AccessToken);
+        request.Headers.Add("xero-tenant-id", Simulator.Options.TenantId);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("Idempotency-Key", $"by-hand:{Guid.NewGuid():N}");
+        using var response = await client.SendAsync(request);
+        Assert.True(response.StatusCode == System.Net.HttpStatusCode.OK, await response.Content.ReadAsStringAsync());
+    }
+
     /// <summary>A person keys a quote into Xero by hand (outside TempestOS's pipeline) for <paramref name="contactId"/>, then walks it to <paramref name="status"/>; returns its <c>QuoteID</c>.</summary>
     public async Task<string> CreateQuoteInXeroByHandAsync(string contactId, string number = "P0012-Q-001", params string[] statuses)
     {

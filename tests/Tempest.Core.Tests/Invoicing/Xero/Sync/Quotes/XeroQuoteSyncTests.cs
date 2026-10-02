@@ -792,7 +792,7 @@ public sealed class XeroQuoteSyncTests
     }
 
     [Fact]
-    public async Task AStaleEntrysOwnCreate_FoundAfterACrash_RecordsTheContentItSent()
+    public async Task AStaleEntrysOwnCreate_FoundAfterACrash_RecordsTheRevisionXeroHolds()
     {
         using var kit = await QuoteSyncTestKit.CreateAsync();
         var id = Guid.NewGuid();
@@ -815,10 +815,12 @@ public sealed class XeroQuoteSyncTests
         await kit.PlanAsync(id);
         var steps = await kit.DrainAsync();
 
-        // The stale R1 entry's own create landed: the link records R1's content, not "unknown".
+        // The stale R1 entry's own create landed: the link records the revision Xero holds (R1), not "unknown" —
+        // and no content hash, since a stale entry's content can no longer be compared with Xero's (X3 verifier round 4, defect 2).
         var link = await kit.LinkAsync(id);
         Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link!.LinkedBy);
-        Assert.Equal(XeroQuoteMapper.ContentHash(r1), link.LastPushedContentHash);
+        Assert.Equal("R1", XeroQuoteMapper.RevisionOf(link.LastPushedContentHash));
+        Assert.Equal(XeroQuoteMapper.ReconciledHash("R1"), link.LastPushedContentHash);
         Assert.Equal(XeroQuoteMapper.RevisionNotSentNote("P0012-Q-001", "SENT", "R2"), XeroQuoteMapper.DriftNote(r2, link));
         Assert.DoesNotContain(steps, s => s.Entry.Operation == XeroOperation.UploadAttachment && s.Result.Outcome == XeroPushOutcome.Succeeded);
         Assert.DoesNotContain(kit.OnlyQuote.Attachments, a => a.Length == "R2 sheet!!".Length);

@@ -420,6 +420,66 @@ public static class XeroQuoteMapper
     }
 
     /// <summary>
+    /// Whether the Xero quote <paramref name="held"/> carries exactly the
+    /// content <paramref name="body"/> would write — number, revision
+    /// (<c>Reference</c>), title, summary, dates, terms, currency, contact
+    /// and every line (description, quantity, unit amount, account, tax
+    /// type), compared as values, not text (<c>12</c> is <c>12.0000</c>, a
+    /// date is a date whatever its wire form). This is the evidence that a
+    /// write whose answer was lost landed: what Xero holds is then this
+    /// content, whoever wrote it, so a link may record its hash. A quote
+    /// changed since (by hand, or by Xero normalising a value this does not
+    /// expect) does not match — the caller then records only the revision
+    /// Xero's <c>Reference</c> names (<see cref="ReconciledHash"/>).
+    /// </summary>
+    /// <param name="held">The Xero quote as read.</param>
+    /// <param name="body">The write TempestOS would send.</param>
+    /// <param name="includeContact"><see langword="false"/> to compare everything but the contact (a quote whose contact was changed in Xero by hand).</param>
+    public static bool HoldsContent(XeroWireQuote held, XeroWireQuoteWrite body, bool includeContact = true)
+    {
+        ArgumentNullException.ThrowIfNull(held);
+        ArgumentNullException.ThrowIfNull(body);
+
+        if (!string.Equals(held.QuoteNumber?.Trim(), body.QuoteNumber.Trim(), StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(Text(held.Reference), Text(body.Reference), StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(Text(held.Title), Text(body.Title), StringComparison.Ordinal)
+            || !string.Equals(Text(held.Summary), Text(body.Summary), StringComparison.Ordinal)
+            || !string.Equals(Text(held.Terms), Text(body.Terms), StringComparison.Ordinal)
+            || XeroWire.ParseDate(held.Date) != XeroWire.ParseDate(body.Date)
+            || XeroWire.ParseDate(held.ExpiryDate) != XeroWire.ParseDate(body.ExpiryDate))
+        {
+            return false;
+        }
+
+        if (body.CurrencyCode is not null && !string.Equals(Text(held.CurrencyCode), Text(body.CurrencyCode), StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (includeContact && !string.Equals(held.Contact?.ContactID?.Trim(), body.Contact.ContactID?.Trim(), StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var lines = held.LineItems ?? [];
+        if (lines.Count != body.LineItems.Count)
+            return false;
+
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var (h, b) = (lines[i], body.LineItems[i]);
+            if (!string.Equals(Text(h.Description), Text(b.Description), StringComparison.Ordinal)
+                || h.Quantity != b.Quantity
+                || h.UnitAmount != b.UnitAmount
+                || !string.Equals(Text(h.AccountCode), Text(b.AccountCode), StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(Text(h.TaxType), Text(b.TaxType), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
+
+        static string Text(string? value) => (value ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
+    }
+
+    /// <summary>
     /// The note the badge shows when Xero's status for a linked quote no
     /// longer follows TempestOS (design §4.1, Xero → TempestOS: Xero never
     /// changes a TempestOS quote); <see langword="null"/> when it follows.
