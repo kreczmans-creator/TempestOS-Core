@@ -1,30 +1,30 @@
-# Graph Report - x-x6  (2026-10-02)
+# Graph Report - x-u2  (2026-10-02)
 
 ## Corpus Check
-- 4778 files · ~5,230,366 words
+- 4781 files · ~5,236,881 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 102 file(s) not represented in the graph (top: .ttf 35, (none) 31, .csv 17)
 
 ## Summary
-- 59044 nodes · 170129 edges · 1701 communities (1239 shown, 462 thin omitted)
-- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 39800 edges (avg confidence: 0.89)
+- 59174 nodes · 170540 edges · 1639 communities (1181 shown, 458 thin omitted)
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 39859 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d7a17929`
+- Built from commit: `eb9521c2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - .Register
-- ReferenceQuantityValue
-- system_reflection
+- ComponentFamily
+- Tempest.Desktop.Documents
 - Tempest.Core.Persistence
 - avalonia_controls
 - ModuleLifecycleManager
-- .EveryConcreteKind
+- Project
 - Tempest.Core.BusinessGovernance
-- Calculation
+- CalculationsCommandsTests
 - CustomerQuotation
 - CommandResult
 - MechanicalProductStructureSampleModule
@@ -37,81 +37,81 @@
 - XeroInvoiceDrafts
 - .RenderCurrentModuleAsync
 - .AutoFill
-- Project
-- IRequirement
-- CalculationTemplateRegistry
+- PurchaseOrder
+- IRequirementsService
+- CalculationInputInvalidException
 - IPAsset
 - PluginManifestDiscoveryService
-- Entries — Technical Debt (Expected to Eventually Be Addressed)
+- ICommandRegistry
 - ReferenceRecordView
 - ISessionPrincipal
 - EngineeringDomainContext
 - DocumentAreaView
 - Unit
 - EngineTestKit
-- DocumentObjectFactoryRegistry
+- ICommandHandler
 - ProjectExplorerView
 - .Verified
-- WP 10.1B — Engineering Review
+- EngineeringDomainSampleModule
 - SourcingComparison
-- MechanicalObjectFactoryRegistry
+- SetBomLineCommand
 - RequirementsServiceTests
-- EngineeringAreaView
-- RecordVerificationResultCommand
+- .BuildViews
+- .BuildContext
 - PurchaseOrder
 - EngineeringObjectBase
 - ManufacturingObjectFactoryRegistry
-- IDiagnosticsProvider
-- ProcessFamily
+- PluginAssemblyLoader
+- ProcessDefinition
 - .StartAsync
-- ReferenceDataCatalog
 - IReferenceRecord
+- LessonRecord
 - IssuedContract
 - DigitalThreadGraphModel
-- EngineeringDocumentStore
-- TempestOS Security Roadmap
+- EngineeringDocumentNotFoundException
+- ToastHost
 - WorkspaceManager
-- XeroOutboxEntry
+- PersistenceXeroOutbox
 - 2. Waves
-- WorkflowInteractionTests
+- InputDialog
 - OperatingScenario
 - .Quantity
 - XeroSettingsReading
 - EngineeringObjectStateStore
 - InMemoryEngineeringObjectRepository
-- EvidenceWorkspaceView
-- CalculationException
+- Money
+- CalculationInputRetentionAndReadbackTests
 - SampleSeparationTests
-- PluginAssemblyLoader
-- InMemoryQueryablePersistenceStore
+- CommandHandlerTable
+- CurrentPrincipalAccessor
 - TimesheetEntryPrompt
 - PlatformVersionProvider
-- ConfigurationBuilder
+- IConfigurationProvider
 - Opportunity
 - VerificationContext
 - Tempest.Core.EngineeringDomain
 - NonConformance
 - SupersededEngineeringObjectException
 - WorkspaceSelection
-- ProjectGovernanceTests
-- UnreadableOrganisationCatalog
+- IFamilySpecificState
+- ProjectFolderLocator
 - LeadTimeRecord
 - IValidationResult
 - EngineeringTemplate
-- CalculationInputInvalidException
-- Evidence
-- ReferencePin
+- CalculationEngineTests
+- EvidenceService
+- 3. The shared core
 - WP 7.0C — Engineering Foundation Contract Review
 - ReferenceReviewService
-- .RunAsync
+- RequirementsReconciliationServiceTests
 - DocumentViewerView
 - BusinessRisk
 - CommercialApplicability
 - DesignReviewPack
 - PluginPlatformPerformanceTests
-- QuotationCommands.cs
+- IWorkspaceCommand
 - SupplierRecord
-- RiskAndInsuranceTests
+- Dimension
 - TempDirectory
 - WP-C — Delete the Retired v0.1 Architecture
 - CancellationToken
@@ -148,8 +148,8 @@
 - CalculationPack
 - PlatformPrincipal
 - IOrganisationCatalog
-- InMemoryPersistenceStore
-- LicenseProvider
+- IPersistenceTransaction
+- Entries
 - DeckStage
 - DeckStage
 - DeckStage
@@ -163,31 +163,31 @@
 - ProcessCostRecord
 - XeroDocumentRef
 - App
-- AttachmentContentStore
+- .Warning
 - TradeStudyRecord
-- .NewContextOver
+- GatedPersistenceStore
 - AttachmentContentStoreTests
 - ManufacturingRequirementSet
 - EngineeringObjectFactory
-- BearingDefinition
+- KnowledgeProvenance
 - Fact
 - .For
-- ConstantLibraryTests
-- WP 4.2B — ADR: Plugin Failure Classification
+- ConstantDefinition
+- ProcessFamily
 - .ValidateDefinitionAsync
 - .BuildRequirements
-- .RegisterAll
+- ICalculationDefinition
 - CommandDescriptorBindingTests
 - RequirementsService
-- .BuildCatalog
+- ContactLinkTestKit
 - PipelineAndOperatingTests
 - TechnicalDocument
-- CalculationsNodeProvider
-- ProjectFolderLocator
+- CalculationTemplateRegistry
+- .QuoteExport_StartsInTheProjectsQuoteFolder_AndOffersNoneWhenGenerationIsOff
 - ObjectEditorView
 - DocumentPageSourceTests
 - Fact
-- IModule
+- IHostedService
 - CommandDescriptor
 - RibbonView
 - EngineeringCockpit
@@ -195,89 +195,89 @@
 - RuleDefinition
 - ComponentQuery
 - .BuildCatalog
-- .NewContext
+- .StartAsync
 - WP 7.2B — Dependency Analysis
 - v0.16.0 — Pre-Release Integration Build Report
 - Tempest.Core.Settings
 - MacroManager
 - PromptRecord
-- .FindAsync
+- CalculationPackListView
 - PurchasingSyncTestKit
 - CalculationModulesView
-- Money
-- .DigitalThreadGraph_ResetViewButton_ResolvedAccessibleName_IsResetView_NotTheStackPanelTypeName
+- BusinessAuthorisation
+- AutomationNameResolutionTests
 - OrganisationPicker
 - .CreateAsync
-- Quotation
+- Contact
 - AuditRecord
 - FakeInvoicingConnector
-- .Governance
-- .GetAsync
+- EffectivePeriod
+- BudgetPosition
 - RequestContext
 - AccountsSnapshot
 - BeamDeflectionInput
 - XeroSyncService
 - VatRate
-- EventBus
-- RateCardsView
-- ConstantDefinition
-- DocumentViewSession
+- NavigationItem
+- FastenerQuery
+- ReferenceQuantityValue
+- AssetFixtures
 - XeroPurchasingCreateLog
-- UndoableAction
+- .Create
 - WorkedExample
-- IPersistenceTransaction
+- CustomersSuppliersView
 - .CreateAsync
-- UndoCompensationJourneyTests
-- .RecordAsync
-- ManufacturingNodeProviderAndFacetsTests
+- CreateDocumentObjectCommand
+- Current Work Package
+- ManufacturingNodeProvider
 - LibrariesView
-- .CtrlShiftC_ARealPointerClickInTheStructureTab_CopiesThePart_AndTheOutcomeIsVisible
-- NewProjectPrompt
-- ProcessSubject
+- CommandPaletteOverlay
+- .Compare
+- GovernedBracketCheckService
 - TaskWorkState
 - .BuildCatalog
 - ProjectGovernanceAcceptanceTests
 - .InvokeAsync
-- ProjectDirectory
+- .CommercialCore_TimeAndDeliverableCompletion_SurviveARestart_WithAuditRows
 - ReviewRecord
-- GovernedBracketCheckService
+- BracketVerificationView
 - AccountsRefreshService
-- Decision
-- VerificationRecordReader
+- CancellationToken
+- EngineeringCalculationsWorkspaceSampleModule
 - Fact
 - OperationalFacts
 - WorkspaceLayoutController
-- MaterialSeed
-- IServiceCollection
-- Register Metadata
+- .List
+- ISettingsProvider
+- CockpitView
 - BearingQuery
 - QuotationService
 - VerificationArtefact
 - Quotation
 - ProjectQuoteView
 - OAuthAuthoriser
-- SettingsProvider
+- Evidence
 - .RegisterRehydrators
 - WorkspaceLayoutTreeTests
 - DesignRuleScope
 - WP 9.9.0 — Release Preparation & Product Baseline — Release Readiness Report
 - QuickBooksOnlineConnector
-- .CreateAsync
+- Task
 - .BuildRig
 - TilingTests
 - ReferenceRange
 - AcademyNode
-- .FirstAcquisition
-- .ReadAsync
+- PlaneWallHeatTransferCalculationDefinition
+- RequirementsReconciliationService
 - .DeepGrooveBall
 - StandardLibraryTests
 - XeroApiSimulator
 - MonitorRelativePlacementTests
 - WorkspaceLayoutHost
 - XeroPurchasingOwnershipTests
-- ProjectAreaAcceptanceTests
+- ReportsView
 - TempestOS v0.5.0 — Work Packages
-- .AssertClose
+- ThermalResistanceChainCalculationDefinition
 - SqlitePersistenceStoreTests
 - .Quote
 - DecisionTree
@@ -292,19 +292,19 @@
 - XeroQuotePushHandler
 - CommandContext
 - WorkspaceSnapshotReader
-- RequirementStatus
+- Requirement
 - ManualTask
 - KpiPeriod
 - StandardDefinition
 - WP 7.4.0 — Release Preparation & Product Baseline — Release Readiness Report
-- QuantityComparisonExpression
 - FakeSubject
+- TradeStudyServiceTests
 - InvoiceRequest
 - ProjectLifecycleService
-- WP 7.1D — Engineering Calculation Framework — Implementation
+- .H
 - EngineeringCalculationView
 - .BuildValidPluginAssembly
-- BearingCatalogTests
+- Interaction
 - SeedHarness
 - .CreateProjectAsync
 - OAuthAuthoriserTests
@@ -313,7 +313,7 @@
 - .CreateAsync
 - .CreateAsync
 - XeroConnector
-- ContractsExportAdapter
+- InvoiceExportKit
 - ProjectSummary
 - Task
 - BracketSectionCheckTests
@@ -324,29 +324,29 @@
 - DeliverableCompletion
 - IssueSheetRenderer
 - JsonExportFormat
-- EvidenceCitationsSection
+- .All
 - CalculationDiagramSpec
 - Tempest.Desktop.Tests/packages.lock.json
-- ReferenceValue
+- BearingDefinition
 - ProjectExpense
 - ProgressReportDocumentRenderer
 - ProjectTimelineView
 - DocumentsNodeProvider
-- NavigationService
+- .Verified
 - XeroWriteSafetyHandlerTests
 - .BuildAsync
-- .AnArchivedProject_DisablesEveryReachableWriteControl_WithTheTooltip_AndReopenStaysLiveButIsHonestlyRefused
+- .WaitUntilAsync
 - .CreateSamplePortfolioAsync
 - .BuildServices
-- QuotationSheetModel
+- .ExtractText
 - _ds_bundle.js
-- SubjectPicker
+- IServiceCollection
 - ReviewDefinition
 - Organisation
 - PurchaseOrderService
 - .SaveDraft_SubmitForReview_SamePersonRefused_SecondPersonApprovesR1_ReturnToDraftNeedsAComment_ExportNamedR1
-- TempestLoggerProvider
-- PersistenceStoreUnavailableException
+- RecordingLogSink
+- EngineeringAssetSeed
 - Icon
 - ProjectMilestoneTests
 - Tempest.Desktop.RealShell/packages.lock.json
@@ -355,50 +355,50 @@
 - Substrate: Engineering domain object model with 31 Kinds and facet composition
 - WorkspaceLayoutSerializer
 - StandardReference
-- TempestHost
+- How to Read an Entry
 - DecisionNode
-- ProjectMilestoneService
+- SourcingCandidate
 - SettingsDocument
-- RuleQuery
+- ICommand
 - KindEditorDeclaration
-- .Compare
-- A4 Bearing Library
-- RecordingLogSink
-- MoveRequirementCommand
+- SupplierIdentity
+- .RunAsync_MixedTrustTierDependencyChain_LoadOrderRespectsGraph_EachReportsCorrectTierDerivedState
+- AssetApplicability
+- .CommercialSectionThenTimesheets_FullJourney
 - ProjectWorkspaceView
 - ProjectRisksView
-- .All
+- CalculationExecuteSection
 - WorkspaceLayoutHostTests
 - RecordingCommandHandler
 - DeliverableCompletionNodeProvider
-- ProjectTaskService
-- ClauseCategory
-- .CreateHarness
-- .OpenMultiPagePdf
-- LicenseValidator
+- WorkPriority
+- ContractTemplate
+- WP 7.1D — Engineering Calculation Framework — Implementation
+- IDocumentPageSource
+- IPAssetQuery
 - StubExternalControllerProvider
 - Rig
 - EngineeringStatusExportAdapter
 - ConnectorResult
 - StandardSeed
-- GlobalNavigationRail
+- Entries — Technical Debt (Expected to Eventually Be Addressed)
 - EngineeringCalculationLifecycleTests
 - .Baseline
 - .Status
-- CreateRequirementCommand
-- ExpenseNodeProvider
+- .BuildPipeline
+- ProjectGovernanceTests
 - net10.0
-- CompositeLogSink
-- BearingCatalog
+- PurchaseOrdersView
+- ReferenceValidationState
 - CalculationDiagramView
-- WP 8.0C — Engineering Workspace UX Specification — Screen Catalogue
+- VerificationStanding
 - TradeStudyDefinition
 - InvoicingService
 - XeroRateLimiter
 - CalculationModulesViewTests
 - WP 16.5B — Linux/X11 Avalonia Upgrade Spike — Implementation Report
-- .Build
-- LoggerTests
+- WorkspaceSnapshotRequest
+- RateCardCatalog
 - .BuildAsync
 - IQuotationService
 - ProjectFolderService
@@ -406,7 +406,7 @@
 - dependencies
 - .AssertRoundTrips
 - ImageSlot
-- SeedSources
+- .Browse_WithStubFilePicker_AttachesTheRealFile_SizeHashAuditAndMessage
 - RestApiHostedServiceTests
 - CalculationModuleServiceTests
 - Tempest.Core.ReferenceData
@@ -415,24 +415,24 @@
 - InvoiceRequestStatus
 - Engineering Readiness Review Architecture
 - .BuildAsync
-- .ExtractText
-- RecordingLifecycleModuleBase
-- .BuildSpineAsync
+- InvoiceDocumentRenderer
+- DataAsset
+- DataAssetCatalog
 - ProjectTaskAcceptanceTests
-- SourceCitation
+- ProjectDecisionEntry
 - RuleApplicability
-- ModuleFixtures.cs
+- AssetTests
 - .Step
 - Tempest.Desktop/packages.lock.json
-- ReportingService
+- IReportingService
 - TimesheetService
 - FakeUpdateService
 - CommercialSeed
 - DocumentViewport
-- ICommandRegistry
+- ILogger
 - EngineeringCalculationWorkspaceTests
-- ReportRequest
-- WorkspacePanelRegistry
+- CostFigure
+- .BuildDockingRig
 - HomeDashboardView
 - .ComposeAnnotatedPage
 - net10.0
@@ -442,14 +442,14 @@
 - WindowsDpapiSecretStore
 - .ReadAsync
 - Rig
-- CommandCompensation
-- LogEntry
+- First Real Engineering Calculation — Completion Report
+- ISupplierCatalog
 - net10.0
 - DrawingRegisterDocumentRenderer
 - **TempestOS v0.12.0 — NOT READY (one procedural precondition unmet — same class of finding as `WP 12.9.0`'s own first execution, on a different commit)**
-- MaterialFamily
+- MaterialDefinition
 - .BuildRealStack
-- IDisposable
+- RollingFileLogSink
 - TechnicalReportDocumentRenderer
 - .ReadAsync
 - CommandRegistryTests
@@ -459,9 +459,9 @@
 - FinancialEntry
 - EngineeringEvidence
 - CalculationInputUnits
-- ReferenceComparisonCell
-- MaterialDefinition
-- XeroPurchasingKnownIdTests
+- FastenerFamily
+- LeadTimeKind
+- system_text_regularexpressions
 - AttachmentsSection
 - ReferenceSeedService
 - .Verified
@@ -478,31 +478,31 @@
 - PurchaseOrderDocumentRenderer
 - BomUnitsOfMeasure
 - WP 5.0S — Platform Security Baseline Audit
-- .Draft
-- IProjectCommercialService
+- .BuildAsync
+- Part I — Concept Guide
 - StubHttpMessageHandler
-- LeadTimeDuration
+- Quantity
 - WorkspaceLayoutPreset
 - TimesheetDocumentRenderer
-- PrincipalDirectory
+- Group B — Engineering Intelligence: Completion Report
 - TempestOS Academy Index
-- WP 16.9.0 — Engineering Release Report (v0.16.0)
+- ContrastRemediationTests
 - .BuildAsync
 - Framework
 - **TempestOS v0.12.0 — CERTIFIED WITH ACCEPTED TECHNICAL DEBT**
 - EvidenceNodeProvider
-- ThickWalledCylinderCalculationDefinition
+- .AssertClose
 - PipelinePosition
 - .For
-- ProjectExplorer
+- SourcingCriterion
 - ADR-0044: Authorization Enforcement Point
 - PersistenceRootResolver
 - RequirementOwnerPrioritySection
-- Rejected Designs Register
-- WP 8.9.0 — Release Preparation & Product Baseline — Release Readiness Report
+- ActionOutcomeReportingTests
+- BearingRatingLifeCalculationDefinition
 - TimesheetWeekView
 - BackupService
-- InvoicingView
+- CommercialQuality
 - CommercialSection
 - ProgrammeHierarchyExportAdapter
 - .StartAsync
@@ -535,125 +535,125 @@
 - WorkingPatternProvider
 - Command Framework
 - StandardClassification
-- ExpenseEntryPrompt
-- ProjectDeliverablesView
-- ModuleLifecycleBaseTests
+- TaskItem
+- CompleteDeliverableCommand
+- IModule
 - IReferencePinResolver
 - ReferenceSeedReleasePolicy
 - UndeleteCalculationObjectCommand
 - AccountsCategoriser
-- .StartAsync
-- .EveryStatusAndCompletion_LandsInItsOwnGroup
+- DependencyDirectionTests
+- InvoicingView
 - Descriptor and Snapshot Types Pattern
-- ConsoleLogSinkTests
-- .ReleasedSteelAsync
+- WP 8.9.0 — Release Preparation & Product Baseline — Release Readiness Report
+- MaterialCriterion
 - .BuildAsync
 - QuotationNodeProvider
-- FocusVisibleStyleTests
+- StatusBarView
 - XeroWire
 - Avalonia
 - .RehydrateEngineeringObjectsAsync
-- .WeekOf
+- TimesheetEntryNodeProvider
 - ProjectModel
-- .RunAgainstRealHttpAsync
+- **TempestOS v0.11.0 — ACCEPT WITH OBSERVATIONS**
 - PipelineStage
 - .RenderPdf
-- LiftingLugPinJointCalculationDefinition
+- LugCheck
 - DocumentFontRole
-- ReportResult
-- Part I — Concept Guide
+- IPLicence
+- Platform Foundation Completion Report
 - CalculationModuleDescriptor
 - .WithCalculators
-- .ValidateAsync
+- PurchaseOrderNodeProvider
 - ReviewQueueExportAdapter
-- ReferenceLibrarySummary
+- `WP 10.2B` — Docking & Workspace Layouts
 - TempestOS v0.16.0 — Engineering Status Report
 - FloatingPanelWindow
-- ConsiderationKind
+- .PriceAsync
 - XeroExpenseBillPushHandler
 - IssueEvidenceCommand
-- BulkSetRequirementStatusCommand
+- RequirementPriority
 - .Create
 - MicrosoftExtensionsConfigurationSource
 - IEditorSection
 - validate.py
-- CommandInvocation
+- CommandRegistry
 - ConstraintKind
-- BearingSeed
-- .CreatePrincipal
+- SourceCitation
+- DuplicateCommandHandlerException
 - `WP 10.1B` — Runtime Host & Module Discovery Hardening
-- SessionPrincipalSource
+- WorkspaceChange
 - QuickBooksOnlineModels.cs
 - `WP 10.2A` — Workspace Modernisation
-- KindEligibilityInvariantTests
+- WP-B2 — Kind Eligibility Is Two Mechanisms, One Invariant
 - Tempest.Core.Tests/packages.lock.json
 - Avalonia
 - AttachmentViewerLauncher
 - dependencies
 - FailingPersistenceStore
 - .StartAsync
-- FailingPersistenceStore
+- Governance — Independent Finding-Closure Verification, Register Closure, False-Claim Corrections
 - **TempestOS v0.10.0 — RELEASED**
-- TD-70 + TD-71 — Responsive Workspace, Ribbon Minimisation, Drag as a Durable Preference
+- TD-77 Stage 3 — Production Command Descriptors Are Bound
 - Phase 5 - Engineering Modules
 - PersistableDefinitionGuardTests
 - InvoiceConnectorSection
 - StandardQuery
 - **TempestOS v0.13.0 — NOT READY**
-- .DispatchAsync
+- ProjectDetailsView
 - xUnit2029 Build Failure and the Vacuous Assertion Behind It
-- IWorkspaceManager
-- R7RegressionProofTests
+- IWorkspaceView
+- PersistenceStoreUnavailableException
 - QueryablePersistenceStoreTests
 - Evidence Canonical Kind Lifecycle
-- 3. Work Package briefs
+- AssetStanding
 - EngineeringDocumentStoreTests
 - Engineering Calculation Framework
 - WP 11.3A — Presentation Strategy Review & Platform Consolidation
 - NonSeekableStream
-- .Resolve
+- PurchaseOrderResult
 - FileSecretStore
-- WP 13.3A — Plugin Platform Integration & End-to-End Validation
+- TaskBucket
 - WP 7.1B — Units & Quantities Framework — Implementation
-- WP 10.0A — Screen Catalogue
+- .ExerciseOnceAsync
 - dependencies
-- .List
+- NoBlockingPersistenceCallsTests
 - net10.0/linux-x64
-- WP 7.3A — Requirements Engine — Implementation
+- TD-80 — The Document and Drawing Viewer
 - Induced-Failure Evidence
 - WP 10.0B — Desktop Application Framework — Implementation
-- CreateEvidenceFromFilesCommand
-- WorkspaceDockingComposer
-- WP 13.9.0 — `v0.13.0` Engineering Readiness Review
+- .DispatchAsync
+- EngineeringWorkspaceComposer
+- WP-A1 — Close the Live Id-Only Command Path
 - net10.0/linux-x64
 - .StartAsync
-- DeterminationState
+- TempestOS v0.6.0 — Release Architecture
 - TempestLogoControl
 - platform.py
-- CancellationToken
+- InMemoryQueryablePersistenceStore
 - Visual Foundations
-- .InitialiseAsync
+- IEngineeringDocumentStore
 - .StartAsync
 - net10.0/linux-x64
 - TD-102 — The Two Project Areas That Claimed to Be Implemented Now Are
 - OsInput
-- .ListAsync
-- WP 8.1B — Navigation & Project Explorer — Implementation Report
+- IVerificationRecord
+- The List
 - WP 4.2D — Platform Services Architecture Review
 - MinimalSdkModule
-- CockpitReadScope
-- WP 4.2 — Plugin Manifest Architecture
+- WP-E — Async/Threading Hardening and the Cockpit Read Scope
+- RuntimeModuleManager
 - Integration Phase — Completion Report
-- SampleWorkspaceView
+- SampleProjectExplorerNodeProvider
 - TD-77 Stage 4 — Core Invocation Contract, Proven Against Real Bindings
 - `v0.11.0` — Release Publication Report
 - RunMacroCommand
 - .BuildHandler
-- WP 7.1E — Verification Framework — Implementation
+- TempestOS v0.7.0 — "Engineering Foundation"
 - dependencies
 - WP 11.1B — Engineering Workflow
 - Avalonia
-- IWorkspaceViewFactory
+- .Build
 - Per-Work-Package Required Reading and Expected Output
 - CalculationDueSection
 - VerificationResultSection
@@ -664,21 +664,21 @@
 - net10.0
 - CalculationInputDescriptor
 - Money as Exact Decimal and Authority Model
-- .RunAgainstRunningHostAsync
-- .ReadAsync
+- .CreatePartAsync
+- .SelectingAnOrganisation_ShowsItsOwnTerms_ChangingAndSaving_PersistsAcrossAReopen
 - WP 15.2A — Desktop Test Suite Persistence Root Cleanup
-- TD-31 — Attachment Content Is Durable Bytes This Platform Holds
+- WP-B1 — Pin the Two Encodings of Per-Kind Command Eligibility
 - dependencies
 - XeroModels.cs
 - dependencies
 - .AssertCoverage
-- WP 6.0 — Reporting Framework Implementation
+- IdOnlyInvocationGuardTests
 - Academy Guide — Sample Explorer Content's New Home
 - Governance — The Architecture Audit Becomes Tracked Debt; TD-01's Trigger Fires
-- WP 6.4 — Settings Framework Implementation
+- WP-Z1 — Governance Correction
 - CI — Close the Build Errors and Governance-Index Gaps That Made the Branch Red
 - Tempest.Samples/packages.lock.json
-- 2. Matrix
+- RuleSeverity
 - CommandDescriptorAndResultTests
 - .RunAgainstRunningHostAsync
 - Tempest.Harness/packages.lock.json
@@ -687,40 +687,40 @@
 - CI — Make a Red Run Name the Tests That Failed
 - OAuthLoopbackListener
 - Tempest.Core.csproj
-- WP 9.5A — Manufacturing Workspace — Future Capability Assessment
+- .WeekOf
 - AsyncKeyedLock
 - Product Gap Reconciliation Audit: Findings and Standing Evidence
 - Microsoft.Extensions.Primitives
 - PROJECT_STATUS.md Dangling-Path Fix
-- SampleProjectExplorerNodeProvider
+- TempestOS v0.6.0 — "Platform Services"
 - Part I — Concept Guide
-- ITimesheetService
+- .IEventHandler_ObservesCancellation
 - RecordingHostedService
 - .NewLifetime
 - Tempest.Workspace/packages.lock.json
 - Tempest.Validation/packages.lock.json
-- .BuildProvider
+- TechnicalDocumentType
 - QuotationLinesSection
 - dependencies
-- WP 6.3 — REST API — Technical Debt Assessment
+- PurchaseOrderRefusal
 - CheckVulnerablePackagesScriptTests
 - TD-93 — Vocabulary Consistency Check Scanned Whatever Happened to Be Loaded
 - .GlobalStyles
-- ProjectCommercialWorkspaceTests
+- .Dispose
 - dependencies
 - Design Freeze Review - Quantitative Evidence
-- .BuildRig
+- CanonicalKindRoundTripTests
 - Entries
 - Windows Delete-While-Locked Test Fix
-- 3. Verification
+- WP 12.1B — Classification & Relationship Vocabulary Safety Net Implementation
 - .RunAgainstRunningHostAsync
-- .RestoreAsync
+- WP 15.0A — Desktop Shell Brand Recovery & Windows Startup Crash Fix
 - CalculationCatalogueEntry
 - WP 11.0A — Platform Architecture & Code Quality Review
 - QuotationRefusal
 - .RunAgainstRunningHostAsync
 - Microsoft.Data.Sqlite
-- .StartAsync
+- .BuildPipeline
 - .RunAgainstRunningHostAsync
 - .GetSnapshotAsync
 - Engineering Object State Is Durable and Rehydrates Through Kind-Keyed Registry
@@ -739,35 +739,35 @@
 - .StartAsync
 - .StartAsync
 - .RunAgainstRunningHostAsync
-- WP 6.8 — Release Readiness Report
+- TD-85 — Durable Engineering Object State, Per-Type Rehydration, Removal of Projects.Index
 - WP 11.1B — Branch Protection & Engineering Workflow Hardening
 - WP 11.2A — Governance Health-Check Automation
 - Microsoft.Data.Sqlite
 - WP 10.1A — Engineering Cockpit Implementation
-- WP 7.1A — Engineering Data Model — Platform Consumption Assessment
+- IPersistenceStore
 - TempestOS Custom DI Container Design
 - dependencies
 - WP 11.4A — Release Engineering Corrections
 - .RunAgainstRunningHostAsync
-- SessionPrincipal
+- IPermissionEvaluator
 - WP 11.4B — Merge to Main & Release Process Correction
-- ReviseReferenceRecordEntry
+- CostComponentKind
 - Microsoft.Data.Sqlite
 - Microsoft.Data.Sqlite
 - Microsoft.Data.Sqlite
 - TempestOS v0.9.0 — "Mechanical Foundation"
-- WP 5.3 — Developer Experience Improvements
+- ReflectionFrameworkDiscoveryService
 - PackagingScriptTests
 - WP 11.5A — Governance Currency & Documentation Integrity
 - PrincipalSessionTests
 - .RunAgainstRunningHostAsync
 - WP 11.9.0 — `v0.11.0` Release Preparation & Engineering Sign-Off
 - Microsoft.Data.Sqlite
-- DurableRig
+- EvidenceRefusal
 - ObjectEditorView - Quotation Editor
 - Microsoft.Data.Sqlite
 - Engineering Governance Process
-- NotificationDispatcher
+- RecordingLevelLogger
 - ProjectMembership
 - Forms Component
 - Tempest.Desktop.Tests.csproj
@@ -782,12 +782,12 @@
 - WP 13.12.1 — v0.13.0 Engineering Readiness Re-Execution
 - .RunAgainstRunningHostAsync
 - FailingPersistenceStore
-- .FromConfiguration
+- .RunAgainstRunningHostAsync
 - dependencies
 - .BuildServices
 - TimesheetEntryObjectView
-- WP 9.9.0 — Release Preparation & Product Baseline (Second Pass)
-- PurchaseOrderObjectView
+- .WithRegistryAsync
+- IWorkspaceView
 - Part class with IRehydratable
 - .RunAgainstRunningHostAsync
 - Plugin Dependency Graph Resolution and Extended Failure Classification
@@ -803,7 +803,7 @@
 - PersistenceStoreHostileNameTests
 - SearchIndexTests
 - WP 7.1C — Materials Framework — Material Provenance Assessment
-- WP 7.1E — Verification Framework — Security Review Report
+- Architecture
 - TempestOS — Physical Review Guide
 - Microsoft.Extensions.Primitives
 - TD-72 — Data-Driven Workspace Layout Replacing the Compile-Time Docking Grid
@@ -819,11 +819,11 @@
 - Avalonia.Headless.XUnit
 - BearingRowConfiguration
 - v0.3.0.md
-- FrameworkRegistry
+- ENGINEERING CORE CERTIFIED WITH ACCEPTED TECHNICAL DEBT
 - AnnotationPalette
 - WP 13.12.7 — v0.13.0 Tag Push & Release Completion
 - TempestOS.slnx
-- WP 15.0B — Desktop Productisation Phase 1
+- DataCategory
 - Connector Result Pattern (IInvoicingConnector)
 - ICalculationEngine with ReferencePin
 - Calculation Status Via Lifecycle Transitions
@@ -867,7 +867,7 @@
 - net10.0
 - WP 15.1A — v0.15.0 Release Preparation & Governance Closure
 - WP 15.1B — v0.15.0 Release Readiness Review
-- WP 16.0B — Integrate Off-`main` Work
+- PurchaseOrderStatus
 - FrozenLayersUnreachableFromDesktopTests.cs
 - Graphical Desktop Paradigm
 - Knowledge Origin Review State Authority
@@ -881,7 +881,7 @@
 - User Command Macro Dispatch Pattern
 - Runtime Host State Machine
 - Select.d.ts
-- logging_framework.py
+- logger.py
 - Consultancy Seam and Commercial Model
 - WP 20.10F: People Directory and Owner Picker
 - OSA-02: Attachment Open Externally Code Execution (High)
@@ -889,7 +889,7 @@
 - run-realshell-linux.sh
 - Tempest.Samples.csproj
 - Tempest.Core
-- DialogModality
+- FileContentTypes
 - ADR-0039: Diagnostics & Composite Logging
 - ADR-0126: One shared reference-data catalogue layer
 - Supplier Identity Recording and Non-Merging
@@ -1000,8 +1000,8 @@
 - TD-77 Stage 2 — Core Command Context and Binding Contract
 - v1.0.0 Release Candidate Audit
 - WP 16.2B — Academy Retrospective Backfill
-- .RunAgainstRunningHostAsync
-- LogLevel
+- StandardValidationService
+- DeclareEvidenceFigureCommand
 - xunit.core
 - InMemoryPersistenceStore
 - xunit.core
@@ -1011,12 +1011,12 @@
 - AccessTokenOutcome
 - TD-77 Stage 5 — Three Surfaces Consume the Binding Contract
 - Microsoft.Extensions.Primitives
-- ISignOffPolicy
+- RC Product Owner feedback — action register (2026-10-01)
 - Product Owner Test Runbook — v1.0.0 release candidate (v0.21.0, build `30fe6e7`)
 - CiShardCoverageTests
 - TimesheetRefusal
 - WP-REVIEW — Clean-Machine and Physical-Review Readiness
-- IWorkspaceView
+- DeliverableCompletionObjectView
 - WP-Z3 — Programme Academy Retrospective Completion
 - Academy Masterclass Roadmap
 - TempestOS Governance Index
@@ -1027,24 +1027,24 @@
 - Heat sink thermal resistance chain — `calc.thermal-resistance-chain`
 - Linear tolerance stack-up, worst case and RSS — `calc.tolerance-stack`
 - Evidence Supporting This Recommendation
-- WP 11.0B — v1.0 Architecture Roadmap & Release Planning
-- WP 13.12.8 — v0.13.0 Release Test Failure Investigation
+- ProjectHealthStatus
+- RecordEvidenceCheckCommand
 - dependencies
 - dependencies
-- .RunAgainstRunningHostAsync
+- WP 7.0B — Engineering Foundation Planning & Capability Architecture
 - Avalonia
 - dependencies
 - dependencies
-- Separation of Concerns
+- WP-H — Enforce the Architectural Invariants Nothing Was Holding
 - dependencies
 - dependencies
 - xunit
 - TD-84 — The Product Spine: Module → Project → Workspace as Persisted State
 - .ResolveOwningProjectAsync
 - TempestOS v0.2.0
-- Deterministic Systems
-- .FilterWhere
-- RecordedEventA
+- Group A — Engineering Reference Data: Completion Report
+- TempestOS v0.6.0 — Technical Debt Assessment
+- EventBus
 - Microsoft.NET.Test.Sdk
 - Avalonia
 - Avalonia
@@ -1053,7 +1053,7 @@
 - D-028 — Evidence is the product; calculation is where the engineer does it
 - dependencies
 - SQLitePCLRaw.bundle_e_sqlite3
-- WP 13.11D — v0.13.0 Plugin Platform Exit Review
+- WP 7.1D — Engineering Calculation Framework — Security Review Report
 - Microsoft.Extensions.Logging.Abstractions
 - SQLitePCLRaw.bundle_e_sqlite3
 - HarfBuzzSharp
@@ -1066,8 +1066,8 @@
 - dependencies
 - SQLitePCLRaw.bundle_e_sqlite3
 - LifecycleSection
-- Defensive Programming
-- WP 16.4A — Test Determinism — Implementation Report
+- WP 7.1E — Verification Framework — Engineering Core Impact Assessment
+- WP 8.0C — Engineering Workspace UX Specification — Navigation Maps
 - WP 11.1A — Continuous Integration & Build Verification: Implementation Report
 - dependencies
 - Microsoft.TestPlatform.TestHost
@@ -1082,7 +1082,7 @@
 - WP 11.4A — Release Engineering Corrections
 - Microsoft.Extensions.Logging.Abstractions
 - WP 11.4B — Release Process Correction Report
-- .BuildAvaloniaApp
+- CiteEvidenceCommand
 - Evidence Supporting This Recommendation
 - Microsoft.Extensions.FileProviders.Physical
 - Avalonia.Angle.Windows.Natives
@@ -1097,7 +1097,7 @@
 - Microsoft.Extensions.Logging.Abstractions
 - Microsoft.Extensions.FileProviders.Physical
 - What You Must Do When Invoked
-- WP 7.0C — Cross-Framework Dependency Report
+- RelationshipsSection
 - Microsoft.Extensions.Logging.Abstractions
 - Microsoft.Extensions.FileProviders.Physical
 - Microsoft.Extensions.Logging.Abstractions
@@ -1115,7 +1115,7 @@
 - Microsoft.Extensions.Logging.Abstractions
 - xunit.extensibility.core
 - Third-Party Notices
-- WP 7.1F — Definition of Done Audit
+- TaskFacts.cs
 - Microsoft.Extensions.Configuration.EnvironmentVariables
 - Microsoft.Extensions.Configuration.Json
 - System.Security.Cryptography.ProtectedData
@@ -1168,7 +1168,7 @@
 - tempest.workspace
 - ExCSS
 - Microsoft.Extensions.FileSystemGlobbing
-- WP 7.1C — Materials Framework — Implementation Report
+- CalculationsWorkspaceView
 - Avalonia.BuildServices
 - Avalonia.Remote.Protocol
 - HarfBuzzSharp.NativeAssets.WebAssembly
@@ -1182,37 +1182,37 @@
 - Tmds.DBus.Protocol
 - Velopack
 - xunit.analyzers
-- WP 9.8B — Platform Service Register Reconciliation — Reconciliation Report
-- WP 7.1F — Security Review Summary
+- .AssertCatalogueConsistent
+- QuantityParsingTests
 - CLAUDE.md
-- Xero Build Decisions.md
-- WP 7.2B — Digital Thread Architecture
+- Tempest.Desktop.Startup
+- EstimateLineKind
 - v0.4.0 (duplicate top-level doc).md
-- WP 7.4.0 — Release Preparation & Product Baseline — Engineering Statistics Report
-- WP 9.1B — Development Baseline Consolidation — Development Baseline Report
+- LinkRequirementCommand
+- SetRequirementOwnerCommand
 - v0.5.0 (duplicate top-level doc).md
 - Candidates D–J (new, `WP 7.0B`)
 - SettingsView
 - WP 7.0B — Engineering Foundation Architecture
 - WP 8.9.0 — Release Preparation & Product Baseline
-- .RecordAsync
-- .GetReferencesAsync
-- Tempest.Core.Tests.Notifications
-- BearingConstructionClass
-- LeadOrigin
+- WP 7.2A — Strategic Roadmap Review
+- RequirementStatus
+- .RunAgainstRunningHostAsync
+- Independent Finding-Closure Verification — 2026-08-28
+- v0.14.0 — Engineering Release Report
 - QuotationStatusTransitionsTests
 - FailingPersistenceStore
-- ProjectFolderOutcome
+- ProjectFolderCoordinator
 - FailingPersistenceStore
 - WP 12.9.1 — Governance Health Check Remediation
-- RequirementEvidence
+- WP 7.1B — Units & Quantities Framework — Mathematical Validation Report
 - Governance Audit Report
 - WP 10.0A — Navigation & Workflow Diagrams
 - WP 15.1B — v0.15.0 Release Readiness Review
-- TempestOS v0.6.0 — Public Interface Catalogue
+- WP 7.1E — Verification Framework — Future Capability Recommendations
 - Programme A — Requirements & Verification Platform
 - WP 8.9.0 — Release Preparation & Product Baseline — Product Owner Release Checklist
-- FailingPersistenceStore
+- Plane wall heat transfer, conduction layers and convection films — `calc.plane-wall-heat-transfer`
 - WP 9.1B — Development Baseline Consolidation — Product Owner Merge Checklist
 - WP 9.9.1 — Git Command Transcript
 - DescriptionSection
@@ -1220,9 +1220,9 @@
 - InvoiceRequestObjectView
 - QuotationObjectView
 - TaskObjectView
-- WP 8.1B — Navigation & Project Explorer — Implementation
+- TempestOS v0.16.0 — Release Notes
 - WP 12.9.0 — Release Preparation & Engineering Sign-Off Architecture
-- TempestOS v0.6.0 — Platform Service Implementation Order
+- IExportable
 - Dependency Injection
 - Academy Audit Report — WP 4.4F
 - TempestOS Governance Philosophy
@@ -1231,107 +1231,93 @@
 - CERTIFIED WITH ACCEPTED TECHNICAL DEBT
 - Findings
 - Per-Framework Plan
-- DependencyDirectionTests
+- WP-A2 — The Keyboard Reaches the Canonical Path; REST Is Decided, Not Deferred
 - TempestOS v0.8.0 — "Engineering Workspace"
 - WP 7.2A — Commercial Assessment
 - WP 7.2A — Engineering Assessment
-- system_runtime_compilerservices
+- ReviewParticipantRole
 - Programme A — Requirements & Verification Platform
 - WP 8.2B — Engineering Domain Contracts — Sequence Diagrams
 - Open Items
-- WP 10.3A — Security Review
+- TempestMarkGeometry.cs
 - InvoiceRequestRefusal
 - WhereUsedSection
 - WP 8.0A — Engineering Workspace — UI Architecture
 - WP 10.0A — User Experience Architecture
 - WP 10.3B — UX Review
 - WP 7.0A — Future Capability Register & Product Vision
-- v0.14.0 — Work Packages
+- EditorControlKind
 - ProjectLifecycleRefusal
 - WP 7.1F — Engineering Core Integration Review & Certification
 - WP 7.4.0 — Release Preparation & Product Baseline
-- ManualTimeProvider
-- Derivations Appendix
+- EngineeringAssetStructuralTests
+- EvidenceStatusTransitionsTests
 - .StartAsync
 - WP 9.8B — Platform Service Register Reconciliation
 - WP 9.9.0 — Release Preparation & Product Baseline
-- InMemoryEngineeringRelationshipRepository
-- WP 4.9 — Developer Experience Improvements
+- .NewService
+- IDiagnosticsProvider
 - .StartAsync
 - WP 11.2A — Governance Health-Check Tool
 - WP 6.4 — Settings Framework — Technical Debt Assessment
 - WP 7.0A — Recommended v0.7 Candidate Work Packages
 - Per-Framework Assessment
 - WP 7.1B — Units & Quantities Framework — Technical Debt Assessment
-- WP 6.0 — Reporting Framework — Engineering Review Report
-- WP 6.5 — Audit Framework — Technical Debt Assessment
+- Part II — Implementation Retrospective
+- DuplicateCopyDelegationTests
 - WP 8.0C — Engineering Workspace UX Specification — Engineering Cockpit Specification
-- WP 6.0 — Reporting Framework — Future Capability Recommendations
 - v0.72.0 — Engineering Foundation Expansion
-- InMemoryPersistenceStore
-- .CreateRegistry
+- WP 10.1A — Technical Debt Review
+- DuplicateCommandIdException
 - Seed Data Review Set
 - WP 7.2A — Strategic Roadmap Selection & Programme Architecture
-- WP 7.2B — Requirements & Verification Platform Architecture
-- WP 7.2C — Security Review
+- WP 7.3A — Requirements Engine — Security Review Report
+- EvidenceClassification
 - Capability Categories
-- WP 6.0 — Reporting Framework — Lessons Learned
+- ThermalConductivity
 - Validation Register
-- WP 10.0A — Architecture Review
+- StateProjection
 - WP 10.0A — Systems Engineering Review
-- WP 6.1 — Permissions & Identity — Lessons Learned
 - WP 11.5A — Governance Currency & Documentation Integrity
 - TempestOS v0.4.0 — Release Plan
 - StandardEquivalence
 - WP 6.0 — Reporting Framework — Technical Debt Assessment
-- WP 6.3 — REST API — Engineering Review Report
-- WP 6.5 — Audit Framework — Future Capability Recommendations
-- WP 6.5 — Audit Framework — Lessons Learned
 - WP 7.0A — Lessons Learned
 - WP 7.1A — Engineering Data Model — Technical Debt Assessment
 - WP 6.7 — Export/Import — Lessons Learned
 - WP 7.1F — Engineering Core Integration Review & Certification — Lessons Learned
 - InMemoryPersistenceStore
 - WP 7.2A — Strategic Roadmap Selection & Programme Architecture — Lessons Learned
-- TempestOS v0.6.0 — Risk Register
 - WP 7.3A — Requirements Engine — Future Capability Recommendations
 - WP 8.0C — Engineering Workspace UX Specification — User Journey Maps
 - WP 8.0C — Engineering Workspace UX Specification — Wireframe Sketches
-- WP 6.8 — Definition of Done Audit
+- .HandleAsync
 - Steel catalogue expansion
 - V1.0.0 Definition of Done
-- WP 7.1E — Verification Framework — Lessons Learned
-- WP 7.1F — Technical Debt Disposition
+- Architecture Document Register
 - WP 10.2A — UX Review
-- SqlitePersistenceStorePostCommitDisposalTests
-- WP 7.3A — Requirements Engine — Digital Thread Assessment
+- QuotationReviewAct
+- MassDensityUnits
 - WP 10.3B — Security Review
-- SOLID
-- WP 7.3A — Requirements Engine — Lessons Learned
+- Verb
+- StandardComparisonProperties
 - Fail Fast
-- .FindReleasedAsync
-- Single Responsibility Principle
 - WP 12.9.2 — Engineering Readiness Review Re-Execution
-- .Fallback
 - WP 10.2B — UX Review
 - WP 10.5C — UX Review
 - WP 6.8 — Executive Summary
 - WP 7.0B — Lessons Learned
-- WP 7.2C — Academy Plan
 - WP 7.1B — Units & Quantities Framework — Future Capability Recommendations
-- RecordingLevelLogger
 - .RunAgainstRunningHostAsync
-- WP 7.4.0 — Release Preparation & Product Baseline — Architecture Baseline Summary
 - WP 7.1F — Executive Summary
 - WP 7.1F — Future Capability Register Review
-- Permission
+- Verification of "Implemented" Status
 - WP 7.2B — Standards Mapping
 - .SaveAsync_ThenLoadAsync_OnASecondInstance_RoundTripsLayoutOpenTabsAndSelection
 - WP 8.2A — Engineering Domain Architecture — Engineering Object Interaction Diagrams
 - Test Register
 - WP 9.0B — Product Configuration & BOM Management — Future Capability Assessment
 - WP 9.1B — Development Baseline Consolidation — Merge Readiness Report
-- TempestOS v0.6.0 — Platform Service Dependency Diagram
 - WP 9.9.0 — Release Preparation & Product Baseline — Architecture Baseline Summary (Second Pass)
 - v0.74.0 Baseline Inspection Report
 - Major catalogue expansion
@@ -1345,24 +1331,16 @@
 - TempestOS Engineering Knowledge Foundation
 - graphify reference: extra exports and benchmark
 - /graphify
-- WP 6.3 — REST API — Lessons Learned
 - WP 8.0C — Engineering Workspace UX Specification
-- WP 6.6 — Licensing Framework — Engineering Review Report
-- WP 6.6 — Licensing Framework — Technical Debt Assessment
 - WP 8.0C — Engineering Workspace UX Specification
-- WP 7.0A — Future Capability Summary
 - FailingPersistenceStore
 - CalculationListEntry
 - WP 12.9.3B — Governance Health Check Consistency Remediation
 - WP 13.0.0 — v0.13.0 Branch Establishment
 - WP 13.0.0A — Release Register Reconciliation
 - WP 13.0B — Plugin & Trust Isolation Architecture Review and Baseline
-- IWorkspaceCommand
-- WP 7.1E — Verification Framework — Engineering Review Report
-- WP 4.6B — Navigation Implementation
-- WP 7.1E — Verification Framework — Verification Integrity Assessment
+- IInvoicingService
 - TempestOS v0.5.0 — Release Checklist
-- TempestOS v0.6.0 — Contract Review: Engineering Governance Confirmation
 - WP 6.0 — Reporting Framework
 - WP 6.1 — Permissions & Identity
 - WP 6.2 — Notification Framework
@@ -1374,21 +1352,12 @@
 - WP 6.8 — Platform Services Integration Review
 - WP 6.4 — Settings Framework — Lessons Learned
 - WP 10.6D — Feature Completion Audit
-- WP 7.1C — Materials Framework — Lessons Learned
-- WP 9.3A — Verification Management Workspace — Technical Debt Assessment
-- WP 7.1C — Materials Framework — Future Capability Recommendations
 - WP 7.2A — Candidate Work Package Catalogue
-- WP 7.2A — Capability Dependency Report
-- .Compare
 - WP 7.3A — Requirements Engine — Technical Debt Assessment
-- [0.5.0] - 2026-07-29
-- XeroOwnershipVerdict
 - WP 9.1B — Development Baseline Consolidation — Commit Summary
-- WP 6.4 — Settings Framework — Engineering Review Report
 - WP 9.8B — Platform Service Register Reconciliation — Engineering Review
 - WP 9.8B — Platform Service Register Reconciliation — Lessons Learned
 - WP 9.8B — Platform Service Register Reconciliation — Systems Engineering Review
-- A2 Standards Library
 - WP 9.9.1 — Product Owner Release Summary
 - Physical and electrical steel properties
 - Steel condition and property depth
@@ -1404,29 +1373,14 @@
 - ADR-0157: The Review Queue Is Exported, Read-Only, as reviews.json
 - WP 7.1C — Materials Framework — Engineering Foundation Impact Assessment
 - WP 7.2B — Requirements & Verification Platform Architecture — Lessons Learned
-- WP 16.0B — Integrate Off-`main` Work
-- .RunAgainstRunningHostAsync
-- WP 8.0A — Engineering Workspace — Object Relationship Diagrams
 - Future Work Package Guidelines
-- WP 6.8 — Technical Debt Disposition
-- WP 7.3A — Requirements Engine — Engineering Review Report
 - WP 16.1A — Enforce the Release Gate
-- WP 6.8 — Risk Register Disposition
 - TempestOS v0.4.0 — Release Checklist
-- WP 6.7 — Export/Import — Technical Debt Assessment
-- .GeneratedModule_OnceSubstitutedAndBuilt_CompilesAndIsDiscoverable
 - WP 7.0A — Roadmap Report
-- WP 7.0B — Capability Dependency Report
 - WP 7.0B — Engineering Discipline Assessment
 - WP 7.0B — Recommended Release Roadmap
-- WP 10.1B — Systems Engineering Review
 - WP 7.2A — Security Assessment
-- TempestOS v0.4.0 — Testing Strategy
-- WP 7.0B — Platform Consumption Matrix
 - TempestOS v0.8.0 — Work Packages
-- WP 7.0C — Platform Integration Matrix
-- WP 9.1A — Requirements Management Workspace — Engineering Review Report
-- WP 9.9.0 — Release Preparation & Product Baseline — Engineering Capability Summary (Second Pass)
 - WP 9.9.1 — Final Release Checklist
 - Engineering Knowledge Foundation v0.7.0
 - Engineering Knowledge Foundation v0.8.0
@@ -1449,19 +1403,13 @@
 - MANIFEST.json
 - material-selection-reference-engine-v1.3.0.py
 - .RunAgainstRunningHostAsync
-- SampleExplorerContent
 - Decision Register
-- FinancialPeriodLabel
 - Engineering Standards Register
 - Governance Register
-- RequirementGroupDeletedException
 - DisciplineAreas
 - v0.13.1 — Work Packages
 - WP 16.2B — Academy Retrospective Backfill
-- LogLevelTests
-- WP 7.2C — Testing Strategy
 - WP 8.9.0 — Release Preparation & Product Baseline — Release Checklist
-- ScenarioRecords
 - Steel Catalogue v0.6.0
 - Steel evidence pass
 - v0.37.0 — Steel Fundamentals Final Audit
@@ -1483,10 +1431,8 @@
 - Workstream status
 - Completion
 - graphify reference: query, path, explain
-- FileContentTypes
 - Risk Register (Governance Index)
 - v0.6.0 Retrospective — "Platform Services"
-- WP 7.1A — Engineering Data Model — Engineering Review Report
 - Core metal population
 - Evidence-depth phase
 - Material Property Seed — v0.3.0
@@ -1509,7 +1455,6 @@
 - Current completion
 - Completion
 - Engineering Knowledge Foundation — WP Status v2.0.0
-- WP 7.2B — Required ADR Catalogue
 - .BuildAvaloniaApp
 - TempestOS v0.6.0 — Work Packages
 - Continue Handoff — v0.6.0
@@ -1518,7 +1463,6 @@
 - graphify reference: add a URL and watch a folder
 - graphify reference: commit hook and native CLAUDE.md integration
 - graphify reference: incremental update and cluster-only
-- WP 7.2C — Requirements & Verification Platform Contract Review — Lessons Learned
 - Continue Handoff — v0.32.0
 - Continue Handoff — v0.37.0
 - Continue Handoff — Engineering Knowledge Foundation v0.4.0
@@ -1604,44 +1548,35 @@
 - .RunAgainstRunningHostAsync
 - WP 10.1B — Technical Debt Review
 - WP 10.2A — Security Review
-- WP 7.2A — Programme Comparison Matrix
-- WP 7.2B — Security Architecture
-- WP 7.3A — Requirements Engine — Systems Engineering Impact Assessment
-- LifecycleState
+- WP 9.5A — Manufacturing Workspace — Technical Debt Assessment
 - Engineering Evolution Register
 - Traceability Matrix
-- WP 7.0C — Testing Strategy
-- WP 7.1F — Engineering Core Consumption Matrix
-- WP 9.8B — Platform Service Register Reconciliation — Security Review
-- TempestOS v0.4.0 — Risk Register
-- WP 9.0A — Mechanical Product Structure — Security Review Report
 - InvoiceNumberHolder
 - InvoiceDraftChangeOutcome
-- XeroScopes
 
 ## God Nodes (most connected - your core abstractions)
 1. `TempDirectory` - 1013 edges
 2. `Entries` - 853 edges
 3. `EngineeringDomainContext` - 592 edges
 4. `Tempest.Core.EngineeringDomain` - 580 edges
-5. `Entries — Technical Debt (Expected to Eventually Be Addressed)` - 451 edges
+5. `Entries — Technical Debt (Expected to Eventually Be Addressed)` - 452 edges
 6. `IReferenceRecord` - 448 edges
-7. `Tempest.Core.ReferenceData` - 401 edges
+7. `Tempest.Core.ReferenceData` - 402 edges
 8. `WorkspaceHost` - 381 edges
 9. `Tempest.Core.Commands` - 363 edges
 10. `App` - 349 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `What did not change, and why` --references--> `ApiRequestHandler`  [INFERRED]
-  archive/docs-2026-09/releases/v0.16.0/WP16.4B-1 REST and Loopback Hygiene.md → src/Frozen/Tempest.Core.Api/ApiRequestHandler.cs
-- `7. Why This Solution Was Chosen` --references--> `IApiEndpointRegistry`  [INFERRED]
-  archive/docs-2026-09/academy/03 Work Packages/WP6.3-rest-api-implementation.md → src/Frozen/Tempest.Core.Api/IApiEndpointRegistry.cs
-- `Observations` --references--> `IApiEndpointRegistry`  [INFERRED]
-  archive/docs-2026-09/releases/v0.6.0/WP6.8 Platform Consumption Matrix.md → src/Frozen/Tempest.Core.Api/IApiEndpointRegistry.cs
 - `4. What the boards confirmed sound` --references--> `RestApiHostedService`  [INFERRED]
   archive/docs-2026-09/releases/v0.16.0/v0.16.0 Review Board Disposition.md → src/Frozen/Tempest.Core.Api/RestApiHostedService.cs
 - `D-024 (reserved) — REST stays loopback-only and becomes off by default` --references--> `RestApiHostedService`  [INFERRED]
   archive/docs-2026-09/releases/v0.16.0/WP16.0A v0.16.0 Scope Decision.md → src/Frozen/Tempest.Core.Api/RestApiHostedService.cs
+- `11. Risks and observations for future Work Packages` --references--> `RestApiHostedService`  [INFERRED]
+  archive/docs-2026-09/releases/v0.16.0/WP16.5B Linux Launch Spike Report.md → src/Frozen/Tempest.Core.Api/RestApiHostedService.cs
+- `Architecture readiness — **Pass, with observations**` --references--> `RestApiHostedService`  [INFERRED]
+  archive/docs-2026-09/releases/v0.16.0/WP16.9.0 Engineering Release Report.md → src/Frozen/Tempest.Core.Api/RestApiHostedService.cs
+- `P04 — Business OS` --references--> `Opportunity`  [INFERRED]
+  archive/docs-2026-09/governance/Delivery/Original Roadmap 40-WP Audit.md → src/Frozen/Tempest.Core.BusinessGovernance/Development/Opportunity.cs
 
 ## Import Cycles
 - None detected.
@@ -1721,115 +1656,115 @@
 - **Plugin Platform Architecture Suite** — docs_adr_adr_0107_plugin_dependency_graph_resolution, docs_adr_adr_0108_plugin_lifecycle, docs_adr_adr_0109_plugin_service_registration, docs_adr_adr_0110_plugin_isolation_boundary, docs_adr_adr_0111_plugin_trust_capability_model, docs_adr_adr_0112_plugin_signing [INFERRED 0.95]
 - **Reference Data and Engineering Intelligence Suite** — docs_adr_adr_0124_bearing_reference_data, docs_adr_adr_0125_affine_units, docs_adr_adr_0126_group_a_reference_libraries, docs_adr_adr_0127_p02_reporting, docs_adr_adr_0128_engineering_rules [INFERRED 0.95]
 
-## Communities (1701 total, 462 thin omitted)
+## Communities (1639 total, 458 thin omitted)
 
 ### Community 0 - ".Register"
-Cohesion: 0.03
-Nodes (38): Part 3 — Five New Object Editor Sections, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 9. Workspace Integration, What shipped, by Work Package (+30 more)
-
-### Community 1 - "ReferenceQuantityValue"
 Cohesion: 0.04
-Nodes (37): RuleThreshold, ConstantSymbol, Literal, RequiresConstantResolution, BearingSubject, DisplayName, Family, IsApplicabilityKnown (+29 more)
+Nodes (25): 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, 3. Extension-Point Conformance, What shipped, by Work Package, CommandParameter, IPrincipalDirectory (+17 more)
 
-### Community 2 - "system_reflection"
+### Community 1 - "ComponentFamily"
 Cohesion: 0.04
-Nodes (20): Tempest.Desktop.Documents.DrawingRegisters, Tempest.Desktop.Documents.TechnicalReports, Tempest.Core.Tests.Architecture, Tempest.Desktop.Tests.Quotations, Tempest.Desktop.Tests.Evidence, Tempest.Core.Tests.Templates, Tempest.Core.Tests.Security, Tempest.Desktop.Documents.Invoicing (+12 more)
+Nodes (54): 1. Purpose, 2. One taxonomy, three typed details, 5. Validation, 6. Boundaries, 7. Dataset, A5 Mechanical Components Library, ComponentSubject, DisplayName (+46 more)
+
+### Community 2 - "Tempest.Desktop.Documents"
+Cohesion: 0.05
+Nodes (18): Tempest.Desktop.Documents.DrawingRegisters, Tempest.Desktop.Documents.TechnicalReports, Tempest.Desktop.Tests.Quotations, Tempest.Desktop.Tests.Evidence, Tempest.Desktop.Documents.Invoicing, SampleHarnessLoading, Tempest.Desktop.Documents.PurchaseOrders, Tempest.Desktop.Diagnostics (+10 more)
 
 ### Community 3 - "Tempest.Core.Persistence"
 Cohesion: 0.01
-Nodes (75): Tempest.Core.Tests.Runtime, Tempest.Core.Tests.Quotations, Tempest.Core.Tests.DependencyInjection, Tempest.Core.Tests.Projects, Tempest.Core.Navigation, Tempest.Core.Logging, Tempest.Core.Tests.Diagnostics, Tempest.Core.Plugins (+67 more)
+Nodes (59): Tempest.Core.Tests.Runtime, Tempest.Core.Navigation, Tempest.Core.Logging, Tempest.Core.BusinessGovernance.Quotations, Tempest.Core.Tests.Workspace.DashboardExport, Tempest.Core.Tests.Diagnostics, Tempest.Core.Plugins, Tempest.Core.BackgroundServices (+51 more)
 
 ### Community 4 - "avalonia_controls"
-Cohesion: 0.02
-Nodes (44): Tempest.Desktop.DigitalThread, Tempest.Workspace.Projects, Tempest.Workspace, Tempest.Workspace.Files, Tempest.Core.Tests.Workspace.Layout, Tempest.Workspace.Tasks, Tempest.Workspace.Layout, Tempest.Workspace.Shell (+36 more)
+Cohesion: 0.03
+Nodes (39): Tempest.Desktop.DigitalThread, Tempest.Workspace.Projects, Tempest.Workspace.Files, Tempest.Workspace.Layout, Tempest.Workspace.Shell, Tempest.Desktop.Composition, Tempest.Desktop.Viewing, Tempest.Desktop.Docking (+31 more)
 
 ### Community 5 - "ModuleLifecycleManager"
 Cohesion: 0.02
-Nodes (120): Benefits, Disadvantages, Immutability, Key Takeaway, What, When Not to Use, When to Use, Why (+112 more)
+Nodes (69): How TempestOS Applies It, Benefits, Disadvantages, How TempestOS Applies It, Key Takeaway, State Machines, What, When Not to Use (+61 more)
 
-### Community 6 - ".EveryConcreteKind"
+### Community 6 - "Project"
 Cohesion: 0.01
-Nodes (192): 1. Introduction, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+184 more)
+Nodes (300): 1. Introduction, 3. Background, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose (+292 more)
 
 ### Community 7 - "Tempest.Core.BusinessGovernance"
 Cohesion: 0.02
-Nodes (61): Tempest.Core.BusinessOperations, Tempest.Core.Invoicing, Tempest.Core.BusinessGovernance.Quotations, Tempest.Core.Invoicing.Xero.Api, Tempest.Core.BusinessOperations.Finance, Tempest.Core.Tests.Invoicing.Xero.Sync.Quotes, Tempest.Core.Invoicing.Xero.Contacts, Tempest.Core.Knowledge.Lessons (+53 more)
+Nodes (70): Tempest.Core.Tests.Quotations, Tempest.Core.Tests.Projects, Tempest.Core.BusinessOperations, Tempest.Core.BusinessGovernance.Operating, Tempest.Core.Invoicing, Tempest.Core.Tests, Tempest.Core.Invoicing.Xero.Api, Tempest.Core.BusinessOperations.Finance (+62 more)
 
-### Community 8 - "Calculation"
+### Community 8 - "CalculationsCommandsTests"
 Cohesion: 0.03
-Nodes (88): 11. Residual risk, 12. Status, 1. Baseline, and a discrepancy in the brief, 2. Inspection — what was already there, 4. What was implemented, 5. What was deliberately not done, 6. Technical Debt disposition, 7. Architectural constraints found, and how they were met (+80 more)
+Nodes (68): CalculationObjectFactoryRegistry, CompleteCalculationCommand, TargetKind, TargetObjectId, CompleteCalculationCommandHandler, CopyCalculationObjectCommand, NewDisplayName, NewIdentifier (+60 more)
 
 ### Community 9 - "CustomerQuotation"
 Cohesion: 0.02
-Nodes (139): 4. The five packages, D1 / WP03.1 — Supplier database, D2 / WP03.2 — Process & cost library, D3 / WP03.3 — Lead-time intelligence, D4 / WP03.4 — Quote / estimate structure, 10. What P03 will not do, 11. What ships, 1. Purpose (+131 more)
+Nodes (123): 8. D4 / WP03.4 — Quote and estimate structure, CostEstimate, AllPins, Assumptions, Currency, Exclusions, IsFullyTraceable, IsPriced (+115 more)
 
 ### Community 10 - "CommandResult"
 Cohesion: 0.01
-Nodes (136): GenerateSampleRequirementReportCommand, GenerateSampleRequirementReportCommandHandler, GetSampleVerificationHistoryCommand, GetSampleVerificationHistoryCommandHandler, IncrementCounterCommandHandler, Counter, QuerySampleAuditRecordsCommand, QuerySampleAuditRecordsCommandHandler (+128 more)
+Nodes (129): GetSampleEngineeringDomainGraphSummaryCommand, GetSampleEngineeringDomainGraphSummaryCommandHandler, QuerySampleAuditRecordsCommand, QuerySampleAuditRecordsCommandHandler, RecordSampleAuditActionCommandHandler, ReviseSampleDocumentCommand, ReviseSampleDocumentCommandHandler, CommandResult (+121 more)
 
 ### Community 11 - "MechanicalProductStructureSampleModule"
 Cohesion: 0.02
-Nodes (97): 5. The Design, 9. Benefits, 3. Background, RD-0027 — A New, Dedicated Host Lifecycle Phase for Hosted Service Discovery/Registration, 4. `TD-38` — Confirmed a Genuine, Separate, New Finding, 5. New Regression Coverage, 9.1 `TD-159` — Resolved, hand-mutation-checked (not tool-produced), 7. Found but out of scope (+89 more)
+Nodes (122): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 5. The Design (+114 more)
 
 ### Community 12 - "Quantity"
-Cohesion: 0.01
-Nodes (131): 3. Background, 5. The Design, What Was Achieved, `WP 7.1B` Summary (for reference), 2. Units & Quantities Framework *(`Tempest.Core.UnitsAndQuantities`, proposed — `FCR-0030`)*, Scope Delivered, 1. Purpose, 2. Classification (`ADR-0013`) (+123 more)
+Cohesion: 0.02
+Nodes (144): 5. The Design, 2. Units & Quantities Framework *(`Tempest.Core.UnitsAndQuantities`, proposed — `FCR-0030`)*, Scope Delivered, Status, GovernedBracketCheckRequest, BearingRatingLifeInput, BearingRatingLifeResult, BoltedJointPreloadInput (+136 more)
 
 ### Community 13 - "TempestHostBuilder"
 Cohesion: 0.03
-Nodes (38): 11. Common Mistakes, 10. Trade-offs, Finding 5 — bounded gates and a CI hang collector, Baseline, New Testing Concerns This Release Introduces, Related Documents, TempestOS v0.6.0 — Testing Strategy, Test Category Definitions (+30 more)
+Nodes (35): 11. Common Mistakes, 6. Alternatives Considered, 10. Trade-offs, Testing Strategy, Baseline, New Testing Concerns This Release Introduces, Related Documents, TempestOS v0.6.0 — Testing Strategy (+27 more)
 
 ### Community 14 - "CommercialFixtures"
-Cohesion: 0.03
-Nodes (72): P03 — Commercial intelligence, `CostFigure`, CostCertainty, Estimated, Exact, Quoted, Ranged, Unknown (+64 more)
+Cohesion: 0.05
+Nodes (29): EstimateAssumption, Reference, Statement, EstimateLine, AssumptionReferences, Description, IsTraceable, IsUnpriced (+21 more)
 
 ### Community 15 - ".CreateAsync"
 Cohesion: 0.04
-Nodes (27): XeroQuoteWriteStatus, Accepted, Declined, Draft, Sent, XeroQuoteLine, XeroQuoteMapper, SendToXeroRecord (+19 more)
+Nodes (27): DomainXeroQuoteSource, IXeroQuoteSource, XeroQuoteLine, XeroQuoteSnapshot, ExpiryDate, IsIssued, RevisionLabel, SendToXeroRecord (+19 more)
 
 ### Community 16 - "XeroAccountingApi"
-Cohesion: 0.04
-Nodes (41): XeroAccountingApi, XeroAttachableResource, Invoices, PurchaseOrders, Quotes, XeroWireBill, XeroWireBillsEnvelope, XeroWireBillStatusUpdate (+33 more)
+Cohesion: 0.05
+Nodes (39): XeroAccountingApi, XeroAttachableResource, Invoices, PurchaseOrders, Quotes, XeroWireBill, XeroWireBillsEnvelope, XeroWireBillStatusUpdate (+31 more)
 
 ### Community 17 - "IEngineeringObject"
-Cohesion: 0.02
-Nodes (274): 5. The Design, Recommendations for the Next Work Package, What Was Achieved, 12. Future Evolution, 5. The Design, 5. The Design, 2. Purpose, 3. Background (+266 more)
+Cohesion: 0.01
+Nodes (309): 5. The Design, Recommendations for the Next Work Package, What Was Achieved, 10. Trade-offs, 12. Future Evolution, 5. The Design, 5. The Design, 12. Future Evolution (+301 more)
 
 ### Community 18 - "XeroInvoiceDrafts"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (7): XeroInvoiceContent, XeroInvoiceDrafts, ConnectorName, CreatedStatus, XeroInvoiceDraftsForwarder, ConnectorName, CreatedStatus
 
 ### Community 19 - ".RenderCurrentModuleAsync"
+Cohesion: 0.02
+Nodes (25): BusinessOwnership, OwnerPrincipalId, OwnerRoleOrTitle, ReferenceReviewStatement, BusinessAreaView, IsTreeCollapsed, RefreshCount, WorkspaceChanges (+17 more)
+
+### Community 21 - "PurchaseOrder"
+Cohesion: 0.10
+Nodes (16): PurchaseOrder, Currency, ExpectedDelivery, ExpensesRecorded, GrossTotal, IssuedDate, Lines, Notes (+8 more)
+
+### Community 22 - "IRequirementsService"
 Cohesion: 0.01
-Nodes (30): BusinessOwnership, OwnerPrincipalId, OwnerRoleOrTitle, ReferenceReviewStatement, BusinessAreaView, IsTreeCollapsed, RefreshCount, WorkspaceChanges (+22 more)
+Nodes (174): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity, What This Document Is (+166 more)
 
-### Community 21 - "Project"
-Cohesion: 0.03
-Nodes (40): Project, Budget, ClientOrganisationId, ClosedOn, Held, HoldReason, ProgrammeId, ProjectManagerIdentityId (+32 more)
-
-### Community 22 - "IRequirement"
-Cohesion: 0.04
-Nodes (32): 5. Requirement Relationship, Requirement Allocation, and Requirement Trace Link, 3.2 Reads vs. Writes, RequirementCollectionExportPayload, RequirementExportEntry, RequirementExportPayload, IRequirement, Category, CreatedAt (+24 more)
-
-### Community 23 - "CalculationTemplateRegistry"
-Cohesion: 0.03
-Nodes (71): 8. Architectural Principles, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 4. The Problem, 6. Alternatives Considered (+63 more)
+### Community 23 - "CalculationInputInvalidException"
+Cohesion: 0.02
+Nodes (62): 9. Refusal behaviour, `TEMPEST-MFG-005`, The 5083 case, Engineering Calculation Framework, Hidden Assumptions Made Impossible — By Construction, Not Convention, Purpose, Related Documents, Verdict (+54 more)
 
 ### Community 24 - "IPAsset"
-Cohesion: 0.02
-Nodes (125): 5. C3 — IP & data protection framework, 8. C3 — IP & data protection, DataAssetCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, DataAssetQuery (+117 more)
+Cohesion: 0.05
+Nodes (31): IPAssetCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, AssetValidationRules, IIPAssetValidationService, IPAssetValidationService (+23 more)
 
 ### Community 25 - "PluginManifestDiscoveryService"
-Cohesion: 0.07
-Nodes (21): Acceptance Criteria, Deliverables, Dependencies, Estimated Complexity, Objective, Risks, Scope, WP 4.2 — Plugin Manifest (+13 more)
+Cohesion: 0.08
+Nodes (13): PluginManifestDiscoveryService, FakePlatformVersionProvider, Version, PluginDependencyGraphResolutionTests, PluginDisabledConfigurationTests, PluginManifestDiscoveryServiceTests, ThrowingPlatformVersionProvider, Version (+5 more)
 
-### Community 26 - "Entries — Technical Debt (Expected to Eventually Be Addressed)"
+### Community 26 - "ICommandRegistry"
 Cohesion: 0.01
-Nodes (398): 5. The Design, 5. The Design, Observations, 9. Files Added / Modified, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways (+390 more)
+Nodes (380): 10. Trade-offs, 5. The Design, 9. Files Added / Modified, 10. Summary, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+372 more)
 
 ### Community 27 - "ReferenceRecordView"
 Cohesion: 0.07
-Nodes (9): ReferenceRecordNotFoundException, RecordId, ReferenceLibraryAccess, ReferenceRecordRevisionRow, ReferenceRecordSnapshot, ReferenceRecordView, ReviseRecordPrompt, IReferenceCitationIndex (+1 more)
+Nodes (7): ReferenceLibraryAccess, ReferenceRecordRevisionRow, ReferenceRecordSnapshot, ReferenceRecordView, ReviseRecordPrompt, IReferenceCitationIndex, ReferenceCitationRecord
 
 ### Community 28 - "ISessionPrincipal"
 Cohesion: 0.15
@@ -1837,119 +1772,119 @@ Nodes (8): 5. The Design (`ADR-0116`), ISessionPrincipal, DisplayName, IdentityI
 
 ### Community 29 - "EngineeringDomainContext"
 Cohesion: 0.02
-Nodes (131): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 2. Purpose, 4. The Problem, 5. The Design (`ADR-0113`), 6. Alternatives Considered (+123 more)
+Nodes (120): 5. The Design (`ADR-0113`), 10. Trade-offs — and the deviation this retrospective does not smooth over, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+112 more)
 
 ### Community 30 - "DocumentAreaView"
 Cohesion: 0.02
-Nodes (83): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+75 more)
+Nodes (68): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+60 more)
 
 ### Community 31 - "Unit"
-Cohesion: 0.01
-Nodes (127): Constraint Checklist, Findings Requiring Disclosure, Four-Layer / Governance Confirmation (Re-Verified Against Real Code), Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 7.1B — Units & Quantities Framework — Engineering Review Report (+119 more)
+Cohesion: 0.02
+Nodes (72): Candidate-by-Candidate Impact, Candidate F — Engineering Calculation Framework Architecture, Candidate G — Materials Framework Architecture, Candidate H — Verification & Validation Framework Architecture, Purpose, Recommendation, Related Documents, What Remains Unchanged (+64 more)
 
 ### Community 32 - "EngineTestKit"
 Cohesion: 0.03
-Nodes (69): XeroPushResult, XeroSimulatorClock, EngineFaultHop, Crashed, CrashOnNewWrite, LoseNewWrites, MinuteRemaining, StripRetryAfter (+61 more)
+Nodes (68): XeroPushResult, EngineFaultHop, Crashed, CrashOnNewWrite, LoseNewWrites, MinuteRemaining, StripRetryAfter, EngineTestKit (+60 more)
 
-### Community 33 - "DocumentObjectFactoryRegistry"
-Cohesion: 0.03
-Nodes (60): AttachDocumentCommandHandler, CopyDocumentObjectCommand, NewDisplayName, NewIdentifier, NewParentId, TargetKind, TargetObjectId, CopyDocumentObjectCommandHandler (+52 more)
+### Community 33 - "ICommandHandler"
+Cohesion: 0.04
+Nodes (50): 4. `ADR-0097` — Correctly Scoped, Not Over-Reaching, 10. Command and Navigation Id ownership/priority model — trigger: paired with item 1 (real third-party plugin support), IncrementCounterCommandHandler, Counter, ICommandHandler, AttachDocumentCommandHandler, CopyDocumentObjectCommand, NewDisplayName (+42 more)
 
 ### Community 34 - "ProjectExplorerView"
-Cohesion: 0.01
-Nodes (136): Observations, 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+128 more)
+Cohesion: 0.02
+Nodes (77): 2. `ADR-0096` — Was This Extension "Genuinely Required"?, 4. New Presentation-Layer Surface — Minimal and Additive, 6. Recommendation, Purpose, WP 10.2A — Architecture Review, 1. `ADR-0096` — Verified Directly, 2. Project Explorer — Verified Directly, 5. Zero Forbidden-Scope Changes — Confirmed (+69 more)
 
 ### Community 35 - ".Verified"
-Cohesion: 0.03
-Nodes (66): YELLOW-1 — Contacts and interactions have no library-wide validation sweep, CrmValidationService, ICrmValidationService, InteractionCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName (+58 more)
+Cohesion: 0.04
+Nodes (39): 10. Defects discovered, 6. Refusal behaviour, The most interesting refusal, The `TEMPEST-MFG-005` contradiction — surfaced, not resolved, CrmValidationService, BudgetPositionService, BudgetValidationService, PurchaseOrderValidationService (+31 more)
 
-### Community 36 - "WP 10.1B — Engineering Review"
-Cohesion: 0.18
-Nodes (8): 2. `TD-37` Fix — Verified Directly, 5. Regression Coverage — Verified Directly, 6. Zero Engineering Domain Changes — Confirmed, 7. Recommendation, Purpose, WP 10.1B — Engineering Review, GetSampleEngineeringDomainGraphSummaryCommand, GetSampleEngineeringDomainGraphSummaryCommandHandler
+### Community 36 - "EngineeringDomainSampleModule"
+Cohesion: 0.04
+Nodes (44): 1. Permission Model — Preserved, One Pre-Existing Gap Reconfirmed, Not Introduced, 2. `BlockedItems`'s Own Requirement Portion — Confirmed Correctly Permission-Aware, 3. `DigitalThreadSummary` — No New Traversal, No New Disclosure Surface, 4. `RiskSummary` — Severity Bucketing Discloses No New Information, 5. The Sample-Module Defect — No Security Consequence Beyond Data Absence, 7. Verdict, Purpose, Related Documents (+36 more)
 
 ### Community 37 - "SourcingComparison"
-Cohesion: 0.02
-Nodes (130): D5 / WP03.5 — Procurement decision support, 9. D5 / WP03.5 — Procurement decision support, ISourcingComparisonCatalog, ISourcingRequirementCatalog, SourcingComparisonCatalog, DocumentKind, IndexCollectionName, LibraryName (+122 more)
+Cohesion: 0.03
+Nodes (68): ISourcingComparisonCatalog, ISourcingRequirementCatalog, SourcingComparisonCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, SourcingComparisonQuery (+60 more)
 
-### Community 38 - "MechanicalObjectFactoryRegistry"
+### Community 38 - "SetBomLineCommand"
 Cohesion: 0.04
-Nodes (56): 2.5 Characterization tests added before refactoring, 3. The Real Create/Duplicate Dispatch — No New Mutation Path, 2. "No Engineering Domain/Runtime Behaviour Shall Change" — Independently Verified, 3. "No Workspace Contract Shall Change Unless Genuinely Required" — Verified, None Discovered, 5. Honest Disclosure of Non-Exhaustive Coverage, 6. Recommendation, Purpose, WP 10.5B — Systems Engineering Review (+48 more)
+Nodes (63): 2.5 Characterization tests added before refactoring, 3. The Real Create/Duplicate Dispatch — No New Mutation Path, 2. "No Engineering Domain/Runtime Behaviour Shall Change" — Independently Verified, 1. Layering, ConfigurationMember, ReferenceIntegrityChecker, CompareBaselinesCommand, FirstId (+55 more)
 
 ### Community 39 - "RequirementsServiceTests"
-Cohesion: 0.08
-Nodes (4): RequirementDto, FakeWorkspaceChangePublisher, Published, RequirementsServiceTests
+Cohesion: 0.06
+Nodes (8): RequirementDto, FailableTransactionStore, BodiesCompleted, CurrentSequence, FailNextCommit, FakeWorkspaceChangePublisher, Published, RequirementsServiceTests
 
-### Community 40 - "EngineeringAreaView"
-Cohesion: 0.02
-Nodes (25): CollapsibleColumn, IsCollapsed, IsCompact, EngineeringDashboardView, ProjectsDashboardView, EngineeringAreaView, IsTreeCollapsed, RefreshCount (+17 more)
+### Community 40 - ".BuildViews"
+Cohesion: 0.01
+Nodes (43): Repository Metrics, ComposedViews, HeaderNotificationsCollector, Changed, Messages, MainWindowCallbacks, CheckEntry, CheckEntryInput (+35 more)
 
-### Community 41 - "RecordVerificationResultCommand"
+### Community 41 - ".BuildContext"
 Cohesion: 0.04
-Nodes (58): CopyVerificationActivityCommand, NewDisplayName, NewParentId, TargetKind, TargetObjectId, CopyVerificationActivityCommandHandler, CreateVerificationActivityCommand, DisplayName (+50 more)
+Nodes (48): CopyVerificationActivityCommand, NewDisplayName, NewParentId, TargetKind, TargetObjectId, CopyVerificationActivityCommandHandler, CreateVerificationActivityCommand, DisplayName (+40 more)
 
 ### Community 42 - "PurchaseOrder"
 Cohesion: 0.03
-Nodes (78): PurchaseOrder, BudgetReference, CancellationReason, Currency, DeliveryTerms, Facts, HasBeenPlaced, IsFullyReceived (+70 more)
+Nodes (80): PurchaseOrder, BudgetReference, CancellationReason, Currency, DeliveryTerms, Facts, HasBeenPlaced, IsFullyReceived (+72 more)
 
 ### Community 43 - "EngineeringObjectBase"
-Cohesion: 0.02
-Nodes (133): 1. Introduction, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered (+125 more)
+Cohesion: 0.01
+Nodes (169): 13. Key Takeaways, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+161 more)
 
 ### Community 44 - "ManufacturingObjectFactoryRegistry"
 Cohesion: 0.04
-Nodes (53): CopyManufacturingObjectCommand, NewDisplayName, NewParentId, TargetKind, TargetObjectId, CopyManufacturingObjectCommandHandler, CreateManufacturingObjectCommand, Classification (+45 more)
+Nodes (52): CopyManufacturingObjectCommand, NewDisplayName, NewParentId, TargetKind, TargetObjectId, CopyManufacturingObjectCommandHandler, CreateManufacturingObjectCommand, Classification (+44 more)
 
-### Community 45 - "IDiagnosticsProvider"
+### Community 45 - "PluginAssemblyLoader"
 Cohesion: 0.01
-Nodes (370): How TempestOS Applies It, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+362 more)
+Nodes (235): 12. Future Evolution, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem (+227 more)
 
-### Community 46 - "ProcessFamily"
-Cohesion: 0.02
-Nodes (161): 1. Purpose, 2. Taxonomy, 3. Capability is a band, and a band needs its conditions, 4. Material compatibility, 5. Production scale and constraints, 6. Identity, 7. Validation, 8. Boundaries (+153 more)
+### Community 46 - "ProcessDefinition"
+Cohesion: 0.04
+Nodes (73): 5. Production scale and constraints, 7. A7 — Manufacturing Process Library, ProcessCapabilities, IsRecorded, ProcessCatalog, DocumentKind, IndexCollectionName, LibraryName (+65 more)
 
 ### Community 47 - ".StartAsync"
 Cohesion: 0.05
-Nodes (15): TasksReadModelService, ArchivedProjectCommandGuardTests, SignOffPolicyTests, SignOffTestSupport, MacroReplayArchivedProjectGuardTests, ProjectLifecycleServiceTests, ProjectStatusReadModelTests, ChangeOrderServiceTests (+7 more)
+Nodes (21): A Note on the Four Pre-Claude Namespaces, Cross-Reference Check, Namespace Register, Register Metadata, ArchivedProjectCommandGuardTests, NoOpCommand, NoOpCommandHandler, FakeTimeProvider (+13 more)
 
-### Community 48 - "ReferenceDataCatalog"
+### Community 48 - "IReferenceRecord"
 Cohesion: 0.03
-Nodes (46): AuditTransactionWriter, PersonProvenance, Default, InvalidReferenceStateTransitionException, From, RecordId, To, ReferenceContentSignature (+38 more)
+Nodes (70): 1. What the Product Owner gets, 2. The weaknesses and the packages that close them, 3. Waves, 4. Method, 5. Outcome (`WP 21.9.0`, 2026-09-15 late evening), 6. The overnight acceptance campaign (2026-09-15 23:11 → 2026-09-16, on `claude/tempestos-v1-final-acceptance-19hka8`), TempestOS v0.21.0 — Execution Plan: the recovery tranche, AuditTransactionWriter (+62 more)
 
-### Community 49 - "IReferenceRecord"
-Cohesion: 0.02
-Nodes (103): ILessonCatalog, LessonCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, LessonQuery, Categories (+95 more)
+### Community 49 - "LessonRecord"
+Cohesion: 0.03
+Nodes (83): LessonCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, LessonQuery, Categories, Enquiry (+75 more)
 
 ### Community 50 - "IssuedContract"
 Cohesion: 0.01
-Nodes (149): 10. Boundary decisions, 3. C1 — Contract templates & commercial terms, ADR-0154: Contracts and Quotations Return to the Build, and a Sales Quotation Is a Governed Record, Alternatives Considered, Consequences, Context, Related Documents, Status (+141 more)
+Nodes (131): 1.1 Template → C-package mapping — anticipated, unverified, 3. C1 — Contract templates & commercial terms, ADR-0154: Contracts and Quotations Return to the Build, and a Sales Quotation Is a Governed Record, Alternatives Considered, Consequences, Related Documents, Status, 12. What ships (+123 more)
 
 ### Community 51 - "DigitalThreadGraphModel"
+Cohesion: 0.03
+Nodes (66): 3. Verification, 4. Reachability-on-Collapse — Independently Re-Verified Against `WP10.0A` Doc §2.1 Step 5, 1. `DigitalThreadGraphModel` — The Graph's Own Pure State and Algorithms, 1. Methodology, Disclosed, 2. `LoadRelationships` — Bounded by One Object's Own Direct Relationship Count, 3. `Prune` — O(nodes × edges) Per Collapse, Explicitly Bounded by Graph Size Only, 4. `LayoutForceDirected` — O(iterations × nodes²), Bounded and Disclosed, 5. `Rebuild()` — Full Visual-Tree Reconstruction, Bounded by Current Graph Size Only (+58 more)
+
+### Community 52 - "EngineeringDocumentNotFoundException"
 Cohesion: 0.02
-Nodes (97): 4. The Problem, 1. "Zero New Traversal Mechanism" — Independently Re-Verified, 3. The `TD-32` Merge — Independently Reproduced, 4. Reachability-on-Collapse — Independently Re-Verified Against `WP10.0A` Doc §2.1 Step 5, 5. Layout Determinism — Independently Re-Run, 6. A Genuine Defect Found and Independently Reproduced Before Fix, 8. Recommendation, Purpose (+89 more)
+Nodes (80): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+72 more)
 
-### Community 52 - "EngineeringDocumentStore"
-Cohesion: 0.04
-Nodes (45): 5. The Design, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+37 more)
-
-### Community 53 - "TempestOS Security Roadmap"
-Cohesion: 0.33
-Nodes (5): Explicit Non-Recommendations, How to Use This Roadmap, Purpose, Related Documents, TempestOS Security Roadmap
+### Community 53 - "ToastHost"
+Cohesion: 0.02
+Nodes (141): 5. The Design, 9. Files Added / Modified, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose (+133 more)
 
 ### Community 54 - "WorkspaceManager"
-Cohesion: 0.03
-Nodes (74): 5. The Design, `WP 10.1B` Summary (for reference), 5. Architectural Risk Assessment, 1. `TD-26` — Reconfirmed Open, Its Own Predicted Consequence Now Directly Observed, 2. New Item — `ProjectExplorer`/`PropertyInspector` Non-Deterministic Panel Ids Broke Cross-Restart Persistence — Found and Fixed, 3. New Item — Desktop Persistence Store Location Is Launch-Context-Dependent, 4. Item Reviewed, Not Newly Affected — `TD-32`, 5. Debt Summary (+66 more)
+Cohesion: 0.04
+Nodes (60): 5. The Design, 5. Architectural Risk Assessment, 6.6 `TD-26` Itself, Reconfirmed Live for the First Time, 1. `TD-26` — Reconfirmed Open, Its Own Predicted Consequence Now Directly Observed, 1. Scope Constraints — Independently Confirmed, 2. Fix Placement — Each at Its Own Correct Layer, 3. New Architectural Surface — Minimal and Additive, 4. `TD-38` — Correctly Deferred, Not Silently Absorbed (+52 more)
 
-### Community 55 - "XeroOutboxEntry"
+### Community 55 - "PersistenceXeroOutbox"
 Cohesion: 0.05
-Nodes (48): 6.1 Outbox, 6.2 Planning, 6.3 Drain, 6.4 Never double-create, 6.5 Rate limits and paging [S6], 6.6 Errors, 6.7 Audit, 6.8 Offline (+40 more)
+Nodes (50): Chief-engineer sign-offs during the build, v0.24.0 Xero — build defaults for the design's open questions, 6.1 Outbox, 6.2 Planning, 6.3 Drain, 6.4 Never double-create, 6.5 Rate limits and paging [S6], 6.6 Errors (+42 more)
 
 ### Community 56 - "2. Waves"
 Cohesion: 0.20
 Nodes (8): 11. Common Mistakes, 1. What the Product Owner gets, 2. Waves, 3. Engineering decisions taken while planning, 4. Questions the Product Owner will need to answer before the physical review (not before work starts), 5. Risks, v0.19.0 Consultancy Seam and Desktop — Execution Plan, SurfaceCommandPolicy
 
-### Community 57 - "WorkflowInteractionTests"
-Cohesion: 0.10
-Nodes (9): 1. Zero New Items — Both Genuine Findings Were Fixed, Not Left Open, 3. Every Other Tracked Item (`TD-01`–`TD-38`) — Reviewed, Confirmed Unaffected, 4. New Future Capability Entries, Not Duplicated Here, 5. Register Totals After This Review, 6. Recommendation, Purpose, WP 10.5B — Technical Debt Review, InMemorySettingsProviderForTest (+1 more)
+### Community 57 - "InputDialog"
+Cohesion: 0.02
+Nodes (59): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+51 more)
 
 ### Community 58 - "OperatingScenario"
 Cohesion: 0.06
@@ -1957,51 +1892,51 @@ Nodes (33): OperatingScenarioCatalog, DocumentKind, IndexCollectionName, Library
 
 ### Community 59 - ".Quantity"
 Cohesion: 0.03
-Nodes (17): Conversion Factor Verification, Edge-Case Verification, Floating-Point Tolerance Discussion, Purpose, Related Documents, Round-Trip Correctness — Statistical Confirmation, Verdict, WP 7.1B — Units & Quantities Framework — Mathematical Validation Report (+9 more)
+Nodes (6): IncompatibleUnitsException, AffineUnitTests, QuantityTests, QuantityVectorTests, LengthDefinitions, RotationalSpeedAndPlaneAngleTests
 
 ### Community 60 - "XeroSettingsReading"
-Cohesion: 0.02
-Nodes (68): 10.1 In-process Xero API simulator (task S1), 10.2 Live smoke test against the Demo Company (task X8, D7), 10.3 Other layers, 10. Test strategy, 12. Committed contracts (this change), 13. Open questions for the Product Owner, 14. Sources, 1. Scope and shape (+60 more)
+Cohesion: 0.03
+Nodes (56): 10.1 In-process Xero API simulator (task S1), 10.2 Live smoke test against the Demo Company (task X8, D7), 10.3 Other layers, 10. Test strategy, 12. Committed contracts (this change), 13. Open questions for the Product Owner, 14. Sources, 1. Scope and shape (+48 more)
 
 ### Community 61 - "EngineeringObjectStateStore"
 Cohesion: 0.02
-Nodes (103): 5. The Design, 5. The Design — as it stood after three commits and two Technical Review rounds, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose (+95 more)
+Nodes (142): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+134 more)
 
 ### Community 62 - "InMemoryEngineeringObjectRepository"
 Cohesion: 0.06
-Nodes (18): EngineeringObjectRepositoryExtensions, EngineeringObjectIndexEntry, InMemoryEngineeringObjectRepository, FakeObject, BusinessIdentifier, CreatedAt, CurrentRevisionNumber, Id (+10 more)
+Nodes (19): EngineeringObjectRepositoryExtensions, EngineeringObjectIndexEntry, IEngineeringObjectRepository, InMemoryEngineeringObjectRepository, FakeObject, BusinessIdentifier, CreatedAt, CurrentRevisionNumber (+11 more)
 
-### Community 63 - "EvidenceWorkspaceView"
-Cohesion: 0.03
-Nodes (25): 1. What the Product Owner gets, 3. Engineering decisions taken while planning, 4. The Product Owner's answers (2026-09-09), 5. Method, 6. Risks, 7. Manual test script for the release candidate (becomes `PHYSICAL_REVIEW.md` §8), v0.18.0 Evidence and Check — Execution Plan, What shipped, by Work Package (+17 more)
+### Community 63 - "Money"
+Cohesion: 0.04
+Nodes (30): 12. Defects found and fixed, 4.1 Money, 10. What P03 will not do, 11. What ships, 12. Dependencies, 1. Purpose, 2. What P03 is not, 4. Governance and storage (+22 more)
 
-### Community 64 - "CalculationException"
-Cohesion: 0.05
-Nodes (37): CalculationBoundExceededException, CalculationId, Kind, Limit, CalculationBoundKind, IntermediateResultCount, IntermediateResultTotalSize, CalculationException (+29 more)
+### Community 64 - "CalculationInputRetentionAndReadbackTests"
+Cohesion: 0.06
+Nodes (29): CalculationBoundExceededException, CalculationId, Kind, Limit, CalculationBoundKind, IntermediateResultCount, IntermediateResultTotalSize, CalculationIntermediateResult (+21 more)
 
 ### Community 65 - "SampleSeparationTests"
-Cohesion: 0.08
-Nodes (16): 10. Trade-offs — what "determinism, verified locally" is and is not worth, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
+Cohesion: 0.04
+Nodes (46): 10. Trade-offs — decided while still Proposed, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+38 more)
 
-### Community 66 - "PluginAssemblyLoader"
-Cohesion: 0.05
-Nodes (25): 12. Future Evolution, 10. Trade-offs, 12. Future Evolution, Risks, Cross-Reference Check, Plugin Register, Reason, Register Metadata (+17 more)
+### Community 66 - "CommandHandlerTable"
+Cohesion: 0.02
+Nodes (95): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+87 more)
 
-### Community 67 - "InMemoryQueryablePersistenceStore"
-Cohesion: 0.08
-Nodes (21): AnnotationPoint, Attachment, ContentHash, ContentType, FileName, Id, SizeInBytes, EngineeringObjectRehydratorRegistry (+13 more)
+### Community 67 - "CurrentPrincipalAccessor"
+Cohesion: 0.02
+Nodes (94): 3. Background, Classification Summary, Cross-Reference Check, Interface Register, 3. "Do Not Introduce Any New Traversal Mechanism" — Independently Verified, Tests, 1. A Tentative Architectural Suggestion Is Not a Ratified Decision, 2. "Positioned to Resolve" and "Resolved" Are Different Claims, and the Difference Matters (+86 more)
 
 ### Community 68 - "TimesheetEntryPrompt"
 Cohesion: 0.04
-Nodes (6): RateCardPicker, TimesheetEntryInput, TimesheetEntryPrompt, TimesheetRunbookG1G2Tests, TimesheetsAndDeliverablesJourneyTests, TimesheetTaskTestSupport
+Nodes (8): NewProjectPrompt, SelectedCustomerCode, NewProjectPromptResult, TimesheetEntryInput, TimesheetEntryPrompt, NewProjectDetailsAndTimesheetsJourneyTests, TimesheetRunbookG1G2Tests, TimesheetTaskTestSupport
 
 ### Community 69 - "PlatformVersionProvider"
 Cohesion: 0.03
-Nodes (84): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+76 more)
+Nodes (75): 7. Why This Solution Was Chosen, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+67 more)
 
-### Community 70 - "ConfigurationBuilder"
-Cohesion: 0.08
-Nodes (20): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+12 more)
+### Community 70 - "IConfigurationProvider"
+Cohesion: 0.03
+Nodes (46): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+38 more)
 
 ### Community 71 - "Opportunity"
 Cohesion: 0.05
@@ -2009,11 +1944,11 @@ Nodes (39): Opportunity, AllPins, ContactName, ContractReference, EstimatedValue
 
 ### Community 72 - "VerificationContext"
 Cohesion: 0.05
-Nodes (38): Constraint Checklist, Additions Beyond the Approved Contract, Deviations From the Approved Contract, Production Code, Related Documents, Status, Testing, WP 7.1E — Verification Framework — Implementation Report (+30 more)
+Nodes (47): Constraint Checklist, Findings Requiring Disclosure, Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 7.1E — Verification Framework — Engineering Review Report, 2. Validating some links while leaving others open is a legitimate, asymmetric design (+39 more)
 
 ### Community 73 - "Tempest.Core.EngineeringDomain"
 Cohesion: 0.01
-Nodes (42): Tempest.Core.EngineeringDomain, Tempest.Core.Tasks, Tempest.Workspace.Deliverables, Tempest.Workspace.Mechanical, Tempest.Workspace.Evidence, Tempest.Core.Tests.Workspace.DashboardExport, Tempest.Workspace.Invoicing, Tempest.Core.ExportImport (+34 more)
+Nodes (46): Tempest.Core.EngineeringDomain, Tempest.Core.Tasks, Tempest.Workspace.Deliverables, Tempest.Workspace.Mechanical, Tempest.Workspace.Evidence, Tempest.Workspace.Invoicing, Tempest.Core.Tests.Requirements, Tempest.Workspace.Documents (+38 more)
 
 ### Community 74 - "NonConformance"
 Cohesion: 0.03
@@ -2021,87 +1956,91 @@ Nodes (79): 1. What the audit found, and how it changed the work, Disposition, D
 
 ### Community 75 - "SupersededEngineeringObjectException"
 Cohesion: 0.04
-Nodes (49): Register Metadata, 8.3 `D-R4` (RED) — an operation reported as *failed* still becomes durable, and it was recorded nowhere, 9.1 What it confirmed, 9.2 `C-R1` (RED) — the register described code that does not exist, again, 9.3 `C-F2`–`C-F5` — four open defects, all reproduced, none fixed, 9.4 What this round still does not have, 9. Agent C — independent adversarial verification of the round-2 remediation (2026-09-06, at `261ba34`), Exceptions (+41 more)
+Nodes (53): 5.1 RED — one, closed and hand-mutation-checked (not tool-produced), 5.2 AMBER — two, both fixed, 5.3 YELLOW — documentation currency, all fixed, 5.4 What board 3 confirmed sound, 5.5 Not fixed, and why, 5. Board 3 — the final release review (2026-09-05, at `4e91ea8`), 8.3 `D-R4` (RED) — an operation reported as *failed* still becomes durable, and it was recorded nowhere, 9.1 What it confirmed (+45 more)
 
 ### Community 76 - "WorkspaceSelection"
-Cohesion: 0.05
-Nodes (33): 8. Architectural Principles, 11. Status Bar, 11. Status Bar and Toolbar Philosophy, 1. Workspace Startup, 3. Open an Object (with View-Factory Extensibility), 4. Digital Thread — Jump to a Linked Calculation Record, 5. Revise a Requirement (Command Dispatch + Auto-Refresh), 6. Layout Change and Persistence (+25 more)
+Cohesion: 0.03
+Nodes (76): 8. Architectural Principles, 11. Status Bar, 11. Status Bar and Toolbar Philosophy, 2. The Two `Tempest.App.Workspace` Changes — Reviewed for Security Impact, 3. New GUI Dependency Surface — `Avalonia`/`Avalonia.Desktop`/`Avalonia.Themes.Fluent`, 4. Command Palette — No Authorization Bypass, 6. Finding: Local Persistence Store Location Is Process-CWD-Relative, 7. Verdict (+68 more)
 
-### Community 77 - "ProjectGovernanceTests"
-Cohesion: 0.05
-Nodes (41): 4. Core-side temp-directory leak (`ProjectGovernanceTests`, `ProjectTaskTests`,, DecisionStatus, Accepted, Proposed, Rejected, Superseded, DecisionStatusDescriptor, DecisionStatuses (+33 more)
+### Community 77 - "IFamilySpecificState"
+Cohesion: 0.04
+Nodes (56): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 5. The Design (+48 more)
+
+### Community 78 - "ProjectFolderLocator"
+Cohesion: 0.16
+Nodes (5): ProjectFolderLocator, Service, ProjectFolderLocatorTests, UnreadableOrganisationCatalog, UnusedOrganisationCatalog
 
 ### Community 79 - "LeadTimeRecord"
-Cohesion: 0.04
-Nodes (48): 7. D3 / WP03.3 — Lead-time intelligence, LeadTimeKind, Actual, Committed, Estimated, Historical, Quoted, Typical (+40 more)
+Cohesion: 0.05
+Nodes (38): 7. D3 / WP03.3 — Lead-time intelligence, LeadTimeCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, LeadTimeQuery, Enquiry (+30 more)
 
 ### Community 80 - "IValidationResult"
 Cohesion: 0.03
-Nodes (80): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+72 more)
+Nodes (79): 10. Trade-offs, 4. The Problem, `WP 9.0B` Summary (for reference), Why a new exception (`RequirementGroupCycleException`), not a reused one, 3. Extension-Point Conformance, 4. Two In-Place Fixes — Conformance-Specific Verification, 6. Overall Verdict, Purpose (+71 more)
 
 ### Community 81 - "EngineeringTemplate"
 Cohesion: 0.04
 Nodes (58): EngineeringTemplate, AllFields, AllSections, Applicability, Governance, Instructions, IsStructured, Kind (+50 more)
 
-### Community 82 - "CalculationInputInvalidException"
-Cohesion: 0.02
-Nodes (96): Engineering Calculations *(implemented — WP 7.1D, ADR-0056)*, 3. Per-operation determination, Engineering Calculation Framework, Hidden Assumptions Made Impossible — By Construction, Not Convention, Integrity Properties — What Is Guaranteed, and How It Is Proven, Purpose, Related Documents, Verdict (+88 more)
+### Community 82 - "CalculationEngineTests"
+Cohesion: 0.07
+Nodes (33): Integrity Properties — What Is Guaranteed, and How It Is Proven, 1. An evidentiary requirement can justify a signature change a contract review could not have anticipated, 2. Reusing a sibling framework's own dispatch pattern works, provided the one deciding property is kept explicit, 3. A calculation's own true "evidence" value comes from what it discloses, not from its final number, 4. A dedicated Security Review, run for the first time, earns its own place in future Engineering Foundation Work Packages, Recommendations, Related Documents, Status (+25 more)
 
-### Community 83 - "Evidence"
-Cohesion: 0.04
-Nodes (52): CheckOutcome, Accepted, AcceptedWithComments, Rejected, CheckRecord, DeclaredFigure, DeclaredFigureRole, Input (+44 more)
+### Community 83 - "EvidenceService"
+Cohesion: 0.16
+Nodes (5): EvidenceActionResult, Succeeded, EvidenceService, ReferenceRecordLookup, IEvidenceService
 
-### Community 84 - "ReferencePin"
+### Community 84 - "3. The shared core"
 Cohesion: 0.02
-Nodes (108): 0. Programme summary, 1. Framework completion and knowledge population, reported separately, 2.1 The shared reasoning core, 2.2 The five work packages, 2. What was built, 4. How missing data is handled, 5. Governance and traceability, 6. Boundaries held (+100 more)
+Nodes (110): 2.1 The shared reasoning core, 4. How missing data is handled, 3.1 Outcomes are eight-valued, 3.2 Severity is not a weight, 3.3 The subject bridge, 3.4 Execution is pure, 3. The shared core, AssessmentOutcome (+102 more)
 
 ### Community 85 - "WP 7.0C — Engineering Foundation Contract Review"
 Cohesion: 0.18
 Nodes (10): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations, Related Documents, Repository Maturity, What This Document Is (+2 more)
 
 ### Community 86 - "ReferenceReviewService"
-Cohesion: 0.05
-Nodes (15): ADR-0161: Second-Person Sign-Off Is One Global Switch, Off by Default, and a Self-Approval Says So, Consequences, Context, Related Documents, Status, ReferenceReviewException, Reason, RecordId (+7 more)
+Cohesion: 0.04
+Nodes (19): ADR-0161: Second-Person Sign-Off Is One Global Switch, Off by Default, and a Self-Approval Says So, Consequences, Context, Related Documents, Status, ReferenceReviewException, Reason, RecordId (+11 more)
 
-### Community 87 - ".RunAsync"
-Cohesion: 0.08
-Nodes (17): Finding 3 — looped double-dispose race, Finding 3 — looped double-dispose race, Finding 4 — golden corpus missing fields, Finding 4 — the golden corpus's missing fields, Finding 5 — bounded gates, Findings 1–2 — Materials and Requirements race tests, Findings 1–2 — order-agnostic race gates (Materials, Requirements), Full suite (+9 more)
+### Community 87 - "RequirementsReconciliationServiceTests"
+Cohesion: 0.05
+Nodes (24): Finding 3 — looped double-dispose race, Finding 3 — looped double-dispose race, Finding 4 — golden corpus missing fields, Finding 4 — the golden corpus's missing fields, Finding 5 — bounded gates, Findings 1–2 — Materials and Requirements race tests, Findings 1–2 — order-agnostic race gates (Materials, Requirements), Full suite (+16 more)
 
 ### Community 88 - "DocumentViewerView"
-Cohesion: 0.04
-Nodes (18): 4. `DocumentViewerView` — glyph-only names, mouse-only panning, DocumentViewerView, ActiveColorHex, ActiveTool, AnnotationsOnCurrentPage, AreViewControlsVisible, ExternalLauncher, FilePicker (+10 more)
+Cohesion: 0.03
+Nodes (39): 4. `DocumentViewerView` — glyph-only names, mouse-only panning, AnnotationTool, Arrow, Ellipse, Freehand, Rectangle, TextNote, DocumentViewerView (+31 more)
 
 ### Community 89 - "BusinessRisk"
-Cohesion: 0.02
-Nodes (132): 1.1 Template → C-package mapping — anticipated, unverified, 5.1 Two states, not one, 5.2 Validation, 5. Governance and storage, RevenueReality, Contracted, Invoiced, Potential (+124 more)
+Cohesion: 0.01
+Nodes (166): 4. C2 — Insurance & risk register, 7. C2 — Insurance & risk register, BusinessRisk, Acceptance, AllPins, Category, Cause, ClosureReason (+158 more)
 
 ### Community 90 - "CommercialApplicability"
-Cohesion: 0.03
-Nodes (49): 3. The shared core, `CommercialApplicability`, `CommercialEnquiry`, `GeographicScope`, `CommercialSource`, `CommercialQuality`, `LeadTimeDuration` and `LeadTimeKind`, `QuantityBand`, CommercialApplicability, Conditions, Geography (+41 more)
+Cohesion: 0.04
+Nodes (34): `CommercialApplicability`, `CommercialEnquiry`, `GeographicScope`, `CommercialSource`, CommercialApplicability, Conditions, Geography, HasQuantityBasis, HasValidity, IsSupplierSpecific, MaterialRecordIds (+26 more)
 
 ### Community 91 - "DesignReviewPack"
-Cohesion: 0.02
-Nodes (96): 8. E4 / WP05.4 — Design review packs, DesignReviewCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, DesignReviewQuery, HasOutstandingActions (+88 more)
+Cohesion: 0.03
+Nodes (82): 8. E4 / WP05.4 — Design review packs, DesignReviewCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, DesignReviewQuery, HasOutstandingActions (+74 more)
 
 ### Community 92 - "PluginPlatformPerformanceTests"
-Cohesion: 0.12
-Nodes (3): 5. The Design, MixedShapeFixture, PluginPlatformPerformanceTests
+Cohesion: 0.08
+Nodes (17): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+9 more)
 
-### Community 93 - "QuotationCommands.cs"
-Cohesion: 0.05
-Nodes (50): AcceptQuotationCommand, TargetKind, TargetObjectId, AcceptQuotationCommandHandler, AddQuotationLineCommand, Description, FixedPrice, Hours (+42 more)
+### Community 93 - "IWorkspaceCommand"
+Cohesion: 0.02
+Nodes (75): `FCR-0048` — Requirement Collection Membership Removal, CompareCalculationWithPreviousCommand, TargetKind, TargetObjectId, CompareCalculationWithPreviousCommandHandler, ReviseEvidenceCommand, TargetKind, TargetObjectId (+67 more)
 
 ### Community 94 - "SupplierRecord"
-Cohesion: 0.02
-Nodes (111): ISupplierCatalog, SupplierCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, SupplierQuery, AsAt (+103 more)
+Cohesion: 0.03
+Nodes (68): 4. The five packages, D1 / WP03.1 — Supplier database, D2 / WP03.2 — Process & cost library, D3 / WP03.3 — Lead-time intelligence, D4 / WP03.4 — Quote / estimate structure, D5 / WP03.5 — Procurement decision support, 5. D1 / WP03.1 — Supplier database, SupplierCatalog (+60 more)
 
-### Community 95 - "RiskAndInsuranceTests"
-Cohesion: 0.04
-Nodes (49): 4. C2 — Insurance & risk register, RiskExposure, Extreme, High, Low, Medium, NotAssessed, RiskExposures (+41 more)
+### Community 95 - "Dimension"
+Cohesion: 0.03
+Nodes (42): Acceleration, Vector, AccelerationUnits, All, Dimension, AmountOfSubstance, ElectricCurrent, IsDimensionless (+34 more)
 
 ### Community 96 - "TempDirectory"
-Cohesion: 0.09
-Nodes (8): TempDirectory, Path, AuditHostRegistrationTests, EngineeringCockpitTests, NavigationServiceTests, TestWorkspaceViewFactory, CreateCallCount, Kind
+Cohesion: 0.06
+Nodes (10): TempDirectory, Path, SettingsHostRegistrationTests, EngineeringCockpitTests, ManufacturingWorkspaceIntegrationTests, NavigationServiceTests, RequirementsWorkspaceIntegrationTests, TestWorkspaceViewFactory (+2 more)
 
 ### Community 97 - "WP-C — Delete the Retired v0.1 Architecture"
 Cohesion: 0.12
@@ -2109,11 +2048,11 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 
 ### Community 98 - "CancellationToken"
 Cohesion: 0.10
-Nodes (19): Test-Only Hosted Service Fixtures (Out of Scope, Noted for Completeness), AbstractHostedService, AlphaHostedService, BetaHostedService, CancellingHostedService, CancellingHostedServiceControl, TokenSourceToCancel, ConstructorInjectedHostedService (+11 more)
+Nodes (18): 7. Why This Solution Was Chosen, Test-Only Hosted Service Fixtures (Out of Scope, Noted for Completeness), AbstractHostedService, AlphaHostedService, BetaHostedService, CancellingHostedService, ConstructorInjectedHostedService, EventBus (+10 more)
 
 ### Community 99 - "RelationshipCategory"
 Cohesion: 0.02
-Nodes (139): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 4. The Problem, 7. Why This Solution Was Chosen, 8. Architectural Principles, 9. Files Added (+131 more)
+Nodes (111): Engineering Domain Architecture, 3. The relationship vocabulary — `IEngineeringRelationship.RelationshipKind`/`RelationshipCategory`, 4. Digital Thread — the platform's own most vocabulary-hungry consumer, Repository Investigation, 2. Bidirectional `RelationshipRepository` Reads Over `IEvidenceComposer` — Assessed Sound, 4. The `TD-32` Merge — Correct Layer, 5. Layout Algorithms — Assessed Real, Not Decorative, 6. Defect Fix — Correct Layer (+103 more)
 
 ### Community 100 - "action-tracker/support.js"
 Cohesion: 0.06
@@ -2217,73 +2156,73 @@ Nodes (75): boot(), bundledBlob(), cdnScriptFor(), collectProps(), compileAttr()
 
 ### Community 125 - "SqlitePersistenceStore"
 Cohesion: 0.05
-Nodes (18): SqliteBlobStream, CanRead, CanSeek, CanWrite, Length, Position, SqlitePersistenceStore, CurrentSequence (+10 more)
+Nodes (23): SqliteBlobStream, CanRead, CanSeek, CanWrite, Length, Position, SqlitePersistenceStore, CurrentSequence (+15 more)
 
 ### Community 126 - "FastenerDefinition"
-Cohesion: 0.02
-Nodes (145): 1. Purpose, 2. Taxonomy, 3.1 Torque is transcribed, never computed, 3.2 Hardness is not a dimensioned quantity, 3.3 Pitch, not threads per inch, 3. The three decisions worth stating, 4. Canonical model, 5. Validation (+137 more)
+Cohesion: 0.05
+Nodes (56): 3.1 Torque is transcribed, never computed, 3.2 Hardness is not a dimensioned quantity, 3.3 Pitch, not threads per inch, 3. The three decisions worth stating, 4. Canonical model, 4. A3 — Fastener Library, FastenerCatalog, DocumentKind (+48 more)
 
 ### Community 127 - "IValidationDiagnostic"
 Cohesion: 0.04
-Nodes (30): 11. Known gaps and honest limitations, CostEstimateValidationService, CustomerQuotationValidationService, SupplierQuoteValidationService, LeadTimeValidationService, SourcingComparisonValidationService, DesignReviewValidationService, KnowledgeGovernanceValidation (+22 more)
+Nodes (24): 11. Known gaps and honest limitations, ProcessCostValidationService, CostEstimateValidationService, CustomerQuotationValidationService, SupplierQuoteValidationService, LeadTimeValidationService, SourcingComparisonValidationService, ISupplierValidationService (+16 more)
 
 ### Community 128 - "ITempestHost"
 Cohesion: 0.05
-Nodes (36): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 6. Alternatives Considered, 7. Why This Solution Was Chosen, 9. Files Added, Architectural Debt Assessment (+28 more)
+Nodes (28): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen, 9. Files Added (+20 more)
 
 ### Community 129 - "CalculationPack"
-Cohesion: 0.03
-Nodes (73): 2.7 Tempest Design Engineering (authored, not sourced), KnowledgeSeed, AcademyNodes, Challenges, Prompts, Seed, DatasetName, DatasetRevision (+65 more)
+Cohesion: 0.04
+Nodes (52): AssetGovernanceValidation, CalculationMethod, Description, GoverningEquations, IsPlatformCalculation, IsToolIdentified, StandardReferences, CalculationMethodKind (+44 more)
 
 ### Community 130 - "PlatformPrincipal"
-Cohesion: 0.04
-Nodes (28): Findings Requiring Disclosure, Four-Layer / Governance Confirmation (Re-Verified Against Real Code), Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 6.5 — Audit Framework — Engineering Review Report, AuditQueryCriteria (+20 more)
+Cohesion: 0.03
+Nodes (35): 1. A Validation Mandate Requires an Actual Test Suite, Not a Restated Opinion, 2. Not Every Shared Utility Needs to Be Reused by Every New Consumer, 3. Two Different Failure Philosophies Can Coexist Correctly in One Service, 4. A Deep, Multi-Step Test Is What Finds Bugs a Shallow One Hides, 5. Confirming a Risk a Second Time Is Not the Same as Retiring It, Related Documents, WP 6.5 — Audit Framework — Lessons Learned, AuditQueryCriteria (+27 more)
 
 ### Community 131 - "IOrganisationCatalog"
+Cohesion: 0.02
+Nodes (42): 1. What the Product Owner gets, 3. Engineering decisions taken while planning, 4. The Product Owner's answers (2026-09-09), 5. Method, 6. Risks, 7. Manual test script for the release candidate (becomes `PHYSICAL_REVIEW.md` §8), v0.18.0 Evidence and Check — Execution Plan, What changed for a developer (+34 more)
+
+### Community 132 - "IPersistenceTransaction"
 Cohesion: 0.03
-Nodes (24): IOrganisationCatalog, IAccountsReadModel, IWorkingPatternProvider, QuotationSheetRenderer, DocumentType, IdentityProvider, TemplateName, ProjectPicker (+16 more)
+Nodes (30): The three layers, and which of them is authoritative, IPersistenceReadTransaction, Sequence, IPersistenceTransaction, IQueryablePersistenceStore, CurrentSequence, SearchHit, InMemoryPersistenceStore (+22 more)
 
-### Community 132 - "InMemoryPersistenceStore"
-Cohesion: 0.05
-Nodes (19): InMemoryPersistenceStore, CurrentSequence, FailNextCommit, InMemoryPersistenceStore, CurrentSequence, FailNextCommit, CommitFailingPersistenceStore, BodiesCompleted (+11 more)
-
-### Community 133 - "LicenseProvider"
-Cohesion: 0.05
-Nodes (26): 5. "The Graph Shall Be a Presentation Over the Existing Digital Thread" — Independently Verified, 1. Four-Layer Dependency Rules (`ADR-0023`), 3. Full Namespace Dependency Graph (`Tempest.Core`), 4. Service Ownership, 7. Platform Layering — Overall Verdict, Module → Module, Purpose, Related Documents (+18 more)
+### Community 133 - "Entries"
+Cohesion: 0.02
+Nodes (128): 11. Common Mistakes, 2. Purpose, 5. The Design, 7. Why This Solution Was Chosen, Licensing, Command Framework *(implemented — WP 5.1A design, WP 5.1B implementation, ADR-0036–ADR-0038)*, Licensing *(implemented — WP 6.6, ADR-0050)*, Future Commercial Plugin Support (+120 more)
 
 ### Community 140 - "EngineeringChallenge"
-Cohesion: 0.04
-Nodes (62): 4. The five packages, F1 / WP06.1 — Prompt library, F2 / WP06.2 — Academy structure, F3 / WP06.3 — Challenge library, F5 / WP06.5 — Worked examples, 7. F3 / WP06.3 — What-if and challenge library, ChallengeCatalog, DocumentKind (+54 more)
+Cohesion: 0.03
+Nodes (78): 4. The five packages, F1 / WP06.1 — Prompt library, F2 / WP06.2 — Academy structure, F3 / WP06.3 — Challenge library, F4 / WP06.4 — Failure & lessons database, F5 / WP06.5 — Worked examples, 10. What ships, 11. Dependencies (+70 more)
 
 ### Community 141 - "WorkspaceLayoutTree"
-Cohesion: 0.07
-Nodes (22): 5. The Design (`ADR-0095`), Operations, What was preserved, DockRelation, Above, Below, Into, Left (+14 more)
+Cohesion: 0.06
+Nodes (33): 5. The Design (`ADR-0095`), Not attempted, Operations, Persistence, Proven by, Related Documents, Rendering, The extension point (+25 more)
 
 ### Community 142 - "WorkspaceShell"
-Cohesion: 0.03
-Nodes (101): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+93 more)
+Cohesion: 0.04
+Nodes (84): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+76 more)
 
 ### Community 144 - "ProcessCostRecord"
-Cohesion: 0.04
-Nodes (60): 6. D2 / WP03.2 — Process and cost library, IProcessCostCatalog, ProcessCostCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, ProcessCostQuery (+52 more)
+Cohesion: 0.05
+Nodes (46): 6. D2 / WP03.2 — Process and cost library, IProcessCostCatalog, ProcessCostCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, ProcessCostQuery (+38 more)
 
 ### Community 145 - "XeroDocumentRef"
-Cohesion: 0.02
-Nodes (69): AttachmentXeroDocumentFileSource, PersistenceXeroLinkStore, XeroStoreSupport, IXeroDocumentFileSource, XeroDocumentFile, XeroDocumentRef, EngineFiles, FakeConnectionState (+61 more)
+Cohesion: 0.03
+Nodes (34): AttachmentXeroDocumentFileSource, PersistenceXeroLinkStore, XeroStoreSupport, IXeroDocumentFileSource, XeroDocumentFile, XeroDocumentRef, EngineFiles, FakeDocumentFiles (+26 more)
 
 ### Community 146 - "App"
 Cohesion: 0.01
-Nodes (614): How TempestOS Applies It, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+606 more)
+Nodes (488): How TempestOS Applies It, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+480 more)
 
-### Community 147 - "AttachmentContentStore"
-Cohesion: 0.08
-Nodes (16): AttachmentContentResult, Bytes, IsAvailable, Status, AttachmentContentStatus, Available, Corrupt, Missing (+8 more)
+### Community 147 - ".Warning"
+Cohesion: 0.07
+Nodes (22): 5. The Design (`ADR-0114`), Attachment Content Reconciliation *(implemented — `WP 16.4B`, `TD-97`, `ADR-0114` Decision 4)*, Attachment Content Store *(implemented — `v0.14.0`, `TD-31`, ADR-0113, ADR-0114)*, TD-97 — attachment content release and sweep, AttachmentContentResult, Bytes, IsAvailable, Status (+14 more)
 
 ### Community 148 - "TradeStudyRecord"
 Cohesion: 0.04
 Nodes (45): JudgementSource, Assessed, Judged, Outstanding, TradeStudyJudgement, AllPins, ConsiderationCode, Evidence (+37 more)
 
-### Community 149 - ".NewContextOver"
+### Community 149 - "GatedPersistenceStore"
 Cohesion: 0.12
 Nodes (6): Validation, EngineeringObjectWriteSerializationTests, TransactionalWriteFaultInjectionTests, GatedPersistenceStore, CurrentSequence, Inner
 
@@ -2292,112 +2231,112 @@ Cohesion: 0.08
 Nodes (3): AttachmentContentSamples, AttachmentContentStoreTests, BinaryPersistenceStoreTests
 
 ### Community 151 - "ManufacturingRequirementSet"
-Cohesion: 0.05
-Nodes (37): 6. B2 — Manufacturing decision trees, DecisionTreeWalker, DecisionStep, EvaluatedBranches, DecisionWalk, AllPins, Concluded, ConstantPins (+29 more)
+Cohesion: 0.04
+Nodes (43): 2. Twelve-Contract Compatibility — Independently Verified, 3. Verified Against Every "Do NOT Implement" Item, 4. Recommendation, Purpose, WP 10.2B — Systems Engineering Review, DecisionStep, EvaluatedBranches, DecisionWalk (+35 more)
 
 ### Community 152 - "EngineeringObjectFactory"
-Cohesion: 0.02
-Nodes (49): EngineeringManufacturingWorkspaceSampleModule, AllSampleObjectIds, FixtureDocumentId, HasRegistered, InspectionId, RoutingId, SharedFastenerOperationId, SparWebPlateOperationId (+41 more)
+Cohesion: 0.03
+Nodes (38): EngineeringManufacturingWorkspaceSampleModule, AllSampleObjectIds, FixtureDocumentId, HasRegistered, InspectionId, RoutingId, SharedFastenerOperationId, SparWebPlateOperationId (+30 more)
 
-### Community 153 - "BearingDefinition"
-Cohesion: 0.06
-Nodes (18): BearingDefinition, ApplicationClassification, Configuration, Construction, EffectiveDate, Family, Geometry, Identity (+10 more)
+### Community 153 - "KnowledgeProvenance"
+Cohesion: 0.02
+Nodes (86): 0. Programme status — the honest four facts, 1. Numbering, 2. The decision the programme rests on, 3. What P06 will not do, 5. Persistence, 6. Registers, 7. What P06 did not touch, 8. Known gaps and deferred work (+78 more)
 
 ### Community 154 - "Fact"
-Cohesion: 0.02
-Nodes (64): 4. The five packages, E1 / WP05.1 — Engineering templates, E2 / WP05.2 — Calculation packs, E3 / WP05.3 — Verification artefacts, E4 / WP05.4 — Design review packs, E5 / WP05.5 — Technical documentation, 10. What ships, 11. Dependencies (+56 more)
+Cohesion: 0.09
+Nodes (12): CalculationInput, Description, HasStatedSource, IsTraceable, Reference, Value, CalculationPackValidationService, TemplateValidationService (+4 more)
 
 ### Community 155 - ".For"
-Cohesion: 0.19
-Nodes (10): BearingPropertyReader, QuantityProperties, TextProperties, FastenerPropertyReader, QuantityProperties, TextProperties, ReferencePropertyReading, Succeeded (+2 more)
+Cohesion: 0.13
+Nodes (16): BearingPropertyReader, QuantityProperties, TextProperties, FastenerPropertyReader, QuantityProperties, TextProperties, ReferencePropertyReading, Succeeded (+8 more)
 
-### Community 156 - "ConstantLibraryTests"
-Cohesion: 0.16
-Nodes (8): ConstantUncertainty, Exact, IsExact, NotRecorded, StatesAFigure, ConstantValidationService, ConstantFixtures, ConstantLibraryTests
+### Community 156 - "ConstantDefinition"
+Cohesion: 0.08
+Nodes (25): ConstantComparer, ConstantComparisonProperties, All, ConstantDefinition, AlternativeSymbols, Applicability, Category, DefiningStatement (+17 more)
 
-### Community 157 - "WP 4.2B — ADR: Plugin Failure Classification"
-Cohesion: 0.12
-Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
+### Community 157 - "ProcessFamily"
+Cohesion: 0.03
+Nodes (74): 2. Taxonomy, ProcessComparer, ProcessFamily, AdhesiveBonding, Annealing, Anodising, ArcWelding, Bending (+66 more)
 
 ### Community 158 - ".ValidateDefinitionAsync"
-Cohesion: 0.03
-Nodes (94): 1. Purpose, 2. One taxonomy, three typed details, 3. A torsion spring's rate is not a torque, 4. Canonical model, 5. Validation, 6. Boundaries, 7. Dataset, A5 Mechanical Components Library (+86 more)
+Cohesion: 0.07
+Nodes (48): 3. A torsion spring's rate is not a torque, 4. Canonical model, 5. A5 — Springs, Gears and Mechanical Components, ComponentCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName (+40 more)
 
 ### Community 159 - ".BuildRequirements"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (8): CockpitReadScopeTests, CountingPersistenceStore, CurrentSequence, KeyListings, Reads, CountingRequirementValidationService, Validations, Harness
 
-### Community 160 - ".RegisterAll"
-Cohesion: 0.08
-Nodes (29): BeamBendingStressCalculationDefinition, CalculationId, Metadata, BeamBendingStressInput, BeamBendingStressResult, BearingLoadCapacityCalculationDefinition, CalculationId, Metadata (+21 more)
+### Community 160 - "ICalculationDefinition"
+Cohesion: 0.05
+Nodes (52): 9.1 `TD-159` — Resolved, hand-mutation-checked (not tool-produced), Not Recommended, Purpose, Recommendation 1 — A Future Discipline Module Should Register Its Own Formula as a Single, Focused `ICalculationDefinition`, Never a Multi-Purpose "Calculator" Type, Recommendation 2 — `FCR-0035` (Execution Cancellation) Should Be Resolved Alongside the First Real, Long-Running Calculation, Not in Isolation, Recommendation 3 — A Future Consumer Needing Guaranteed Intermediate-Result Type Fidelity Should Layer Its Own Typed Wrapper, Not Request a Framework Change, Recommendation 4 — Candidate H (Verification & Validation) Should Consider Recording That a Specific Calculation Record Satisfied a Requirement, Once Designed, Related Documents (+44 more)
 
 ### Community 162 - "RequirementsService"
-Cohesion: 0.12
-Nodes (15): 11. Common Mistakes, `WP 8.2A` Summary (for reference), TD-67, item 4 — `MoveGroupAsync` Kind and ancestry-cycle checks, IWorkspaceChangePublisher, RequirementCollectionDto, RequirementGroup, Id, IsDeleted (+7 more)
+Cohesion: 0.09
+Nodes (22): Design decision: one service or three?, Digital Thread Traversal — Read Path, Not Write Path, Purpose, Related Documents, Status, The Thread, Stage by Stage, What "Digital Thread" Means Architecturally, What This Document Does Not Claim (+14 more)
 
-### Community 163 - ".BuildCatalog"
-Cohesion: 0.12
-Nodes (8): ReferenceProvenanceIncompleteException, RecordId, RequestedState, ReleasedReferenceImmutableException, RecordId, State, BearingLibraryIntegrationTests, BearingLifecycleTests
+### Community 163 - "ContactLinkTestKit"
+Cohesion: 0.05
+Nodes (22): XeroSimulatorClock, ContactLinkPromptTests, ContactLinkTestKit, Audit, Clock, Contacts, Linker, Links (+14 more)
 
 ### Community 165 - "TechnicalDocument"
+Cohesion: 0.06
+Nodes (40): DocumentRelationship, IsResolvable, RelationshipKind, Kinds, All, TechnicalDocument, Applicability, DocumentId (+32 more)
+
+### Community 166 - "CalculationTemplateRegistry"
 Cohesion: 0.03
-Nodes (64): 9. E5 / WP05.5 — Technical documentation, DocumentRelationship, IsResolvable, RelationshipKind, DocumentStatus, Approved, Draft, InReview (+56 more)
+Nodes (70): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+62 more)
 
-### Community 166 - "CalculationsNodeProvider"
-Cohesion: 0.07
-Nodes (24): 5. The Design, Process Observations, Purpose, Recommendation for Future Work Packages, Related Documents, What Went Well, WP 9.2A — Engineering Calculations Workspace — Lessons Learned, CalculationsNodeProvider (+16 more)
-
-### Community 167 - "ProjectFolderLocator"
-Cohesion: 0.09
-Nodes (8): ProjectFolderCoordinator, Pending, ProjectFolderLocator, Service, GatedProjectDirectory, Finds, Project, ProjectFolderExportTests
+### Community 167 - ".QuoteExport_StartsInTheProjectsQuoteFolder_AndOffersNoneWhenGenerationIsOff"
+Cohesion: 0.16
+Nodes (4): GatedProjectDirectory, Finds, Project, ProjectFolderExportTests
 
 ### Community 168 - "ObjectEditorView"
 Cohesion: 0.02
-Nodes (66): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+58 more)
+Nodes (77): Observations, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+69 more)
 
 ### Community 169 - "DocumentPageSourceTests"
 Cohesion: 0.07
 Nodes (12): 5. The Design, 2. Tests strengthened, DocumentPageSourceFactory, DocumentRenderException, ImageDocumentPageSource, PageCount, SvgMarkupSanitiser, TextDocumentPageSource (+4 more)
 
 ### Community 170 - "Fact"
-Cohesion: 0.02
-Nodes (103): 0. Programme status — the honest four facts, 1. Numbering, 2. The decision the programme rests on, 3. What P06 will not do, 5. Persistence, 6. Registers, 7. What P06 did not touch, 8. Known gaps and deferred work (+95 more)
+Cohesion: 0.05
+Nodes (36): AcademyValidationService, ChallengeValidationService, PromptValidationService, AuthoritySeekingTerms, WorkedStep, Description, IsExplained, IsTraceable (+28 more)
 
-### Community 171 - "IModule"
+### Community 171 - "IHostedService"
 Cohesion: 0.01
-Nodes (406): How TempestOS Applies It, When Not to Use, 3. Implementation Lessons, 10. Trade-offs, 7. Why This Solution Was Chosen, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution (+398 more)
+Nodes (262): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 5. The Design (+254 more)
 
 ### Community 172 - "CommandDescriptor"
 Cohesion: 0.09
-Nodes (22): CommandBinding, AppliesToKinds, ConfirmationMessage, IsInvocable, Mutates, Parameters, Requires, RequiresPrompt (+14 more)
+Nodes (23): Provenance Fields — What Is Captured, and Why, CommandBinding, AppliesToKinds, ConfirmationMessage, IsInvocable, Mutates, Parameters, Requires (+15 more)
 
 ### Community 173 - "RibbonView"
 Cohesion: 0.02
-Nodes (106): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+98 more)
+Nodes (108): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+100 more)
 
 ### Community 174 - "EngineeringCockpit"
 Cohesion: 0.01
-Nodes (291): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+283 more)
+Nodes (219): Alternatives Considered, Desktop Composition Architecture, Documentation Impact, Failure Model, Lifecycle Interaction, Objective, Related Documents, Required ADRs (+211 more)
 
 ### Community 175 - "BusinessRecord"
 Cohesion: 0.04
 Nodes (46): 4. The two things the platform will not compute, BusinessRecord, Classification, DocumentId, Evidence, ExternalLocation, Facts, HasRetentionDecision (+38 more)
 
 ### Community 176 - "RuleDefinition"
-Cohesion: 0.06
-Nodes (30): ReviewCriterion, Code, IsAutomated, Question, RuleCatalog, DocumentKind, IndexCollectionName, LibraryName (+22 more)
+Cohesion: 0.04
+Nodes (55): RuleCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, RuleDefinition, Applicability, Code (+47 more)
 
 ### Community 177 - "ComponentQuery"
-Cohesion: 0.06
-Nodes (29): ComponentQuery, BoreDiameterMaximum, BoreDiameterMinimum, CitesStandardContaining, DesignationContains, DriveProfileDesignation, Families, FreeLengthMaximum (+21 more)
+Cohesion: 0.07
+Nodes (28): ComponentQuery, BoreDiameterMaximum, BoreDiameterMinimum, CitesStandardContaining, DesignationContains, DriveProfileDesignation, Families, FreeLengthMaximum (+20 more)
 
 ### Community 178 - ".BuildCatalog"
-Cohesion: 0.12
-Nodes (13): ReferenceDataCatalogTests, KeylessWidgetCatalog, DocumentKind, IndexCollectionName, LibraryName, ReferenceDataFixtures, WidgetCatalog, DocumentKind (+5 more)
+Cohesion: 0.10
+Nodes (16): ReferenceProvenanceIncompleteException, RecordId, RequestedState, ReferenceDataCatalogTests, KeylessWidgetCatalog, DocumentKind, IndexCollectionName, LibraryName (+8 more)
 
-### Community 179 - ".NewContext"
-Cohesion: 0.11
-Nodes (7): EngineeringRelationshipFactory, RelationshipKind, ChildrenIndexTests, RelationshipFactorySupersessionTests, RevisedObjectWriteSerializationTests, RevisionSuccessorUniquenessTests, TestEngineeringDomain
+### Community 179 - ".StartAsync"
+Cohesion: 0.09
+Nodes (5): DashboardExportTestHost, EngineeringStatusExportAdapterTests, ProgrammeHierarchyExportAdapterTests, ReviewQueueExportAdapterTests, ProjectHealthTests
 
 ### Community 180 - "WP 7.2B — Dependency Analysis"
 Cohesion: 0.25
@@ -2408,40 +2347,40 @@ Cohesion: 0.08
 Nodes (24): 10.1 Engineering Calculations was hard to find, 10.2 "Populate Material Library" was invisible, 10.3 Why the tests did not catch either — and what changed, 10.4 The gate, re-run, 10.5 Still true, 10. Amendment — first manual usability review on Windows (2026-09-07), 11.2 The workspace, 11.4 The gate (+16 more)
 
 ### Community 182 - "Tempest.Core.Settings"
-Cohesion: 0.06
-Nodes (6): Tempest.Core.Tests.Settings, Tempest.Core.Settings, Tempest.Core.Input, Tempest.Core.Tests.Input, Tempest.Core.Tests.Macros, Tempest.Core.Macros
+Cohesion: 0.03
+Nodes (11): Tempest.Core.Tests.Settings, Tempest.Core.ExportImport, Tempest.Core.Concurrency, Tempest.Core.Settings, Tempest.Core.Input, Tempest.Core.Tests.Verification, Tempest.Core.Tests.ExportImport, Tempest.Core.Tests.Input (+3 more)
 
 ### Community 183 - "MacroManager"
-Cohesion: 0.04
-Nodes (36): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+28 more)
+Cohesion: 0.05
+Nodes (30): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+22 more)
 
 ### Community 184 - "PromptRecord"
 Cohesion: 0.04
-Nodes (46): PromptCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, PromptQuery, Enquiry, IsAuthoritative (+38 more)
+Nodes (55): 3. Sources — first acquisition (2026-09-07), PromptCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, PromptQuery, Enquiry (+47 more)
 
-### Community 185 - ".FindAsync"
-Cohesion: 0.02
-Nodes (29): PostalAddress, CountryCode, IsPostable, Line1, CustomersSuppliersView, EditingRecordId, Provenance, CalculationPackListView (+21 more)
+### Community 185 - "CalculationPackListView"
+Cohesion: 0.04
+Nodes (9): CalculationPackListView, EngineeringAssetFormatting, EngineeringEvidenceRow, Label, AssetListRow, EngineeringAssetListBuilder, EngineeringEvidenceListView, EngineeringTemplateListView (+1 more)
 
 ### Community 186 - "PurchasingSyncTestKit"
-Cohesion: 0.04
-Nodes (43): LostResponseHandler, FailReadsAfterLoss, LoseWrites, FakeExpenseSource, FakePurchaseOrderSource, NewWriteLossHandler, LoseNewWrites, PurchasingSyncTestKit (+35 more)
+Cohesion: 0.05
+Nodes (44): LostResponseHandler, FailReadsAfterLoss, LoseWrites, FakeExpenseSource, FakePurchaseOrderSource, NewWriteLossHandler, LoseNewWrites, PurchasingSyncTestKit (+36 more)
 
 ### Community 187 - "CalculationModulesView"
-Cohesion: 0.04
-Nodes (30): 1. The Canonical States, 2. The Canonical Transition Table, 3. Approval Gates, 4.1 Worked Reconciliation: `RequirementStatus` (Shipped), 4. Per-Family Specialisation, 5. Deletion, 6. Validation Rules Summary, Purpose (+22 more)
+Cohesion: 0.05
+Nodes (13): ReleasedRecordOption, CalculationModulesCoordinator, BesideOrAbovePanel, CalculationModulesView, CalculationName, Catalogue, CurrentRun, Diagram (+5 more)
 
-### Community 188 - "Money"
+### Community 188 - "BusinessAuthorisation"
 Cohesion: 0.02
-Nodes (102): 0. Programme status, 11. Registers, 12. Defects found and fixed, 13. Cross-package review, 14. Known gaps and honest limitations, 15. Git, 16. What P07 did not touch, 2. Shared architecture (+94 more)
+Nodes (97): 0. Programme status, 10. Boundary decisions, 11. Registers, 13. Cross-package review, 14. Known gaps and honest limitations, 15. Git, 16. What P07 did not touch, 2. Shared architecture (+89 more)
 
 ### Community 190 - "OrganisationPicker"
 Cohesion: 0.12
-Nodes (5): ADR-0156: Project-Centric Numbering and One Customers & Suppliers List, Context, Decision, Status, OrganisationPicker
+Nodes (6): ADR-0156: Project-Centric Numbering and One Customers & Suppliers List, Consequences, Context, Decision, Status, OrganisationPicker
 
-### Community 192 - "Quotation"
-Cohesion: 0.06
-Nodes (32): Quotation, AllPins, Amount, BecameContract, Client, DecidedOn, FollowUpOn, Governance (+24 more)
+### Community 192 - "Contact"
+Cohesion: 0.05
+Nodes (35): ContactCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, OrganisationCatalog, DocumentKind, IndexCollectionName (+27 more)
 
 ### Community 193 - "AuditRecord"
 Cohesion: 0.15
@@ -2451,157 +2390,161 @@ Nodes (6): AuditRecord, Action, ActorId, Detail, OccurredAt, AuditRecordTests
 Cohesion: 0.09
 Nodes (19): FakeConnectorCall, FakeInvoicingConnector, Calls, Name, ConnectorAuthorisation, Authorised, Expired, NotAuthorised (+11 more)
 
-### Community 195 - ".Governance"
-Cohesion: 0.09
-Nodes (6): AssetTests, Today, BusinessGovernanceFixtures, Today, ContractTests, Today
+### Community 195 - "EffectivePeriod"
+Cohesion: 0.10
+Nodes (8): EffectivePeriod, DayCount, IsOpenEnded, To, BusinessGovernanceFixtures, Today, ContractTests, Today
 
-### Community 196 - ".GetAsync"
-Cohesion: 0.09
-Nodes (13): FaultSlot, Fault, Remaining, XeroFault, XeroFaultKind, DropResponseAfterCommit, RateLimitedDay, RateLimitedMinute (+5 more)
+### Community 196 - "BudgetPosition"
+Cohesion: 0.04
+Nodes (58): 0. Scope and method, 1. RED — release blockers, 2. AMBER — required in-scope improvements, 3. YELLOW — technical improvement and debt, 4. GREEN — observations, 5. Verdict, 6. Secondary review, AMBER-1 — Academy prerequisite cycle detection under-delivered its own contract ✅ **Remediated** (+50 more)
 
 ### Community 197 - "RequestContext"
 Cohesion: 0.07
-Nodes (18): CachedResponse, RequestContext, AcceptsJson, Binary, BodyMalformed, ContentType, IdempotencyKey, IsRead (+10 more)
+Nodes (20): CachedResponse, RequestContext, AcceptsJson, Binary, BodyMalformed, ContentType, IdempotencyKey, IsRead (+12 more)
 
 ### Community 198 - "AccountsSnapshot"
-Cohesion: 0.06
+Cohesion: 0.05
 Nodes (24): AccountsSnapshot, AsOf, BillsDueWithin30, Cash, CashFlowSeries, Connector, Due30, Due30Total (+16 more)
 
 ### Community 199 - "BeamDeflectionInput"
-Cohesion: 0.03
-Nodes (43): BeamDeflectionCalculationDefinition, CalculationId, Metadata, BeamDeflectionInput, BeamDeflectionResult, BeamLoading, PointLoad, UniformlyDistributed (+35 more)
+Cohesion: 0.13
+Nodes (11): BeamDeflectionInput, BeamDeflectionResult, BeamLoading, PointLoad, UniformlyDistributed, BeamSupport, Cantilever, SimplySupported (+3 more)
 
 ### Community 200 - "XeroSyncService"
 Cohesion: 0.03
-Nodes (66): When to Use, 3. Background, WorkspaceChangeFeed, XeroBackoff, XeroChangeObserver, IsListening, XeroObservedBatch, XeroObservedChange (+58 more)
+Nodes (67): WorkspaceChangeFeed, XeroBackoff, XeroChangeObserver, IsListening, XeroObservedBatch, XeroObservedChange, XeroReadBack, XeroReadBackReport (+59 more)
 
 ### Community 201 - "VatRate"
-Cohesion: 0.07
-Nodes (23): Facts this plan relies on, Out of scope for v0.24.0, Principle, Product Owner decisions (2026-10-02), Source of truth, TempestOS v0.24.0 — Xero Integration Plan, Work packages, VatRate (+15 more)
-
-### Community 202 - "EventBus"
-Cohesion: 0.02
-Nodes (97): 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 6. Alternatives Considered, 9. Benefits, Related Documents (+89 more)
-
-### Community 203 - "RateCardsView"
-Cohesion: 0.06
-Nodes (9): RateCardsView, OpenRecordId, RateCardProvenance, ReviseRecordPrompt, CollapsibleSection, Header, IsExpanded, Title (+1 more)
-
-### Community 204 - "ConstantDefinition"
 Cohesion: 0.03
-Nodes (50): 5. Where a constant applies is part of the constant, ConstantCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, ConstantCategories, ConstantCategory (+42 more)
+Nodes (35): Facts this plan relies on, Out of scope for v0.24.0, Principle, Product Owner decisions (2026-10-02), Source of truth, TempestOS v0.24.0 — Xero Integration Plan, Work packages, VatRate (+27 more)
 
-### Community 205 - "DocumentViewSession"
+### Community 202 - "NavigationItem"
+Cohesion: 0.02
+Nodes (96): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design, 6. Alternatives Considered (+88 more)
+
+### Community 203 - "FastenerQuery"
+Cohesion: 0.03
+Nodes (64): FastenerDriveType, CrossRecess, ExternalHexagon, HandDriven, InternalHexagon, InternalHexalobular, None, Other (+56 more)
+
+### Community 204 - "ReferenceQuantityValue"
+Cohesion: 0.04
+Nodes (43): 5. Taxonomy, 1. Purpose, 3. The value is always a dimensioned quantity, 5. Where a constant applies is part of the constant, 6. Symbols, 7. Validation, 8. Boundaries, 9. Dataset (+35 more)
+
+### Community 205 - "AssetFixtures"
 Cohesion: 0.06
-Nodes (23): AnnotationTool, Arrow, Ellipse, Freehand, Rectangle, TextNote, AttachmentAnnotation, IHasAttachmentAnnotations (+15 more)
+Nodes (27): ObservationSeverity, Comment, Critical, Major, Minor, Unspecified, ReviewObservation, HasRecommendation (+19 more)
 
 ### Community 206 - "XeroPurchasingCreateLog"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (7): XeroPurchasingCreateLog, XeroPurchasingSentCreate, IsTombstone, Calls, XeroPurchasingRecovery, XeroPurchasingCreateLogTests, YieldingInMemoryPersistenceStore
 
-### Community 207 - "UndoableAction"
-Cohesion: 0.02
-Nodes (73): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered (+65 more)
+### Community 207 - ".Create"
+Cohesion: 0.09
+Nodes (19): 12. Future Evolution, 6. Alternatives Considered, A. Carried from the `v0.13.x` train, B. Engineering body of work (pre-programme, this release), C. The remediation programme (twelve Work Packages), D. Release-preparation Work Packages, E. Not started — out of this release's scope, Scope of this document (+11 more)
 
 ### Community 208 - "WorkedExample"
 Cohesion: 0.06
 Nodes (35): WorkedExample, AllPins, Applicability, Assumptions, CalculationPackReference, CommonMistakes, Inputs, Interpretation (+27 more)
 
-### Community 209 - "IPersistenceTransaction"
-Cohesion: 0.05
-Nodes (17): AttachmentContentLimits, AttachmentContentTooLargeException, FileName, SizeInBytes, DocumentCreation, ITransactionalAttachmentWriter, ITransactionalDocumentWriter, ITransactionalStateWriter (+9 more)
+### Community 209 - "CustomersSuppliersView"
+Cohesion: 0.06
+Nodes (12): PostalAddress, CountryCode, IsPostable, Line1, CustomersSuppliersView, EditingRecordId, IsXeroBusy, Provenance (+4 more)
 
 ### Community 210 - ".CreateAsync"
 Cohesion: 0.04
 Nodes (24): XeroContactLinkerOptions, WriteContactNumberWhenEmpty, ContactLinkerTestKit, Api, AttemptStore, Audit, Clock, Linker (+16 more)
 
-### Community 212 - ".RecordAsync"
-Cohesion: 0.01
-Nodes (151): 2.3 Engineering Vocabulary Register — created and populated, 10. Trade-offs — the data-loss defect this Work Package shipped, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+143 more)
+### Community 211 - "CreateDocumentObjectCommand"
+Cohesion: 0.08
+Nodes (17): CreateDocumentObjectCommand, Classification, DisplayName, DrawingNumber, Identifier, InitialContent, Kind, ModelFormat (+9 more)
 
-### Community 213 - "ManufacturingNodeProviderAndFacetsTests"
-Cohesion: 0.12
-Nodes (5): ManufacturingOperationPropertyFacetProvider, Kind, ManufacturingWorkspaceViewFactory, Kind, ManufacturingNodeProviderAndFacetsTests
+### Community 212 - "Current Work Package"
+Cohesion: 0.01
+Nodes (190): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+182 more)
+
+### Community 213 - "ManufacturingNodeProvider"
+Cohesion: 0.09
+Nodes (16): 1. Layering, Testing, Confirms Rather Than Redesigns, Purpose, Related Documents, Verdict, What Manufacturing Now Exists, WP 9.5A — Manufacturing Workspace — Systems Engineering Review (+8 more)
 
 ### Community 214 - "LibrariesView"
-Cohesion: 0.08
-Nodes (7): CitationPicker, EvidenceLibraryRow, IsCitable, LibrariesView, AllLibraryNames, Catalogues, ReviseRecordPrompt
+Cohesion: 0.05
+Nodes (12): CitationPicker, EvidenceLibraryRow, IsCitable, LibrariesView, AllLibraryNames, Catalogues, ReviseRecordPrompt, CollapsibleSection (+4 more)
 
-### Community 215 - ".CtrlShiftC_ARealPointerClickInTheStructureTab_CopiesThePart_AndTheOutcomeIsVisible"
+### Community 215 - "CommandPaletteOverlay"
+Cohesion: 0.03
+Nodes (43): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+35 more)
+
+### Community 216 - ".Compare"
 Cohesion: 0.10
-Nodes (5): DesktopCommandPrompt, Prompt, Candidate, ObjectPickerDialog, ObjectPickerMoveAndCopyJourneyTests
+Nodes (12): 9. D5 / WP03.5 — Procurement decision support, SourcingRequirementValidationService, RecommendationStrength, Clear, Insufficient, Marginal, Provisional, ISourcingComparisonService (+4 more)
 
-### Community 216 - "NewProjectPrompt"
-Cohesion: 0.07
-Nodes (5): NewProjectPrompt, SelectedCustomerCode, NewProjectPromptResult, NestedOverlayZOrderTests, ProjectBrowserViewTests
-
-### Community 217 - "ProcessSubject"
-Cohesion: 0.07
-Nodes (21): 7. Zero Forbidden-Scope Changes — Confirmed, 2. Twelve-Contract Compatibility — Independently Verified, 3. Verified Against Every "Do NOT Implement" Item, 4. Recommendation, Purpose, WP 10.2B — Systems Engineering Review, ProcessCandidateAssessment, Assessments (+13 more)
+### Community 217 - "GovernedBracketCheckService"
+Cohesion: 0.15
+Nodes (14): 10. Defects discovered, BracketSectionCheckResult, BracketCheckRefusal, MaterialNotFound, MaterialNotReleased, None, PropertyDimensionWrong, RequiredPropertyMissing (+6 more)
 
 ### Community 218 - "TaskWorkState"
-Cohesion: 0.05
-Nodes (45): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+37 more)
+Cohesion: 0.07
+Nodes (29): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+21 more)
 
 ### Community 219 - ".BuildCatalog"
-Cohesion: 0.13
-Nodes (5): MaterialComparisonProperties, All, MaterialValidationService, MaterialFixtures, MaterialLibraryTests
+Cohesion: 0.10
+Nodes (7): MaterialPropertyReader, MaterialComparisonProperties, All, MaterialValidationService, ModuleMaterialResolutionTests, MaterialFixtures, MaterialLibraryTests
 
 ### Community 221 - ".InvokeAsync"
 Cohesion: 0.12
 Nodes (4): CommandInvocationContractTests, Invocable, Production, Unavailable
 
-### Community 222 - "ProjectDirectory"
+### Community 222 - ".CommercialCore_TimeAndDeliverableCompletion_SurviveARestart_WithAuditRows"
 Cohesion: 0.05
-Nodes (11): ProjectDirectory, ProjectKind, ProjectCommercialJourneyTests, ProjectCommercialTestHost, ProjectFolderLocatorTests, DeliverableCompletionWorkspaceTests, EngineeringCockpitKpiTests, Cockpit (+3 more)
+Nodes (11): ProjectCommercialJourneyTests, ProjectCommercialTestHost, DeliverableCompletionWorkspaceTests, EngineeringCockpitKpiTests, Cockpit, CountingQueryableStore, CurrentSequence, ReadTransactions (+3 more)
 
 ### Community 223 - "ReviewRecord"
-Cohesion: 0.04
-Nodes (38): UnreleasedReviewDefinitionException, ReviewCode, State, FindingDisposition, Accepted, ActionRaised, Open, OutOfScope (+30 more)
+Cohesion: 0.05
+Nodes (30): EngineeringReviewService, IEngineeringReviewService, UnreleasedReviewDefinitionException, ReviewCode, State, FindingDisposition, Accepted, ActionRaised (+22 more)
 
-### Community 224 - "GovernedBracketCheckService"
-Cohesion: 0.04
-Nodes (64): 10. Defects discovered, 11. Colour Review Board, 12. Test gate, 13. The demonstration, in one line, 14.1 Additional calculation modules, 14.2 Additional population, 14.3 UI refinement, 14.4 Broader end-to-end scenarios (+56 more)
+### Community 224 - "BracketVerificationView"
+Cohesion: 0.07
+Nodes (20): 11. Colour Review Board, 🟠 AMBER — 2, both remediated within the phase, 🟢 GREEN — 12, 🔴 RED — 0, 🟡 YELLOW — 6, 7e. Engineering Assets in `v0.21.0` (about 10 minutes), BracketEngineeringRecordService, IndependentCheck (+12 more)
 
 ### Community 225 - "AccountsRefreshService"
-Cohesion: 0.07
-Nodes (19): AccountsReading, CategorisedRepeatingBill, FileAccountsReadingStore, IAccountsReadingStore, AccountsReadModel, AccountsRefreshService, LastFailureAtUtc, LastFailureReason (+11 more)
+Cohesion: 0.05
+Nodes (23): AccountsReading, CategorisedRepeatingBill, FileAccountsReadingStore, IAccountsReadingStore, AccountsReadModel, AccountsRefreshService, LastFailureAtUtc, LastFailureReason (+15 more)
 
-### Community 226 - "Decision"
-Cohesion: 0.04
-Nodes (58): 3. Background, 5. The Design, 12. Future Evolution, Superseded Planning Note (Retained for Reference), Cross-Reference Check, Engineering Vocabulary Register, Entries — RelationshipKind, Governing Rules (+50 more)
+### Community 226 - "CancellationToken"
+Cohesion: 0.14
+Nodes (9): GovernanceFamily, Decision, Issue, Risk, GovernanceObjectNotFoundException, ExpectedFamily, ObjectId, IProjectGovernanceService (+1 more)
 
-### Community 227 - "VerificationRecordReader"
-Cohesion: 0.04
-Nodes (50): 5. The Design, `WP 9.3A` Summary (for reference), 1. Scope Reviewed, 2. Verification Method, 3. Findings, 4. Technical Debt Assessment, 5. Claims Not Independently Re-Verified by This Review, 6. Verdict (+42 more)
+### Community 227 - "EngineeringCalculationsWorkspaceSampleModule"
+Cohesion: 0.02
+Nodes (80): 5. The Design, `WP 9.3A` Summary (for reference), 1. Layering, 2. Circular Dependency Analysis, 4. `IVerificationService.RecordAsync` — Verified to Introduce No New Execution Mechanism, 5. `VerificationRecordReader` — Verified Against the Raw-Store-vs-`RelationshipRepository` Finding, 7. API Stability Classification, Purpose (+72 more)
 
 ### Community 228 - "Fact"
 Cohesion: 0.08
 Nodes (15): DocumentViewStatus, Corrupt, Missing, Ready, Unsupported, DocumentFormatDetector, ViewableDocumentFormat, ExternalOnly (+7 more)
 
 ### Community 229 - "OperationalFacts"
-Cohesion: 0.05
-Nodes (28): OperationalFacts, CancellationReason, Classification, ClosedOn, DueBy, Evidence, IsFinished, IsIncompletelyClosed (+20 more)
+Cohesion: 0.07
+Nodes (24): OperationalFacts, CancellationReason, Classification, ClosedOn, DueBy, Evidence, IsFinished, IsIncompletelyClosed (+16 more)
 
 ### Community 230 - "WorkspaceLayoutController"
-Cohesion: 0.08
-Nodes (13): 2. What changed, DockAnchor, NoScreens, All, Primary, WorkspaceLayoutController, CurrentDropTarget, DraggingPanelId (+5 more)
+Cohesion: 0.05
+Nodes (17): Drag to dock, 2. What changed, DockAnchor, NoScreens, All, Primary, WorkspaceLayoutController, CurrentDropTarget (+9 more)
 
-### Community 231 - "MaterialSeed"
+### Community 231 - ".List"
 Cohesion: 0.08
 Nodes (14): MaterialSeed, En485Part2At2008, En573Part3At2009, En755Part2At2008, En10088Part3At2005, En10025Part2At2004, Eurocode3, DatasetName (+6 more)
 
-### Community 232 - "IServiceCollection"
-Cohesion: 0.03
-Nodes (40): 8. Architectural Principles, Alternatives Considered, Lifecycle Interaction, RD-0043 — Deferring `DiagnosticsProvider`'s Own DI Registration Until After Both Managers Exist, Registration Surface (`ServiceCollectionExtensions`), Not Recommended, Purpose, Recommendation 2 — Add a Sensitive-Value Flag to `ISettingDefinition` Once a Real Sensitive Setting Is Named (+32 more)
-
-### Community 233 - "Register Metadata"
+### Community 232 - "ISettingsProvider"
 Cohesion: 0.02
-Nodes (89): Observations, 12. Future Evolution, 5. The Design, 10. Trade-offs — what six findings closed does not mean, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction (+81 more)
+Nodes (117): 8. Architectural Principles, 2. Purpose, 5. The Design, Architectural Lessons, Settings *(implemented — WP 6.4, ADR-0042)*, 5. Session Persistence — No New Data-at-Rest Risk, 1. Scope, 2. New Findings (+109 more)
+
+### Community 233 - "CockpitView"
+Cohesion: 0.03
+Nodes (55): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+47 more)
 
 ### Community 234 - "BearingQuery"
-Cohesion: 0.10
-Nodes (24): BearingQuery, BasicDynamicRadialMinimum, BasicStaticRadialMinimum, BoreMaximum, BoreMinimum, ConstructionClass, DesignationContains, Families (+16 more)
+Cohesion: 0.06
+Nodes (41): 16. Deferred, BearingConstructionClass, AllCeramic, CorrosionResistant, Hybrid, Other, Polymer, Standard (+33 more)
 
 ### Community 235 - "QuotationService"
 Cohesion: 0.21
@@ -2620,100 +2563,88 @@ Cohesion: 0.11
 Nodes (9): ProjectQuoteView, ParameterPrompt, Principals, ProjectFolders, RateCards, RefreshCount, SignOffPolicy, WorkspaceChanges (+1 more)
 
 ### Community 239 - "OAuthAuthoriser"
-Cohesion: 0.07
-Nodes (10): 2. Scopes (X0), IBrowserLauncher, SystemBrowserLauncher, OAuthAuthoriser, Provider, OAuthResult, OAuthTokenResponse, PkceGenerator (+2 more)
+Cohesion: 0.09
+Nodes (9): 2. Scopes (X0), IBrowserLauncher, SystemBrowserLauncher, OAuthAuthoriser, Provider, OAuthResult, OAuthTokenResponse, PkceGenerator (+1 more)
 
-### Community 240 - "SettingsProvider"
-Cohesion: 0.04
-Nodes (44): Diagnostics: What Was and Was Not Done, Production Code, Related Documents, Status, Testing, Validation Performed, WP 6.4 — Settings Framework — Implementation Report, 3. Materials Framework *(`Tempest.Core.Materials`, proposed — `FCR-0031`)* (+36 more)
-
-### Community 241 - ".RegisterRehydrators"
-Cohesion: 0.07
-Nodes (4): 10. Governance, CanonicalObjectKinds, All, ProductionRehydrationTests
+### Community 240 - "Evidence"
+Cohesion: 0.06
+Nodes (23): CheckOutcome, Accepted, AcceptedWithComments, Rejected, CheckRecord, Evidence, AuthorIdentityId, Check (+15 more)
 
 ### Community 242 - "WorkspaceLayoutTreeTests"
 Cohesion: 0.07
-Nodes (17): Rendering, LayoutOrientation, Horizontal, Vertical, LayoutSplitNode, Children, DescendantsAndSelf, Orientation (+9 more)
+Nodes (16): LayoutOrientation, Horizontal, Vertical, LayoutSplitNode, Children, DescendantsAndSelf, Orientation, Panels (+8 more)
 
 ### Community 243 - "DesignRuleScope"
-Cohesion: 0.09
-Nodes (17): 7. B3 — Mechanical design rules, DesignRuleAssessment, Concerns, Defects, Gaps, Outcome, Record, RequiresHumanDecision (+9 more)
+Cohesion: 0.08
+Nodes (19): 7. B3 — Mechanical design rules, DesignRuleAssessment, Concerns, Defects, Gaps, Outcome, Record, RequiresHumanDecision (+11 more)
 
 ### Community 244 - "WP 9.9.0 — Release Preparation & Product Baseline — Release Readiness Report"
-Cohesion: 0.03
-Nodes (59): 1. Introduction, 2. What Was Found, 3. Architectural Lessons, 4. Key Takeaways, Related Documents, What This Document Is, WP 12.1A — Classification & Relationship Vocabulary Safety Net Architecture, 10. Trade-offs (+51 more)
+Cohesion: 0.04
+Nodes (34): Governance Note: Interface/DI/Module Registers, Interaction Model, New ADR, Platform Integration, Related Documents, Repository Metrics, Status, Technical Debt Assessment (+26 more)
 
 ### Community 245 - "QuickBooksOnlineConnector"
-Cohesion: 0.11
-Nodes (5): ConnectorHttpOutcome, AccessTokenResult, QuickBooksOnlineConnector, Name, QboQueryEnvelope
-
-### Community 246 - ".CreateAsync"
-Cohesion: 0.17
-Nodes (9): ProjectAreaRegisterTests, RegisterFixture, Documents, Domain, Principal, Requirements, RequirementsService, Root (+1 more)
+Cohesion: 0.10
+Nodes (6): ConnectorHttpOutcome, AccessTokenResult, QuickBooksOnlineConnector, Name, QboQueryEnvelope, OAuthTokenRedactionTests
 
 ### Community 247 - ".BuildRig"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (7): 5. Full test suites (after the upgrade), 4. Tests added, 5. The §7j checks, on the real application, WorkspaceLayoutStore, Point, Rig, WorkspaceLayoutControllerTests
 
 ### Community 248 - "TilingTests"
 Cohesion: 0.09
-Nodes (9): ITiledDocumentPageSource, Entry, Key, TileCache, BudgetBytes, Count, UsedBytes, TileGrid (+1 more)
+Nodes (7): Entry, TileCache, BudgetBytes, Count, UsedBytes, TileGrid, TilingTests
 
 ### Community 249 - "ReferenceRange"
-Cohesion: 0.09
-Nodes (13): EncodedQuantity, ReferenceQuantityCodec, ReferenceRange, IsInverted, IsRecorded, ReferenceValueOrigin, DerivedByTempestOS, EngineeringReference (+5 more)
+Cohesion: 0.04
+Nodes (35): 1. Purpose, 3. Capability is a band, and a band needs its conditions, 4. Material compatibility, 6. Identity, 7. Validation, 8. Boundaries, 9. Dataset, A7 Manufacturing Process Library (+27 more)
 
 ### Community 250 - "AcademyNode"
 Cohesion: 0.04
-Nodes (58): 6. F2 / WP06.2 — Academy structure, AcademyCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, AcademyQuery, Enquiry (+50 more)
+Nodes (59): 6. F2 / WP06.2 — Academy structure, AcademyCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, AcademyQuery, Enquiry (+51 more)
 
-### Community 251 - ".FirstAcquisition"
-Cohesion: 0.09
-Nodes (16): 6. Alternatives Considered, 1. Purpose, 3. The value is always a dimensioned quantity, 4. Not recorded, zero, and exact are three different facts, 6. Symbols, 7. Validation, 8. Boundaries, 9. Dataset (+8 more)
+### Community 251 - "PlaneWallHeatTransferCalculationDefinition"
+Cohesion: 0.06
+Nodes (20): PlaneWallHeatTransferCalculationDefinition, CalculationId, Metadata, PlaneWallHeatTransferInput, PlaneWallHeatTransferResult, PlaneWallLayer, HeatFlux, Vector (+12 more)
 
-### Community 252 - ".ReadAsync"
-Cohesion: 0.11
-Nodes (5): 2. Read-order reversal in all three reconciliation sweeps (scope widened mid-task), RequirementsReconciliationFinding, RequirementsReconciliationReport, OrderAgnosticGatedListKeysPersistenceStore, ReachedGate
+### Community 252 - "RequirementsReconciliationService"
+Cohesion: 0.08
+Nodes (29): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+21 more)
 
 ### Community 253 - ".DeepGrooveBall"
-Cohesion: 0.12
-Nodes (10): 5. Taxonomy, BearingConfiguration, BearingConstruction, ReferencedMaterialIds, BearingGeometry, AdditionalDimensions, BearingLoadRatings, ManufacturerRatings (+2 more)
-
-### Community 254 - "StandardLibraryTests"
-Cohesion: 0.17
-Nodes (3): StandardValidationService, StandardFixtures, StandardLibraryTests
+Cohesion: 0.04
+Nodes (23): BearingConfiguration, BearingConstruction, ReferencedMaterialIds, BearingGeometry, AdditionalDimensions, BearingLoadRatings, ManufacturerRatings, BearingSpeedRating (+15 more)
 
 ### Community 255 - "XeroApiSimulator"
-Cohesion: 0.05
-Nodes (26): 11. Build plan, XeroApiSimulator, ElementCheck, Errors, Ok, LedgerSide, Purchases, Sales (+18 more)
+Cohesion: 0.04
+Nodes (30): 11. Build plan, XeroApiSimulator, ElementCheck, Errors, Ok, LedgerSide, Purchases, Sales (+22 more)
 
 ### Community 256 - "MonitorRelativePlacementTests"
 Cohesion: 0.11
 Nodes (12): MonitorRelativePlacement, AvaloniaScreenList, All, Primary, IScreenList, All, Primary, ScreenSnapshot (+4 more)
 
 ### Community 257 - "WorkspaceLayoutHost"
-Cohesion: 0.04
-Nodes (34): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+26 more)
+Cohesion: 0.05
+Nodes (26): 4. The Problem, 1. "Already Real Before This Work Package" — Independently Re-Verified, 2. `DockingGrid`'s Bottom Row — Verified Directly, 4. `TD-39` — Correctly Diagnosed, Correctly Scoped, 5. Auto-Hide Flyout — Not a Floating Window, Confirmed, 6. Twelve-Contract Compatibility — Independently Re-Confirmed, 7. Zero Forbidden-Scope Changes — Confirmed, 8. Recommendation (+18 more)
 
 ### Community 258 - "XeroPurchasingOwnershipTests"
-Cohesion: 0.14
-Nodes (9): XeroOwnershipJudgement, XeroRecoveredCreate, XeroRecovery, Gone, Live, Unrecoverable, PurchasingDrainStep, Doc (+1 more)
+Cohesion: 0.11
+Nodes (16): XeroOwnershipJudgement, XeroOwnershipVerdict, AnotherDocuments, CannotTell, DeletedInXero, NothingLive, NotOurs, Ours (+8 more)
 
-### Community 259 - "ProjectAreaAcceptanceTests"
-Cohesion: 0.16
-Nodes (5): ProjectRequirementsView, Entries, IsShowingEmptyState, SummaryText, ProjectAreaAcceptanceTests
+### Community 259 - "ReportsView"
+Cohesion: 0.05
+Nodes (23): Documentation, Known, carried forward, Summary, TempestOS v0.23.0 — Release Notes, What changed, ProjectDocumentsView, Entries, IsShowingEmptyState (+15 more)
 
 ### Community 260 - "TempestOS v0.5.0 — Work Packages"
-Cohesion: 0.05
-Nodes (37): Acceptance Criteria — Met, Acceptance Criteria — Met, Acceptance Criteria — Met, Deliverables — Done, Deliverables — Done, Deliverables — Done, Deliverables — Done, Dependencies (+29 more)
+Cohesion: 0.04
+Nodes (44): Acceptance Criteria — Met, Acceptance Criteria — Met, Acceptance Criteria — Met, Acceptance Criteria — Met, Deliverables — Done, Deliverables — Done, Deliverables — Done, Deliverables — Done (+36 more)
 
-### Community 261 - ".AssertClose"
-Cohesion: 0.03
-Nodes (53): 0. Programme summary, 11. What was deliberately not done, 12. Git, 1. The architectural decision, stated plainly, 8. Shared layer and A4 migration, 9. Units & Quantities, Group A — Engineering Reference Data: Completion Report, Recovered branches (2026-10-01) (+45 more)
+### Community 261 - "ThermalResistanceChainCalculationDefinition"
+Cohesion: 0.06
+Nodes (22): 9. Units & Quantities, Recovered branches (2026-10-01), ThermalResistanceChainCalculationDefinition, CalculationId, Metadata, ThermalResistanceChainInput, ThermalResistanceChainResult, ThermalResistanceStage (+14 more)
 
 ### Community 263 - ".Quote"
-Cohesion: 0.08
-Nodes (20): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+12 more)
+Cohesion: 0.10
+Nodes (5): PersistenceXeroLinkStoreTests, PersistenceXeroOutboxTests, UnfilteredDrain, SteppingClock, StoresFixtures
 
 ### Community 264 - "DecisionTree"
 Cohesion: 0.07
@@ -2721,7 +2652,7 @@ Nodes (27): DecisionTree, Code, CodeKey, DanglingTargets, Name, Nodes, Notes, Pu
 
 ### Community 265 - "MaterialRequirementSet"
 Cohesion: 0.04
-Nodes (48): 5. B1 — Material selection, IMaterialSelectionService, CriterionAssessment, IsEliminating, Reason, MaterialCandidateAssessment, AllCriterionAssessments, AllPins (+40 more)
+Nodes (39): IMaterialSelectionService, CriterionAssessment, IsEliminating, Reason, MaterialCandidateAssessment, AllCriterionAssessments, AllPins, CriterionAssessments (+31 more)
 
 ### Community 266 - "DecisionGate"
 Cohesion: 0.07
@@ -2732,99 +2663,99 @@ Cohesion: 0.08
 Nodes (14): Probe, ProbeInvoice, XeroAccountingApiTests, FakeSettingsReader, Cached, OnRefresh, Refreshes, RecordingAuditRecorder (+6 more)
 
 ### Community 268 - "SimulatorTestKit"
-Cohesion: 0.06
-Nodes (7): SimulatorReply, SimulatorTestKit, Client, Clock, Simulator, XeroApiSimulatorDocumentTests, XeroApiSimulatorEdgeCaseTests
+Cohesion: 0.04
+Nodes (17): SimulatorReply, SimulatorTestKit, Client, Clock, Simulator, XeroFault, XeroFaultKind, DropResponseAfterCommit (+9 more)
 
 ### Community 269 - "TradeStudyConsideration"
-Cohesion: 0.12
-Nodes (11): ReviewDefinitionValidationService, TradeStudyConsideration, Code, IsAssessable, IsEliminating, Severity, Statement, EngineeringIntelligenceFixtures (+3 more)
+Cohesion: 0.17
+Nodes (8): ReviewDefinitionValidationService, TradeStudyConsideration, Code, IsAssessable, IsEliminating, Severity, Statement, EngineeringIntelligenceValidationTests
 
 ### Community 270 - "KpiEquationsTests"
 Cohesion: 0.09
 Nodes (14): KpiEquations, MarginAccumulator, AnyMissingCostRate, Cost, Currency, Revenue, WipAccumulator, OldestDate (+6 more)
 
 ### Community 271 - "ToleranceStackCalculationDefinition"
-Cohesion: 0.08
-Nodes (16): ToleranceDirection, Adds, Subtracts, ToleranceStackCalculationDefinition, CalculationId, Metadata, ToleranceStackContributor, ToleranceStackInput (+8 more)
+Cohesion: 0.07
+Nodes (17): EngineeringNumber, ToleranceDirection, Adds, Subtracts, ToleranceStackCalculationDefinition, CalculationId, Metadata, ToleranceStackContributor (+9 more)
 
 ### Community 272 - "Person"
 Cohesion: 0.06
 Nodes (18): 7h. Commercial edges in `v0.21.0` — expenses, purchase orders, VAT, a second principal (about 15 minutes), InMemoryPeopleDirectory, IPeopleDirectory, Person, DisplayName, DisplayNameKey, Email, IdentityId (+10 more)
 
 ### Community 273 - "XeroQuotePushHandler"
-Cohesion: 0.07
-Nodes (21): XeroWireQuote, XeroWireQuotesEnvelope, XeroWireQuoteStatusUpdate, XeroWireQuotesWriteEnvelope, XeroWireQuoteWrite, DomainXeroQuoteSource, IXeroQuoteSource, XeroQuoteContentMatch (+13 more)
+Cohesion: 0.05
+Nodes (27): XeroWireQuote, XeroWireQuotesEnvelope, XeroWireQuoteStatusUpdate, XeroWireQuotesWriteEnvelope, XeroWireQuoteWrite, XeroQuoteWriteStatus, Accepted, Declined (+19 more)
 
 ### Community 274 - "CommandContext"
 Cohesion: 0.07
-Nodes (17): 5. The Design, ArchivedProjectCommandGuard, CommandAvailability, Available, CommandContext, Empty, Primary, ProjectId (+9 more)
+Nodes (15): 5. The Design, CommandContext, Empty, Primary, ProjectId, Selection, CommandContextObject, CommandContextRequirement (+7 more)
 
 ### Community 275 - "WorkspaceSnapshotReader"
-Cohesion: 0.09
-Nodes (18): WorkspaceSnapshot, Cockpit, ExplorerTree, Facets, Kind, Kpi, ObjectState, Sequence (+10 more)
+Cohesion: 0.10
+Nodes (19): WorkspaceSnapshot, Cockpit, ExplorerTree, Facets, Kind, Kpi, ObjectState, Sequence (+11 more)
 
-### Community 276 - "RequirementStatus"
-Cohesion: 0.03
-Nodes (62): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, What This Document Is, WP 8.2A — Engineering Domain Architecture (+54 more)
+### Community 276 - "Requirement"
+Cohesion: 0.12
+Nodes (14): Requirement, Category, CreatedAt, CreatedByPrincipalId, GroupId, Id, Identifier, IsDeleted (+6 more)
 
 ### Community 277 - "ManualTask"
-Cohesion: 0.08
-Nodes (16): ITaskService, ManualTask, CompletedOn, Done, DueDate, TaskActResult, Succeeded, TaskRefusal (+8 more)
+Cohesion: 0.06
+Nodes (25): ITaskService, ManualTask, CompletedOn, Done, DueDate, TaskActResult, Succeeded, TaskRefusal (+17 more)
 
 ### Community 278 - "KpiPeriod"
 Cohesion: 0.08
 Nodes (15): KpiPeriod, From, Preset, To, TotalDays, KpiPeriodPreset, Custom, LastMonth (+7 more)
 
 ### Community 279 - "StandardDefinition"
-Cohesion: 0.07
+Cohesion: 0.06
 Nodes (23): StandardDefinition, Body, Classification, ConfirmationDate, Designation, DesignationKey, Disciplines, Edition (+15 more)
 
 ### Community 280 - "WP 7.4.0 — Release Preparation & Product Baseline — Release Readiness Report"
-Cohesion: 0.10
-Nodes (20): 11. Module Inventory, 12. Platform Service Inventory, 13. Interface Inventory, 14. DI Registration Inventory, 15. Technical Debt Register, 16. Future Capability Register, 17. Known Issues, 1. Repository Health (+12 more)
+Cohesion: 0.08
+Nodes (23): Dependency Graph Integrity, 10. Dependency Consistency, 12. Platform Service Inventory, 13. Interface Inventory, 15. Technical Debt Register, 16. Future Capability Register, 17. Known Issues, 1. Repository Health (+15 more)
 
-### Community 281 - "QuantityComparisonExpression"
-Cohesion: 0.07
-Nodes (33): AllOfExpression, Children, Operands, AnyOfExpression, Children, Operands, EvidenceRequiredExpression, Requirement (+25 more)
+### Community 281 - "FakeSubject"
+Cohesion: 0.15
+Nodes (15): QuantityComparisonExpression, PropertyName, Threshold, RuleThreshold, ConstantSymbol, Literal, RequiresConstantResolution, FakeSubject (+7 more)
 
-### Community 282 - "FakeSubject"
-Cohesion: 0.09
-Nodes (27): 3. How human authority is kept explicit, 9. B5 — Design trade-off framework, CriterionStandings, ConsiderationOverride, AuthorisedByPrincipalId, ConsiderationCode, Reason, TradeStudyDecision (+19 more)
+### Community 282 - "TradeStudyServiceTests"
+Cohesion: 0.14
+Nodes (13): ConsiderationOverride, AuthorisedByPrincipalId, ConsiderationCode, Reason, TradeStudyDecision, AcceptedRiskCodes, DecidedByPrincipalId, HasOverrides (+5 more)
 
 ### Community 283 - "InvoiceRequest"
-Cohesion: 0.09
+Cohesion: 0.07
 Nodes (20): InvoiceRequest, ClientOrganisationId, Connector, Currency, DueOn, ExternalId, ExternalInvoiceNumber, ExternalReference (+12 more)
 
 ### Community 284 - "ProjectLifecycleService"
 Cohesion: 0.12
 Nodes (7): IProjectLifecycleService, ProjectLifecycleResult, Succeeded, ProjectLifecycleService, ProjectOpenWorkItem, IsBlocking, ProjectSignOffView
 
-### Community 285 - "WP 7.1D — Engineering Calculation Framework — Implementation"
-Cohesion: 0.03
-Nodes (53): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+45 more)
+### Community 285 - ".H"
+Cohesion: 0.06
+Nodes (32): 12. Future Evolution, 12. Future Evolution, 3. Materials Framework *(`Tempest.Core.Materials`, proposed — `FCR-0031`)*, 4. Engineering Calculation Framework *(`Tempest.Core.Calculations`, proposed — `FCR-0032`)*, How to Read This Document, Related Documents, Status, TempestOS v0.7.0 — Engineering Foundation Contracts (+24 more)
 
 ### Community 286 - "EngineeringCalculationView"
 Cohesion: 0.05
-Nodes (23): EngineeringCalculationView, CalculationName, Calculations, Catalogue, CurrentInputs, DisplayedOutcome, DisplayedVerification, IsReadOnly (+15 more)
+Nodes (24): EngineeringCalculationView, CalculationName, Calculations, Catalogue, CurrentInputs, DisplayedOutcome, DisplayedVerification, IsReadOnly (+16 more)
 
 ### Community 287 - ".BuildValidPluginAssembly"
 Cohesion: 0.06
 Nodes (19): PluginSignatureVerifier, PluginTrustStore, PluginManifestDto, AssemblyFileName, Dependencies, Id, MinimumPlatformVersion, Name (+11 more)
 
-### Community 288 - "BearingCatalogTests"
-Cohesion: 0.14
-Nodes (3): DuplicateReferenceKeyException, ExistingRecordId, BearingCatalogTests
+### Community 288 - "Interaction"
+Cohesion: 0.06
+Nodes (31): YELLOW-1 — Contacts and interactions have no library-wide validation sweep, ICrmValidationService, InteractionCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, Interaction (+23 more)
 
 ### Community 289 - "SeedHarness"
 Cohesion: 0.06
-Nodes (33): 12. Remediation, 4. Cross-domain references, E. Cross-domain references now working, Full gate, I. Testing, K.1 Remaining population, K.2 Integration, K.3 End-to-end testing (+25 more)
+Nodes (31): 12. Remediation, 4. Cross-domain references, E. Cross-domain references now working, Full gate, I. Testing, K.1 Remaining population, K.2 Integration, K.3 End-to-end testing (+23 more)
 
 ### Community 290 - ".CreateProjectAsync"
-Cohesion: 0.18
-Nodes (4): EvidenceBusinessIdentifierTests, EvidenceJourneyTests, EvidenceTestHost, IssueSheetModelFromTests
+Cohesion: 0.17
+Nodes (5): IssueSheetContext, EvidenceBusinessIdentifierTests, EvidenceJourneyTests, EvidenceTestHost, IssueSheetModelFromTests
 
 ### Community 291 - "OAuthAuthoriserTests"
-Cohesion: 0.09
+Cohesion: 0.10
 Nodes (11): OAuthProviderProfile, FakeBrowserLauncher, Code, CorruptState, Error, LastAuthorizationUrl, LastSimulatedRedirect, RealmId (+3 more)
 
 ### Community 292 - "ProjectExplorerTests"
@@ -2832,7 +2763,7 @@ Cohesion: 0.20
 Nodes (3): ProjectExplorerTests, TestProjectExplorerNodeProvider, Kind
 
 ### Community 293 - "DocumentTemplate"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (11): DesignSystemColorToken, DocumentTemplate, ReferenceColourTokens, ReferenceTypeNames, ImageRun, OrganisationIdentity, HasBankDetails, TempestDefaults (+3 more)
 
 ### Community 294 - ".CreateAsync"
@@ -2840,27 +2771,27 @@ Cohesion: 0.07
 Nodes (12): InvoiceRequestLineRevision, XeroInvoicePlanner, CanonicalKind, Kind, XeroInvoiceAttachmentPushHandler, Kind, Operations, XeroInvoicePushHandler (+4 more)
 
 ### Community 295 - ".CreateAsync"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (4): XeroPurchasingPlannerOptions, AutomaticFromUtc, XeroExpenseBillSyncTests, XeroPurchaseOrderSyncTests
 
 ### Community 296 - "XeroConnector"
-Cohesion: 0.10
-Nodes (4): XeroConnector, Name, XeroInvoiceReading, XeroSalesInvoiceDraft
+Cohesion: 0.11
+Nodes (3): XeroConnector, Name, XeroInvoiceReading
 
-### Community 297 - "ContractsExportAdapter"
-Cohesion: 0.10
-Nodes (6): ContractEntry, ContractsExport, ContractsExportAdapter, Kind, SchemaVersion, ContractsExportAdapterTests
+### Community 297 - "InvoiceExportKit"
+Cohesion: 0.05
+Nodes (32): AnswerLoss, Dropped, EmptyBody, InvoiceExportKit, Api, Audit, Clock, Connector (+24 more)
 
 ### Community 298 - "ProjectSummary"
-Cohesion: 0.13
-Nodes (8): CurrentProjectDto, ProjectContext, Current, HasProject, ProjectSummary, Label, GatedProjectDirectory, ProjectContextRefreshRaceTests
+Cohesion: 0.09
+Nodes (12): DuplicateProjectIdentifierException, Identifier, CurrentProjectDto, ProjectContext, Current, HasProject, ProjectDirectory, ProjectKind (+4 more)
 
 ### Community 299 - "Task"
-Cohesion: 0.08
-Nodes (22): BlockingHostTestModule, Id, Name, Version, DisposalCounter, Count, DisposalTrackingHostTestModule, Id (+14 more)
+Cohesion: 0.07
+Nodes (24): Finding 5 — bounded gates and a CI hang collector, BlockingHostTestModule, Id, Name, Version, BlockingModuleGate, DisposalCounter, Count (+16 more)
 
 ### Community 300 - "BracketSectionCheckTests"
-Cohesion: 0.16
+Cohesion: 0.14
 Nodes (5): BracketSectionCheckCalculationDefinition, CalculationId, Metadata, BracketSectionCheckInput, BracketSectionCheckTests
 
 ### Community 301 - "Journal"
@@ -2877,39 +2808,39 @@ Nodes (7): PdfDocumentPageSource, PageCount, SvgDocumentPageSource, PageCount, C
 
 ### Community 304 - "RateCard"
 Cohesion: 0.03
-Nodes (81): 6. Release Decision — fixed verdict vocabulary, 6. C4 — Pricing & rate card, Finding 1 — Namespace Register: a BOM blind spot hides a real namespace, Finding 2 — Technical Debt Register: a concurrent-merge artefact, not an arithmetic error, Findings for the Integrator, The two disclosed-in-advance staleness items (handled as instructed), Why these were not made `Warn`, Technical Debt Register (`TD-57`/`TD-45`) (+73 more)
+Nodes (67): 6. Release Decision — fixed verdict vocabulary, 6. C4 — Pricing & rate card, Technical Debt Register (`TD-57`/`TD-45`), Context, 9. C4 — Pricing & rate card, IPricingService, PricingService, QuotationLine (+59 more)
 
 ### Community 305 - "DeliverableCompletion"
-Cohesion: 0.08
-Nodes (19): DeliverableCompletion, CompletedOn, DeliverableId, DocumentIds, FixedPriceValue, InvoicedBy, IssuedEvidenceIds, PrincipalIdentityId (+11 more)
+Cohesion: 0.06
+Nodes (24): DeliverableCompletion, CompletedOn, DeliverableId, DocumentIds, FixedPriceValue, InvoicedBy, IssuedEvidenceIds, PrincipalIdentityId (+16 more)
 
 ### Community 306 - "IssueSheetRenderer"
-Cohesion: 0.12
-Nodes (9): IssueSheetRenderer, DocumentType, IdentityProvider, TemplateName, IssueSheetCitationRow, IssueSheetContext, IssueSheetModel, IssueSheetModelFixtures (+1 more)
+Cohesion: 0.10
+Nodes (12): DeclaredFigure, DeclaredFigureRole, Input, Result, IssueSheetRenderer, DocumentType, IdentityProvider, TemplateName (+4 more)
 
 ### Community 307 - "JsonExportFormat"
-Cohesion: 0.03
-Nodes (68): Not Recommended, Purpose, Recommendation 1 — Backfill `Interface Register.md`/`Dependency Injection Register.md`/`Module Register.md` as Part of `WP 6.8`'s Own Closing Audit, Recommendation 3 — A Future Schema-Upgrade Path Should Be Designed Only Once a Real, Shipped Schema Version Bump Exists, Recommendation 5 — Any Future Multi-Section Artifact Consumer Should Reuse `IExportFormat`, Not Invent a Second Envelope Format, Related Documents, WP 6.7 — Export/Import — Future Capability Recommendations, A Genuine Design Question, Resolved by Direct Inspection Rather Than Assumption (+60 more)
+Cohesion: 0.04
+Nodes (46): Testing, CorruptedExportArtifactException, Reason, DuplicateExportSchemaMigrationException, FromSchemaVersion, Kind, ExportSection, ExportService (+38 more)
 
-### Community 308 - "EvidenceCitationsSection"
+### Community 308 - ".All"
 Cohesion: 0.09
-Nodes (10): EvidenceAuditSection, Title, EvidenceCitationsSection, Title, EvidenceDeclaredFiguresSection, Title, EvidenceLifecycleSection, Title (+2 more)
+Nodes (11): EditorSections, EvidenceAuditSection, Title, EvidenceCitationsSection, Title, EvidenceDeclaredFiguresSection, Title, EvidenceLifecycleSection (+3 more)
 
 ### Community 309 - "CalculationDiagramSpec"
 Cohesion: 0.09
-Nodes (46): CalculationDiagrams, All, CalculationDiagramSpec, BoundInputNames, DiagramAxes, LabelAnchor, DiagramCircle, LabelAnchor (+38 more)
+Nodes (47): Tempest.Core.Calculations.Modules.Diagrams, CalculationDiagrams, All, CalculationDiagramSpec, BoundInputNames, DiagramAxes, LabelAnchor, DiagramCircle (+39 more)
 
 ### Community 310 - "Tempest.Desktop.Tests/packages.lock.json"
 Cohesion: 0.03
 Nodes (70): Avalonia.Headless, Avalonia, Avalonia.Angle.Windows.Natives, Avalonia.BuildServices, Avalonia.Desktop, Avalonia.Fonts.Inter, Avalonia.FreeDesktop, Avalonia.Native (+62 more)
 
-### Community 311 - "ReferenceValue"
-Cohesion: 0.05
-Nodes (34): 12. Selection boundary, BearingEquivalentReference, ClaimedBy, BearingFamily, AngularContactBall, CylindricalRoller, DeepGrooveBall, NeedleRoller (+26 more)
+### Community 311 - "BearingDefinition"
+Cohesion: 0.02
+Nodes (82): 10. Comparison contract, 11. Calculation boundary, 12. Selection boundary, 13. Data vs knowledge, 14. Data import and the population requirement, 17. Future integration, 1. Purpose, 3. Canonical model (+74 more)
 
 ### Community 312 - "ProjectExpense"
-Cohesion: 0.04
-Nodes (39): ExpenseRefusal, CurrencyMismatch, ExpenseInvoiced, ExpenseNotFound, InvalidAmount, None, ProjectArchived, ExpenseResult (+31 more)
+Cohesion: 0.05
+Nodes (33): ExpenseRefusal, CurrencyMismatch, ExpenseInvoiced, ExpenseNotFound, InvalidAmount, None, ProjectArchived, ExpenseResult (+25 more)
 
 ### Community 313 - "ProgressReportDocumentRenderer"
 Cohesion: 0.08
@@ -2917,67 +2848,67 @@ Nodes (13): ProgressReportDocumentModel, ProgressReportDocumentRenderer, Documen
 
 ### Community 314 - "ProjectTimelineView"
 Cohesion: 0.10
-Nodes (17): 2. WP04.2 — the package that was already built, ProjectTimelineView, ActionSpacing, IsShowingEmptyState, Milestones, SummaryText, ProjectMilestoneContribution, IsIndirect (+9 more)
+Nodes (17): ProjectTimelineView, ActionSpacing, IsShowingEmptyState, Milestones, SummaryText, IProjectMilestoneRegister, ProjectMilestoneContribution, IsIndirect (+9 more)
 
 ### Community 315 - "DocumentsNodeProvider"
-Cohesion: 0.09
-Nodes (11): Purpose, Related Documents, Verdict, WP 9.4A — Engineering Documents Workspace — Security Review Report, DocumentsNodeProvider, Kind, DocumentsPropertyFacetProvider, Kind (+3 more)
+Cohesion: 0.08
+Nodes (15): 1. Layering, Purpose, New Debt Disclosed by This Review, Purpose, Related Documents, Review, Verdict, WP 9.5A — Manufacturing Workspace — Security Review Report (+7 more)
 
-### Community 316 - "NavigationService"
-Cohesion: 0.12
-Nodes (12): 5. The Design, NavigationHistoryEntry, NavigationService, ActiveView, Areas, CanGoBack, CanGoForward, CurrentAreaId (+4 more)
+### Community 316 - ".Verified"
+Cohesion: 0.15
+Nodes (9): ReviewCriterion, Code, IsAutomated, Question, DesignRuleAndReviewTests, EngineeringIntelligenceFixtures, FixedNow, FakeTimeProvider (+1 more)
 
 ### Community 317 - "XeroWriteSafetyHandlerTests"
-Cohesion: 0.07
-Nodes (10): ManualClock, Now, XeroRateLimiterTests, Rig, Audit, Client, Network, Reader (+2 more)
+Cohesion: 0.09
+Nodes (9): ManualClock, Now, Rig, Audit, Client, Network, Reader, ThrowingAuditRecorder (+1 more)
 
 ### Community 318 - ".BuildAsync"
 Cohesion: 0.13
 Nodes (8): InMemorySecretStore, NoBrowser, RecordingAuthorisableConnector, AuthoriseCalls, Authorised, Name, Refusal, SettingsInvoicingAuthorisationTests
 
-### Community 319 - ".AnArchivedProject_DisablesEveryReachableWriteControl_WithTheTooltip_AndReopenStaysLiveButIsHonestlyRefused"
-Cohesion: 0.03
-Nodes (22): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+14 more)
-
-### Community 320 - ".CreateSamplePortfolioAsync"
-Cohesion: 0.15
-Nodes (14): EngineeringRelationship, Category, CreatedAt, CreatedByPrincipalId, RelationshipKind, SourceId, TargetId, RevisionRecord (+6 more)
+### Community 319 - ".WaitUntilAsync"
+Cohesion: 0.02
+Nodes (32): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+24 more)
 
 ### Community 321 - ".BuildServices"
-Cohesion: 0.18
-Nodes (4): RequirementGroupHasChildrenException, GroupId, LiveChildCount, RequirementsLifecycleExtensionsTests
+Cohesion: 0.15
+Nodes (7): RequirementGroupCycleException, AttemptedParentGroupId, GroupId, RequirementGroupHasChildrenException, GroupId, LiveChildCount, RequirementsLifecycleExtensionsTests
 
-### Community 322 - "QuotationSheetModel"
-Cohesion: 0.13
-Nodes (4): QuotationSheetLineRow, QuotationSheetModel, QuotationSheetModelFixtures, QuotationSheetRendererTests
+### Community 322 - ".ExtractText"
+Cohesion: 0.10
+Nodes (5): QuotationSheetLineRow, QuotationSheetModel, PdfTextExtractor, QuotationSheetModelFixtures, QuotationSheetRendererTests
 
 ### Community 323 - "_ds_bundle.js"
 Cohesion: 0.13
 Nodes (40): AlertsScreen(), AppShell(), Badge(), Button(), Capabilities(), Card(), Checkbox(), Dialog() (+32 more)
 
+### Community 324 - "IServiceCollection"
+Cohesion: 0.09
+Nodes (12): Non-Goals (Restated and Extended), IServiceCollection, Descriptors, XeroServiceRegistration, XeroServiceContext, OAuthProfile, PluginRegistryState, DependencyUnmet (+4 more)
+
 ### Community 325 - "ReviewDefinition"
 Cohesion: 0.04
-Nodes (50): 10. What ships, 11. Standards and compliance, 12. Dependencies, 1. Purpose, 2. What P02 is not, 4.1 Revision traceability, 4.2 Validation, 4. Governance (+42 more)
+Nodes (57): 10. What ships, 11. Standards and compliance, 12. Dependencies, 1. Purpose, 2. What P02 is not, 4.1 Revision traceability, 4.2 Validation, 4. Governance (+49 more)
 
 ### Community 326 - "Organisation"
-Cohesion: 0.03
-Nodes (54): 5. Identity and linking model, Organisation, Address, CustomerCode, EmailAddress, Facts, HasHardIdentifier, IsAlsoASupplier (+46 more)
+Cohesion: 0.02
+Nodes (63): LeadOrigin, Event, ExistingRelationship, InboundEnquiry, Other, OutboundApproach, Referral, Research (+55 more)
 
-### Community 327 - "PurchaseOrderService"
-Cohesion: 0.12
-Nodes (17): IPurchaseOrderService, PurchaseOrderRefusal, ExpensesAlreadyRecorded, InvalidLine, LineCurrencyMismatch, LineNotFound, None, NothingToIssue (+9 more)
+### Community 329 - "RecordingLogSink"
+Cohesion: 0.02
+Nodes (100): 6. Alternatives Considered, 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+92 more)
 
-### Community 329 - "TempestLoggerProvider"
-Cohesion: 0.11
-Nodes (4): BridgeLogger, NullScope, TempestLoggerProvider, TempestLoggerProviderTests
-
-### Community 330 - "PersistenceStoreUnavailableException"
-Cohesion: 0.22
-Nodes (4): PersistenceStoreUnavailableException, ReferenceDataRig, RequirementsRig, RequirementsVerificationReferenceDataAuditTests
+### Community 330 - "EngineeringAssetSeed"
+Cohesion: 0.07
+Nodes (20): ArchivedEngineeringAssetSeed, DesignReviews, TechnicalDocuments, Seed, DatasetName, DatasetRevision, Records, CalculationOutput (+12 more)
 
 ### Community 331 - "Icon"
 Cohesion: 0.08
 Nodes (19): Badge(), TONES, SIZES, VARIANTS, PADS, Icon(), BOX, GLYPH (+11 more)
+
+### Community 332 - "ProjectMilestoneTests"
+Cohesion: 0.11
+Nodes (9): DeliverableNotFoundException, DeliverableId, IProjectMilestoneService, MilestoneNotFoundException, MilestoneId, ProjectMilestoneService, ProjectNotFoundException, ProjectId (+1 more)
 
 ### Community 333 - "Tempest.Desktop.RealShell/packages.lock.json"
 Cohesion: 0.03
@@ -2996,84 +2927,80 @@ Cohesion: 0.11
 Nodes (8): FloatingDto, LayoutDocumentDto, LegacyLayoutDocumentDto, NodeDto, PanelStateDto, WindowDto, WorkspaceLayoutSerializer, WorkspaceLayoutSerializerTests
 
 ### Community 338 - "StandardReference"
-Cohesion: 0.10
-Nodes (14): FastenerSeed, Sizes, StainlessClasses, SteelClasses, TestForces, SteelClass, DatasetName, DatasetRevision (+6 more)
+Cohesion: 0.04
+Nodes (37): 1. The one thing to know before using any of this data, 2.1 National Institute of Standards and Technology (NIST), 2.2 Aalco Metals Limited, 2.3 Siderticino SA, 2.5 Proto Labs, Inc., 2.6 Wikimedia Foundation (tertiary — placeholder citations), 2.7 Tempest Design Engineering (authored, not sourced), 2. Sources (+29 more)
 
-### Community 339 - "TempestHost"
-Cohesion: 0.01
-Nodes (234): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+226 more)
+### Community 339 - "How to Read an Entry"
+Cohesion: 0.04
+Nodes (57): Atomic Operation, Atomic Phase Principle, Command *(implemented — v0.4.0 WP 4.0 contract, WP 5.1A design, WP 5.1B dispatcher implementation, ADR-0036–ADR-0038)*, Composition Root, Consumer, Controlled Shutdown, Dependency Injection, Deterministic Systems (+49 more)
 
 ### Community 340 - "DecisionNode"
-Cohesion: 0.12
-Nodes (20): DecisionBranch, Condition, Label, TargetNodeId, DecisionNode, Branches, DefaultBranchLabel, IsTerminal (+12 more)
+Cohesion: 0.10
+Nodes (18): DecisionBranch, Condition, Label, TargetNodeId, DecisionNode, Branches, DefaultBranchLabel, IsTerminal (+10 more)
 
-### Community 341 - "ProjectMilestoneService"
-Cohesion: 0.16
-Nodes (10): DuplicateProjectIdentifierException, Identifier, DeliverableNotFoundException, DeliverableId, IProjectMilestoneService, MilestoneNotFoundException, MilestoneId, ProjectMilestoneService (+2 more)
+### Community 341 - "SourcingCandidate"
+Cohesion: 0.05
+Nodes (35): 3. How human authority is kept explicit, CandidateExclusion, IsAutomatic, Reason, CriterionAssessment, CriterionCode, Evidence, IsEstablished (+27 more)
 
 ### Community 342 - "SettingsDocument"
 Cohesion: 0.08
 Nodes (25): 3. One finding rejected, with reasoning, ISettingsMigration, FromVersion, SettingsDocument, Key, OrganisationIdentityDto, OrganisationIdentitySettings, AddressLine1 (+17 more)
 
-### Community 343 - "RuleQuery"
+### Community 343 - "ICommand"
 Cohesion: 0.06
-Nodes (31): RuleDomain, Bearings, Environment, Fasteners, Gears, GeneralMechanical, Joints, Manufacturing (+23 more)
+Nodes (36): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 3. Background, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+28 more)
 
 ### Community 344 - "KindEditorDeclaration"
-Cohesion: 0.10
-Nodes (19): EditorControlKind, Attachments, Choice, Lifecycle, MultilineText, ObjectReference, QuantityWithUnit, ReadOnlyList (+11 more)
+Cohesion: 0.14
+Nodes (10): EditorFieldDeclaration, EditorSectionDeclaration, EditorSectionKeys, IKindEditorDeclarationRegistry, KindEditorDeclaration, Kind, Sections, KindEditorDeclarationRegistry (+2 more)
 
-### Community 345 - ".Compare"
-Cohesion: 0.16
-Nodes (6): ReferenceComparisonResult, IsSingleFamily, PopulatedRows, ReferenceComparisonRow, AnyRecorded, BearingComparisonTests
+### Community 345 - "SupplierIdentity"
+Cohesion: 0.05
+Nodes (35): IdentityConfidence, Ambiguous, Confirmed, NotAssessed, Probable, SupplierAlias, IsCurrent, MatchKey (+27 more)
 
-### Community 346 - "A4 Bearing Library"
-Cohesion: 0.06
-Nodes (29): 10. Comparison contract, 11. Calculation boundary, 13. Data vs knowledge, 14. Data import and the population requirement, 16. Deferred, 17. Future integration, 1. Purpose, 3. Canonical model (+21 more)
+### Community 346 - ".RunAsync_MixedTrustTierDependencyChain_LoadOrderRespectsGraph_EachReportsCorrectTierDerivedState"
+Cohesion: 0.12
+Nodes (11): PluginDependencyDto, Id, MaximumVersion, MinimumVersion, FirstPartyNavigationOwnerFixtureModule, Id, Name, Version (+3 more)
 
-### Community 347 - "RecordingLogSink"
-Cohesion: 0.17
-Nodes (5): Acceptance Criteria, LoggerFactoryTests, RecordingLogSink, Entries, TempestHostHostedServiceTests
-
-### Community 348 - "MoveRequirementCommand"
-Cohesion: 0.09
-Nodes (22): `FCR-0039` — Resolved, `FCR-0048` — Requirement Collection Membership Removal, `FCR-0050` — Multi-Target Workspace View Refresh, Not Recommended: A Second, Dedicated "Copy Requirement" Command, Purpose, Related Documents, Verdict, WP 9.1A — Requirements Management Workspace — Future Capability Assessment (+14 more)
+### Community 347 - "AssetApplicability"
+Cohesion: 0.07
+Nodes (30): 3. The shared core, `AssetApplicability` and `AssetEnquiry`, `AssetGovernanceFacts`, `AssetStanding` and `AssetGovernanceValidation`, `EngineeringEvidence`, AssetApplicability, Conditions, Disciplines (+22 more)
 
 ### Community 349 - "ProjectWorkspaceView"
-Cohesion: 0.02
-Nodes (45): 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+37 more)
+Cohesion: 0.03
+Nodes (25): 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+17 more)
 
 ### Community 350 - "ProjectRisksView"
-Cohesion: 0.08
-Nodes (24): GovernanceRegisterTab, Decisions, Issues, Risks, ProjectRisksView, ActionSpacing, Decisions, IsShowingEmptyState (+16 more)
+Cohesion: 0.12
+Nodes (12): GovernanceRegisterTab, Decisions, Issues, Risks, ProjectRisksView, ActionSpacing, Decisions, IsShowingEmptyState (+4 more)
 
-### Community 351 - ".All"
-Cohesion: 0.10
-Nodes (5): EditorSections, CalculationExecuteSection, Title, CalculationPointerSection, Title
+### Community 351 - "CalculationExecuteSection"
+Cohesion: 0.14
+Nodes (4): CalculationExecuteSection, Title, CalculationPointerSection, Title
 
 ### Community 353 - "RecordingCommandHandler"
+Cohesion: 0.09
+Nodes (7): CommandHandlerNotRegisteredException, CommandType, CommandDispatcherTests, RecordedCommandB, RecordingCommandHandler, Received, CommandFrameworkUnaffectedTests
+
+### Community 355 - "WorkPriority"
+Cohesion: 0.19
+Nodes (11): WorkPriority, Critical, High, Low, Normal, IProjectTaskService, ProjectTaskService, TaskNotFoundException (+3 more)
+
+### Community 356 - "ContractTemplate"
+Cohesion: 0.04
+Nodes (47): ContractTemplateCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, ClauseCategory, Acceptance, ChangeControl (+39 more)
+
+### Community 357 - "WP 7.1D — Engineering Calculation Framework — Implementation"
+Cohesion: 0.05
+Nodes (32): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+24 more)
+
+### Community 358 - "IDocumentPageSource"
 Cohesion: 0.11
-Nodes (5): CommandDispatcherTests, RecordedCommandB, RecordingCommandHandler, Received, CommandFrameworkUnaffectedTests
+Nodes (8): IDocumentPageSource, PageCount, DocumentViewerRotationTests, RecordingPageSource, LastPageIndex, LastScale, PageCount, RenderCalls
 
-### Community 355 - "ProjectTaskService"
-Cohesion: 0.24
-Nodes (6): IProjectTaskService, ProjectTaskService, TaskNotFoundException, TaskId, TaskTargetNotFoundException, TargetId
-
-### Community 356 - "ClauseCategory"
-Cohesion: 0.07
-Nodes (23): ClauseCategory, Acceptance, ChangeControl, Confidentiality, DataProtection, Deliverables, DisputeResolution, Exclusions (+15 more)
-
-### Community 357 - ".CreateHarness"
-Cohesion: 0.20
-Nodes (6): AlwaysFailsCommand, AlwaysFailsCommandHandler, IncrementCommand, IncrementCommandHandler, CallCount, MacroManagerTests
-
-### Community 358 - ".OpenMultiPagePdf"
-Cohesion: 0.14
-Nodes (6): DocumentViewerRotationTests, RecordingPageSource, LastPageIndex, LastScale, PageCount, RenderCalls
-
-### Community 359 - "LicenseValidator"
-Cohesion: 0.18
-Nodes (4): Testing, LicenseValidator, LicenseValidatorTests, LicenseHostRegistrationTests
+### Community 359 - "IPAssetQuery"
+Cohesion: 0.06
+Nodes (34): 8. C3 — IP & data protection, IPAssetQuery, Origins, OwnershipIsEvidenced, Ownerships, TextContains, Types, ValidationStates (+26 more)
 
 ### Community 360 - "StubExternalControllerProvider"
 Cohesion: 0.17
@@ -3088,80 +3015,76 @@ Cohesion: 0.08
 Nodes (16): AttentionExport, BomSection, ChecksSection, DigitalThreadSection, EngineeringStatusExport, EngineeringStatusExportAdapter, Kind, SchemaVersion (+8 more)
 
 ### Community 363 - "ConnectorResult"
-Cohesion: 0.09
-Nodes (11): ConnectorResult, Outcome, Reason, Value, IInvoicingConnector, Name, ThrowingConnector, Name (+3 more)
+Cohesion: 0.08
+Nodes (15): ConnectorResult, Outcome, Reason, Value, IInvoicingConnector, Name, InvoiceRequestLine, GrossAmount (+7 more)
 
 ### Community 364 - "StandardSeed"
 Cohesion: 0.07
 Nodes (26): StandardSeed, Astm, Cen, DatasetName, DatasetRevision, Instance, Iso, Records (+18 more)
 
-### Community 365 - "GlobalNavigationRail"
+### Community 365 - "Entries — Technical Debt (Expected to Eventually Be Addressed)"
 Cohesion: 0.02
-Nodes (101): 5. The Design, 5. The Design, Product Convergence & Recovery, 1. `IProjectDirectory` — projects are real engineering objects, 2. `IProjectContext` — the current project as real state, 3. `IShellNavigator` — navigation as one value, Every destination is real, or says it is not, Product Spine Architecture (+93 more)
+Nodes (99): 5. The Design, 5. The Design, 5. The Design, Product Convergence & Recovery, 3. `IShellNavigator` — navigation as one value, Every destination is real, or says it is not, Product Spine Architecture, The boundary the spine exposed (+91 more)
 
 ### Community 367 - ".Baseline"
-Cohesion: 0.28
-Nodes (3): LegacyPanelPreference, WorkspaceLayoutMigration, WorkspaceLayoutMigrationTests
+Cohesion: 0.20
+Nodes (3): Tempest.Core.Tests.Workspace.Layout, LegacyPanelPreference, WorkspaceLayoutMigrationTests
 
 ### Community 368 - ".Status"
-Cohesion: 0.07
-Nodes (27): 1. Audit Methodology — Traceable, Not Self-Referential, 3. Traceability From Requirement to Test, 4. Cross-Work-Package Consistency Confirmed, 5. Recommendation, Purpose, WP 10.5C — Systems Engineering Review, 1. Scope Derivation — Evidence, Not Assumption, 2. What This Work Package Did (+19 more)
+Cohesion: 0.06
+Nodes (28): 1. Audit Methodology — Traceable, Not Self-Referential, 3. Traceability From Requirement to Test, 4. Cross-Work-Package Consistency Confirmed, 5. Recommendation, Purpose, WP 10.5C — Systems Engineering Review, 1. Scope Derivation — Evidence, Not Assumption, 2. What This Work Package Did (+20 more)
 
-### Community 369 - "CreateRequirementCommand"
-Cohesion: 0.11
-Nodes (15): CreateRequirementCommand, Category, GroupId, Identifier, Statement, MoveRequirementGroupCommand, NewParentGroupId, TargetKind (+7 more)
-
-### Community 370 - "ExpenseNodeProvider"
-Cohesion: 0.15
-Nodes (4): ExpenseNodeProvider, Kind, InvoiceRequestNodeProvider, Kind
+### Community 369 - ".BuildPipeline"
+Cohesion: 0.04
+Nodes (35): 7g. Undo across commands, in `v0.21.0` (about 10 minutes), CommandCompensation, Description, Redo, Undo, CreateRequirementCommand, Category, GroupId (+27 more)
 
 ### Community 371 - "net10.0"
 Cohesion: 0.04
 Nodes (55): contentHash, resolved, type, contentHash, resolved, type, net10.0, contentHash (+47 more)
 
-### Community 372 - "CompositeLogSink"
-Cohesion: 0.17
-Nodes (9): 6. Alternatives Considered, Documentation Impact, `WP 9.9.0` (Second Pass) Summary (for reference), 1. `TD-34` — `CompositeLogSink`'s injected error writer, 7. Second Pass — `WP 9.8B` and Renewed Verification, 3. Test Verification — A Genuine Finding This Pass, CompositeLogSink, Sinks (+1 more)
+### Community 372 - "PurchaseOrdersView"
+Cohesion: 0.12
+Nodes (6): OrderRow, PurchaseOrdersView, ParameterPrompt, PickSupplierAsync, RefreshCount, WorkspaceChanges
 
-### Community 373 - "BearingCatalog"
-Cohesion: 0.15
-Nodes (10): BearingCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, DuplicateReferenceRecordException, RecordId, ReferenceDataException (+2 more)
+### Community 373 - "ReferenceValidationState"
+Cohesion: 0.07
+Nodes (19): UnreleasedDecisionTreeException, State, TreeCode, DuplicateReferenceRecordException, RecordId, InvalidReferenceStateTransitionException, From, RecordId (+11 more)
 
 ### Community 374 - "CalculationDiagramView"
 Cohesion: 0.06
 Nodes (13): CalculationDiagramView, HasDiagram, HighlightedInput, Reading, Spec, Summary, Part, Bar (+5 more)
 
-### Community 375 - "WP 8.0C — Engineering Workspace UX Specification — Screen Catalogue"
-Cohesion: 0.07
-Nodes (27): 10. Inspector Panel, 12. Command Palette, 13. Search Behaviour, 14. Context Menus, 15. Toolbars, 16. Notifications, 17. Attention / Action Centre, 18. Digital Thread Visualisation (+19 more)
+### Community 375 - "VerificationStanding"
+Cohesion: 0.11
+Nodes (16): E3 / WP05.3 — Verification artefacts, 7. E3 / WP05.3 — Verification artefacts, VerificationStanding, Failed, Inconclusive, InProgress, NotApplicable, NotPerformed (+8 more)
 
 ### Community 376 - "TradeStudyDefinition"
-Cohesion: 0.05
-Nodes (38): 1. How to Read Every Entry, 2. Relationship Categories, 3. Ownership Rule, 4. Full Relationship Table, 5. Evidence Is Not a Relationship, Purpose, Related Documents, WP 8.2A — Engineering Domain Architecture — Relationship Catalogue (+30 more)
+Cohesion: 0.04
+Nodes (51): 9. B5 — Design trade-off framework, TradeStudyCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, TradeStudyQuery, CodeContains (+43 more)
 
 ### Community 377 - "InvoicingService"
 Cohesion: 0.09
-Nodes (14): IInvoicingService, InvoiceRequestResult, Succeeded, IInvoiceDraftSync, ConnectorName, CreatedStatus, InvoiceDraftChange, InvoiceDraftDocument (+6 more)
+Nodes (13): InvoiceRequestResult, Succeeded, IInvoiceDraftSync, ConnectorName, CreatedStatus, InvoiceDraftChange, InvoiceDraftDocument, InvoiceNumberFinding (+5 more)
 
 ### Community 378 - "XeroRateLimiter"
-Cohesion: 0.11
-Nodes (4): XeroRateLimiter, LastReading, PausedUntilUtc, XeroSafetyArchitectureTests
+Cohesion: 0.08
+Nodes (6): XeroRateLimiter, LastReading, PausedUntilUtc, XeroRateLimitReading, XeroSafetyArchitectureTests, XeroRateLimiterTests
 
 ### Community 380 - "WP 16.5B — Linux/X11 Avalonia Upgrade Spike — Implementation Report"
 Cohesion: 0.07
 Nodes (19): 10. Files changed, 11. Risks and observations for future Work Packages, 1. Objective, 2. Reproduction (before), 3. The fix applied, 4. Build under the CI gate, 6. Launch evidence (after), 7. CI: `linux-launch-smoke` (+11 more)
 
-### Community 381 - ".Build"
+### Community 381 - "WorkspaceSnapshotRequest"
 Cohesion: 0.13
-Nodes (14): IWorkspaceSnapshotReader, WorkspaceSnapshotKind, Cockpit, ExplorerTree, FacetSet, Kpi, ObjectEditorState, WorkspaceSnapshotRequest (+6 more)
+Nodes (12): WorkspaceSnapshotKind, Cockpit, ExplorerTree, FacetSet, Kpi, ObjectEditorState, WorkspaceSnapshotRequest, Kind (+4 more)
 
-### Community 382 - "LoggerTests"
-Cohesion: 0.21
-Nodes (3): LoggerTests, ThrowingLogSink, WriteAttempts
+### Community 382 - "RateCardCatalog"
+Cohesion: 0.11
+Nodes (13): RateCardCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, RateCardQuery, AppliesTo, ApplyingOn (+5 more)
 
 ### Community 384 - "IQuotationService"
-Cohesion: 0.19
-Nodes (6): IQuotationService, QuotationKind, ChangeOrder, Quotation, QuotationReviewCommandHandler, QuotationReviewSupport
+Cohesion: 0.14
+Nodes (7): ISignOffPolicy, IQuotationService, QuotationKind, ChangeOrder, Quotation, QuotationReviewCommandHandler, QuotationReviewSupport
 
 ### Community 385 - "ProjectFolderService"
 Cohesion: 0.13
@@ -3179,85 +3102,93 @@ Nodes (54): Microsoft.Data.Sqlite, Microsoft.Extensions.Configuration, Microsoft
 Cohesion: 0.13
 Nodes (7): flushNow(), getSlot(), ImageSlot, load(), save(), setSlot(), toDataUrl()
 
+### Community 390 - ".Browse_WithStubFilePicker_AttachesTheRealFile_SizeHashAuditAndMessage"
+Cohesion: 0.15
+Nodes (7): AttachmentsSectionTests, BareEngineeringObject, BusinessIdentifier, CreatedAt, CurrentRevisionNumber, Id, Kind
+
 ### Community 391 - "RestApiHostedServiceTests"
 Cohesion: 0.15
 Nodes (6): AuditRecorderStub, CommandRegistryStub, Items, IdentityServiceStub, PermissionEvaluatorStub, RestApiHostedServiceTests
 
 ### Community 393 - "Tempest.Core.ReferenceData"
 Cohesion: 0.01
-Nodes (79): Tempest.Core.Manufacturing, Tempest.Core.Tests.Constants, Tempest.Core.Tests.Materials, Tempest.Core.BusinessGovernance.Operating, Tempest.Core.EngineeringIntelligence.MaterialSelection, Tempest.Core.Tests.Components, Tempest.Core.Tests, Tempest.Core.Tests.EngineeringIntelligence (+71 more)
+Nodes (72): Tempest.Core.Manufacturing, Tempest.Core.Tests.Constants, Tempest.Core.Tests.Materials, Tempest.Core.EngineeringIntelligence.MaterialSelection, Tempest.Core.Tests.Components, Tempest.Core.Tests.EngineeringIntelligence, Tempest.Core.Tests.Calculations.Modules, Tempest.Core.Calculations (+64 more)
+
+### Community 395 - "XeroWriteSafetyHandler"
+Cohesion: 0.07
+Nodes (13): ADR-0162: Xero Holds Drafts and Copies; TempestOS Never Approves or Sends; Every Push Goes Through One Durable, Idempotent Outbox, Consequences, Context, Decision, Related, Status, 7.1 Where, 7.2 By construction (+5 more)
 
 ### Community 396 - "InvoiceRequestStatus"
 Cohesion: 0.08
-Nodes (13): InvoiceRequestStatus, Accepted, Draft, Reauthorise, Rejected, Sending, Sent, Unavailable (+5 more)
+Nodes (15): InvoiceRequestStatus, Accepted, Draft, Reauthorise, Rejected, Sending, Sent, Unavailable (+7 more)
 
 ### Community 397 - "Engineering Readiness Review Architecture"
-Cohesion: 0.07
-Nodes (27): 1. Continue the informal, per-release checklist (status quo), 1. Scope and boundary, 1. What sign-off process exists today, 2.1 Architecture readiness, 2.2 Implementation readiness, 2.3 Verification readiness, 2.4 Governance readiness, 2.5 Release readiness (+19 more)
+Cohesion: 0.12
+Nodes (16): 1. Continue the informal, per-release checklist (status quo), 1. What sign-off process exists today, 2. A single-reviewer sign-off, 2. What is machine-verified today, and what is not, 3. A purely automated gate, 3. Direct repository assessment, `v0.12.0`, as of this Work Package, 4. The five-category ERR, six-discipline Programme Review (recommended, adopted), Alternatives Considered (+8 more)
 
-### Community 399 - ".ExtractText"
-Cohesion: 0.09
-Nodes (9): InvoiceDocumentLineRow, InvoiceDocumentModel, InvoiceDocumentRenderer, DocumentType, IdentityProvider, TemplateName, InvoiceDocumentModelFixtures, InvoiceDocumentRendererTests (+1 more)
+### Community 399 - "InvoiceDocumentRenderer"
+Cohesion: 0.12
+Nodes (8): InvoiceDocumentLineRow, InvoiceDocumentModel, InvoiceDocumentRenderer, DocumentType, IdentityProvider, TemplateName, InvoiceDocumentModelFixtures, InvoiceDocumentRendererTests
 
-### Community 400 - "RecordingLifecycleModuleBase"
-Cohesion: 0.14
-Nodes (12): ModuleWithMissingDependency, Id, Name, Version, RecordingLifecycleModuleBase, Id, Name, Version (+4 more)
+### Community 400 - "DataAsset"
+Cohesion: 0.08
+Nodes (23): DataAssetValidationService, DataAsset, AccessRequirements, AllPins, Category, ComplianceReviewOwner, ComplianceReviewState, DataOwnerName (+15 more)
+
+### Community 401 - "DataAssetCatalog"
+Cohesion: 0.13
+Nodes (14): DataAssetCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, DataAssetQuery, Categories, ComplianceReviewStates (+6 more)
 
 ### Community 402 - "ProjectTaskAcceptanceTests"
-Cohesion: 0.12
-Nodes (16): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+8 more)
+Cohesion: 0.06
+Nodes (36): 6. Alternatives Considered, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+28 more)
 
-### Community 403 - "SourceCitation"
-Cohesion: 0.18
-Nodes (5): SourceCitation, Publisher, Work, ReferenceDataTestProvenance, SourceCitationTests
+### Community 403 - "ProjectDecisionEntry"
+Cohesion: 0.21
+Nodes (12): IProjectGovernanceRegister, ProjectDecisionEntry, IsAwaitingDecision, IsInForce, ProjectGovernanceRegister, ProjectIssueEntry, IsOpen, IsUnassigned (+4 more)
 
 ### Community 404 - "RuleApplicability"
-Cohesion: 0.11
-Nodes (11): ApplicabilityDecision, Applies, DoesNotApply, Unknown, RuleApplicability, Families, IsUniversal, NeedsHumanConfirmation (+3 more)
-
-### Community 405 - "ModuleFixtures.cs"
 Cohesion: 0.08
-Nodes (25): AbstractModule, Id, Name, Version, ConstructorDependencyModuleWithoutMetadata, Id, Name, Version (+17 more)
+Nodes (18): ApplicabilityDecision, Applies, DoesNotApply, Unknown, RuleApplicability, Families, IsUniversal, NeedsHumanConfirmation (+10 more)
 
 ### Community 407 - "Tempest.Desktop/packages.lock.json"
 Cohesion: 0.04
 Nodes (52): Avalonia, Avalonia.Angle.Windows.Natives, Avalonia.BuildServices, Avalonia.FreeDesktop, Avalonia.Native, Avalonia.Remote.Protocol, Avalonia.Skia, Avalonia.Win32 (+44 more)
 
-### Community 408 - "ReportingService"
-Cohesion: 0.19
-Nodes (6): ReportingService, RegisteredDefinitions, RecordedReportDefinitionA, Id, Name, ReportingServiceTests
+### Community 408 - "IReportingService"
+Cohesion: 0.02
+Nodes (131): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+123 more)
 
 ### Community 409 - "TimesheetService"
-Cohesion: 0.31
-Nodes (3): TimesheetResult, Succeeded, TimesheetService
+Cohesion: 0.19
+Nodes (4): ITimesheetService, TimesheetResult, Succeeded, TimesheetService
 
 ### Community 410 - "FakeUpdateService"
 Cohesion: 0.11
 Nodes (12): IUpdateService, IsInstalled, UpdateAvailability, AvailableVersion, VelopackUpdateService, IsInstalled, FakeUpdateService, CheckCallCount (+4 more)
 
 ### Community 411 - "CommercialSeed"
-Cohesion: 0.05
-Nodes (38): 2.1 National Institute of Standards and Technology (NIST), 2.2 Aalco Metals Limited, 2.3 Siderticino SA, 2.4 RHD Bearings, 2.5 Proto Labs, Inc., 2.6 Wikimedia Foundation (tertiary — placeholder citations), 2. Sources, 3. The three content categories, and how to tell them apart (+30 more)
+Cohesion: 0.13
+Nodes (17): 2.4 RHD Bearings, CommercialSeed, Costs, LeadTimes, Suppliers, CostSeed, DatasetName, DatasetRevision (+9 more)
 
 ### Community 412 - "DocumentViewport"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (14): 5. The Design (`ADR-0115`), DocumentViewport, ContentHeight, ContentWidth, FitZoom, IsFitted, IsScrollable, OffsetX (+6 more)
 
-### Community 413 - "ICommandRegistry"
-Cohesion: 0.01
-Nodes (315): How TempestOS Applies It, How TempestOS Applies It, Benefits, Composition Over Inheritance, Disadvantages, How TempestOS Applies It, Key Takeaway, What (+307 more)
+### Community 413 - "ILogger"
+Cohesion: 0.02
+Nodes (129): Disadvantages, 10. Trade-offs — the data-loss defect this Work Package shipped, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+121 more)
 
-### Community 415 - "ReportRequest"
-Cohesion: 0.16
-Nodes (6): IReportTemplate, ContentType, PlainTextReportTemplate, ContentType, ReportRequest, PlainTextReportTemplateTests
+### Community 415 - "CostFigure"
+Cohesion: 0.10
+Nodes (19): P03 — Commercial intelligence, 3. The shared core, `CostFigure`, `LeadTimeDuration` and `LeadTimeKind`, `QuantityBand`, CostCertainty, Estimated, Exact (+11 more)
 
-### Community 416 - "WorkspacePanelRegistry"
-Cohesion: 0.11
-Nodes (5): WorkspacePanelDescriptor, WorkspacePanelRegistry, All, DockingRig, KeyboardOnlyJourneyTests
+### Community 416 - ".BuildDockingRig"
+Cohesion: 0.12
+Nodes (3): InMemoryPersistenceStore, DockingRig, KeyboardOnlyJourneyTests
 
 ### Community 417 - "HomeDashboardView"
-Cohesion: 0.10
-Nodes (4): HomeDashboardView, RefreshCount, WorkspaceChanges, HomeRightRailLinksTests
+Cohesion: 0.13
+Nodes (4): Differences, HomeDashboardView, RefreshCount, WorkspaceChanges
 
 ### Community 418 - ".ComposeAnnotatedPage"
 Cohesion: 0.15
@@ -3268,64 +3199,60 @@ Cohesion: 0.04
 Nodes (53): contentHash, resolved, type, net10.0, contentHash, resolved, type, contentHash (+45 more)
 
 ### Community 420 - "PluginComponentPrincipalRegistry"
-Cohesion: 0.14
-Nodes (10): PluginComponentPrincipalRegistry, PluginComponentPrincipalRegistryTests, SampleModuleA, Id, Name, Version, SampleModuleB, Id (+2 more)
+Cohesion: 0.12
+Nodes (11): IPluginComponentPrincipalRecorder, PluginComponentPrincipalRegistry, PluginComponentPrincipalRegistryTests, SampleModuleA, Id, Name, Version, SampleModuleB (+3 more)
 
 ### Community 421 - "CalculationContext"
-Cohesion: 0.02
-Nodes (70): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations, Related Documents, Repository Maturity, What This Document Is (+62 more)
+Cohesion: 0.03
+Nodes (33): CalculationContext, ConstraintChecks, IntermediateResults, ReferencedMaterialIds, BeamDeflectionCalculationDefinition, CalculationId, Metadata, ColumnBucklingCalculationDefinition (+25 more)
 
 ### Community 423 - "WindowsDpapiSecretStore"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (4): 9. Security, InvoicingHttpLoggingHandler, WindowsDpapiSecretStore, SecretStoreTests
 
 ### Community 424 - ".ReadAsync"
-Cohesion: 0.07
-Nodes (23): CompletionFact, DeliverableFact, InvoiceRequestStatusFact, MilestoneFact, ProjectFact, ProjectHealthStatus, AtRisk, Blocked (+15 more)
+Cohesion: 0.12
+Nodes (9): CompletionFact, DeliverableFact, InvoiceRequestStatusFact, MilestoneFact, ProjectFact, ProjectScheduleMilestone, ProjectStatusReadModel, ProjectStatusRow (+1 more)
 
 ### Community 425 - "Rig"
 Cohesion: 0.17
 Nodes (7): AttachmentRevisionAtomicityTests, Rig, ContentKeys, ContentStore, Context, StateStore, Store
 
-### Community 426 - "CommandCompensation"
-Cohesion: 0.21
-Nodes (5): 7g. Undo across commands, in `v0.21.0` (about 10 minutes), CommandCompensation, Description, Redo, Undo
+### Community 426 - "First Real Engineering Calculation — Completion Report"
+Cohesion: 0.07
+Nodes (26): 12. Test gate, 13. The demonstration, in one line, 14.1 Additional calculation modules, 14.2 Additional population, 14.3 UI refinement, 14.4 Broader end-to-end scenarios, 14.5 Existing technical debt, 14. Remaining work (+18 more)
 
-### Community 427 - "LogEntry"
-Cohesion: 0.11
-Nodes (9): LogEntry, Category, Exception, Level, Message, Properties, ThreadId, Timestamp (+1 more)
+### Community 427 - "ISupplierCatalog"
+Cohesion: 0.15
+Nodes (15): ISupplierCatalog, IdentityMatchBasis, AliasOverlap, LegalName, NormalisedName, RegistrationNumber, ISupplierIdentityService, SupplierIdentityMatch (+7 more)
 
 ### Community 428 - "net10.0"
 Cohesion: 0.04
 Nodes (52): net10.0, contentHash, resolved, type, contentHash, resolved, type, contentHash (+44 more)
 
 ### Community 429 - "DrawingRegisterDocumentRenderer"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (8): DrawingRegisterDocumentModel, DrawingRegisterDocumentRenderer, DocumentType, IdentityProvider, TemplateName, DrawingRegisterRow, DrawingRegisterDocumentModelFixtures, DrawingRegisterDocumentRendererTests
 
 ### Community 430 - "**TempestOS v0.12.0 — NOT READY (one procedural precondition unmet — same class of finding as `WP 12.9.0`'s own first execution, on a different commit)**"
 Cohesion: 0.08
 Nodes (25): A1. Branch state, merge history, repository cleanliness, A2. `VERSION`, Release Notes, A3. Work Package completion, A4. Architecture, ADR, Documentation, Academy Registers; Governance Index; Governance Health Check, A5. Technical Debt Register, Future Capability Register, A6. Debug build, Release build, full regression suite, B1. Chief Architect — Architecture Readiness, B2. Principal Software Engineer — Implementation Readiness (+17 more)
 
-### Community 431 - "MaterialFamily"
-Cohesion: 0.05
-Nodes (30): 1. Purpose, 3.1 Why the family became a closed enum, 3.2 Why the property set stayed open, 3.3 Designation uniqueness, 3. Canonical model, 4. Family traits, 5. Validation, 6. Boundaries (+22 more)
+### Community 431 - "MaterialDefinition"
+Cohesion: 0.03
+Nodes (63): 1. Purpose, 3.1 Why the family became a closed enum, 3.2 Why the property set stayed open, 3.3 Designation uniqueness, 3. Canonical model, 4. Family traits, 5. Validation, 6. Boundaries (+55 more)
 
-### Community 432 - ".BuildRealStack"
-Cohesion: 0.16
-Nodes (9): Independent Finding-Closure Verification — 2026-08-28, Method, Part 1 — The three named findings, Part 2 — Re-verification of every previously claimed closure, Part 3 — New findings from the eight-discipline re-review, Provenance, stated plainly, TD-59 — Reserved device-name uniqueness: **CLOSED**, Verification summary (+1 more)
-
-### Community 433 - "IDisposable"
-Cohesion: 0.06
-Nodes (15): RollingFileLogSink, DirectoryPath, ErrorCount, MaxFiles, AsyncDisposableService, AsyncDisposeCalled, SyncDisposeCalled, DisposableDependency (+7 more)
+### Community 433 - "RollingFileLogSink"
+Cohesion: 0.15
+Nodes (5): RollingFileLogSink, DirectoryPath, ErrorCount, MaxFiles, RollingFileLogSinkTests
 
 ### Community 434 - "TechnicalReportDocumentRenderer"
 Cohesion: 0.11
 Nodes (9): TechnicalReportDocumentModel, TechnicalReportDocumentRenderer, DocumentType, IdentityProvider, TemplateName, TechnicalReportRevisionRow, TechnicalReportSection, TechnicalReportDocumentModelFixtures (+1 more)
 
 ### Community 435 - ".ReadAsync"
-Cohesion: 0.07
-Nodes (27): TaskEquations, CalculationChaseFact, DeliverableFact, EvidenceReviewFact, InvoiceChaseFact, ManualTaskFact, MilestoneFact, QuotationChaseFact (+19 more)
+Cohesion: 0.12
+Nodes (8): StateProjection, Attachments, DisplayName, IsDeleted, Kind, ParentId, TypeState, TasksReadModelService
 
 ### Community 437 - "template.json"
 Cohesion: 0.06
@@ -3336,40 +3263,44 @@ Cohesion: 0.14
 Nodes (9): EnvelopeDto, Algorithm, PublisherCertificateThumbprint, Value, PluginSignatureEnvelope, Algorithm, PublisherCertificateThumbprint, Value (+1 more)
 
 ### Community 440 - "FinancialEntry"
-Cohesion: 0.02
-Nodes (108): 0. Scope and method, 1. RED — release blockers, 2. AMBER — required in-scope improvements, 3. YELLOW — technical improvement and debt, 4. GREEN — observations, 5. Verdict, 6. Secondary review, AMBER-1 — Academy prerequisite cycle detection under-delivered its own contract ✅ **Remediated** (+100 more)
+Cohesion: 0.04
+Nodes (53): FinancialEntryCatalog, DocumentKind, IndexCollectionName, LibraryName, SecondaryIndexCollectionName, IFinancialEntryCatalog, Budget, Currency (+45 more)
 
 ### Community 441 - "EngineeringEvidence"
-Cohesion: 0.02
-Nodes (128): F4 / WP06.4 — Failure & lessons database, 3. The shared core, `AssetApplicability` and `AssetEnquiry`, `AssetGovernanceFacts`, `AssetStanding` and `AssetGovernanceValidation`, `EngineeringEvidence`, 10. What ships, 11. Dependencies (+120 more)
+Cohesion: 0.05
+Nodes (44): AssetAuthorship, AuthoredByPrincipalId, AssetGovernanceFacts, Approval, Authorship, Classification, Evidence, HasOutstandingFindings (+36 more)
 
 ### Community 442 - "CalculationInputUnits"
 Cohesion: 0.12
 Nodes (4): CalculationInputUnits, DimensionNames, Registration, CalculationModuleDescriptorsTests
 
-### Community 443 - "ReferenceComparisonCell"
-Cohesion: 0.23
-Nodes (5): BearingComparer, ReferenceComparer, ReferenceComparisonCell, NotApplicable, NotRecorded
+### Community 443 - "FastenerFamily"
+Cohesion: 0.06
+Nodes (29): 1. Purpose, 2. Taxonomy, 5. Validation, 6. Boundaries, 7. Dataset, A3 Fastener Library, FastenerSubject, DisplayName (+21 more)
 
-### Community 444 - "MaterialDefinition"
-Cohesion: 0.05
-Nodes (33): MaterialDefinition, Condition, Designation, DesignationKey, EffectiveDate, EnvironmentalNotes, Family, Grade (+25 more)
+### Community 444 - "LeadTimeKind"
+Cohesion: 0.11
+Nodes (17): LeadTimeKind, Actual, Committed, Estimated, Historical, Quoted, Typical, Unspecified (+9 more)
+
+### Community 445 - "system_text_regularexpressions"
+Cohesion: 0.11
+Nodes (4): Tempest.Core.Tests.Templates, Tempest.Core.Tests.Security, Tempest.Core.Tests.ReleaseEngineering, UnscaledTestDeadlineTests
 
 ### Community 447 - "ReferenceSeedService"
-Cohesion: 0.05
-Nodes (39): A. Baseline, C. Data intentionally still empty, D. Import mechanism, F. P02 intelligence introduced, G. P05 assets introduced, H. P06 knowledge introduced, J. Governance, L. Stop condition (+31 more)
+Cohesion: 0.04
+Nodes (48): 6. Alternatives Considered, 4. Not recorded, zero, and exact are three different facts, A. Baseline, B. Data populated, C. Data intentionally still empty, D. Import mechanism, F. P02 intelligence introduced, G. P05 assets introduced (+40 more)
 
 ### Community 448 - ".Verified"
-Cohesion: 0.09
-Nodes (11): QuotationStatus, Accepted, Declined, Draft, Submitted, QuotationStatuses, All, Gbp (+3 more)
+Cohesion: 0.04
+Nodes (42): Quotation, AllPins, Amount, BecameContract, Client, DecidedOn, FollowUpOn, Governance (+34 more)
 
 ### Community 449 - "TimesheetEntry"
 Cohesion: 0.11
 Nodes (12): TimesheetEntry, Billable, BillingRate, CostRate, Date, DeliverableId, Grade, Hours (+4 more)
 
 ### Community 451 - "ModuleLifecycleManagerTests"
-Cohesion: 0.14
-Nodes (17): 6. Alternatives Considered, 6. `LifecycleTestLog` — thread safety, What Does Not Change, IUnregisteredLifecycleDependency, LifecycleTestLog, Entries, NoLifecycleModule, Id (+9 more)
+Cohesion: 0.08
+Nodes (28): 6. `LifecycleTestLog` — thread safety, What Does Not Change, IUnregisteredLifecycleDependency, LifecycleTestLog, Entries, ModuleWithMissingDependency, Id, Name (+20 more)
 
 ### Community 452 - "Ui"
 Cohesion: 0.11
@@ -3380,12 +3311,12 @@ Cohesion: 0.13
 Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 454 - "StandardPublicationStatus"
-Cohesion: 0.13
-Nodes (11): 2.1 Publisher status is not record validation state, StandardPublicationStatus, Amended, Current, Draft, Obsolete, Superseded, Unknown (+3 more)
+Cohesion: 0.11
+Nodes (18): 2.1 Publisher status is not record validation state, 2.2 An edition is a record, not a revision, 2. The two decisions that carry the library, 3. A2 registers standards; it never reproduces them, 5. Validation, 6. Boundaries, 7. Dataset, A2 Standards Library (+10 more)
 
 ### Community 455 - "ProjectNumbering"
 Cohesion: 0.11
-Nodes (5): Consequences, ProjectDocumentType, ProjectNumbering, DocumentTypes, ProjectNumberingTests
+Nodes (4): ProjectDocumentType, ProjectNumbering, DocumentTypes, ProjectNumberingTests
 
 ### Community 456 - "WP 9.9.0 — Release Preparation & Product Baseline — Release Readiness Report (Second Pass)"
 Cohesion: 0.08
@@ -3408,20 +3339,20 @@ Cohesion: 0.14
 Nodes (4): BomUnitsOfMeasure, Known, Definition, BomUnitsOfMeasureTests
 
 ### Community 461 - "WP 5.0S — Platform Security Baseline Audit"
-Cohesion: 0.09
-Nodes (22): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+14 more)
+Cohesion: 0.11
+Nodes (18): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+10 more)
 
-### Community 463 - "IProjectCommercialService"
-Cohesion: 0.24
-Nodes (10): IProjectCommercialService, ProjectCommercialRefusal, None, ProjectArchived, ProjectNotFound, RateCardNotFound, RateCardNotReleased, ProjectCommercialResult (+2 more)
+### Community 463 - "Part I — Concept Guide"
+Cohesion: 0.10
+Nodes (20): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+12 more)
 
 ### Community 464 - "StubHttpMessageHandler"
 Cohesion: 0.05
-Nodes (33): 10. Trade-offs — and the tension this Work Package did not resolve, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+25 more)
+Nodes (34): 10. Trade-offs — and the tension this Work Package did not resolve, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+26 more)
 
-### Community 465 - "LeadTimeDuration"
-Cohesion: 0.07
-Nodes (24): 0. Programme status, 10. What P03 did not touch, 12. Git, 1. Numbering, 2. What shipped, 5. What P03 will not do, 6. Defect found and fixed, 7. Tests (+16 more)
+### Community 465 - "Quantity"
+Cohesion: 0.04
+Nodes (30): 0. Programme status, 10. What P03 did not touch, 12. Git, 1. Numbering, 2. What shipped, 3. Reuse rather than restatement, 5. What P03 will not do, 6. Defect found and fixed (+22 more)
 
 ### Community 466 - "WorkspaceLayoutPreset"
 Cohesion: 0.16
@@ -3431,25 +3362,37 @@ Nodes (6): WorkspaceLayoutPreset, Documentation, Engineering, Review, WorkspaceL
 Cohesion: 0.08
 Nodes (11): TimesheetDocumentModel, TimesheetDocumentRenderer, DocumentType, IdentityProvider, TemplateName, TimesheetDocumentRow, TimesheetPrincipalLabel, DocumentLogoOnPaperTests (+3 more)
 
+### Community 468 - "Group B — Engineering Intelligence: Completion Report"
+Cohesion: 0.10
+Nodes (15): 0. Programme summary, 1. Framework completion and knowledge population, reported separately, 2.2 The five work packages, 2. What was built, 5. Governance and traceability, 6. Boundaries held, 7. Register reconciliation, 8. Known gaps and honest limitations (+7 more)
+
 ### Community 469 - "TempestOS Academy Index"
 Cohesion: 0.10
 Nodes (27): Architecture Decision Record (ADR), Definition of Done, Execution Plan, Work Package, Design Patterns (registry, descriptor, reflection discovery, phantom types), Engineering Standards (exception design, testing, CI, release), Failure Isolation Across TempestOS, The Module Pipeline: Discovery → Registration → Lifecycle → Dependency Injection (+19 more)
 
-### Community 470 - "WP 16.9.0 — Engineering Release Report (v0.16.0)"
-Cohesion: 0.10
-Nodes (19): 1. How this review was conducted, 2. The five categories, 3.1 The superseded text, retained verbatim, 3.3 Disclosed, Non-Blocking — 14, 3.4 Pre-Existing, Unaffected, 3. Findings by `ADR-0106`'s three-kind taxonomy, 4.1 CI evidence — the five-run determinism matrix, 4.2 CI evidence — the re-run, on the remediated candidate (+11 more)
+### Community 470 - "ContrastRemediationTests"
+Cohesion: 0.19
+Nodes (6): Build, Contrast — before/after, both themes, every background actually consumed, Tests, Validation, ContrastRemediationTests, DocumentViewerKeyboardPanTests
 
 ### Community 471 - ".BuildAsync"
-Cohesion: 0.18
-Nodes (3): 2. Purpose, QuotationExport, QuotationSheetModelBuilder
+Cohesion: 0.07
+Nodes (23): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+15 more)
+
+### Community 472 - "Framework"
+Cohesion: 0.17
+Nodes (3): 3. Background, Framework, FrameworkRegistry
 
 ### Community 473 - "**TempestOS v0.12.0 — CERTIFIED WITH ACCEPTED TECHNICAL DEBT**"
 Cohesion: 0.10
 Nodes (20): B1. Chief Architect — Architecture Readiness, B2. Principal Software Engineer — Implementation Readiness, B3. QA Lead — Verification Readiness (Build/Test Evidence), B4. Workflow Engineer — Verification Readiness (CI/CD Mechanics), B5. Technical Author — Governance Readiness, B6. Product Manager — Release Readiness, Part A — Repository State Confirmation, Part B — Six Independent Discipline Reviews (Fresh Evidence Only) (+12 more)
 
-### Community 475 - "ThickWalledCylinderCalculationDefinition"
-Cohesion: 0.14
-Nodes (9): CylinderSurface, Bore, Outer, ThickWalledCylinderCalculationDefinition, CalculationId, Metadata, ThickWalledCylinderInput, ThickWalledCylinderResult (+1 more)
+### Community 474 - "EvidenceNodeProvider"
+Cohesion: 0.15
+Nodes (3): EvidenceNodeProvider, Kind, EvidenceWorkspaceTests
+
+### Community 475 - ".AssertClose"
+Cohesion: 0.04
+Nodes (15): BoltedJointPreloadCalculationDefinition, CalculationId, Metadata, ThermalExpansionStressCalculationDefinition, CalculationId, Metadata, BoltedJointPreloadCalculationDefinitionTests, BoltGroupEccentricShearCalculationDefinitionTests (+7 more)
 
 ### Community 476 - "PipelinePosition"
 Cohesion: 0.19
@@ -3459,9 +3402,9 @@ Nodes (8): 8. C6 — Business development & sales pipeline, IPipelineService, Pi
 Cohesion: 0.08
 Nodes (6): XeroIdempotencyKey, LegacyInvoiceLink, XeroInvoiceLinkImporter, XeroInvoiceLinkImportReport, XeroIdempotencyKeyTests, XeroInvoiceLinkImporterTests
 
-### Community 478 - "ProjectExplorer"
-Cohesion: 0.18
-Nodes (10): `WP 8.1B` Summary (for reference), 4. Project Explorer, Testing, What Was Implemented, ProjectExplorer, CurrentPath, DockPosition, Id (+2 more)
+### Community 478 - "SourcingCriterion"
+Cohesion: 0.10
+Nodes (20): SourcingCriterion, Code, IsEliminating, IsScoring, Statement, Weight, SourcingCriterionKind, Capability (+12 more)
 
 ### Community 479 - "ADR-0044: Authorization Enforcement Point"
 Cohesion: 0.10
@@ -3475,29 +3418,25 @@ Nodes (13): IInstalledAppLocator, InstalledDataDirectory, IsInstalled, FirstRunM
 Cohesion: 0.18
 Nodes (3): OwnerOptionTag, RequirementOwnerPrioritySection, Title
 
-### Community 482 - "Rejected Designs Register"
-Cohesion: 0.33
-Nodes (5): Cross-Reference Check, Distribution by Work Package, How to Read This Register, Register Metadata, Rejected Designs Register
+### Community 482 - "ActionOutcomeReportingTests"
+Cohesion: 0.21
+Nodes (4): ActionOutcomeReportingTests, Reported, LastToast, StatusText
 
-### Community 483 - "WP 8.9.0 — Release Preparation & Product Baseline — Release Readiness Report"
-Cohesion: 0.10
-Nodes (19): 12. Platform Service Inventory, 13. Interface Inventory, 14. DI Registration Inventory, 15. Technical Debt Register, 16. Future Capability Register, 17. Known Issues, 1. Repository Verification, 2. Build Verification (+11 more)
+### Community 483 - "BearingRatingLifeCalculationDefinition"
+Cohesion: 0.18
+Nodes (7): BearingRatingLifeCalculationDefinition, CalculationId, Metadata, RollingBearingType, Ball, Roller, BearingRatingLifeCalculationDefinitionTests
 
 ### Community 484 - "TimesheetWeekView"
-Cohesion: 0.12
-Nodes (9): EntryRow, Billable, Hours, TimesheetWeekView, ExportFolder, ParameterPrompt, RefreshCount, WeekStart (+1 more)
+Cohesion: 0.07
+Nodes (11): ExpenseEntryInput, ExpenseEntryPrompt, EntryRow, Billable, Hours, TimesheetWeekView, ExportFolder, ParameterPrompt (+3 more)
 
 ### Community 485 - "BackupService"
-Cohesion: 0.14
-Nodes (6): BackupOutcome, Verified, BackupService, BackupVerificationException, BackupServiceTests, RootPath
+Cohesion: 0.13
+Nodes (7): BackupOutcome, Verified, BackupService, BackupVerificationException, RestartProcess, BackupServiceTests, RootPath
 
-### Community 486 - "InvoicingView"
-Cohesion: 0.10
-Nodes (7): CompletionRow, ExpenseRow, InvoicingView, ParameterPrompt, RefreshCount, WorkspaceChanges, RequestRow
-
-### Community 487 - "CommercialSection"
+### Community 486 - "CommercialQuality"
 Cohesion: 0.15
-Nodes (3): EditorSectionHelpers, CommercialSection, Title
+Nodes (11): `CommercialQuality`, CommercialQualities, WorstFirst, CommercialQuality, Contradicted, Incomplete, Invalid, NotApplicable (+3 more)
 
 ### Community 488 - "ProgrammeHierarchyExportAdapter"
 Cohesion: 0.09
@@ -3505,7 +3444,7 @@ Nodes (11): PortfolioEntry, ProgrammeEntry, ProgrammeExport, ProgrammeHierarchyE
 
 ### Community 489 - ".StartAsync"
 Cohesion: 0.01
-Nodes (109): 2.1 Characterization tests, added before any refactor, 4. The Problem, 5. The Design, 10. Trade-offs, Open Questions Requiring Implementation Validation, What is proven, Method and evidence standard, Register Metadata (+101 more)
+Nodes (106): 4. The Problem, Open Questions Requiring Implementation Validation, Register Metadata, 4. The Four Found-and-Fixed Defects — Independently Re-Verified, 2. `Tempest.Desktop` — Project Structure, 6.3 `ThemeServiceTests`'s Own Second Test Was Not Self-Contained, 4.1 `WorkspaceHost`'s Own `TD-26` Mitigation Was Too Narrow, 6. `WorkspaceHost`'s Own `IDiagnosticsProvider` Read — No New Risk (+98 more)
 
 ### Community 491 - "Tempest Engineering Brand"
 Cohesion: 0.12
@@ -3513,7 +3452,7 @@ Nodes (22): Chakra Petch Display Font, Design System Color Tokens, Mono — Spac
 
 ### Community 492 - "IPlatformNotification"
 Cohesion: 0.02
-Nodes (137): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+129 more)
+Nodes (119): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 5. The Design (+111 more)
 
 ### Community 511 - "EngineeringCalculationRegister"
 Cohesion: 0.15
@@ -3521,115 +3460,115 @@ Nodes (14): CalculationCompensationFailedException, LinkFailure, WithdrawalFailu
 
 ### Community 513 - "FinancialScenario"
 Cohesion: 0.02
-Nodes (102): 7. C5 — Financial controls & forecasting, 10. C5 — Financial controls & forecasting, 12. What ships, 13. Dependencies, 1. Purpose, 2. Source material and its limits, 3. What P07 is not, 7. C2 — Insurance & risk register (+94 more)
+Nodes (101): 1. Zero New `TD-##` Items — Confirmed, Not Assumed, 2. Six New Accepted Trade-offs, Each With a Real Revisit Trigger, 3. Register Totals — Independently Recomputed, Confirmed Accurate, 4. A Genuine, Disclosed Register Drift Found During This Review, Fixed in the Architecture Review's Own Pass, 5. Conclusion, Purpose, WP 10.6A — Technical Debt Review, 7. C5 — Financial controls & forecasting (+93 more)
 
 ### Community 515 - "RecordingLogger"
-Cohesion: 0.20
-Nodes (4): RecordingLogger, Messages, Sample, SettingsDocumentTests
+Cohesion: 0.18
+Nodes (5): 11. Common Mistakes, RecordingLogger, Messages, Sample, SettingsDocumentTests
 
 ### Community 517 - "Command Framework"
 Cohesion: 0.09
 Nodes (20): ADR-0036: Command Framework, ADR-0053: Engineering Data Model, ADR-0056: Calculation Framework, ADR-0057: Verification Framework, ADR-0058: Requirements Engine, ADR-0062: Workspace as Composition Root, ADR-0098: Undo/Redo Pattern, ADR-0099: Macro as Command (+12 more)
 
 ### Community 518 - "StandardClassification"
-Cohesion: 0.07
-Nodes (19): 4.1 Taxonomies, 4.2 Relationships between standards, 4. Canonical model, StandardClassification, CodeOfPractice, DesignationSystem, DimensionalStandard, Documentation (+11 more)
+Cohesion: 0.09
+Nodes (17): 4.1 Taxonomies, 4.2 Relationships between standards, 4. Canonical model, StandardClassification, CodeOfPractice, DesignationSystem, DimensionalStandard, Documentation (+9 more)
 
-### Community 520 - "ProjectDeliverablesView"
-Cohesion: 0.08
-Nodes (17): ProjectDeliverablesView, ParameterPrompt, RefreshCount, WorkspaceChanges, AddDeliverableCommand, ProjectId, TargetDate, Title (+9 more)
-
-### Community 521 - "ModuleLifecycleBaseTests"
+### Community 520 - "CompleteDeliverableCommand"
 Cohesion: 0.13
-Nodes (7): Observations, InvalidIdLifecycleModule, ModuleLifecycleBaseTests, SdkLifecycleLog, Entries, SdkModuleOverridingEveryPhase, SdkModuleOverridingOnlyStart
+Nodes (13): AddDeliverableCommand, ProjectId, TargetDate, Title, AddDeliverableCommandHandler, CompleteDeliverableCommand, CompletedOn, DocumentIds (+5 more)
+
+### Community 521 - "IModule"
+Cohesion: 0.01
+Nodes (209): Benefits, Disadvantages, How TempestOS Applies It, Key Takeaway, SOLID, What, When Not to Use, When to Use (+201 more)
 
 ### Community 522 - "IReferencePinResolver"
-Cohesion: 0.06
-Nodes (26): 0. Programme status — the honest four facts, 10. Git, 1. Numbering, 2. Shared architecture, 3. Boundaries — what P05 references and never duplicates, 5. Persistence, 6. Defects found and fixed, 7. Registers (+18 more)
+Cohesion: 0.07
+Nodes (25): 0. Programme status — the honest four facts, 10. Git, 1. Numbering, 2. Shared architecture, 3. Boundaries — what P05 references and never duplicates, 4. The five packages, 5. Persistence, 6. Defects found and fixed (+17 more)
 
 ### Community 523 - "ReferenceSeedReleasePolicy"
-Cohesion: 0.14
-Nodes (6): Decision, ActingAsScope, FixedPrincipalAccessor, Current, ReferenceSeedReleasePolicy, IsEnabled
+Cohesion: 0.23
+Nodes (4): FixedPrincipalAccessor, Current, ReferenceSeedReleasePolicy, IsEnabled
 
 ### Community 524 - "UndeleteCalculationObjectCommand"
-Cohesion: 0.12
-Nodes (8): UndeleteCalculationObjectCommand, TargetKind, TargetObjectId, UndeleteCalculationObjectCommandHandler, UndeleteMechanicalObjectCommand, TargetKind, TargetObjectId, UndeleteMechanicalObjectCommandHandler
+Cohesion: 0.29
+Nodes (4): UndeleteCalculationObjectCommand, TargetKind, TargetObjectId, UndeleteCalculationObjectCommandHandler
 
 ### Community 525 - "AccountsCategoriser"
 Cohesion: 0.21
 Nodes (7): AccountsCategoriser, AccountsCategory, Hardware, Other, Premises, Software, AccountsCategoriserTests
 
-### Community 526 - ".StartAsync"
-Cohesion: 0.22
-Nodes (7): Disclosed Status-Name Mapping (`RequirementsKpiCards`, design note), Related Documents, Repository Metrics, Status, Testing, WP 9.1A — Requirements Management Workspace — Implementation Report, RequirementsWorkspaceIntegrationTests
+### Community 526 - "DependencyDirectionTests"
+Cohesion: 0.19
+Nodes (4): 8. Architectural Principles, 7. Why This Solution Was Chosen, Related Documents, DependencyDirectionTests
+
+### Community 527 - "InvoicingView"
+Cohesion: 0.06
+Nodes (9): CompletionRow, ExpenseRow, InvoicingView, ParameterPrompt, RefreshCount, WorkspaceChanges, RequestRow, InvoicesGroupingTests (+1 more)
 
 ### Community 528 - "Descriptor and Snapshot Types Pattern"
 Cohesion: 0.09
 Nodes (19): Registry Pattern, RuntimeModuleManager, Descriptor and Snapshot Types Pattern, ModuleDescriptor, ModuleLifecycleStatus, RuntimeModule, Length Dimension Marker, Phantom Type Dimension Safety (+11 more)
 
-### Community 529 - "ConsoleLogSinkTests"
-Cohesion: 0.13
-Nodes (11): Build Verification, Commits This Release (`v0.7.0` → `v0.8.0`, so far), Contributors, Headline Metrics, Per-Work-Package Breakdown (`v0.8.0`), Purpose, Related Documents, Security Reviews Performed (+3 more)
+### Community 529 - "WP 8.9.0 — Release Preparation & Product Baseline — Release Readiness Report"
+Cohesion: 0.03
+Nodes (66): 1. `WP 16.0A` — the decision that sizes everything else, 2. Execution waves, 3. Work Package briefs, 4. What comes immediately after, 5. Risks to this plan, Related Documents, v0.16.0 — Release Plan: v1.0 Readiness Hygiene, `WP 16.0B` — Integrate off-`main` work (+58 more)
 
-### Community 533 - "FocusVisibleStyleTests"
-Cohesion: 0.08
-Nodes (13): Build, Contrast — before/after, both themes, every background actually consumed, Tests, Validation, Channel, ContrastRemediationTests, DocumentViewerKeyboardPanTests, ChromeStylesTreatment (+5 more)
+### Community 530 - "MaterialCriterion"
+Cohesion: 0.17
+Nodes (13): 5. B1 — Material selection, MaterialCriterion, Expression, PropertyName, RequiredValue, MaterialCriterionRole, Constraint, Informational (+5 more)
+
+### Community 533 - "StatusBarView"
+Cohesion: 0.01
+Nodes (138): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+130 more)
 
 ### Community 535 - "Avalonia"
 Cohesion: 0.06
 Nodes (37): contentHash, dependencies, resolved, type, contentHash, dependencies, resolved, type (+29 more)
 
-### Community 537 - ".WeekOf"
-Cohesion: 0.13
-Nodes (4): TimesheetWeek, TimesheetEntryNodeProvider, Kind, TimesheetWeekTests
-
 ### Community 538 - "ProjectModel"
 Cohesion: 0.09
 Nodes (20): Project Engine *(planned)*, Tempest.Core.Models, ProjectModel, ActionCount, CalculationCount, Classification, ContractNumber, Created (+12 more)
 
-### Community 539 - ".RunAgainstRealHttpAsync"
-Cohesion: 0.30
-Nodes (3): Test files changed to opt in explicitly, Testing, ApiSampleModuleIntegrationTests
+### Community 539 - "**TempestOS v0.11.0 — ACCEPT WITH OBSERVATIONS**"
+Cohesion: 0.11
+Nodes (17): A3. Workflow Engineer — Workflow Review, A4. QA Lead — QA Report, A5. Technical Author — Documentation Update, A6. Product Manager — Product Review, Confidence Assessment, Git, Part A — Six Independent Discipline Reviews, Part B — Programme Review: Reconciling the Six Reports (+9 more)
 
 ### Community 540 - "PipelineStage"
-Cohesion: 0.12
+Cohesion: 0.10
 Nodes (16): OpportunityInteraction, RecordedByPrincipalId, Summary, PipelineStage, Contacted, Dormant, Identified, Lost (+8 more)
 
 ### Community 541 - ".RenderPdf"
 Cohesion: 0.10
 Nodes (14): LayoutState, ContentBottom, ContentRight, ContentWidth, Landscape, Page, PageHeight, Pages (+6 more)
 
-### Community 542 - "LiftingLugPinJointCalculationDefinition"
-Cohesion: 0.14
-Nodes (12): LiftingLugPinJointCalculationDefinition, CalculationId, Metadata, LiftingLugPinJointInput, LiftingLugPinJointResult, LugCheck, Bearing, NetSection (+4 more)
+### Community 542 - "LugCheck"
+Cohesion: 0.33
+Nodes (6): LugCheck, Bearing, NetSection, PinBending, PinShear, TearOut
 
 ### Community 543 - "DocumentFontRole"
 Cohesion: 0.12
 Nodes (9): DocumentFontRole, Body, Display, Mono, DocumentFonts, DisplayLoaded, InterVariableLoaded, MonoLoaded (+1 more)
 
-### Community 544 - "ReportResult"
-Cohesion: 0.12
-Nodes (6): ReportResult, RecordedReportDefinitionB, Id, Name, RecordingRenderer, Received
-
-### Community 545 - "Part I — Concept Guide"
+### Community 544 - "IPLicence"
 Cohesion: 0.11
-Nodes (17): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+9 more)
+Nodes (14): 5. C3 — IP & data protection framework, RetentionRule, Basis, Description, IsBounded, RetainForMonths, StatesDisposal, IPLicence (+6 more)
+
+### Community 545 - "Platform Foundation Completion Report"
+Cohesion: 0.11
+Nodes (17): Academy Growth, Architectural Themes, Architecture Growth, Documentation Achieved, Governance Achieved, Governance Growth, Key Engineering Decisions, Lessons Learned (+9 more)
 
 ### Community 546 - "CalculationModuleDescriptor"
-Cohesion: 0.04
-Nodes (52): 7i. Engineering Calculators in `v0.21.0` (about 15 minutes), EngineeringNumber, CalculationModuleDescriptor, DefinitionInterface, InputType, Metadata, References, ResultType (+44 more)
-
-### Community 548 - ".ValidateAsync"
-Cohesion: 0.12
-Nodes (13): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+5 more)
+Cohesion: 0.05
+Nodes (44): 7i. Engineering Calculators in `v0.21.0` (about 15 minutes), CalculationModuleDescriptor, DefinitionInterface, InputType, Metadata, References, ResultType, CalculationCheckRow (+36 more)
 
 ### Community 549 - "ReviewQueueExportAdapter"
 Cohesion: 0.16
 Nodes (7): PendingReview, ProjectRef, ReviewEntry, ReviewQueueExportAdapter, Kind, SchemaVersion, ReviewsExport
 
-### Community 550 - "ReferenceLibrarySummary"
-Cohesion: 0.15
-Nodes (13): ReferenceVerificationStatus, NotVerified, SupersededBySource, VerifiedAgainstSource, ReferenceLibraryEntry, IsUsableAsAuthoritative, IsVerified, UnusableReason (+5 more)
+### Community 550 - "`WP 10.2B` — Docking & Workspace Layouts"
+Cohesion: 0.12
+Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
 
 ### Community 551 - "TempestOS v0.16.0 — Engineering Status Report"
 Cohesion: 0.14
@@ -3639,61 +3578,65 @@ Nodes (13): 1. Executive status, 2. Work Package matrix, 3. Decision matrix — 
 Cohesion: 0.08
 Nodes (15): 1. What this Work Package was asked to do, 3. Defects found, 6. Gate, 7. What remains owed, 8. For the lead to reconcile (not edited here), D1 — Closing a tab inside a floating window discarded every panel in every other window (critical, pre-existing, **fixed**), D2 — The restored focus ring was never drawn (minor, **fixed**), D3 — The application's own shutdown gate did not run on this rig, so nothing it saves was written (**open, and not attributable from here**) (+7 more)
 
-### Community 553 - "ConsiderationKind"
-Cohesion: 0.11
-Nodes (17): AssumptionConfidence, Critical, Sound, ToBeConfirmed, Unspecified, ConsiderationKind, Constraint, Criterion (+9 more)
+### Community 553 - ".PriceAsync"
+Cohesion: 0.20
+Nodes (8): EstimateGap, EstimateReproduction, Divergences, UnresolvedPins, EstimateResult, Gaps, IsComplete, IEstimatingService
 
 ### Community 554 - "XeroExpenseBillPushHandler"
-Cohesion: 0.02
-Nodes (44): XeroContactResolution, IsLinked, XeroExpenseBillPushHandler, DocumentKind, Operations, XeroGeneralExpensesContact, XeroPurchaseOrderPushHandler, DocumentKind (+36 more)
+Cohesion: 0.03
+Nodes (41): XeroContactResolution, IsLinked, XeroExpenseBillPushHandler, DocumentKind, Operations, XeroPurchaseOrderPushHandler, DocumentKind, Operations (+33 more)
 
 ### Community 555 - "IssueEvidenceCommand"
 Cohesion: 0.04
 Nodes (25): Design Freeze Option 1 Keep and Remediate, Design Freeze Option 2 Fresh Layout Same Columns, Figures, Related, Summary, TempestOS v0.17.0 — Release Notes, Warnings, What a user will notice (+17 more)
 
-### Community 556 - "BulkSetRequirementStatusCommand"
-Cohesion: 0.12
-Nodes (11): New Item, `TD-28` — Bulk Requirements Commands Do Not Trigger an Automatic View Refresh, BulkSetRequirementOwnerCommand, Owner, RequirementIds, BulkSetRequirementPriorityCommand, Priority, RequirementIds (+3 more)
+### Community 556 - "RequirementPriority"
+Cohesion: 0.05
+Nodes (24): New Item, `TD-28` — Bulk Requirements Commands Do Not Trigger an Automatic View Refresh, RequirementPriority, Critical, High, Low, Medium, BulkSetRequirementOwnerCommand (+16 more)
 
 ### Community 558 - "MicrosoftExtensionsConfigurationSource"
 Cohesion: 0.25
 Nodes (3): MicrosoftExtensionsConfigurationSource, MicrosoftExtensionsConfigurationSourceTests, ScopedEnvironmentVariable
 
-### Community 559 - "IEditorSection"
-Cohesion: 0.13
-Nodes (4): RelationshipsSection, Title, ValidationSection, Title
-
 ### Community 560 - "validate.py"
 Cohesion: 0.12
 Nodes (6): classify(), declared_statuses(), iter_files(), kind_of(), main(), score_depth()
 
-### Community 562 - "CommandInvocation"
-Cohesion: 0.14
-Nodes (10): CommandInvocation, Cancelled, Outcome, Reason, Result, CommandOutcome, Cancelled, Executed (+2 more)
+### Community 562 - "CommandRegistry"
+Cohesion: 0.07
+Nodes (15): CommandAvailability, Available, CommandInvocation, Cancelled, Outcome, Reason, Result, CommandOutcome (+7 more)
 
 ### Community 563 - "ConstraintKind"
-Cohesion: 0.11
-Nodes (17): ConstraintKind, Accreditation, Capability, Capacity, Demand, Equipment, Facilities, KeyPerson (+9 more)
-
-### Community 564 - "BearingSeed"
 Cohesion: 0.09
-Nodes (16): BearingSpeedRating, BearingSpeedRatingKind, GreaseLubricatedSpeed, LimitingSpeed, ManufacturerSpecified, OilLubricatedSpeed, ReferenceSpeed, SealLimitedSpeed (+8 more)
+Nodes (21): 9. C7 — Operating model & scale plan, ConstraintKind, Accreditation, Capability, Capacity, Demand, Equipment, Facilities (+13 more)
+
+### Community 564 - "SourceCitation"
+Cohesion: 0.07
+Nodes (20): BearingSpeedRatingKind, GreaseLubricatedSpeed, LimitingSpeed, ManufacturerSpecified, OilLubricatedSpeed, ReferenceSpeed, SealLimitedSpeed, Unspecified (+12 more)
+
+### Community 565 - "DuplicateCommandHandlerException"
+Cohesion: 0.29
+Nodes (3): DuplicateCommandHandlerException, CommandType, CommandHandlerTableTrustTests
 
 ### Community 566 - "`WP 10.1B` — Runtime Host & Module Discovery Hardening"
 Cohesion: 0.11
 Nodes (17): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+9 more)
+
+### Community 567 - "WorkspaceChange"
+Cohesion: 0.12
+Nodes (5): WorkspaceChange, Entries, Sequence, IEditorSection, Title
 
 ### Community 568 - "QuickBooksOnlineModels.cs"
 Cohesion: 0.23
 Nodes (18): QboAccount, QboAccountBasedExpenseLineDetail, QboBill, QboCustomer, QboCustomerEnvelope, QboFault, QboFaultEnvelope, QboFaultError (+10 more)
 
 ### Community 569 - "`WP 10.2A` — Workspace Modernisation"
-Cohesion: 0.12
-Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
+Cohesion: 0.07
+Nodes (26): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+18 more)
 
-### Community 570 - "KindEligibilityInvariantTests"
-Cohesion: 0.05
-Nodes (34): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered (+26 more)
+### Community 570 - "WP-B2 — Kind Eligibility Is Two Mechanisms, One Invariant"
+Cohesion: 0.13
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 571 - "Tempest.Core.Tests/packages.lock.json"
 Cohesion: 0.06
@@ -3703,19 +3646,19 @@ Nodes (32): Microsoft.CodeCoverage, Microsoft.Data.Sqlite, Microsoft.Data.Sqlite
 Cohesion: 0.07
 Nodes (32): contentHash, dependencies, requested, resolved, type, contentHash, dependencies, resolved (+24 more)
 
-### Community 573 - "AttachmentViewerLauncher"
-Cohesion: 0.08
-Nodes (17): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+9 more)
-
 ### Community 574 - "dependencies"
 Cohesion: 0.07
 Nodes (32): Microsoft.Data.Sqlite, Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Abstractions, Microsoft.Extensions.Configuration.CommandLine, Microsoft.Extensions.Configuration.EnvironmentVariables, Microsoft.Extensions.Configuration.FileExtensions, Microsoft.Extensions.Configuration.Json, Microsoft.Extensions.FileProviders.Abstractions (+24 more)
+
+### Community 577 - "Governance — Independent Finding-Closure Verification, Register Closure, False-Claim Corrections"
+Cohesion: 0.12
+Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
 ### Community 578 - "**TempestOS v0.10.0 — RELEASED**"
 Cohesion: 0.11
 Nodes (17): 2. Full Build Verification, 3. Full Test Verification, 5. Documentation Review, 6. Governance Review, 7. Release Notes, 8. Release Validation, Confidence Assessment, Git (+9 more)
 
-### Community 579 - "TD-70 + TD-71 — Responsive Workspace, Ribbon Minimisation, Drag as a Durable Preference"
+### Community 579 - "TD-77 Stage 3 — Production Command Descriptors Are Bound"
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
@@ -3739,33 +3682,33 @@ Nodes (26): StandardQuery, BodyCode, BodyKinds, Classifications, DesignationCont
 Cohesion: 0.11
 Nodes (17): B1. Chief Architect — Architecture Readiness, B2. Principal Software Engineer — Implementation Readiness, B3. QA Lead / Workflow Engineer — Verification Readiness, B4. Technical Author — Governance Readiness, B5. Security/Trust *(disclosed, additional sixth category)*, B6. Product Manager — Release Readiness, Part A — Repository State Confirmation, Part B — Six Independent Discipline Reviews (+9 more)
 
-### Community 585 - ".DispatchAsync"
-Cohesion: 0.05
-Nodes (39): Command *(implemented — v0.4.0 WP 4.0 contract, WP 5.1A design, WP 5.1B dispatcher implementation, ADR-0036–ADR-0038)*, ProjectDetailsView, RefreshCount, WorkspaceChanges, RecordExpenseCommand, Billable, Category, Date (+31 more)
+### Community 585 - "ProjectDetailsView"
+Cohesion: 0.04
+Nodes (53): IProjectCommercialService, ProjectCommercialRefusal, None, ProjectArchived, ProjectNotFound, RateCardNotFound, RateCardNotReleased, ProjectCommercialResult (+45 more)
 
 ### Community 586 - "xUnit2029 Build Failure and the Vacuous Assertion Behind It"
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 587 - "IWorkspaceManager"
+### Community 587 - "IWorkspaceView"
 Cohesion: 0.01
-Nodes (323): Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, What This Document Is, What Was Achieved, WP 8.0B — Workspace Contracts (+315 more)
+Nodes (310): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, What This Document Is, What Was Achieved (+302 more)
 
-### Community 588 - "R7RegressionProofTests"
-Cohesion: 0.17
-Nodes (7): DurableRig, Content, Context, Raw, States, Store, R7RegressionProofTests
+### Community 588 - "PersistenceStoreUnavailableException"
+Cohesion: 0.07
+Nodes (16): PersistenceStoreUnavailableException, ReferenceDataRig, RequirementsRig, RequirementsVerificationReferenceDataAuditTests, DurableRig, Context, States, Store (+8 more)
 
 ### Community 590 - "Evidence Canonical Kind Lifecycle"
 Cohesion: 0.11
 Nodes (15): Estimate Quote Actual as Four Types, Calculation Carries Reference Revision, Persistence SQLite WAL Synchronous, One Store Authoritative Transactional, Units Runtime Dimension Vector, Evidence Canonical Kind Lifecycle, Reference Record Source Citation, Project Commercial Core Timesheet (+7 more)
 
-### Community 591 - "3. Work Package briefs"
-Cohesion: 0.11
-Nodes (17): 1. `WP 16.0A` — the decision that sizes everything else, 2. Execution waves, 3. Work Package briefs, 4. What comes immediately after, 5. Risks to this plan, Related Documents, v0.16.0 — Release Plan: v1.0 Readiness Hygiene, `WP 16.0B` — Integrate off-`main` work (+9 more)
+### Community 591 - "AssetStanding"
+Cohesion: 0.16
+Nodes (10): AssetStanding, Incomplete, Invalid, NotApplicable, Stale, Superseded, Unverified, Verified (+2 more)
 
 ### Community 592 - "EngineeringDocumentStoreTests"
-Cohesion: 0.12
-Nodes (13): Certification Outcome, ENGINEERING CORE CERTIFIED WITH ACCEPTED TECHNICAL DEBT, Purpose, Recommendation, Related Documents, Scope of This Certification, Testing Review, Two Genuine, Non-Blocking Findings — Found and Closed in This Same Work Package (+5 more)
+Cohesion: 0.15
+Nodes (3): Testing Review, EngineeringDocumentStoreTests, FailingPersistenceStore
 
 ### Community 593 - "Engineering Calculation Framework"
 Cohesion: 0.12
@@ -3779,129 +3722,121 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.11
 Nodes (9): FakeLengthStream, CanSeek, Length, NonSeekableStream, CanRead, CanSeek, CanWrite, Length (+1 more)
 
-### Community 596 - ".Resolve"
-Cohesion: 0.10
-Nodes (13): Drag to dock, Not attempted, Persistence, Proven by, Related Documents, The extension point, The model, The question this answers (+5 more)
+### Community 596 - "PurchaseOrderResult"
+Cohesion: 0.39
+Nodes (3): IPurchaseOrderService, PurchaseOrderResult, Succeeded
 
 ### Community 597 - "FileSecretStore"
-Cohesion: 0.16
-Nodes (10): 1. What the Product Owner gets, 2. The weaknesses and the packages that close them, 3. Waves, 4. Method, 5. Outcome (`WP 21.9.0`, 2026-09-15 late evening), 6. The overnight acceptance campaign (2026-09-15 23:11 → 2026-09-16, on `claude/tempestos-v1-final-acceptance-19hka8`), TempestOS v0.21.0 — Execution Plan: the recovery tranche, FileSecretStore (+2 more)
+Cohesion: 0.28
+Nodes (3): FileSecretStore, SecretFileNaming, FileSecretStoreTests
 
-### Community 598 - "WP 13.3A — Plugin Platform Integration & End-to-End Validation"
-Cohesion: 0.12
-Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. What the Three Parallel Technical Sub-Agents Validated, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
+### Community 598 - "TaskBucket"
+Cohesion: 0.14
+Nodes (11): TaskBucket, Approvals, Calculations, DueThisWeek, DueToday, Finance, Later, Overdue (+3 more)
 
 ### Community 599 - "WP 7.1B — Units & Quantities Framework — Implementation"
 Cohesion: 0.12
-Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered (+7 more)
-
-### Community 600 - "WP 10.0A — Screen Catalogue"
-Cohesion: 0.10
-Nodes (20): 10. Tabbed Document Area, 12. Toolbar, 13. Search, 14. Context Menus, 15. Notifications, 16. Attention / Action Centre, 17. Empty States, 18. Loading States (+12 more)
+Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
 
 ### Community 601 - "dependencies"
 Cohesion: 0.08
 Nodes (28): contentHash, dependencies, requested, resolved, type, HarfBuzzSharp, HarfBuzzSharp.NativeAssets.Linux, HarfBuzzSharp.NativeAssets.WebAssembly (+20 more)
 
-### Community 602 - ".List"
-Cohesion: 0.05
-Nodes (3): WorkspaceChangeFeedTests, NoBlockingPersistenceCallsTests, UnscaledTestDeadlineTests
-
 ### Community 603 - "net10.0/linux-x64"
 Cohesion: 0.10
 Nodes (28): contentHash, resolved, type, contentHash, resolved, type, dependencies, net10.0/linux-x64 (+20 more)
 
-### Community 604 - "WP 7.3A — Requirements Engine — Implementation"
-Cohesion: 0.12
-Nodes (15): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered (+7 more)
+### Community 604 - "TD-80 — The Document and Drawing Viewer"
+Cohesion: 0.13
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 605 - "Induced-Failure Evidence"
-Cohesion: 0.12
-Nodes (15): Check 10 — Exception Register, Check 11 — Namespace Register, Check 12 — Technical Debt Register, Check 13 — Future Capability Register, Check 14 — Governance Index ADR count, Check 15 — Academy Register (row-presence Fail, and header Warn both directions), Check 16 — Documentation Register 03 Work Packages/ row count, Check 9 — Interface Register (+7 more)
+Cohesion: 0.10
+Nodes (20): Check 10 — Exception Register, Check 11 — Namespace Register, Check 12 — Technical Debt Register, Check 13 — Future Capability Register, Check 14 — Governance Index ADR count, Check 15 — Academy Register (row-presence Fail, and header Warn both directions), Check 16 — Documentation Register 03 Work Packages/ row count, Check 9 — Interface Register (+12 more)
 
 ### Community 606 - "WP 10.0B — Desktop Application Framework — Implementation"
 Cohesion: 0.12
 Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
 
-### Community 607 - "CreateEvidenceFromFilesCommand"
-Cohesion: 0.19
-Nodes (7): CreateEvidenceFromFilesCommand, Classification, Files, ParentId, SubjectId, Title, CreateEvidenceFromFilesCommandTests
+### Community 608 - "EngineeringWorkspaceComposer"
+Cohesion: 0.05
+Nodes (42): 1. Introduction, 2. What Was Found, 3. Architectural Lessons, 4. Key Takeaways, Related Documents, What This Document Is, WP 12.0A — Desktop Composition Root Decomposition Architecture, 4. Key Takeaways (+34 more)
 
-### Community 608 - "WorkspaceDockingComposer"
-Cohesion: 0.02
-Nodes (78): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+70 more)
-
-### Community 609 - "WP 13.9.0 — `v0.13.0` Engineering Readiness Review"
-Cohesion: 0.12
-Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
+### Community 609 - "WP-A1 — Close the Live Id-Only Command Path"
+Cohesion: 0.13
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 610 - "net10.0/linux-x64"
 Cohesion: 0.13
 Nodes (27): contentHash, resolved, type, dependencies, net10.0/linux-x64, net10.0/win-x64, contentHash, resolved (+19 more)
 
-### Community 612 - "DeterminationState"
-Cohesion: 0.14
-Nodes (10): DeterminationState, Assumed, Disputed, NotApplicable, NotDetermined, Recorded, ReviewRequired, DeterminationStates (+2 more)
+### Community 612 - "TempestOS v0.6.0 — Release Architecture"
+Cohesion: 0.13
+Nodes (14): Cross-Service Orthogonality Decisions, Documentation Impact, Integration With the Runtime, Host, Plugin System, and Command Framework, Objective, "Platform Services", Related Documents, Repository Investigation, Required ADRs — Summary (+6 more)
 
 ### Community 613 - "TempestLogoControl"
 Cohesion: 0.11
 Nodes (7): TempestLockupControl, WordmarkBrush, TempestLogoControl, CoreBrush, Monochrome, Point, AnnotationGeometry
 
 ### Community 614 - "platform.py"
-Cohesion: 0.23
-Nodes (3): Platform, LoggingFramework, WorkPackage
+Cohesion: 0.19
+Nodes (5): 3. Background, Platform, WorkPackageRegistry, LoggingFramework, WorkPackage
 
-### Community 615 - "CancellationToken"
+### Community 615 - "InMemoryQueryablePersistenceStore"
 Cohesion: 0.05
-Nodes (14): AuditCollectionProtectedException, Collection, IAuditCollectionTransactionWriter, IAuditCollectionWriter, AuditCollectionProtectionTests, Entry, IndexEntry, ReadTransaction (+6 more)
+Nodes (25): AnnotationPoint, Attachment, ContentHash, ContentType, FileName, Id, SizeInBytes, Part (+17 more)
 
 ### Community 616 - "Visual Foundations"
 Cohesion: 0.12
 Nodes (13): Badge Component, Button Component, Card Component, Icon Component, IconButton Component, Toast Component, Input Component, Textarea Component (+5 more)
 
-### Community 617 - ".InitialiseAsync"
-Cohesion: 0.17
-Nodes (4): RegisterSampleMaterialCommand, RegisterSampleMaterialCommandHandler, ReviseSampleMaterialCommand, ReviseSampleMaterialCommandHandler
+### Community 617 - "IEngineeringDocumentStore"
+Cohesion: 0.01
+Nodes (288): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+280 more)
+
+### Community 618 - ".StartAsync"
+Cohesion: 0.29
+Nodes (3): CalculationModuleGroup, CalculationModuleWorkbenchTests, Session
 
 ### Community 619 - "net10.0/linux-x64"
 Cohesion: 0.13
 Nodes (27): contentHash, resolved, type, dependencies, net10.0/linux-x64, net10.0/win-x64, contentHash, resolved (+19 more)
 
 ### Community 620 - "TD-102 — The Two Project Areas That Claimed to Be Implemented Now Are"
-Cohesion: 0.13
-Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
+Cohesion: 0.12
+Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
 ### Community 621 - "OsInput"
 Cohesion: 0.19
 Nodes (5): Interactive, OsInput, Available, Display, WindowId
 
-### Community 622 - ".ListAsync"
-Cohesion: 0.20
-Nodes (10): IProjectRequirementRegister, ProjectRequirementEntry, ClaimsUnrecordedVerification, ProjectRequirementRegister, RequirementVerificationState, Conditional, Failed, NotVerified (+2 more)
+### Community 622 - "IVerificationRecord"
+Cohesion: 0.03
+Nodes (56): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+48 more)
 
-### Community 623 - "WP 8.1B — Navigation & Project Explorer — Implementation Report"
-Cohesion: 0.22
-Nodes (8): Disclosed Implementation-Phase Findings, Interaction Model, New ADR, Related Documents, Repository Metrics, Status, Technical Debt Assessment, WP 8.1B — Navigation & Project Explorer — Implementation Report
+### Community 623 - "The List"
+Cohesion: 0.13
+Nodes (14): ADR-0040 — Reporting Is DI-Public and Orthogonal to Export/Import, ADR-0041 — A Shared Persistence Abstraction Serves Settings and Audit, ADR-0042 — Settings Is DI-Public and Distinct From Configuration, ADR-0044 — Authorization Enforcement Point, ADR-0045 — Audit Is a Durable, Queryable Record, Distinct From Logging and Diagnostics, ADR-0047 — REST API Is a Background Hosted Service, ADR-0049 — Adopting ASP.NET Core/Kestrel for the REST API, ADR-0050 — License Validation Is a Host-Startup, Host-Fatal Gate (+6 more)
 
 ### Community 624 - "WP 4.2D — Platform Services Architecture Review"
-Cohesion: 0.12
-Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
+Cohesion: 0.06
+Nodes (28): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+20 more)
 
-### Community 626 - "CockpitReadScope"
-Cohesion: 0.18
-Nodes (6): 8. Architectural Principles, CockpitReadCell, Value, CockpitReadScope, IsActive, Handle
+### Community 626 - "WP-E — Async/Threading Hardening and the Cockpit Read Scope"
+Cohesion: 0.10
+Nodes (15): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 7. Why This Solution Was Chosen, 8. Architectural Principles, 9. Benefits (+7 more)
 
-### Community 627 - "WP 4.2 — Plugin Manifest Architecture"
-Cohesion: 0.13
-Nodes (14): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+6 more)
+### Community 627 - "RuntimeModuleManager"
+Cohesion: 0.01
+Nodes (204): Benefits, Disadvantages, How TempestOS Applies It, Key Takeaway, Separation of Concerns, What, When Not to Use, When to Use (+196 more)
 
 ### Community 628 - "Integration Phase — Completion Report"
-Cohesion: 0.08
-Nodes (23): 10. Defects discovered, 11. Colour Review Board, 13.1 Remaining population, 13.2 Remaining integration, 13.3 Remaining UI, 13.4 Remaining end-to-end scenarios, 13.5 Existing YELLOW technical debt, 13. Outstanding work (+15 more)
+Cohesion: 0.13
+Nodes (14): 13.1 Remaining population, 13.2 Remaining integration, 13.3 Remaining UI, 13.4 Remaining end-to-end scenarios, 13.5 Existing YELLOW technical debt, 13. Outstanding work, 1. Baseline, 2. Scenario (+6 more)
 
-### Community 629 - "SampleWorkspaceView"
-Cohesion: 0.12
-Nodes (13): SampleWorkspaceView, Id, IsDirty, ObjectId, ObjectKind, Title, SampleWorkspaceViewFactory, Kind (+5 more)
+### Community 629 - "SampleProjectExplorerNodeProvider"
+Cohesion: 0.07
+Nodes (18): SampleExplorerContent, RootNodes, SampleProjectExplorerNodeProvider, Kind, SampleProjectExplorerNodeProviderTests, SampleWorkspaceView, Id, IsDirty (+10 more)
 
 ### Community 630 - "TD-77 Stage 4 — Core Invocation Contract, Proven Against Real Bindings"
 Cohesion: 0.12
@@ -3912,16 +3847,16 @@ Cohesion: 0.12
 Nodes (16): 1. Git Status Before Push, 2. Branch Pushed, 3. Tag Pushed, 4. Workflow Results, 5. CI Summary and Root-Cause Diagnosis, 6. Reproducibility, `TD-44`, and `TD-45`, 7. Recommendation: Branch Protection, 8. Recommendation: Merging into `main` (+8 more)
 
 ### Community 632 - "RunMacroCommand"
-Cohesion: 0.08
-Nodes (15): MacroStep, CommandId, RecordedValues, RunMacroCommand, Context, MacroId, MacroBindingEligibilityTests, Production (+7 more)
+Cohesion: 0.07
+Nodes (18): MacroStep, CommandId, RecordedValues, RunMacroCommand, Context, MacroId, MacroBindingEligibilityTests, Production (+10 more)
 
 ### Community 633 - ".BuildHandler"
-Cohesion: 0.13
-Nodes (6): RecordedApiCommand, RecordingApiCommandHandler, CallCount, ApiRequestHandlerTests, FakeAuditRecorder, Recorded
+Cohesion: 0.12
+Nodes (6): Test files changed to opt in explicitly, Testing, ApiRequestHandlerTests, FakeAuditRecorder, Recorded, ApiSampleModuleIntegrationTests
 
-### Community 634 - "WP 7.1E — Verification Framework — Implementation"
+### Community 634 - "TempestOS v0.7.0 — "Engineering Foundation""
 Cohesion: 0.13
-Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 7. Why This Solution Was Chosen (+6 more)
+Nodes (14): Acknowledgements, Architecture Highlights, Breaking Changes, Completed Programmes, Deferred Work, Engineering Foundation (`WP 7.0A`–`WP 7.1F`), Engineering Statistics, Future Roadmap (+6 more)
 
 ### Community 635 - "dependencies"
 Cohesion: 0.09
@@ -3935,13 +3870,13 @@ Nodes (16): 10. Rollback Procedure, 1. Branching Strategy, 2. Pull Request Expec
 Cohesion: 0.11
 Nodes (24): contentHash, dependencies, resolved, type, contentHash, dependencies, resolved, type (+16 more)
 
-### Community 638 - "IWorkspaceViewFactory"
-Cohesion: 0.13
-Nodes (14): DeliverableCompletionObjectViewFactory, Kind, EvidenceObjectViewFactory, Kind, ExpenseObjectViewFactory, Kind, PurchaseOrderObjectViewFactory, Kind (+6 more)
-
 ### Community 639 - "Per-Work-Package Required Reading and Expected Output"
 Cohesion: 0.12
 Nodes (16): Cross-Cutting Required Reading (Every `v0.6.0` Work Package), How to Use This Document, Per-Work-Package Required Reading and Expected Output, Purpose, Related Documents, Summary Table, TempestOS v0.6.0 — Academy Plan, `WP 6.0` — Reporting Framework (+8 more)
+
+### Community 641 - "VerificationResultSection"
+Cohesion: 0.14
+Nodes (3): EditorSectionHelpers, VerificationResultSection, Title
 
 ### Community 642 - "**APPROVED**"
 Cohesion: 0.12
@@ -3967,33 +3902,25 @@ Nodes (20): ADR-0158: Calculator Reference Diagrams Are Declared per Calculation
 Cohesion: 0.18
 Nodes (13): Business Governance Records Reuse Shared Lifecycle, Money as Exact Decimal and Authority Model, Commercial Intelligence Lifecycle and Quality Axis, P03 Compares Ranks Recommends No Authority, Engineering Assets Template Pinning, Verification Review Decision Approval Distinct, P04 Operational Layer Over References, Business Authorisation Pattern (+5 more)
 
-### Community 649 - ".RunAgainstRunningHostAsync"
-Cohesion: 0.25
-Nodes (5): RegistrationRoundTripReportDefinition, Id, Name, RegistrationRoundTripReportRenderer, ReportingHostRegistrationTests
-
 ### Community 651 - "WP 15.2A — Desktop Test Suite Persistence Root Cleanup"
 Cohesion: 0.08
 Nodes (19): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 5. The Design (+11 more)
 
-### Community 652 - "TD-31 — Attachment Content Is Durable Bytes This Platform Holds"
+### Community 652 - "WP-B1 — Pin the Two Encodings of Per-Kind Command Eligibility"
 Cohesion: 0.14
-Nodes (13): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 3. Background, 4. The Problem, 6. Alternatives Considered (+5 more)
+Nodes (13): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered (+5 more)
 
 ### Community 653 - "dependencies"
 Cohesion: 0.11
 Nodes (23): contentHash, dependencies, resolved, type, HarfBuzzSharp, HarfBuzzSharp.NativeAssets.Linux, HarfBuzzSharp.NativeAssets.WebAssembly, SkiaSharp (+15 more)
 
 ### Community 654 - "XeroModels.cs"
-Cohesion: 0.25
-Nodes (17): XeroApiException, XeroContact, XeroContactsEnvelope, XeroInvoice, XeroInvoicesEnvelope, XeroLineItem, XeroRepeatingInvoice, XeroRepeatingInvoicesEnvelope (+9 more)
+Cohesion: 0.23
+Nodes (18): XeroApiException, XeroContact, XeroContactsEnvelope, XeroInvoice, XeroInvoicesEnvelope, XeroLineItem, XeroRepeatingInvoice, XeroRepeatingInvoicesEnvelope (+10 more)
 
 ### Community 655 - "dependencies"
 Cohesion: 0.09
 Nodes (23): contentHash, dependencies, resolved, type, Avalonia.Desktop, Avalonia.Fonts.Inter, Avalonia.Themes.Fluent, PDFtoImage (+15 more)
-
-### Community 657 - "WP 6.0 — Reporting Framework Implementation"
-Cohesion: 0.14
-Nodes (13): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 3. Background, 4. The Problem, 6. Alternatives Considered, 8. Architectural Principles (+5 more)
 
 ### Community 658 - "Academy Guide — Sample Explorer Content's New Home"
 Cohesion: 0.12
@@ -4003,9 +3930,9 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 660 - "WP 6.4 — Settings Framework Implementation"
+### Community 660 - "WP-Z1 — Governance Correction"
 Cohesion: 0.14
-Nodes (13): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 3. Background, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen, 8. Architectural Principles (+5 more)
+Nodes (13): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 6. Alternatives Considered (+5 more)
 
 ### Community 661 - "CI — Close the Build Errors and Governance-Index Gaps That Made the Branch Red"
 Cohesion: 0.12
@@ -4015,9 +3942,9 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.09
 Nodes (21): Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core, Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Abstractions, Microsoft.Extensions.Configuration.CommandLine, Microsoft.Extensions.Configuration.EnvironmentVariables, Microsoft.Extensions.Configuration.FileExtensions, Microsoft.Extensions.Configuration.Json (+13 more)
 
-### Community 663 - "2. Matrix"
-Cohesion: 0.14
-Nodes (13): 1. Why this audit exists, 2. Matrix, 3. Two findings that change the remediation scope, 4. Remediation scope agreed from this audit, 5. Position before remediation, Original Roadmap — 40 Work Package Audit, P01 — Engineering Reference Data (Group A), P02 — Engineering Intelligence (Group B) (+5 more)
+### Community 663 - "RuleSeverity"
+Cohesion: 0.08
+Nodes (23): 1. Why this audit exists, 2. Matrix, 3. Two findings that change the remediation scope, 4. Remediation scope agreed from this audit, 5. Position before remediation, Original Roadmap — 40 Work Package Audit, P01 — Engineering Reference Data (Group A), P02 — Engineering Intelligence (Group B) (+15 more)
 
 ### Community 666 - "Tempest.Harness/packages.lock.json"
 Cohesion: 0.09
@@ -4043,13 +3970,9 @@ Nodes (3): OAuthCallback, OAuthLoopbackListener, RedirectUri
 Cohesion: 0.15
 Nodes (11): Microsoft.Data.Sqlite (10.0.11), Microsoft.Extensions.Configuration (10.0.11), Microsoft.Extensions.Configuration.CommandLine (10.0.11), Microsoft.Extensions.Configuration.EnvironmentVariables (10.0.11), Microsoft.Extensions.Configuration.Json (10.0.11), Microsoft.Extensions.Logging.Abstractions (10.0.11), System.Security.Cryptography.ProtectedData (10.0.11), net10.0 (+3 more)
 
-### Community 672 - "WP 9.5A — Manufacturing Workspace — Future Capability Assessment"
-Cohesion: 0.14
-Nodes (11): Entries — Classification, `FCR-0060` — A Genuine `Routing`/`SupplierOperation` Domain Kind, Each With Its Own Structured Fields, `FCR-0061` — Parameterising `EngineeringCockpit.FormatCoverage`'s Own Empty-State Message, `FCR-0062` — Extending `VerificationService.RecordAsync`'s Own `IHasRelationships` Linking to Cover Inspection Subjects, Not Recommended: A Dedicated `ManufacturingResource`/`Tooling`/`Fixture` Domain Kind Distinct From `"Document"`, Not Recommended: Reusing Manufacturing's Own Commands From Documents/Verification, Purpose, Related Documents (+3 more)
-
 ### Community 673 - "AsyncKeyedLock"
-Cohesion: 0.03
-Nodes (63): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+55 more)
+Cohesion: 0.08
+Nodes (26): 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 3. Background, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+18 more)
 
 ### Community 674 - "Product Gap Reconciliation Audit: Findings and Standing Evidence"
 Cohesion: 0.12
@@ -4063,13 +3986,17 @@ Nodes (22): Microsoft.Extensions.FileSystemGlobbing, Microsoft.Extensions.Primit
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 677 - "SampleProjectExplorerNodeProvider"
-Cohesion: 0.27
-Nodes (3): SampleProjectExplorerNodeProvider, Kind, SampleProjectExplorerNodeProviderTests
+### Community 677 - "TempestOS v0.6.0 — "Platform Services""
+Cohesion: 0.14
+Nodes (13): Academy, Acknowledgements, Architecture, Documentation, Governance, Highlights, Known Limitations, Overview (+5 more)
 
 ### Community 678 - "Part I — Concept Guide"
-Cohesion: 0.11
-Nodes (18): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+10 more)
+Cohesion: 0.18
+Nodes (11): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+3 more)
+
+### Community 679 - ".IEventHandler_ObservesCancellation"
+Cohesion: 0.27
+Nodes (5): EventContractTests, ProjectSavedEvent, ProjectId, RecordingEventHandler, LastHandled
 
 ### Community 680 - "RecordingHostedService"
 Cohesion: 0.15
@@ -4087,13 +4014,17 @@ Nodes (20): Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core, Microsoft.Extensi
 Cohesion: 0.10
 Nodes (20): Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core, Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Abstractions, Microsoft.Extensions.Configuration.CommandLine, Microsoft.Extensions.Configuration.EnvironmentVariables, Microsoft.Extensions.Configuration.FileExtensions, Microsoft.Extensions.Configuration.Json (+12 more)
 
+### Community 684 - "TechnicalDocumentType"
+Cohesion: 0.14
+Nodes (14): TechnicalDocumentType, CalculationReport, ChangeNote, DataSheet, DesignReport, Drawing, Manual, Other (+6 more)
+
 ### Community 686 - "dependencies"
 Cohesion: 0.12
 Nodes (20): Microsoft.Extensions.Configuration, Microsoft.Extensions.Configuration.Abstractions, Microsoft.Extensions.Configuration.FileExtensions, Microsoft.Extensions.FileProviders.Abstractions, Microsoft.Extensions.FileProviders.Physical, Microsoft.Extensions.FileSystemGlobbing, dependencies, contentHash (+12 more)
 
-### Community 687 - "WP 6.3 — REST API — Technical Debt Assessment"
-Cohesion: 0.15
-Nodes (12): A Genuine, Disclosed Process Finding (Not Platform Debt), Existing Debt: What Actually Happened, New Debt Actually Disclosed by This Work Package, Purpose, `R1` (`docs/releases/v0.6.0/Risk Register.md`) — `CurrentPrincipalAccessor`'s ambient design under request concurrency, `R3` — ASP.NET Core/Kestrel integration boundary risk, Related Documents, Summary Table (+4 more)
+### Community 687 - "PurchaseOrderRefusal"
+Cohesion: 0.14
+Nodes (13): PurchaseOrderRefusal, ExpensesAlreadyRecorded, InvalidLine, LineCurrencyMismatch, LineNotFound, None, NothingToIssue, NotReceived (+5 more)
 
 ### Community 689 - "TD-93 — Vocabulary Consistency Check Scanned Whatever Happened to Be Loaded"
 Cohesion: 0.12
@@ -4108,16 +4039,20 @@ Cohesion: 0.11
 Nodes (18): Commits Per Month, Design Freeze Review - Quantitative Evidence, Lines Added/Deleted (Last 100 Commits), Section 1: Source Lines Per Project, Section 2: Test Lines and Test Methods, Section 3: Largest 25 .cs Files by Line Count (src excluding Frozen), Section 4: Namespace/Folder Size Analysis, Section 5: Project References Graph (+10 more)
 
 ### Community 695 - "Entries"
-Cohesion: 0.01
-Nodes (923): 3. Background, 3. Background, 3. Background, Observations, 1. Introduction, 4. The Problem, 5. The Design, 11. Common Mistakes (+915 more)
+Cohesion: 0.02
+Nodes (216): 1. Purpose, 15. Application boundary, 8. Data quality rules, 2. The seam built to refuse, At a Glance, Bearing Library *(implemented — `A4`, ADR-0124)*, Bearing Validation *(implemented — `A4`, ADR-0124)*, Engineering Reference Data — Group A *(implemented — `Group A`, ADR-0125/ADR-0126)* (+208 more)
 
 ### Community 696 - "Windows Delete-While-Locked Test Fix"
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 697 - "3. Verification"
+### Community 697 - "WP 12.1B — Classification & Relationship Vocabulary Safety Net Implementation"
 Cohesion: 0.17
-Nodes (11): 1. Introduction, 2.2 The confirmed duplicate, closed, 2.4 Component 3 — the consistency test, 2. What Was Built, 3. Verification, 4. Architectural Lessons, 5. Key Takeaways, 6. Addendum — Architecture Review Follow-Up (2026-08-12, documentation only) (+3 more)
+Nodes (11): 1. Introduction, 2.2 The confirmed duplicate, closed, 2.3 Engineering Vocabulary Register — created and populated, 2.4 Component 3 — the consistency test, 2. What Was Built, 4. Architectural Lessons, 5. Key Takeaways, 6. Addendum — Architecture Review Follow-Up (2026-08-12, documentation only) (+3 more)
+
+### Community 699 - "WP 15.0A — Desktop Shell Brand Recovery & Windows Startup Crash Fix"
+Cohesion: 0.08
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 6. Alternatives Considered (+6 more)
 
 ### Community 700 - "CalculationCatalogueEntry"
 Cohesion: 0.24
@@ -4153,7 +4088,7 @@ Nodes (10): Avalonia (11.3.20), Avalonia.Desktop (11.3.20), Avalonia.Fonts.Inter
 
 ### Community 714 - "MechanicalProductStructureNodeProvider"
 Cohesion: 0.06
-Nodes (32): FCR-0039 — Multi-Selection in the Project Explorer, FCR-0040 — Drag-and-Drop Reparenting, FCR-0041 — Real Invoke-by-Id Execution for Object-Targeted Commands, FCR-0042 — A Second Engineering Discipline Module Reusing This Work Package's Own Three Provider Categories, Purpose, Related Documents, Verdict, WP 9.0A — Mechanical Product Structure — Future Capability Assessment (+24 more)
+Nodes (29): FCR-0039 — Multi-Selection in the Project Explorer, FCR-0040 — Drag-and-Drop Reparenting, FCR-0041 — Real Invoke-by-Id Execution for Object-Targeted Commands, FCR-0042 — A Second Engineering Discipline Module Reusing This Work Package's Own Three Provider Categories, Purpose, Related Documents, Verdict, WP 9.0A — Mechanical Product Structure — Future Capability Assessment (+21 more)
 
 ### Community 715 - "WP 11.0B — v1.0 Architecture Roadmap & Release Planning"
 Cohesion: 0.12
@@ -4172,8 +4107,8 @@ Cohesion: 0.22
 Nodes (6): DocumentsWorkspaceView, Id, IsDirty, ObjectId, ObjectKind, Title
 
 ### Community 719 - "`WP 10.3A` — Engineering Object Editors"
-Cohesion: 0.04
-Nodes (42): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+34 more)
+Cohesion: 0.13
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 720 - "ManufacturingWorkspaceView"
 Cohesion: 0.22
@@ -4183,9 +4118,9 @@ Nodes (6): ManufacturingWorkspaceView, Id, IsDirty, ObjectId, ObjectKind, Title
 Cohesion: 0.22
 Nodes (6): VerificationActivityWorkspaceView, Id, IsDirty, ObjectId, ObjectKind, Title
 
-### Community 725 - "WP 6.8 — Release Readiness Report"
-Cohesion: 0.17
-Nodes (11): 10. Overall Assessment, 1. Build Verification, 2. Complete Automated Test Suite, 4. Integration Coverage, 5. Long-Running / Real-Process Tests, 7. Failure Injection Coverage, 8. Performance Observations, 9. Dependency Validation (+3 more)
+### Community 725 - "TD-85 — Durable Engineering Object State, Per-Type Rehydration, Removal of Projects.Index"
+Cohesion: 0.15
+Nodes (12): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+4 more)
 
 ### Community 726 - "WP 11.1B — Branch Protection & Engineering Workflow Hardening"
 Cohesion: 0.12
@@ -4203,9 +4138,9 @@ Nodes (18): Microsoft.Data.Sqlite.Core, SQLitePCLRaw.bundle_e_sqlite3, SQLitePCL
 Cohesion: 0.12
 Nodes (16): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+8 more)
 
-### Community 730 - "WP 7.1A — Engineering Data Model — Platform Consumption Assessment"
-Cohesion: 0.17
-Nodes (11): Audit, Diagnostics, Licensing, Persistence, Purpose, Related Documents, Reporting, REST API (+3 more)
+### Community 730 - "IPersistenceStore"
+Cohesion: 0.01
+Nodes (196): 10. Trade-offs, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+188 more)
 
 ### Community 731 - "TempestOS Custom DI Container Design"
 Cohesion: 0.24
@@ -4219,13 +4154,17 @@ Nodes (18): bblanchon.PDFium.Linux, bblanchon.PDFium.macOS, bblanchon.PDFium.Win
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 735 - "SessionPrincipal"
-Cohesion: 0.17
-Nodes (11): ApplicationPermissions, LocalSession, SessionPrincipal, DisplayName, Identity, IdentityId, Permissions, Role (+3 more)
+### Community 735 - "IPermissionEvaluator"
+Cohesion: 0.02
+Nodes (149): 8. Architectural Principles, 3. Background, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+141 more)
 
 ### Community 736 - "WP 11.4B — Merge to Main & Release Process Correction"
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
+
+### Community 737 - "CostComponentKind"
+Cohesion: 0.15
+Nodes (13): CostComponentKind, Carriage, Inspection, Labour, Machine, Margin, Material, Other (+5 more)
 
 ### Community 738 - "Microsoft.Data.Sqlite"
 Cohesion: 0.11
@@ -4243,9 +4182,9 @@ Nodes (18): Microsoft.Data.Sqlite.Core, SQLitePCLRaw.bundle_e_sqlite3, SQLitePCL
 Cohesion: 0.12
 Nodes (16): A New, Disclosed Reuse Pattern: Cross-Work-Package Facet/View Provider Sharing, Acknowledgements, Architecture Highlights, Breaking Changes, Completed Work Packages, Engineering Cockpit, Now Substantively Real, Engineering Statistics, Executive Summary (+8 more)
 
-### Community 742 - "WP 5.3 — Developer Experience Improvements"
-Cohesion: 0.12
-Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 6. Alternatives Considered (+7 more)
+### Community 742 - "ReflectionFrameworkDiscoveryService"
+Cohesion: 0.02
+Nodes (129): Benefits, Composition Over Inheritance, Disadvantages, Key Takeaway, What, When Not to Use, When to Use, Why (+121 more)
 
 ### Community 743 - "PackagingScriptTests"
 Cohesion: 0.06
@@ -4263,9 +4202,9 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.11
 Nodes (18): Microsoft.Data.Sqlite.Core, SQLitePCLRaw.bundle_e_sqlite3, SQLitePCLRaw.core, contentHash, contentHash, dependencies, resolved, type (+10 more)
 
-### Community 749 - "DurableRig"
-Cohesion: 0.14
-Nodes (6): DurableRig, Context, States, Store, R7FalsificationTests, ProjectFixtureRoot
+### Community 749 - "EvidenceRefusal"
+Cohesion: 0.17
+Nodes (12): EvidenceCitationResult, Succeeded, EvidenceRefusal, CheckerMustDifferFromAuthor, EvidenceNotFound, None, NoPrincipalSignedIn, ProjectArchived (+4 more)
 
 ### Community 750 - "ObjectEditorView - Quotation Editor"
 Cohesion: 0.27
@@ -4279,9 +4218,9 @@ Nodes (18): Microsoft.Data.Sqlite.Core, SQLitePCLRaw.bundle_e_sqlite3, SQLitePCL
 Cohesion: 0.28
 Nodes (5): Product Owner's Test as Source of Record, CI in Shards and the Gate at Scale, Engineering Governance Process, Engineering Lifecycle Stages, Work Package Lifecycle
 
-### Community 753 - "NotificationDispatcher"
-Cohesion: 0.06
-Nodes (25): 4. Unit Tests Using Matching Concrete Types Can Hide a Bug Integration Tests Expose, ADR-0162: Xero Holds Drafts and Copies; TempestOS Never Approves or Sends; Every Push Goes Through One Durable, Idempotent Outbox, Consequences, Context, Decision, Related, Status, 7.1 Where (+17 more)
+### Community 753 - "RecordingLevelLogger"
+Cohesion: 0.15
+Nodes (4): RecordingLevelLogger, Entries, RecordingLevelLogger, Entries
 
 ### Community 754 - "ProjectMembership"
 Cohesion: 0.22
@@ -4331,6 +4270,10 @@ Nodes (17): bblanchon.PDFium.Linux, bblanchon.PDFium.macOS, bblanchon.PDFium.Win
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
+### Community 768 - ".RunAgainstRunningHostAsync"
+Cohesion: 0.27
+Nodes (4): AddOneCalculation, CalculationId, Metadata, CalculationHostRegistrationTests
+
 ### Community 769 - "dependencies"
 Cohesion: 0.12
 Nodes (17): bblanchon.PDFium.Linux, bblanchon.PDFium.macOS, bblanchon.PDFium.Win32, SkiaSharp.NativeAssets.Linux.NoDependencies, SkiaSharp.NativeAssets.macOS, SkiaSharp.NativeAssets.Win32, Sungaila.PDFium.BlazorWebAssembly, PDFtoImage (+9 more)
@@ -4339,11 +4282,7 @@ Nodes (17): bblanchon.PDFium.Linux, bblanchon.PDFium.macOS, bblanchon.PDFium.Win
 Cohesion: 0.19
 Nodes (6): TimesheetEntryObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
-### Community 772 - "WP 9.9.0 — Release Preparation & Product Baseline (Second Pass)"
-Cohesion: 0.18
-Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. Implementation Lessons, 5. Repository Maturity, 6. Recommendations for the Next Work Package, Key Takeaways, Related Documents (+2 more)
-
-### Community 773 - "PurchaseOrderObjectView"
+### Community 773 - "IWorkspaceView"
 Cohesion: 0.19
 Nodes (6): PurchaseOrderObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
@@ -4392,12 +4331,12 @@ Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
 ### Community 788 - "WP 7.1C — Materials Framework — Material Provenance Assessment"
-Cohesion: 0.18
-Nodes (8): No Invented Values, Preservation Through Registration, Revision, and Lookup, Provenance Fields — What Is Captured, and Why, Purpose, Related Documents, Structural Guarantee, Not Convention, Verdict, WP 7.1C — Materials Framework — Material Provenance Assessment
+Cohesion: 0.25
+Nodes (7): No Invented Values, Preservation Through Registration, Revision, and Lookup, Purpose, Related Documents, Structural Guarantee, Not Convention, Verdict, WP 7.1C — Materials Framework — Material Provenance Assessment
 
-### Community 789 - "WP 7.1E — Verification Framework — Security Review Report"
-Cohesion: 0.18
-Nodes (10): AT-17 — No Dependency on Materials for Material-Reference Validation, Future Capability Register Entry Raised, New Accepted Trade-off Disclosed by This Review, New Debt Disclosed by This Review, Purpose, Related Documents, TD-23 — `RecordAsync`'s Own Multi-Link Sequence Is Not Transactional, TD-24 — `VerificationContext` Imposes No Bound on Recorded Data Volume; `GetVerificationHistoryAsync` Scales With Total Reference Count (+2 more)
+### Community 789 - "Architecture"
+Cohesion: 0.17
+Nodes (12): 1. Scope and boundary, 2.1 Architecture readiness, 2.2 Implementation readiness, 2.3 Verification readiness, 2.4 Governance readiness, 2.5 Release readiness, 2. The five readiness categories, 3. The release-level Definition of Done (+4 more)
 
 ### Community 790 - "TempestOS — Physical Review Guide"
 Cohesion: 0.12
@@ -4451,9 +4390,9 @@ Nodes (6): BearingRowConfiguration, DoubleRow, FourRow, Other, SingleRow, Unspec
 Cohesion: 0.13
 Nodes (14): Academy, Acknowledgements, Architectural Deliverables, Architecture, Baseline Statement, Engineering Principles Demonstrated, Engineering Quality, Governance (+6 more)
 
-### Community 805 - "FrameworkRegistry"
-Cohesion: 0.22
-Nodes (4): 3. Background, 3. Background, FrameworkRegistry, WorkPackageRegistry
+### Community 805 - "ENGINEERING CORE CERTIFIED WITH ACCEPTED TECHNICAL DEBT"
+Cohesion: 0.17
+Nodes (11): Certification Outcome, ENGINEERING CORE CERTIFIED WITH ACCEPTED TECHNICAL DEBT, Purpose, Recommendation, Related Documents, Scope of This Certification, Two Genuine, Non-Blocking Findings — Found and Closed in This Same Work Package, What Certification Means, Concretely (+3 more)
 
 ### Community 806 - "AnnotationPalette"
 Cohesion: 0.29
@@ -4467,9 +4406,9 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.29
 Nodes (4): net10.0, Microsoft.NET.Sdk, net10.0, Microsoft.NET.Sdk
 
-### Community 809 - "WP 15.0B — Desktop Productisation Phase 1"
-Cohesion: 0.13
-Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 5. The Design (+6 more)
+### Community 809 - "DataCategory"
+Cohesion: 0.17
+Nodes (11): DataCategory, BusinessData, ClientData, EmployeeData, EngineeringData, FinancialData, Other, PersonalData (+3 more)
 
 ### Community 810 - "Connector Result Pattern (IInvoicingConnector)"
 Cohesion: 0.33
@@ -4568,8 +4507,8 @@ Cohesion: 0.12
 Nodes (15): **APPROVED**, Build and Test — Clean, Certification — Independently Re-Verified, Not Assumed, Constraints Honoured, Evidence Supporting This Recommendation, Governance — Sound, With Disclosed (Not Hidden) Gaps, Purpose, Recommendation (+7 more)
 
 ### Community 841 - "QuotesExportAdapter"
-Cohesion: 0.24
-Nodes (5): QuoteEntry, QuotesExport, QuotesExportAdapter, Kind, SchemaVersion
+Cohesion: 0.16
+Nodes (6): IQuotationCatalog, QuoteEntry, QuotesExport, QuotesExportAdapter, Kind, SchemaVersion
 
 ### Community 842 - "net10.0"
 Cohesion: 0.13
@@ -4607,9 +4546,9 @@ Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key T
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 858 - "WP 16.0B — Integrate Off-`main` Work"
-Cohesion: 0.12
-Nodes (15): 10. Trade-offs — decided while still Proposed, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
+### Community 858 - "PurchaseOrderStatus"
+Cohesion: 0.18
+Nodes (8): PurchaseOrderStatus, Cancelled, Closed, Draft, Issued, Received, PurchaseOrderStatusTransitions, AllStatuses
 
 ### Community 863 - "Knowledge Origin Review State Authority"
 Cohesion: 0.67
@@ -4680,8 +4619,8 @@ Cohesion: 0.17
 Nodes (11): 10. Sign-off, 1. A rate card can be created (new), 2. The organisation picker opens above the New Project prompt (fixed), 3. Accepting a quotation fills the sibling tabs in place (fixed), 4. Home counts every open project (fixed), 5. Xero can be authorised from Settings (fixed; live sign-in is yours), 6. Docking: closing a floating tab no longer wipes other panels (fixed); keyboard reorder (new), 7. The real-shell journey (new, for information) (+3 more)
 
 ### Community 1061 - "TD-77 Stage 2 — Core Command Context and Binding Contract"
-Cohesion: 0.14
-Nodes (13): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+5 more)
+Cohesion: 0.13
+Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 1062 - "v1.0.0 Release Candidate Audit"
 Cohesion: 0.12
@@ -4691,9 +4630,9 @@ Nodes (15): 1. Where the repository actually is, 2. What "v1.0.0" means on recor
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 1065 - "LogLevel"
-Cohesion: 0.11
-Nodes (10): LogLevel, Critical, Debug, Error, Information, None, Trace, Warning (+2 more)
+### Community 1065 - "DeclareEvidenceFigureCommand"
+Cohesion: 0.18
+Nodes (7): DeclareEvidenceFigureCommand, Name, Quantity, Role, TargetKind, TargetObjectId, DeclareEvidenceFigureCommandHandler
 
 ### Community 1066 - "xunit.core"
 Cohesion: 0.17
@@ -4727,9 +4666,9 @@ Nodes (13): 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Int
 Cohesion: 0.18
 Nodes (11): Microsoft.Extensions.Primitives, contentHash, dependencies, resolved, type, contentHash, dependencies, resolved (+3 more)
 
-### Community 1075 - "ISignOffPolicy"
-Cohesion: 0.07
-Nodes (18): Already in hand elsewhere (do not duplicate), Calculator reference diagrams (PO-2) — scope, Decided and built: second-person sign-off (PO, 2026-10-01), Decided, scheduled for v0.24.0: Xero integration (PO, 2026-10-02), Done on `claude/focused-dirac-k0qilf`, Needs a PO decision before building, Not yet run — rerun after this build, RC Product Owner feedback — action register (2026-10-01) (+10 more)
+### Community 1075 - "RC Product Owner feedback — action register (2026-10-01)"
+Cohesion: 0.13
+Nodes (9): Already in hand elsewhere (do not duplicate), Calculator reference diagrams (PO-2) — scope, Decided and built: second-person sign-off (PO, 2026-10-01), Decided, scheduled for v0.24.0: Xero integration (PO, 2026-10-02), Done on `claude/focused-dirac-k0qilf`, Needs a PO decision before building, Not yet run — rerun after this build, RC Product Owner feedback — action register (2026-10-01) (+1 more)
 
 ### Community 1076 - "Product Owner Test Runbook — v1.0.0 release candidate (v0.21.0, build `30fe6e7`)"
 Cohesion: 0.20
@@ -4743,7 +4682,7 @@ Nodes (9): TimesheetRefusal, DeliverableNotOnProject, EntryInvoiced, EntryNotFou
 Cohesion: 0.12
 Nodes (15): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+7 more)
 
-### Community 1080 - "IWorkspaceView"
+### Community 1080 - "DeliverableCompletionObjectView"
 Cohesion: 0.19
 Nodes (6): DeliverableCompletionObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
@@ -4758,10 +4697,6 @@ Nodes (15): 1. Building a Modular Runtime Platform, End to End, 2. Designing a R
 ### Community 1083 - "TempestOS Governance Index"
 Cohesion: 0.12
 Nodes (15): Architecture, Data, Delivery, Documentation, Engineering, How to Read This Suite, Maintaining This Suite, Product & Roadmap (+7 more)
-
-### Community 1084 - ".RunAgainstRunningHostAsync"
-Cohesion: 0.16
-Nodes (3): CalculationHostRegistrationTests, RequirementsHostRegistrationTests, SettingsHostRegistrationTests
 
 ### Community 1085 - "TempestOS Platform"
 Cohesion: 0.07
@@ -4787,13 +4722,13 @@ Nodes (8): Edge cases, Formulae, Inputs, Limits of applicability, Linear toleran
 Cohesion: 0.12
 Nodes (15): **APPROVED**, Build and Test — Clean, Certification — Independently Confirmed Twice, Constraints Honoured, Evidence Supporting This Recommendation, Governance — Sound, With Disclosed (Not Hidden) Gaps, Purpose, Recommendation (+7 more)
 
-### Community 1091 - "WP 11.0B — v1.0 Architecture Roadmap & Release Planning"
-Cohesion: 0.15
-Nodes (12): 1. Recommended Definition of "TempestOS v1.0", 3. Work Packages, 4. Review of the Existing Roadmap — Reprioritisation & Merging, 5. Estimates, Dependencies, and Impact, 6. Recommended Release Sequence, 7. What This Roadmap Deliberately Does Not Do, Related Documents, Release `v0.11.0` — "Release Engineering & Architecture Governance" (+4 more)
+### Community 1091 - "ProjectHealthStatus"
+Cohesion: 0.20
+Nodes (8): ProjectHealthStatus, AtRisk, Blocked, OnHold, OnTrack, Overdue, ReadyToInvoice, ProjectStatusSnapshot
 
-### Community 1092 - "WP 13.12.8 — v0.13.0 Release Test Failure Investigation"
-Cohesion: 0.13
-Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
+### Community 1092 - "RecordEvidenceCheckCommand"
+Cohesion: 0.18
+Nodes (8): RecordEvidenceCheckCommand, CheckerName, CheckerOrganisation, Outcome, Statement, TargetKind, TargetObjectId, RecordEvidenceCheckCommandHandler
 
 ### Community 1093 - "dependencies"
 Cohesion: 0.36
@@ -4802,6 +4737,10 @@ Nodes (9): dependencies, net10.0/linux-x64, net10.0/win-x64, SQLitePCLRaw.lib.e_
 ### Community 1094 - "dependencies"
 Cohesion: 0.36
 Nodes (9): dependencies, net10.0/linux-x64, net10.0/win-x64, SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.lib.e_sqlite3, contentHash, resolved (+1 more)
+
+### Community 1095 - "WP 7.0B — Engineering Foundation Planning & Capability Architecture"
+Cohesion: 0.18
+Nodes (10): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations, Related Documents, Repository Maturity, What This Document Is (+2 more)
 
 ### Community 1096 - "Avalonia"
 Cohesion: 0.22
@@ -4815,9 +4754,9 @@ Nodes (9): dependencies, net10.0/linux-x64, net10.0/win-x64, SQLitePCLRaw.lib.e_
 Cohesion: 0.36
 Nodes (9): dependencies, net10.0/linux-x64, net10.0/win-x64, SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.lib.e_sqlite3, contentHash, resolved (+1 more)
 
-### Community 1099 - "Separation of Concerns"
-Cohesion: 0.22
-Nodes (8): Benefits, Disadvantages, Key Takeaway, Separation of Concerns, What, When Not to Use, When to Use, Why
+### Community 1099 - "WP-H — Enforce the Architectural Invariants Nothing Was Holding"
+Cohesion: 0.18
+Nodes (10): 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen, 9. Benefits (+2 more)
 
 ### Community 1100 - "dependencies"
 Cohesion: 0.36
@@ -4836,24 +4775,24 @@ Cohesion: 0.13
 Nodes (14): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+6 more)
 
 ### Community 1104 - ".ResolveOwningProjectAsync"
-Cohesion: 0.10
-Nodes (17): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+9 more)
+Cohesion: 0.08
+Nodes (18): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+10 more)
 
 ### Community 1105 - "TempestOS v0.2.0"
 Cohesion: 0.25
 Nodes (7): Bug Fixes, Improvements, New Features, Next Milestone, Summary, TempestOS v0.2.0, Validation
 
-### Community 1106 - "Deterministic Systems"
-Cohesion: 0.22
-Nodes (8): Benefits, Deterministic Systems, Disadvantages, Key Takeaway, What, When Not to Use, When to Use, Why
+### Community 1106 - "Group A — Engineering Reference Data: Completion Report"
+Cohesion: 0.18
+Nodes (9): 0. Programme summary, 10. Governance, 11. What was deliberately not done, 12. Git, 1. The architectural decision, stated plainly, 8. Shared layer and A4 migration, Group A — Engineering Reference Data: Completion Report, CanonicalObjectKinds (+1 more)
 
-### Community 1107 - ".FilterWhere"
-Cohesion: 0.09
-Nodes (6): SimulatedAccount, SimulatedTaxRate, SimulatorSeed, RouteMatch, SimResponse, Headers
+### Community 1107 - "TempestOS v0.6.0 — Technical Debt Assessment"
+Cohesion: 0.18
+Nodes (10): Assessment Summary, AT-06 — partially relevant, not resolved by this release, Existing Debt This Release Is Positioned to Resolve, Licensing initially local/offline-only, New Debt/Trade-offs This Release Is Expected to Disclose, Purpose, Related Documents, REST API's initial authorization model possibly coarse-grained (+2 more)
 
-### Community 1108 - "RecordedEventA"
-Cohesion: 0.06
-Nodes (30): Academy Growth, Architectural Themes, Architecture Growth, Documentation Achieved, Governance Achieved, Governance Growth, Key Engineering Decisions, Lessons Learned (+22 more)
+### Community 1108 - "EventBus"
+Cohesion: 0.04
+Nodes (17): EventBus, IEventHandler, SettingsProvider, EventBusCapabilityTests, RecordedEventA, Payload, RecordedEventB, RecordingHandler (+9 more)
 
 ### Community 1109 - "Microsoft.NET.Test.Sdk"
 Cohesion: 0.25
@@ -4887,9 +4826,9 @@ Nodes (7): Microsoft.Data.Sqlite, Microsoft.Extensions.Configuration.CommandLine
 Cohesion: 0.29
 Nodes (7): SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.provider.e_sqlite3, SQLitePCLRaw.bundle_e_sqlite3, contentHash, dependencies, resolved, type
 
-### Community 1117 - "WP 13.11D — v0.13.0 Plugin Platform Exit Review"
-Cohesion: 0.14
-Nodes (13): 10. Trade-offs, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+5 more)
+### Community 1117 - "WP 7.1D — Engineering Calculation Framework — Security Review Report"
+Cohesion: 0.18
+Nodes (10): AT-16 — No Dependency on Materials for Material-Reference Validation, Future Capability Register Entry Raised, New Accepted Trade-off Disclosed by This Review, New Debt Disclosed by This Review, Purpose, Related Documents, TD-21 — No Cancellation Reaches Into `Calculate` Once Execution Has Started, TD-22 — `CalculationContext` Imposes No Bound on Recorded Data Volume or Type Fidelity (+2 more)
 
 ### Community 1118 - "Microsoft.Extensions.Logging.Abstractions"
 Cohesion: 0.29
@@ -4935,13 +4874,13 @@ Nodes (7): Microsoft.Data.Sqlite, Microsoft.Extensions.Configuration.CommandLine
 Cohesion: 0.29
 Nodes (7): SQLitePCLRaw.lib.e_sqlite3, SQLitePCLRaw.provider.e_sqlite3, SQLitePCLRaw.bundle_e_sqlite3, contentHash, dependencies, resolved, type
 
-### Community 1130 - "Defensive Programming"
-Cohesion: 0.22
-Nodes (8): Benefits, Defensive Programming, Disadvantages, Key Takeaway, What, When Not to Use, When to Use, Why
-
-### Community 1131 - "WP 16.4A — Test Determinism — Implementation Report"
+### Community 1130 - "WP 7.1E — Verification Framework — Engineering Core Impact Assessment"
 Cohesion: 0.18
-Nodes (10): 1. Root cause and fix, 3. Full-suite validation, 4. Narrower per-session design — investigated, not needed, 5. `TD-100` — proposed disposition, 6. Files changed, 7. Deferred, 8. Validation, 9. Files changed (+2 more)
+Nodes (10): Any future Quality-discipline capability, FCR-0027 — Requirements Engine, FCR-0028 — Project Engine, Impact on Future Capabilities, Impact on the Engineering Foundation Programme, Purpose, Recommendation, Related Documents (+2 more)
+
+### Community 1131 - "WP 8.0C — Engineering Workspace UX Specification — Navigation Maps"
+Cohesion: 0.18
+Nodes (10): 1. Navigation Model, Restated, 2. Global Navigation Flow, 3. Breadcrumbs, 4. Navigation History, 5. Project Switching and Recent Projects, 6. Global Commands, 7. Filtering and Searching, Navigation-Adjacent, Purpose (+2 more)
 
 ### Community 1132 - "WP 11.1A — Continuous Integration & Build Verification: Implementation Report"
 Cohesion: 0.13
@@ -4999,6 +4938,10 @@ Nodes (6): Microsoft.Extensions.DependencyInjection.Abstractions, contentHash, d
 Cohesion: 0.13
 Nodes (14): 10. Release State, 11. Preventative Action, 12. Confirmation, 1. Timeline, 2. Discovery, 3. Root Cause, 4. Why the Error Occurred, 5. Why It Escaped Review (+6 more)
 
+### Community 1146 - "CiteEvidenceCommand"
+Cohesion: 0.20
+Nodes (6): CiteEvidenceCommand, Library, RecordId, TargetKind, TargetObjectId, CiteEvidenceCommandHandler
+
 ### Community 1147 - "Evidence Supporting This Recommendation"
 Cohesion: 0.13
 Nodes (14): **APPROVED**, Build and Test — Clean, Certification — Independently Re-Verified, Not Assumed, Constraints Honoured, Evidence Supporting This Recommendation, Governance — Sound, With Disclosed (Not Hidden) Gaps, Purpose, Recommendation (+6 more)
@@ -5054,10 +4997,6 @@ Nodes (6): Microsoft.Extensions.FileSystemGlobbing, contentHash, dependencies, r
 ### Community 1160 - "What You Must Do When Invoked"
 Cohesion: 0.13
 Nodes (15): Part A - Structural extraction for code files, Part B - Semantic extraction (parallel subagents), Part C - Merge AST + semantic into final extraction, Step 0 - GitHub repos and multi-path merge (only if a URL or several paths), Step 1 - Ensure graphify is installed, Step 2.5 - Video and audio (only if video files detected), Step 2 - Detect files, Step 3 - Extract entities and relationships (+7 more)
-
-### Community 1161 - "WP 7.0C — Cross-Framework Dependency Report"
-Cohesion: 0.22
-Nodes (8): 1. Separation of Responsibilities, 2. Circular Dependencies, 4. Reuse Opportunities, 5. Naming Consistency, Dependency Graph, Related Documents, Status, WP 7.0C — Cross-Framework Dependency Report
 
 ### Community 1162 - "Microsoft.Extensions.Logging.Abstractions"
 Cohesion: 0.33
@@ -5127,9 +5066,9 @@ Nodes (6): xunit.abstractions, xunit.extensibility.core, contentHash, dependenci
 Cohesion: 0.33
 Nodes (5): Brand assets, Fonts, Licence texts, Notes, Third-Party Notices
 
-### Community 1179 - "WP 7.1F — Definition of Done Audit"
-Cohesion: 0.18
-Nodes (10): §1. The One Genuine Gap This Audit Found: `WP 7.1A`'s Own Undisclosed Academy Omission, §2. Criterion 9 (Unrelated Issues), for This Work Package Itself, Audit, Notes on Criterion 6 (ADRs) for `WP 7.0A`–`WP 7.0C`, Notes on Criterion 7 (Rejected Designs), Purpose, Related Documents, The Ten Criteria (Engineering Governance §3) (+2 more)
+### Community 1179 - "TaskFacts.cs"
+Cohesion: 0.36
+Nodes (7): CalculationChaseFact, DeliverableFact, EvidenceReviewFact, InvoiceChaseFact, ManualTaskFact, MilestoneFact, QuotationChaseFact
 
 ### Community 1180 - "Microsoft.Extensions.Configuration.EnvironmentVariables"
 Cohesion: 0.40
@@ -5277,7 +5216,7 @@ Nodes (4): System.Security.Cryptography.ProtectedData, contentHash, resolved, ty
 
 ### Community 1217 - "WorkspaceViewCoordinator"
 Cohesion: 0.01
-Nodes (170): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+162 more)
+Nodes (161): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+153 more)
 
 ### Community 1218 - "Microsoft.Extensions.Configuration.EnvironmentVariables"
 Cohesion: 0.50
@@ -5335,9 +5274,9 @@ Nodes (4): contentHash, resolved, type, ExCSS
 Cohesion: 0.50
 Nodes (4): contentHash, resolved, type, Microsoft.Extensions.FileSystemGlobbing
 
-### Community 1232 - "WP 7.1C — Materials Framework — Implementation Report"
+### Community 1232 - "CalculationsWorkspaceView"
 Cohesion: 0.22
-Nodes (8): Additions Beyond the Approved Contract, Deviations From the Approved Contract, Platform Integration, Production Code, Related Documents, Status, Testing, WP 7.1C — Materials Framework — Implementation Report
+Nodes (6): CalculationsWorkspaceView, Id, IsDirty, ObjectId, ObjectKind, Title
 
 ### Community 1233 - "Avalonia.BuildServices"
 Cohesion: 0.50
@@ -5391,41 +5330,33 @@ Nodes (4): Velopack, contentHash, resolved, type
 Cohesion: 0.50
 Nodes (4): xunit.analyzers, contentHash, resolved, type
 
-### Community 1246 - "WP 9.8B — Platform Service Register Reconciliation — Reconciliation Report"
-Cohesion: 0.17
-Nodes (11): Backfill Performed, Consistency Verdict, Definition of Done — Verified, Disclosed Sequencing Note, Finding 1 — The Gap Was Real, Confirmed by Direct Inspection, Confined to Exactly Two Documents, Finding 2 — A Second, Distinct Arithmetic Drift, Found During This Reconciliation, Finding 4 — The Related ADRs Field Was Also Stale, Platform Services Register — four rows added (+3 more)
-
-### Community 1247 - "WP 7.1F — Security Review Summary"
-Cohesion: 0.22
-Nodes (8): 1. Audit of `WP 7.1D`'s Own Security Review (Engineering Calculation Framework), 3. Cross-Framework Finding Not Visible From Either Individual Review, 4. No Third Dedicated Security Review Was Required for `WP 7.1A`–`WP 7.1C`, Overall Classification Summary (Engineering Core, All Five Frameworks), Purpose, Related Documents, Verdict, WP 7.1F — Security Review Summary
-
-### Community 1252 - "WP 7.2B — Digital Thread Architecture"
-Cohesion: 0.22
-Nodes (8): Digital Thread Traversal — Read Path, Not Write Path, Purpose, Related Documents, Status, The Thread, Stage by Stage, What "Digital Thread" Means Architecturally, What This Document Does Not Claim, WP 7.2B — Digital Thread Architecture
+### Community 1252 - "EstimateLineKind"
+Cohesion: 0.20
+Nodes (10): EstimateLineKind, Carriage, Contingency, ExternalCost, Inspection, Labour, Material, Process (+2 more)
 
 ### Community 1253 - "v0.4.0 (duplicate top-level doc).md"
 Cohesion: 0.14
 Nodes (13): Academy, Acknowledgements, Architectural Deliverables, Architecture, Baseline Statement, Engineering Principles Demonstrated, Engineering Quality, Governance (+5 more)
 
-### Community 1254 - "WP 7.4.0 — Release Preparation & Product Baseline — Engineering Statistics Report"
+### Community 1254 - "LinkRequirementCommand"
 Cohesion: 0.22
-Nodes (8): Commits This Release (`v0.6.0` → `v0.7.0`, so far), Contributors, Headline Metrics, Per-Framework Breakdown (v0.7.0 New Capability), Purpose, Related Documents, Security Reviews Performed, WP 7.4.0 — Release Preparation & Product Baseline — Engineering Statistics Report
+Nodes (6): LinkRequirementCommand, RelationshipKind, TargetDocumentId, TargetKind, TargetObjectId, LinkRequirementCommandHandler
 
-### Community 1255 - "WP 9.1B — Development Baseline Consolidation — Development Baseline Report"
+### Community 1255 - "SetRequirementOwnerCommand"
 Cohesion: 0.22
-Nodes (8): Genuine Inconsistency Found and Corrected, Inconsistencies Found, Confirmed Pre-Existing, Not Fixed (Out of Scope), No New Functionality Introduced, Purpose, Related Documents, Status, Verification Performed, WP 9.1B — Development Baseline Consolidation — Development Baseline Report
+Nodes (6): SetRequirementOwnerCommand, Owner, OwnerPersonId, TargetKind, TargetObjectId, SetRequirementOwnerCommandHandler
 
 ### Community 1256 - "v0.5.0 (duplicate top-level doc).md"
 Cohesion: 0.14
 Nodes (13): Academy, Acknowledgements, Architectural Deliverables, Architecture, Baseline Statement, Developer Experience, Engineering Principles Demonstrated, Engineering Quality (+5 more)
 
 ### Community 1257 - "Candidates D–J (new, `WP 7.0B`)"
-Cohesion: 0.14
-Nodes (13): Candidate D — Engineering Data Model & Document Foundation Architecture, Candidate E — Units & Quantities Framework Architecture, Candidate F — Engineering Calculation Framework Architecture, Candidate G — Materials Framework Architecture, Candidate H — Verification & Validation Framework Architecture, Candidate I — Requirements Engine Architecture, Candidate J — Project Engine Architecture, Candidates D–J (new, `WP 7.0B`) (+5 more)
+Cohesion: 0.13
+Nodes (14): Candidate D — Engineering Data Model & Document Foundation Architecture, Candidate E — Units & Quantities Framework Architecture, Candidate F — Engineering Calculation Framework Architecture, Candidate G — Materials Framework Architecture, Candidate H — Verification & Validation Framework Architecture, Candidate I — Requirements Engine Architecture, Candidate J — Project Engine Architecture, Candidates A–C (from `WP 7.0A`, reproduced) (+6 more)
 
 ### Community 1258 - "SettingsView"
 Cohesion: 0.03
-Nodes (18): 5. The Design, 5. `DesktopPanelUiState` — Bounded, Infrequent I/O, 8. Honest, Disclosed Absences, 1. Delete Confirmation Wording — Consequence-Led, Consistent With `TD-40`'s Own Precedent, 2. The Create/Duplicate Flow — Assessed a Real, Coherent First Step, 3. `TaskScheduler.UnobservedTaskException` — Correctly Scoped, Not Oversold, 4. Settings Dialog — Real, Minimal, Honestly Scoped, 5. Recent Searches — the Flyout Button Assessed Discoverable Enough, Not Perfectly (+10 more)
+Nodes (37): 5. The Design, 5. The Design, 1. Implementation Coverage — The Controlling Instruction's Own "Implement" List, 2. "Demonstrate" List Coverage, 3. Traceability to `WP 10.0A`, 4. Gaps Named, Not Silently Left Open, 5. Verdict, Purpose (+29 more)
 
 ### Community 1259 - "WP 7.0B — Engineering Foundation Architecture"
 Cohesion: 0.14
@@ -5435,33 +5366,33 @@ Nodes (13): 1. `FCR-0029` — Engineering Data Model & Document Management Found
 Cohesion: 0.18
 Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. Implementation Lessons, 5. Repository Maturity, 6. Recommendations for the Next Work Package, Key Takeaways, Related Documents (+2 more)
 
-### Community 1261 - ".RecordAsync"
-Cohesion: 0.05
-Nodes (34): Not Recommended, Purpose, Recommendation 1 — A Future Requirements Engine Should Consume `IVerificationService` Directly, Never Duplicate Verification Recording, Recommendation 2 — `FCR-0036` (Transactional Multi-Document Operations) Should Be Resolved Against a Real, Demonstrated Multi-Consumer Need, Not Verification Alone, Recommendation 3 — Any Future Consumer Needing Bounded `VerificationContext` Recording Should Layer Its Own Limit, Not Request a Framework Change, Recommendation 4 (Programme-Level) — Product Approval Should Choose Among Three Genuinely Open Paths Now That the Engineering Foundation Is Complete, Related Documents, WP 7.1E — Verification Framework — Future Capability Recommendations (+26 more)
+### Community 1261 - "WP 7.2A — Strategic Roadmap Review"
+Cohesion: 0.14
+Nodes (13): 10. Summary Finding, 1. Where TempestOS Stands Today, 2. What `Future Capability Register.md` Actually Supports, 3. What `Product Roadmap.md` Actually Supports, 4. What `VISION.md` Actually Supports — Including a Real, Disclosed Tension, 5. What the Technical Debt Register Actually Supports, 6. What Both Security Reviews Actually Support, 7. What the Academy Actually Supports (+5 more)
 
-### Community 1262 - ".GetReferencesAsync"
-Cohesion: 0.02
-Nodes (79): 1. Digital Thread Visualisation — What Stays the Same, 2.1 Graph Construction, 2.2 What Is Never Cached, 2.3 Layout, 2. Object Relationship Views — The New Rendering Shape, 3. Relationship to the Property Inspector, 4. Cross-Discipline Behaviour, 5. Known Limitation, Disclosed (+71 more)
+### Community 1262 - "RequirementStatus"
+Cohesion: 0.01
+Nodes (183): Architectural Debt Assessment, Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity (+175 more)
 
-### Community 1264 - "BearingConstructionClass"
+### Community 1264 - "Independent Finding-Closure Verification — 2026-08-28"
 Cohesion: 0.22
-Nodes (8): BearingConstructionClass, AllCeramic, CorrosionResistant, Hybrid, Other, Polymer, Standard, Unspecified
+Nodes (8): Independent Finding-Closure Verification — 2026-08-28, Method, Part 1 — The three named findings, Part 2 — Re-verification of every previously claimed closure, Part 3 — New findings from the eight-discipline re-review, Provenance, stated plainly, TD-59 — Reserved device-name uniqueness: **CLOSED**, Verification summary
 
-### Community 1265 - "LeadOrigin"
+### Community 1265 - "v0.14.0 — Engineering Release Report"
 Cohesion: 0.22
-Nodes (9): LeadOrigin, Event, ExistingRelationship, InboundEnquiry, Other, OutboundApproach, Referral, Research (+1 more)
+Nodes (8): 1. Scope reconciliation against git, 2. Architecture readiness, 4. Verification readiness, 5. Governance readiness, 6. Release readiness, 7. Technical debt and limitations, classified, 8. Recommendation, v0.14.0 — Engineering Release Report
 
-### Community 1268 - "ProjectFolderOutcome"
-Cohesion: 0.25
-Nodes (7): ProjectFolderOutcome, IsAvailable, ProjectFolderStatus, AlreadyExisted, Created, Failed, Unavailable
+### Community 1268 - "ProjectFolderCoordinator"
+Cohesion: 0.13
+Nodes (9): ProjectFolderOutcome, IsAvailable, ProjectFolderStatus, AlreadyExisted, Created, Failed, Unavailable, ProjectFolderCoordinator (+1 more)
 
 ### Community 1270 - "WP 12.9.1 — Governance Health Check Remediation"
 Cohesion: 0.15
 Nodes (12): A.1 — Academy Index (`Test-AcademyIndexMatchesArticles`), A.2 — Documentation Register (`Test-DocumentationRegisterReferences`), A.3 — `PROJECT_STATUS.md` (`Test-ProjectStatusReferences`), A.4 — Governance Index (`Test-GovernanceIndexOrphans`), Key Takeaways, Phase A — Investigation (Root Cause, Every Finding), Phase B — Trade-Offs Considered, Phase C — Implementation (+4 more)
 
-### Community 1271 - "RequirementEvidence"
+### Community 1271 - "WP 7.1B — Units & Quantities Framework — Mathematical Validation Report"
 Cohesion: 0.22
-Nodes (4): RequirementEvidence, LinkedReferences, RequirementId, VerificationHistory
+Nodes (8): Conversion Factor Verification, Edge-Case Verification, Floating-Point Tolerance Discussion, Purpose, Related Documents, Round-Trip Correctness — Statistical Confirmation, Verdict, WP 7.1B — Units & Quantities Framework — Mathematical Validation Report
 
 ### Community 1272 - "Governance Audit Report"
 Cohesion: 0.15
@@ -5475,9 +5406,9 @@ Nodes (12): 1. Navigation Model, 2. Journey 1 — Browse and Inspect a Requireme
 Cohesion: 0.15
 Nodes (12): 1. Scope Re-Verification (independent, not trusting `WP 15.1A`'s own count), 2. Finding — A Real Gap in `WP 15.1A`'s Own Deliverable, Corrected, 3. Registers & Documentation, 4. Build / Test — Independently Re-Run, Not Assumed, 5. Governance Health Check — Re-Run After the §2 Correction, 6. CI Status — Real Infrastructure, the Exact Reviewed Commit, 7. Release Blockers, **READY TO RELEASE** (+4 more)
 
-### Community 1275 - "TempestOS v0.6.0 — Public Interface Catalogue"
-Cohesion: 0.15
-Nodes (12): Related Documents, Status, `Tempest.Core.Api` *(proposed — `WP 6.3`)*, `Tempest.Core.Audit` *(proposed — `WP 6.5`)*, `Tempest.Core.ExportImport` *(proposed — `WP 6.7`)*, `Tempest.Core.Identity` *(proposed — `WP 6.1`)*, `Tempest.Core.Licensing` *(proposed — `WP 6.6`)*, `Tempest.Core.Notifications` *(proposed — `WP 6.2`)* (+4 more)
+### Community 1275 - "WP 7.1E — Verification Framework — Future Capability Recommendations"
+Cohesion: 0.22
+Nodes (8): Not Recommended, Purpose, Recommendation 1 — A Future Requirements Engine Should Consume `IVerificationService` Directly, Never Duplicate Verification Recording, Recommendation 2 — `FCR-0036` (Transactional Multi-Document Operations) Should Be Resolved Against a Real, Demonstrated Multi-Consumer Need, Not Verification Alone, Recommendation 3 — Any Future Consumer Needing Bounded `VerificationContext` Recording Should Layer Its Own Limit, Not Request a Framework Change, Recommendation 4 (Programme-Level) — Product Approval Should Choose Among Three Genuinely Open Paths Now That the Engineering Foundation Is Complete, Related Documents, WP 7.1E — Verification Framework — Future Capability Recommendations
 
 ### Community 1276 - "Programme A — Requirements & Verification Platform"
 Cohesion: 0.14
@@ -5486,6 +5417,10 @@ Nodes (13): Confidence and Caveats, Engineering Workflow vs. Engineering Discipl
 ### Community 1277 - "WP 8.9.0 — Release Preparation & Product Baseline — Product Owner Release Checklist"
 Cohesion: 0.15
 Nodes (12): Prerequisites (Already Satisfied), Purpose, Related Documents, Step 1 — Merge to `main`, Step 2 — Bump `VERSION`, Step 3 — Build and Test via the Release Script, Step 4 — Tag (If Not Already Created by Step 3), Step 5 — Push (+4 more)
+
+### Community 1278 - "Plane wall heat transfer, conduction layers and convection films — `calc.plane-wall-heat-transfer`"
+Cohesion: 0.22
+Nodes (8): Edge cases, Formulae, Inputs, Limits of applicability, Method, Outputs and recorded intermediates, Plane wall heat transfer, conduction layers and convection films — `calc.plane-wall-heat-transfer`, Worked examples (hand calculations)
 
 ### Community 1279 - "WP 9.1B — Development Baseline Consolidation — Product Owner Merge Checklist"
 Cohesion: 0.15
@@ -5500,8 +5435,8 @@ Cohesion: 0.19
 Nodes (6): ExpenseObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
 ### Community 1283 - "InvoiceRequestObjectView"
-Cohesion: 0.16
-Nodes (8): InvoiceRequestObjectView, Id, IsDirty, ObjectId, ObjectKind, Title, InvoiceRequestObjectViewFactory, Kind
+Cohesion: 0.19
+Nodes (6): InvoiceRequestObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
 ### Community 1284 - "QuotationObjectView"
 Cohesion: 0.19
@@ -5511,17 +5446,17 @@ Nodes (6): QuotationObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 Cohesion: 0.19
 Nodes (6): TaskObjectView, Id, IsDirty, ObjectId, ObjectKind, Title
 
-### Community 1286 - "WP 8.1B — Navigation & Project Explorer — Implementation"
-Cohesion: 0.14
-Nodes (13): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 1. Introduction, 2. Purpose, 4. The Problem, 7. Why This Solution Was Chosen, 8. Architectural Principles (+5 more)
+### Community 1286 - "TempestOS v0.16.0 — Release Notes"
+Cohesion: 0.22
+Nodes (8): Defects this release found in its own work, Governance, Known issues and disclosed debt, Platform support, Summary, TempestOS v0.16.0 — Release Notes, Upgrading — read this before you do, What shipped
 
 ### Community 1287 - "WP 12.9.0 — Release Preparation & Engineering Sign-Off Architecture"
 Cohesion: 0.17
 Nodes (11): 1. Introduction, 2. Phase A — Repository Assessment, 3. Phase B — Engineering Readiness Review Architecture, 4. Decision Evaluation, 5. Architecture, 6. Verification, 7. Key Takeaways, 8. Addendum — Architecture Review Follow-Up (2026-08-12, same day, documentation only) (+3 more)
 
-### Community 1288 - "TempestOS v0.6.0 — Platform Service Implementation Order"
-Cohesion: 0.20
-Nodes (9): Dependency-Derived Ordering Constraints, Parallelization Opportunities, Purpose, Recommended Order, Related Documents, TempestOS v0.6.0 — Platform Service Implementation Order, What This Order Does Not Determine, Why Identity First (+1 more)
+### Community 1288 - "IExportable"
+Cohesion: 0.02
+Nodes (150): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem, 5. The Design (+142 more)
 
 ### Community 1289 - "Dependency Injection"
 Cohesion: 0.25
@@ -5536,8 +5471,8 @@ Cohesion: 0.17
 Nodes (11): A Closing Note on Cost, How Contributors Maintain Governance, Ownership Principles, Related Documents, Relationship Between FOUNDATION.md, Academy, Architecture, Governance, and Testing, Review Expectations, TempestOS Governance Philosophy, What This Document Is (+3 more)
 
 ### Community 1292 - "ResourceCapacity"
-Cohesion: 0.07
-Nodes (27): 9. C7 — Operating model & scale plan, OperatingCapability, Code, HeldBy, IsSinglePointOfFailure, IsSoldButNotHeld, Name, ServiceCodes (+19 more)
+Cohesion: 0.09
+Nodes (23): OperatingCapability, Code, HeldBy, IsSinglePointOfFailure, IsSoldButNotHeld, Name, ServiceCodes, ResourceCapacity (+15 more)
 
 ### Community 1293 - "2. The six decisions as ratified"
 Cohesion: 0.17
@@ -5555,25 +5490,25 @@ Nodes (11): 1. No architectural rule was changed, 2. `Future Capability Register
 Cohesion: 0.17
 Nodes (11): Cross-Cutting Required Reading (Every Engineering Foundation Work Package), Engineering Calculation Framework, Engineering Data Model & Document Management Foundation, Materials Framework, Per-Framework Plan, Purpose, Related Documents, Summary Table (+3 more)
 
-### Community 1297 - "DependencyDirectionTests"
-Cohesion: 0.03
-Nodes (57): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+49 more)
+### Community 1297 - "WP-A2 — The Keyboard Reaches the Canonical Path; REST Is Decided, Not Deferred"
+Cohesion: 0.10
+Nodes (18): 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background, 4. The Problem (+10 more)
 
 ### Community 1298 - "TempestOS v0.8.0 — "Engineering Workspace""
-Cohesion: 0.14
-Nodes (13): Acknowledgements, Architecture Highlights, Breaking Changes, Completed Work Packages, Engineering Domain Track (`WP 8.2A`–`WP 8.2C`), Engineering Statistics, Engineering Workspace Track (`WP 8.0A`–`WP 8.1C`), Executive Summary (+5 more)
+Cohesion: 0.11
+Nodes (17): Acknowledgements, Architecture Highlights, Breaking Changes, Completed Work Packages, Engineering Cockpit, Engineering Domain, Engineering Domain Track (`WP 8.2A`–`WP 8.2C`), Engineering Statistics (+9 more)
 
 ### Community 1299 - "WP 7.2A — Commercial Assessment"
 Cohesion: 0.17
 Nodes (11): Commercial Risks and Mitigations, Governing Commercial Principle, Per-Programme Commercial Assessment, Programme A — Requirements & Verification Platform, Programme F — Platform Hardening, Programme G — AI & Engineering Intelligence, Programmes B, C, D, E — Mechanical, Building Services/HVAC, Structural, Electrical, Purpose (+3 more)
 
 ### Community 1300 - "WP 7.2A — Engineering Assessment"
-Cohesion: 0.25
-Nodes (7): Architectural Leverage Comparison, Architectural Risks and Mitigations, Long-Term Maintainability Comparison, Purpose, Related Documents, Verdict, WP 7.2A — Engineering Assessment
+Cohesion: 0.17
+Nodes (11): Architectural Leverage Comparison, Architectural Risks and Mitigations, Engineering Readiness Per Programme, Long-Term Maintainability Comparison, Programme A — Requirements & Verification Platform, Programme F — Platform Hardening, Programmes B, C, D, E — Mechanical, Building Services/HVAC, Structural, Electrical, Purpose (+3 more)
 
-### Community 1301 - "system_runtime_compilerservices"
-Cohesion: 0.07
-Nodes (8): SampleHarnessLoading, Tempest.Desktop.Diagnostics, SampleHarnessLoader, TestPersistenceDurability, SampleHarnessLoader, TestPersistenceDurability, TestProjectFolders, TestTimesheetExportFolder
+### Community 1301 - "ReviewParticipantRole"
+Cohesion: 0.22
+Nodes (9): ReviewParticipant, PrincipalId, ReviewParticipantRole, Chair, Observer, Presenter, Recorder, Reviewer (+1 more)
 
 ### Community 1302 - "Programme A — Requirements & Verification Platform"
 Cohesion: 0.17
@@ -5587,17 +5522,17 @@ Nodes (11): 1. Object Creation, 2. Relationship Creation, 3. Lifecycle Transitio
 Cohesion: 0.17
 Nodes (11): Closed Items, Open Items, Register Summary, TD-K01 — The knowledge layer has no content depth, TD-K02 — No source-bound numeric property data, TD-K03 — 151 content records declare no maturity status, TD-K04 — Version identity is inconsistent four ways, TD-K05 — Process record disproportionate to content (+3 more)
 
-### Community 1305 - "WP 10.3A — Security Review"
-Cohesion: 0.25
-Nodes (7): 1. Scope, 3. `ADR-0097`'s Own New Write Surface — Security-Relevant Checks, 5. Validation Feedback — Read-Only, No New Exposure, 6. Honest, Disclosed Absences — Security Relevance, 7. Recommendation, Purpose, WP 10.3A — Security Review
+### Community 1305 - "TempestMarkGeometry.cs"
+Cohesion: 0.28
+Nodes (6): MarkLayer, Cyan, Indigo, Violet, MarkStroke, TempestMarkGeometry
 
 ### Community 1306 - "InvoiceRequestRefusal"
 Cohesion: 0.17
 Nodes (11): InvoiceRequestRefusal, AlreadyInvoiced, CompletionNotFound, ExpenseNotFound, NoClient, None, NoRateCardPinned, NothingToBill (+3 more)
 
 ### Community 1308 - "WP 8.0A — Engineering Workspace — UI Architecture"
-Cohesion: 0.18
-Nodes (10): 1. Main Window Layout, 2. Docking Strategy, 3.1 The View/Object Relationship, 3.3 View Composition, Not Inheritance, 3. View Architecture, 4. Interaction Patterns, 5. Workspace State Management, Purpose (+2 more)
+Cohesion: 0.20
+Nodes (9): 2. Docking Strategy, 3.1 The View/Object Relationship, 3.3 View Composition, Not Inheritance, 3. View Architecture, 4. Interaction Patterns, 5. Workspace State Management, Purpose, Related Documents (+1 more)
 
 ### Community 1309 - "WP 10.0A — User Experience Architecture"
 Cohesion: 0.18
@@ -5611,9 +5546,9 @@ Nodes (7): 1. Discipline Differentiation — Assessed, 3. Rename/Edit Routing to
 Cohesion: 0.18
 Nodes (10): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations, Related Documents, Repository Maturity, What This Document Is (+2 more)
 
-### Community 1312 - "v0.14.0 — Work Packages"
-Cohesion: 0.25
-Nodes (7): A. Carried from the `v0.13.x` train, B. Engineering body of work (pre-programme, this release), C. The remediation programme (twelve Work Packages), D. Release-preparation Work Packages, E. Not started — out of this release's scope, Scope of this document, v0.14.0 — Work Packages
+### Community 1312 - "EditorControlKind"
+Cohesion: 0.22
+Nodes (9): EditorControlKind, Attachments, Choice, Lifecycle, MultilineText, ObjectReference, QuantityWithUnit, ReadOnlyList (+1 more)
 
 ### Community 1313 - "ProjectLifecycleRefusal"
 Cohesion: 0.20
@@ -5627,14 +5562,6 @@ Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. 
 Cohesion: 0.18
 Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. Implementation Lessons, 5. Repository Maturity, 6. Recommendations for the Next Work Package, Key Takeaways, Related Documents (+2 more)
 
-### Community 1316 - "ManualTimeProvider"
-Cohesion: 0.15
-Nodes (4): FixedTimeProvider, ManualTimeProvider, LastPeriod, ManualTimer
-
-### Community 1317 - "Derivations Appendix"
-Cohesion: 0.15
-Nodes (12): Contradictions and Residuals Found, Corrected Counts (register claim → derived value), Derivations Appendix, Feature Register, Files Changed (all within declared ownership), Health Check and Final Verification, PROJECT_STATUS.md, Release Register (+4 more)
-
 ### Community 1319 - "WP 9.8B — Platform Service Register Reconciliation"
 Cohesion: 0.18
 Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. Implementation Lessons, 5. Repository Maturity, 6. Recommendations for the Next Work Package, Key Takeaways, Related Documents (+2 more)
@@ -5643,13 +5570,9 @@ Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. 
 Cohesion: 0.18
 Nodes (10): 1. Introduction, 2. What Was Achieved, 3. Architectural Lessons, 4. Implementation Lessons, 5. Repository Maturity, 6. Recommendations for the Next Work Package, Key Takeaways, Related Documents (+2 more)
 
-### Community 1321 - "InMemoryEngineeringRelationshipRepository"
-Cohesion: 0.08
-Nodes (6): Validation, Tests, InMemoryEngineeringRelationshipRepository, InMemoryPersistenceStore, RequirementsReconciliationServiceTests, InMemoryPersistenceStore
-
-### Community 1322 - "WP 4.9 — Developer Experience Improvements"
-Cohesion: 0.25
-Nodes (8): Acceptance Criteria, Deliverables, Dependencies, Estimated Complexity, Objective, Risks, Scope, WP 4.9 — Developer Experience Improvements
+### Community 1322 - "IDiagnosticsProvider"
+Cohesion: 0.02
+Nodes (132): 10. Trade-offs, 11. Common Mistakes, 13. Key Takeaways, 2. Purpose, 3. Background, 4. The Problem, 6. Alternatives Considered, 7. Why This Solution Was Chosen (+124 more)
 
 ### Community 1324 - "WP 11.2A — Governance Health-Check Tool"
 Cohesion: 0.18
@@ -5664,72 +5587,68 @@ Cohesion: 0.18
 Nodes (10): Basis, Candidate WP A — Plugin & Registration Trust Isolation, Candidate WP B — REST API Authentication & Transport Security, Candidate WP C — Engineering Foundation Governance Closeout, Recommended Grouping, Related Documents, Sequencing Suggestion, Status (+2 more)
 
 ### Community 1327 - "Per-Framework Assessment"
-Cohesion: 0.18
-Nodes (10): Cross-Framework Standards Observation, Engineering Calculation Framework, Engineering Data Model, Materials Framework, Per-Framework Assessment, Related Documents, Status, Units & Quantities Framework (+2 more)
+Cohesion: 0.20
+Nodes (9): Cross-Framework Standards Observation, Engineering Data Model, Materials Framework, Per-Framework Assessment, Related Documents, Status, Units & Quantities Framework, Verification & Validation Framework (+1 more)
 
 ### Community 1328 - "WP 7.1B — Units & Quantities Framework — Technical Debt Assessment"
 Cohesion: 0.18
 Nodes (10): A Genuine, Disclosed Engineering-Review Finding (Not Debt), AT-14 — Compile-Time Dimension Safety Verified by Inspection, Not an Automated Test, Existing Debt: What Actually Happened, New Accepted Trade-off Disclosed by This Work Package, New Debt Disclosed by This Work Package, Purpose, Related Documents, Summary Table (+2 more)
 
-### Community 1329 - "WP 6.0 — Reporting Framework — Engineering Review Report"
+### Community 1329 - "Part II — Implementation Retrospective"
 Cohesion: 0.25
-Nodes (7): Findings Requiring Disclosure, Four-Layer / Governance Confirmation (Re-Verified Against Real Code), Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 6.0 — Reporting Framework — Engineering Review Report
-
-### Community 1330 - "WP 6.5 — Audit Framework — Technical Debt Assessment"
-Cohesion: 0.29
-Nodes (6): A Genuine, Disclosed Process Finding (Not Platform Debt), Existing Debt: What Actually Happened, Purpose, Related Documents, Summary Table, WP 6.5 — Audit Framework — Technical Debt Assessment
+Nodes (7): Governance Discipline, Part II — Implementation Retrospective, Related Documents, Retrospective Verdict, Verification Rigour, What Was Planned vs. What Was Built, WP 9.0A — Mechanical Product Structure
 
 ### Community 1331 - "WP 8.0C — Engineering Workspace UX Specification — Engineering Cockpit Specification"
 Cohesion: 0.18
 Nodes (10): 1. Purpose and Placement, 2. Layout Regions, 3. "What Needs Attention" — Ranking Rule, 4. Attention Centre vs. Notifications, Restated, 5. Empty and New-Project States, 6. Multi-Project Context, 7. Relationship to the Project Dashboard, Purpose (+2 more)
 
-### Community 1332 - "WP 6.0 — Reporting Framework — Future Capability Recommendations"
-Cohesion: 0.25
-Nodes (7): Not Recommended, Purpose, Recommendation 1 — `WP 6.7` (Export/Import) Should Design Its Own Contract Independently, Using `ReportResult` Only as a Plausible Input, Recommendation 2 — Any Future Renderer Needing a Different Output Format Should Implement `IReportTemplate<TDefinition>` Directly, Not Modify `PlainTextReportTemplate<TDefinition>`, Recommendation 4 — Report Generation Progress/Streaming and Scheduled/Recurring Generation Remain Named, Not Designed, Related Documents, WP 6.0 — Reporting Framework — Future Capability Recommendations
-
 ### Community 1333 - "v0.72.0 — Engineering Foundation Expansion"
 Cohesion: 0.18
 Nodes (10): Actuation and transmission, Boundary, Electromechanical interfaces, Fluid and thermal interfaces, Materials and process selection, Metrology, Systems verification, Tribology (+2 more)
 
+### Community 1334 - "WP 10.1A — Technical Debt Review"
+Cohesion: 0.29
+Nodes (6): 2. `TD-26` — Reconfirmed Open, Mitigation Strategy Upgraded, 3. Items Reviewed, Not Newly Affected, 4. Debt Summary, Purpose, Related Documents, WP 10.1A — Technical Debt Review
+
+### Community 1335 - "DuplicateCommandIdException"
+Cohesion: 0.31
+Nodes (4): RD-0041 — Allowing a Later Command Registration to Silently Override an Earlier One, DuplicateCommandIdException, Id, CommandRegistryTrustTests
+
 ### Community 1336 - "Seed Data Review Set"
-Cohesion: 0.14
-Nodes (13): 1. What this document is, and what it is not, 2. Records the engineering scenario needs, 3.1 Strongest candidates — a reviewer can check these against a primary source today, 3.2 Reviewable, with a caveat the reviewer must accept, 3.3 Not yet release candidates, 3. Release candidacy, 4.1 The Aalco 5083 density — keep it omitted, 4.2 `TEMPEST-MFG-005` — turning and wall thickness (+5 more)
+Cohesion: 0.15
+Nodes (12): 2. Records the engineering scenario needs, 3.1 Strongest candidates — a reviewer can check these against a primary source today, 3.2 Reviewable, with a caveat the reviewer must accept, 3.3 Not yet release candidates, 3. Release candidacy, 4.1 The Aalco 5083 density — keep it omitted, 4.2 `TEMPEST-MFG-005` — turning and wall thickness, 4.3 The empty failure and lessons library (+4 more)
 
 ### Community 1337 - "WP 7.2A — Strategic Roadmap Selection & Programme Architecture"
-Cohesion: 0.20
-Nodes (9): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity, What This Document Is (+1 more)
+Cohesion: 0.18
+Nodes (10): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity, What This Document Is (+2 more)
 
-### Community 1338 - "WP 7.2B — Requirements & Verification Platform Architecture"
-Cohesion: 0.20
-Nodes (9): Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity, What This Document Is, What Was Achieved (+1 more)
-
-### Community 1339 - "WP 7.2C — Security Review"
+### Community 1338 - "WP 7.3A — Requirements Engine — Security Review Report"
 Cohesion: 0.29
-Nodes (6): Purpose, Related Documents, Status, What Changed Since `WP 7.2B`'s Own Security Architecture Review, WP 7.2C — Security Review, Zero Release Blocking Findings
+Nodes (6): New Debt Disclosed by This Review, Purpose, Related Documents, `TD-25` — No Concurrency-Conflict Detection on `ReviseAsync`/`SetStatusAsync`, Verdict, WP 7.3A — Requirements Engine — Security Review Report
+
+### Community 1339 - "EvidenceClassification"
+Cohesion: 0.29
+Nodes (6): EvidenceClassification, Calculation, Drawing, Other, Report, Test
 
 ### Community 1340 - "Capability Categories"
 Cohesion: 0.20
 Nodes (9): Capability Categories, Category Model, Coverage Note, Engineering Discipline Categories, Extensibility, Platform Categories, Purpose of This Document, Register Metadata (+1 more)
 
-### Community 1341 - "WP 6.0 — Reporting Framework — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 1. Not Every Brief-Named Noun Maps Onto a New Type, 2. An Orthogonality Decision Protects a Sibling Work Package's Own Future Design Space, Not Just the Current One, 3. Cross-Service Integration Can Be Demonstrated Without Touching the Service Itself, 4. A Notification's Own Payload Discipline Must Be Actively Checked, Not Assumed, 5. A Clean First Attempt Is Still Worth Verifying, Not Just Assuming, Related Documents, WP 6.0 — Reporting Framework — Lessons Learned
+### Community 1341 - "ThermalConductivity"
+Cohesion: 0.29
+Nodes (4): ThermalConductivity, Vector, ThermalConductivityUnits, All
 
 ### Community 1342 - "Validation Register"
 Cohesion: 0.20
 Nodes (9): Coverage Note, Cross-Reference Check, Current State (`WP 16.2A`), `Group A` snapshot (2026-09-06) — superseded, retained as a record, Register Metadata, Release-Level Gates Summary — `v0.5.0` through `v0.15.0` (`WP 16.2A`), Release-Level Gates — `v0.4.0` ("Platform Foundation," Released 2026-07-27), Release-Level Gates — `v0.5.0` ("Developer Experience," Not Yet Applicable) (+1 more)
 
-### Community 1343 - "WP 10.0A — Architecture Review"
-Cohesion: 0.20
-Nodes (9): 1. The Supersession Mechanism Itself, 2. Is Superseding ADR-0066 Architecturally Justified?, 3. Is Superseding ADR-0065 Architecturally Justified?, 4. FOUNDATION.md Conformance, 5. Architectural Risk Assessment, 6. Verdict, Purpose, Related Documents (+1 more)
+### Community 1343 - "StateProjection"
+Cohesion: 0.29
+Nodes (6): StateProjection, DisplayName, IsDeleted, Kind, ParentId, TypeState
 
 ### Community 1344 - "WP 10.0A — Systems Engineering Review"
 Cohesion: 0.20
 Nodes (9): 1. Requirements Coverage — The Controlling Instruction's Own Topic List, 2. Deliverables Coverage — The Controlling Instruction's Own Deliverable List, 3. Traceability — Every Decision Has a Stated Reason, 4. Verifiability — Can a Future Work Package Actually Build Against This, 5. Gaps Named, Not Silently Left Open, 6. Verdict, Purpose, Related Documents (+1 more)
-
-### Community 1345 - "WP 6.1 — Permissions & Identity — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 1. A Tentative Architectural Suggestion Is Not a Ratified Decision, 2. "Positioned to Resolve" and "Resolved" Are Different Claims, and the Difference Matters, 3. Deferred Design Questions Should Be Named, Not Rediscovered, 4. Fail-Closed Defaults Simplify More Than They Cost, 6. Re-Deriving Governance Counts Directly Continues to Pay Off, Related Documents, WP 6.1 — Permissions & Identity — Lessons Learned
 
 ### Community 1346 - "WP 11.5A — Governance Currency & Documentation Integrity"
 Cohesion: 0.20
@@ -5740,24 +5659,12 @@ Cohesion: 0.20
 Nodes (9): Branch, Explicitly Out of Scope, Objective, Related Documents, Release Theme, Scope, Status, Success Criteria (+1 more)
 
 ### Community 1348 - "StandardEquivalence"
-Cohesion: 0.12
+Cohesion: 0.15
 Nodes (10): StandardEquivalence, Designation, IsDerived, IsResolved, StandardEquivalenceKind, Equivalent, Identical, Modified (+2 more)
 
 ### Community 1349 - "WP 6.0 — Reporting Framework — Technical Debt Assessment"
 Cohesion: 0.20
 Nodes (9): A Genuine, Disclosed Engineering-Review Finding (Not Platform Debt), `AT-09` — No delivery-channel abstraction or durable report history, Existing Debt: What Actually Happened, New Debt Actually Disclosed by This Work Package, Purpose, Related Documents, Summary Table, The deliberate non-delivery of an "Export abstraction" (+1 more)
-
-### Community 1350 - "WP 6.3 — REST API — Engineering Review Report"
-Cohesion: 0.25
-Nodes (7): Findings Requiring Disclosure, Four-Layer / Governance Confirmation (Re-Verified Against Real Code), Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 6.3 — REST API — Engineering Review Report
-
-### Community 1351 - "WP 6.5 — Audit Framework — Future Capability Recommendations"
-Cohesion: 0.25
-Nodes (7): Not Recommended, Purpose, Recommendation 1 — Any Future Consumer (Reporting, REST API, Licensing, Export/Import) Should Decide Its Own `RecordAsync` Failure Policy Explicitly, Recommendation 2 — Revisit `TD-12` Only When a Real Performance Problem or Scale Requirement Is Named, Recommendation 4 — A Future REST API Endpoint Exposing `IAuditQuery` Should Reuse the Existing Permission, Not Invent a New One, Related Documents, WP 6.5 — Audit Framework — Future Capability Recommendations
-
-### Community 1352 - "WP 6.5 — Audit Framework — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 1. A Validation Mandate Requires an Actual Test Suite, Not a Restated Opinion, 2. Not Every Shared Utility Needs to Be Reused by Every New Consumer, 3. Two Different Failure Philosophies Can Coexist Correctly in One Service, 4. A Deep, Multi-Step Test Is What Finds Bugs a Shallow One Hides, 5. Confirming a Risk a Second Time Is Not the Same as Retiring It, Related Documents, WP 6.5 — Audit Framework — Lessons Learned
 
 ### Community 1353 - "WP 7.0A — Lessons Learned"
 Cohesion: 0.20
@@ -5779,10 +5686,6 @@ Nodes (9): 1. A designated closing-review Work Package still needs to be schedul
 Cohesion: 0.20
 Nodes (9): 1. A repository can already contain most of the answer to "what's next," if it is read as a whole rather than department by department, 2. A stated vision and an actual practice can diverge, and the honest response is to name the divergence, not silently pick a side, 3. "Cannot be sequenced from existing evidence" is a legitimate, reusable finding — it does not need to be re-derived from scratch every time it still applies, 4. Scoring only clarifies a decision that is already well-supported by qualitative evidence — it does not substitute for that evidence, 5. Recommending a programme "second" is a genuine, real commitment, not a polite way of declining it, Recommendations, Related Documents, Status (+1 more)
 
-### Community 1359 - "TempestOS v0.6.0 — Risk Register"
-Cohesion: 0.33
-Nodes (5): How to Use This Document, Purpose, Related Documents, Risks Considered and Not Included, TempestOS v0.6.0 — Risk Register
-
 ### Community 1360 - "WP 7.3A — Requirements Engine — Future Capability Recommendations"
 Cohesion: 0.20
 Nodes (9): FCR-0027 — Requirements Engine, New Candidate: Change Impact Analysis, New Candidate: Requirement Baselining, New Candidate: String-Based Allocation Targets, Not Recommended: Optimistic Concurrency for `ReviseAsync`, Purpose, Related Documents, Verdict (+1 more)
@@ -5795,9 +5698,9 @@ Nodes (9): 1. Engineer — Author and Revise a Requirement, 2. Project Manager �
 Cohesion: 0.20
 Nodes (9): 1. Engineering Cockpit, 2. Workspace Shell (General Screen), 3. Project Dashboard, 4. Command Palette (Overlay), 5. Properties vs. Inspector Panel (Tabbed Region), 6. Empty / Loading / Error States, Purpose, Related Documents (+1 more)
 
-### Community 1363 - "WP 6.8 — Definition of Done Audit"
-Cohesion: 0.25
-Nodes (7): Audit, Notes on Criterion 9 (Unrelated Issues Disclosed and Fixed Only If Blocking), Purpose, Related Documents, The Ten Criteria (Engineering Governance §3), Verdict, WP 6.8 — Definition of Done Audit
+### Community 1363 - ".HandleAsync"
+Cohesion: 0.40
+Nodes (3): CreateRequirementCollectionCommand, Name, CreateRequirementCollectionCommandHandler
 
 ### Community 1364 - "Steel catalogue expansion"
 Cohesion: 0.20
@@ -5807,41 +5710,29 @@ Nodes (9): 13-8 Mo, 15-5 PH, 310S, 321, 430, 440C, Engineering Knowledge Foundat
 Cohesion: 0.20
 Nodes (9): 1. The Decision This Document Records, 2. What V1.0.0 Therefore Is, 3. V1.0.0 Includes, 4. V1.0.0 Explicitly Excludes, 5. The Design-Use Boundary, 6. Version Identity, 7. The Depth Standard (for the Content Programme, not for v1.0.0), 8. The Completion Gate (+1 more)
 
-### Community 1366 - "WP 7.1E — Verification Framework — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 1. The best design for a cross-cutting framework can be reusing an existing mechanism completely, not extending it, 3. Narrow, well-scoped exclusions produce close-to-automatic scope discipline, 4. Zero new exception types is itself worth confirming, not merely defaulting to, Recommendations, Related Documents, Status, WP 7.1E — Verification Framework — Lessons Learned
-
-### Community 1367 - "WP 7.1F — Technical Debt Disposition"
-Cohesion: 0.25
-Nodes (7): Comparison to the Rest of the Technical Debt Register, Engineering Core Disclosed, Accepted Trade-offs (`AT-14`–`AT-17`), Purpose, Related Documents, Release-Blocking Assessment, Verdict, WP 7.1F — Technical Debt Disposition
+### Community 1367 - "Architecture Document Register"
+Cohesion: 0.40
+Nodes (4): Architecture Document Register, Coverage by Implementation Status, Cross-Reference Check, Register Metadata
 
 ### Community 1368 - "WP 10.2A — UX Review"
 Cohesion: 0.25
 Nodes (7): 2. Full Light/Dark Theme Compatibility — Verified, 3. Interaction Consistency — Verified, 4. Accessibility — Verified, 5. Disclosed UX Trade-offs, 6. Recommendation, Purpose, WP 10.2A — UX Review
 
-### Community 1370 - "WP 7.3A — Requirements Engine — Digital Thread Assessment"
-Cohesion: 0.25
-Nodes (7): One Disclosed Limitation, Purpose, Related Documents, Verdict, What Was Correctly Not Built, What Was Required, WP 7.3A — Requirements Engine — Digital Thread Assessment
+### Community 1369 - "QuotationReviewAct"
+Cohesion: 0.40
+Nodes (5): QuotationReviewAct, Approve, ReturnToDraft, SaveDraft, SubmitForReview
 
 ### Community 1371 - "WP 10.3B — Security Review"
 Cohesion: 0.25
 Nodes (7): 1. Scope, 2. New Findings, 4. `CommandUnavailable` Fix — Security-Relevant Checks, 6. Honest, Disclosed Absences — Security Relevance, 7. Recommendation, Purpose, WP 10.3B — Security Review
 
-### Community 1372 - "SOLID"
-Cohesion: 0.22
-Nodes (8): Benefits, Disadvantages, Key Takeaway, SOLID, What, When Not to Use, When to Use, Why
-
-### Community 1373 - "WP 7.3A — Requirements Engine — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): Process Observations, Purpose, Recommendation for Future Work Packages, Related Documents, What Was Harder Than Expected, What Went Well, WP 7.3A — Requirements Engine — Lessons Learned
+### Community 1372 - "Verb"
+Cohesion: 0.50
+Nodes (4): Verb, Delete, Rename, Revise
 
 ### Community 1374 - "Fail Fast"
 Cohesion: 0.22
 Nodes (8): Benefits, Disadvantages, Fail Fast, Key Takeaway, What, When Not to Use, When to Use, Why
-
-### Community 1377 - "Single Responsibility Principle"
-Cohesion: 0.22
-Nodes (8): Benefits, Disadvantages, Key Takeaway, Single Responsibility Principle, What, When Not to Use, When to Use, Why
 
 ### Community 1378 - "WP 12.9.2 — Engineering Readiness Review Re-Execution"
 Cohesion: 0.22
@@ -5863,17 +5754,9 @@ Nodes (8): Certification Outcome, Recommendation, Related Documents, What Ships 
 Cohesion: 0.22
 Nodes (8): 1. "Foundation before discipline" is a defensible architectural inference, distinct from inventing a capability, 2. A dependency graph revealed a real, previously-unnoticed asymmetry, 3. Recommending release numbers without contradicting a prior Work Package's own non-commitment was a genuine tension, 4. Five disciplines with zero capabilities is not a problem this Work Package could solve by trying harder, Recommendations, Related Documents, Status, WP 7.0B — Lessons Learned
 
-### Community 1384 - "WP 7.2C — Academy Plan"
-Cohesion: 0.25
-Nodes (7): Engineering Principles Review, Purpose, Related Documents, Required Output (Owning Implementation Work Package), Required Reading (Owning Implementation Work Package), Summary Table, WP 7.2C — Academy Plan
-
 ### Community 1385 - "WP 7.1B — Units & Quantities Framework — Future Capability Recommendations"
 Cohesion: 0.22
 Nodes (8): Not Recommended, Purpose, Recommendation 1 — Candidate `G` (Materials) Should Represent Dimensioned Properties as `Quantity<TDimension>` Directly, Boxed Only at the Dictionary Level, Recommendation 2 — Candidate `F` (Calculation) Should Treat `Quantity<TDimension>` as Its Default `TInput`/`TResult` Shape for Any Dimensioned Calculation, Recommendation 3 — `FCR-0034` (Affine Unit Conversion) Should Be Designed as an Additive Extension, Not a Retrofit, Recommendation 4 — A Future Dimensional-Algebra Extension (Length × Length = Area) Should Be Scoped as Its Own Work Package, Not Folded Into a Future Framework's Own Brief, Related Documents, WP 7.1B — Units & Quantities Framework — Future Capability Recommendations
-
-### Community 1388 - "WP 7.4.0 — Release Preparation & Product Baseline — Architecture Baseline Summary"
-Cohesion: 0.25
-Nodes (7): Key Architectural Decisions This Release, Purpose, Related Documents, Security Architecture Posture, The Layer Model, Verdict, WP 7.4.0 — Release Preparation & Product Baseline — Architecture Baseline Summary
 
 ### Community 1389 - "WP 7.1F — Executive Summary"
 Cohesion: 0.22
@@ -5883,17 +5766,17 @@ Nodes (8): Certification Outcome, Recommendation, Related Documents, What Ships 
 Cohesion: 0.22
 Nodes (8): 1. Confirmation: `FCR-0029`–`FCR-0033` Are All Implemented, 2. Review of `FCR-0034`, `FCR-0035`, `FCR-0036`, 3. `FCR-0005` (Governance Register Health-Check Tooling) — Priority Raised, 4. No New Future Capability Identified Beyond What `WP 7.1D`/`WP 7.1E` Already Raised, Coverage Note, Purpose, Related Documents, WP 7.1F — Future Capability Register Review
 
-### Community 1391 - "Permission"
-Cohesion: 0.03
-Nodes (38): 5. The Design, Documentation, Item 1 — D-024: the REST listener is off by default, Item 2 — TD-62: the OpenAPI route requires identity + permission, Related Documents, Validation, What changed, What did not change, and why (+30 more)
+### Community 1391 - "Verification of "Implemented" Status"
+Cohesion: 0.02
+Nodes (100): 5. The Design, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+92 more)
 
 ### Community 1392 - "WP 7.2B — Standards Mapping"
 Cohesion: 0.22
 Nodes (8): Generic Architectural Capabilities Every Standard Family Would Draw On, Per-Family Architectural Implications (Illustrative Only, Not a Compliance Target), Purpose, Related Documents, Status, What This Document Deliberately Does Not Do, What This Mapping Confirms, WP 7.2B — Standards Mapping
 
 ### Community 1393 - ".SaveAsync_ThenLoadAsync_OnASecondInstance_RoundTripsLayoutOpenTabsAndSelection"
-Cohesion: 0.06
-Nodes (26): A1. Chief Architect — Architecture Readiness, A2. Principal Software Engineer — Implementation Readiness, A3. QA Lead — Verification Readiness (Build/Test Evidence), A4. Workflow Engineer — Verification Readiness (CI/CD Mechanics), A5. Technical Author — Governance Readiness, A6. Product Manager — Release Readiness, Part A — Six Independent Discipline Reviews, Part B — Programme Review: Reconciling the Six Reports (+18 more)
+Cohesion: 0.04
+Nodes (39): 13. Session Persistence, A1. Chief Architect — Architecture Readiness, A2. Principal Software Engineer — Implementation Readiness, A3. QA Lead — Verification Readiness (Build/Test Evidence), A4. Workflow Engineer — Verification Readiness (CI/CD Mechanics), A5. Technical Author — Governance Readiness, A6. Product Manager — Release Readiness, Part A — Six Independent Discipline Reviews (+31 more)
 
 ### Community 1394 - "WP 8.2A — Engineering Domain Architecture — Engineering Object Interaction Diagrams"
 Cohesion: 0.22
@@ -5904,16 +5787,12 @@ Cohesion: 0.29
 Nodes (6): Cross-Reference Check, Entries, Historical Test Count Progression (Verified from CHANGELOG.md / Testing.md / Retrospectives), `Tempest.Desktop.Tests`, Test Register, Three Counts, Three Different Things
 
 ### Community 1396 - "WP 9.0B — Product Configuration & BOM Management — Future Capability Assessment"
-Cohesion: 0.22
-Nodes (8): FCR-0045 — Unit of Measure Canonicalisation, FCR-0046 — Cost Roll-Up Over the BOM Hierarchy, FCR-0047 — Configuration Management Workflow, Not Recommended: Validating `UnitOfMeasure` Against `Tempest.Core.UnitsAndQuantities`, Purpose, Related Documents, Verdict, WP 9.0B — Product Configuration & BOM Management — Future Capability Assessment
+Cohesion: 0.20
+Nodes (9): FCR-0044 — Product Variant Resolution, FCR-0045 — Unit of Measure Canonicalisation, FCR-0046 — Cost Roll-Up Over the BOM Hierarchy, FCR-0047 — Configuration Management Workflow, Not Recommended: Validating `UnitOfMeasure` Against `Tempest.Core.UnitsAndQuantities`, Purpose, Related Documents, Verdict (+1 more)
 
 ### Community 1397 - "WP 9.1B — Development Baseline Consolidation — Merge Readiness Report"
 Cohesion: 0.22
 Nodes (8): Branch Relationship, Conflict Analysis, Pre-Merge Verification (Already Complete), Related Documents, Status, Verdict, What This Merge Will and Will Not Do, WP 9.1B — Development Baseline Consolidation — Merge Readiness Report
-
-### Community 1398 - "TempestOS v0.6.0 — Platform Service Dependency Diagram"
-Cohesion: 0.29
-Nodes (6): Four-Layer Rule Compliance, Full Dependency Graph, Purpose, Reading the Graph, Related Documents, TempestOS v0.6.0 — Platform Service Dependency Diagram
 
 ### Community 1399 - "WP 9.9.0 — Release Preparation & Product Baseline — Architecture Baseline Summary (Second Pass)"
 Cohesion: 0.22
@@ -5964,32 +5843,16 @@ Cohesion: 0.22
 Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
 
 ### Community 1411 - "/graphify"
-Cohesion: 0.18
+Cohesion: 0.20
 Nodes (9): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Usage (+1 more)
-
-### Community 1412 - "WP 6.3 — REST API — Lessons Learned"
-Cohesion: 0.29
-Nodes (6): 1. When a Prior ADR Names an Explicit Revisit Trigger, Test the Deferred Alternative — Don't Just Re-Argue It, 3. Confining a New External Dependency Requires an Explicit, Verified Boundary, Not Just a Design Intention, 4. A Command Exposed Over REST Inherits Whatever That Command Already Does — Including Its Own Assumptions, 5. A Governance Register Can Go Unnoticed-Stale Even When the Very Thing It Tracks Has Already Happened, Related Documents, WP 6.3 — REST API — Lessons Learned
 
 ### Community 1413 - "WP 8.0C — Engineering Workspace UX Specification"
 Cohesion: 0.18
 Nodes (10): Architectural Lessons, Implementation Lessons, Introduction, Key Takeaways, Recommendations for the Next Work Package, Related Documents, Repository Maturity, What This Document Is (+2 more)
 
-### Community 1414 - "WP 6.6 — Licensing Framework — Engineering Review Report"
-Cohesion: 0.29
-Nodes (6): Findings Requiring Disclosure, Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 6.6 — Licensing Framework — Engineering Review Report
-
-### Community 1415 - "WP 6.6 — Licensing Framework — Technical Debt Assessment"
-Cohesion: 0.18
-Nodes (10): A Genuine, Disclosed Design Finding (Not Platform Debt), `AT-13` — No remote validation/activation, floating/seat-based licensing, or renewal/grace-period model, Existing Debt: What Actually Happened, New Debt Actually Disclosed by This Work Package, Purpose, `R5` (`docs/releases/v0.6.0/Risk Register.md`) — License validation being too aggressively Host-fatal, Related Documents, Summary Table (+2 more)
-
 ### Community 1416 - "WP 8.0C — Engineering Workspace UX Specification"
 Cohesion: 0.18
 Nodes (10): 0. Where This Sits, and a Disclosed Sequencing Finding, 1. Design Principles, 2. Personas and Workflows, 3. Visual Language (Intent, Not Implementation), 4. Summary of Companion Deliverables, 5. Rendering Feasibility Disclosure, 6. ADR Summary, Purpose (+2 more)
-
-### Community 1417 - "WP 7.0A — Future Capability Summary"
-Cohesion: 0.29
-Nodes (6): Prioritisation Table, Rating Scale, Related Documents, Status, Which Capabilities Should Form the Basis of `v0.7`, WP 7.0A — Future Capability Summary
 
 ### Community 1419 - "CalculationListEntry"
 Cohesion: 0.25
@@ -6011,29 +5874,13 @@ Nodes (7): Related Documents, Root Cause, Scope Confirmation, Verification, What
 Cohesion: 0.25
 Nodes (7): Related Documents, Root Cause (What the Audit Was Checking For), Scope Confirmation, Verification, What Changed, What This Document Is, WP 13.0B — Plugin & Trust Isolation Architecture Review and Baseline
 
-### Community 1424 - "IWorkspaceCommand"
-Cohesion: 0.02
-Nodes (87): 7. Object Editor Completion, CiteEvidenceCommand, Library, RecordId, TargetKind, TargetObjectId, DeclareEvidenceFigureCommand, Name (+79 more)
-
-### Community 1425 - "WP 7.1E — Verification Framework — Engineering Review Report"
-Cohesion: 0.29
-Nodes (6): Findings Requiring Disclosure, Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 7.1E — Verification Framework — Engineering Review Report
-
-### Community 1426 - "WP 4.6B — Navigation Implementation"
-Cohesion: 0.25
-Nodes (8): Acceptance Criteria, Deliverables, Dependencies, Estimated Complexity, Objective, Risks, Scope, WP 4.6B — Navigation Implementation
-
-### Community 1427 - "WP 7.1E — Verification Framework — Verification Integrity Assessment"
-Cohesion: 0.29
-Nodes (6): Purpose, Related Documents, Unverifiable Conclusions Made Impossible — By Construction, Not Convention, Verdict, What Remains the Registering Caller's Own Responsibility, WP 7.1E — Verification Framework — Verification Integrity Assessment
+### Community 1424 - "IInvoicingService"
+Cohesion: 0.13
+Nodes (17): IInvoicingService, RaiseInvoiceCommand, TargetKind, TargetObjectId, RaiseInvoiceCommandHandler, ReconcileInvoiceCommand, TargetKind, TargetObjectId (+9 more)
 
 ### Community 1428 - "TempestOS v0.5.0 — Release Checklist"
 Cohesion: 0.25
 Nodes (7): Merge and Tag Sequence — Executed, Note on What `WP 5.4` Deliberately Did Not Do, Per-Work-Package Definition of Done, Post-Release, Purpose, Release-Level Checklist (Before Tagging), TempestOS v0.5.0 — Release Checklist
-
-### Community 1429 - "TempestOS v0.6.0 — Contract Review: Engineering Governance Confirmation"
-Cohesion: 0.25
-Nodes (7): 1. Four-Layer Dependency Rules, 2. Circular Dependencies, 4. Duplicated Responsibilities, Overall Confirmation, Purpose, Related Documents, TempestOS v0.6.0 — Contract Review: Engineering Governance Confirmation
 
 ### Community 1430 - "WP 6.0 — Reporting Framework"
 Cohesion: 0.25
@@ -6079,45 +5926,17 @@ Nodes (7): 1. A Brief's Own Deliverable List Is Not Automatically Approved Scope
 Cohesion: 0.25
 Nodes (7): Aggregate Findings (Corroborated), Context, Disclosure: Retrospectively Written During `WP 10.9A`, Genuinely Unrecoverable Detail, Process Correction Applied Forward, Verification, WP 10.6D — Feature Completion Audit
 
-### Community 1441 - "WP 7.1C — Materials Framework — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 1. A provenance requirement can resolve a reserved property-typing question more decisively than the question alone, 3. Bounding a heterogeneous property value to an already-established, small set avoids two failure modes at once, 4. "Do not invent values" is a discipline worth naming explicitly, not just following implicitly, Recommendations, Related Documents, Status, WP 7.1C — Materials Framework — Lessons Learned
-
-### Community 1442 - "WP 9.3A — Verification Management Workspace — Technical Debt Assessment"
-Cohesion: 0.29
-Nodes (6): Items Considered and Not Raised, New Items, Purpose, Related Documents, Verdict, WP 9.3A — Verification Management Workspace — Technical Debt Assessment
-
-### Community 1443 - "WP 7.1C — Materials Framework — Future Capability Recommendations"
-Cohesion: 0.29
-Nodes (6): Purpose, Recommendation 1 — Candidate `F` (Calculation) Should Read a Material's Own Properties Directly Through `IMaterialCatalog.FindAsync`, Never Duplicate Them, Recommendation 3 — `FCR-0034` (Affine Unit Conversion) Should Confirm Whether Materials Needs a Temperature-Dependent Property Before Its Own Design Is Finalised, Recommendation 4 — A Future Materials-Discipline or Manufacturing Capability Should Extend `Category`'s Own Usage Conventions, Not Redesign the Field, Related Documents, WP 7.1C — Materials Framework — Future Capability Recommendations
-
 ### Community 1444 - "WP 7.2A — Candidate Work Package Catalogue"
-Cohesion: 0.25
-Nodes (7): Candidate K — Requirements Engine Architecture, Candidate M — Traceability Reporting, Candidates for Programme A (Requirements & Verification Platform), Explicitly Not Recommended at This Time, Related Documents, Status, WP 7.2A — Candidate Work Package Catalogue
-
-### Community 1445 - "WP 7.2A — Capability Dependency Report"
-Cohesion: 0.29
-Nodes (6): Programme A — Requirements & Verification Platform, Programmes B, C, D, E — Mechanical, Building Services/HVAC, Structural, Electrical, Purpose, Related Documents, Which Programme Unlocks the Greatest Number of Future Capabilities, WP 7.2A — Capability Dependency Report
+Cohesion: 0.22
+Nodes (8): Candidate K — Requirements Engine Architecture, Candidate L — Requirements Engine Implementation, Candidate M — Traceability Reporting, Candidates for Programme A (Requirements & Verification Platform), Explicitly Not Recommended at This Time, Related Documents, Status, WP 7.2A — Candidate Work Package Catalogue
 
 ### Community 1447 - "WP 7.3A — Requirements Engine — Technical Debt Assessment"
 Cohesion: 0.22
 Nodes (8): Existing Items Reviewed for Extension or Change, Items Considered and Not Raised, New Item, Purpose, Related Documents, `TD-25` — No Concurrency-Conflict Detection on Requirement Revision/Status Changes, Verdict, WP 7.3A — Requirements Engine — Technical Debt Assessment
 
-### Community 1448 - "[0.5.0] - 2026-07-29"
-Cohesion: 0.33
-Nodes (5): [0.5.0] - 2026-07-29, Fixed, Repository Review Findings, Across the Release, Status, TempestOS v0.5.0 — Changelog
-
-### Community 1449 - "XeroOwnershipVerdict"
-Cohesion: 0.29
-Nodes (7): XeroOwnershipVerdict, AnotherDocuments, CannotTell, DeletedInXero, NothingLive, NotOurs, Ours
-
 ### Community 1450 - "WP 9.1B — Development Baseline Consolidation — Commit Summary"
 Cohesion: 0.25
 Nodes (7): Assessed Alternative: `git add -p` Hunk-Level Splitting, Related Documents, Status, The Commit, Verification, Why a Single Commit, Not Three, WP 9.1B — Development Baseline Consolidation — Commit Summary
-
-### Community 1451 - "WP 6.4 — Settings Framework — Engineering Review Report"
-Cohesion: 0.33
-Nodes (5): Findings Requiring Disclosure, Purpose, Related Documents, Verdict, WP 6.4 — Settings Framework — Engineering Review Report
 
 ### Community 1452 - "WP 9.8B — Platform Service Register Reconciliation — Engineering Review"
 Cohesion: 0.25
@@ -6130,10 +5949,6 @@ Nodes (7): Process Observations, Purpose, Recommendation for Future Work Package
 ### Community 1454 - "WP 9.8B — Platform Service Register Reconciliation — Systems Engineering Review"
 Cohesion: 0.25
 Nodes (7): Confirms Rather Than Redesigns, Purpose, Related Documents, Verdict, What Now Exists, What Remains Outside This Work Package's Own Scope, WP 9.8B — Platform Service Register Reconciliation — Systems Engineering Review
-
-### Community 1455 - "A2 Standards Library"
-Cohesion: 0.25
-Nodes (7): 2.2 An edition is a record, not a revision, 2. The two decisions that carry the library, 3. A2 registers standards; it never reproduces them, 5. Validation, 6. Boundaries, 7. Dataset, A2 Standards Library
 
 ### Community 1456 - "WP 9.9.1 — Product Owner Release Summary"
 Cohesion: 0.25
@@ -6188,52 +6003,24 @@ Cohesion: 0.22
 Nodes (8): Candidate-by-Candidate Impact, Candidate F — Engineering Calculation Framework Architecture, Candidate H — Verification & Validation Framework Architecture, Purpose, Recommendation, Related Documents, What Remains Unchanged, WP 7.1C — Materials Framework — Engineering Foundation Impact Assessment
 
 ### Community 1470 - "WP 7.2B — Requirements & Verification Platform Architecture — Lessons Learned"
-Cohesion: 0.22
-Nodes (8): 2. Discipline-neutrality is enforced by refusing to resolve one specific tension, not by adding abstraction, 3. An architecture-only Work Package can still find, and disclose, a genuine new gap, 4. Reviewing seven illustrative standards together, rather than one at a time, surfaces the generalisable capability faster, 5. "No principle extension" is sometimes the evidence-disciplined answer, and saying so explicitly matters, Recommendations, Related Documents, Status, WP 7.2B — Requirements & Verification Platform Architecture — Lessons Learned
-
-### Community 1471 - "WP 16.0B — Integrate Off-`main` Work"
-Cohesion: 0.33
-Nodes (5): Disclosed for later Work Packages, Related Documents, Validation, What was done, WP 16.0B — Integrate Off-`main` Work
-
-### Community 1473 - "WP 8.0A — Engineering Workspace — Object Relationship Diagrams"
-Cohesion: 0.22
-Nodes (8): 1. The Shared Engineering Document Model, 2. Requirement Relationships (`RequirementRelationshipKinds`), 3. Digital Thread Composition (What `GetEvidenceAsync` Actually Reads), 4. Project Explorer Tree — Requirements Area (Worked Example), 5. Allocation to a Future Design Element (Disclosed Limitation), Purpose, Related Documents, WP 8.0A — Engineering Workspace — Object Relationship Diagrams
+Cohesion: 0.20
+Nodes (9): 1. A cross-cutting foundation's own design discipline generalises to a second layer without needing reinvention, 2. Discipline-neutrality is enforced by refusing to resolve one specific tension, not by adding abstraction, 3. An architecture-only Work Package can still find, and disclose, a genuine new gap, 4. Reviewing seven illustrative standards together, rather than one at a time, surfaces the generalisable capability faster, 5. "No principle extension" is sometimes the evidence-disciplined answer, and saying so explicitly matters, Recommendations, Related Documents, Status (+1 more)
 
 ### Community 1474 - "Future Work Package Guidelines"
 Cohesion: 0.29
 Nodes (6): Future Work Package Guidelines, Mandatory Expectations, Purpose, Related Documents, Status, What Changes for Future Work Packages
 
-### Community 1475 - "WP 6.8 — Technical Debt Disposition"
-Cohesion: 0.33
-Nodes (5): Disclosed, Accepted Trade-offs (AT), Purpose, Related Documents, Release-Blocking Assessment, WP 6.8 — Technical Debt Disposition
-
-### Community 1476 - "WP 7.3A — Requirements Engine — Engineering Review Report"
-Cohesion: 0.33
-Nodes (5): Engineering Judgement Calls Requiring Explicit Ratification, Purpose, Related Documents, Verdict, WP 7.3A — Requirements Engine — Engineering Review Report
-
 ### Community 1477 - "WP 16.1A — Enforce the Release Gate"
 Cohesion: 0.29
 Nodes (6): Product Owner action required — branch protection on `main`, Related Documents, Validation, What changed, What did not change, and why, WP 16.1A — Enforce the Release Gate
-
-### Community 1478 - "WP 6.8 — Risk Register Disposition"
-Cohesion: 0.40
-Nodes (4): Purpose, Related Documents, Summary, WP 6.8 — Risk Register Disposition
 
 ### Community 1479 - "TempestOS v0.4.0 — Release Checklist"
 Cohesion: 0.29
 Nodes (6): Merge and Tag Sequence, Per-Work-Package Definition of Done, Post-Release, Purpose, Release-Level Checklist (Before Tagging), TempestOS v0.4.0 — Release Checklist
 
-### Community 1481 - "WP 6.7 — Export/Import — Technical Debt Assessment"
-Cohesion: 0.29
-Nodes (6): A Genuine, Disclosed Process Finding (Not Platform Debt), Existing Debt: What Actually Happened, Purpose, Related Documents, Summary Table, WP 6.7 — Export/Import — Technical Debt Assessment
-
 ### Community 1483 - "WP 7.0A — Roadmap Report"
 Cohesion: 0.29
 Nodes (6): Phase Summary, Related Documents, Status, What This Roadmap Does Not Do, Why This Sequencing, WP 7.0A — Roadmap Report
-
-### Community 1484 - "WP 7.0B — Capability Dependency Report"
-Cohesion: 0.29
-Nodes (6): Part 2 — Dependency Graph, Part 3 — Engineering Programmes, Part 4 — Classification, Related Documents, Status, WP 7.0B — Capability Dependency Report
 
 ### Community 1485 - "WP 7.0B — Engineering Discipline Assessment"
 Cohesion: 0.29
@@ -6243,37 +6030,13 @@ Nodes (6): Assessment, Cross-Discipline Observations, Related Documents, Status,
 Cohesion: 0.29
 Nodes (6): Mapping: Product Roadmap Phases → Release Numbers, Related Documents, Status, What This Document Does Not Do, Why This Mapping, Not Another, WP 7.0B — Recommended Release Roadmap
 
-### Community 1487 - "WP 10.1B — Systems Engineering Review"
-Cohesion: 0.40
-Nodes (4): 4. Cockpit — Live Data After Successful Initialisation, 5. Recommendation, Purpose, WP 10.1B — Systems Engineering Review
-
 ### Community 1488 - "WP 7.2A — Security Assessment"
 Cohesion: 0.18
 Nodes (10): Cross-Programme Security Observations, Per-Programme Security Assessment, Programme F — Platform Hardening, Programme G — AI & Engineering Intelligence, Programmes B, C, D, E — Mechanical, Building Services/HVAC, Structural, Electrical, Purpose, Related Documents, Risk: Architectural and Governance Risks Bearing on Security Posture (+2 more)
 
-### Community 1489 - "TempestOS v0.4.0 — Testing Strategy"
-Cohesion: 0.40
-Nodes (4): Baseline, Exit Criteria for the Release as a Whole, New Testing Concerns This Release Introduces, TempestOS v0.4.0 — Testing Strategy
-
-### Community 1490 - "WP 7.0B — Platform Consumption Matrix"
-Cohesion: 0.40
-Nodes (4): Reading the Matrix, Related Documents, Status, WP 7.0B — Platform Consumption Matrix
-
 ### Community 1492 - "TempestOS v0.8.0 — Work Packages"
 Cohesion: 0.29
 Nodes (6): Original Text (Historical, Not Corrected Below This Line), Related Documents, Status, TempestOS v0.8.0 — Work Packages, What `v0.8.0` Actually Delivered, Work Packages
-
-### Community 1493 - "WP 7.0C — Platform Integration Matrix"
-Cohesion: 0.40
-Nodes (4): Reading the Matrix, Related Documents, Status, WP 7.0C — Platform Integration Matrix
-
-### Community 1494 - "WP 9.1A — Requirements Management Workspace — Engineering Review Report"
-Cohesion: 0.40
-Nodes (4): Purpose, Related Documents, Verdict, WP 9.1A — Requirements Management Workspace — Engineering Review Report
-
-### Community 1495 - "WP 9.9.0 — Release Preparation & Product Baseline — Engineering Capability Summary (Second Pass)"
-Cohesion: 0.29
-Nodes (6): Capability Table — Unchanged From the First Pass, Engineering Domain — Now-Documented Foundation, Purpose, Related Documents, Verdict, WP 9.9.0 — Release Preparation & Product Baseline — Engineering Capability Summary (Second Pass)
 
 ### Community 1496 - "WP 9.9.1 — Final Release Checklist"
 Cohesion: 0.29
@@ -6352,16 +6115,12 @@ Cohesion: 0.29
 Nodes (6): file_count, files, generated, generator, package, version
 
 ### Community 1516 - "material-selection-reference-engine-v1.3.0.py"
-Cohesion: 0.70
+Cohesion: 0.53
 Nodes (4): hard_filter(), satisfies(), select(), _value()
 
 ### Community 1519 - "Decision Register"
 Cohesion: 0.33
 Nodes (5): Common Pattern, Cross-Reference Check, Decision Register, Register Metadata, Relationship to the ADR Register
-
-### Community 1520 - "FinancialPeriodLabel"
-Cohesion: 0.40
-Nodes (3): FinancialPeriodLabel, Label, Period
 
 ### Community 1521 - "Engineering Standards Register"
 Cohesion: 0.33
@@ -6371,10 +6130,6 @@ Nodes (5): Coding Standards Hierarchy (Engineering Governance §8), Cross-Refere
 Cohesion: 0.33
 Nodes (5): Compliance Matrix, Cross-Reference Check, Findings, Governance Register, Register Metadata
 
-### Community 1523 - "RequirementGroupDeletedException"
-Cohesion: 0.40
-Nodes (3): RequirementGroupDeletedException, GroupId, RequirementId
-
 ### Community 1525 - "v0.13.1 — Work Packages"
 Cohesion: 0.33
 Nodes (5): Related Documents, Scope of this release, Status, v0.13.1 — Work Packages, Where the Work Package ledger lives
@@ -6383,17 +6138,9 @@ Nodes (5): Related Documents, Scope of this release, Status, v0.13.1 — Work Pa
 Cohesion: 0.33
 Nodes (5): Register work, Related Documents, Validation, What was written, WP 16.2B — Academy Retrospective Backfill
 
-### Community 1529 - "WP 7.2C — Testing Strategy"
-Cohesion: 0.33
-Nodes (5): Baseline, Cross-Contract Testing Observations, Related Documents, Test Category Definitions (Reused, Unchanged), WP 7.2C — Testing Strategy
-
 ### Community 1530 - "WP 8.9.0 — Release Preparation & Product Baseline — Release Checklist"
 Cohesion: 0.33
 Nodes (5): Checklist, Merge Readiness, Purpose, Related Documents, WP 8.9.0 — Release Preparation & Product Baseline — Release Checklist
-
-### Community 1531 - "ScenarioRecords"
-Cohesion: 0.40
-Nodes (4): ScenarioRecords, CandidateMaterials, CandidateProcesses, ScenarioRules
 
 ### Community 1533 - "Steel Catalogue v0.6.0"
 Cohesion: 0.33
@@ -6487,10 +6234,6 @@ Nodes (4): Cross-Reference Check, Entries, Register Metadata, Risk Register (Gov
 Cohesion: 0.40
 Nodes (4): Related Documents (Prepared in Advance), Status, v0.6.0 Retrospective — "Platform Services", What This Document Will Be
 
-### Community 1564 - "WP 7.1A — Engineering Data Model — Engineering Review Report"
-Cohesion: 0.12
-Nodes (13): Constraint Checklist, Findings Requiring Disclosure, Platform Impact Assessment, Purpose, Related Documents, Verdict, WP 7.1A — Engineering Data Model — Engineering Review Report, Constraint Checklist (+5 more)
-
 ### Community 1565 - "Core metal population"
 Cohesion: 0.40
 Nodes (4): Core metal population, Engineering Knowledge Foundation v1.4.0, Immediate benefit, Trust boundary
@@ -6579,10 +6322,6 @@ Nodes (4): Completion, Current maturity, Engineering Knowledge Foundation — WP
 Cohesion: 0.40
 Nodes (4): Current evidence milestone, Engineering Knowledge Foundation — WP Status v2.0.0, Next, Workstream completion
 
-### Community 1588 - "WP 7.2B — Required ADR Catalogue"
-Cohesion: 0.25
-Nodes (7): ADR-0058 — Requirements Platform: Classification, Storage, and Relationship to the Engineering Data Model, ADR-0060 — Requirement Concurrency and Traceability Integrity Model, Cross-Reference Check, Related Documents, Status, The List, WP 7.2B — Required ADR Catalogue
-
 ### Community 1591 - "TempestOS v0.6.0 — Work Packages"
 Cohesion: 0.50
 Nodes (3): How to Read This Document, Status, TempestOS v0.6.0 — Work Packages
@@ -6611,10 +6350,6 @@ Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify refer
 Cohesion: 0.50
 Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
-### Community 1598 - "WP 7.2C — Requirements & Verification Platform Contract Review — Lessons Learned"
-Cohesion: 0.25
-Nodes (7): 2. Reserving a relationship-kind constant is nearly free; reserving a domain concept is not — the two should not be evaluated by the same standard, 3. Disclosing a real, structural limitation is stronger governance than presenting an elegant design as complete, 4. A contract review that finds nothing new beyond its own architecture review is itself informative, not merely uneventful, Recommendations, Related Documents, Status, WP 7.2C — Requirements & Verification Platform Contract Review — Lessons Learned
-
 ### Community 1608 - ".Layout"
 Cohesion: 0.13
 Nodes (4): ComposedLayout, ShellActionCommand, Action, ShellActionCommandHandler
@@ -6627,21 +6362,9 @@ Nodes (6): 1. `TD-26` — Resolved, 2. `TD-37` — Resolved, 4. Register Arithme
 Cohesion: 0.29
 Nodes (6): 1. Scope, 2. New Findings, 4. Honest, Disclosed Absences — Security Relevance, 5. Recommendation, Purpose, WP 10.2A — Security Review
 
-### Community 1712 - "WP 7.2A — Programme Comparison Matrix"
+### Community 1719 - "WP 9.5A — Manufacturing Workspace — Technical Debt Assessment"
 Cohesion: 0.29
-Nodes (6): Matrix, Purpose, Related Documents, Scoring Methodology, Sensitivity Check, WP 7.2A — Programme Comparison Matrix
-
-### Community 1713 - "WP 7.2B — Security Architecture"
-Cohesion: 0.29
-Nodes (6): Purpose, Related Documents, Status, Summary, What This Document Deliberately Does Not Do, WP 7.2B — Security Architecture
-
-### Community 1715 - "WP 7.3A — Requirements Engine — Systems Engineering Impact Assessment"
-Cohesion: 0.29
-Nodes (6): Confirms Rather Than Redesigns, Purpose, Related Documents, Verdict, What Remains Outside This Work Package's Own Scope, WP 7.3A — Requirements Engine — Systems Engineering Impact Assessment
-
-### Community 1719 - "LifecycleState"
-Cohesion: 0.01
-Nodes (158): 10. Trade-offs, 10. Trade-offs, 11. Common Mistakes, 12. Future Evolution, 13. Key Takeaways, 1. Introduction, 2. Purpose, 3. Background (+150 more)
+Nodes (6): New Items, Purpose, Related Documents, `TD-33` — `EngineeringCockpit.FormatCoverage`'s Own Zero-Denominator Text Is Hardcoded Requirements-Specific, Inaccurate When Reused by a Different Discipline's Own Coverage Card, Verdict, WP 9.5A — Manufacturing Workspace — Technical Debt Assessment
 
 ### Community 1726 - "Engineering Evolution Register"
 Cohesion: 0.33
@@ -6650,26 +6373,6 @@ Nodes (5): Coverage Note, Cross-Reference Check, Engineering Evolution Register,
 ### Community 1727 - "Traceability Matrix"
 Cohesion: 0.33
 Nodes (5): Cross-Reference Check, Reason (Not Yet Applicable Capabilities), Register Metadata, Traceability Gaps Found, Traceability Matrix
-
-### Community 1731 - "WP 7.0C — Testing Strategy"
-Cohesion: 0.33
-Nodes (5): Baseline, Cross-Framework Testing Observations, Related Documents, Test Category Definitions (Reused, Unchanged), WP 7.0C — Testing Strategy
-
-### Community 1732 - "WP 7.1F — Engineering Core Consumption Matrix"
-Cohesion: 0.33
-Nodes (5): Cross-Framework Consumption Confirmed Directly, Observations, Purpose, Related Documents, WP 7.1F — Engineering Core Consumption Matrix
-
-### Community 1738 - "WP 9.8B — Platform Service Register Reconciliation — Security Review"
-Cohesion: 0.33
-Nodes (5): New Debt Disclosed by This Review, Purpose, Related Documents, Verdict, WP 9.8B — Platform Service Register Reconciliation — Security Review
-
-### Community 1748 - "TempestOS v0.4.0 — Risk Register"
-Cohesion: 0.40
-Nodes (4): How to Use This Document, Purpose, Risks Considered and Not Included, TempestOS v0.4.0 — Risk Register
-
-### Community 1750 - "WP 9.0A — Mechanical Product Structure — Security Review Report"
-Cohesion: 0.40
-Nodes (4): New Debt Disclosed by This Review, Related Documents, Verdict, WP 9.0A — Mechanical Product Structure — Security Review Report
 
 ### Community 1752 - "InvoiceNumberHolder"
 Cohesion: 0.40
@@ -6680,24 +6383,24 @@ Cohesion: 0.50
 Nodes (4): InvoiceDraftChangeOutcome, Applied, Blocked, NotDraft
 
 ## Knowledge Gaps
-- **15448 isolated node(s):** `session-start.sh script`, `package`, `version`, `generated`, `generator` (+15443 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 21956 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **462 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **15467 isolated node(s):** `session-start.sh script`, `package`, `version`, `generated`, `generator` (+15462 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 22001 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **458 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Entries` connect `Entries` to `.Register`, `FinancialScenario`, `ReferenceQuantityValue`, `Tempest.Core.Persistence`, `.EveryConcreteKind`, `Tempest.Core.BusinessGovernance`, `Calculation`, `CustomerQuotation`, `CommandResult`, `IReferencePinResolver`, `StandardClassification`, `TempestHostBuilder`, `CommercialFixtures`, `Quantity`, `IEngineeringObject`, `.RenderCurrentModuleAsync`, `CalculationTemplateRegistry`, `IPAsset`, `Entries — Technical Debt (Expected to Eventually Be Addressed)`, `PipelineStage`, `EngineeringDomainContext`, `ISessionPrincipal`, `Unit`, `ReportResult`, `DocumentObjectFactoryRegistry`, `.Verified`, `SourcingComparison`, `ReferenceLibrarySummary`, `ConsiderationKind`, `PurchaseOrder`, `EngineeringObjectBase`, `ManufacturingObjectFactoryRegistry`, `IDiagnosticsProvider`, `ProcessFamily`, `RecordVerificationResultCommand`, `ReferenceDataCatalog`, `IReferenceRecord`, `IssuedContract`, `ConstraintKind`, `EngineeringDocumentStore`, `BearingSeed`, `WorkspaceManager`, `.StartAsync`, `OperatingScenario`, `.Quantity`, `CalculationException`, `PlatformVersionProvider`, `Opportunity`, `StandardQuery`, `VerificationContext`, `NonConformance`, `SupersededEngineeringObjectException`, `IWorkspaceManager`, `LeadTimeRecord`, `.ResolveOwningProjectAsync`, `EngineeringTemplate`, `CalculationInputInvalidException`, `ReferencePin`, `ReferenceReviewService`, `BusinessRisk`, `CommercialApplicability`, `DesignReviewPack`, `SupplierRecord`, `RiskAndInsuranceTests`, `WorkspaceDockingComposer`, `DeterminationState`, `.ListAsync`, `RunMacroCommand`, `FastenerDefinition`, `IValidationDiagnostic`, `CalculationPack`, `PlatformPrincipal`, `LicenseProvider`, `EngineeringChallenge`, `WorkspaceShell`, `ProcessCostRecord`, `App`, `TradeStudyRecord`, `ManufacturingRequirementSet`, `BearingDefinition`, `Fact`, `ConstantLibraryTests`, `.ValidateDefinitionAsync`, `AsyncKeyedLock`, `RequirementsService`, `TechnicalDocument`, `Fact`, `CommandDescriptor`, `EngineeringCockpit`, `BusinessRecord`, `RuleDefinition`, `ComponentQuery`, `LifecycleState`, `PromptRecord`, `.FindAsync`, `MacroManager`, `Money`, `CalculationCatalogueEntry`, `AuditRecord`, `EventBus`, `ConstantDefinition`, `WorkedExample`, `.RecordAsync`, `ProcessSubject`, `.BuildCatalog`, `ProjectDirectory`, `ReviewRecord`, `GovernedBracketCheckService`, `SessionPrincipal`, `OperationalFacts`, `MaterialSeed`, `IServiceCollection`, `BearingQuery`, `VerificationArtefact`, `SettingsProvider`, `LeadOrigin`, `NotificationDispatcher`, `DesignRuleScope`, `ReferenceRange`, `AcademyNode`, `.FirstAcquisition`, `StandardLibraryTests`, `.AssertClose`, `DecisionTree`, `MaterialRequirementSet`, `DecisionGate`, `ResourceCapacity`, `TradeStudyConsideration`, `StandardDefinition`, `QuantityComparisonExpression`, `FakeSubject`, `SeedHarness`, `ProjectSummary`, `BracketCalculationWorkbench`, `RateCard`, `JsonExportFormat`, `ReferenceValue`, `ProjectTimelineView`, `StandardEquivalence`, `ReviewDefinition`, `Organisation`, `ProjectTasksView`, `StandardReference`, `TempestHost`, `DecisionNode`, `ProjectMilestoneService`, `SettingsDocument`, `RuleQuery`, `ProjectWorkspaceView`, `ProjectRisksView`, `ClauseCategory`, `LicenseValidator`, `StandardSeed`, `GlobalNavigationRail`, `Permission`, `CompositeLogSink`, `BearingCatalog`, `TradeStudyDefinition`, `SeedSources`, `Tempest.Core.ReferenceData`, `RuleApplicability`, `ReportingService`, `CommercialSeed`, `ICommandRegistry`, `ReportRequest`, `CalculationContext`, `MaterialFamily`, `FinancialEntry`, `EngineeringEvidence`, `ReferenceComparisonCell`, `MaterialDefinition`, `ReferenceSeedService`, `StandardPublicationStatus`, `LeadTimeDuration`, `PipelinePosition`, `IPlatformNotification`, `EngineeringCalculationRegister`?**
-  _High betweenness centrality (0.235) - this node is a cross-community bridge._
-- **Why does `Entries — Technical Debt (Expected to Eventually Be Addressed)` connect `Entries — Technical Debt (Expected to Eventually Be Addressed)` to `.Register`, `ModuleLifecycleManager`, `.EveryConcreteKind`, `Calculation`, `CommandResult`, `MechanicalProductStructureSampleModule`, `IReferencePinResolver`, `Quantity`, `IEngineeringObject`, `.RenderCurrentModuleAsync`, `FocusVisibleStyleTests`, `IRequirement`, `CalculationTemplateRegistry`, `PluginManifestDiscoveryService`, `ProjectModel`, `ISessionPrincipal`, `EngineeringDomainContext`, `DocumentAreaView`, `DocumentObjectFactoryRegistry`, `ProjectExplorerView`, `.ValidateAsync`, `ReferenceLibrarySummary`, `MechanicalObjectFactoryRegistry`, `EngineeringObjectBase`, `ManufacturingObjectFactoryRegistry`, `IDiagnosticsProvider`, `ProcessFamily`, `BulkSetRequirementStatusCommand`, `ReferenceDataCatalog`, `DigitalThreadGraphModel`, `EngineeringDocumentStore`, `WorkspaceManager`, `WorkflowInteractionTests`, `KindEligibilityInvariantTests`, `EngineeringObjectStateStore`, `InMemoryEngineeringObjectRepository`, `AttachmentViewerLauncher`, `SampleSeparationTests`, `PluginAssemblyLoader`, `InMemoryQueryablePersistenceStore`, `VerificationContext`, `SupersededEngineeringObjectException`, `IWorkspaceManager`, `WorkspaceSelection`, `R7RegressionProofTests`, `.ResolveOwningProjectAsync`, `CalculationInputInvalidException`, `RecordedEventA`, `.Resolve`, `ReferenceReviewService`, `DocumentViewerView`, `WorkspaceDockingComposer`, `TempDirectory`, `.ListAsync`, `CockpitReadScope`, `CalculationPack`, `WP 15.2A — Desktop Test Suite Persistence Root Cleanup`, `WorkspaceLayoutTree`, `WorkspaceShell`, `App`, `AttachmentContentStore`, `EngineeringObjectFactory`, `Fact`, `.BuildRequirements`, `.RegisterAll`, `AsyncKeyedLock`, `RequirementsService`, `CommandDescriptorBindingTests`, `ObjectEditorView`, `DocumentPageSourceTests`, `IModule`, `RibbonView`, `EngineeringCockpit`, `.NewContext`, `LifecycleState`, `Entries`, `MacroManager`, `.FindAsync`, `.RestoreAsync`, `CalculationModulesView`, `WorkspaceViewCoordinator`, `EventBus`, `MechanicalProductStructureNodeProvider`, `DocumentViewSession`, `UndoableAction`, ``WP 10.3A` — Engineering Object Editors`, `.RecordAsync`, `TaskWorkState`, `ProjectDirectory`, `GovernedBracketCheckService`, `Decision`, `VerificationRecordReader`, `Fact`, `WorkspaceLayoutController`, `IServiceCollection`, `Register Metadata`, `VerificationArtefact`, `.GetReferencesAsync`, `SettingsProvider`, `.RegisterRehydrators`, `WorkspaceLayoutHost`, `.AssertClose`, `CommandContext`, `PersistenceStoreHostileNameTests`, `EngineeringCalculationView`, `.BuildValidPluginAssembly`, `ProjectSummary`, `PdfDocumentPageSource`, `DocumentsNodeProvider`, `NavigationService`, `.AnArchivedProject_DisablesEveryReachableWriteControl_WithTheTooltip_AndReopenStaysLiveButIsHonestlyRefused`, `.BuildServices`, `TempestLoggerProvider`, `PersistenceStoreUnavailableException`, `TempestHost`, `ProjectMilestoneService`, `SettingsDocument`, `MoveRequirementCommand`, `ProjectWorkspaceView`, `WorkspaceLayoutHostTests`, `ProjectTaskService`, `Rig`, `GlobalNavigationRail`, `Permission`, `.Baseline`, `.Status`, `CompositeLogSink`, `BearingCatalog`, `LoggerTests`, `RestApiHostedServiceTests`, `IWorkspaceCommand`, `ProjectTaskAcceptanceTests`, `DocumentViewport`, `ICommandRegistry`, `WorkspacePanelRegistry`, `CalculationContext`, `.BuildRealStack`, `FinancialEntry`, `EngineeringEvidence`, `ReferenceSeedService`, `.Draft`, `.BuildAsync`, `.StartAsync`, `IPlatformNotification`, `EngineeringCalculationRegister`?**
-  _High betweenness centrality (0.087) - this node is a cross-community bridge._
-- **Why does `EngineeringDomainContext` connect `EngineeringDomainContext` to `.Register`, `.Journey_RecordTimeAndCompleteADeliverable_HomeShowsTheFiveCards_AndThePlaceholderIsGone`, `.Journey_SetAMilestone_AddADeliverable_LinkWork_ThenRelaunch`, `Tempest.Core.Persistence`, `.EveryConcreteKind`, `ExpenseEntryPrompt`, `ProjectDeliverablesView`, `Calculation`, `CommandResult`, `MechanicalProductStructureSampleModule`, `UndeleteCalculationObjectCommand`, `.EveryStatusAndCompletion_LandsInItsOwnGroup`, `IEngineeringObject`, `.RenderCurrentModuleAsync`, `QuotationNodeProvider`, `Project`, `CalculationTemplateRegistry`, `.WeekOf`, `Entries — Technical Debt (Expected to Eventually Be Addressed)`, `ISessionPrincipal`, `DocumentAreaView`, `DocumentObjectFactoryRegistry`, `ProjectExplorerView`, `CalculationModuleDescriptor`, `ReviewQueueExportAdapter`, `MechanicalObjectFactoryRegistry`, `EngineeringAreaView`, `RecordVerificationResultCommand`, `XeroExpenseBillPushHandler`, `EngineeringObjectBase`, `IssueEvidenceCommand`, `IDiagnosticsProvider`, `ManufacturingObjectFactoryRegistry`, `.StartAsync`, `DigitalThreadGraphModel`, `WorkspaceManager`, `IWorkspaceView`, `EngineeringObjectStateStore`, `InMemoryEngineeringObjectRepository`, `EvidenceWorkspaceView`, `InMemoryQueryablePersistenceStore`, `TimesheetEntryPrompt`, `.DispatchAsync`, `IWorkspaceManager`, `SupersededEngineeringObjectException`, `R7RegressionProofTests`, `ProjectGovernanceTests`, `IValidationResult`, `Evidence`, `.List`, `CreateEvidenceFromFilesCommand`, `TempDirectory`, `WorkspaceDockingComposer`, `.StartAsync`, `.ListAsync`, `IWorkspaceViewFactory`, `ITempestHost`, `IOrganisationCatalog`, `LicenseProvider`, `XeroDocumentRef`, `App`, `.NewContextOver`, `EngineeringObjectFactory`, `RequirementsService`, `CalculationsNodeProvider`, `ObjectEditorView`, `.NewLifetime`, `IModule`, `EngineeringCockpit`, `.NewContext`, `ProjectCommercialWorkspaceTests`, `v0.16.0 — Pre-Release Integration Build Report`, `.BuildRig`, `Entries`, `.DigitalThreadGraph_ResetViewButton_ResolvedAccessibleName_IsResetView_NotTheStackPanelTypeName`, `.CreateAsync`, `WorkspaceViewCoordinator`, `AccountsSnapshot`, `MechanicalProductStructureNodeProvider`, `DocumentsWorkspaceView`, `ManufacturingWorkspaceView`, `IPersistenceTransaction`, `VerificationActivityWorkspaceView`, `UndoCompensationJourneyTests`, `ManufacturingNodeProviderAndFacetsTests`, `.CtrlShiftC_ARealPointerClickInTheStructureTab_CopiesThePart_AndTheOutcomeIsVisible`, `ProjectGovernanceAcceptanceTests`, `ProjectDirectory`, `AccountsRefreshService`, `Decision`, `VerificationRecordReader`, `Register Metadata`, `SettingsView`, `QuotationService`, `DurableRig`, `.GetReferencesAsync`, `ProjectQuoteView`, `.RegisterRehydrators`, `.CreateAsync`, `ExpenseObjectView`, `InvoiceRequestObjectView`, `QuotationObjectView`, `PurchaseOrderObjectView`, `TaskObjectView`, `TimesheetEntryObjectView`, `ProjectAreaAcceptanceTests`, `XeroQuotePushHandler`, `CommandContext`, `ManualTask`, `WP 10.3A — Security Review`, `ProjectLifecycleService`, `.CreateProjectAsync`, `WP 15.0B — Desktop Productisation Phase 1`, `MechanicalWorkspaceView`, `DeliverableCompletion`, `ProjectExpense`, `ProjectTimelineView`, `DocumentsNodeProvider`, `.CreateSamplePortfolioAsync`, `SubjectPicker`, `PurchaseOrderService`, `EvidenceObjectView`, `.SaveDraft_SubmitForReview_SamePersonRefused_SecondPersonApprovesR1_ReturnToDraftNeedsAComment_ExportNamedR1`, `ProjectMilestoneTests`, `ProjectTasksView`, `TempestHost`, `ProjectMilestoneService`, `ProjectWorkspaceView`, `ProjectRisksView`, `DeliverableCompletionNodeProvider`, `ProjectTaskService`, `Rig`, `EngineeringStatusExportAdapter`, `GlobalNavigationRail`, `EngineeringCalculationLifecycleTests`, `Permission`, `ExpenseNodeProvider`, `InvoicingService`, `.Build`, `.BuildAsync`, `.StartAsync`, `IWorkspaceCommand`, `.BuildSpineAsync`, `ProjectTaskAcceptanceTests`, `TimesheetService`, `ICommandRegistry`, `HomeDashboardView`, `Rig`, `CommandCompensation`, `FinancialEntry`, `IProjectCommercialService`, `.BuildAsync`, `EvidenceNodeProvider`, `.For`, `WP 8.9.0 — Release Preparation & Product Baseline — Release Readiness Report`, `TimesheetWeekView`, `InvoicingView`, `ProgrammeHierarchyExportAdapter`, `.StartAsync`, `StructuralMutationTests`, `EngineeringCalculationRegister`?**
-  _High betweenness centrality (0.054) - this node is a cross-community bridge._
+- **Why does `Entries` connect `Entries` to `.Register`, `FinancialScenario`, `ComponentFamily`, `Project`, `StandardClassification`, `CalculationsCommandsTests`, `CustomerQuotation`, `CommandResult`, `IReferencePinResolver`, `Quantity`, `MechanicalProductStructureSampleModule`, `CommercialFixtures`, `TempestHostBuilder`, `IEngineeringObject`, `MaterialCriterion`, `.RenderCurrentModuleAsync`, `IRequirementsService`, `CalculationInputInvalidException`, `IPAsset`, `ICommandRegistry`, `PipelineStage`, `EngineeringDomainContext`, `ISessionPrincipal`, `IPLicence`, `.Verified`, `SourcingComparison`, `StandardValidationService`, `.PriceAsync`, `PurchaseOrder`, `EngineeringObjectBase`, `ManufacturingObjectFactoryRegistry`, `PluginAssemblyLoader`, `ProcessDefinition`, `.BuildContext`, `IReferenceRecord`, `LessonRecord`, `IssuedContract`, `ConstraintKind`, `EngineeringDocumentNotFoundException`, `SourceCitation`, `WorkspaceManager`, `.StartAsync`, `OperatingScenario`, `.Quantity`, `EngineeringObjectStateStore`, `InMemoryEngineeringObjectRepository`, `Money`, `CommandHandlerTable`, `CurrentPrincipalAccessor`, `PlatformVersionProvider`, `Opportunity`, `StandardQuery`, `VerificationContext`, `NonConformance`, `IWorkspaceView`, `LeadTimeRecord`, `AssetStanding`, `EngineeringTemplate`, `.ResolveOwningProjectAsync`, `3. The shared core`, `EventBus`, `ReferenceReviewService`, `BusinessRisk`, `CommercialApplicability`, `DesignReviewPack`, `SupplierRecord`, `Dimension`, `EngineeringWorkspaceComposer`, `RelationshipCategory`, `IEngineeringDocumentStore`, `IVerificationRecord`, `RunMacroCommand`, `FastenerDefinition`, `IValidationDiagnostic`, `CalculationPack`, `PlatformPrincipal`, `Entries`, `EngineeringChallenge`, `WorkspaceShell`, `ProcessCostRecord`, `App`, `.Warning`, `TradeStudyRecord`, `ManufacturingRequirementSet`, `RuleSeverity`, `KnowledgeProvenance`, `Fact`, `ConstantDefinition`, `ProcessFamily`, `.ValidateDefinitionAsync`, `AsyncKeyedLock`, `RequirementsService`, `TechnicalDocument`, `CalculationTemplateRegistry`, `Fact`, `TechnicalDocumentType`, `CommandDescriptor`, `BusinessRecord`, `RuleDefinition`, `ComponentQuery`, `MacroManager`, `PromptRecord`, `BusinessAuthorisation`, `CalculationCatalogueEntry`, `AuditRecord`, `EffectivePeriod`, `BudgetPosition`, `NavigationItem`, `FastenerQuery`, `ReferenceQuantityValue`, `AssetFixtures`, `WorkedExample`, `CustomersSuppliersView`, `Current Work Package`, `.Compare`, `GovernedBracketCheckService`, `IPersistenceStore`, `.BuildCatalog`, `ReviewRecord`, `IPermissionEvaluator`, `CostComponentKind`, `BracketVerificationView`, `OperationalFacts`, `.List`, `ISettingsProvider`, `BearingQuery`, `VerificationArtefact`, `DesignRuleScope`, `ReferenceRange`, `AcademyNode`, `ReportsView`, `ThermalResistanceChainCalculationDefinition`, `DecisionTree`, `MaterialRequirementSet`, `DecisionGate`, `IExportable`, `ResourceCapacity`, `TradeStudyConsideration`, `ReviewParticipantRole`, `StandardDefinition`, `FakeSubject`, `TradeStudyServiceTests`, `Interaction`, `SeedHarness`, `DataCategory`, `IDiagnosticsProvider`, `ProjectSummary`, `BracketCalculationWorkbench`, `RateCard`, `JsonExportFormat`, `BearingDefinition`, `ProjectTimelineView`, `.Verified`, `ThermalConductivity`, `StandardEquivalence`, `ReviewDefinition`, `Organisation`, `RecordingLogSink`, `EngineeringAssetSeed`, `ProjectMilestoneTests`, `ProjectTasksView`, `StandardReference`, `DecisionNode`, `SourcingCandidate`, `SettingsDocument`, `ICommand`, `SupplierIdentity`, `AssetApplicability`, `StandardComparisonProperties`, `ContractTemplate`, `IPAssetQuery`, `StandardSeed`, `Entries — Technical Debt (Expected to Eventually Be Addressed)`, `Verification of "Implemented" Status`, `ReferenceValidationState`, `VerificationStanding`, `TradeStudyDefinition`, `RateCardCatalog`, `Tempest.Core.ReferenceData`, `DataAsset`, `ProjectDecisionEntry`, `RuleApplicability`, `IReportingService`, `CommercialSeed`, `ILogger`, `CostFigure`, `CalculationContext`, `ISupplierCatalog`, `MaterialDefinition`, `FinancialEntry`, `EngineeringEvidence`, `FastenerFamily`, `LeadTimeKind`, `ReferenceSeedService`, `StandardPublicationStatus`, `Quantity`, `Group B — Engineering Intelligence: Completion Report`, `PipelinePosition`, `SourcingCriterion`, `CommercialQuality`, `IPlatformNotification`, `EngineeringCalculationRegister`?**
+  _High betweenness centrality (0.231) - this node is a cross-community bridge._
+- **Why does `Entries — Technical Debt (Expected to Eventually Be Addressed)` connect `Entries — Technical Debt (Expected to Eventually Be Addressed)` to `.Register`, `ModuleLifecycleManager`, `Project`, `CalculationsCommandsTests`, `IModule`, `CommandResult`, `MechanicalProductStructureSampleModule`, `IReferencePinResolver`, `Quantity`, `IEngineeringObject`, `.RenderCurrentModuleAsync`, `StatusBarView`, `IRequirementsService`, `CalculationInputInvalidException`, `PluginManifestDiscoveryService`, `ProjectModel`, `ICommandRegistry`, `ISessionPrincipal`, `EngineeringDomainContext`, `DocumentAreaView`, `Unit`, `ICommandHandler`, `ProjectExplorerView`, `EngineeringDomainSampleModule`, `SetBomLineCommand`, `EngineeringObjectBase`, `ManufacturingObjectFactoryRegistry`, `PluginAssemblyLoader`, `ProcessDefinition`, `RequirementPriority`, `IReferenceRecord`, `DigitalThreadGraphModel`, `EngineeringDocumentNotFoundException`, `ToastHost`, `WorkspaceManager`, `InputDialog`, `EngineeringObjectStateStore`, `InMemoryEngineeringObjectRepository`, `AttachmentViewerLauncher`, `SampleSeparationTests`, `CurrentPrincipalAccessor`, `IConfigurationProvider`, `VerificationContext`, `SupersededEngineeringObjectException`, `PersistenceStoreUnavailableException`, `IFamilySpecificState`, `IWorkspaceView`, `WorkspaceSelection`, `IValidationResult`, `.ResolveOwningProjectAsync`, `Group A — Engineering Reference Data: Completion Report`, `EventBus`, `ReferenceReviewService`, `DocumentViewerView`, `IWorkspaceCommand`, `EngineeringWorkspaceComposer`, `TempDirectory`, `InMemoryQueryablePersistenceStore`, `IEngineeringDocumentStore`, `IVerificationRecord`, `WP-E — Async/Threading Hardening and the Cockpit Read Scope`, `RuntimeModuleManager`, `PlatformPrincipal`, `Entries`, `WP 15.2A — Desktop Test Suite Persistence Root Cleanup`, `WorkspaceLayoutTree`, `WorkspaceShell`, `App`, `.Warning`, `EngineeringObjectFactory`, `Fact`, `.BuildRequirements`, `ICalculationDefinition`, `AsyncKeyedLock`, `RequirementsService`, `CommandDescriptorBindingTests`, `CalculationTemplateRegistry`, `ObjectEditorView`, `DocumentPageSourceTests`, `IHostedService`, `RibbonView`, `EngineeringCockpit`, `Entries`, `MacroManager`, `WP 15.0A — Desktop Shell Brand Recovery & Windows Startup Crash Fix`, `WorkspaceViewCoordinator`, `BudgetPosition`, `NavigationItem`, `MechanicalProductStructureNodeProvider`, `.Create`, `Current Work Package`, `CommandPaletteOverlay`, `GovernedBracketCheckService`, `IPersistenceStore`, `TaskWorkState`, `IPermissionEvaluator`, `BracketVerificationView`, `CancellationToken`, `EngineeringCalculationsWorkspaceSampleModule`, `Fact`, `ReflectionFrameworkDiscoveryService`, `WorkspaceLayoutController`, `LinkRequirementCommand`, `CockpitView`, `SettingsView`, `VerificationArtefact`, `RequirementStatus`, `.RegisterRehydrators`, `WorkspaceLayoutHost`, `ReportsView`, `.WithRegistryAsync`, `CommandContext`, `PersistenceStoreHostileNameTests`, `EngineeringCalculationView`, `.BuildValidPluginAssembly`, `IDiagnosticsProvider`, `ProjectSummary`, `PdfDocumentPageSource`, `DocumentsNodeProvider`, `.WaitUntilAsync`, `.BuildServices`, `IServiceCollection`, `RecordingLogSink`, `EngineeringAssetSeed`, `ProjectMilestoneTests`, `How to Read an Entry`, `SettingsDocument`, `ICommand`, `AssetApplicability`, `ProjectWorkspaceView`, `WorkspaceLayoutHostTests`, `WorkPriority`, `IDocumentPageSource`, `Rig`, `Verification of "Implemented" Status`, `.Status`, `ReferenceValidationState`, `RestApiHostedServiceTests`, `ProjectTaskAcceptanceTests`, `DocumentViewport`, `ILogger`, `PluginComponentPrincipalRegistry`, `CalculationContext`, `.BuildRealStack`, `ReferenceSeedService`, `.BuildAsync`, `.StartAsync`, `IPlatformNotification`, `EngineeringCalculationRegister`?**
+  _High betweenness centrality (0.114) - this node is a cross-community bridge._
+- **Why does `EngineeringDomainContext` connect `EngineeringDomainContext` to `.Register`, `.Journey_RecordTimeAndCompleteADeliverable_HomeShowsTheFiveCards_AndThePlaceholderIsGone`, `.Journey_SetAMilestone_AddADeliverable_LinkWork_ThenRelaunch`, `Tempest.Core.Persistence`, `Project`, `CalculationsCommandsTests`, `CompleteDeliverableCommand`, `CommandResult`, `MechanicalProductStructureSampleModule`, `UndeleteCalculationObjectCommand`, `.CreateAsync`, `InvoicingView`, `IEngineeringObject`, `QuotationNodeProvider`, `StatusBarView`, `TimesheetEntryNodeProvider`, `ICommandRegistry`, `ISessionPrincipal`, `DocumentAreaView`, `ICommandHandler`, `ProjectExplorerView`, `CalculationModuleDescriptor`, `EngineeringDomainSampleModule`, `ReviewQueueExportAdapter`, `SetBomLineCommand`, `PurchaseOrderNodeProvider`, `.BuildViews`, `.BuildContext`, `XeroExpenseBillPushHandler`, `EngineeringObjectBase`, `IssueEvidenceCommand`, `ManufacturingObjectFactoryRegistry`, `.StartAsync`, `DigitalThreadGraphModel`, `ToastHost`, `WorkspaceManager`, `DeliverableCompletionObjectView`, `EngineeringObjectStateStore`, `InMemoryEngineeringObjectRepository`, `Money`, `CurrentPrincipalAccessor`, `TimesheetEntryPrompt`, `ProjectDetailsView`, `SupersededEngineeringObjectException`, `PersistenceStoreUnavailableException`, `IValidationResult`, `EvidenceService`, `EventBus`, `.DispatchAsync`, `TempDirectory`, `RelationshipCategory`, `InMemoryQueryablePersistenceStore`, `IEngineeringDocumentStore`, `.StartAsync`, `IVerificationRecord`, `SqlitePersistenceStore`, `.Build`, `ITempestHost`, `IOrganisationCatalog`, `IPersistenceTransaction`, `.CreatePartAsync`, `XeroDocumentRef`, `.Warning`, `GatedPersistenceStore`, `EngineeringObjectFactory`, `AsyncKeyedLock`, `RequirementsService`, `CalculationTemplateRegistry`, `ObjectEditorView`, `.NewLifetime`, `RibbonView`, `EngineeringCockpit`, `.StartAsync`, `.Dispose`, `v0.16.0 — Pre-Release Integration Build Report`, `Entries`, `AutomationNameResolutionTests`, `.CreateAsync`, `WorkspaceViewCoordinator`, `BudgetPosition`, `AccountsSnapshot`, `MechanicalProductStructureNodeProvider`, `DocumentsWorkspaceView`, `CalculationsWorkspaceView`, `ManufacturingWorkspaceView`, `VerificationActivityWorkspaceView`, `CreateDocumentObjectCommand`, `Current Work Package`, `ManufacturingNodeProvider`, `CommandPaletteOverlay`, `IPersistenceStore`, `ProjectGovernanceAcceptanceTests`, `.CommercialCore_TimeAndDeliverableCompletion_SurviveARestart_WithAuditRows`, `IPermissionEvaluator`, `AccountsRefreshService`, `CancellationToken`, `EngineeringCalculationsWorkspaceSampleModule`, `SettingsView`, `QuotationService`, `RequirementStatus`, `ProjectQuoteView`, `.RegisterRehydrators`, `RequirementsReconciliationService`, `ExpenseObjectView`, `ReportsView`, `InvoiceRequestObjectView`, `IWorkspaceView`, `QuotationObjectView`, `TaskObjectView`, `TimesheetEntryObjectView`, `CommandContext`, `ManualTask`, `ProjectLifecycleService`, `.CreateProjectAsync`, `.NewService`, `ProjectSummary`, `InvoiceExportKit`, `MechanicalWorkspaceView`, `DeliverableCompletion`, `ProjectExpense`, `ProjectTimelineView`, `DocumentsNodeProvider`, `.WaitUntilAsync`, `.CreateSamplePortfolioAsync`, `PurchaseOrderService`, `EvidenceObjectView`, `.SaveDraft_SubmitForReview_SamePersonRefused_SecondPersonApprovesR1_ReturnToDraftNeedsAComment_ExportNamedR1`, `ProjectMilestoneTests`, `ProjectTasksView`, `.CommercialSectionThenTimesheets_FullJourney`, `ProjectWorkspaceView`, `DeliverableCompletionNodeProvider`, `WorkPriority`, `Rig`, `EngineeringStatusExportAdapter`, `Entries — Technical Debt (Expected to Eventually Be Addressed)`, `EngineeringCalculationLifecycleTests`, `Verification of "Implemented" Status`, `.BuildPipeline`, `PurchaseOrdersView`, `InvoicingService`, `.BuildAsync`, `.Browse_WithStubFilePicker_AttachesTheRealFile_SizeHashAuditAndMessage`, `.StartAsync`, `InvoiceRequestStatus`, `ProjectTaskAcceptanceTests`, `ProjectDecisionEntry`, `TimesheetService`, `ILogger`, `.BuildDockingRig`, `HomeDashboardView`, `Rig`, `.BuildAsync`, `EvidenceNodeProvider`, `.For`, `TimesheetWeekView`, `ProgrammeHierarchyExportAdapter`, `.StartAsync`, `StructuralMutationTests`, `EngineeringCalculationRegister`?**
+  _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **Are the 987 inferred relationships involving `TempDirectory` (e.g. with `11. Common Mistakes` and `Observations`) actually correct?**
   _`TempDirectory` has 987 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 852 inferred relationships involving `Entries` (e.g. with `ApiEndpointRegistry` and `ApiException`) actually correct?**
   _`Entries` has 852 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 77 inferred relationships involving `EngineeringDomainContext` (e.g. with `4. Architectural Lessons` and `5. The Design`) actually correct?**
   _`EngineeringDomainContext` has 77 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 450 inferred relationships involving `Entries — Technical Debt (Expected to Eventually Be Addressed)` (e.g. with `ApiRequestHandler` and `.AuthorizeAsync()`) actually correct?**
-  _`Entries — Technical Debt (Expected to Eventually Be Addressed)` has 450 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 451 inferred relationships involving `Entries — Technical Debt (Expected to Eventually Be Addressed)` (e.g. with `ApiRequestHandler` and `.AuthorizeAsync()`) actually correct?**
+  _`Entries — Technical Debt (Expected to Eventually Be Addressed)` has 451 INFERRED edges - model-reasoned connections that need verification._
