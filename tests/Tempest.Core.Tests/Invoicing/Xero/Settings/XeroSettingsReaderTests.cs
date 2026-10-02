@@ -298,6 +298,21 @@ public sealed class XeroSettingsReaderTests
         Assert.Empty(rig.Simulator.Violations);
     }
 
+    // Backlog X1-4: the container builds the reader through its public constructor, which used the system clock
+    // rather than the clock the host composed the Xero client with.
+    [Fact]
+    public async Task TheContainersConstructor_StampsAReadingWithTheXeroClientsClock()
+    {
+        await using var rig = await SettingsRig.CreateAsync();
+        rig.Clock.Advance(TimeSpan.FromDays(400));
+        var reader = new XeroSettingsReader(rig.NewApi(), rig.Cache, rig.SecretStore, rig.Audit);
+
+        var reading = (await reader.RefreshAsync()).Value!;
+
+        Assert.Equal(rig.Clock.GetUtcNow(), reading.ReadAtUtc);
+        Assert.Empty(rig.Simulator.Violations);
+    }
+
     // Backlog X1-3: If-Modified-Since never returns an account deleted in Xero, so a code reused by a new
     // account left the stale one first in the merge and Check answered its status.
     [Fact]

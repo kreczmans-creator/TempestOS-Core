@@ -61,13 +61,13 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
     private readonly object _sync = new();
     private XeroSettingsReading? _last;
 
-    /// <summary>Initialises a new instance of the <see cref="XeroSettingsReader"/> class on the system clock.</summary>
+    /// <summary>Initialises a new instance of the <see cref="XeroSettingsReader"/> class on <paramref name="api"/>'s clock — the one the host composed the Xero client with.</summary>
     /// <param name="api">The typed Xero client.</param>
     /// <param name="cache">Where the last reading is kept.</param>
     /// <param name="secretStore">Where the connected tenant id is kept.</param>
     /// <param name="auditRecorder">Records <see cref="AuditAction"/>.</param>
     public XeroSettingsReader(XeroAccountingApi api, IXeroSettingsCache cache, ISecretStore secretStore, IAuditRecorder auditRecorder)
-        : this(api, cache, secretStore, auditRecorder, TimeProvider.System)
+        : this(api, cache, secretStore, auditRecorder, (api ?? throw new ArgumentNullException(nameof(api))).Time)
     {
     }
 

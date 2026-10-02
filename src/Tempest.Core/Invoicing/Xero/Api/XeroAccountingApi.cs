@@ -54,6 +54,9 @@ public sealed partial class XeroAccountingApi
     private readonly OAuthAuthoriser _authoriser;
     private readonly TimeProvider _time;
 
+    /// <summary>The clock this client reads Xero's answers on — the host's Xero clock, so services built over the client share it.</summary>
+    internal TimeProvider Time => _time;
+
     /// <summary>Initialises a new instance of the <see cref="XeroAccountingApi"/> class.</summary>
     /// <param name="httpClient">The Xero <see cref="HttpClient"/> — its <see cref="HttpClient.BaseAddress"/> is the API root, and its pipeline holds <see cref="XeroWriteSafetyHandler"/> and <see cref="XeroRateLimiter"/> (`TempestHost`), or the in-process simulator in tests.</param>
     /// <param name="authoriser">The Xero <see cref="OAuthAuthoriser"/>; every call asks it for a current access token and the connected tenant.</param>
