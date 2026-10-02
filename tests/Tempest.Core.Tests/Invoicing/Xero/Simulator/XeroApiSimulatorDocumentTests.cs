@@ -329,8 +329,12 @@ public sealed class XeroApiSimulatorDocumentTests
         }
         else
         {
+            // Refused by Xero, but still a D3 breach: TempestOS creates only DRAFT.
             Assert.Equal(HttpStatusCode.BadRequest, reply.Status);
-            Assert.Equal(XeroSimulatorRules.InvoiceTransition, Assert.Single(kit.Simulator.Violations).Rule);
+            Assert.Empty(kit.Simulator.All("Invoices"));
+            Assert.Equal(
+                [XeroSimulatorRules.InvoiceStatusNotDraft, XeroSimulatorRules.InvoiceTransition],
+                kit.Simulator.Violations.Select(v => v.Rule));
         }
     }
 
@@ -832,14 +836,13 @@ public sealed class XeroApiSimulatorDocumentTests
     [InlineData("no-lines", XeroSimulatorRules.RequiredField)]
     [InlineData("sales-tax", XeroSimulatorRules.TaxType)]
     [InlineData("duplicate", XeroSimulatorRules.Duplicate)]
-    [InlineData("billed", XeroSimulatorRules.PurchaseOrderTransition)]
     public async Task A_purchase_order_breaking_a_rule_is_refused(string breakage, string rule)
     {
         using var kit = new SimulatorTestKit();
         var supplier = kit.Simulator.SeedContact("Metals Ltd");
         if (breakage == "duplicate")
             await kit.CreatePurchaseOrderAsync(supplier);
-        var body = SimulatorTestKit.PurchaseOrder(supplier, status: breakage == "billed" ? "BILLED" : "DRAFT");
+        var body = SimulatorTestKit.PurchaseOrder(supplier);
         var order = body["PurchaseOrders"]![0]!.AsObject();
         switch (breakage)
         {

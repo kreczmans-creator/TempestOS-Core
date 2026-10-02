@@ -98,6 +98,9 @@ internal sealed partial class XeroApiSimulator
 
         public List<StoredAttachment> Attachments { get; } = [];
 
+        /// <summary>The <c>LineItemID</c>s whose <c>TaxAmount</c> the simulator computed (rather than the client sent), so it is recomputed on every later write.</summary>
+        public HashSet<string> ComputedTaxLines { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public DateTimeOffset Updated { get; set; }
 
         public string Status => XeroWire.Str(Body, Kind.StatusField) ?? string.Empty;
@@ -179,6 +182,16 @@ internal sealed partial class XeroApiSimulator
                     ValidateUpdate(kind, existing, element, check, context);
             }
 
+            // Xero applies a batch in order, so an element also clashes with
+            // the unique key an earlier, valid element of the same batch claims.
+            if (check.Ok && UniqueKey(kind, element, existing) is { } key
+                && plans.Any(p => p.Check.Ok && string.Equals(UniqueKey(kind, p.Element, p.Existing), key, StringComparison.OrdinalIgnoreCase)))
+            {
+                check.Fail(XeroSimulatorRules.Duplicate, kind == ContactsKind
+                    ? $"The contact name {key} is already assigned to another contact in this request. The contact name must be unique across all active contacts."
+                    : $"{kind.NumberField} {key} is used by another element of this request; it must be unique.");
+            }
+
             plans.Add((element, existing, check));
         }
 
@@ -218,6 +231,27 @@ internal sealed partial class XeroApiSimulator
         }
 
         return SimResponse.Ok(Envelope(kind.Resource, results));
+    }
+
+    /// <summary>
+    /// The unique key <paramref name="element"/> would claim once applied —
+    /// an active contact's name, an ACCREC invoice's number, a quote's or
+    /// purchase order's number — or <see langword="null"/> when it claims none.
+    /// </summary>
+    private static string? UniqueKey(DocumentKind kind, JsonObject element, StoredDocument? existing)
+    {
+        var status = Upper(XeroWire.Str(element, kind.StatusField));
+        if (kind == ContactsKind)
+        {
+            var active = status is null ? existing is null || existing.Status == "ACTIVE" : status == "ACTIVE";
+            return active && XeroWire.Str(element, "Name") is { } name && !string.IsNullOrWhiteSpace(name) ? name.Trim() : null;
+        }
+
+        if (status == "DELETED")
+            return null;
+        if (kind == InvoicesKind && (Upper(XeroWire.Str(element, "Type")) ?? XeroWire.Str(existing?.Body, "Type")) != "ACCREC")
+            return null;
+        return XeroWire.Str(element, kind.NumberField) is { Length: > 0 } number ? number : null;
     }
 
     private static List<JsonObject>? ExtractElements(DocumentKind kind, JsonNode? json)
@@ -264,9 +298,11 @@ internal sealed partial class XeroApiSimulator
             ValidateContactReference(element, check, context, required: true);
             ValidateLines(element, check, type == "ACCPAY" ? LedgerSide.Purchases : LedgerSide.Sales, required: false);
 
-            if (status is "SUBMITTED" or "AUTHORISED")
+            // D3: any create other than DRAFT is a breach, whether Xero then
+            // applies it (SUBMITTED, AUTHORISED) or refuses it (the rest).
+            if (status != "DRAFT")
                 context.Violate(XeroSimulatorRules.InvoiceStatusNotDraft, $"{type} invoice created as {status}; TempestOS creates only DRAFT (D3).");
-            else if (status != "DRAFT")
+            if (status is not ("DRAFT" or "SUBMITTED" or "AUTHORISED"))
                 check.Fail(XeroSimulatorRules.InvoiceTransition, $"An invoice cannot be created as {status}.");
 
             if (type == "ACCREC" && XeroWire.Str(element, "InvoiceNumber") is { } number)
@@ -292,9 +328,9 @@ internal sealed partial class XeroApiSimulator
         ValidateContactReference(element, check, context, required: true);
         ValidateLines(element, check, LedgerSide.Purchases, required: true);
 
-        if (status is "SUBMITTED" or "AUTHORISED")
+        if (status != "DRAFT")
             context.Violate(XeroSimulatorRules.PurchaseOrderStatusNotDraft, $"Purchase order created as {status}; TempestOS creates only DRAFT (D3, Q2).");
-        else if (status != "DRAFT")
+        if (status is not ("DRAFT" or "SUBMITTED" or "AUTHORISED"))
             check.Fail(XeroSimulatorRules.PurchaseOrderTransition, $"A purchase order cannot be created as {status}.");
 
         if (XeroWire.Str(element, "PurchaseOrderNumber") is { } poNumber)
@@ -670,7 +706,10 @@ internal sealed partial class XeroApiSimulator
             SetDate(body, "Date", DateOnly.FromDateTime(Time.GetUtcNow().UtcDateTime));
 
         if (element.TryGetPropertyValue("LineItems", out var linesNode) && linesNode is JsonArray lines)
+        {
             body["LineItems"] = NormaliseLines(lines);
+            doc.ComputedTaxLines.Clear();
+        }
 
         body["LineAmountTypes"] ??= "Exclusive";
         body["CurrencyCode"] ??= "GBP";
@@ -685,7 +724,7 @@ internal sealed partial class XeroApiSimulator
             body["AmountPaid"] ??= 0m;
         }
 
-        Recompute(body);
+        Recompute(body, doc.ComputedTaxLines);
 
         if (kind == InvoicesKind && XeroWire.TextAt(body, "Contact.ContactID") is { } contactId && FindById(ContactsKind, contactId) is { } contact)
         {
@@ -769,8 +808,15 @@ internal sealed partial class XeroApiSimulator
         return result;
     }
 
-    /// <summary>Recomputes line amounts and totals. A line's sent <c>TaxAmount</c> is kept (a bill records the receipt's VAT, design §3); otherwise it is computed from the tax rate.</summary>
-    private void Recompute(JsonObject body)
+    /// <summary>
+    /// Recomputes line amounts and totals. A line's sent <c>TaxAmount</c> is
+    /// kept (a bill records the receipt's VAT, design §3); otherwise it is
+    /// computed from the tax rate and the line is listed in
+    /// <paramref name="computed"/>, so a later write that changes
+    /// <c>LineAmountTypes</c> without resending the lines recomputes it
+    /// rather than keeping a stale figure.
+    /// </summary>
+    private void Recompute(JsonObject body, HashSet<string> computed)
     {
         var mode = XeroWire.Str(body, "LineAmountTypes") ?? "Exclusive";
         decimal subTotal = 0m, totalTax = 0m;
@@ -782,7 +828,8 @@ internal sealed partial class XeroApiSimulator
             line["LineAmount"] = amount;
 
             var rate = _taxRates.FirstOrDefault(r => string.Equals(r.TaxType, XeroWire.Str(line, "TaxType"), StringComparison.OrdinalIgnoreCase))?.EffectiveRate ?? 0m;
-            if (!XeroWire.TryNumber(line["TaxAmount"], out var tax))
+            var lineId = XeroWire.Str(line, "LineItemID") ?? string.Empty;
+            if (computed.Contains(lineId) || !XeroWire.TryNumber(line["TaxAmount"], out var tax))
             {
                 tax = mode.ToUpperInvariant() switch
                 {
@@ -791,6 +838,7 @@ internal sealed partial class XeroApiSimulator
                     _ => Math.Round(amount * rate / 100m, 2, MidpointRounding.AwayFromZero),
                 };
                 line["TaxAmount"] = tax;
+                computed.Add(lineId);
             }
 
             subTotal += string.Equals(mode, "Inclusive", StringComparison.OrdinalIgnoreCase) ? amount - tax : amount;

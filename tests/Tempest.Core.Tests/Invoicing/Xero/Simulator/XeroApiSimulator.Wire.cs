@@ -59,7 +59,9 @@ internal static partial class XeroWire
             return true;
         }
 
-        if (DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
+        // Exact ISO shapes only: no culture-dependent forms (10/02/2026) and
+        // no offsets, which would silently move the calendar date.
+        if (DateTime.TryParseExact(raw, IsoDateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
         {
             date = DateOnly.FromDateTime(parsed);
             return true;
@@ -67,6 +69,8 @@ internal static partial class XeroWire
 
         return false;
     }
+
+    private static readonly string[] IsoDateFormats = ["yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss"];
 
     /// <summary>Parses an instant written as <c>/Date(ms±zzzz)/</c>.</summary>
     public static DateTimeOffset? ParseMsInstant(string? raw)
@@ -138,14 +142,15 @@ internal static partial class XeroWire
     public static Func<JsonObject, bool>? CompileWhere(string where, out string? error)
     {
         error = null;
-        if (where.Contains("||", StringComparison.Ordinal) || OrRegex().IsMatch(where))
+        var clauses = SplitWhere(where, out var hasOr);
+        if (hasOr)
         {
             error = "OR is not supported by the simulator";
             return null;
         }
 
         var predicates = new List<Func<JsonObject, bool>>();
-        foreach (var rawClause in AndRegex().Split(where))
+        foreach (var rawClause in clauses)
         {
             var clause = rawClause.Trim();
             while (clause.StartsWith('(') && clause.EndsWith(')'))
@@ -181,6 +186,79 @@ internal static partial class XeroWire
         return o => predicates.All(p => p(o));
     }
 
+    /// <summary>
+    /// Splits a <c>where=</c> clause on <c>&amp;&amp;</c> / <c>AND</c>
+    /// outside double-quoted strings, and reports whether an <c>||</c> /
+    /// <c>OR</c> appears outside them. Text inside quotes (where <c>\"</c>
+    /// escapes a quote) is never split, so <c>Name=="Barnes AND Noble"</c>
+    /// is one clause.
+    /// </summary>
+    internal static List<string> SplitWhere(string where, out bool hasOr)
+    {
+        hasOr = false;
+        var clauses = new List<string>();
+        var start = 0;
+        var inQuotes = false;
+        for (var i = 0; i < where.Length; i++)
+        {
+            var c = where[i];
+            if (inQuotes)
+            {
+                if (c == '\\')
+                    i++;
+                else if (c == '"')
+                    inQuotes = false;
+                continue;
+            }
+
+            if (c == '"')
+            {
+                inQuotes = true;
+                continue;
+            }
+
+            if (c == '|' && i + 1 < where.Length && where[i + 1] == '|')
+            {
+                hasOr = true;
+                i++;
+                continue;
+            }
+
+            if (c == '&' && i + 1 < where.Length && where[i + 1] == '&')
+            {
+                clauses.Add(where[start..i]);
+                i++;
+                start = i + 1;
+                continue;
+            }
+
+            if (char.IsWhiteSpace(c))
+            {
+                var wordStart = i + 1;
+                var wordEnd = wordStart;
+                while (wordEnd < where.Length && char.IsAsciiLetter(where[wordEnd]))
+                    wordEnd++;
+                if (wordEnd < where.Length && char.IsWhiteSpace(where[wordEnd]))
+                {
+                    var word = where[wordStart..wordEnd];
+                    if (string.Equals(word, "OR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasOr = true;
+                    }
+                    else if (string.Equals(word, "AND", StringComparison.OrdinalIgnoreCase))
+                    {
+                        clauses.Add(where[start..i]);
+                        start = wordEnd + 1;
+                        i = wordEnd;
+                    }
+                }
+            }
+        }
+
+        clauses.Add(where[start..]);
+        return clauses;
+    }
+
     private static bool TryLiteral(string raw, out string? literal)
     {
         literal = null;
@@ -211,12 +289,6 @@ internal static partial class XeroWire
 
     [GeneratedRegex(@"^/Date\((?<ms>-?\d+)(?<offset>[+-]\d{4})?\)/$")]
     private static partial Regex MsDateRegex();
-
-    [GeneratedRegex(@"\s+OR\s+", RegexOptions.IgnoreCase)]
-    private static partial Regex OrRegex();
-
-    [GeneratedRegex(@"\s*&&\s*|\s+AND\s+", RegexOptions.IgnoreCase)]
-    private static partial Regex AndRegex();
 
     [GeneratedRegex(@"^(?<path>[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*)\.(?<fn>Contains|StartsWith|EndsWith)\(""(?<arg>[^""]*)""\)$")]
     private static partial Regex MethodClauseRegex();
