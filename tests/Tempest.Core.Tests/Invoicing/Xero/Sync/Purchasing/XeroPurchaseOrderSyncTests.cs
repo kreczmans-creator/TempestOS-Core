@@ -282,6 +282,61 @@ public sealed class XeroPurchaseOrderSyncTests
     }
 
     [Fact]
+    public async Task Po_RejectedThenRetried_DoesNotTakeOverHandPo()
+    {
+        // Retry makes a second attempt of an entry that never sent a create: no proof the hand order is ours.
+        using var kit = await PurchasingSyncTestKit.CreateAsync();
+        var handEntered = SimulatorTestKit.PurchaseOrder(kit.SupplierContactId, "PO-2026-001");
+        handEntered["PurchaseOrders"]![0]!["Reference"] = "Bookkeeper's own order";
+        var handId = await PutByHandAsync(kit.Simulator, "PurchaseOrders", handEntered);
+
+        var id = Guid.NewGuid();
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id);
+        var entry = Assert.Single(await kit.PlanOrderAsync(id));
+        Assert.Equal(XeroPushOutcome.Rejected, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+
+        Assert.True(await kit.Outbox.RetryAsync(entry.Id));
+        var retried = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(2, retried.Entry.Attempts);
+        Assert.Equal(XeroPushOutcome.Rejected, retried.Result.Outcome);
+        Assert.Null(await kit.OrderLinkAsync(id));
+
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id, PurchaseOrderStatus.Cancelled);
+        await kit.PlanOrderAsync(id);
+        await kit.DrainAsync();
+        Assert.Equal("DRAFT", kit.Simulator.Find("PurchaseOrders", handId)!.Status);
+        Assert.Single(kit.WritesTo("PurchaseOrders")); // The hand order's own PUT only.
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task Po_BlockedForAnUnlinkedSupplier_ThenLinkedAndRetried_DoesNotTakeOverHandPo()
+    {
+        // A Blocked push sent nothing to Xero; its retry is the entry's second attempt.
+        using var kit = await PurchasingSyncTestKit.CreateAsync();
+        var newcoContactId = kit.Simulator.SeedContact("Newco Fixings Ltd");
+        var handEntered = SimulatorTestKit.PurchaseOrder(newcoContactId, "PO-2026-001");
+        handEntered["PurchaseOrders"]![0]!["Reference"] = "Bookkeeper's own order";
+        var handId = await PutByHandAsync(kit.Simulator, "PurchaseOrders", handEntered);
+
+        var id = Guid.NewGuid();
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id, supplier: PurchasingSyncTestKit.UnlinkedReference);
+        var entry = Assert.Single(await kit.PlanOrderAsync(id));
+        Assert.Equal(XeroPushOutcome.Blocked, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+
+        Assert.Equal(ConnectorOutcome.Ok, (await kit.Linker.LinkExistingAsync(PurchasingSyncTestKit.UnlinkedReference, newcoContactId)).Outcome);
+        Assert.True(await kit.Outbox.RetryAsync(entry.Id));
+        Assert.Equal(XeroPushOutcome.Rejected, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+        Assert.Null(await kit.OrderLinkAsync(id));
+
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id, PurchaseOrderStatus.Cancelled, supplier: PurchasingSyncTestKit.UnlinkedReference);
+        await kit.PlanOrderAsync(id);
+        await kit.DrainAsync();
+        Assert.Equal("DRAFT", kit.Simulator.Find("PurchaseOrders", handId)!.Status);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
     public async Task AnOrderIssuedOnTheDaySyncBegan_IsAutomatic_DayGranularity()
     {
         // An order holds an issue date, not an instant: the cut-off compares dates, inclusive (planner remarks).

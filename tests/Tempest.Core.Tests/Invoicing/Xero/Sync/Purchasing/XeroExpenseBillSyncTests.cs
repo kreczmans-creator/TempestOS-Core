@@ -306,6 +306,115 @@ public sealed class XeroExpenseBillSyncTests
         kit.AssertNoViolations();
     }
 
+    /// <summary>A hand bill "NS-9" for the supplier, and an expense under the same number whose first push was Rejected for it.</summary>
+    private static async Task<(PurchasingSyncTestKit Kit, Guid ExpenseId, string HandBillId, string HandBody, XeroOutboxEntry Rejected)> RejectedForAHandBillAsync()
+    {
+        var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var handBillId = await XeroPurchaseOrderSyncTests.PutByHandAsync(
+            kit.Simulator, "Invoices", SimulatorTestKit.Invoice(kit.SupplierContactId, "NS-9", type: "ACCPAY"));
+        var handBody = kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString();
+
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(
+            id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-9", net: 30m, vat: 6m, description: "Delivery");
+        await kit.PlanExpenseAsync(id);
+
+        var step = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        return (kit, id, handBillId, handBody, step.Entry);
+    }
+
+    [Fact]
+    public async Task Bill_RejectedThenAmended_DoesNotTakeOverHandBill()
+    {
+        // A Rejected push sent no create: its Failed (then Superseded) entry is no proof one reached Xero.
+        var rejected = await RejectedForAHandBillAsync();
+        using var kit = rejected.Kit;
+        var (id, handBillId, handBody) = (rejected.ExpenseId, rejected.HandBillId, rejected.HandBody);
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { NetAmount = 40m, VatAmount = 8m };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        var step = Assert.Single(await kit.DrainAsync(), s => s.Entry.Operation == XeroOperation.PushExpenseBill);
+
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Contains("already used in Xero by another bill", step.Result.Reason, StringComparison.Ordinal);
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Equal(handBody, kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString());
+        Assert.Single(kit.WritesTo("Invoices")); // The hand bill's own PUT only.
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task Bill_RejectedThenAmendedThenDeleted_HandBillSurvives()
+    {
+        var rejected = await RejectedForAHandBillAsync();
+        using var kit = rejected.Kit;
+        var (id, handBillId, handBody) = (rejected.ExpenseId, rejected.HandBillId, rejected.HandBody);
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { NetAmount = 40m, VatAmount = 8m };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        await kit.DrainAsync();
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { IsDeleted = true };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        await kit.DrainAsync();
+
+        var hand = kit.Simulator.Find("Invoices", handBillId)!;
+        Assert.Equal("DRAFT", hand.Status);
+        Assert.Equal(handBody, hand.Body.ToJsonString());
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Single(kit.WritesTo("Invoices")); // The hand bill's own PUT only.
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task Bill_RejectedThenRetried_DoesNotTakeOverHandBill()
+    {
+        // Retry makes the entry's second attempt; it still never sent a create.
+        var rejected = await RejectedForAHandBillAsync();
+        using var kit = rejected.Kit;
+        var (id, handBillId, handBody) = (rejected.ExpenseId, rejected.HandBillId, rejected.HandBody);
+
+        Assert.True(await kit.Outbox.RetryAsync(rejected.Rejected.Id));
+        var step = Assert.Single(await kit.DrainAsync());
+
+        Assert.Equal(2, step.Entry.Attempts);
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Equal(handBody, kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString());
+        Assert.Single(kit.WritesTo("Invoices")); // The hand bill's own PUT only.
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task Bill_BlockedForAnUnlinkedSupplier_ThenLinkedAndRetried_DoesNotTakeOverHandBill()
+    {
+        // A Blocked push sent nothing at all to Xero.
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var newcoContactId = kit.Simulator.SeedContact("Newco Fixings Ltd");
+        var handBillId = await XeroPurchaseOrderSyncTests.PutByHandAsync(
+            kit.Simulator, "Invoices", SimulatorTestKit.Invoice(newcoContactId, "NF-1", type: "ACCPAY"));
+        var handBody = kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString();
+
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.UnlinkedReference, supplierInvoiceNumber: "NF-1");
+        await kit.PlanExpenseAsync(id);
+        var blocked = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(XeroPushOutcome.Blocked, blocked.Result.Outcome);
+
+        Assert.Equal(ConnectorOutcome.Ok, (await kit.Linker.LinkExistingAsync(PurchasingSyncTestKit.UnlinkedReference, newcoContactId)).Outcome);
+        Assert.True(await kit.Outbox.RetryAsync(blocked.Entry.Id));
+        var step = Assert.Single(await kit.DrainAsync());
+
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Equal(handBody, kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString());
+        kit.AssertNoViolations();
+    }
+
     [Fact]
     public async Task ALostCreateUnderTheSuppliersNumber_ThenTheExpenseAmended_StillMakesOneBill()
     {

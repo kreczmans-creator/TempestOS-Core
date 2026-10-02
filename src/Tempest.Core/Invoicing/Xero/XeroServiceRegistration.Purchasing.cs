@@ -15,7 +15,7 @@ internal static partial class XeroServiceRegistration
     /// X5's registrations, each service type once (`ADR-0122`):
     /// <see cref="IXeroPurchaseOrderSource"/> (<see cref="DomainXeroPurchaseOrderSource"/>),
     /// <see cref="IXeroExpenseSource"/> (<see cref="DomainXeroExpenseSource"/>),
-    /// and the concrete <see cref="XeroPurchasingSyncState"/>,
+    /// and the concrete <see cref="XeroPurchasingSyncState"/>, <see cref="XeroPurchasingCreateLog"/>,
     /// <see cref="XeroGeneralExpensesContact"/>, <see cref="XeroPurchaseOrderPlanner"/>,
     /// <see cref="XeroExpenseBillPlanner"/>, <see cref="XeroPurchaseOrderPushHandler"/>,
     /// <see cref="XeroExpenseBillPushHandler"/>, <see cref="XeroPurchaseOrderAttachmentHandler"/>
@@ -35,6 +35,7 @@ internal static partial class XeroServiceRegistration
         services.Singleton<IXeroPurchaseOrderSource, DomainXeroPurchaseOrderSource>();
         services.Singleton<IXeroExpenseSource, DomainXeroExpenseSource>();
         services.Singleton<XeroPurchasingSyncState>();
+        services.Singleton<XeroPurchasingCreateLog>();
         services.Singleton<XeroGeneralExpensesContact>();
         services.Singleton<XeroPurchaseOrderPlanner>();
         services.Singleton<XeroExpenseBillPlanner>();

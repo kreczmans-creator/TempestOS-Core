@@ -43,7 +43,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
 {
     private readonly XeroAccountingApi _api;
     private readonly IXeroLinkStore _links;
-    private readonly IXeroOutbox _outbox;
+    private readonly XeroPurchasingCreateLog _creates;
     private readonly IXeroExpenseSource _expenses;
     private readonly XeroContactLinker _contacts;
     private readonly XeroGeneralExpensesContact _generalContact;
@@ -55,7 +55,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
     /// <summary>Initialises a new instance of the <see cref="XeroExpenseBillPushHandler"/> class.</summary>
     /// <param name="api">The typed Xero client (its <see cref="HttpClient"/> holds the safety handler).</param>
     /// <param name="links">The link store (B2).</param>
-    /// <param name="outbox">The outbox (B2): whether an earlier write for the expense already sent a create, before a found bill is called its own.</param>
+    /// <param name="creates">The create log: written just before each create is sent, and read before a bill found in Xero under the supplier's number is called the expense's own.</param>
     /// <param name="expenses">Reads expenses.</param>
     /// <param name="contacts">The X2 linker: the supplier's <c>ContactID</c>, or why the push is Blocked.</param>
     /// <param name="generalContact">The configured "General expenses" contact (Q3).</param>
@@ -66,7 +66,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
     public XeroExpenseBillPushHandler(
         XeroAccountingApi api,
         IXeroLinkStore links,
-        IXeroOutbox outbox,
+        XeroPurchasingCreateLog creates,
         IXeroExpenseSource expenses,
         XeroContactLinker contacts,
         XeroGeneralExpensesContact generalContact,
@@ -77,7 +77,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(links);
-        ArgumentNullException.ThrowIfNull(outbox);
+        ArgumentNullException.ThrowIfNull(creates);
         ArgumentNullException.ThrowIfNull(expenses);
         ArgumentNullException.ThrowIfNull(contacts);
         ArgumentNullException.ThrowIfNull(generalContact);
@@ -86,7 +86,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
 
         _api = api;
         _links = links;
-        _outbox = outbox;
+        _creates = creates;
         _expenses = expenses;
         _contacts = contacts;
         _generalContact = generalContact;
@@ -163,7 +163,11 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
                 if (createBody is null)
                     return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
 
+                // Recorded before it goes, so a lost answer (or a crash mid-request)
+                // still leaves proof this expense's create may be in Xero.
+                await _creates.RecordSendingAsync(tenantId, entry.Document, createBody.InvoiceNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
                 var created = await _api.CreateBillAsync(createBody, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+                await _creates.RecordAnswerAsync(tenantId, entry.Document, entry.IdempotencyKey, created.Outcome, cancellationToken).ConfigureAwait(false);
                 if (created.Outcome != ConnectorOutcome.Ok)
                     return XeroPurchasingMapper.Failed(created);
 
@@ -287,13 +291,14 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
     /// split across categories), and each gets its own bill;</item>
     /// <item>a bill under the expense's own <c>EXP-{id}</c> number is
     /// TempestOS's (no one else uses that number);</item>
-    /// <item>a bill under the supplier's number is TempestOS's only when a
-    /// create for this expense was already sent and its answer not had — this
-    /// entry on an earlier attempt, or an earlier entry since superseded or
-    /// left unfinished (<see cref="SentACreateBeforeAsync"/>). Otherwise it is a bill
-    /// someone else entered — typically the bookkeeper, by hand — and the push
-    /// Fails with the reason rather than linking, overwriting or later
-    /// deleting it.</item>
+    /// <item>a bill under the supplier's number is TempestOS's only when the
+    /// <see cref="XeroPurchasingCreateLog"/> shows a create for this expense
+    /// was really sent under that number to that contact (by this entry or an
+    /// earlier one). Outbox attempts are not that proof: a push Rejected or
+    /// Blocked before any create, then retried, amended or deleted, never
+    /// sent one. Otherwise it is a bill someone else entered — typically the
+    /// bookkeeper, by hand — and the push is Rejected with the reason rather
+    /// than linking, overwriting or later deleting it.</item>
     /// </list>
     /// </remarks>
     private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileAsync(
@@ -324,8 +329,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
                 continue; // Every bill under this number is another expense's: this one gets its own.
 
             var isOwnNumber = string.Equals(number, byId, StringComparison.OrdinalIgnoreCase);
-            var sentUnderThisNumber = string.Equals(number, current, StringComparison.OrdinalIgnoreCase)
-                                      && await SentACreateBeforeAsync(entry, cancellationToken).ConfigureAwait(false);
+            var sentUnderThisNumber = await _creates.WasSentAsync(tenantId, entry.Document, number, contactId, cancellationToken: cancellationToken).ConfigureAwait(false);
             if (!isOwnNumber && !sentUnderThisNumber)
             {
                 return (new XeroPushResult(
@@ -334,8 +338,10 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
                     + "TempestOS never takes over or changes a bill it did not make. Link the expense to it by hand, or change the supplier invoice number on the expense, then Retry."), null);
             }
 
-            // Found after this entry was sent before, under the number it carries: what it sent landed.
-            var landed = sentUnderThisNumber && !stale && entry.Attempts > 1;
+            // Found after this entry's own create was sent under this number: what it sent landed.
+            var landed = !stale
+                         && entry.Operation == XeroOperation.PushExpenseBill
+                         && await _creates.WasSentAsync(tenantId, entry.Document, number, contactId, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
             var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
             await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
             await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
@@ -343,25 +349,6 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
         }
 
         return (null, null);
-    }
-
-    /// <summary>
-    /// Whether a create for this expense may already have reached Xero: this
-    /// entry, if a create, was sent before (<see cref="XeroOutboxEntry.Attempts"/>
-    /// above 1), or an earlier <see cref="XeroOperation.PushExpenseBill"/>
-    /// entry for the expense was sent and did not finish as Succeeded (a
-    /// Succeeded create saved its link, so reconciling never follows it).
-    /// </summary>
-    private async Task<bool> SentACreateBeforeAsync(XeroOutboxEntry entry, CancellationToken cancellationToken)
-    {
-        if (entry.Operation == XeroOperation.PushExpenseBill && entry.Attempts > 1)
-            return true;
-
-        var history = await _outbox.ListForDocumentAsync(entry.Document, cancellationToken).ConfigureAwait(false);
-        return history.Any(e => e.Id != entry.Id
-                                && e.Operation == XeroOperation.PushExpenseBill
-                                && e.Attempts > 0
-                                && e.State != XeroOutboxState.Succeeded);
     }
 
     /// <summary>The Xero ids of the bills already linked to an expense other than <paramref name="document"/> in the tenant.</summary>

@@ -125,8 +125,9 @@ internal sealed class PurchasingSyncTestKit : IDisposable
         var accounts = new XeroAccountCodeMap(settings, SettingsProvider);
         OrderPlanner = new XeroPurchaseOrderPlanner(orders, Links, Outbox, State, Files);
         ExpensePlanner = new XeroExpenseBillPlanner(expenses, Links, Outbox, State, Files, orders);
-        OrderHandler = new XeroPurchaseOrderPushHandler(api, Links, orders, linker, taxTypes, accounts, Audit, clock);
-        BillHandler = new XeroExpenseBillPushHandler(api, Links, Outbox, expenses, linker, GeneralContact, taxTypes, accounts, Audit, clock);
+        Creates = new XeroPurchasingCreateLog(store);
+        OrderHandler = new XeroPurchaseOrderPushHandler(api, Links, Creates, orders, linker, taxTypes, accounts, Audit, clock);
+        BillHandler = new XeroExpenseBillPushHandler(api, Links, Creates, expenses, linker, GeneralContact, taxTypes, accounts, Audit, clock);
         OrderAttachments = new XeroPurchaseOrderAttachmentHandler(api, Links, orders, Files, clock);
         BillAttachments = new XeroExpenseBillAttachmentHandler(api, Links, Files, clock);
     }
@@ -178,6 +179,9 @@ internal sealed class PurchasingSyncTestKit : IDisposable
     public PersistenceXeroOutbox Outbox { get; }
 
     public XeroGeneralExpensesContact GeneralContact { get; }
+
+    /// <summary>The handlers' log of creates sent to Xero.</summary>
+    public XeroPurchasingCreateLog Creates { get; }
 
     public XeroPurchasingSyncState State { get; }
 

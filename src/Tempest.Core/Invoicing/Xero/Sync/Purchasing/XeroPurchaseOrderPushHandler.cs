@@ -44,6 +44,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
 {
     private readonly XeroAccountingApi _api;
     private readonly IXeroLinkStore _links;
+    private readonly XeroPurchasingCreateLog _creates;
     private readonly IXeroPurchaseOrderSource _orders;
     private readonly XeroContactLinker _contacts;
     private readonly XeroTaxTypeResolver _taxTypes;
@@ -54,6 +55,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     /// <summary>Initialises a new instance of the <see cref="XeroPurchaseOrderPushHandler"/> class.</summary>
     /// <param name="api">The typed Xero client (its <see cref="HttpClient"/> holds the safety handler).</param>
     /// <param name="links">The link store (B2).</param>
+    /// <param name="creates">The create log: written just before each create is sent, and read before an order found in Xero without our reference is called this order's own.</param>
     /// <param name="orders">Reads purchase orders.</param>
     /// <param name="contacts">The X2 linker: the supplier's <c>ContactID</c>, or why the push is Blocked.</param>
     /// <param name="taxTypes">The X1 tax-type resolver (input side).</param>
@@ -63,6 +65,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     public XeroPurchaseOrderPushHandler(
         XeroAccountingApi api,
         IXeroLinkStore links,
+        XeroPurchasingCreateLog creates,
         IXeroPurchaseOrderSource orders,
         XeroContactLinker contacts,
         XeroTaxTypeResolver taxTypes,
@@ -72,6 +75,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(links);
+        ArgumentNullException.ThrowIfNull(creates);
         ArgumentNullException.ThrowIfNull(orders);
         ArgumentNullException.ThrowIfNull(contacts);
         ArgumentNullException.ThrowIfNull(taxTypes);
@@ -79,6 +83,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
 
         _api = api;
         _links = links;
+        _creates = creates;
         _orders = orders;
         _contacts = contacts;
         _taxTypes = taxTypes;
@@ -154,7 +159,11 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
         if (body is null)
             return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
 
+        // Recorded before it goes, so a lost answer (or a crash mid-request)
+        // still leaves proof this order's create may be in Xero.
+        await _creates.RecordSendingAsync(tenantId, entry.Document, body.PurchaseOrderNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
         var created = await _api.CreatePurchaseOrderAsync(body, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+        await _creates.RecordAnswerAsync(tenantId, entry.Document, entry.IdempotencyKey, created.Outcome, cancellationToken).ConfigureAwait(false);
         if (created.Outcome != ConnectorOutcome.Ok)
             return XeroPurchasingMapper.Failed(created);
 
@@ -227,8 +236,9 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     /// <summary>
     /// Before a first create, and before a delete with no link (§6.4 items
     /// 3–4): looks the number up. A live order with the number, this
-    /// supplier's contact and our reference (the project code) — or found
-    /// after this entry already sent its create — is TempestOS's own and is
+    /// supplier's contact and our reference (the project code) — or with the
+    /// contact, when the <see cref="XeroPurchasingCreateLog"/> shows a create
+    /// for this order was sent under the number — is TempestOS's own and is
     /// linked; any other live order with the number (another contact, or a
     /// different reference: one entered by hand) is someone else's —
     /// Rejected with the reason, never a silent duplicate and never taken
@@ -245,9 +255,14 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
         if (live.Count == 0)
             return (null, null);
 
-        // Found after this entry was sent before: what it sent landed.
-        var sentBefore = entry.Attempts > 1;
-        var landed = !stale && sentBefore;
+        // A create for this order really sent under this number to this
+        // contact (the create log, written just before each create) — never
+        // outbox attempts: a push Rejected or Blocked before any create, then
+        // retried, sent none. Found after this entry's own create: it landed.
+        var sentBefore = await _creates.WasSentAsync(tenantId, entry.Document, order.Reference, contactId, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var landed = !stale
+                     && entry.Operation == XeroOperation.PushPurchaseOrder
+                     && await _creates.WasSentAsync(tenantId, entry.Document, order.Reference, contactId, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
 
         // Ours = this supplier's contact and our reference (the project code,
         // as the create writes it), or this entry's own create whose answer
