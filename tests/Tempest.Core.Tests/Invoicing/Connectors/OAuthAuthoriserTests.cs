@@ -414,6 +414,129 @@ public sealed class OAuthAuthoriserTests
     }
 
     // ====================================================================
+    // `v0.24.0` X0 — the granted-scope record
+    // ====================================================================
+
+    [Fact]
+    public async Task AuthoriseAsync_RecordsTheGrantedScopes_FromTheTokenResponsesOwnScopeMember()
+    {
+        var (authoriser, handler, secretStore, launcher) = Build(withTenantResolution: false);
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"access-1","refresh_token":"refresh-1","expires_in":3600,"token_type":"Bearer","scope":"scope-a  offline_access"}"""));
+
+        Assert.Equal(OAuthOutcome.Ok, (await authoriser.AuthoriseAsync(TestTimeout())).Outcome);
+        await AwaitLauncherAsync(launcher);
+
+        Assert.Equal(["scope-a", "offline_access"], await authoriser.ReadGrantedScopesAsync());
+        Assert.Equal("scope-a offline_access", await secretStore.GetAsync($"Invoicing:{Provider}:{OAuthAuthoriser.GrantedScopesKeySuffix}"));
+    }
+
+    [Fact]
+    public async Task AuthoriseAsync_RecordsTheGrantedScopes_FromTheAccessTokensScopeClaim_WhenTheResponseOmitsThem()
+    {
+        var (authoriser, handler, _, launcher) = Build(withTenantResolution: false);
+        var jwt = Jwt("""{"sub":"x","scope":["scope-b","offline_access"]}""");
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, $$"""{"access_token":"{{jwt}}","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        Assert.Equal(OAuthOutcome.Ok, (await authoriser.AuthoriseAsync(TestTimeout())).Outcome);
+        await AwaitLauncherAsync(launcher);
+
+        Assert.Equal(["scope-b", "offline_access"], await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Fact]
+    public async Task AuthoriseAsync_RecordsTheRequestedScopes_WhenNeitherTheResponseNorTheTokenSays()
+    {
+        var (authoriser, handler, _, launcher) = Build(withTenantResolution: false);
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"opaque-access","refresh_token":"refresh-1","expires_in":3600}"""));
+
+        Assert.Equal(OAuthOutcome.Ok, (await authoriser.AuthoriseAsync(TestTimeout())).Outcome);
+        await AwaitLauncherAsync(launcher);
+
+        Assert.Equal(["scope-a", "scope-b"], await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Fact]
+    public async Task ReadGrantedScopesAsync_IsNull_ForTokensStoredBeforeAnyGrantWasRecorded()
+    {
+        var (authoriser, _, secretStore, _) = Build(withTenantResolution: false);
+        await SeedAsync(secretStore, "access-1", "refresh-1", DateTimeOffset.UtcNow.AddHours(1), "tenant-1");
+
+        Assert.Null(await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Fact]
+    public async Task EnsureAccessTokenAsync_ARefreshThatStatesItsScopes_UpdatesTheRecord()
+    {
+        var (authoriser, handler, secretStore, _) = Build(withTenantResolution: false);
+        await SeedAsync(secretStore, "expired", "refresh-1", DateTimeOffset.UtcNow.AddHours(-1), "tenant-1");
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"fresh","expires_in":3600,"scope":"scope-a"}"""));
+
+        Assert.Equal(AccessTokenOutcome.Ok, (await authoriser.EnsureAccessTokenAsync()).Outcome);
+
+        Assert.Equal(["scope-a"], await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Fact]
+    public async Task EnsureAccessTokenAsync_ARefreshThatDoesNotStateItsScopes_NeverAssumesTheRequestedSet()
+    {
+        var (authoriser, handler, secretStore, _) = Build(withTenantResolution: false);
+        await SeedAsync(secretStore, "expired", "refresh-1", DateTimeOffset.UtcNow.AddHours(-1), "tenant-1");
+        handler.When(HttpMethod.Post, "provider.example.test/token", (_, _) =>
+            JsonResponse(HttpStatusCode.OK, """{"access_token":"fresh","expires_in":3600}"""));
+
+        Assert.Equal(AccessTokenOutcome.Ok, (await authoriser.EnsureAccessTokenAsync()).Outcome);
+
+        Assert.Null(await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Fact]
+    public async Task ForgetTokensAsync_AlsoClearsTheGrantedScopeRecord()
+    {
+        var (authoriser, _, secretStore, _) = Build(withTenantResolution: false);
+        await secretStore.SetAsync($"Invoicing:{Provider}:{OAuthAuthoriser.GrantedScopesKeySuffix}", "scope-a");
+
+        await authoriser.ForgetTokensAsync();
+
+        Assert.Null(await authoriser.ReadGrantedScopesAsync());
+    }
+
+    [Theory]
+    [InlineData("not-a-jwt")]
+    [InlineData("a.b.c")]
+    [InlineData("a.!!!.c")]
+    [InlineData("")]
+    public void ReadScopeClaim_IsNull_ForAnythingButAJwtCarryingAScopeClaim(string token)
+    {
+        Assert.Null(OAuthAuthoriser.ReadScopeClaim(token));
+        Assert.Null(OAuthAuthoriser.ReadScopeClaim(Jwt("""{"sub":"x"}""")));
+    }
+
+    [Fact]
+    public void ReadScopeClaim_ReadsASpaceSeparatedStringClaimToo()
+    {
+        Assert.Equal(["a", "b"], OAuthAuthoriser.ReadScopeClaim(Jwt("""{"scope":"a b"}""")));
+    }
+
+    [Fact]
+    public void TokenResponse_ToString_NeverPrintsATokenButShowsTheScope()
+    {
+        var text = new OAuthTokenResponse("secret-access", "secret-refresh", 60, "Bearer", "scope-a").ToString();
+
+        Assert.DoesNotContain("secret", text, StringComparison.Ordinal);
+        Assert.Contains("scope-a", text, StringComparison.Ordinal);
+    }
+
+    private static string Jwt(string payloadJson)
+    {
+        static string Encode(string json) => Convert.ToBase64String(Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{Encode("""{"alg":"none"}""")}.{Encode(payloadJson)}.signature";
+    }
+
+    // ====================================================================
     // Fixtures
     // ====================================================================
 

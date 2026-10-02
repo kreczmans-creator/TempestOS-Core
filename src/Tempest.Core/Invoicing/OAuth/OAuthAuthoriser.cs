@@ -65,6 +65,18 @@ public sealed class OAuthAuthoriser
     /// <summary>The loopback port used when <see cref="LoopbackPortConfigurationKey"/> is not configured — also the port <c>docs/adr/ADR-0151-addendum.md</c> and the release notes name as the one to register.</summary>
     public const int DefaultLoopbackPort = 49301;
 
+    /// <summary>
+    /// The <see cref="ISecretStore"/> key suffix (<c>Invoicing:&lt;Provider&gt;:GrantedScopes</c>)
+    /// under which the scopes the provider actually granted are recorded,
+    /// space-separated (`v0.24.0` X0). Written after every code exchange —
+    /// from the token response's own <c>scope</c> member when present, else
+    /// the access token's <c>scope</c> claim, else the requested set — and
+    /// after a refresh only when the response states the scopes itself. No
+    /// record (tokens stored before v0.24.0) reads back as
+    /// <see langword="null"/>, never as "everything".
+    /// </summary>
+    public const string GrantedScopesKeySuffix = "GrantedScopes";
+
     private static readonly TimeSpan RefreshSkew = TimeSpan.FromMinutes(2);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -168,6 +180,7 @@ public sealed class OAuthAuthoriser
             tenantId = await ResolveTenantIdAsync(tenantEndpoint, tokenResponse.AccessToken, cancellationToken).ConfigureAwait(false);
 
         await StoreTokensAsync(tokenResponse, tenantId, cancellationToken).ConfigureAwait(false);
+        await StoreGrantedScopesAsync(ReadGrantedScopes(tokenResponse) ?? _profile.Scopes, cancellationToken).ConfigureAwait(false);
 
         return OAuthResult.Ok();
     }
@@ -213,6 +226,12 @@ public sealed class OAuthAuthoriser
 
         await StoreTokensAsync(refreshed, tenantId, cancellationToken).ConfigureAwait(false);
 
+        // A refresh never widens a grant, so the requested set is never
+        // assumed here — only a response that states its scopes updates
+        // the record (a pre-v0.24.0 grant with no record stays unknown).
+        if (ReadGrantedScopes(refreshed) is { } refreshedScopes)
+            await StoreGrantedScopesAsync(refreshedScopes, cancellationToken).ConfigureAwait(false);
+
         return AccessTokenResult.Ok(refreshed.AccessToken, tenantId);
     }
 
@@ -223,7 +242,74 @@ public sealed class OAuthAuthoriser
         await _secretStore.RemoveAsync(Key("RefreshToken"), cancellationToken).ConfigureAwait(false);
         await _secretStore.RemoveAsync(Key("ExpiresAtUtc"), cancellationToken).ConfigureAwait(false);
         await _secretStore.RemoveAsync(Key("TenantId"), cancellationToken).ConfigureAwait(false);
+        await _secretStore.RemoveAsync(Key(GrantedScopesKeySuffix), cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// The scopes the provider granted at the last authorisation (see
+    /// <see cref="GrantedScopesKeySuffix"/>), in the order recorded; or
+    /// <see langword="null"/> when no grant has been recorded — tokens
+    /// stored before `v0.24.0`, or never authorised. A connector compares
+    /// this with the scopes it needs to decide whether the operator must
+    /// re-authorise.
+    /// </summary>
+    public async Task<IReadOnlyList<string>?> ReadGrantedScopesAsync(CancellationToken cancellationToken = default)
+    {
+        var raw = await _secretStore.GetAsync(Key(GrantedScopesKeySuffix), cancellationToken).ConfigureAwait(false);
+        return raw is null ? null : SplitScopes(raw);
+    }
+
+    /// <summary>
+    /// The scopes a token response says were granted: its own
+    /// <c>scope</c> member when present, else the access token's
+    /// <c>scope</c> claim when it is a JWT (Xero's access tokens are, with
+    /// <c>scope</c> as an array); <see langword="null"/> when neither says.
+    /// </summary>
+    internal static IReadOnlyList<string>? ReadGrantedScopes(OAuthTokenResponse token)
+    {
+        if (!string.IsNullOrWhiteSpace(token.Scope))
+            return SplitScopes(token.Scope);
+
+        return ReadScopeClaim(token.AccessToken);
+    }
+
+    /// <summary>Reads the <c>scope</c> claim of a JWT access token without validating it (the token is only ever sent back to the provider that issued it; this read only labels what it allows). <see langword="null"/> when the token is not a JWT or carries no such claim.</summary>
+    internal static IReadOnlyList<string>? ReadScopeClaim(string? accessToken)
+    {
+        if (string.IsNullOrEmpty(accessToken))
+            return null;
+
+        var parts = accessToken.Split('.');
+        if (parts.Length != 3 || parts[1].Length == 0)
+            return null;
+
+        try
+        {
+            var payload = parts[1].Replace('-', '+').Replace('_', '/');
+            payload = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
+
+            using var document = JsonDocument.Parse(Convert.FromBase64String(payload));
+            if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.TryGetProperty("scope", out var scope))
+                return null;
+
+            return scope.ValueKind switch
+            {
+                JsonValueKind.String => SplitScopes(scope.GetString() ?? string.Empty),
+                JsonValueKind.Array => [.. scope.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString()!).Where(s => s.Length > 0)],
+                _ => null,
+            };
+        }
+        catch (Exception ex) when (ex is FormatException or JsonException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static IReadOnlyList<string> SplitScopes(string raw) =>
+        raw.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private Task StoreGrantedScopesAsync(IReadOnlyList<string> scopes, CancellationToken cancellationToken) =>
+        _secretStore.SetAsync(Key(GrantedScopesKeySuffix), string.Join(' ', scopes), cancellationToken);
 
     private async Task<(string ClientId, string? ClientSecret)?> ResolveClientCredentialsAsync(CancellationToken cancellationToken)
     {
