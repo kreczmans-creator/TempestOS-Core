@@ -56,7 +56,7 @@ public sealed class AccountsRefreshServiceTests
     }
 
     [Fact]
-    public async Task RefreshNowAsync_ListBillsDueAsksForANinetyDayHorizon()
+    public async Task RefreshNowAsync_ListBillsDueAsksForTheForwardCashHorizon()
     {
         using var temp = new TempDirectory();
         var store = new FileAccountsReadingStore(temp.Path);
@@ -64,14 +64,16 @@ public sealed class AccountsRefreshServiceTests
         var time = new ManualTimeProvider(new DateTimeOffset(2026, 3, 10, 9, 0, 0, TimeSpan.Zero));
         var service = new AccountsRefreshService(connector, store, EmptyConfiguration(), timeProvider: time);
 
-        // A bill due at day 89 is inside the horizon; one at day 91 is
-        // outside it — proving the connector was asked for (and this
-        // service kept) a 90-day window, not the 30/60-day dashboard
+        // `v0.24.0` X7: a bill due at day 185 is inside the horizon; one at
+        // day 187 is outside it — proving the connector was asked for (and
+        // this service kept) a 186-day window (six calendar months of
+        // forward cash, at most 6 x 31 days), not the 30/60-day dashboard
         // buckets themselves.
+        Assert.Equal(186, AccountsRefreshService.BillsHorizonDays);
         connector.ScriptBillsDue(
         [
-            new BillDue("In Range", "R1", new DateOnly(2026, 3, 1), new DateOnly(2026, 6, 7), new Money(1m, CurrencyCode.Gbp), "AUTHORISED"),
-            new BillDue("Out Of Range", "R2", new DateOnly(2026, 3, 1), new DateOnly(2026, 6, 12), new Money(1m, CurrencyCode.Gbp), "AUTHORISED"),
+            new BillDue("In Range", "R1", new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 10).AddDays(185), new Money(1m, CurrencyCode.Gbp), "AUTHORISED"),
+            new BillDue("Out Of Range", "R2", new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 10).AddDays(187), new Money(1m, CurrencyCode.Gbp), "AUTHORISED"),
         ]);
 
         await service.RefreshNowAsync();
