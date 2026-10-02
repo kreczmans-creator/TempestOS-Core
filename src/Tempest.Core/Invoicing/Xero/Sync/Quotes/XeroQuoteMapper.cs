@@ -383,6 +383,61 @@ public static class XeroQuoteMapper
         return word == expected ? null : $"Xero shows this quote as {word}; TempestOS has it as {tempestStatus}.";
     }
 
+    /// <summary>
+    /// The note the badge shows for a linked quote (design §4.1, Q1):
+    /// when Xero holds it past <c>DRAFT</c> and the current revision's
+    /// content never reached it (<see cref="IsRevisionNotSent"/>), that
+    /// revision was not sent and must be changed in Xero by hand — the same
+    /// reason a refused content push gives
+    /// (<see cref="RevisionNotSentNote"/>); otherwise
+    /// <see cref="DriftNote(string?, QuotationStatus)"/>. <c>INVOICED</c> and
+    /// <c>DELETED</c> keep their own notes.
+    /// </summary>
+    /// <param name="quote">The TempestOS quotation.</param>
+    /// <param name="link">Its Xero link.</param>
+    public static string? DriftNote(XeroQuoteSnapshot quote, XeroLink link)
+    {
+        ArgumentNullException.ThrowIfNull(quote);
+        ArgumentNullException.ThrowIfNull(link);
+
+        var word = link.LastKnownXeroStatus?.Trim().ToUpperInvariant();
+        if (word is not ("INVOICED" or "DELETED") && IsRevisionNotSent(quote, link))
+            return RevisionNotSentNote(link.XeroNumber ?? quote.Reference, word!, quote.RevisionLabel);
+
+        return DriftNote(link.LastKnownXeroStatus, quote.Status);
+    }
+
+    /// <summary>
+    /// Whether Xero is known to hold the linked quote past <c>DRAFT</c> while
+    /// carrying older content than <paramref name="quote"/>'s current
+    /// revision: content was pushed once (<see cref="XeroLink.LastPushedContentHash"/>)
+    /// and differs from <see cref="ContentHash"/>. Xero changes content only
+    /// while <c>DRAFT</c> (Q1), so that revision — and its PDF, which follows
+    /// its content — never reaches Xero.
+    /// </summary>
+    /// <param name="quote">The TempestOS quotation.</param>
+    /// <param name="link">Its Xero link.</param>
+    public static bool IsRevisionNotSent(XeroQuoteSnapshot quote, XeroLink link)
+    {
+        ArgumentNullException.ThrowIfNull(quote);
+        ArgumentNullException.ThrowIfNull(link);
+
+        var word = link.LastKnownXeroStatus?.Trim().ToUpperInvariant();
+        return !string.IsNullOrEmpty(word)
+               && word != StatusWord(XeroQuoteWriteStatus.Draft)
+               && link.LastPushedContentHash is not null
+               && !string.Equals(link.LastPushedContentHash, ContentHash(quote), StringComparison.Ordinal);
+    }
+
+    /// <summary>The reason a revision's content (and PDF) did not go to a Xero quote held past <c>DRAFT</c> (Q1).</summary>
+    /// <param name="number">The quote's number.</param>
+    /// <param name="xeroStatus">Xero's status word.</param>
+    /// <param name="revisionLabel">The revision that was not sent (<c>R2</c>, …).</param>
+    public static string RevisionNotSentNote(string number, string xeroStatus, string? revisionLabel) =>
+        $"Xero holds quote {number} as {xeroStatus}, and Xero changes a quote's content only while it is DRAFT, "
+        + $"so revision {revisionLabel ?? "(unnumbered)"} was not sent (Q1: the Xero copy follows a new revision only until the quote is sent). "
+        + "Change it in Xero by hand, or unlink it and issue a new quotation.";
+
     private static string? Truncate(string? value, int max) =>
         value is null ? null : value.Length <= max ? value : value[..max];
 

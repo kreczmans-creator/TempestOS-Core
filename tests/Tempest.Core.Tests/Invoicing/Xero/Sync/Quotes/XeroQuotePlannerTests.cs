@@ -215,4 +215,30 @@ public sealed class XeroQuotePlannerTests
         kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted, revision: 2);
         Assert.Empty(await kit.Planner.PlanAsync(id, link with { LastKnownXeroStatus = "ACCEPTED", AttachmentContentHash = kit.Files.Find(id)!.Sha256 }));
     }
+
+    [Fact]
+    public void TheRevisionNotSentNote_NamesTheRevision_OnlyWhenXeroHoldsOlderContentPastDraft()
+    {
+        var id = Guid.NewGuid();
+        var r1 = QuoteSyncTestKit.Quote(id);
+        var r2 = QuoteSyncTestKit.Quote(id, revision: 2);
+        var link = new XeroLink(
+            XeroLink.CurrentSchemaVersion, QuoteSyncTestKit.TenantId, QuoteSyncTestKit.Ref(id), "q-1", "P0012-Q-001", XeroQuoteMapper.ContentHash(r1), "SENT",
+            null, null, DateTimeOffset.UnixEpoch, null, XeroQuoteMapper.LinkedByCreated);
+
+        Assert.True(XeroQuoteMapper.IsRevisionNotSent(r2, link));
+        Assert.Equal(
+            "Xero holds quote P0012-Q-001 as SENT, and Xero changes a quote's content only while it is DRAFT, so revision R2 was not sent "
+            + "(Q1: the Xero copy follows a new revision only until the quote is sent). Change it in Xero by hand, or unlink it and issue a new quotation.",
+            XeroQuoteMapper.DriftNote(r2, link));
+
+        // The same content, still DRAFT, never pushed (a reconciled link) or off the walk: the plain drift notes.
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(r1, link));
+        Assert.Equal("Xero shows this quote as SENT; TempestOS has it as Approved.", XeroQuoteMapper.DriftNote(r1, link));
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(r2, link with { LastKnownXeroStatus = "DRAFT" }));
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(r2, link with { LastPushedContentHash = null }));
+        Assert.Null(XeroQuoteMapper.DriftNote(r2 with { Status = QuotationStatus.Sent }, link with { LastPushedContentHash = null }));
+        Assert.Equal("Deleted in Xero.", XeroQuoteMapper.DriftNote(r2, link with { LastKnownXeroStatus = "DELETED" }));
+        Assert.StartsWith("Invoiced in Xero", XeroQuoteMapper.DriftNote(r2, link with { LastKnownXeroStatus = "INVOICED" }), StringComparison.Ordinal);
+    }
 }

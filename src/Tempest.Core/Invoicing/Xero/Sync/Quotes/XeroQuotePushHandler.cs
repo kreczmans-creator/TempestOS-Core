@@ -204,16 +204,14 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
             {
                 return new XeroPushResult(
                     XeroPushOutcome.NothingToDo,
-                    XeroQuoteMapper.DriftNote(status, quote.Status)
+                    XeroQuoteMapper.DriftNote(quote, link)
                     ?? $"Xero already holds quote {read.Value.QuoteNumber ?? quote.Reference} as {status}; its content is not changed once past DRAFT (Q1).",
                     Link: link);
             }
 
             return new XeroPushResult(
                 XeroPushOutcome.Rejected,
-                $"Xero holds quote {read.Value.QuoteNumber ?? quote.Reference} as {status}, and Xero changes a quote's content only while it is DRAFT, "
-                + $"so revision {quote.RevisionLabel ?? "(unnumbered)"} was not sent (Q1: the Xero copy follows a new revision only until the quote is sent). "
-                + "Change it in Xero by hand, or unlink it and issue a new quotation.",
+                XeroQuoteMapper.RevisionNotSentNote(read.Value.QuoteNumber ?? quote.Reference, status ?? "(unknown)", quote.RevisionLabel),
                 Link: link);
         }
 
@@ -503,16 +501,21 @@ public sealed class XeroQuoteAttachmentHandler : IXeroPushHandler
         if (string.Equals(link.AttachmentContentHash, file.Sha256, StringComparison.OrdinalIgnoreCase))
             return new XeroPushResult(XeroPushOutcome.NothingToDo, Link: link);
 
+        // The PDF follows its content (Q1): when Xero holds the quote past
+        // DRAFT with an older revision's lines, this revision's PDF is not
+        // put beside them — an upload queued before the content push was
+        // refused would otherwise run once that refusal is released.
+        var current = await _quotes.FindAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (current is not null && XeroQuoteMapper.IsRevisionNotSent(current, link))
+            return new XeroPushResult(XeroPushOutcome.NothingToDo, XeroQuoteMapper.DriftNote(current, link), Link: link);
+
         // A different PDF than this entry was queued for: the newer entry uploads it under its own key.
         if (!string.Equals(file.Sha256, entry.ContentHash, StringComparison.OrdinalIgnoreCase))
             return new XeroPushResult(XeroPushOutcome.NothingToDo, "A newer PDF replaced the one this upload was queued for; the newer upload sends it.", Link: link);
 
         var name = entry.Argument;
         if (string.IsNullOrWhiteSpace(name))
-        {
-            var quote = await _quotes.FindAsync(quotationId, cancellationToken).ConfigureAwait(false);
-            name = XeroQuoteMapper.AttachmentFileName(quote?.Reference ?? link.XeroNumber ?? quotationId.ToString("D"));
-        }
+            name = XeroQuoteMapper.AttachmentFileName(current?.Reference ?? link.XeroNumber ?? quotationId.ToString("D"));
 
         // Replace by name once a file of that name was uploaded (no attachment delete in Xero, §3).
         var replace = string.Equals(link.AttachmentFileName, name, StringComparison.OrdinalIgnoreCase);

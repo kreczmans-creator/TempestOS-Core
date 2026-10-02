@@ -57,13 +57,35 @@ public sealed record XeroQuoteSendRequest(bool Queued, IReadOnlyList<XeroOutboxE
 /// <see cref="XeroOperation.PushQuote"/> while the content differs from what
 /// was last pushed and Xero is not known to hold the quote past <c>DRAFT</c>
 /// (Q1: Xero accepts content only while <c>DRAFT</c>; past it the badge
-/// shows the drift, <see cref="XeroQuoteMapper.DriftNote"/>, instead);
+/// shows the drift, <see cref="XeroQuoteMapper.DriftNote(XeroQuoteSnapshot, XeroLink)"/>, instead);
 /// <see cref="XeroOperation.UploadAttachment"/> when the issued PDF differs
-/// from the one last uploaded; then <see cref="XeroOperation.SetQuoteStatus"/>
+/// from the one last uploaded — unless Xero holds the quote past <c>DRAFT</c>
+/// with an older revision's content (<see cref="XeroQuoteMapper.IsRevisionNotSent"/>):
+/// the PDF follows its content, and the badge says that revision was not
+/// sent (<see cref="XeroQuoteMapper.DriftNote(XeroQuoteSnapshot, XeroLink)"/>);
+/// then <see cref="XeroOperation.SetQuoteStatus"/>
 /// for each step of <c>DRAFT → SENT → ACCEPTED | DECLINED</c> Xero has not
 /// yet reached. A linked quote Xero holds off that walk (<c>INVOICED</c>,
 /// <c>DELETED</c>) plans nothing: its badge shows the drift
-/// (<see cref="XeroQuoteMapper.DriftNote"/>), and TempestOS never moves it.
+/// (<see cref="XeroQuoteMapper.DriftNote(string?, QuotationStatus)"/>), and TempestOS never moves it.
+/// </para>
+/// <para>
+/// <b>Known gaps for X6 (engine).</b>
+/// (1) <em>Start-up order (Q8).</em> When automatic sync began is recorded
+/// by the first plan or scan of a run, with the moment the planner was
+/// built. X6 must call <see cref="ScanAsync"/> (or <see cref="AutomaticFromAsync"/>)
+/// first thing at start-up, before a quotation can be approved: if the very
+/// first run ends before any plan or scan, the next run records its own
+/// build time, and a quotation approved in between waits for
+/// <em>Send to Xero</em>.
+/// (2) <em>A PDF is not tied to its revision.</em> "Exported" means a PDF is
+/// held that the Xero quote does not already carry; <see cref="IXeroDocumentFileSource"/>
+/// does not say which revision a held PDF belongs to. When the previous
+/// revision's PDF never reached Xero (an unlinked quotation, a Blocked or
+/// offline first push, an upload still pending), approving Rn+1 without
+/// exporting it counts as exported, so Rn+1 is pushed on approval with Rn's
+/// PDF. X6's file source should record the revision (or content hash) a PDF
+/// was exported for, and this planner then compare it with the current one.
 /// </para>
 /// </remarks>
 public sealed class XeroQuotePlanner : IXeroSyncPlanner
@@ -203,11 +225,17 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
         // Content goes only while Xero holds the quote as DRAFT (Q1). Past it
         // the push would be refused and hold the document's queue; the badge
-        // shows the drift instead (XeroQuoteMapper.DriftNote).
+        // shows the drift instead: "revision Rn was not sent; change it in
+        // Xero" (XeroQuoteMapper.DriftNote(quote, link)).
         if (xeroRank == 0 && !string.Equals(link?.LastPushedContentHash, contentHash, StringComparison.Ordinal))
             planned.Add(new XeroPlannedOperation(XeroOperation.PushQuote, contentHash));
 
-        if (file is not null && !string.Equals(link?.AttachmentContentHash, file.Sha256, StringComparison.OrdinalIgnoreCase))
+        // The PDF follows its content: past DRAFT, a revision whose content
+        // Xero refused or never received keeps its PDF too, so the Xero copy
+        // never shows one revision's sheet beside another's amounts.
+        if (file is not null
+            && !string.Equals(link?.AttachmentContentHash, file.Sha256, StringComparison.OrdinalIgnoreCase)
+            && !(link is not null && xeroRank > 0 && XeroQuoteMapper.IsRevisionNotSent(quote, link)))
             planned.Add(new XeroPlannedOperation(XeroOperation.UploadAttachment, file.Sha256, XeroQuoteMapper.AttachmentFileName(quote.Reference)));
 
         foreach (var step in XeroQuoteMapper.StatusPath(quote.Status))
@@ -244,7 +272,7 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         return entries;
     }
 
-    /// <summary>The start-up and Refresh scan (§6.2): records when automatic sync began (Q8) if it is not yet recorded, then <see cref="PlanAndEnqueueAsync"/> for every quotation, so a change committed before a crash, or made offline, is still queued.</summary>
+    /// <summary>The start-up and Refresh scan (§6.2) — X6 calls it first thing at start-up (see the remarks on <see cref="XeroQuotePlanner"/>): records when automatic sync began (Q8) if it is not yet recorded, then <see cref="PlanAndEnqueueAsync"/> for every quotation, so a change committed before a crash, or made offline, is still queued.</summary>
     /// <param name="cancellationToken">Cancels the scan.</param>
     /// <returns>How many outbox entries the scan produced or found (planned writes).</returns>
     public async Task<int> ScanAsync(CancellationToken cancellationToken = default)
@@ -314,7 +342,9 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     /// When automatic quote sync began: <see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>,
     /// else the recorded moment; when none is recorded yet, the moment this
     /// planner was built (start-up — never later than a quotation approved
-    /// in this run) is written once, then read back.
+    /// in this run) is written once, then read back. The engine (X6) calls
+    /// this, or <see cref="ScanAsync"/>, first thing at start-up so the
+    /// start is recorded even if the run ends before its first plan.
     /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<DateTimeOffset> AutomaticFromAsync(CancellationToken cancellationToken = default)
