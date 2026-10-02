@@ -51,6 +51,14 @@ public sealed partial class XeroAccountingApi
     /// an approved invoice's content. Deleting is
     /// <see cref="DeleteInvoiceDraftAsync"/>.
     /// </summary>
+    /// <remarks>
+    /// Accepted trade-off (verifier note): an invoice the Product Owner moved
+    /// to <c>SUBMITTED</c> (awaiting approval) in that same window is moved
+    /// back to <c>DRAFT</c> by this write, since Xero allows that move. It
+    /// does not breach D3 — the invoice only ever goes back towards draft,
+    /// never forward — but the submission has to be made again in Xero.
+    /// To be recorded in the design doc (§6, outside X4's files) at merge.
+    /// </remarks>
     /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
     /// <param name="invoice">The new content.</param>
     /// <param name="idempotencyKey">The fixed key for this update.</param>

@@ -185,6 +185,15 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// sends, exactly what Xero may already hold, even if the project or
     /// deliverable has been renamed since. <see langword="null"/> until
     /// then, and for every request sent before `v0.24.0`.
+    /// <para>
+    /// It is frozen on any send attempted through the seam, including one
+    /// that never reached the accounting system (a transport failure takes
+    /// the request back to Draft): TempestOS cannot tell whether that system
+    /// committed the send, so it keeps the reference it may hold. The
+    /// accepted cost is that a project or deliverable renamed after such an
+    /// attempt still goes out under the old name in the reference on the
+    /// next send.
+    /// </para>
     /// </summary>
     internal string? ExternalReference => _externalReference;
 

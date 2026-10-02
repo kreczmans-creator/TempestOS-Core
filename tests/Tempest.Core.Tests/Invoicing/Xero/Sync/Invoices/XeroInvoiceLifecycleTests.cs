@@ -351,6 +351,94 @@ public sealed class XeroInvoiceLifecycleTests
     }
 
     [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_ClientRelinkedToAnotherContact_IsRefused_TheXeroDraftAndTheRequestStay()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV5");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV5");
+        var completionId = Assert.Single(request.Lines).SourceId;
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+
+        // The client is re-linked to another Xero contact after the send.
+        Assert.True(await kit.Linker.UnlinkAsync(organisationId));
+        var other = kit.Simulator.SeedContact("Other Client Ltd");
+        Assert.Equal(ConnectorOutcome.Ok, (await kit.Linker.LinkExistingAsync(organisationId, other)).Outcome);
+        var mark = kit.Mark;
+
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.False(voided.Succeeded);
+        Assert.Contains("with this invoice's reference under another contact; check Xero", voided.Reason, StringComparison.Ordinal);
+        Assert.Equal(InvoiceRequestStatus.Draft, (await kit.ReloadAsync(request.Id)).Status);
+        Assert.Equal("DRAFT", kit.Invoice(lost.Id).Status);
+        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
+        Assert.Null(await kit.LinkAsync(request.Id)); // never linked under a contact the client no longer has
+
+        // Its lines stay held: the same work cannot be raised a second time.
+        Assert.False((await kit.Service.RaiseFromCompletionAsync(completionId)).Succeeded);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_LookUpRefusedByTheSystem_IsRefused_TheRequestStaysDraft()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV6");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV6");
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+
+        // A look-up Xero refused outright (a 400 or 404) says nothing about who holds the number.
+        var service = kit.NewService(new LookUpRefused(kit.Drafts));
+        var voided = await service.VoidAsync(request.Id);
+
+        Assert.False(voided.Succeeded);
+        Assert.Contains("try again", voided.Reason, StringComparison.Ordinal);
+        Assert.Equal(InvoiceRequestStatus.Draft, (await kit.ReloadAsync(request.Id)).Status);
+        Assert.Equal("DRAFT", kit.Invoice(lost.Id).Status);
+        kit.AssertSafe();
+    }
+
+    /// <summary>The kit's drafts seam, with every number look-up refused by the system (HTTP 400).</summary>
+    private sealed class LookUpRefused(XeroInvoiceDrafts inner) : IInvoiceDraftSync
+    {
+        private const string Refusal = "Xero answered 400: the request was not valid.";
+
+        public string ConnectorName => inner.ConnectorName;
+
+        public string CreatedStatus => inner.CreatedStatus;
+
+        public Task<string?> FindBlockingReasonAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            inner.FindBlockingReasonAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<CreatedInvoice>> CreateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            inner.CreateDraftAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<CreatedInvoice?>> FindByInvoiceNumberAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ConnectorResult<CreatedInvoice?>.Rejected(Refusal));
+
+        public Task<ConnectorResult<InvoiceNumberFinding>> FindNumberHolderAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            Task.FromResult(ConnectorResult<InvoiceNumberFinding>.Rejected(Refusal));
+
+        public Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            inner.UpdateDraftAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<InvoiceDraftChange>> DeleteDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            inner.DeleteDraftAsync(document, cancellationToken);
+
+        public Task QueueSendAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+            inner.QueueSendAsync(document, cancellationToken);
+
+        public Task RecordStatusReadingAsync(InvoiceDraftDocument document, string externalStatus, CancellationToken cancellationToken = default) =>
+            inner.RecordStatusReadingAsync(document, externalStatus, cancellationToken);
+    }
+
+    [Fact]
     public async Task Retry_AfterALostAnswer_FindsItsOwnInvoice_EvenThoughTheDeliverableWasRenamedMeanwhile()
     {
         await using var kit = await InvoiceExportKit.CreateAsync();

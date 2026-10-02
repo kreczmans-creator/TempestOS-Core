@@ -542,27 +542,44 @@ public sealed class InvoicingService : IInvoicingService
     private async Task<InvoiceRequestResult?> ClearCutOffSendAsync(InvoiceRequest request, IInvoiceDraftSync drafts, CancellationToken cancellationToken)
     {
         var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        var found = await drafts.FindByInvoiceNumberAsync(document, cancellationToken).ConfigureAwait(false);
+        var found = await drafts.FindNumberHolderAsync(document, cancellationToken).ConfigureAwait(false);
 
-        switch (found.Outcome)
+        if (found.Outcome != ConnectorOutcome.Ok)
         {
-            case ConnectorOutcome.Ok when found.Value is null:
-                return null; // Nothing carries its number there: the void is local only.
+            // Unreachable, unauthorised, or the look-up itself refused (a 400
+            // or 404): who holds the number is not known, so nothing is
+            // voided — a void that frees the lines over a live draft would
+            // let a second invoice be raised for the same work.
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.TransitionNotPermitted,
+                $"Invoice request '{request.Id}' was not voided: its last send to {drafts.ConnectorName} was cut off, and {drafts.ConnectorName} could not be asked whether it holds the draft ({found.Reason ?? found.Outcome.ToString()}); the request is unchanged — try again.",
+                request);
+        }
 
-            case ConnectorOutcome.Rejected:
-                return null; // Another invoice holds the number (or the look-up is refused outright): nothing there is TempestOS's own.
+        var finding = found.Value!;
+        switch (finding.Holder)
+        {
+            case InvoiceNumberHolder.Nobody:
+            case InvoiceNumberHolder.AnotherInvoice:
+                return null; // Nothing carrying its number there is TempestOS's own: the void is local only.
 
-            case ConnectorOutcome.Ok:
+            case InvoiceNumberHolder.OwnReferenceOtherContact:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName} holds {document.InvoiceNumber} with this invoice's reference under another contact; check {drafts.ConnectorName}. The request is unchanged.",
+                    request);
+
+            case InvoiceNumberHolder.Own when finding.Invoice is not null:
                 break;
 
             default:
                 return new InvoiceRequestResult(
                     InvoiceRequestRefusal.TransitionNotPermitted,
-                    $"Invoice request '{request.Id}' was not voided: its last send to {drafts.ConnectorName} was cut off, and {drafts.ConnectorName} could not be asked whether it holds the draft ({found.Reason ?? found.Outcome.ToString()}); the request is unchanged — try again.",
+                    $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName}'s answer about {document.InvoiceNumber} was not understood; the request is unchanged.",
                     request);
         }
 
-        var own = found.Value!;
+        var own = finding.Invoice;
         var change = await drafts.DeleteDraftAsync(document with { ExternalId = own.ExternalId }, cancellationToken).ConfigureAwait(false);
         if (change.Outcome != ConnectorOutcome.Ok)
         {
@@ -1198,6 +1215,28 @@ public enum InvoiceDraftChangeOutcome
 /// <param name="Reason">Why, for <see cref="InvoiceDraftChangeOutcome.Blocked"/>.</param>
 public sealed record InvoiceDraftChange(InvoiceDraftChangeOutcome Outcome, string? ExternalStatus = null, string? Reason = null);
 
+/// <summary>Who holds an invoice number in the accounting system, as <see cref="IInvoiceDraftSync.FindNumberHolderAsync"/> reads it (`v0.24.0` X4).</summary>
+public enum InvoiceNumberHolder
+{
+    /// <summary>No invoice carries the number.</summary>
+    Nobody,
+
+    /// <summary>TempestOS's own invoice carries it: the request's reference, under the client's linked contact (linked as found).</summary>
+    Own,
+
+    /// <summary>An invoice carries it with the request's own reference, but under a contact other than the client's linked one (the client was re-linked after a send) — TempestOS's own work, never to be treated as someone else's.</summary>
+    OwnReferenceOtherContact,
+
+    /// <summary>Another invoice — not carrying the request's reference — holds the number.</summary>
+    AnotherInvoice,
+}
+
+/// <summary>What <see cref="IInvoiceDraftSync.FindNumberHolderAsync"/> found under a request's number.</summary>
+/// <param name="Holder">Who holds the number.</param>
+/// <param name="Invoice">TempestOS's own invoice, for <see cref="InvoiceNumberHolder.Own"/>; otherwise <see langword="null"/>.</param>
+/// <param name="ExternalStatus">The status word of the invoice found (the first, when several), or <see langword="null"/> when nobody holds the number.</param>
+public sealed record InvoiceNumberFinding(InvoiceNumberHolder Holder, CreatedInvoice? Invoice = null, string? ExternalStatus = null);
+
 /// <summary>
 /// The numbered-draft seam of an accounting connector (`v0.24.0` X4,
 /// `ADR-0162` D3/D4): create a sales invoice as a draft carrying
@@ -1247,6 +1286,17 @@ public interface IInvoiceDraftSync
     /// when another invoice holds it.
     /// </summary>
     Task<ConnectorResult<CreatedInvoice?>> FindByInvoiceNumberAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Who holds <paramref name="document"/>'s number (`v0.24.0` X4, the
+    /// void of a request whose send was cut off): TempestOS's own invoice
+    /// (linked as found, as <see cref="FindByInvoiceNumberAsync"/> does),
+    /// one carrying its reference under another contact, another invoice,
+    /// or nobody — each an Ok answer. Anything other than Ok (including
+    /// <see cref="ConnectorOutcome.Rejected"/> for a look-up the system
+    /// refused) means the holder is not known.
+    /// </summary>
+    Task<ConnectorResult<InvoiceNumberFinding>> FindNumberHolderAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
 
     /// <summary>Changes the draft for <paramref name="document"/> to its content — only while the accounting system still holds it as a draft.</summary>
     Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);

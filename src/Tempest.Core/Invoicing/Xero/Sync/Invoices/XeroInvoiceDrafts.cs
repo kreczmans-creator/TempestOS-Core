@@ -245,6 +245,36 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
     }
 
     /// <inheritdoc />
+    public async Task<ConnectorResult<InvoiceNumberFinding>> FindNumberHolderAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        var tenantId = await _contacts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false);
+        if (tenantId is null)
+            return ConnectorResult<InvoiceNumberFinding>.Reauthorise("No Xero organisation is connected; re-authorise to select one.");
+
+        await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var existing = await _links.FindAsync(tenantId, DocumentFor(document.RequestId), cancellationToken).ConfigureAwait(false);
+            if (existing is not null && !PersistenceXeroLinkStore.IsFromNewerVersion(existing))
+            {
+                return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(
+                    InvoiceNumberHolder.Own,
+                    new CreatedInvoice(existing.XeroId, existing.XeroNumber ?? document.InvoiceNumber, document.Reference),
+                    existing.LastKnownXeroStatus));
+            }
+
+            var contact = await _contacts.ResolveForPushAsync(tenantId, document.ClientReference, cancellationToken).ConfigureAwait(false);
+            return await ClassifyNumberAsync(tenantId, document, contact.ContactId, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeGate.Release();
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -430,26 +460,55 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
     /// The invoice Xero holds under <paramref name="document"/>'s number when
     /// it is TempestOS's own (same contact and reference; linked as
     /// reconciled), <see langword="null"/> when none holds it, or Rejected
-    /// when another invoice does.
+    /// when another invoice does — or one carrying its reference under
+    /// another contact (never linked, never re-created over).
     /// </summary>
     private async Task<ConnectorResult<CreatedInvoice?>> FindOwnAsync(
         string tenantId, InvoiceDraftDocument document, string? contactId, CancellationToken cancellationToken)
     {
+        var found = await ClassifyNumberAsync(tenantId, document, contactId, cancellationToken).ConfigureAwait(false);
+        if (found.Outcome != ConnectorOutcome.Ok)
+            return Retype<InvoiceNumberFinding, CreatedInvoice?>(found);
+
+        var finding = found.Value!;
+        return finding.Holder switch
+        {
+            InvoiceNumberHolder.Nobody => ConnectorResult<CreatedInvoice?>.Ok(null),
+            InvoiceNumberHolder.Own => ConnectorResult<CreatedInvoice?>.Ok(finding.Invoice),
+            InvoiceNumberHolder.OwnReferenceOtherContact => ConnectorResult<CreatedInvoice?>.Rejected(
+                $"Xero holds {document.InvoiceNumber} with this invoice's reference under another contact ({finding.ExternalStatus}); TempestOS will not create a second — check Xero."),
+            _ => ConnectorResult<CreatedInvoice?>.Rejected(
+                $"{document.InvoiceNumber} is already used in Xero by another invoice ({finding.ExternalStatus}); TempestOS will not create a second — check Xero."),
+        };
+    }
+
+    /// <summary>
+    /// Who holds <paramref name="document"/>'s number in Xero: TempestOS's
+    /// own invoice (its reference under <paramref name="contactId"/>, or any
+    /// contact when that is <see langword="null"/> — linked as reconciled),
+    /// one with its reference under another contact, another invoice, or
+    /// nobody. A look-up Xero did not answer is returned as it came.
+    /// </summary>
+    private async Task<ConnectorResult<InvoiceNumberFinding>> ClassifyNumberAsync(
+        string tenantId, InvoiceDraftDocument document, string? contactId, CancellationToken cancellationToken)
+    {
         var found = await _connector.FindSalesInvoicesByNumberAsync(document.InvoiceNumber, cancellationToken).ConfigureAwait(false);
         if (found.Outcome != ConnectorOutcome.Ok)
-            return Retype<IReadOnlyList<XeroInvoiceReading>, CreatedInvoice?>(found);
+            return Retype<IReadOnlyList<XeroInvoiceReading>, InvoiceNumberFinding>(found);
 
         if (found.Value!.Count == 0)
-            return ConnectorResult<CreatedInvoice?>.Ok(null);
+            return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.Nobody));
 
-        var own = found.Value.FirstOrDefault(i =>
-            string.Equals(i.Reference?.Trim(), document.Reference.Trim(), StringComparison.Ordinal)
-            && (contactId is null || string.Equals(i.ContactId, contactId, StringComparison.OrdinalIgnoreCase)));
+        var withReference = found.Value
+            .Where(i => string.Equals(i.Reference?.Trim(), document.Reference.Trim(), StringComparison.Ordinal))
+            .ToList();
+        var own = withReference.FirstOrDefault(i => contactId is null || string.Equals(i.ContactId, contactId, StringComparison.OrdinalIgnoreCase));
 
         if (own is null)
         {
-            return ConnectorResult<CreatedInvoice?>.Rejected(
-                $"{document.InvoiceNumber} is already used in Xero by another invoice ({found.Value[0].Status}); TempestOS will not create a second — check Xero.");
+            return withReference.Count > 0
+                ? ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.OwnReferenceOtherContact, null, withReference[0].Status))
+                : ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.AnotherInvoice, null, found.Value[0].Status));
         }
 
         var link = NewLink(tenantId, DocumentFor(document.RequestId), own.InvoiceId, own.InvoiceNumber ?? document.InvoiceNumber, null, LinkedByReconciled)
@@ -457,7 +516,8 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditLinkReconciled, link, XeroOperation.PushInvoiceDraft, null, cancellationToken).ConfigureAwait(false);
 
-        return ConnectorResult<CreatedInvoice?>.Ok(new CreatedInvoice(own.InvoiceId, own.InvoiceNumber ?? document.InvoiceNumber, own.Reference ?? document.Reference));
+        var invoice = new CreatedInvoice(own.InvoiceId, own.InvoiceNumber ?? document.InvoiceNumber, own.Reference ?? document.Reference);
+        return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.Own, invoice, own.Status));
     }
 
     /// <summary>After reconciling a lost create: the draft brought to the request's current content (while still a draft); a failure is left for the planner's <see cref="XeroOperation.UpdateInvoiceDraft"/>.</summary>
@@ -631,6 +691,10 @@ public sealed class XeroInvoiceDraftsForwarder : IInvoiceDraftSync
     /// <inheritdoc />
     public Task<ConnectorResult<CreatedInvoice?>> FindByInvoiceNumberAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
         _drafts.FindByInvoiceNumberAsync(document, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ConnectorResult<InvoiceNumberFinding>> FindNumberHolderAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
+        _drafts.FindNumberHolderAsync(document, cancellationToken);
 
     /// <inheritdoc />
     public Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) =>
