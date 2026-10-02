@@ -142,7 +142,8 @@ public sealed class FileXeroSettingsCache : IXeroSettingsCache
                 if (document.RootElement.ValueKind != JsonValueKind.Object
                     || !TryGetVersion(document.RootElement, out var version)
                     || version < 1
-                    || version > XeroSettingsReading.CurrentSchemaVersion)
+                    || version > XeroSettingsReading.CurrentSchemaVersion
+                    || !HasRequiredValues(document.RootElement))
                 {
                     return null;
                 }
@@ -169,12 +170,65 @@ public sealed class FileXeroSettingsCache : IXeroSettingsCache
         return false;
     }
 
+    /// <summary>
+    /// Whether the value-typed fields a consumer relies on are actually in the
+    /// file: the deserialiser fills a missing one with its default (a reading
+    /// "read at 1 Jan 0001", a demo flag of <see langword="false"/>), which
+    /// <see cref="IsComplete"/> cannot tell from a real value.
+    /// </summary>
+    private static bool HasRequiredValues(JsonElement root)
+    {
+        if (!TryGetProperty(root, nameof(XeroSettingsReading.ReadAtUtc), out var readAt) || readAt.ValueKind != JsonValueKind.String)
+            return false;
+
+        if (TryGetProperty(root, nameof(XeroSettingsReading.Organisation), out var organisation) && organisation.ValueKind == JsonValueKind.Object
+            && !(IsBoolean(organisation, nameof(XeroOrganisationProfile.PaysTax)) && IsBoolean(organisation, nameof(XeroOrganisationProfile.IsDemoCompany))))
+        {
+            return false;
+        }
+
+        if (TryGetProperty(root, nameof(XeroSettingsReading.TaxRates), out var rates) && rates.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var rate in rates.EnumerateArray())
+            {
+                if (rate.ValueKind == JsonValueKind.Object
+                    && !(TryGetProperty(rate, nameof(XeroTaxRate.EffectiveRate), out var effective) && effective.ValueKind == JsonValueKind.Number
+                        && IsBoolean(rate, nameof(XeroTaxRate.CanApplyToRevenue))
+                        && IsBoolean(rate, nameof(XeroTaxRate.CanApplyToExpenses))))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsBoolean(JsonElement owner, string name) =>
+        TryGetProperty(owner, name, out var value) && value.ValueKind is JsonValueKind.True or JsonValueKind.False;
+
+    private static bool TryGetProperty(JsonElement owner, string name, out JsonElement value)
+    {
+        foreach (var property in owner.EnumerateObject())
+        {
+            if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
     /// <summary>Whether every field a consumer relies on being present is present (the deserialiser fills a missing one with <see langword="null"/>).</summary>
     private static bool IsComplete(XeroSettingsReading reading)
     {
         var organisation = reading.Organisation;
 
         return !string.IsNullOrWhiteSpace(reading.TenantId)
+            && reading.ReadAtUtc != default
             && organisation is not null
             && !string.IsNullOrWhiteSpace(organisation.OrganisationId)
             && !string.IsNullOrWhiteSpace(organisation.Name)

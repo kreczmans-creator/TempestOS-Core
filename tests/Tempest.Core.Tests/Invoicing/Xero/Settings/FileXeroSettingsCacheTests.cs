@@ -114,6 +114,13 @@ public sealed class FileXeroSettingsCacheTests
     [InlineData("Organisation.OrganisationId")]
     [InlineData("Organisation.BankAccounts")]
     [InlineData("Organisation.Address.Lines")]
+    // Backlog X1-1: value-typed fields read back as their default when missing.
+    [InlineData("ReadAtUtc")]
+    [InlineData("Organisation.PaysTax")]
+    [InlineData("Organisation.IsDemoCompany")]
+    [InlineData("TaxRates.0.CanApplyToRevenue")]
+    [InlineData("TaxRates.0.CanApplyToExpenses")]
+    [InlineData("TaxRates.0.EffectiveRate")]
     public async Task AFileMissingAFieldTheReadingNeeds_ReadsAsNoReading(string path)
     {
         using var temp = new TempDirectory();
@@ -121,9 +128,19 @@ public sealed class FileXeroSettingsCacheTests
         await cache.SaveAsync(Sample);
         var json = JsonNode.Parse(await File.ReadAllTextAsync(cache.FilePath))!.AsObject();
         var parts = path.Split('.');
-        var parent = parts.Take(parts.Length - 1).Aggregate((JsonNode)json, (node, part) => node[part]!).AsObject();
+        var parent = parts.Take(parts.Length - 1).Aggregate((JsonNode)json, (node, part) => int.TryParse(part, out var index) ? node[index]! : node[part]!).AsObject();
         parent.Remove(parts[^1]);
         await File.WriteAllTextAsync(cache.FilePath, json.ToJsonString());
+
+        Assert.Null(await cache.ReadAsync());
+    }
+
+    [Fact]
+    public async Task AFileWhoseReadAtIsTheDefaultDate_ReadsAsNoReading()
+    {
+        using var temp = new TempDirectory();
+        var cache = new FileXeroSettingsCache(temp.Path);
+        await cache.SaveAsync(Sample with { ReadAtUtc = default });
 
         Assert.Null(await cache.ReadAsync());
     }
