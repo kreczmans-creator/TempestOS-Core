@@ -93,6 +93,21 @@ internal sealed partial class XeroApiSimulator
         }
     }
 
+    /// <summary>The document's <c>Date</c> is edited in Xero by hand (a bookkeeper's change; nothing else moves).</summary>
+    public void SetDateInXero(string resource, string id, DateOnly date)
+    {
+        var kind = KindOf(resource);
+        lock (_sync)
+            SetDate(Existing(kind, id).Body, "Date", date);
+    }
+
+    /// <summary>Xero's <c>Idempotency-Key</c> cache expires: every key is forgotten, so a repeat of an earlier write is processed as a new one (nothing else moves).</summary>
+    public void ForgetIdempotencyKeys()
+    {
+        lock (_sync)
+            _idempotency.Clear();
+    }
+
     /// <summary>The quote is turned into an invoice in Xero by hand (quote <c>ACCEPTED</c> → <c>INVOICED</c>; a new <c>ACCREC</c> draft exists) — the double-invoicing risk X3 must surface.</summary>
     /// <returns>The new invoice's <c>InvoiceID</c>.</returns>
     public string ConvertQuoteToInvoiceInXero(string quoteId)

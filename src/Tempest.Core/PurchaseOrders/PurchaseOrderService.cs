@@ -256,8 +256,11 @@ public sealed class PurchaseOrderService : IPurchaseOrderService
         // any other recorded expense (`ExpenseService.AmendAsync`).
         foreach (var line in order.Lines)
         {
+            // `v0.24.0` X5 (Q6): the expense carries the order it came from
+            // in its first revision, so it is never pushed to Xero as a second
+            // bill — not even by a reader that sees it before anything else.
             await _expenses
-                .RecordAsync(projectId, today, $"{order.Reference} — {line.Description}", ExpenseCategory.Materials, line.Net, line.VatAmount, billable: true, cancellationToken)
+                .RecordAsync(projectId, today, $"{order.Reference} — {line.Description}", ExpenseCategory.Materials, line.Net, line.VatAmount, billable: true, order.Id, cancellationToken)
                 .ConfigureAwait(false);
         }
 

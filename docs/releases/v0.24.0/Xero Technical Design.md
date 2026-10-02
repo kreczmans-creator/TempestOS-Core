@@ -542,13 +542,47 @@ file, each task owns its resource file. Paths below are relative to
 | **X2** Contacts | `XeroContactLinker` (§5), M21 fix: invoices use `ContactID` | `Api/XeroAccountingApi.Contacts.cs`, `Contacts/XeroContactLinker.cs`, `Contacts/XeroContactMatcher.cs`, `XeroServiceRegistration.Contacts.cs`; tests `Contacts/**` | B1, B2, S1 | Candidates ranked VAT > ContactNumber > exact > similar; link existing writes nothing; create looks up `ContactNumber` first; lost-response create makes one contact; archived contact not linkable; details read-only |
 | **X3** Quotes | planner + handlers `PushQuote`, `SetQuoteStatus`; drift notes | `Api/XeroAccountingApi.Quotes.cs`, `Sync/Quotes/XeroQuotePlanner.cs`, `Sync/Quotes/XeroQuotePushHandler.cs`, `Sync/Quotes/XeroQuoteMapper.cs`, `XeroServiceRegistration.Quotes.cs`; tests `Sync/Quotes/**` | X1, X2, B2 | §4.1 both directions over the simulator: approve+export→DRAFT; Rn+1 updates content; send→SENT; accept/decline; never an illegal transition; status-only update omits lines; INVOICED drift noted; same number; PDF uploaded once per content hash |
 | **X4** Invoices | `XeroConnector` creates with `InvoiceNumber`, `ContactID`, account code, reference text; reconcile by number; `InterpretStatus` + DELETED; void of a Xero draft; draft update; `PushInvoiceDraft` on Unavailable; planner (attachment, update, delete) | `XeroConnector.cs` (all but B1's scope check), `XeroModels.cs`, `Api/XeroAccountingApi.Invoices.cs`, `Sync/Invoices/**`, `src/Tempest.Core/Invoicing/InvoicingService.cs`, `…/InvoiceRequest.cs`, `…/InvoiceRequestStatus.cs`, `XeroServiceRegistration.Invoices.cs`; tests `Sync/Invoices/**`, `…/Invoicing/Connectors/XeroConnectorTests.cs`, `…/Invoicing/InvoicingServiceJourneyTests.cs` | X1, X2, B2 | §4.2 tables over the simulator; D3: invoice never leaves DRAFT through TempestOS; unlinked client refused before Sending; lost response → one invoice; pre-v0.24 request still reconciles by Reference; existing invoicing tests green |
-| **X5** POs and bills | planners + handlers for PO and expense bill (§4.3, §4.4) | `Api/XeroAccountingApi.PurchaseOrders.cs`, `Api/XeroAccountingApi.Bills.cs`, `Sync/Purchasing/**`, `XeroServiceRegistration.Purchasing.cs`; `src/Tempest.Core/Expenses/ProjectExpense.cs` (additive `SupplierOrganisationId`, `SourcePurchaseOrderId` — after Q3/Q6); tests `Sync/Purchasing/**` | X1, X2, B2 | Issued PO → DRAFT PO + PDF; cancel → DELETED; expense → ACCPAY DRAFT with category account, input tax, receipt; amend while DRAFT only; PO-sourced expense per Q6; recharges unchanged |
+| **X5** POs and bills | planners + handlers for PO and expense bill (§4.3, §4.4) | `Api/XeroAccountingApi.PurchaseOrders.cs`, `Api/XeroAccountingApi.Bills.cs`, `Sync/Purchasing/**`, `XeroServiceRegistration.Purchasing.cs`; `src/Tempest.Core/Expenses/ProjectExpense.cs` (additive `SupplierOrganisationId`, `SourcePurchaseOrderId` — after Q3/Q6); additive only, for Q3/Q4/Q6: `src/Tempest.Core/Expenses/IExpenseService.cs` + `…/Expenses/ExpenseService.cs` (`RecordAsync` overload carrying `sourcePurchaseOrderId` in the first revision; `SetSupplierAsync`), `src/Tempest.Core/PurchaseOrders/PurchaseOrderService.cs` (`RecordLinesAsExpensesAsync` passes `order.Id`, one call); tests `Sync/Purchasing/**` | X1, X2, B2 | Issued PO → DRAFT PO + PDF; cancel → DELETED; expense → ACCPAY DRAFT with category account, input tax, receipt; amend while DRAFT only; PO-sourced expense per Q6; recharges unchanged; a lost create is recovered by identity (remark below) |
 | **X6** Engine | `XeroSyncService` (drain, read-back, badges), change observer + start-up scan, backoff, audit, hosted service, `IXeroDocumentFileSource` over attachments | `Sync/XeroSyncService.cs`, `Sync/XeroChangeObserver.cs`, `Sync/XeroBackoff.cs`, `Sync/XeroReadBack.cs`, `Sync/AttachmentXeroDocumentFileSource.cs`, `Sync/XeroSyncHostedService.cs`, `XeroServiceRegistration.Sync.cs`; tests `Sync/Engine/**`, `XeroNeverApprovesOrSendsTests.cs` | X3, X4, X5 | §6 over the simulator: offline queue then drain; 429 pauses all for `Retry-After`; 5xx backoff; reauth pause/resume; crash with InFlight → reconcile, one record; restart scan enqueues a commit made before crash; per-document order; §7.3 item 3 |
 | **U1** Settings UI (X0/X1) | Xero section: connection, granted vs required scopes, Re-authorise, company details *"from Xero, read at"*, tax/account mapping pickers, AllowLiveOrganisation switch; PDFs use Xero identity | `src/Tempest.Desktop/Views/SettingsView.cs`, `src/Tempest.Desktop/OrganisationIdentitySettings.cs`, `src/Tempest.Desktop/Documents/DocumentTemplate.cs` (`VatNumber`), new `src/Tempest.Desktop/Views/XeroSettingsSection.cs`; `tests/Tempest.Desktop.Tests/Xero/SettingsXero*Tests.cs` | X1 | Headless tests with fakes; offline shows last reading; switch audited |
 | **U2** Contact link UI (X2) | link/create prompt from Customers & suppliers and from a Blocked badge | `src/Tempest.Desktop/Views/CustomersSuppliersView.cs`, new `src/Tempest.Desktop/Views/XeroContactLinkPrompt.cs`; `tests/Tempest.Desktop.Tests/Xero/ContactLink*Tests.cs` | X2 | PO confirms a candidate; create path; reason shown on failure |
 | **U3** Badges + PDF attach on issue (X6) | Xero column/badge with Retry on quotes, invoices, POs, expenses; Export/Issue attach the rendered PDF to the record | `src/Tempest.Desktop/Views/QuotesView.cs`, `…/ProjectQuoteView.cs`, `…/InvoicingView.cs`, `…/PurchaseOrdersView.cs`, `…/ExpenseEntryPrompt.cs` (receipt), new `src/Tempest.Desktop/Views/XeroSyncBadge.cs`; `tests/Tempest.Desktop.Tests/Xero/Badge*Tests.cs` | X6 | Every badge state rendered; Retry calls `IXeroOutbox.RetryAsync`; export attaches the same bytes it saves |
 | **X7** Forward cash | dashboard: Xero actuals (bank, bills, invoices due) + accepted-not-invoiced milestones by month | `src/Tempest.Core/Invoicing/AccountsReadModel.cs`, `…/AccountsReading.cs`, `…/AccountsRefreshService.cs`, `src/Tempest.Desktop/Views/Dashboards/BusinessDashboardView.cs`; tests `…/Invoicing/Accounts*Tests.cs`, Desktop dashboard tests | X6 | Months sum correctly; offline uses last reading; accepted-not-invoiced excludes anything already in Xero |
 | **X8** Acceptance | live smoke test + script, runbook, setup guide, Release Notes, ADR to Accepted | `tests/Tempest.Core.Tests/Invoicing/Xero/Live/**`, `scripts/xero-demo-smoke.ps1`, `docs/guides/Xero Setup - Step by Step.md`, `docs/releases/v0.24.0/PO Test Runbook.md`, `docs/releases/v0.24.0/Release Notes.md`, `docs/adr/ADR-0162-*.md`, `docs/governance/Architecture/ADR Register.md` | all | §10.2 passes on the Demo Company; runbook walked by the PO |
+
+**X5 remark — purchasing ownership (`XeroPurchasingOwnership`, the one
+rule for POs and bills).** A Xero PO or bill is TempestOS's only when linked,
+or when it is the record a logged create made, recovered by identity and
+read back by its id before linking. The create log records the record's id
+as soon as any answer reveals it (the create's own, or a replay of it); from
+then on that create is only ever read back by its id, never re-sent. While
+no id is known, and only within `IdempotencyKeyLifetime` (5 minutes) of the
+create first being sent, the handler re-sends the create's exact body under
+its own `Idempotency-Key` (Xero replays its first answer, the record's id;
+the log keeps the body and the send time for this). Xero documents keeping a
+key for 6 minutes from the first call, after which a repeat is processed as a
+new request (developer.xero.com, *Idempotent requests*; re-confirm at X8).
+This refines §6.4 item 3 for X5: the number lookup never proves a record
+ours, only finds one in the way of a create. Read back live → link; deleted
+(or a bill voided) → *DeletedInXero*, recorded as a tombstone: never linked,
+never re-sent by Retry, cancel or delete, nothing else under the number
+touched (live push Rejected, cancel/delete NothingToDo), however it was
+edited or renumbered first. The person's deliberate **Send again**
+(`XeroPurchasingSendAgain`, audited `xero.purchasing.send-again`; U3 puts it
+on the badge) releases the tombstone and re-queues the push, which sends the
+document as a new DRAFT under a new derived key (`CreateKey`), never the
+deleted record's key. No id known and the key possibly forgotten, no
+recorded body, or a replay refused → *CannotTell*: Rejected, nothing linked,
+sent or deleted; Send again never releases it. Matching by number, contact
+or amounts never adopts a record: every purchasing create is keyed and
+logged (pre-v0.24 documents' *Send to Xero* queues the same keyed create).
+Residual risk for design-owner sign-off: a create whose answer was lost and
+which the drain does not recover within 5 minutes stays CannotTell (for a PO
+or a bill) until someone checks Xero — TempestOS never re-sends it, so it
+never makes a second record; it no longer re-creates a bill after the key
+expires. Out-of-row, additive, test-only:
+`Simulator/XeroApiSimulator.BackOffice.cs` (`SetDateInXero`,
+`ForgetIdempotencyKeys`).
 
 Every task: `dotnet build` of both test projects with
 `-p:TreatWarningsAsErrors=true`, its own tests plus the Invoicing and
