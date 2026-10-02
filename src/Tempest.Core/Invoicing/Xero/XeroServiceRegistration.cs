@@ -196,8 +196,9 @@ internal static partial class XeroServiceRegistration
     /// <summary>
     /// Registers every Xero Settings definition B1 owns —
     /// <see cref="XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey"/> —
-    /// once the container is built, so Settings lists it (default off)
-    /// before the first write reads it. Idempotent
+    /// and X1's tax-type and account-code choices (with their Q10 defaults) —
+    /// once the container is built, so Settings lists them (live organisation
+    /// default off) before the first write or line resolution reads them. Idempotent
     /// (<see cref="XeroWriteSafetyHandler.EnsureAllowLiveOrganisationDefinition"/>):
     /// the Settings UI may call that too.
     /// </summary>
@@ -207,7 +208,13 @@ internal static partial class XeroServiceRegistration
         ArgumentNullException.ThrowIfNull(provider);
 
         if (TryResolve<ISettingsProvider>(provider) is { } settings)
+        {
             XeroWriteSafetyHandler.EnsureAllowLiveOrganisationDefinition(settings);
+
+            // X1's tax-type and account-code choices, so Settings lists them before anything resolves a code.
+            XeroTaxTypeResolver.EnsureDefinitions(settings);
+            XeroAccountCodeMap.EnsureDefinitions(settings);
+        }
     }
 
     /// <summary>

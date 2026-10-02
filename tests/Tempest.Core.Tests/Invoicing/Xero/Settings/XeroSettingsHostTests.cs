@@ -1,3 +1,4 @@
+using Tempest.Core.BusinessGovernance;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero;
@@ -34,6 +35,11 @@ public sealed class XeroSettingsHostTests
             Assert.Equal(Path.Combine(temp.Path, "accounts", FileXeroSettingsCache.FileName), cache.FilePath);
             Assert.IsType<XeroTaxTypeResolver>(services.GetService(typeof(XeroTaxTypeResolver)));
             Assert.IsType<XeroAccountCodeMap>(services.GetService(typeof(XeroAccountCodeMap)));
+
+            // Backlog X1-5: X1's choices are defined at start-up, so Settings lists them before any line resolves a code.
+            var settings = (Tempest.Core.Settings.ISettingsProvider)services.GetService(typeof(Tempest.Core.Settings.ISettingsProvider));
+            Assert.Equal("200", await settings.GetValueAsync(XeroAccountCodeMap.SalesSettingKey));
+            Assert.Equal("OUTPUT2", await settings.GetValueAsync(XeroTaxTypeResolver.SettingKey(VatTaxDirection.Sales, VatRate.Standard)));
 
             // Never authorised: no tenant, so no reading and no network call.
             Assert.Null(await reader.ReadCachedAsync());

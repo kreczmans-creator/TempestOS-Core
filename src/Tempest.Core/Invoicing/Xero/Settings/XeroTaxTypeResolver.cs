@@ -170,8 +170,13 @@ public sealed class XeroTaxTypeResolver
         if (!Enum.IsDefined(rate) || !Enum.IsDefined(direction))
             return null;
 
-        if (Interlocked.Exchange(ref _definitionsEnsured, 1) == 0)
+        // Marked only once the definitions exist: a call racing the first one ensures them itself
+        // (idempotent) rather than reading before they are registered and answering the default.
+        if (Volatile.Read(ref _definitionsEnsured) == 0)
+        {
             EnsureDefinitions(_settings);
+            Volatile.Write(ref _definitionsEnsured, 1);
+        }
 
         try
         {

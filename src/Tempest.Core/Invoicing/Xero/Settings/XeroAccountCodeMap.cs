@@ -193,8 +193,13 @@ public sealed class XeroAccountCodeMap
 
     private async Task<string> ReadChoiceAsync(string key, string fallback, CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _definitionsEnsured, 1) == 0)
+        // Marked only once the definitions exist: a call racing the first one ensures them itself
+        // (idempotent) rather than reading before they are registered and answering the default.
+        if (Volatile.Read(ref _definitionsEnsured) == 0)
+        {
             EnsureDefinitions(_settings);
+            Volatile.Write(ref _definitionsEnsured, 1);
+        }
 
         try
         {
