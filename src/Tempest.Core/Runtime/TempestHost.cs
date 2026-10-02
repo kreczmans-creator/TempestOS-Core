@@ -969,10 +969,21 @@ public sealed class TempestHost : ITempestHost
         }
 
         IInvoicingConnector invoicingConnector;
+        var xeroComposed = false;
 
         if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))
         {
-            invoicingConnector = BuildXeroConnector(configuration, secretStore, microsoftLoggerFactory);
+            // `v0.24.0` (`ADR-0162`, task B1): the connector and the typed
+            // Xero client share one `HttpClient` whose pipeline starts with
+            // `XeroWriteSafetyHandler` (D3/D4/D7) — composed, and every Xero
+            // service registered, by `XeroServiceRegistration`. The handler
+            // resolves the settings reader, Settings and the audit recorder
+            // from the container once it exists, per write.
+            var xero = XeroServiceRegistration.Compose(
+                configuration, secretStore, microsoftLoggerFactory, () => { lock (_gate) return _services; });
+            XeroServiceRegistration.Register(services, xero);
+            invoicingConnector = xero.Connector;
+            xeroComposed = true;
         }
         else if (string.Equals(configuredConnectorName, "QuickBooksOnline", StringComparison.OrdinalIgnoreCase))
         {
@@ -1065,6 +1076,12 @@ public sealed class TempestHost : ITempestHost
         }
 
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
+
+        // `v0.24.0` B1: the Xero Settings definitions (D7's
+        // `Xero.AllowLiveOrganisation`), registered once now rather than on
+        // the first write that reads them.
+        if (xeroComposed)
+            XeroServiceRegistration.RegisterSettingDefinitions(serviceProvider);
 
         runToken.ThrowIfCancellationRequested();
 
@@ -1267,38 +1284,6 @@ public sealed class TempestHost : ITempestHost
             $"'{SqlitePersistenceStore.BackendConfigurationKey}' is configured as '{backend}', which is not a " +
             $"persistence backend this build has. The only valid value is '{SqlitePersistenceStore.SqliteBackendValue}' " +
             "(the default); the file-per-key backend this key once also selected is deleted (v0.18.0, ADR-0144).");
-    }
-
-    /// <summary>
-    /// Builds the real Xero <see cref="IInvoicingConnector"/> (`WP 19.1A`
-    /// part 2): the redirect URI a sandbox app must register is a fresh
-    /// loopback port every run (<c>OAuthLoopbackListener</c>'s own remarks)
-    /// — never one of these fixed endpoints.
-    /// </summary>
-    private static XeroConnector BuildXeroConnector(
-        IConfigurationProvider configuration, ISecretStore secretStore, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory)
-    {
-        var httpClient = new HttpClient(new InvoicingHttpLoggingHandler(loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero")))
-        {
-            BaseAddress = new Uri("https://api.xero.com/api.xro/2.0/"),
-        };
-
-        var profile = new OAuthProviderProfile(
-            Provider: "Xero",
-            AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
-            TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
-            // Xero's granular scopes: an app created on or after 2 March
-            // 2026 can never be granted the broad `accounting.transactions`
-            // or `accounting.reports.read`, so asking for them fails the
-            // consent outright. One scope per endpoint `XeroConnector`
-            // calls: Invoices/RepeatingInvoices (invoices), Contacts (read
-            // only), Reports/BankSummary.
-            Scopes: ["openid", "profile", "email", "accounting.invoices", "accounting.contacts.read", "accounting.reports.banksummary.read", "offline_access"],
-            TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
-
-        var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);
-
-        return new XeroConnector(httpClient, authoriser, configuration);
     }
 
     /// <summary>

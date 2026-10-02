@@ -285,6 +285,7 @@ public sealed class XeroConnectorTests
         await secretStore.SetAsync("Invoicing:Xero:AccessToken", "seeded-access-token");
         await secretStore.SetAsync("Invoicing:Xero:RefreshToken", "seeded-refresh-token");
         await secretStore.SetAsync("Invoicing:Xero:ExpiresAtUtc", DateTimeOffset.UtcNow.AddHours(1).ToString("O"));
+        await secretStore.SetAsync("Invoicing:Xero:GrantedScopes", string.Join(' ', XeroScopes.Required)); // v0.24.0 X0: a full grant
 
         if (tenantId is not null)
             await secretStore.SetAsync("Invoicing:Xero:TenantId", tenantId);

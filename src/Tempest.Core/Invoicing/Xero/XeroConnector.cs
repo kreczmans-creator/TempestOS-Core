@@ -248,17 +248,50 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     public Task<OAuthResult> AuthoriseAsync(CancellationToken cancellationToken = default) =>
         _authoriser.AuthoriseAsync(cancellationToken);
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// `v0.24.0` X0: a usable token whose recorded grant lacks any of
+    /// <see cref="XeroScopes.Required"/> answers
+    /// <see cref="ConnectorAuthorisation.Expired"/> with the detail
+    /// <i>"Xero needs re-authorising to allow: {missing}"</i>, so Settings
+    /// offers Re-authorise before a call fails on the missing scope.
+    /// </remarks>
     public async Task<ConnectorAuthorisationState> AuthorisationStateAsync(CancellationToken cancellationToken = default)
     {
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);
 
+        if (access.Outcome == AccessTokenOutcome.Ok)
+        {
+            var missing = FindMissingScopes(await _authoriser.ReadGrantedScopesAsync(cancellationToken).ConfigureAwait(false));
+            return missing.Count == 0
+                ? new ConnectorAuthorisationState(ConnectorAuthorisation.Authorised)
+                : new ConnectorAuthorisationState(ConnectorAuthorisation.Expired, $"Xero needs re-authorising to allow: {string.Join(", ", missing)}");
+        }
+
         return access.Outcome switch
         {
-            AccessTokenOutcome.Ok => new ConnectorAuthorisationState(ConnectorAuthorisation.Authorised),
             AccessTokenOutcome.NotAuthorised => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised),
             AccessTokenOutcome.NotConfigured => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised, access.Reason),
             _ => new ConnectorAuthorisationState(ConnectorAuthorisation.Expired, access.Reason),
         };
+    }
+
+    /// <summary>
+    /// The scopes of <see cref="XeroScopes.Required"/> that
+    /// <paramref name="granted"/> lacks, in <see cref="XeroScopes.Required"/>'s
+    /// order (`v0.24.0` X0). A <see langword="null"/> grant — tokens stored
+    /// before v0.24.0 recorded none — counts as lacking exactly the scopes
+    /// v0.24.0 added: <see cref="XeroScopes.Contacts"/>,
+    /// <see cref="XeroScopes.SettingsRead"/> and <see cref="XeroScopes.Attachments"/>.
+    /// </summary>
+    /// <param name="granted">The recorded grant (<see cref="OAuthAuthoriser.ReadGrantedScopesAsync"/>).</param>
+    public static IReadOnlyList<string> FindMissingScopes(IReadOnlyList<string>? granted)
+    {
+        if (granted is null)
+            return [XeroScopes.Contacts, XeroScopes.SettingsRead, XeroScopes.Attachments];
+
+        var grantedSet = new HashSet<string>(granted, StringComparer.Ordinal);
+        return [.. XeroScopes.Required.Where(scope => !grantedSet.Contains(scope))];
     }
 
     // ====================================================================
