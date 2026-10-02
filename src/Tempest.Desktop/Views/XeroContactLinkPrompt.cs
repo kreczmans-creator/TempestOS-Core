@@ -82,6 +82,7 @@ public sealed class XeroContactLinkPrompt : Border
     private readonly Button _cancelButton = new() { Content = CancelButtonName, MinHeight = DesignTokens.ControlSizeMedium };
 
     private TaskCompletionSource<XeroLink?>? _pending;
+    private CancellationTokenRegistration _pendingRegistration;
     private CancellationTokenSource? _searchCancellation;
     private string? _organisationReference;
     private string _organisationName = string.Empty;
@@ -178,9 +179,18 @@ public sealed class XeroContactLinkPrompt : Border
     /// <param name="organisationReference">The organisation's reference (its link key).</param>
     /// <param name="organisationName">Its name, for the title.</param>
     /// <param name="cancellationToken">Closes the prompt as cancelled.</param>
+    /// <remarks>
+    /// While a link or create is in flight the prompt stays on that
+    /// organisation — the write's answer belongs to it alone — so a second
+    /// call completes at once with <see langword="null"/> and leaves the
+    /// prompt (and the write) as they are.
+    /// </remarks>
     public Task<XeroLink?> PromptAsync(string organisationReference, string organisationName, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organisationReference);
+
+        if (_writing)
+            return Task.FromResult<XeroLink?>(null);
 
         Complete(null);
 
@@ -196,7 +206,7 @@ public sealed class XeroContactLinkPrompt : Border
         var pending = new TaskCompletionSource<XeroLink?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending = pending;
         if (cancellationToken.CanBeCanceled)
-            cancellationToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (ReferenceEquals(_pending, pending)) Cancel(); }));
+            _pendingRegistration = cancellationToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (ReferenceEquals(_pending, pending)) Cancel(); }));
 
         _ = SearchAsync();
         _cancelButton.Focus();
@@ -267,15 +277,19 @@ public sealed class XeroContactLinkPrompt : Border
             return;
 
         _searchCancellation?.Cancel();
-        var cancellation = new CancellationTokenSource();
+        using var cancellation = new CancellationTokenSource();
         _searchCancellation = cancellation;
 
+        // Create in Xero waits for this search's answer: the matches are
+        // seen before a new contact is made.
+        _searched = false;
         _searching = true;
         _noMatches.IsVisible = false;
         _status.Text = "Searching Xero for matching contacts…";
         UpdateButtons();
 
         ConnectorResult<IReadOnlyList<XeroContactCandidate>>? result = null;
+        string? failure = null;
         try
         {
             result = await _linker.FindCandidatesAsync(reference, cancellation.Token).ConfigureAwait(true);
@@ -284,25 +298,26 @@ public sealed class XeroContactLinkPrompt : Border
         {
             // Cancelled or superseded: a newer search or the prompt closing owns the state now.
         }
-        catch (Exception ex) when (ex is InvalidOperationException or HttpRequestException)
+        catch (Exception ex)
         {
-            if (ReferenceEquals(_searchCancellation, cancellation))
-                _status.Text = $"Could not search Xero: {ex.Message}";
-        }
-        finally
-        {
-            if (ReferenceEquals(_searchCancellation, cancellation))
-            {
-                _searching = false;
-                _searched = true;
-            }
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
+            failure = $"Could not search Xero: {ex.Message}";
         }
 
-        if (!ReferenceEquals(_searchCancellation, cancellation) || !IsVisible)
+        // A newer search or the prompt closing owns the state now; this
+        // search's token source is disposed on the way out and must not stay
+        // reachable.
+        if (!ReferenceEquals(_searchCancellation, cancellation))
+            return;
+
+        _searchCancellation = null;
+        _searching = false;
+        if (!IsVisible)
             return;
 
         if (result is { Outcome: ConnectorOutcome.Ok, Value: { } found })
         {
+            _searched = true;
             ShowCandidates(found);
             _noMatches.IsVisible = found.Count == 0;
             _status.Text = found.Count switch
@@ -315,6 +330,10 @@ public sealed class XeroContactLinkPrompt : Border
         else if (result is not null)
         {
             _status.Text = DescribeFailure(result, "search Xero");
+        }
+        else if (failure is not null)
+        {
+            _status.Text = failure;
         }
 
         UpdateButtons();
@@ -389,6 +408,10 @@ public sealed class XeroContactLinkPrompt : Border
 
     private async Task WriteAsync(string progress, string action, Func<CancellationToken, Task<ConnectorResult<XeroLink>>> write)
     {
+        // The write's answer belongs to the prompt it was started from: the
+        // prompt cannot be re-pointed while it runs (see PromptAsync), and
+        // only this pending answer is completed with its link.
+        var pending = _pending;
         _writing = true;
         _status.Text = progress;
         UpdateButtons();
@@ -400,8 +423,9 @@ public sealed class XeroContactLinkPrompt : Border
             // from the answer, so a write always runs to it.
             result = await write(CancellationToken.None).ConfigureAwait(true);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
             _status.Text = $"Could not {action}: {ex.Message}";
         }
         finally
@@ -411,11 +435,14 @@ public sealed class XeroContactLinkPrompt : Border
 
         if (result is { Outcome: ConnectorOutcome.Ok, Value: { } link })
         {
-            Complete(link);
+            if (ReferenceEquals(_pending, pending))
+                Complete(link);
+            else
+                pending?.TrySetResult(link);
             return;
         }
 
-        if (result is not null)
+        if (result is not null && ReferenceEquals(_pending, pending))
             _status.Text = DescribeFailure(result, action);
 
         UpdateButtons();
@@ -444,6 +471,9 @@ public sealed class XeroContactLinkPrompt : Border
         _searchCancellation?.Cancel();
         _searchCancellation = null;
         _searching = false;
+
+        _pendingRegistration.Dispose();
+        _pendingRegistration = default;
 
         IsVisible = false;
         var pending = _pending;

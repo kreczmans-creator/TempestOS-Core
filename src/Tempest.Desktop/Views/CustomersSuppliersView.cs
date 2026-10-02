@@ -123,6 +123,12 @@ public sealed class CustomersSuppliersView : UserControl
     private readonly Button _xeroRefreshButton = new() { Content = RefreshFromXeroName, MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
     private readonly Button _xeroUnlinkButton = new() { Content = "Unlink", MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
     private readonly Panel _overlay = new();
+    private readonly ScrollViewer _body = new();
+
+    // The Link to Xero… prompt is modal within the view: while it is open a
+    // full-size scrim takes every pointer hit and the body behind it is
+    // disabled, so the organisation shown cannot change under it.
+    private readonly Border _xeroScrim = new() { IsVisible = false, Opacity = 0.7 };
     private XeroContactLinker? _xero;
     private XeroContactLinkPrompt? _xeroPrompt;
     private int _xeroGeneration;
@@ -261,7 +267,8 @@ public sealed class CustomersSuppliersView : UserControl
         body.Children.Add(_contactsSection);
 
         AutomationProperties.SetName(this, "Customers & Suppliers");
-        _overlay.Children.Add(new ScrollViewer { Content = body });
+        _body.Content = body;
+        _overlay.Children.Add(_body);
         Content = _overlay;
     }
 
@@ -283,6 +290,9 @@ public sealed class CustomersSuppliersView : UserControl
     /// <summary>The automation name of the Unlink button.</summary>
     public const string UnlinkFromXeroName = "Unlink from Xero";
 
+    /// <summary>The automation name of the scrim that covers the view while the Link to Xero… prompt is open.</summary>
+    public const string XeroPromptScrimName = "Xero link prompt backdrop";
+
     /// <summary>
     /// The X2 contact linker (`v0.24.0` U2): set when Xero is the connector,
     /// which shows each organisation's Xero link and the Link / Refresh /
@@ -299,7 +309,19 @@ public sealed class CustomersSuppliersView : UserControl
                 return;
 
             _xeroPrompt = new XeroContactLinkPrompt(value);
+            ThemeReactiveBrush.Bind(_xeroScrim, Border.BackgroundProperty, ApplicationPalette.OverlayBackgroundBrushKey);
+            AutomationProperties.SetName(_xeroScrim, XeroPromptScrimName);
+            _overlay.Children.Add(_xeroScrim);
             _overlay.Children.Add(_xeroPrompt);
+            _xeroPrompt.PropertyChanged += (_, e) =>
+            {
+                if (e.Property != IsVisibleProperty)
+                    return;
+
+                var open = _xeroPrompt.IsVisible;
+                _xeroScrim.IsVisible = open;
+                _body.IsEnabled = !open;
+            };
         }
     }
 
@@ -308,6 +330,9 @@ public sealed class CustomersSuppliersView : UserControl
 
     /// <summary>Whether a Xero read or unlink for the organisation shown is in flight.</summary>
     internal bool IsXeroBusy => _xeroBusy;
+
+    /// <summary>Whether the body behind the Link to Xero… prompt (the list and the form) takes input.</summary>
+    internal bool IsBodyEnabled => _body.IsEnabled;
 
     /// <summary>The record id of the organisation the form is editing, or <see langword="null"/> while it holds a new one.</summary>
     internal string? EditingRecordId => _editingRecordId;
@@ -667,7 +692,7 @@ public sealed class CustomersSuppliersView : UserControl
     private void HideXero()
     {
         _xeroGeneration++;
-        _xeroBusy = false;
+        SetXeroBusy(false);
         _xeroSection.IsVisible = false;
         _xeroDetails.IsVisible = false;
         _xeroStatus.Text = string.Empty;
@@ -682,7 +707,20 @@ public sealed class CustomersSuppliersView : UserControl
     internal async Task RefreshXeroAsync(bool readDetails)
     {
         var generation = ++_xeroGeneration;
-        if (_xero is null || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation || generation != _xeroGeneration)
+        Organisation? organisation;
+        try
+        {
+            organisation = _xero is null ? null : await EditingOrganisationAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
+            if (generation == _xeroGeneration)
+                _xeroStatus.Text = $"Could not read the Xero link: {ex.Message}";
+            return;
+        }
+
+        if (_xero is null || organisation is null || generation != _xeroGeneration)
         {
             if (generation == _xeroGeneration)
                 _xeroSection.IsVisible = false;
@@ -694,7 +732,7 @@ public sealed class CustomersSuppliersView : UserControl
         _xeroStatus.Text = string.Empty;
         SetXeroButtons(linked: null);
 
-        _xeroBusy = true;
+        SetXeroBusy(true);
         try
         {
             var tenantId = await _xero.ReadTenantIdAsync().ConfigureAwait(true);
@@ -750,16 +788,29 @@ public sealed class CustomersSuppliersView : UserControl
                 _xeroStatus.Text = XeroContactLinkPrompt.DescribeFailure(details, "read the contact's details from Xero");
             }
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
             if (generation == _xeroGeneration)
                 _xeroStatus.Text = $"Could not read the Xero link: {ex.Message}";
         }
         finally
         {
             if (generation == _xeroGeneration)
-                _xeroBusy = false;
+                SetXeroBusy(false);
         }
+    }
+
+    /// <summary>
+    /// Marks a Xero read or unlink as in flight (or not): while one is,
+    /// Refresh and Unlink are disabled, so neither is silently ignored nor
+    /// races the other's bookkeeping.
+    /// </summary>
+    private void SetXeroBusy(bool busy)
+    {
+        _xeroBusy = busy;
+        _xeroRefreshButton.IsEnabled = !busy;
+        _xeroUnlinkButton.IsEnabled = !busy;
     }
 
     private void SetXeroButtons(bool? linked)
@@ -819,49 +870,103 @@ public sealed class CustomersSuppliersView : UserControl
 
     private async Task LinkToXeroAsync()
     {
-        if (_xeroPrompt is null || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
-            return;
-
-        var link = await _xeroPrompt.PromptAsync(organisation.Reference, organisation.Name).ConfigureAwait(true);
-        if (link is null)
-            return;
-
-        await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
-        if (string.IsNullOrEmpty(_xeroStatus.Text))
+        try
         {
-            _xeroStatus.Text = link.LinkedBy == XeroContactLinker.LinkedByCreated
-                ? $"Created '{organisation.Name}' in Xero and linked it."
-                : $"Linked '{organisation.Name}' to its Xero contact.";
+            if (_xeroPrompt is null || _editingRecordId is not { } recordId
+                || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
+                return;
+
+            var link = await _xeroPrompt.PromptAsync(organisation.Reference, organisation.Name).ConfigureAwait(true);
+            if (link is null || !IsStillShowing(recordId))
+                return;
+
+            await ReportAfterRefreshAsync(
+                recordId,
+                link.LinkedBy == XeroContactLinker.LinkedByCreated
+                    ? $"Created '{organisation.Name}' in Xero and linked it."
+                    : $"Linked '{organisation.Name}' to its Xero contact.",
+                readDetails: true,
+                onlyIfQuiet: true).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
+            _xeroStatus.Text = $"Could not link to Xero: {ex.Message}";
         }
     }
 
     private async Task UnlinkFromXeroAsync()
     {
-        if (_xero is null || _xeroBusy || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
+        if (_xero is null || _xeroBusy || _editingRecordId is not { } recordId)
             return;
 
-        _xeroBusy = true;
-        _xeroUnlinkButton.IsEnabled = false;
+        // Busy from the click: Refresh and Unlink wait for this unlink.
+        var generation = ++_xeroGeneration;
+        SetXeroBusy(true);
+        Organisation? organisation = null;
         bool removed;
         try
         {
+            organisation = await EditingOrganisationAsync().ConfigureAwait(true);
+            if (organisation is null)
+                return;
+
             removed = await _xero.UnlinkAsync(organisation.Reference).ConfigureAwait(true);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _xeroStatus.Text = $"Could not unlink: {ex.Message}";
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
+            if (generation == _xeroGeneration)
+                _xeroStatus.Text = $"Could not unlink: {ex.Message}";
             return;
         }
         finally
         {
-            _xeroBusy = false;
-            _xeroUnlinkButton.IsEnabled = true;
+            if (generation == _xeroGeneration)
+                SetXeroBusy(false);
         }
 
-        await RefreshXeroAsync(readDetails: false).ConfigureAwait(true);
-        _xeroStatus.Text = removed
-            ? $"Unlinked '{organisation.Name}' from its Xero contact. Nothing was changed in Xero; link it again before its next document goes to Xero."
-            : "There was no Xero link to remove.";
+        if (!IsStillShowing(recordId))
+            return;
+
+        await ReportAfterRefreshAsync(
+            recordId,
+            removed
+                ? $"Unlinked '{organisation.Name}' from its Xero contact. Nothing was changed in Xero; link it again before its next document goes to Xero."
+                : "There was no Xero link to remove.",
+            readDetails: false,
+            onlyIfQuiet: false).ConfigureAwait(true);
+    }
+
+    /// <summary>Whether the form still shows the organisation <paramref name="recordId"/>.</summary>
+    private bool IsStillShowing(string recordId) => string.Equals(_editingRecordId, recordId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Refreshes the Xero section, then writes <paramref name="message"/>
+    /// into its status line — but only if the organisation shown is still
+    /// <paramref name="recordId"/> and no other refresh started meanwhile
+    /// (the same generation check <see cref="RefreshXeroAsync"/> uses), so an
+    /// outcome never lands on another organisation.
+    /// </summary>
+    private async Task ReportAfterRefreshAsync(string recordId, string message, bool readDetails, bool onlyIfQuiet)
+    {
+        try
+        {
+            var refresh = RefreshXeroAsync(readDetails);
+            var generation = _xeroGeneration;
+            await refresh.ConfigureAwait(true);
+            if (generation != _xeroGeneration || !IsStillShowing(recordId))
+                return;
+
+            if (!onlyIfQuiet || string.IsNullOrEmpty(_xeroStatus.Text))
+                _xeroStatus.Text = message;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
+            if (IsStillShowing(recordId))
+                _xeroStatus.Text = $"Could not refresh the Xero link: {ex.Message}";
+        }
     }
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();

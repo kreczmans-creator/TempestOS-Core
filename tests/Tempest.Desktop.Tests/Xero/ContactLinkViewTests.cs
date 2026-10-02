@@ -499,11 +499,29 @@ internal sealed class TestSettingsReader(bool isDemoCompany) : IXeroSettingsRead
 internal sealed class InMemorySecretStore : ISecretStore
 {
     private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
+    private TaskCompletionSource? _hold;
 
-    public Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
+    /// <summary>When set, every read throws it — a store defect, which is neither an <see cref="InvalidOperationException"/> nor a transport fault.</summary>
+    public Exception? Fault { get; set; }
+
+    /// <summary>Holds the next read until the returned gate is opened.</summary>
+    public TaskCompletionSource HoldNextGet()
     {
+        var hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _hold = hold;
+        return hold;
+    }
+
+    public async Task<string?> GetAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (Interlocked.Exchange(ref _hold, null) is { } hold)
+            await hold.Task.ConfigureAwait(false);
+
+        if (Fault is { } fault)
+            throw fault;
+
         lock (_values)
-            return Task.FromResult(_values.TryGetValue(key, out var value) ? value : null);
+            return _values.TryGetValue(key, out var value) ? value : null;
     }
 
     public Task SetAsync(string key, string value, CancellationToken cancellationToken = default)

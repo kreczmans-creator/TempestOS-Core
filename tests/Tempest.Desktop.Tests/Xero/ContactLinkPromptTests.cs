@@ -62,6 +62,9 @@ public sealed class ContactLinkPromptTests
         Assert.Contains("Nothing was changed", Text(prompt, XeroContactLinkPrompt.StatusName), StringComparison.Ordinal);
         Assert.Empty(prompt.Candidates);
 
+        // The search did not answer, so the matches have not been seen: no Create in Xero yet.
+        Assert.False(Button(prompt, XeroContactLinkPrompt.CreateButtonName).IsEnabled);
+
         Click(prompt, XeroContactLinkPrompt.SearchAgainButtonName);
         await kit.WaitAsync(() => !prompt.IsBusy && prompt.Candidates.Count == 1);
         Assert.Equal(contactId, prompt.Candidates[0].ContactId);
