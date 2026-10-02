@@ -211,23 +211,6 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
             cancellationToken);
     }
 
-    /// <summary>Sets <see cref="SourcePurchaseOrderId"/> to <paramref name="purchaseOrderId"/>, once — an expense recorded from an order carries it from its first revision (<c>IExpenseService.RecordAsync</c> with the order id); this marks one recorded without it.</summary>
-    internal Task MarkSourcePurchaseOrderAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default)
-    {
-        if (_sourcePurchaseOrderId is { } existing)
-        {
-            return existing == purchaseOrderId
-                ? Task.CompletedTask
-                : throw new InvalidOperationException($"Expense '{Id}' was already recorded from purchase order '{existing}'.");
-        }
-
-        return MutateTypeStateAndPersistAsync(
-            () => new Dictionary<string, string?>(StringComparer.Ordinal) { [nameof(SourcePurchaseOrderId)] = purchaseOrderId.ToString() },
-            () => _sourcePurchaseOrderId = purchaseOrderId,
-            $"Recorded from purchase order '{purchaseOrderId:N}'.",
-            cancellationToken);
-    }
-
     /// <inheritdoc />
     protected override void CaptureTypeState(IDictionary<string, string?> state)
     {

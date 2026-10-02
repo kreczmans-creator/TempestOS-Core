@@ -32,6 +32,9 @@ internal sealed class FakePurchaseOrderSource : IXeroPurchaseOrderSource
         set => _orders[id] = value;
     }
 
+    /// <summary>The order is no longer readable at all (purged, or its store unreadable).</summary>
+    public void Remove(Guid id) => _orders.Remove(id);
+
     public Task<XeroPurchaseOrderSnapshot?> FindAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_orders.TryGetValue(purchaseOrderId, out var order) ? order : null);
 
@@ -49,6 +52,9 @@ internal sealed class FakeExpenseSource : IXeroExpenseSource
         get => _expenses[id];
         set => _expenses[id] = value;
     }
+
+    /// <summary>The expense is no longer readable at all (purged, or its store unreadable).</summary>
+    public void Remove(Guid id) => _expenses.Remove(id);
 
     public Task<XeroExpenseSnapshot?> FindAsync(Guid expenseId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_expenses.TryGetValue(expenseId, out var expense) ? expense : null);

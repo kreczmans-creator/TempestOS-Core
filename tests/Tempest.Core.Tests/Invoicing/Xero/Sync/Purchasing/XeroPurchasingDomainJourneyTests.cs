@@ -240,12 +240,10 @@ public sealed class XeroPurchasingDomainJourneyTests
 
             var supplied = (await expenses.RecordAsync(
                 projectId, new DateOnly(2026, 9, 2), "Fixings", ExpenseCategory.Materials,
-                new Money(30m, CurrencyCode.Gbp), new Money(6m, CurrencyCode.Gbp), billable: true)).Expense!;
+                new Money(30m, CurrencyCode.Gbp), new Money(6m, CurrencyCode.Gbp), billable: true, sourceOrderId)).Expense!;
             suppliedId = supplied.Id;
+            Assert.Equal(sourceOrderId, supplied.SourcePurchaseOrderId);
             Assert.True((await expenses.SetSupplierAsync(suppliedId, "STEEL1", "INV-9")).Succeeded);
-            await supplied.MarkSourcePurchaseOrderAsync(sourceOrderId);
-            await supplied.MarkSourcePurchaseOrderAsync(sourceOrderId); // the same order again: no change
-            await Assert.ThrowsAsync<InvalidOperationException>(() => supplied.MarkSourcePurchaseOrderAsync(Guid.NewGuid()));
 
             // Clearing the supplier keeps the source order.
             Assert.True((await expenses.SetSupplierAsync(suppliedId, "STEEL1", null)).Succeeded);

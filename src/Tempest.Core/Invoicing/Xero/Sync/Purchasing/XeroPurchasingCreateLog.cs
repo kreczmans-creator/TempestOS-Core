@@ -48,14 +48,16 @@ public sealed class XeroPurchasingCreateLog
     /// <param name="contactId">The Xero <c>ContactID</c> the create carries.</param>
     /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
+    /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any — so a record found later under the number can be told from one someone else keyed with another reference.</param>
     public async Task RecordSendingAsync(
-        string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default)
+        string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default,
+        string? reference = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
-        var sent = new XeroPurchasingSentCreate(number.Trim(), contactId.Trim(), idempotencyKey);
+        var sent = new XeroPurchasingSentCreate(number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim());
         await UpdateAsync(tenantId, document, list => list.Any(s => s == sent) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
     }
 
@@ -156,4 +158,5 @@ public sealed class XeroPurchasingCreateLog
 /// <param name="Number">The Xero number the create carried.</param>
 /// <param name="ContactId">The Xero <c>ContactID</c> the create carried.</param>
 /// <param name="IdempotencyKey">The create's <c>Idempotency-Key</c>.</param>
-public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey);
+/// <param name="Reference">The <c>Reference</c> the create carried; <see langword="null"/> when none (a bill carries none).</param>
+public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null);

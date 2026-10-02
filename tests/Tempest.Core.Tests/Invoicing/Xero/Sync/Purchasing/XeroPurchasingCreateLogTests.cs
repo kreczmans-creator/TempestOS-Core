@@ -73,4 +73,16 @@ public sealed class XeroPurchasingCreateLogTests
         Assert.Empty(await log.ListSentAsync("t2", Document));
         Assert.Empty(await log.ListSentAsync("t1", new XeroDocumentRef(XeroDocumentKind.ExpenseBill, Guid.NewGuid().ToString("D"))));
     }
+
+    [Fact]
+    public async Task TheReferenceACreateCarried_IsKept_Trimmed()
+    {
+        var log = new XeroPurchasingCreateLog(new YieldingInMemoryPersistenceStore());
+        await log.RecordSendingAsync("t1", Document, "PO-1", "c1", "k1", reference: " P0012 ");
+        await log.RecordSendingAsync("t1", Document, "PO-1", "c1", "k2", reference: "  ");
+
+        Assert.Equal(
+            [new XeroPurchasingSentCreate("PO-1", "c1", "k1", "P0012"), new XeroPurchasingSentCreate("PO-1", "c1", "k2")],
+            await log.ListSentAsync("t1", Document));
+    }
 }
