@@ -16,9 +16,11 @@ public sealed record XeroQuotePlannerOptions
     /// this moment are synced automatically; earlier ones — raised before
     /// `v0.24.0`'s Xero sync existed — only after the Product Owner's explicit
     /// <em>Send to Xero</em> (<see cref="XeroQuotePlanner.SendToXeroAsync"/>,
-    /// Q8). <see langword="null"/> (the default) uses the moment the planner
-    /// first ran in this workspace, recorded once in
-    /// <see cref="XeroQuotePlanner.StateCollection"/> and never moved.
+    /// Q8). <see langword="null"/> (the default) uses the moment Xero quote
+    /// sync started running in this workspace — when the planner was built,
+    /// at start-up — recorded once in
+    /// <see cref="XeroQuotePlanner.StateCollection"/> the first time it is
+    /// used (the start-up scan, or any plan) and never moved.
     /// </summary>
     public DateTimeOffset? AutomaticFromUtc { get; init; }
 }
@@ -38,9 +40,12 @@ public sealed record XeroQuoteSendRequest(bool Queued, IReadOnlyList<XeroOutboxE
 /// <remarks>
 /// <para>
 /// <b>When a quotation is in scope.</b> Once it is issued: an approved
-/// revision Rn that has been exported (its PDF is held,
-/// <see cref="IXeroDocumentFileSource"/>), or already sent, accepted or
-/// declined. A draft, a quotation in review, or an approved one edited back
+/// revision Rn that has been exported (a PDF is held,
+/// <see cref="IXeroDocumentFileSource"/>, that has not already been
+/// uploaded to its Xero quote — so a linked Rn+1 waits for its own export,
+/// not just its approval; or the Product Owner sent this revision to Xero),
+/// or already sent, accepted or declined (§4.1: "Approved Rn, then Export
+/// or Send"). A draft, a quotation in review, or an approved one edited back
 /// to draft plans nothing — the next approval issues Rn+1. Q8: a quotation
 /// issued before Xero sync began in this workspace
 /// (<see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>) is planned only
@@ -50,8 +55,9 @@ public sealed record XeroQuoteSendRequest(bool Queued, IReadOnlyList<XeroOutboxE
 /// <b>What it plans, in order</b> (the outbox keeps per-document order, so a
 /// status change never overtakes its create):
 /// <see cref="XeroOperation.PushQuote"/> while the content differs from what
-/// was last pushed and TempestOS has not yet sent it (Q1: Xero accepts content
-/// only while <c>DRAFT</c>; a sent TempestOS quotation's lines are fixed);
+/// was last pushed and Xero is not known to hold the quote past <c>DRAFT</c>
+/// (Q1: Xero accepts content only while <c>DRAFT</c>; past it the badge
+/// shows the drift, <see cref="XeroQuoteMapper.DriftNote"/>, instead);
 /// <see cref="XeroOperation.UploadAttachment"/> when the issued PDF differs
 /// from the one last uploaded; then <see cref="XeroOperation.SetQuoteStatus"/>
 /// for each step of <c>DRAFT → SENT → ACCEPTED | DECLINED</c> Xero has not
@@ -80,6 +86,7 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     private readonly Audit.IAuditRecorder? _audit;
     private readonly TimeProvider _time;
     private readonly XeroQuotePlannerOptions _options;
+    private readonly DateTimeOffset _startedAtUtc;
     private readonly SemaphoreSlim _stateGate = new(1, 1);
 
     /// <summary>Initialises a new instance of the <see cref="XeroQuotePlanner"/> class.</summary>
@@ -118,6 +125,13 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         _audit = audit;
         _time = timeProvider ?? TimeProvider.System;
         _options = options ?? new XeroQuotePlannerOptions();
+
+        // Q8: sync starts when this build starts planning in the workspace.
+        // Built at start-up, before any quotation can be approved in this
+        // run, so a quotation approved now is never "older" than the start —
+        // even when its first plan runs later (no PDF yet) or a moment after
+        // its approval commit.
+        _startedAtUtc = _time.GetUtcNow();
     }
 
     /// <inheritdoc />
@@ -133,6 +147,10 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     /// <inheritdoc />
     public async Task<IReadOnlyList<XeroPlannedOperation>> PlanAsync(Guid objectId, XeroLink? link, CancellationToken cancellationToken = default)
     {
+        // Q8: the start is recorded before anything can return early, so the
+        // first plan of a run (a draft, an approval not yet exported) fixes it.
+        await AutomaticFromAsync(cancellationToken).ConfigureAwait(false);
+
         var quote = await _quotes.FindAsync(objectId, cancellationToken).ConfigureAwait(false);
         if (quote is null || !quote.IsIssued)
             return [];
@@ -142,15 +160,22 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
         var document = XeroDocumentRef.For(XeroDocumentKind.Quote, objectId);
         var file = _files is null ? null : await _files.FindAsync(document, cancellationToken).ConfigureAwait(false);
+        var contentHash = XeroQuoteMapper.ContentHash(quote);
+
+        // §4.1: "Approved Rn, then Export or Send". Sent, accepted and
+        // declined quotations are issued; an approved revision counts once
+        // exported — a PDF is held that its Xero quote does not already carry
+        // (the previous revision's PDF does not count) — or once the Product
+        // Owner sent this revision to Xero.
+        var exported = quote.Status != QuotationStatus.Approved
+                       || (file is not null && !string.Equals(link?.AttachmentContentHash, file.Sha256, StringComparison.OrdinalIgnoreCase))
+                       || await IsRevisionSentToXeroAsync(objectId, contentHash, cancellationToken).ConfigureAwait(false);
+        if (!exported)
+            return [];
 
         if (link is null)
         {
             var optedIn = await IsOptedInAsync(objectId, cancellationToken).ConfigureAwait(false);
-
-            // Exported: an approved revision counts once its PDF is held (or it was sent, or the PO asked).
-            if (quote.Status == QuotationStatus.Approved && file is null && !optedIn)
-                return [];
-
             if (!optedIn && !await IsAutomaticAsync(quote, cancellationToken).ConfigureAwait(false))
                 return [];
         }
@@ -176,9 +201,10 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
         var planned = new List<XeroPlannedOperation>();
 
-        var contentHash = XeroQuoteMapper.ContentHash(quote);
-        var contentMayChange = link is null || quote.Status == QuotationStatus.Approved;
-        if (contentMayChange && !string.Equals(link?.LastPushedContentHash, contentHash, StringComparison.Ordinal))
+        // Content goes only while Xero holds the quote as DRAFT (Q1). Past it
+        // the push would be refused and hold the document's queue; the badge
+        // shows the drift instead (XeroQuoteMapper.DriftNote).
+        if (xeroRank == 0 && !string.Equals(link?.LastPushedContentHash, contentHash, StringComparison.Ordinal))
             planned.Add(new XeroPlannedOperation(XeroOperation.PushQuote, contentHash));
 
         if (file is not null && !string.Equals(link?.AttachmentContentHash, file.Sha256, StringComparison.OrdinalIgnoreCase))
@@ -209,6 +235,8 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         var link = tenantId is null ? null : await _links.FindAsync(tenantId, document, cancellationToken).ConfigureAwait(false);
 
         var planned = await PlanAsync(quotationId, link, cancellationToken).ConfigureAwait(false);
+        await ReleaseRefusedContentAsync(quotationId, document, link, cancellationToken).ConfigureAwait(false);
+
         var entries = new List<XeroOutboxEntry>(planned.Count);
         foreach (var operation in planned)
             entries.Add(await _outbox.EnqueueAsync(operation.Operation, document, operation.ContentHash, operation.Argument, cancellationToken).ConfigureAwait(false));
@@ -216,11 +244,13 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         return entries;
     }
 
-    /// <summary>The start-up and Refresh scan (§6.2): <see cref="PlanAndEnqueueAsync"/> for every quotation, so a change committed before a crash, or made offline, is still queued.</summary>
+    /// <summary>The start-up and Refresh scan (§6.2): records when automatic sync began (Q8) if it is not yet recorded, then <see cref="PlanAndEnqueueAsync"/> for every quotation, so a change committed before a crash, or made offline, is still queued.</summary>
     /// <param name="cancellationToken">Cancels the scan.</param>
     /// <returns>How many outbox entries the scan produced or found (planned writes).</returns>
     public async Task<int> ScanAsync(CancellationToken cancellationToken = default)
     {
+        await AutomaticFromAsync(cancellationToken).ConfigureAwait(false);
+
         var count = 0;
         foreach (var id in await _quotes.ListIdsAsync(cancellationToken).ConfigureAwait(false))
             count += (await PlanAndEnqueueAsync(id, cancellationToken).ConfigureAwait(false)).Count;
@@ -231,7 +261,8 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     /// The Product Owner's <em>Send to Xero</em> on one quotation (Q8): a
     /// quotation issued before Xero sync began is not pushed automatically;
     /// this records the explicit request (audited) and queues its writes. Also
-    /// counts as "exported" for an approved revision whose PDF is not held.
+    /// counts as "exported" for the approved revision it was asked for, when
+    /// its PDF is not held.
     /// </summary>
     /// <param name="quotationId">The quotation.</param>
     /// <param name="cancellationToken">Cancels the work.</param>
@@ -246,7 +277,7 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
         await _state.WriteAsync(
             StateCollection, OptInKey(quotationId),
-            JsonSerializer.Serialize(new { requestedAtUtc = _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture) }),
+            JsonSerializer.Serialize(new SendToXeroRecord(_time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture), XeroQuoteMapper.ContentHash(quote))),
             cancellationToken).ConfigureAwait(false);
 
         if (_audit is not null)
@@ -279,7 +310,12 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         return issued >= await AutomaticFromAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>When automatic quote sync began: <see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>, else the moment recorded the first time the planner was asked (written once, then read back).</summary>
+    /// <summary>
+    /// When automatic quote sync began: <see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>,
+    /// else the recorded moment; when none is recorded yet, the moment this
+    /// planner was built (start-up — never later than a quotation approved
+    /// in this run) is written once, then read back.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<DateTimeOffset> AutomaticFromAsync(CancellationToken cancellationToken = default)
     {
@@ -296,10 +332,11 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
                 return recorded;
             }
 
-            // First run (or an unreadable record, rewritten): sync begins now.
-            var now = _time.GetUtcNow();
-            await _state.WriteAsync(StateCollection, AutomaticFromKey, now.ToString("O", CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
-            return now;
+            // First run (or an unreadable record, rewritten): sync began when
+            // this run's planner was built, not when it was first asked — an
+            // approval committed a moment before its plan is still automatic.
+            await _state.WriteAsync(StateCollection, AutomaticFromKey, _startedAtUtc.ToString("O", CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+            return _startedAtUtc;
         }
         finally
         {
@@ -309,6 +346,52 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
     private async Task<bool> IsOptedInAsync(Guid quotationId, CancellationToken cancellationToken) =>
         await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false) is not null;
+
+    /// <summary>Whether the Product Owner's <em>Send to Xero</em> was asked for this very revision (content), which counts as its export.</summary>
+    private async Task<bool> IsRevisionSentToXeroAsync(Guid quotationId, string contentHash, CancellationToken cancellationToken)
+    {
+        var stored = await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false);
+        if (stored is null)
+            return false;
+
+        try
+        {
+            var record = JsonSerializer.Deserialize<SendToXeroRecord>(stored);
+            return string.Equals(record?.ContentHash, contentHash, StringComparison.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// A content push Xero refused because it holds the quote past
+    /// <c>DRAFT</c> stays Failed and holds the document's queue (B2). Once the
+    /// TempestOS quotation is no longer Approved its content is fixed, so
+    /// there is nothing left to push: the refused entry is put back to
+    /// Pending, the handler then answers NothingToDo (recording the drift),
+    /// and the status changes behind it run. Local only; no network call.
+    /// </summary>
+    private async Task ReleaseRefusedContentAsync(Guid quotationId, XeroDocumentRef document, XeroLink? link, CancellationToken cancellationToken)
+    {
+        if (link is null || XeroQuoteMapper.Rank(link.LastKnownXeroStatus) is not > 0)
+            return;
+
+        var quote = await _quotes.FindAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (quote is null || !quote.IsIssued || quote.Status == QuotationStatus.Approved)
+            return;
+
+        foreach (var entry in await _outbox.ListForDocumentAsync(document, cancellationToken).ConfigureAwait(false))
+        {
+            if (entry.Operation == XeroOperation.PushQuote && entry.State == XeroOutboxState.Failed)
+                await _outbox.RetryAsync(entry.Id, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private sealed record SendToXeroRecord(
+        [property: System.Text.Json.Serialization.JsonPropertyName("requestedAtUtc")] string RequestedAtUtc,
+        [property: System.Text.Json.Serialization.JsonPropertyName("contentHash")] string? ContentHash);
 
     private async Task<string?> ReadTenantIdAsync(CancellationToken cancellationToken)
     {

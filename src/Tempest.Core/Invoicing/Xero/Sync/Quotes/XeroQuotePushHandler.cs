@@ -4,6 +4,7 @@ using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Invoicing.Xero.Contacts;
 using Tempest.Core.Invoicing.Xero.Settings;
+using Tempest.Core.Quotations;
 
 namespace Tempest.Core.Invoicing.Xero.Sync.Quotes;
 
@@ -31,7 +32,11 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Quotes;
 /// <para>
 /// <b>Read before write.</b> Each update reads the Xero quote first: content
 /// is replaced only while it is <c>DRAFT</c> (Q1 — once <c>SENT</c> a new
-/// revision is refused with the reason, never sent); a status is moved only
+/// approved revision is refused with the reason, never sent; when there is
+/// nothing left to push — TempestOS has sent or answered the quotation, or
+/// the quote was just found by its number already past <c>DRAFT</c> — the
+/// link is recorded and the answer is NothingToDo with the drift note, so
+/// the status changes queued behind it still run); a status is moved only
 /// along <c>DRAFT → SENT → ACCEPTED | DECLINED</c>, so Xero is never asked
 /// for a transition it refuses; a status already reached (a lost response)
 /// is simply recorded. A status-only update carries the quote's number,
@@ -144,6 +149,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 : contact.BlockedReason);
         }
 
+        var reconciledNow = false;
         if (link is null)
         {
             var reconciled = await ReconcileByNumberAsync(tenantId, entry, quote, contact.ContactId!, stale, cancellationToken).ConfigureAwait(false);
@@ -151,6 +157,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 return answered;
 
             link = reconciled.Link;
+            reconciledNow = link is not null;
             if (link is null)
             {
                 if (stale)
@@ -186,6 +193,22 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         var status = Word(read.Value!.Status);
         if (!string.Equals(status, XeroQuoteStatusWords.Draft, StringComparison.Ordinal))
         {
+            // Nothing left to push: TempestOS has sent (or answered) the
+            // quotation, so its content is fixed, or the Xero quote was just
+            // found by its number (keyed in by hand, or Send to Xero on an
+            // older quote) already past DRAFT. The link is recorded and the
+            // status changes behind this entry still run; the badge shows
+            // any drift. A refusal here would hold the document's queue for
+            // good — nothing would ever supersede it.
+            if (quote.Status != QuotationStatus.Approved || reconciledNow)
+            {
+                return new XeroPushResult(
+                    XeroPushOutcome.NothingToDo,
+                    XeroQuoteMapper.DriftNote(status, quote.Status)
+                    ?? $"Xero already holds quote {read.Value.QuoteNumber ?? quote.Reference} as {status}; its content is not changed once past DRAFT (Q1).",
+                    Link: link);
+            }
+
             return new XeroPushResult(
                 XeroPushOutcome.Rejected,
                 $"Xero holds quote {read.Value.QuoteNumber ?? quote.Reference} as {status}, and Xero changes a quote's content only while it is DRAFT, "

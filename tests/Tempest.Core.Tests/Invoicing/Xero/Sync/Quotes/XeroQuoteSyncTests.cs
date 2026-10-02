@@ -572,4 +572,109 @@ public sealed class XeroQuoteSyncTests
         Assert.Empty(kit.QuoteWrites);
         Assert.Empty(kit.Simulator.Violations);
     }
+
+    [Fact]
+    public async Task ARevisionRefusedBecauseXeroHoldsSent_DoesNotStrandTheLaterSentAndAccepted()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id);
+        kit.Files.Store(id, "R1 sheet");
+        await kit.PlanAsync(id);
+        await kit.DrainAsync();
+        await kit.SetStatusInXeroAsync(kit.OnlyQuote.Id, "SENT");
+
+        // R2 approved and exported: refused (Xero holds SENT), with the reason.
+        var r2 = QuoteSyncTestKit.Quote(id, revision: 2, lines: [new XeroQuoteLine("Concept design", 20m, 95m, VatRate.Standard)]);
+        kit.FakeQuotes[id] = r2;
+        kit.Files.Store(id, "R2 sheet");
+        await kit.PlanAsync(id);
+        Assert.Contains(await kit.DrainAsync(), s => s.Entry.Operation == XeroOperation.PushQuote && s.Result.Outcome == XeroPushOutcome.Rejected);
+
+        // Sent, then Accepted, in TempestOS: the refusal no longer holds the queue.
+        kit.FakeQuotes[id] = r2 with { Status = QuotationStatus.Sent };
+        await kit.PlanAsync(id);
+        var released = await kit.DrainAsync();
+        Assert.Contains(released, s => s.Entry.Operation == XeroOperation.PushQuote && s.Result.Outcome == XeroPushOutcome.NothingToDo);
+
+        kit.FakeQuotes[id] = r2 with { Status = QuotationStatus.Accepted };
+        await kit.PlanAsync(id);
+        await kit.DrainAsync();
+
+        Assert.Equal("ACCEPTED", kit.OnlyQuote.Status);
+        Assert.Equal("R1", kit.OnlyQuote.Body["Reference"]!.GetValue<string>()); // the content Xero refused is never forced in
+        Assert.DoesNotContain(await kit.Outbox.ListForDocumentAsync(QuoteSyncTestKit.Ref(id)), e => e.State == XeroOutboxState.Failed);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task SendToXero_OnAnAcceptedQuotationKeyedIntoXeroByHand_LinksIt_WithoutARefusal()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions { AutomaticFromUtc = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) });
+        var xeroId = await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001", "SENT", "ACCEPTED");
+        var writes = kit.QuoteWrites.Count;
+
+        // An older quotation (Q8), accepted in TempestOS; its Xero copy is already ACCEPTED.
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted, issuedAt: new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero));
+        Assert.True((await kit.Planner.SendToXeroAsync(id)).Queued);
+
+        var steps = await kit.DrainAsync();
+        Assert.DoesNotContain(steps, s => s.Result.Outcome is XeroPushOutcome.Rejected or XeroPushOutcome.Blocked);
+        var link = await kit.LinkAsync(id);
+        Assert.Equal(xeroId, link!.XeroId);
+        Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link.LinkedBy);
+        Assert.Equal("ACCEPTED", link.LastKnownXeroStatus);
+        Assert.Equal(writes, kit.QuoteWrites.Count); // nothing written: the copy already matches
+        Assert.Empty(await kit.PlanAsync(id));
+        Assert.All(await kit.Outbox.ListForDocumentAsync(QuoteSyncTestKit.Ref(id)), e => Assert.Equal(XeroOutboxState.Succeeded, e.State));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ALinkedNewRevision_IsPushedWhenExported_NotWhenApproved()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id);
+        kit.Files.Store(id, "R1 sheet");
+        await kit.PlanAsync(id);
+        await kit.DrainAsync();
+
+        // R2 approved: the R1 PDF is still the one held, so nothing goes yet (Xero keeps R1's lines with R1's PDF).
+        var r2 = QuoteSyncTestKit.Quote(id, revision: 2, lines: [new XeroQuoteLine("Concept design", 20m, 95m, VatRate.Standard)]);
+        kit.FakeQuotes[id] = r2;
+        Assert.Empty(await kit.PlanAsync(id));
+
+        // R2 exported: its content and its PDF go together.
+        kit.Files.Store(id, "R2 sheet");
+        Assert.Equal([XeroOperation.PushQuote, XeroOperation.UploadAttachment], (await kit.PlanAsync(id)).Select(e => e.Operation));
+        await kit.DrainAsync();
+        Assert.Equal("R2", kit.OnlyQuote.Body["Reference"]!.GetValue<string>());
+        Assert.Equal("R2 sheet".Length, Assert.Single(kit.OnlyQuote.Attachments).Length);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ALinkedNewRevision_SentWithoutAnExport_IsPushedBeforeItIsMarkedSent()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id);
+        kit.Files.Store(id, "R1 sheet");
+        await kit.PlanAsync(id);
+        await kit.DrainAsync();
+
+        var r2 = QuoteSyncTestKit.Quote(id, revision: 2, lines: [new XeroQuoteLine("Concept design", 20m, 95m, VatRate.Standard)]);
+        kit.FakeQuotes[id] = r2;
+        Assert.Empty(await kit.PlanAsync(id));
+
+        // "Approved Rn, then Export or Send": Send issues R2 too.
+        kit.FakeQuotes[id] = r2 with { Status = QuotationStatus.Sent };
+        Assert.Equal([XeroOperation.PushQuote, XeroOperation.SetQuoteStatus], (await kit.PlanAsync(id)).Select(e => e.Operation));
+        Assert.All(await kit.DrainAsync(), s => Assert.Equal(XeroPushOutcome.Succeeded, s.Result.Outcome));
+        Assert.Equal("SENT", kit.OnlyQuote.Status);
+        Assert.Equal("R2", kit.OnlyQuote.Body["Reference"]!.GetValue<string>());
+        kit.AssertNoViolations();
+    }
 }

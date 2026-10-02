@@ -135,4 +135,84 @@ public sealed class XeroQuotePlannerTests
         Assert.True(key.Length <= XeroOutboxEntry.MaximumIdempotencyKeyLength);
         Assert.EndsWith(hash, key, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task WithNoConfiguredStart_AQuotationApprovedAfterStartUp_IsSyncedWhenExportedLater()
+    {
+        // Default options, as AddXeroQuotes registers the planner: the start is not set in advance.
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions());
+        var id = Guid.NewGuid();
+
+        // Approved a little after start-up; its approval commit is planned, but there is no PDF yet.
+        kit.Clock.Advance(TimeSpan.FromMinutes(2));
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, issuedAt: kit.Clock.GetUtcNow());
+        kit.Clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Empty(await kit.PlanAsync(id));
+
+        // Exported an hour later.
+        kit.Clock.Advance(TimeSpan.FromHours(1));
+        kit.Files.Store(id, "R1 sheet");
+        Assert.Equal([XeroOperation.PushQuote, XeroOperation.UploadAttachment], (await kit.PlanAsync(id)).Select(e => e.Operation));
+        await kit.DrainAsync();
+        Assert.Equal("DRAFT", kit.OnlyQuote.Status);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task WithNoConfiguredStart_AQuotationApprovedThenSent_IsSyncedOnItsFirstPlan()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions());
+        var id = Guid.NewGuid();
+        var approvedAt = kit.Clock.GetUtcNow().AddMinutes(1);
+
+        // The approval is committed, and the first plan this run makes comes a moment later.
+        kit.Clock.Advance(TimeSpan.FromMinutes(5));
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Sent, issuedAt: approvedAt);
+        Assert.Equal([XeroOperation.PushQuote, XeroOperation.SetQuoteStatus], (await kit.PlanAsync(id)).Select(e => e.Operation));
+
+        // The start is the moment sync started running, kept across restarts; an older quotation still waits for Send to Xero.
+        var began = await kit.Planner.AutomaticFromAsync();
+        Assert.True(began <= approvedAt);
+        kit.Clock.Advance(TimeSpan.FromDays(1));
+        var restarted = new XeroQuotePlanner(kit.Quotes, kit.Links, kit.Outbox, kit.Store, kit.Secrets, kit.Files, timeProvider: kit.Clock);
+        Assert.Equal(began, await restarted.AutomaticFromAsync());
+        var old = Guid.NewGuid();
+        kit.FakeQuotes[old] = QuoteSyncTestKit.Quote(old, QuotationStatus.Sent, reference: "Q-OLD", issuedAt: began.AddMinutes(-1));
+        Assert.Empty(await restarted.PlanAsync(old, null));
+    }
+
+    [Fact]
+    public async Task WithNoConfiguredStart_TheStartUpScan_RecordsTheStart_BeforeAnyQuotationIsPlanned()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions());
+        var startedAt = kit.Clock.GetUtcNow();
+        Assert.Null(await kit.Store.ReadAsync(XeroQuotePlanner.StateCollection, XeroQuotePlanner.AutomaticFromKey));
+
+        kit.Clock.Advance(TimeSpan.FromMinutes(10));
+        Assert.Equal(0, await kit.Planner.ScanAsync());
+
+        var recorded = await kit.Store.ReadAsync(XeroQuotePlanner.StateCollection, XeroQuotePlanner.AutomaticFromKey);
+        Assert.Equal(startedAt, DateTimeOffset.Parse(recorded!, System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task OnceXeroIsKnownToHoldTheQuotePastDraft_NoContentPushIsPlanned()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        var r1 = QuoteSyncTestKit.Quote(id);
+        var link = new XeroLink(
+            XeroLink.CurrentSchemaVersion, QuoteSyncTestKit.TenantId, QuoteSyncTestKit.Ref(id), "q-1", "P0012-Q-001", XeroQuoteMapper.ContentHash(r1), "SENT",
+            null, null, DateTimeOffset.UnixEpoch, null, XeroQuoteMapper.LinkedByCreated);
+
+        // R2 approved and exported, but Xero already holds the quote as SENT (by hand): the badge shows the drift; nothing is queued that Xero would refuse.
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, revision: 2);
+        kit.Files.Store(id, "R2 sheet");
+        Assert.DoesNotContain(await kit.Planner.PlanAsync(id, link), p => p.Operation == XeroOperation.PushQuote);
+        Assert.Equal("Xero shows this quote as SENT; TempestOS has it as Approved.", XeroQuoteMapper.DriftNote("SENT", QuotationStatus.Approved));
+
+        // Accepted in TempestOS with new content while Xero holds ACCEPTED: nothing at all.
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted, revision: 2);
+        Assert.Empty(await kit.Planner.PlanAsync(id, link with { LastKnownXeroStatus = "ACCEPTED", AttachmentContentHash = kit.Files.Find(id)!.Sha256 }));
+    }
 }

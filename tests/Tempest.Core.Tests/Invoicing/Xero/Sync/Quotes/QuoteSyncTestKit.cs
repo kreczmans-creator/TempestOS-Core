@@ -279,6 +279,29 @@ internal sealed class QuoteSyncTestKit : IDisposable
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 
+    /// <summary>A person keys a quote into Xero by hand (outside TempestOS's pipeline) for <paramref name="contactId"/>, then walks it to <paramref name="status"/>; returns its <c>QuoteID</c>.</summary>
+    public async Task<string> CreateQuoteInXeroByHandAsync(string contactId, string number = "P0012-Q-001", params string[] statuses)
+    {
+        using (var client = Simulator.CreateClient())
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Put, "Quotes?summarizeErrors=true")
+            {
+                Content = new StringContent(SimulatorTestKit.Quote(contactId, number).ToJsonString(), Encoding.UTF8, "application/json"),
+            };
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Simulator.Options.AccessToken);
+            request.Headers.Add("xero-tenant-id", Simulator.Options.TenantId);
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("Idempotency-Key", $"by-hand:{Guid.NewGuid():N}");
+            using var response = await client.SendAsync(request);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        }
+
+        var quoteId = Assert.Single(LiveQuotes, q => q.Number == number).Id;
+        foreach (var status in statuses)
+            await SetStatusInXeroAsync(quoteId, status);
+        return quoteId;
+    }
+
     /// <summary>Asserts the simulator saw no contract or safety violation, and nothing was ever emailed.</summary>
     public void AssertNoViolations()
     {
