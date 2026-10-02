@@ -73,10 +73,12 @@ public interface IXeroOutboxDrain
 /// reader), so "oldest first" is the order entries were queued even when
 /// the clock gives two the same instant. Ties are broken by
 /// <see cref="XeroOutboxEntry.EnqueuedAtUtc"/>, then by id. An entry stored
-/// without a <c>Sequence</c> (or with one that is not a whole number) reads
-/// as <c>0</c>, never as a value the next sequence could overflow from; the
-/// next sequence never wraps (it stays at <see cref="long.MaxValue"/> and
-/// the tie-breaks order the rest).
+/// without a <c>Sequence</c> (or with one that is not a whole number) is
+/// placed by its time: it takes the largest stored sequence among entries
+/// queued at or before it (<c>0</c> when none), so it never jumps ahead of
+/// earlier work, and it is rewritten without one. The next sequence never
+/// wraps (it stays at <see cref="long.MaxValue"/> and the tie-breaks order
+/// the rest).
 /// </para>
 /// <para>
 /// <b>Per-document FIFO.</b> An entry is claimable only when every earlier
@@ -113,7 +115,10 @@ public interface IXeroOutboxDrain
 /// its document's queue — also when this build cannot deserialize it (an
 /// operation or state it does not know): it is then listed as a
 /// placeholder built from the fields it can read, at its own
-/// <see cref="XeroOutboxEntry.SchemaVersion"/>.
+/// <see cref="XeroOutboxEntry.SchemaVersion"/>. An operation it does not
+/// know is listed as <see cref="UnknownOperation"/>; a document kind (or a
+/// document) it does not know as <see cref="UnknownDocumentKind"/>, which
+/// is listed but holds no real document's queue.
 /// </para>
 /// <para>
 /// <b>Corrupt entries.</b> An entry of this build's version (or with no
@@ -142,6 +147,24 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
 
     /// <summary>The <see cref="XeroOutboxEntry.EnqueuedBy"/> of a placeholder whose own value cannot be read.</summary>
     internal const string UnknownPrincipal = "unknown";
+
+    /// <summary>
+    /// The <see cref="XeroOutboxEntry.Operation"/> of a placeholder whose own
+    /// operation this build does not know: not a defined
+    /// <see cref="XeroOperation"/> (<see cref="Enum.IsDefined{TEnum}(TEnum)"/>
+    /// is <see langword="false"/>), so a listing shows it as an unknown
+    /// operation, never as a real one.
+    /// </summary>
+    public const XeroOperation UnknownOperation = (XeroOperation)(-1);
+
+    /// <summary>
+    /// The <see cref="XeroDocumentRef.Kind"/> of a newer TempestOS's entry
+    /// whose document kind this build does not know: not a defined
+    /// <see cref="XeroDocumentKind"/>, and refused by
+    /// <see cref="EnqueueAsync"/>, so the entry is listed (for the badge) but
+    /// holds no real document's queue.
+    /// </summary>
+    public const XeroDocumentKind UnknownDocumentKind = (XeroDocumentKind)(-1);
 
     private static readonly XeroOutboxState[] OutcomeStates =
     [
@@ -186,6 +209,9 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         if (!Enum.IsDefined(operation))
             throw new ArgumentOutOfRangeException(nameof(operation), operation, "Not a Xero operation.");
 
+        if (!Enum.IsDefined(document.Kind))
+            throw new ArgumentOutOfRangeException(nameof(document), document.Kind, "Not a kind of TempestOS record.");
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -207,12 +233,19 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
 
             // A replacement takes the earliest replaced entry's sequence, so
             // it keeps that entry's place ahead of later work for the
-            // document; it is stamped strictly after every entry it replaces,
-            // so the tie-break still puts it behind them (a crash before they
-            // are marked superseded sends the old content first, then this).
+            // document. Every new entry is stamped strictly after every
+            // stored entry of this build (a clock that repeats an instant or steps back moves
+            // it on by a tick), so time order is queue order: the tie-break
+            // puts a replacement behind the entries it replaces (a crash
+            // before they are marked superseded sends the old content first,
+            // then this), and an entry whose Sequence is lost is still placed
+            // unambiguously by its time.
             var now = _time.GetUtcNow();
-            if (replaced.Count > 0 && replaced.Max(s => s.Entry.EnqueuedAtUtc) is var latestReplaced && now <= latestReplaced)
-                now = latestReplaced.AddTicks(1);
+            // Only this build's own readable entries count: a locked entry's
+            // time (a newer TempestOS's, or a corrupt one's) is not trusted.
+            if (all.Where(s => !s.Locked).Select(s => s.Entry.EnqueuedAtUtc).DefaultIfEmpty(DateTimeOffset.MinValue).Max() is var latestStored
+                && now <= latestStored && latestStored < DateTimeOffset.MaxValue)
+                now = latestStored.AddTicks(1);
 
             var sequence = replaced.Count > 0 ? replaced.Min(s => s.Sequence) : NextSequence(all);
             var occurrence = group.Count(s => string.Equals(s.Entry.ContentHash, contentHash, StringComparison.Ordinal));
@@ -422,6 +455,22 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
                 entries.Add(stored);
         }
 
+        // An entry stored without a usable Sequence takes the largest stored
+        // sequence among entries queued at or before it (0 when none), so it
+        // sorts after everything queued before it and the time and id
+        // tie-breaks order it among its peers: it never jumps ahead of work
+        // its document queued earlier.
+        var sequenced = entries.Where(s => s.HasSequence).ToList();
+        for (var i = 0; i < entries.Count; i++)
+        {
+            if (entries[i].HasSequence)
+                continue;
+
+            var at = entries[i].Entry.EnqueuedAtUtc;
+            var imputed = sequenced.Where(s => s.Entry.EnqueuedAtUtc <= at).Select(s => s.Sequence).DefaultIfEmpty(0).Max();
+            entries[i] = entries[i] with { Sequence = imputed };
+        }
+
         entries.Sort(static (a, b) =>
         {
             var bySequence = a.Sequence.CompareTo(b.Sequence);
@@ -464,7 +513,9 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
 
         var version = XeroStoreSupport.ReadSchemaVersion(json);
         var newer = version > XeroOutboxEntry.CurrentSchemaVersion;
-        var sequence = ReadSequence(node);
+        var stored = ReadSequence(node);
+        var sequence = stored ?? 0;
+        var hasSequence = stored is not null;
 
         if (version >= 1)
         {
@@ -473,7 +524,7 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
                 var entry = JsonSerializer.Deserialize<XeroOutboxEntry>(json, XeroStoreSupport.JsonOptions);
 
                 if (entry is not null && entry.Id == id && IsComplete(entry))
-                    return new StoredEntry(entry with { SchemaVersion = version.Value }, sequence, newer, node);
+                    return new StoredEntry(entry with { SchemaVersion = version.Value }, sequence, newer, node, HasSequence: hasSequence);
             }
             catch (Exception ex) when (ex is JsonException or InvalidOperationException or FormatException or NotSupportedException)
             {
@@ -481,26 +532,34 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             }
         }
 
-        return Placeholder(node, id, version ?? 0, newer, sequence);
+        return Placeholder(node, id, version ?? 0, newer, sequence, hasSequence);
     }
 
     /// <summary>
     /// What can be read of an entry that cannot be deserialized: its
-    /// document (required — without it the entry holds no queue), and every
-    /// other field it still carries in a form this build reads. A newer
+    /// document (required for a corrupt entry — without it the entry holds no
+    /// queue; a newer TempestOS's entry is listed under
+    /// <see cref="UnknownDocumentKind"/> instead), and every other field it
+    /// still carries in a form this build reads (an unknown operation reads as
+    /// <see cref="UnknownOperation"/>). A newer
     /// TempestOS's entry keeps its own state (an unknown one reads as
     /// <see cref="XeroOutboxState.Pending"/>, so it holds its queue); a
     /// corrupt one reads as <see cref="XeroOutboxState.Failed"/> with
     /// <see cref="UnreadableError"/> unless it says it is finished.
     /// </summary>
-    private static StoredEntry? Placeholder(JsonObject node, Guid id, int version, bool newer, long sequence)
+    private static StoredEntry? Placeholder(JsonObject node, Guid id, int version, bool newer, long sequence, bool hasSequence)
     {
-        if (node["Document"] is not JsonObject document
-            || ReadEnum<XeroDocumentKind>(document, "Kind") is not { } kind
-            || ReadString(document, "TempestKey") is not { Length: > 0 } tempestKey)
-        {
+        var document = node["Document"] as JsonObject;
+        var kind = document is null ? null : ReadEnum<XeroDocumentKind>(document, "Kind");
+        var tempestKey = document is null ? null : ReadString(document, "TempestKey");
+        XeroDocumentRef reference;
+
+        if (kind is not null && tempestKey is { Length: > 0 })
+            reference = new XeroDocumentRef(kind.Value, tempestKey);
+        else if (newer)
+            reference = new XeroDocumentRef(UnknownDocumentKind, tempestKey ?? string.Empty);
+        else
             return null;
-        }
 
         var storedState = ReadEnum<XeroOutboxState>(node, "State");
         var finished = storedState is XeroOutboxState.Succeeded or XeroOutboxState.Superseded;
@@ -511,8 +570,8 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         var entry = new XeroOutboxEntry(
             SchemaVersion: version,
             Id: id,
-            Operation: ReadEnum<XeroOperation>(node, "Operation") ?? default,
-            Document: new XeroDocumentRef(kind, tempestKey),
+            Operation: ReadEnum<XeroOperation>(node, "Operation") ?? UnknownOperation,
+            Document: reference,
             Argument: ReadString(node, "Argument"),
             IdempotencyKey: ReadString(node, "IdempotencyKey") ?? string.Empty,
             ContentHash: ReadString(node, "ContentHash") ?? string.Empty,
@@ -524,12 +583,12 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             LastError: newer || finished ? ReadString(node, "LastError") : UnreadableError,
             EnqueuedBy: ReadString(node, "EnqueuedBy") ?? UnknownPrincipal);
 
-        return new StoredEntry(entry, sequence, newer, node, Unreadable: !newer);
+        return new StoredEntry(entry, sequence, newer, node, Unreadable: !newer, HasSequence: hasSequence);
     }
 
-    /// <summary>The stored <c>Sequence</c>; <c>0</c> when it is missing or not a whole number, so no stored value makes the next one overflow.</summary>
-    private static long ReadSequence(JsonObject node) =>
-        node.TryGetPropertyValue(SequenceProperty, out var value) && value is JsonValue v && v.TryGetValue<long>(out var s) ? s : 0;
+    /// <summary>The stored <c>Sequence</c>; <see langword="null"/> when it is missing or not a whole number (<see cref="LoadAllAsync"/> places such an entry by its time).</summary>
+    private static long? ReadSequence(JsonObject node) =>
+        node.TryGetPropertyValue(SequenceProperty, out var value) && value is JsonValue v && v.TryGetValue<long>(out var s) ? s : null;
 
     /// <summary>The sequence after every stored one; never wraps (at <see cref="long.MaxValue"/> it stays there and the tie-breaks order the rest).</summary>
     private static long NextSequence(List<StoredEntry> all)
@@ -561,13 +620,19 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     private Task WriteAsync(StoredEntry stored, CancellationToken cancellationToken)
     {
         var node = XeroStoreSupport.ToJson(stored.Entry with { SchemaVersion = XeroOutboxEntry.CurrentSchemaVersion }, stored.Original);
-        node[SequenceProperty] = stored.Sequence;
+        // An entry stored without a Sequence keeps none: its place is worked
+        // out from its time on every read, never frozen at a value that
+        // could move it ahead of earlier work.
+        if (stored.HasSequence)
+            node[SequenceProperty] = stored.Sequence;
+        else
+            node.Remove(SequenceProperty);
 
         return _store.WriteAsync(Collection, stored.Entry.Id.ToString("D"), node.ToJsonString(), cancellationToken);
     }
 
-    /// <summary>One entry as stored: the entry, its queue position, whether a newer TempestOS wrote it, the JSON it was read from (<see langword="null"/> for a new entry), and whether it is a corrupt entry's placeholder.</summary>
-    internal sealed record StoredEntry(XeroOutboxEntry Entry, long Sequence, bool Newer, JsonObject? Original, bool Unreadable = false)
+    /// <summary>One entry as stored: the entry, its queue position, whether a newer TempestOS wrote it, the JSON it was read from (<see langword="null"/> for a new entry), whether it is a corrupt entry's placeholder, and whether its queue position was stored (rather than worked out from its time).</summary>
+    internal sealed record StoredEntry(XeroOutboxEntry Entry, long Sequence, bool Newer, JsonObject? Original, bool Unreadable = false, bool HasSequence = true)
     {
         /// <summary>Never claimed, retried, superseded or rewritten by this build: a newer TempestOS's entry, or one that cannot be read.</summary>
         public bool Locked => Newer || Unreadable;

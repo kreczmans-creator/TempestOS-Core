@@ -424,6 +424,116 @@ public sealed class PersistenceXeroOutboxTests
     }
 
     [Fact]
+    public async Task EntriesQueuedAtTheSameInstant_AreStampedInQueueOrder()
+    {
+        // Time order is queue order, so an entry whose Sequence is lost is
+        // still placed unambiguously by its time.
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        var other = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(2), "h1");
+
+        Assert.Equal(Start, create.EnqueuedAtUtc);
+        Assert.True(create.EnqueuedAtUtc < status.EnqueuedAtUtc && status.EnqueuedAtUtc < other.EnqueuedAtUtc);
+    }
+
+    [Fact]
+    public async Task LaterEntryWithNoSequence_DoesNotJumpAheadOfTheCreate()
+    {
+        // Re-verify defect 1: an unsequenced entry queued after the create
+        // must not read as sequence 0 and be sent ahead of it.
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        var key = status.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json.Remove("Sequence");
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        Assert.Equal([create.Id, status.Id], (await Outbox().ListForDocumentAsync(Quote(1))).Select(e => e.Id));
+        Assert.Equal(create.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+        await Outbox().RecordOutcomeAsync(create.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(status.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+    }
+
+    [Fact]
+    public async Task EntryWithNoSequence_IsRewrittenWithoutOne_SoARetryCannotMoveItAhead()
+    {
+        // A rewrite (here Failed -> Retry) of an unsequenced entry must not
+        // freeze it at sequence 0, ahead of a create queued before it.
+        var other = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(2), "h0");
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        var key = status.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json.Remove("Sequence");
+        json["State"] = "Failed";
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        Assert.True(await Outbox().RetryAsync(status.Id));
+        Assert.False(JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject().ContainsKey("Sequence"));
+
+        // The entry queued before the unsequenced status change stays ahead
+        // of it after the rewrite: its place is still worked out from its
+        // time, not frozen at 0.
+        Assert.Equal([other.Id, status.Id], (await Outbox().ListAsync(AllStates)).Select(e => e.Id));
+    }
+
+    [Fact]
+    public async Task NewerVersionEntry_OfAnUnknownDocumentKind_IsListed_ButHoldsNoRealDocument()
+    {
+        // Re-verify defect 2: a newer TempestOS's entry for a kind of record
+        // this build does not know must still be listed (for the badge), and
+        // an operation it does not know must not read as PushQuote.
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = entry.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["SchemaVersion"] = 2;
+        json["Operation"] = "PushCreditNote";
+        json["Document"]!["Kind"] = "CreditNote";
+        var newer = json.ToJsonString();
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, newer);
+
+        var listed = Assert.Single(await Outbox().ListAsync(AllStates));
+        Assert.Equal(entry.Id, listed.Id);
+        Assert.Equal(2, listed.SchemaVersion);
+        Assert.Equal(PersistenceXeroOutbox.UnknownOperation, listed.Operation);
+        Assert.False(Enum.IsDefined(listed.Operation));
+        Assert.Equal(PersistenceXeroOutbox.UnknownDocumentKind, listed.Document.Kind);
+        Assert.False(Enum.IsDefined(listed.Document.Kind));
+        Assert.Empty(await Outbox().ListForDocumentAsync(Quote(1)));
+
+        // Holds no real document's queue, and is never claimed or rewritten.
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+        Assert.Equal(create.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+        Assert.False(await Outbox().RetryAsync(entry.Id));
+        Assert.Equal(newer, _persistence.Raw(PersistenceXeroOutbox.Collection, key));
+    }
+
+    [Fact]
+    public async Task NewerVersionEntry_WithAnUnknownOperation_IsNotListedAsAPushQuote()
+    {
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = entry.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["SchemaVersion"] = 2;
+        json["Operation"] = "PushCreditNote";
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        var listed = Assert.Single(await Outbox().ListForDocumentAsync(Quote(1)));
+        Assert.Equal(PersistenceXeroOutbox.UnknownOperation, listed.Operation);
+    }
+
+    [Fact]
+    public async Task Enqueue_RefusesADocumentKindThisBuildDoesNotDefine()
+    {
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            Outbox().EnqueueAsync(XeroOperation.PushQuote, new XeroDocumentRef(PersistenceXeroOutbox.UnknownDocumentKind, "k"), "h1"));
+        Assert.Empty(await Outbox().ListAsync(AllStates));
+    }
+
+    [Fact]
     public async Task EntryAtTheLargestSequence_DoesNotMakeTheNextOneWrap()
     {
         var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
