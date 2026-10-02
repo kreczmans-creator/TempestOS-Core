@@ -303,7 +303,8 @@ public static class XeroPurchasingOwnership
         $"The answer to the {noun.ToLowerInvariant()} TempestOS sent to Xero for this {document} under number {number} was lost, and it cannot be recovered "
         + $"({(string.IsNullOrWhiteSpace(problem) ? "no reason given" : problem.Trim().TrimEnd('.'))}), so TempestOS cannot tell whether that {noun.ToLowerInvariant()} is in Xero. "
         + $"It leaves every {noun.ToLowerInvariant()} in Xero as it is: nothing is sent{(sourceGone ? ", and nothing is deleted" : string.Empty)}. "
-        + "Check in Xero with whoever keeps the books, then Retry.");
+        + $"Retrying will not change this: TempestOS will not send this {document} to Xero automatically. "
+        + $"Whoever keeps the books should check Xero for {number}: if it is there, leave it (key it against this {document} by hand if needed); if it is not, key it into Xero by hand.");
 
     /// <summary>
     /// The record a create the log recorded for this document made — found by

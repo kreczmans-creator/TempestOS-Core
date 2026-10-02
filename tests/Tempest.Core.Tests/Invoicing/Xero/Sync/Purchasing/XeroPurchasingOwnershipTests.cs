@@ -44,6 +44,19 @@ public sealed class XeroPurchasingOwnershipTests
         IReadOnlyList<Doc>? inTheWay = null, IReadOnlyList<XeroPurchasingSentCreate>? sentForOthers = null) =>
         XeroPurchasingOwnership.Judge(recovered, resendKey, sourceGone, inTheWay ?? [], d => d.Value, sentForOthers);
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheCannotTellMessage_NeverSuggestsRetry_AndSaysWhatTheBookkeeperShouldCheck(bool sourceGone)
+    {
+        var result = XeroPurchasingOwnership.CannotTell("Purchase order", "order", "PO-2026-001", "the key has expired", sourceGone);
+
+        Assert.Equal(XeroPushOutcome.Rejected, result.Outcome);
+        Assert.DoesNotContain("then Retry", result.Reason!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Retrying will not change this", result.Reason!, StringComparison.Ordinal);
+        Assert.Contains("PO-2026-001", result.Reason!, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Rule_OnlyARecordRecoveredByItsKey_IsOurs_NeverOneFoundByMatching()
     {
