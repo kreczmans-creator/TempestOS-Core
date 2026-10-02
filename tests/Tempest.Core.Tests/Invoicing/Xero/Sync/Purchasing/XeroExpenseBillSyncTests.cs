@@ -494,6 +494,105 @@ public sealed class XeroExpenseBillSyncTests
     }
 
     [Fact]
+    public async Task ALostCreateUnderTheSuppliersNumber_ThenTheNumberChanged_RewritesThatBill_NeverASecond()
+    {
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-5");
+        await kit.PlanExpenseAsync(id);
+
+        kit.Lost.LoseWrites = 1;
+        await kit.DrainAsync();
+        Assert.Equal("NS-5", Assert.Single(kit.LiveBills).Number);
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { SupplierInvoiceNumber = "NS-6" };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.All(await kit.DrainAsync(), s => Assert.Equal(XeroPushOutcome.Succeeded, s.Result.Outcome));
+
+        var bill = Assert.Single(kit.LiveBills);
+        Assert.Equal("NS-6", bill.Number);
+        Assert.Equal(bill.Id, (await kit.ExpenseLinkAsync(id))!.XeroId);
+        Assert.Empty(await kit.PlanExpenseAsync(id));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ALostCreateToTheSupplier_ThenTheSupplierRemoved_MovesThatBillToGeneralExpenses_NeverASecond()
+    {
+        using var kit = await PurchasingSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.SupplierReference);
+        await kit.PlanExpenseAsync(id);
+
+        kit.Lost.LoseWrites = 1;
+        await kit.DrainAsync();
+        Assert.Single(kit.LiveBills);
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { SupplierOrganisationReference = null };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.All(await kit.DrainAsync(), s => Assert.Equal(XeroPushOutcome.Succeeded, s.Result.Outcome));
+
+        var bill = Assert.Single(kit.LiveBills);
+        Assert.Equal($"EXP-{id:N}", bill.Number);
+        Assert.Equal(kit.GeneralContactId, bill.Body["Contact"]!["ContactID"]!.GetValue<string>());
+        Assert.Equal(bill.Id, (await kit.ExpenseLinkAsync(id))!.XeroId);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ALostCreateUnderTheSuppliersNumber_ThenTheNumberChangedAndTheExpenseDeleted_DeletesThatBill()
+    {
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-5");
+        await kit.PlanExpenseAsync(id);
+
+        kit.Lost.LoseWrites = 1;
+        await kit.DrainAsync();
+        var billId = Assert.Single(kit.LiveBills).Id;
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { SupplierInvoiceNumber = "NS-6" };
+        await kit.PlanExpenseAsync(id);
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { IsDeleted = true };
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        await kit.DrainAsync();
+
+        Assert.Empty(kit.LiveBills);
+        Assert.Equal("DELETED", kit.Simulator.Find("Invoices", billId)!.Status);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task DeletingAnExpenseRejectedForAHandBill_IsNothingToDo_AndSaysTheBillIsNotTempestOs()
+    {
+        // The Failed push holds the expense's queue; once it is retried, neither
+        // it nor the delete behind it asks for a new number and a Retry.
+        var rejected = await RejectedForAHandBillAsync();
+        using var kit = rejected.Kit;
+        var (id, handBillId, handBody) = (rejected.ExpenseId, rejected.HandBillId, rejected.HandBody);
+
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { IsDeleted = true };
+        Assert.Equal(XeroOperation.DeleteExpenseBill, Assert.Single(await kit.PlanExpenseAsync(id)).Operation);
+        Assert.True(await kit.Outbox.RetryAsync(rejected.Rejected.Id));
+        var steps = await kit.DrainAsync();
+
+        Assert.Equal([XeroOperation.PushExpenseBill, XeroOperation.DeleteExpenseBill], steps.Select(s => s.Entry.Operation));
+        Assert.All(steps, s =>
+        {
+            Assert.Equal(XeroPushOutcome.NothingToDo, s.Result.Outcome);
+            Assert.Contains("never reached Xero; the bill under NS-9 is not TempestOS's", s.Result.Reason, StringComparison.Ordinal);
+            Assert.DoesNotContain("Retry", s.Result.Reason, StringComparison.Ordinal);
+        });
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Equal(handBody, kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString());
+        Assert.Single(kit.WritesTo("Invoices")); // The hand bill's own PUT only.
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
     public async Task AnExpenseRecordedFromAPurchaseOrdersLines_IsNotBilled_AndSaysWhy()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();

@@ -55,4 +55,22 @@ public sealed class XeroPurchasingCreateLogTests
         Assert.True(await log.WasSentAsync("t1", Document, "NS-1", "c1"));
         Assert.False(await log.WasSentAsync("t1", Document, "NS-1", "c1", "k2"));
     }
+
+    [Fact]
+    public async Task ListSent_GivesEveryNumberAndContactStillOnTheLog_ForThatDocumentOnly()
+    {
+        var log = new XeroPurchasingCreateLog(new YieldingInMemoryPersistenceStore());
+        Assert.Empty(await log.ListSentAsync("t1", Document));
+
+        await log.RecordSendingAsync("t1", Document, "NS-5", "c1", "k1");
+        await log.RecordSendingAsync("t1", Document, "NS-6", "c2", "k2");
+        await log.RecordSendingAsync("t1", Document, "NS-7", "c2", "k3");
+        await log.RecordAnswerAsync("t1", Document, "k3", ConnectorOutcome.Rejected);
+
+        Assert.Equal(
+            [new XeroPurchasingSentCreate("NS-5", "c1", "k1"), new XeroPurchasingSentCreate("NS-6", "c2", "k2")],
+            await log.ListSentAsync("t1", Document));
+        Assert.Empty(await log.ListSentAsync("t2", Document));
+        Assert.Empty(await log.ListSentAsync("t1", new XeroDocumentRef(XeroDocumentKind.ExpenseBill, Guid.NewGuid().ToString("D"))));
+    }
 }

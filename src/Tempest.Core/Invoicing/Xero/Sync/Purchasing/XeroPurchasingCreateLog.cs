@@ -55,7 +55,7 @@ public sealed class XeroPurchasingCreateLog
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
-        var sent = new SentCreate(number.Trim(), contactId.Trim(), idempotencyKey);
+        var sent = new XeroPurchasingSentCreate(number.Trim(), contactId.Trim(), idempotencyKey);
         await UpdateAsync(tenantId, document, list => list.Any(s => s == sent) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
     }
 
@@ -91,7 +91,20 @@ public sealed class XeroPurchasingCreateLog
                              && (idempotencyKey is null || string.Equals(s.IdempotencyKey, idempotencyKey, StringComparison.Ordinal)));
     }
 
-    private async Task UpdateAsync(string tenantId, XeroDocumentRef document, Func<IReadOnlyList<SentCreate>, IReadOnlyList<SentCreate>> change, CancellationToken cancellationToken)
+    /// <summary>
+    /// Every create for <paramref name="document"/> that may have reached Xero,
+    /// in the order sent: the numbers and contacts to look Xero up by when the
+    /// document's own number or contact has changed since (a bill found under
+    /// one of them is the document's own).
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public Task<IReadOnlyList<XeroPurchasingSentCreate>> ListSentAsync(
+        string tenantId, XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        ReadAsync(Key(tenantId, document), cancellationToken);
+
+    private async Task UpdateAsync(string tenantId, XeroDocumentRef document, Func<IReadOnlyList<XeroPurchasingSentCreate>, IReadOnlyList<XeroPurchasingSentCreate>> change, CancellationToken cancellationToken)
     {
         var key = Key(tenantId, document);
         var gate = XeroStoreSupport.GateFor(_store, Collection);
@@ -114,7 +127,7 @@ public sealed class XeroPurchasingCreateLog
         }
     }
 
-    private async Task<IReadOnlyList<SentCreate>> ReadAsync(string key, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<XeroPurchasingSentCreate>> ReadAsync(string key, CancellationToken cancellationToken)
     {
         var json = await _store.ReadAsync(Collection, key, cancellationToken).ConfigureAwait(false);
         if (json is null)
@@ -122,7 +135,7 @@ public sealed class XeroPurchasingCreateLog
 
         try
         {
-            return JsonSerializer.Deserialize<List<SentCreate>>(json, XeroStoreSupport.JsonOptions) ?? [];
+            return JsonSerializer.Deserialize<List<XeroPurchasingSentCreate>>(json, XeroStoreSupport.JsonOptions) ?? [];
         }
         catch (JsonException ex)
         {
@@ -137,6 +150,10 @@ public sealed class XeroPurchasingCreateLog
         return $"{tenantId}/{document.Kind}/{document.TempestKey}";
     }
 
-    /// <summary>One create sent: the number and contact it carried and its <c>Idempotency-Key</c>.</summary>
-    private sealed record SentCreate(string Number, string ContactId, string IdempotencyKey);
 }
+
+/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number and contact it carried and its <c>Idempotency-Key</c>.</summary>
+/// <param name="Number">The Xero number the create carried.</param>
+/// <param name="ContactId">The Xero <c>ContactID</c> the create carried.</param>
+/// <param name="IdempotencyKey">The create's <c>Idempotency-Key</c>.</param>
+public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey);
