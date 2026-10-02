@@ -3,11 +3,16 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using System.Globalization;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.PurchaseOrders;
 using Tempest.Desktop;
+using Tempest.Desktop.Documents;
+using Tempest.Desktop.Documents.PurchaseOrders;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace.Projects;
 using Tempest.Workspace.PurchaseOrders;
@@ -51,6 +56,7 @@ public sealed class PurchaseOrdersView : UserControl
     private readonly Button _newOrderButton = new() { Content = "New Purchase Order…", MinHeight = DesignTokens.ControlSizeMedium };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
+    private readonly List<XeroSyncBadgeControl> _xeroBadges = [];
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -68,6 +74,34 @@ public sealed class PurchaseOrdersView : UserControl
     /// plain text prompt this view always had.
     /// </summary>
     public Func<CancellationToken, Task<string?>>? PickSupplierAsync { get; set; }
+
+    /// <summary>
+    /// Where each order's Xero badge is read from (`v0.24.0` U3,
+    /// <see cref="XeroSyncBadgeControl"/>). <see langword="null"/> — Xero is
+    /// not the configured connector, or a test that does not thread it
+    /// through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
+
+    /// <summary>
+    /// Renders the purchase order PDF that <b>Issue</b> keeps on the order
+    /// (`v0.24.0` U3), so the order's Xero copy carries the same document
+    /// (X6's <see cref="IXeroDocumentFileSource"/> uploads it).
+    /// <see langword="null"/> keeps no PDF; Issue itself is unchanged.
+    /// </summary>
+    public IDocumentRenderer<PurchaseOrderDocumentModel>? PurchaseOrderRenderer { get; set; }
+
+    /// <summary>Resolves the supplier's name for the issued PDF; <see langword="null"/> prints the supplier's record id.</summary>
+    public IOrganisationCatalog? Organisations { get; set; }
+
+    /// <summary>The issuing principal's name for the issued PDF; <see langword="null"/> prints "TempestOS".</summary>
+    public Func<string>? IssuerName { get; set; }
+
+    /// <summary>The running application's version text for the issued PDF's footer; <see langword="null"/> prints "TempestOS".</summary>
+    public Func<string>? ApplicationVersionText { get; set; }
+
+    /// <summary>The clock the issued PDF is stamped with; <see langword="null"/> for the system clock.</summary>
+    public TimeProvider? Clock { get; set; }
 
     /// <summary>The change feed this view reloads its own list from.</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -164,10 +198,15 @@ public sealed class PurchaseOrdersView : UserControl
             .OrderByDescending(r => r.Order.Reference, StringComparer.Ordinal).ToList();
 
         _groups.Children.Clear();
+        _xeroBadges.Clear();
         _groups.Children.Add(BuildStandardGroup("New", $"New ({draft.Count})", "No draft purchase orders.", draft.Select(BuildRow).ToList()));
         _groups.Children.Add(BuildStandardGroup("Issued", $"Issued ({issued.Count})", "Nothing issued yet.", issued.Select(BuildRow).ToList()));
         _groups.Children.Add(BuildStandardGroup("Received", $"Received ({received.Count})", "Nothing received yet.", received.Select(BuildRow).ToList()));
         _groups.Children.Add(BuildClosedGroup($"Closed ({closed.Count})", "Nothing closed or cancelled.", closed.Select(BuildRow).ToList()));
+
+        // `v0.24.0` U3: each badge reads local state only (never Xero); the
+        // list is already shown while they load.
+        await Task.WhenAll(_xeroBadges.Select(b => b.LoadAsync())).ConfigureAwait(true);
     }
 
     private async Task<List<IEngineeringObject>> ProjectsInScopeAsync(Guid? scopedProjectId)
@@ -289,6 +328,17 @@ public sealed class PurchaseOrdersView : UserControl
 
         rows.Children.Add(actions);
 
+        // `v0.24.0` U3: a draft is not in Xero's scope yet; an issued order is.
+        if (XeroBadges is { } xero && order.Status != PurchaseOrderStatus.Draft)
+        {
+            var badge = new XeroSyncBadgeControl(
+                xero, XeroDocumentRef.For(XeroDocumentKind.PurchaseOrder, order.Id), order.Reference,
+                offerSendToXero: order.IssuedDate is not null && order.Status != PurchaseOrderStatus.Cancelled);
+            badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+            _xeroBadges.Add(badge);
+            rows.Children.Add(badge);
+        }
+
         var border = new Border
         {
             Padding = DesignTokens.PanelPadding,
@@ -331,9 +381,78 @@ public sealed class PurchaseOrdersView : UserControl
             return;
         }
 
+        var message = result.Message ?? (result.Succeeded ? "Done." : "The action failed.");
+        if (result.Succeeded && commandId == PurchaseOrderCommandIds.Issue && await AttachIssuedPdfAsync(orderId).ConfigureAwait(true))
+            message = $"{message} Purchase order PDF kept on the order.";
+
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
-        Report(result.Message ?? (result.Succeeded ? "Done." : "The action failed."), succeeded: result.Succeeded);
+        Report(message, succeeded: result.Succeeded);
+    }
+
+    /// <summary>
+    /// `v0.24.0` U3: renders the issued order's PDF and keeps it on the order
+    /// (<see cref="XeroIssuedPdf.AttachAsync"/>), so its Xero copy carries the
+    /// same document. Nothing when no renderer is composed or the order is
+    /// not issued; never throws for an attach the platform refuses.
+    /// </summary>
+    /// <returns>Whether the PDF is on the order.</returns>
+    internal async Task<bool> AttachIssuedPdfAsync(Guid orderId)
+    {
+        if (PurchaseOrderRenderer is not { } renderer
+            || await _domainContext.Repository.FindAsync(orderId).ConfigureAwait(true) is not PurchaseOrder order
+            || order.IssuedDate is not { } issued)
+        {
+            return false;
+        }
+
+        var model = await BuildDocumentModelAsync(order, issued).ConfigureAwait(true);
+        var bytes = renderer.Render(model);
+        return await XeroIssuedPdf.AttachAsync(
+            order, $"{SanitiseFileNameSegment(order.Reference)}-{renderer.TemplateName}.pdf", bytes, at => renderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
+    }
+
+    private async Task<PurchaseOrderDocumentModel> BuildDocumentModelAsync(PurchaseOrder order, DateOnly issued)
+    {
+        var (projectCode, projectName) = (string.Empty, string.Empty);
+        if (order.ParentId is { } projectId && await _domainContext.Repository.FindAsync(projectId).ConfigureAwait(true) is IHasBusinessIdentifier project)
+            (projectCode, projectName) = (project.Identifier ?? string.Empty, project.DisplayName);
+
+        var supplierName = "(none)";
+        if (!string.IsNullOrWhiteSpace(order.SupplierOrganisationId))
+        {
+            var supplier = Organisations is null ? null : await Organisations.FindAsync(order.SupplierOrganisationId, CancellationToken.None).ConfigureAwait(true);
+            supplierName = supplier?.Definition.Name ?? order.SupplierOrganisationId;
+        }
+
+        var lines = order.Lines.Select(l => new PurchaseOrderDocumentLineRow(
+            l.Description,
+            l.Quantity.ToString("0.##", CultureInfo.InvariantCulture),
+            MoneyDisplay.Format(l.UnitPrice),
+            MoneyDisplay.Format(l.Net))).ToList();
+
+        return new PurchaseOrderDocumentModel(
+            IssuerName: IssuerName?.Invoke() ?? "TempestOS",
+            ProjectCode: projectCode,
+            ProjectName: projectName,
+            Reference: order.Reference,
+            Date: issued,
+            SupplierName: supplierName,
+            DeliveryAddress: null,
+            Currency: order.Currency.ToString(),
+            Lines: lines,
+            Total: $"{MoneyDisplay.Format(order.Total)} net + {MoneyDisplay.Format(order.VatTotal)} VAT = {MoneyDisplay.Format(order.GrossTotal)}",
+            Conditions: order.Notes,
+            Status: order.Status.ToString(),
+            GeneratedAtUtc: (Clock ?? TimeProvider.System).GetUtcNow(),
+            ApplicationVersionText: ApplicationVersionText?.Invoke() ?? "TempestOS");
+    }
+
+    /// <summary>Replaces every character <see cref="Path.GetInvalidFileNameChars"/> names with <c>-</c> — <see cref="DocumentExporter"/>'s own naming rule (<c>&lt;reference&gt;-&lt;template&gt;.pdf</c>).</summary>
+    private static string SanitiseFileNameSegment(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        return new string([.. value.Select(c => invalid.Contains(c) ? '-' : c)]);
     }
 
     private async Task OnAddLineAsync(Guid orderId, Core.BusinessGovernance.CurrencyCode currency)

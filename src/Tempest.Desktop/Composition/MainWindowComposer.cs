@@ -346,6 +346,13 @@ internal sealed partial class MainWindowComposer
         // makes at launch — never a second mechanism.
         void SwitchPrincipal(Tempest.Core.Identity.ISessionPrincipal principal) => host.SwitchPrincipal(principal);
 
+        // `v0.24.0` U1: Settings → Xero, only when Xero is the running
+        // connector; documents use the company details from Xero from start-up.
+        var xeroSettings = XeroSettingsSectionServices.FromServices(services, session.OrganisationIdentity) is { } xeroServices
+            ? new XeroSettingsSection(composition.SettingsProvider, xeroServices)
+            : null;
+        xeroSettings?.KeepDocumentIdentityCurrent();
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
@@ -354,7 +361,8 @@ internal sealed partial class MainWindowComposer
             organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
-            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)));
+            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
+            xeroSettings: xeroSettings);
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
@@ -538,7 +546,19 @@ internal sealed partial class MainWindowComposer
         // `WP 21.3B`: "Record expense…" — reachable from Business →
         // Timesheets beside Record, and from the project's own Details
         // tab (`timesheetWeekView`/`projectDetailsView`, both below).
-        var expenseEntryPrompt = new ExpenseEntryPrompt(composition.DomainContext);
+        var expenseEntryPrompt = new ExpenseEntryPrompt(composition.DomainContext)
+        {
+            // `v0.24.0` U3 (X5, Q3/Q4): the optional supplier and its invoice number.
+            PickSupplierAsync = organisationPicker.PickSupplierAsync,
+            Organisations = organisationCatalog,
+            ExpenseService = expenseService,
+            // `v0.24.0` U3: the optional receipt its Xero bill carries.
+            FilePicker = evidenceFilePicker,
+        };
+
+        // `v0.24.0` U3: the Xero badge source — null unless Xero is the
+        // configured connector (its engine is then registered).
+        var xeroBadges = Views.XeroSyncServiceBadgeSource.TryCreate(services);
 
         // Fire-and-forget at the view boundary, but never silently: an open
         // that throws is reported like any other failed action, so "it
@@ -649,6 +669,7 @@ internal sealed partial class MainWindowComposer
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
+            XeroBadges = xeroBadges,
         };
         invoicingView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
@@ -684,6 +705,7 @@ internal sealed partial class MainWindowComposer
         // Runbook C3: each quote line's rate is chosen from the project's
         // own pinned rate card.
         projectQuoteView.RateCards = rateCardCatalog;
+        projectQuoteView.XeroBadges = xeroBadges;
 
         // Colour review board M4: the review line names people, not SIDs.
         projectQuoteView.Principals = principals;
@@ -722,6 +744,7 @@ internal sealed partial class MainWindowComposer
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         quotesView.ProjectFolders = projectFolderLocator;
+        quotesView.XeroBadges = xeroBadges;
         quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 21.3B`: the Purchase orders area — every PurchaseOrder across
@@ -737,6 +760,15 @@ internal sealed partial class MainWindowComposer
             ParameterPrompt = commandPrompt.Prompt,
             PickSupplierAsync = organisationPicker.PickSupplierAsync,
             WorkspaceChanges = composition.WorkspaceChanges,
+            // `v0.24.0` U3: the Xero badge, and the PDF Issue keeps on the order.
+            XeroBadges = xeroBadges,
+            PurchaseOrderRenderer = new Tempest.Desktop.Documents.PurchaseOrders.PurchaseOrderDocumentRenderer
+            {
+                IdentityProvider = () => session.OrganisationIdentity.ToIdentity(),
+            },
+            Organisations = organisationCatalog,
+            IssuerName = IssuerName,
+            ApplicationVersionText = ApplicationVersionText,
         };
         purchaseOrdersView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 

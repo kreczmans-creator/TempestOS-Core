@@ -424,8 +424,11 @@ public sealed class TimesheetWeekView : UserControl
             return;
         }
 
+        // `v0.24.0` U3 (X5, Q3/Q4): the prompt's optional supplier details.
+        var supplierNote = result.SubjectId is { } recordedId ? await _recordExpensePrompt.ApplyPurchasingDetailsAsync(recordedId, input).ConfigureAwait(true) : null;
+
         await RefreshAsync().ConfigureAwait(true);
-        Report(result.Message ?? "Expense recorded.", succeeded: true);
+        Report(supplierNote is null ? result.Message ?? "Expense recorded." : $"{result.Message ?? "Expense recorded."} {supplierNote}", succeeded: true);
 
         // `WP 17.9.4`: what you make opens right up.
         if (result.SubjectId is { } createdId)
