@@ -16,36 +16,48 @@ namespace Tempest.Core.Tests.Architecture;
 
 /// <summary>
 /// `v0.24.0` §7.3 item 4 (`ADR-0162` decision 2): D3 and D4 hold by
-/// construction as well as by the safety handler. No source file outside the
-/// read-side mapping files below carries the words a forbidden Xero write
-/// would need — <c>"AUTHORISED"</c>, <c>"SUBMITTED"</c>, <c>SentToContact</c>
-/// or an <c>/Email</c> path — and the Xero <see cref="HttpClient"/> that
+/// construction as well as by the safety handler. No line of code under
+/// <c>src/</c> other than the read-side lines below carries the words a
+/// forbidden Xero write would need — <c>"AUTHORISED"</c>, <c>"SUBMITTED"</c>
+/// (quoted or JSON-escaped), <c>SentToContact</c> or an <c>/Email</c> path —
+/// and the Xero <see cref="HttpClient"/> that
 /// <c>TempestHost</c> builds starts with <see cref="XeroWriteSafetyHandler"/>,
 /// shared by every Xero caller.
 /// </summary>
 /// <remarks>
-/// <b>Adding a read-side file.</b> A file that must <i>read</i> one of these
+/// <b>Adding a read-side line.</b> A line that must <i>read</i> one of these
 /// words (mapping Xero's status back onto a TempestOS record, filtering a
-/// <c>GET</c>) is added to <see cref="ReadSideFiles"/> with its reason —
-/// never a file that builds a request body.
+/// <c>GET</c>) is added to <see cref="ReadSideLines"/> — file and exact
+/// trimmed line — with its reason; never a line that builds a request body.
+/// The allowance is per line, never per file, so a forbidden word added
+/// anywhere else in the same file (a write path such as
+/// <c>XeroConnector.cs</c>) is still caught. An allowance whose line no
+/// longer exists fails <see cref="EveryReadSideLine_StillExists"/>.
 /// </remarks>
 public sealed class XeroSafetyArchitectureTests
 {
-    /// <summary>The files allowed to carry a forbidden word, each for reading only (or, for the handler, to refuse it).</summary>
-    private static readonly IReadOnlyDictionary<string, string> ReadSideFiles = new Dictionary<string, string>(StringComparer.Ordinal)
-    {
-        ["src/Tempest.Core/Invoicing/Xero/Api/XeroWriteSafetyHandler.cs"] = "the guard itself: names SentToContact and /Email to refuse them",
-        ["src/Tempest.Core/Invoicing/Xero/XeroConnector.cs"] = "WP 19.8B bills-due read: a GET filter on Status==\"AUTHORISED\"",
-        ["src/Tempest.Core/Invoicing/InvoicingService.cs"] = "InterpretStatus: maps a Xero status read back onto an InvoiceRequest (ADR-0151, X4)",
-        ["src/Tempest.Core/Invoicing/Xero/Sync/XeroReadBack.cs"] = "X6 read-back: maps Xero statuses onto badges",
-        ["src/Tempest.Core/Invoicing/FakeInvoicingConnector.cs"] = "the fake connector's simulated status reading",
-        ["src/Tempest.Core/Invoicing/QuickBooksOnline/QuickBooksOnlineConnector.cs"] = "QuickBooks' own status word, read back (not Xero)",
-    };
+    /// <summary>The individual lines allowed to carry a forbidden word, each for reading only (or, for the handler, to refuse it): repository-relative file, exact trimmed line, reason.</summary>
+    private static readonly IReadOnlyList<(string File, string Line, string Reason)> ReadSideLines =
+    [
+        ("src/Tempest.Core/Invoicing/Xero/Api/XeroWriteSafetyHandler.cs",
+            """if (string.Equals(property.Name, "SentToContact", StringComparison.OrdinalIgnoreCase)""",
+            "the guard itself: names SentToContact to refuse it"),
+        ("src/Tempest.Core/Invoicing/Xero/XeroConnector.cs",
+            """var where = Uri.EscapeDataString("Type==\"ACCPAY\"&&Status==\"AUTHORISED\"");""",
+            "WP 19.8B bills-due read: a GET filter on approved bills"),
+        ("src/Tempest.Core/Invoicing/FakeInvoicingConnector.cs",
+            """: new InvoiceStatusReading("SUBMITTED", null, null, null);""",
+            "the fake connector's simulated status reading"),
+        ("src/Tempest.Core/Invoicing/QuickBooksOnline/QuickBooksOnlineConnector.cs",
+            """return "SUBMITTED";""",
+            "QuickBooks' own status word, read back (not Xero)"),
+    ];
 
     private static readonly Regex[] ForbiddenInCode =
     [
-        new("\"AUTHORISED\"", RegexOptions.CultureInvariant),
-        new("\"SUBMITTED\"", RegexOptions.CultureInvariant),
+        // Quoted, JSON-escaped (\"AUTHORISED\") or both.
+        new(@"\\?""AUTHORISED\\?""", RegexOptions.CultureInvariant),
+        new(@"\\?""SUBMITTED\\?""", RegexOptions.CultureInvariant),
         new(@"\bSentToContact\b", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase),
         new("\"[^\"\\r\\n]*/Email\\b[^\"\\r\\n]*\"", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase),
     ];
@@ -59,7 +71,7 @@ public sealed class XeroSafetyArchitectureTests
         foreach (var file in Directory.EnumerateFiles(Path.Combine(root, "src"), "*.cs", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
-            if (relative.Contains("/bin/", StringComparison.Ordinal) || relative.Contains("/obj/", StringComparison.Ordinal) || ReadSideFiles.ContainsKey(relative))
+            if (relative.Contains("/bin/", StringComparison.Ordinal) || relative.Contains("/obj/", StringComparison.Ordinal))
                 continue;
 
             var lineNumber = 0;
@@ -67,7 +79,7 @@ public sealed class XeroSafetyArchitectureTests
             {
                 lineNumber++;
                 var code = CodeOf(line);
-                if (code.Length == 0)
+                if (code.Length == 0 || IsReadSideLine(relative, code))
                     continue;
 
                 foreach (var pattern in ForbiddenInCode)
@@ -93,12 +105,37 @@ public sealed class XeroSafetyArchitectureTests
     }
 
     [Fact]
-    public void EveryReadSideFile_Exists_OrIsAPlannedV024File()
+    public void TheScan_CatchesAJsonEscapedStatusWrite()
     {
-        string[] planned = ["src/Tempest.Core/Invoicing/Xero/Sync/XeroReadBack.cs"];
+        Assert.Contains(ForbiddenInCode, p => p.IsMatch("""var body = "{\"Status\":\"AUTHORISED\"}";"""));
+        Assert.Contains(ForbiddenInCode, p => p.IsMatch("""var body = "{\"Status\":\"SUBMITTED\"}";"""));
+    }
 
-        foreach (var file in ReadSideFiles.Keys.Except(planned))
-            Assert.True(File.Exists(Path.Combine(RepositoryPaths.RepositoryRoot, file)), $"{file} is in the read-side allow-list but does not exist; remove it.");
+    [Fact]
+    public void TheAllowance_IsPerLine_SoAForbiddenWriteInAReadSideFileIsStillCaught()
+    {
+        // XeroConnector.cs is the invoice write path (X4): only its one GET
+        // filter line is allowed; a body built anywhere else in it is not.
+        const string Connector = "src/Tempest.Core/Invoicing/Xero/XeroConnector.cs";
+
+        Assert.True(IsReadSideLine(Connector, """var where = Uri.EscapeDataString("Type==\"ACCPAY\"&&Status==\"AUTHORISED\"");"""));
+        Assert.False(IsReadSideLine(Connector, """var invoice = new { Status = "AUTHORISED" };"""));
+        Assert.False(IsReadSideLine(Connector, """SentToContact = true,"""));
+        Assert.False(IsReadSideLine("src/Tempest.Core/Invoicing/InvoicingService.cs", """return "AUTHORISED";"""));
+    }
+
+    [Fact]
+    public void EveryReadSideLine_StillExists()
+    {
+        foreach (var (file, line, _) in ReadSideLines)
+        {
+            var path = Path.Combine(RepositoryPaths.RepositoryRoot, file);
+            Assert.True(File.Exists(path), $"{file} is in the read-side allow-list but does not exist; remove its line.");
+            Assert.True(
+                File.ReadLines(path).Any(candidate => string.Equals(candidate.Trim(), line, StringComparison.Ordinal)),
+                $"{file} no longer has the read-side line `{line}`; remove or update its allowance.");
+            Assert.Contains(ForbiddenInCode, p => p.IsMatch(line));
+        }
     }
 
     [Fact]
@@ -148,6 +185,9 @@ public sealed class XeroSafetyArchitectureTests
             await host.DisposeAsync();
         }
     }
+
+    private static bool IsReadSideLine(string relative, string code) =>
+        ReadSideLines.Any(allowed => string.Equals(allowed.File, relative, StringComparison.Ordinal) && string.Equals(allowed.Line, code.Trim(), StringComparison.Ordinal));
 
     /// <summary>A line's code, or empty for a whole-line comment (<c>//</c>, <c>///</c>, or a <c>*</c> block-comment line).</summary>
     private static string CodeOf(string line)

@@ -969,6 +969,7 @@ public sealed class TempestHost : ITempestHost
         }
 
         IInvoicingConnector invoicingConnector;
+        var xeroComposed = false;
 
         if (string.Equals(configuredConnectorName, "Xero", StringComparison.OrdinalIgnoreCase))
         {
@@ -982,6 +983,7 @@ public sealed class TempestHost : ITempestHost
                 configuration, secretStore, microsoftLoggerFactory, () => { lock (_gate) return _services; });
             XeroServiceRegistration.Register(services, xero);
             invoicingConnector = xero.Connector;
+            xeroComposed = true;
         }
         else if (string.Equals(configuredConnectorName, "QuickBooksOnline", StringComparison.OrdinalIgnoreCase))
         {
@@ -1074,6 +1076,12 @@ public sealed class TempestHost : ITempestHost
         }
 
         logger.Information("Host lifecycle phase completed: Dependency Injection Built.");
+
+        // `v0.24.0` B1: the Xero Settings definitions (D7's
+        // `Xero.AllowLiveOrganisation`), registered once now rather than on
+        // the first write that reads them.
+        if (xeroComposed)
+            XeroServiceRegistration.RegisterSettingDefinitions(serviceProvider);
 
         runToken.ThrowIfCancellationRequested();
 

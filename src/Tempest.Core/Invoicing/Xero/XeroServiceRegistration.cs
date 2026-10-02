@@ -53,9 +53,6 @@ internal sealed record XeroServiceContext(
 /// </remarks>
 internal static partial class XeroServiceRegistration
 {
-    /// <summary>The display name of the <see cref="XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey"/> setting.</summary>
-    internal const string AllowLiveOrganisationDisplayName = "Xero — allow writes to the live organisation";
-
     /// <summary>The Xero API root every Xero call is relative to.</summary>
     internal static readonly Uri ApiBaseAddress = new("https://api.xero.com/api.xro/2.0/");
 
@@ -113,7 +110,8 @@ internal static partial class XeroServiceRegistration
             settingsReader: () => TryResolve<IXeroSettingsReader>(services()),
             allowLiveOrganisation: cancellationToken => ReadAllowLiveOrganisationAsync(TryResolve<ISettingsProvider>(services()), cancellationToken),
             auditRecorder: () => TryResolve<IAuditRecorder>(services()),
-            logger: loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero.Safety"))
+            logger: loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero.Safety"),
+            timeProvider: time)
         {
             InnerHandler = rateLimiter,
         };
@@ -196,9 +194,28 @@ internal static partial class XeroServiceRegistration
     }
 
     /// <summary>
+    /// Registers every Xero Settings definition B1 owns —
+    /// <see cref="XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey"/> —
+    /// once the container is built, so Settings lists it (default off)
+    /// before the first write reads it. Idempotent
+    /// (<see cref="XeroWriteSafetyHandler.EnsureAllowLiveOrganisationDefinition"/>):
+    /// the Settings UI may call that too.
+    /// </summary>
+    /// <param name="provider">The host's built container.</param>
+    internal static void RegisterSettingDefinitions(ITempestServiceProvider provider)
+    {
+        ArgumentNullException.ThrowIfNull(provider);
+
+        if (TryResolve<ISettingsProvider>(provider) is { } settings)
+            XeroWriteSafetyHandler.EnsureAllowLiveOrganisationDefinition(settings);
+    }
+
+    /// <summary>
     /// Reads <see cref="XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey"/>
-    /// (default <c>false</c>), registering its definition first when no
-    /// Settings surface has yet. Anything but a parsable <c>true</c> is off.
+    /// (default <c>false</c>). Its definition is registered at start-up
+    /// (<see cref="RegisterSettingDefinitions"/>); it is ensured again here
+    /// for a provider that start-up never saw. Anything but a parsable
+    /// <c>true</c> is off.
     /// </summary>
     /// <param name="settings">The settings provider; <see langword="null"/> reads as off.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -207,14 +224,7 @@ internal static partial class XeroServiceRegistration
         if (settings is null)
             return false;
 
-        try
-        {
-            settings.RegisterDefinition(new SettingDefinition(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, AllowLiveOrganisationDisplayName, "false"));
-        }
-        catch (DuplicateSettingDefinitionException)
-        {
-            // Registered already — by an earlier read, or by Settings.
-        }
+        XeroWriteSafetyHandler.EnsureAllowLiveOrganisationDefinition(settings);
 
         var value = await settings.GetValueAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(false);
         return bool.TryParse(value, out var allowed) && allowed;

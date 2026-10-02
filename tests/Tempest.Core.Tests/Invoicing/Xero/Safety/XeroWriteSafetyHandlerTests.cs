@@ -82,6 +82,66 @@ public sealed class XeroWriteSafetyHandlerTests
         await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleInvoiceStatus);
     }
 
+    // Verifier B1 defect 1: JsonDocument keeps duplicate keys and this
+    // handler would read the first; Xero's serialiser takes the last.
+    [Theory]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT","Status":"AUTHORISED"}]}""")]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT","status":"AUTHORISED"}]}""")]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT"}],"invoices":[{"Status":"AUTHORISED"}]}""")]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT"}],"Invoices":[{"Status":"AUTHORISED"}]}""")]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT","Contact":{"ContactID":"c-1","contactid":"c-2"}}]}""")]
+    public async Task ABodyRepeatingAKey_IsBlocked_ItsStatusIsAmbiguous(string body)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Post, "Invoices", body);
+
+        await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleWriteAllowList);
+    }
+
+    // Verifier B1 defect 2: an envelope sent as one object, not an array.
+    [Theory]
+    [InlineData("Invoices", """{"Invoices":{"Status":"AUTHORISED"}}""", XeroWriteSafetyHandler.RuleInvoiceStatus)]
+    [InlineData("Invoices", """{"invoices":{"Type":"ACCPAY","Status":"SUBMITTED"}}""", XeroWriteSafetyHandler.RuleInvoiceStatus)]
+    [InlineData("PurchaseOrders", """{"PurchaseOrders":{"Status":"AUTHORISED"}}""", XeroWriteSafetyHandler.RulePurchaseOrderStatus)]
+    [InlineData("Quotes", """{"Quotes":{"Status":"INVOICED"}}""", XeroWriteSafetyHandler.RuleQuoteStatus)]
+    public async Task AnEnvelopeSentAsOneObject_IsCheckedAsADocument(string path, string body, string rule)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Put, path, body);
+
+        await AssertBlockedAsync(rig, response, rule);
+    }
+
+    [Theory]
+    [InlineData("""{"Invoices":"AUTHORISED"}""")]
+    [InlineData("""{"Invoices":[[{"Status":"AUTHORISED"}]]}""")]
+    [InlineData("""{"Invoices":[{"Status":"DRAFT"},"AUTHORISED"]}""")]
+    [InlineData("""[[{"Status":"AUTHORISED"}]]""")]
+    [InlineData("\"AUTHORISED\"")]
+    [InlineData("""{"Status":"AUTHORISED","Invoices":[{"Status":"DRAFT"}]}""")]
+    public async Task ADocumentThatIsNotAnObject_OrARootStatusBesideTheEnvelope_IsBlocked(string body)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Put, "Invoices", body);
+
+        await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleInvoiceStatus);
+    }
+
+    [Theory]
+    [InlineData("""{"Invoices":{"Type":"ACCREC","Status":"DRAFT"}}""")]
+    [InlineData("""{"Invoices":null,"InvoiceID":"inv-1"}""")]
+    public async Task AnEnvelopeSentAsOneDraftObject_Passes(string body)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Put, "Invoices", body);
+
+        AssertPassed(rig, response);
+    }
+
     // ------------------------------------------------------------------
     // D3 / Q2 — purchase orders
     // ------------------------------------------------------------------
@@ -175,12 +235,32 @@ public sealed class XeroWriteSafetyHandlerTests
         await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleSentToContact);
     }
 
-    [Fact]
-    public async Task SentToContactFalse_Passes()
+    // Verifier B1 defect 3: Newtonsoft reads 1 (and "1", "yes"…) as true.
+    [Theory]
+    [InlineData("1")]
+    [InlineData("-1")]
+    [InlineData("\"1\"")]
+    [InlineData("\"yes\"")]
+    [InlineData("\"false\"")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    public async Task ASentToContactThatIsNotJsonFalseOrNull_IsBlocked(string value)
     {
         var rig = Rig.Demo();
 
-        var response = await rig.SendJsonAsync(HttpMethod.Post, "Invoices/inv-1", """{"Status":"DRAFT","SentToContact":false}""");
+        var response = await rig.SendJsonAsync(HttpMethod.Post, "Invoices/inv-1", $$"""{"Status":"DRAFT","SentToContact":{{value}}}""");
+
+        await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleSentToContact);
+    }
+
+    [Theory]
+    [InlineData("false")]
+    [InlineData("null")]
+    public async Task SentToContactFalseOrNull_Passes(string value)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Post, "Invoices/inv-1", $$"""{"Status":"DRAFT","SentToContact":{{value}}}""");
 
         AssertPassed(rig, response);
     }
@@ -338,6 +418,51 @@ public sealed class XeroWriteSafetyHandlerTests
         Assert.Equal(1, rig.Reader.Refreshes);
     }
 
+    // Verifier B1 defect 6: a failed reading (three GETs) is not repeated by
+    // every blocked write.
+    [Fact]
+    public async Task AFailedReading_IsNotRetriedByTheNextWrite_UntilTheRetryWindowPasses()
+    {
+        var clock = new ManualClock(DateTimeOffset.Parse("2026-10-02T09:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+        var rig = new Rig(cached: null, _ => Task.FromResult(false), clock: clock);
+        rig.Reader.OnRefresh = null;
+
+        for (var i = 0; i < 3; i++)
+        {
+            using var blocked = await rig.SendJsonAsync(HttpMethod.Put, "Contacts", """{"Name":"Acme"}""");
+            Assert.Equal(XeroWriteSafetyHandler.RuleLiveOrganisation, blocked.Headers.GetValues(XeroWriteSafetyHandler.BlockedHeader).Single());
+        }
+
+        Assert.Equal(1, rig.Reader.Refreshes);
+
+        clock.Advance(XeroWriteSafetyHandler.UnknownOrganisationRetryAfter);
+        rig.Reader.OnRefresh = FakeSettingsReader.Reading(XeroTestAuthoriser.TenantId, isDemoCompany: true);
+
+        using var passed = await rig.SendJsonAsync(HttpMethod.Put, "Contacts", """{"Name":"Acme"}""");
+
+        Assert.Equal(HttpStatusCode.OK, passed.StatusCode);
+        Assert.Equal(2, rig.Reader.Refreshes);
+    }
+
+    [Fact]
+    public async Task AFailedReading_StillUsesACachedReadingThatAppearsMeanwhile()
+    {
+        var rig = new Rig(cached: null, _ => Task.FromResult(false), clock: new ManualClock(DateTimeOffset.UnixEpoch));
+        rig.Reader.OnRefresh = null;
+
+        using (await rig.SendJsonAsync(HttpMethod.Put, "Contacts", """{"Name":"Acme"}"""))
+        {
+        }
+
+        // Settings refreshed it meanwhile: the cache is read on every write.
+        rig.Reader.Cached = FakeSettingsReader.Reading(XeroTestAuthoriser.TenantId, isDemoCompany: true);
+
+        using var passed = await rig.SendJsonAsync(HttpMethod.Put, "Contacts", """{"Name":"Acme"}""");
+
+        Assert.Equal(HttpStatusCode.OK, passed.StatusCode);
+        Assert.Equal(1, rig.Reader.Refreshes);
+    }
+
     [Fact]
     public async Task AReadingOfAnotherTenant_IsNeverUsed()
     {
@@ -445,14 +570,16 @@ public sealed class XeroWriteSafetyHandlerTests
             Tempest.Core.Invoicing.Xero.Settings.XeroSettingsReading? cached,
             Func<CancellationToken, Task<bool>> allowLiveOrganisation,
             bool throwingAudit = false,
-            bool readerPresent = true)
+            bool readerPresent = true,
+            TimeProvider? clock = null)
         {
             Reader = new FakeSettingsReader { Cached = cached };
             Audit = new RecordingAuditRecorder();
             var handler = new XeroWriteSafetyHandler(
                 () => readerPresent ? Reader : null,
                 allowLiveOrganisation,
-                () => throwingAudit ? new ThrowingAuditRecorder() : Audit)
+                () => throwingAudit ? new ThrowingAuditRecorder() : Audit,
+                timeProvider: clock)
             {
                 InnerHandler = Network,
             };

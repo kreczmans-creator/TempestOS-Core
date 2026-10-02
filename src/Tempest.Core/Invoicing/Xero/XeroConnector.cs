@@ -244,6 +244,7 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
     public Task<OAuthResult> AuthoriseAsync(CancellationToken cancellationToken = default) =>
         _authoriser.AuthoriseAsync(cancellationToken);
 

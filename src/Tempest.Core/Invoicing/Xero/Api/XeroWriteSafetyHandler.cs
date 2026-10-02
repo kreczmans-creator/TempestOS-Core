@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Tempest.Core.Audit;
 using Tempest.Core.Invoicing.Xero.Settings;
+using Tempest.Core.Settings;
 
 namespace Tempest.Core.Invoicing.Xero.Api;
 
@@ -25,12 +26,12 @@ namespace Tempest.Core.Invoicing.Xero.Api;
 /// </para>
 /// <list type="bullet">
 /// <item><see cref="RuleEmail"/> — any request to a path ending <c>/Email</c> (D4).</item>
-/// <item><see cref="RuleWriteAllowList"/> — any non-GET other than <c>PUT</c>/<c>POST</c> to <c>Contacts[/id]</c>, <c>Quotes[/id]</c>, <c>Invoices[/id]</c>, <c>PurchaseOrders[/id]</c> or <c>{Quotes,Invoices,PurchaseOrders}/{id}/Attachments/{file}</c> under the API root; and any such write whose body is not readable JSON (an XML or form body could carry a status this handler cannot see).</item>
-/// <item><see cref="RuleSentToContact"/> — any body with <c>SentToContact: true</c> (D4).</item>
-/// <item><see cref="RuleInvoiceStatus"/> — an <c>Invoices</c> write whose <c>Status</c> is anything but <c>DRAFT</c>, or <c>DELETED</c> on an existing invoice (D3).</item>
+/// <item><see cref="RuleWriteAllowList"/> — any non-GET other than <c>PUT</c>/<c>POST</c> to <c>Contacts[/id]</c>, <c>Quotes[/id]</c>, <c>Invoices[/id]</c>, <c>PurchaseOrders[/id]</c> or <c>{Quotes,Invoices,PurchaseOrders}/{id}/Attachments/{file}</c> under the API root; any such write whose body is not readable JSON (an XML or form body could carry a status this handler cannot see); and any body with an object holding the same key twice, compared case-insensitively (this handler would read the first, Xero's serialiser the last).</item>
+/// <item><see cref="RuleSentToContact"/> — any body with a <c>SentToContact</c> that is not JSON <c>false</c> or <c>null</c> (D4): <c>true</c>, <c>"true"</c>, <c>1</c> and anything else Xero's serialiser might read as true.</item>
+/// <item><see cref="RuleInvoiceStatus"/> — an <c>Invoices</c> write whose <c>Status</c> is anything but <c>DRAFT</c>, or <c>DELETED</c> on an existing invoice (D3). The documents checked are the root object itself and every element of its envelope (<c>{ "Invoices": [ … ] }</c>, or an envelope sent as a single object), or every element of a bare array; an envelope or element that is not an object is blocked, since its status cannot be checked.</item>
 /// <item><see cref="RulePurchaseOrderStatus"/> — a <c>PurchaseOrders</c> write whose <c>Status</c> is anything but <c>DRAFT</c>/<c>DELETED</c> (D3, Q2).</item>
 /// <item><see cref="RuleQuoteStatus"/> — a <c>Quotes</c> write whose <c>Status</c> is outside <c>DRAFT, SENT, ACCEPTED, DECLINED</c>.</item>
-/// <item><see cref="RuleLiveOrganisation"/> — any non-GET while the cached organisation is not Xero's Demo Company and <see cref="AllowLiveOrganisationSettingKey"/> is off (D7). An unknown organisation (no reading, or a reading of another tenant) is read first; still unknown blocks.</item>
+/// <item><see cref="RuleLiveOrganisation"/> — any non-GET while the cached organisation is not Xero's Demo Company and <see cref="AllowLiveOrganisationSettingKey"/> is off (D7). An unknown organisation (no reading, or a reading of another tenant) is read first; still unknown blocks — and a failed reading is not retried for that tenant for <see cref="UnknownOrganisationRetryAfter"/>, so blocked writes do not spend Xero's call budget re-reading it.</item>
 /// </list>
 /// <para>
 /// <b>GETs pass</b> (other than to <c>/Email</c>) — reading is never what D3,
@@ -70,6 +71,12 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     /// <summary>D7: a write to an organisation that is not the Demo Company while the live organisation is not allowed.</summary>
     public const string RuleLiveOrganisation = "D7.live-organisation";
 
+    /// <summary>The display name of the <see cref="AllowLiveOrganisationSettingKey"/> setting.</summary>
+    public const string AllowLiveOrganisationDisplayName = "Xero — allow writes to the live organisation";
+
+    /// <summary>How long a failed reading of the organisation stands before a write reads it again (D7). The cached reading is still consulted on every write.</summary>
+    public static readonly TimeSpan UnknownOrganisationRetryAfter = TimeSpan.FromMinutes(1);
+
     private const string ApiRootSegment = "/api.xro/2.0/";
 
     private static readonly HashSet<string> WritableDocuments = new(StringComparer.OrdinalIgnoreCase) { "Contacts", "Quotes", "Invoices", "PurchaseOrders" };
@@ -81,17 +88,22 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     private readonly Func<CancellationToken, Task<bool>> _allowLiveOrganisation;
     private readonly Func<IAuditRecorder?> _auditRecorder;
     private readonly ILogger? _logger;
+    private readonly TimeProvider _time;
+    private readonly Lock _failedReadingGate = new();
+    private (string TenantId, DateTimeOffset Until)? _failedReading;
 
     /// <summary>Initialises a new instance of the <see cref="XeroWriteSafetyHandler"/> class. Its <see cref="DelegatingHandler.InnerHandler"/> is set by the pipeline's composer.</summary>
     /// <param name="settingsReader">Resolves the X1 settings reader whose cached organisation says whether this is the Demo Company; resolved per write (the container is built after the pipeline). <see langword="null"/> from it means no reader — the organisation is unknown, so every write is blocked by D7 unless the live organisation is allowed.</param>
     /// <param name="allowLiveOrganisation">Reads <see cref="AllowLiveOrganisationSettingKey"/>; any failure is treated as off.</param>
     /// <param name="auditRecorder">Resolves the audit recorder; <see langword="null"/> from it records nothing (the block still happens).</param>
     /// <param name="logger">Where a block is logged; <see langword="null"/> for nowhere.</param>
+    /// <param name="timeProvider">The clock that times <see cref="UnknownOrganisationRetryAfter"/>; <see langword="null"/> for the system clock.</param>
     public XeroWriteSafetyHandler(
         Func<IXeroSettingsReader?> settingsReader,
         Func<CancellationToken, Task<bool>> allowLiveOrganisation,
         Func<IAuditRecorder?> auditRecorder,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        TimeProvider? timeProvider = null)
     {
         ArgumentNullException.ThrowIfNull(settingsReader);
         ArgumentNullException.ThrowIfNull(allowLiveOrganisation);
@@ -101,6 +113,28 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         _allowLiveOrganisation = allowLiveOrganisation;
         _auditRecorder = auditRecorder;
         _logger = logger;
+        _time = timeProvider ?? TimeProvider.System;
+    }
+
+    /// <summary>
+    /// Registers the <see cref="AllowLiveOrganisationSettingKey"/> definition
+    /// (default <c>false</c>) with <paramref name="settings"/> unless it is
+    /// registered already — idempotent, so <c>TempestHost</c> (at start-up),
+    /// the handler's own read and the Settings UI may each call it.
+    /// </summary>
+    /// <param name="settings">The settings provider.</param>
+    public static void EnsureAllowLiveOrganisationDefinition(ISettingsProvider settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        try
+        {
+            settings.RegisterDefinition(new SettingDefinition(AllowLiveOrganisationSettingKey, AllowLiveOrganisationDisplayName, "false"));
+        }
+        catch (DuplicateSettingDefinitionException)
+        {
+            // Registered already.
+        }
     }
 
     /// <inheritdoc />
@@ -140,6 +174,9 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
             using (body)
             {
+                if (HasDuplicateKey(body.RootElement))
+                    return (RuleWriteAllowList, "A Xero document write must not repeat a key: TempestOS would check one value and Xero would use another.");
+
                 if (ContainsSentToContact(body.RootElement))
                     return (RuleSentToContact, "TempestOS never marks a document as sent to the contact (D4).");
 
@@ -202,9 +239,10 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
             case JsonValueKind.Object:
                 foreach (var property in element.EnumerateObject())
                 {
+                    // Only an explicit false (or null) is safe: Xero's
+                    // serialiser reads 1, "true", "1" and more as true.
                     if (string.Equals(property.Name, "SentToContact", StringComparison.OrdinalIgnoreCase)
-                        && (property.Value.ValueKind == JsonValueKind.True
-                            || (property.Value.ValueKind == JsonValueKind.String && string.Equals(property.Value.GetString(), "true", StringComparison.OrdinalIgnoreCase))))
+                        && property.Value.ValueKind is not (JsonValueKind.False or JsonValueKind.Null))
                     {
                         return true;
                     }
@@ -223,13 +261,40 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         }
     }
 
-    /// <summary>Checks the <c>Status</c> of every document in the body: the elements of a <c>{ "Invoices": [ … ] }</c>-style envelope, of a bare array, or the root object itself.</summary>
+    /// <summary>Whether any object in <paramref name="element"/> holds the same key twice, compared case-insensitively (as Xero's serialiser matches them).</summary>
+    private static bool HasDuplicateKey(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (!seen.Add(property.Name) || HasDuplicateKey(property.Value))
+                        return true;
+                }
+
+                return false;
+
+            case JsonValueKind.Array:
+                return element.EnumerateArray().Any(HasDuplicateKey);
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>Checks the <c>Status</c> of every document in the body: the root object and each element of its <c>{ "Invoices": [ … ] }</c>-style envelope (or the envelope itself when sent as one object), or each element of a bare array.</summary>
     private static (string Rule, string Reason)? CheckStatuses(List<string> segments, JsonElement root)
     {
         var resource = segments[0];
         var pathHasId = segments.Count == 2;
 
-        foreach (var document in Documents(resource, root))
+        var documents = Documents(resource, root);
+        if (documents is null)
+            return (StatusRuleFor(resource), $"A {resource} write carried a document that is not an object, so its Status cannot be checked.");
+
+        foreach (var document in documents)
         {
             if (!TryGetProperty(document, "Status", out var statusElement))
                 continue; // Xero's default on create is DRAFT.
@@ -270,18 +335,41 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         : string.Equals(resource, "Quotes", StringComparison.OrdinalIgnoreCase) ? RuleQuoteStatus
         : RuleWriteAllowList;
 
-    private static IEnumerable<JsonElement> Documents(string resource, JsonElement root)
+    /// <summary>The documents a body carries; <see langword="null"/> when one of them is not an object (its status could not be checked).</summary>
+    private static List<JsonElement>? Documents(string resource, JsonElement root)
     {
-        if (root.ValueKind == JsonValueKind.Array)
-            return root.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).ToList();
+        switch (root.ValueKind)
+        {
+            case JsonValueKind.Array:
+                return ObjectsOrNull(root);
 
-        if (root.ValueKind != JsonValueKind.Object)
-            return [];
+            case JsonValueKind.Object:
+                List<JsonElement> documents = [root];
+                if (!TryGetProperty(root, resource, out var envelope))
+                    return documents;
 
-        if (TryGetProperty(root, resource, out var envelope) && envelope.ValueKind == JsonValueKind.Array)
-            return envelope.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).ToList();
+                switch (envelope.ValueKind)
+                {
+                    case JsonValueKind.Array:
+                        return ObjectsOrNull(envelope) is { } elements ? [.. documents, .. elements] : null;
+                    case JsonValueKind.Object:
+                        documents.Add(envelope);
+                        return documents;
+                    case JsonValueKind.Null:
+                        return documents;
+                    default:
+                        return null;
+                }
 
-        return [root];
+            default:
+                return null;
+        }
+    }
+
+    private static List<JsonElement>? ObjectsOrNull(JsonElement array)
+    {
+        var elements = array.EnumerateArray().ToList();
+        return elements.TrueForAll(e => e.ValueKind == JsonValueKind.Object) ? elements : null;
     }
 
     private static bool TryGetProperty(JsonElement element, string name, out JsonElement value)
@@ -362,12 +450,18 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
             if (cached is not null && string.Equals(cached.TenantId, tenantId, StringComparison.OrdinalIgnoreCase))
                 return cached;
 
+            if (RecentlyFailedToRead(tenantId))
+                return null;
+
             var refreshed = await reader.RefreshAsync(cancellationToken).ConfigureAwait(false);
-            return refreshed.Outcome == ConnectorOutcome.Ok
+            var reading = refreshed.Outcome == ConnectorOutcome.Ok
                 && refreshed.Value is { } fresh
                 && string.Equals(fresh.TenantId, tenantId, StringComparison.OrdinalIgnoreCase)
                     ? fresh
                     : null;
+
+            RememberReading(tenantId, failed: reading is null);
+            return reading;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -376,7 +470,26 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Reading Xero's organisation failed; the organisation is unknown.");
+            RememberReading(tenantId, failed: true);
             return null;
+        }
+    }
+
+    private bool RecentlyFailedToRead(string tenantId)
+    {
+        lock (_failedReadingGate)
+        {
+            return _failedReading is { } failed
+                && string.Equals(failed.TenantId, tenantId, StringComparison.OrdinalIgnoreCase)
+                && _time.GetUtcNow() < failed.Until;
+        }
+    }
+
+    private void RememberReading(string tenantId, bool failed)
+    {
+        lock (_failedReadingGate)
+        {
+            _failedReading = failed ? (tenantId, _time.GetUtcNow() + UnknownOrganisationRetryAfter) : null;
         }
     }
 
