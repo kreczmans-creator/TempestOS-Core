@@ -168,6 +168,14 @@ public sealed class SettingsView : UserControl
     // every separation-of-duty rule consults. Off by default.
     private readonly CheckBox _secondPersonSignOff = new() { Content = new TextBlock { Text = SecondPersonSignOffLabel, TextWrapping = TextWrapping.Wrap } };
     private readonly Tempest.Core.Governance.ISignOffPolicy? _signOffPolicy;
+
+    // `v0.24.0` U1: Settings → Xero — present only when Xero is the running
+    // connector (`XeroSettingsSectionServices.FromServices`).
+    private readonly XeroSettingsSection? _xeroSettings;
+
+    // `v0.24.0` U1 (design §8): says, beside Settings → Organisation, that
+    // documents print the company details from Xero while a reading exists.
+    private readonly TextBlock _orgXeroNote = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85, TextWrapping = TextWrapping.Wrap, IsVisible = false };
     // Runbook G2: where Business → Timesheets → Export week saves by default.
     private readonly TextBox _timesheetExportFolder = new() { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _browseTimesheetExportFolder = new() { Content = "Browse…", MinHeight = DesignTokens.ControlSizeMedium };
@@ -219,6 +227,7 @@ public sealed class SettingsView : UserControl
     /// <param name="confirmationDialog">The shared Dialog Framework overlay "Switch person…" confirms through (`WP 21.3B`). <see langword="null"/> leaves the action honestly unavailable.</param>
     /// <param name="switchPrincipal">Publishes the confirmed person as this session's own principal (`WP 21.3B`) — <see cref="Tempest.Desktop.WorkspaceHost.SwitchPrincipal"/>. <see langword="null"/> leaves the action honestly unavailable.</param>
     /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`). <see langword="null"/> hides the Sign-off section.</param>
+    /// <param name="xeroSettings">Settings → Xero (`v0.24.0` U1). <see langword="null"/> hides the Xero section — Xero is not the running connector.</param>
     public SettingsView(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
@@ -230,7 +239,8 @@ public sealed class SettingsView : UserControl
         IUpdateService? updateService = null, UpdateAvailability? updateAvailability = null,
         IFilePicker? filePicker = null,
         IPeopleDirectory? people = null, ConfirmationDialog? confirmationDialog = null, Action<ISessionPrincipal>? switchPrincipal = null,
-        Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null)
+        Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null,
+        XeroSettingsSection? xeroSettings = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -260,6 +270,7 @@ public sealed class SettingsView : UserControl
         _confirmationDialog = confirmationDialog;
         _switchPrincipal = switchPrincipal;
         _signOffPolicy = signOffPolicy;
+        _xeroSettings = xeroSettings;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -437,6 +448,8 @@ public sealed class SettingsView : UserControl
         orgStack.Children.Add(LabeledRow("Address line 2", _orgAddressLine2));
         orgStack.Children.Add(LabeledRow("Email", _orgEmail));
         orgStack.Children.Add(LabeledRow("Phone", _orgPhone));
+        orgStack.Children.Add(_orgXeroNote);
+        AutomationProperties.SetName(_orgXeroNote, "Organisation identity source");
         var organisation = BuildSection("Organisation identity", orgStack);
 
         // `WP 21.2A`, scope item 2: the invoice renderer's own "Payment
@@ -484,6 +497,13 @@ public sealed class SettingsView : UserControl
 
         if (_invoicingConnector is not null && _secretStore is not null)
             body.Children.Add(invoicing);
+
+        if (_xeroSettings is not null)
+        {
+            body.Children.Add(BuildSection("Xero", _xeroSettings));
+            _xeroSettings.ActionCompleted += (message, outcome) => ActionCompleted?.Invoke(message, outcome);
+            _xeroSettings.ReadingChanged += _ => DescribeOrganisationIdentitySource();
+        }
 
         if (_organisationIdentity is not null)
         {
@@ -578,6 +598,11 @@ public sealed class SettingsView : UserControl
             _orgBankAccountName.Text = _organisationIdentity.BankAccountName;
             _orgBankIban.Text = _organisationIdentity.BankIban;
         }
+        if (_xeroSettings is not null)
+            await _xeroSettings.RefreshAsync().ConfigureAwait(true);
+
+        DescribeOrganisationIdentitySource();
+
         if (_persistenceDatabasePath is not null)
             _backupStatus.Text = string.Empty;
 
@@ -953,6 +978,9 @@ public sealed class SettingsView : UserControl
             }
         }
 
+        if (_xeroSettings is not null)
+            await _xeroSettings.SaveAsync().ConfigureAwait(true);
+
         _savedStatus.Text = $"Saved at {DateTime.Now:HH:mm:ss}.";
         ActionCompleted?.Invoke("Settings saved.", ActionOutcome.Changed);
     }
@@ -994,6 +1022,21 @@ public sealed class SettingsView : UserControl
         ActionCompleted?.Invoke($"Switched to {person.DisplayName}.", ActionOutcome.Changed);
 
         await RefreshAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>`v0.24.0` U1 (design §8): beside Settings → Organisation, whether documents print these values or the company details read from Xero.</summary>
+    private void DescribeOrganisationIdentitySource()
+    {
+        if (_organisationIdentity?.XeroCompanyDetails is { } xero)
+        {
+            _orgXeroNote.Text = $"Documents print the company details from Xero ({xero.SourceNote()}) — see Xero, above. The values here are used when there is no reading of Xero.";
+            _orgXeroNote.IsVisible = true;
+        }
+        else
+        {
+            _orgXeroNote.Text = string.Empty;
+            _orgXeroNote.IsVisible = false;
+        }
     }
 
     private async Task LoadInvoicingSectionAsync()

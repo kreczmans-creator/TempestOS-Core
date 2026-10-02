@@ -21,6 +21,7 @@ namespace Tempest.Desktop.Documents;
 /// <param name="BankAccountNumber">The bank account number. <see langword="null"/> when none is recorded.</param>
 /// <param name="BankAccountName">The account holder's own name, where it differs from <see cref="LegalName"/> enough to state separately. <see langword="null"/> when none is recorded.</param>
 /// <param name="BankIban">The IBAN, for an international client. <see langword="null"/> when none is recorded.</param>
+/// <param name="VatNumber">The VAT registration number (`v0.24.0` U1, design §8 "PDF identity": Xero's <c>TaxNumber</c> when a reading of Xero exists). <see langword="null"/> when none is recorded — the footer then shows no VAT number, as before.</param>
 public sealed record OrganisationIdentity(
     string LegalName,
     string? CompanyNumber,
@@ -32,7 +33,8 @@ public sealed record OrganisationIdentity(
     string? BankSortCode = null,
     string? BankAccountNumber = null,
     string? BankAccountName = null,
-    string? BankIban = null)
+    string? BankIban = null,
+    string? VatNumber = null)
 {
     /// <summary>
     /// The Tempest Design Engineering Ltd defaults — transcribed verbatim
@@ -63,7 +65,7 @@ public sealed record OrganisationIdentity(
 
     /// <summary>
     /// The footer's own left-hand text — legal name, then "Company No.
-    /// {n}" and any address lines/email/phone that are actually recorded,
+    /// {n}", "VAT No. {n}" (`v0.24.0` U1) and any address lines/email/phone that are actually recorded,
     /// each joined with " · " — the same left-hand shape the design
     /// system's own footer slot uses (name, then company number).
     /// </summary>
@@ -73,6 +75,8 @@ public sealed record OrganisationIdentity(
 
         if (!string.IsNullOrWhiteSpace(CompanyNumber))
             parts.Add($"Company No. {CompanyNumber}");
+        if (!string.IsNullOrWhiteSpace(VatNumber))
+            parts.Add($"VAT No. {VatNumber}");
         if (!string.IsNullOrWhiteSpace(AddressLine1))
             parts.Add(AddressLine1!);
         if (!string.IsNullOrWhiteSpace(AddressLine2))

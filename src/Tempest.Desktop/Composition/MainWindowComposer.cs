@@ -346,6 +346,13 @@ internal sealed partial class MainWindowComposer
         // makes at launch — never a second mechanism.
         void SwitchPrincipal(Tempest.Core.Identity.ISessionPrincipal principal) => host.SwitchPrincipal(principal);
 
+        // `v0.24.0` U1: Settings → Xero, only when Xero is the running
+        // connector; documents use the company details from Xero from start-up.
+        var xeroSettings = XeroSettingsSectionServices.FromServices(services, session.OrganisationIdentity) is { } xeroServices
+            ? new XeroSettingsSection(composition.SettingsProvider, xeroServices)
+            : null;
+        xeroSettings?.KeepDocumentIdentityCurrent();
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
@@ -354,7 +361,8 @@ internal sealed partial class MainWindowComposer
             organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
-            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)));
+            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
+            xeroSettings: xeroSettings);
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
