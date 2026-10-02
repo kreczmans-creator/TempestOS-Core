@@ -43,7 +43,9 @@ public sealed class XeroContactLinkerTests
         Assert.Equal(["vat-number", "contact-number", "exact-name", "similar-name"], result.Value!.Select(c => c.MatchedOn));
         Assert.All(result.Value!, c => Assert.Equal("ACTIVE", c.ContactStatus));
         Assert.Empty(kit.WritesSince(mark));
-        Assert.Equal(3, kit.RequestsSince(mark).Count);
+
+        // VAT as recorded and without its "GB" prefix, ContactNumber, name.
+        Assert.Equal(4, kit.RequestsSince(mark).Count);
         Assert.Null(await kit.Linker.FindLinkAsync("ACME1"));
         kit.AssertNoViolations();
     }

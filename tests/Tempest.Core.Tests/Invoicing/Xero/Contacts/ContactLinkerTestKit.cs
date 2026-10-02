@@ -67,7 +67,7 @@ internal sealed class ContactLinkerTestKit : IDisposable
     private ContactLinkerTestKit(
         XeroApiSimulator simulator, XeroSimulatorClock clock, HttpClient client, XeroAccountingApi api, InMemorySecretStore secretStore,
         OrganisationCatalog organisations, PersistenceXeroLinkStore links, RecordingAuditRecorder audit, RecordingAuditRecorder safetyAudit,
-        LostResponseHandler lost, FakeSettingsReader settings, XeroContactLinkerOptions options)
+        LostResponseHandler lost, FakeSettingsReader settings, XeroContactLinkerOptions options, YieldingInMemoryPersistenceStore attemptStore)
     {
         Simulator = simulator;
         Clock = clock;
@@ -80,8 +80,19 @@ internal sealed class ContactLinkerTestKit : IDisposable
         SafetyAudit = safetyAudit;
         Lost = lost;
         Settings = settings;
-        Linker = new XeroContactLinker(api, links, organisations, secretStore, audit, clock, options);
+        Options = options;
+        AttemptStore = attemptStore;
+        Linker = NewLinker();
     }
+
+    public XeroContactLinkerOptions Options { get; }
+
+    /// <summary>Where the linker keeps its write attempts (<see cref="XeroContactLinker.AttemptsCollection"/>).</summary>
+    public YieldingInMemoryPersistenceStore AttemptStore { get; }
+
+    /// <summary>Another linker over the same stores and pipeline — TempestOS restarted.</summary>
+    public XeroContactLinker NewLinker() =>
+        new(Api, Links, Organisations, SecretStore, Audit, Clock, Options, attemptStore: AttemptStore);
 
     public XeroApiSimulator Simulator { get; }
 
@@ -138,7 +149,7 @@ internal sealed class ContactLinkerTestKit : IDisposable
         return new ContactLinkerTestKit(
             simulator, clock, client, api, secretStore, OperationsFixtures.BuildOrganisationCatalog(),
             new PersistenceXeroLinkStore(new YieldingInMemoryPersistenceStore()), new RecordingAuditRecorder(), safetyAudit, lost, settings,
-            options ?? new XeroContactLinkerOptions());
+            options ?? new XeroContactLinkerOptions(), new YieldingInMemoryPersistenceStore());
     }
 
     public void Dispose()
@@ -173,6 +184,13 @@ internal sealed class ContactLinkerTestKit : IDisposable
     {
         using var raw = new SimulatorTestKitClient(Simulator);
         return await raw.PutContactAsync(contact);
+    }
+
+    /// <summary>A person edits the contact in Xero by hand, outside TempestOS's pipeline.</summary>
+    public async Task EditContactInXeroAsync(string contactId, JsonObject changes)
+    {
+        using var raw = new SimulatorTestKitClient(Simulator);
+        await raw.PostContactAsync(contactId, changes);
     }
 
     /// <summary>The contact as the simulator holds it.</summary>
@@ -215,5 +233,23 @@ internal sealed class SimulatorTestKitClient : IDisposable
         var reply = await SimulatorTestKit.ReadAsync(response);
         Assert.Equal(System.Net.HttpStatusCode.OK, reply.Status);
         return reply.First("Contacts")["ContactID"]!.GetValue<string>();
+    }
+
+    /// <summary>A person edits the contact in Xero by hand (<c>POST Contacts/{id}</c> with <paramref name="changes"/>).</summary>
+    public async Task PostContactAsync(string contactId, JsonObject changes)
+    {
+        changes["ContactID"] = contactId;
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"Contacts/{contactId}?summarizeErrors=true")
+        {
+            Content = new StringContent(new JsonObject { ["Contacts"] = new JsonArray { changes } }.ToJsonString(), System.Text.Encoding.UTF8, "application/json"),
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _simulator.Options.AccessToken);
+        request.Headers.Add("xero-tenant-id", _simulator.Options.TenantId);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Add("Idempotency-Key", $"seed:{Interlocked.Increment(ref _seeds)}");
+
+        using var response = await _client.SendAsync(request);
+        var reply = await SimulatorTestKit.ReadAsync(response);
+        Assert.Equal(System.Net.HttpStatusCode.OK, reply.Status);
     }
 }
