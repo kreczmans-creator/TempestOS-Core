@@ -2,10 +2,19 @@
 
 ## Status
 
-Proposed — Product Owner decisions D1–D7 of 2026-10-02 (`docs/releases/v0.24.0/Xero Integration Plan.md`),
-recorded for `v0.24.0` before the build starts. Moves to Accepted at the
-end of work package X8, when the Demo Company smoke test and runbook have
-passed. Technical detail: `docs/releases/v0.24.0/Xero Technical Design.md`.
+Accepted — 2026-10-02, at the end of work package X8. Product Owner
+decisions D1–D7 of 2026-10-02 (`docs/releases/v0.24.0/Xero Integration Plan.md`);
+proposed before the build, and every rule below is now built and guarded
+by tests (the safety handler's own tests, the in-process Xero simulator's
+`Violations` log on every end-to-end test, `XeroNeverApprovesOrSendsTests`
+and `XeroSafetyArchitectureTests`). The live confirmation against the Xero
+Demo Company is the operator-run smoke test
+(`scripts/xero-demo-smoke.ps1`, `Category=XeroLive`) and the Product
+Owner's runbook (`docs/releases/v0.24.0/PO Test Runbook - Xero.md`); their
+results are recorded in `docs/releases/v0.24.0/Release Notes.md`. A
+finding there that contradicts this decision reopens it as a new ADR.
+Technical detail: `docs/releases/v0.24.0/Xero Technical Design.md`;
+build defaults Q1–Q10: `docs/releases/v0.24.0/Xero Build Decisions.md`.
 
 Extends `ADR-0151` (the connector seam: a result, never an exception; the
 request's own id is the idempotency key; paid is read, never set) and
@@ -107,4 +116,8 @@ schema-versioned stores; an invoice request sent to Xero before
 
 `ADR-0151`, `ADR-0152`, `ADR-0154`, `ADR-0156`;
 `docs/releases/v0.24.0/Xero Integration Plan.md`;
-`docs/releases/v0.24.0/Xero Technical Design.md`.
+`docs/releases/v0.24.0/Xero Technical Design.md`;
+`docs/releases/v0.24.0/Xero Build Decisions.md`;
+`docs/releases/v0.24.0/Release Notes.md`;
+`docs/releases/v0.24.0/PO Test Runbook - Xero.md`;
+`docs/guides/Xero Setup - Step by Step.md`.
