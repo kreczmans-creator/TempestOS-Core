@@ -311,6 +311,15 @@ public static class XeroPurchasingMapper
         };
     }
 
+    /// <summary>Why Xero refused a call, readably: its own validation messages when it gave any, else the reason.</summary>
+    /// <typeparam name="T">The answer type.</typeparam>
+    /// <param name="result">Xero's answer.</param>
+    public static string? Problem<T>(XeroApiResult<T> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        return result.ValidationErrors is { Count: > 0 } errors ? string.Join("; ", errors) : result.Reason;
+    }
+
     private static string SafeFileName(string name)
     {
         var invalid = Path.GetInvalidFileNameChars();

@@ -8,8 +8,10 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// The durable record of every purchasing create that may have reached Xero
 /// (`v0.24.0` X5): written immediately before
 /// <c>CreatePurchaseOrderAsync</c> or <c>CreateBillAsync</c> goes, so the
-/// handlers can tell a Xero record TempestOS's own create made (its answer
-/// lost) from one someone typed into Xero by hand under the same number.
+/// handlers can recover the record a create made whose answer was lost: by
+/// re-sending that create's body under its own <c>Idempotency-Key</c> (Xero
+/// replays its first answer, the record's id) and reading that id back
+/// (<see cref="XeroPurchasingOwnership"/>) — never by matching a number.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,7 +23,7 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// <para>
 /// One record per document in <see cref="Collection"/>, keyed
 /// <c>{tenant}/{kind}/{TempestOS key}</c>, listing each create sent: the
-/// number and contact it carried and its <c>Idempotency-Key</c>. A create
+/// number, contact and body it carried and its <c>Idempotency-Key</c>. A create
 /// Xero refused outright (<see cref="ConnectorOutcome.Rejected"/> or
 /// <see cref="ConnectorOutcome.Reauthorise"/>) made nothing and is struck
 /// off again; one whose answer was lost, or that succeeded, stays.
@@ -50,17 +52,19 @@ public sealed class XeroPurchasingCreateLog
     /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any. Kept for the record only: a bookkeeper may edit it, so the ownership rule never reads it.</param>
-    /// <param name="value">The value-bearing content the create carries (<see cref="XeroPurchasingOwnership.ValueOf(XeroWirePurchaseOrderWrite)"/> or <see cref="XeroPurchasingOwnership.ValueOf(XeroWireBillWrite)"/>): what a record found later under the number and contact must still carry to be called this document's own.</param>
+    /// <param name="value">The value-bearing content the create carries (<see cref="XeroPurchasingOwnership.ValueOf(XeroWirePurchaseOrderWrite)"/> or <see cref="XeroPurchasingOwnership.ValueOf(XeroWireBillWrite)"/>). Only ever used to word a refusal for another document (<see cref="ListSentForOthersAsync"/>), never to call a record ours.</param>
+    /// <param name="body">The create's body exactly as sent (<see cref="XeroPurchasingSentCreate.Body"/>): what recovery re-sends under the same <c>Idempotency-Key</c> so Xero replays its first answer, the record's id.</param>
     public async Task RecordSendingAsync(
         string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default,
-        string? reference = null, string? value = null)
+        string? reference = null, string? value = null, string? body = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
         var sent = new XeroPurchasingSentCreate(
-            number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(), string.IsNullOrWhiteSpace(value) ? null : value);
+            number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(), string.IsNullOrWhiteSpace(value) ? null : value,
+            string.IsNullOrWhiteSpace(body) ? null : body);
         await UpdateAsync(tenantId, document, list => list.Any(s => s == sent) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
     }
 
@@ -190,10 +194,38 @@ public sealed class XeroPurchasingCreateLog
 
 }
 
-/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number, contact and value-bearing content it carried and its <c>Idempotency-Key</c>.</summary>
+/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number, contact, value-bearing content and body it carried and its <c>Idempotency-Key</c>.</summary>
 /// <param name="Number">The Xero number the create carried.</param>
 /// <param name="ContactId">The Xero <c>ContactID</c> the create carried.</param>
 /// <param name="IdempotencyKey">The create's <c>Idempotency-Key</c>.</param>
 /// <param name="Reference">The <c>Reference</c> the create carried; <see langword="null"/> when none (a bill carries none).</param>
-/// <param name="Value">The value-bearing content the create carried (<see cref="XeroPurchasingOwnership"/>); <see langword="null"/> when unknown, which proves nothing is TempestOS's.</param>
-public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null, string? Value = null);
+/// <param name="Value">The value-bearing content the create carried (<see cref="XeroPurchasingOwnership"/>); only ever words a refusal, never proves a record ours.</param>
+/// <param name="Body">The create's body exactly as sent, serialised with <see cref="XeroWire.JsonOptions"/> (a <see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>); re-sent under <see cref="IdempotencyKey"/> to recover the record's id. <see langword="null"/> when unknown: that create cannot be recovered, so TempestOS cannot tell.</param>
+public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null, string? Value = null, string? Body = null)
+{
+    /// <summary>A create's body as <see cref="Body"/> holds it: serialised with <see cref="XeroWire.JsonOptions"/>, as the typed client sends it.</summary>
+    /// <param name="body">The create's body (a <see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>).</param>
+    public static string Serialise(object body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return JsonSerializer.Serialize(body, body.GetType(), XeroWire.JsonOptions);
+    }
+
+    /// <summary>The create's body, to re-send under <see cref="IdempotencyKey"/>; <see langword="null"/> when not recorded or unreadable (that create cannot be recovered).</summary>
+    /// <typeparam name="T">The write model (<see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>).</typeparam>
+    public T? BodyAs<T>()
+        where T : class
+    {
+        if (string.IsNullOrWhiteSpace(Body))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(Body, XeroWire.JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+}

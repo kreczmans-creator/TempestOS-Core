@@ -12,11 +12,13 @@ namespace Tempest.Core.Tests.Invoicing.Xero.Sync.Purchasing;
 /// <summary>
 /// `v0.24.0` X5: the one purchasing ownership rule (<see cref="XeroPurchasingOwnership"/>)
 /// on every path, the same for a purchase order and a bill. A Xero record is
-/// TempestOS's only when linked, or when its number, contact and amounts match
-/// a create TempestOS logged (deleted copies counted as evidence); only that
-/// is ever linked, changed or deleted. Anything else is left untouched,
-/// reported once, and the entry ends NothingToDo when the source is cancelled
-/// or deleted, Rejected (Retry) for a live push — never Failed for good.
+/// TempestOS's only when linked, or when it is the record a logged create made,
+/// recovered by re-sending that create under its own <c>Idempotency-Key</c> and
+/// reading the answered id back — never by matching a number, contact or
+/// amounts. Only that is ever linked, changed or deleted; one no longer live in
+/// Xero is never linked or resent. Anything else is left untouched, reported
+/// once, and the entry ends NothingToDo when the source is cancelled or
+/// deleted, Rejected for a live push — never Failed for good.
 /// </summary>
 public sealed class XeroPurchasingOwnershipTests
 {
@@ -27,92 +29,99 @@ public sealed class XeroPurchasingOwnershipTests
 
     // ------------------------------------------------------------ the rule itself
 
-    private static XeroPurchasingSentCreate Sent(string key, string? value) => new("NS-5", "c1", key, null, value);
+    private static XeroPurchasingSentCreate Sent(string key, string? value = "v") => new("NS-5", "c1", key, null, value, "{}");
 
-    private sealed record Doc(string Id, string? Value, bool Live);
+    private sealed record Doc(string Id, string? Value = "v");
 
-    private static XeroOwnershipJudgement<Doc> Judge(IReadOnlyList<Doc> docs, params XeroPurchasingSentCreate[] sent) =>
-        XeroPurchasingOwnership.Judge(docs, sent, d => d.Value, d => d.Live);
+    private static XeroRecoveredCreate<Doc> Live(string key, string id) => new(Sent(key), XeroRecovery.Live, new Doc(id));
+
+    private static XeroRecoveredCreate<Doc> Gone(string key, string id) => new(Sent(key), XeroRecovery.Gone, new Doc(id));
+
+    private static XeroRecoveredCreate<Doc> Refused(string key) => new(Sent(key), XeroRecovery.Unrecoverable, Problem: "Purchase order number must be unique.");
+
+    private static XeroOwnershipJudgement<Doc> Judge(
+        IReadOnlyList<XeroRecoveredCreate<Doc>> recovered, string? resendKey = null, bool sourceGone = false,
+        IReadOnlyList<Doc>? inTheWay = null, IReadOnlyList<XeroPurchasingSentCreate>? sentForOthers = null) =>
+        XeroPurchasingOwnership.Judge(recovered, resendKey, sourceGone, inTheWay ?? [], d => d.Value, sentForOthers);
 
     [Fact]
-    public void Rule_ADeletedCopyCarryingWhatWasSent_IsEvidence_SoALiveCopyBesideItIsAmbiguous()
+    public void Rule_OnlyARecordRecoveredByItsKey_IsOurs_NeverOneFoundByMatching()
     {
-        var judged = Judge([new Doc("ours", "v", Live: false), new Doc("hand", "v", Live: true)], Sent("k1", "v"));
-        Assert.Equal(XeroOwnershipVerdict.Ambiguous, judged.Verdict);
-        Assert.Equal(2, judged.Count);
-    }
+        // A live record carrying exactly what was sent, under the number and contact, is not ours by matching.
+        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([], "k1", inTheWay: [new Doc("hand")]).Verdict);
+        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([Gone("k0", "old")], "k1", inTheWay: [new Doc("hand")]).Verdict);
 
-    [Fact]
-    public void Rule_AsManyCopiesAsCreatesSent_IsOurs_TheLiveOne()
-    {
-        var judged = Judge([new Doc("first", "v", Live: false), new Doc("second", "v", Live: true)], Sent("k1", "v"), Sent("k2", "v"));
+        var judged = Judge([Live("k1", "ours")], "k1", inTheWay: [new Doc("hand")]);
         Assert.Equal(XeroOwnershipVerdict.Ours, judged.Verdict);
-        Assert.Equal("second", judged.Ours!.Id);
+        Assert.Equal("ours", judged.Ours!.Id);
+        Assert.Equal("k1", judged.From!.Create.IdempotencyKey);
     }
 
     [Fact]
-    public void Rule_OtherAmounts_OrNoRecordedContent_AreNeverOurs()
+    public void Rule_TheEntrysOwnCreatesRecordFirst_ElseTheLatestRecovered()
     {
-        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([new Doc("hand", "w", Live: true)], Sent("k1", "v")).Verdict);
-        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([new Doc("hand", "v", Live: true)], Sent("k1", null)).Verdict);
-        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([new Doc("hand", "v", Live: true)]).Verdict);
-        Assert.Equal(XeroOwnershipVerdict.NothingLive, Judge([new Doc("ours", "v", Live: false)], Sent("k1", "v")).Verdict);
+        XeroRecoveredCreate<Doc>[] both = [Live("k1", "first"), Live("k2", "second")];
+        Assert.Equal("first", Judge(both, "k1").Ours!.Id);
+        Assert.Equal("second", Judge(both).Ours!.Id);
+        Assert.Equal("second", Judge(both, sourceGone: true).Ours!.Id);
     }
 
     [Fact]
-    public void Rule_AnAmbiguousAmountGroup_NeverHidesALiveRecordAnotherGroupProvesOurs()
+    public void Rule_TheEntrysOwnCreatesRecordNoLongerLive_IsDeletedInXero_NeverResent_NeverNotOurs()
     {
-        // v: sent once, ours deleted and a hand copy beside it (ambiguous). w: sent once, ours live.
-        var docs = new[] { new Doc("ours-v", "v", Live: false), new Doc("hand-v", "v", Live: true), new Doc("ours-w", "w", Live: true) };
-        var judged = Judge(docs, Sent("k1", "v"), Sent("k2", "w"));
-        Assert.Equal(XeroOwnershipVerdict.Ours, judged.Verdict);
-        Assert.Equal("ours-w", judged.Ours!.Id);
-
-        // The order the groups are weighed in does not matter.
-        Assert.Equal("ours-w", Judge(docs, Sent("k2", "w"), Sent("k1", "v")).Ours!.Id);
-
-        // No group proves one: ambiguous, as before.
-        Assert.Equal(XeroOwnershipVerdict.Ambiguous, Judge(docs, Sent("k1", "v")).Verdict);
-    }
-
-    [Fact]
-    public void Rule_NothingLive_AndADeletedRecordCarriesWhatTheEntrysOwnCreateSent_IsDeletedInXero_NeverResent()
-    {
-        var deleted = new[] { new Doc("ours", "v", Live: false) };
-        var judged = XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k1");
+        var judged = Judge([Gone("k1", "ours")], "k1", inTheWay: [new Doc("hand")]);
         Assert.Equal(XeroOwnershipVerdict.DeletedInXero, judged.Verdict);
         Assert.Equal("ours", judged.Ours!.Id);
 
-        // Another entry's key (an amended document), or other amounts: nothing of this entry's was deleted.
-        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k2").Verdict);
-        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "w")], d => d.Value, d => d.Live, entryKey: "k1").Verdict);
-        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live).Verdict);
+        // A cancel or delete: every recovered record gone is DeletedInXero too (and touches nothing else).
+        Assert.Equal(XeroOwnershipVerdict.DeletedInXero, Judge([Gone("k1", "ours")], sourceGone: true, inTheWay: [new Doc("hand")]).Verdict);
+
+        // An earlier entry's create gone: a newer entry (a new key) may send the document anew.
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, Judge([Gone("k1", "ours")], "k2").Verdict);
+
+        // A stale push resends nothing: its older create's record gone is not its to report.
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, Judge([Gone("k1", "ours")]).Verdict);
     }
 
     [Fact]
-    public void Rule_EvidenceNotReadInFull_NeverYieldsOursOrAResend()
+    public void Rule_AReplayXeroRefused_IsCannotTell_UnlessAnotherCreatesRecordIsLive()
     {
-        Assert.Equal(
-            XeroOwnershipVerdict.CannotTell,
-            XeroPurchasingOwnership.Judge([new Doc("ours", "v", Live: true)], [Sent("k1", "v")], d => d.Value, d => d.Live, evidenceComplete: false).Verdict);
-        Assert.Equal(
-            XeroOwnershipVerdict.CannotTell,
-            XeroPurchasingOwnership.Judge(Array.Empty<Doc>(), [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k1", evidenceComplete: false).Verdict);
-        Assert.Equal(
-            XeroOwnershipVerdict.NothingLive,
-            XeroPurchasingOwnership.Judge(Array.Empty<Doc>(), [], d => d.Value, d => d.Live, entryKey: "k1", evidenceComplete: false).Verdict);
+        var judged = Judge([Refused("k1")], "k1");
+        Assert.Equal(XeroOwnershipVerdict.CannotTell, judged.Verdict);
+        Assert.Equal("Purchase order number must be unique.", judged.From!.Problem);
+
+        Assert.Equal(XeroOwnershipVerdict.CannotTell, Judge([Refused("k0"), Gone("k1", "ours")], "k1").Verdict);
+        Assert.Equal(XeroOwnershipVerdict.CannotTell, Judge([Refused("k1")], sourceGone: true).Verdict);
+        Assert.Equal(XeroOwnershipVerdict.CannotTell, Judge([Refused("k1")], "k2", inTheWay: [new Doc("hand")]).Verdict);
+        Assert.Equal("ours", Judge([Refused("k0"), Live("k1", "ours")], "k1").Ours!.Id);
     }
 
     [Fact]
     public void Rule_ALiveRecordCarryingWhatAnotherDocumentSent_IsAnotherDocuments_NotCalledKeyedByHand()
     {
-        var live = new[] { new Doc("a's", "v", Live: true) };
-        Assert.Equal(
-            XeroOwnershipVerdict.AnotherDocuments,
-            XeroPurchasingOwnership.Judge(live, [], d => d.Value, d => d.Live, sentForOthersUnderPair: [Sent("ka", "v")]).Verdict);
-        Assert.Equal(
-            XeroOwnershipVerdict.NotOurs,
-            XeroPurchasingOwnership.Judge(live, [], d => d.Value, d => d.Live, sentForOthersUnderPair: [Sent("ka", "w")]).Verdict);
+        Doc[] live = [new Doc("a's")];
+        Assert.Equal(XeroOwnershipVerdict.AnotherDocuments, Judge([], "k1", inTheWay: live, sentForOthers: [Sent("ka", "v")]).Verdict);
+        Assert.Equal(XeroOwnershipVerdict.NotOurs, Judge([], "k1", inTheWay: live, sentForOthers: [Sent("ka", "w")]).Verdict);
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, Judge([], "k1").Verdict);
+    }
+
+    [Fact]
+    public void TheCreateLog_KeepsTheBodyExactlyAsTheClientSendsIt_SoAReplayMatchesXerosFingerprint()
+    {
+        var contact = new XeroWireContactRef("c1");
+        var order = new XeroWirePurchaseOrderWrite(
+            OrderNumber, "P0012", contact, "2026-10-02", "2026-10-16", "GBP", "Exclusive",
+            [new XeroWireLineItem("Steel plate", 10m, 50.10m, "310", "INPUT2"), new XeroWireLineItem("Freight", 1m, 75m, "310", "ZERORATEDINPUT")]);
+        var json = XeroPurchasingSentCreate.Serialise(order);
+        var logged = new XeroPurchasingSentCreate(OrderNumber, "c1", "k1", Body: json);
+        Assert.Equal(json, XeroPurchasingSentCreate.Serialise(logged.BodyAs<XeroWirePurchaseOrderWrite>()!));
+
+        var bill = new XeroWireBillWrite("NS-5", contact, "2026-10-01", "GBP", "Exclusive", [new XeroWireLineItem("Train", 1m, 100m, "493", "INPUT2", TaxAmount: 20.00m)]);
+        var billJson = XeroPurchasingSentCreate.Serialise(bill);
+        Assert.Equal(billJson, XeroPurchasingSentCreate.Serialise(new XeroPurchasingSentCreate("NS-5", "c1", "k2", Body: billJson).BodyAs<XeroWireBillWrite>()!));
+
+        Assert.Null(new XeroPurchasingSentCreate("NS-5", "c1", "k3").BodyAs<XeroWireBillWrite>());
+        Assert.Null(new XeroPurchasingSentCreate("NS-5", "c1", "k4", Body: "{not json").BodyAs<XeroWireBillWrite>());
     }
 
     [Fact]
@@ -227,7 +236,7 @@ public sealed class XeroPurchasingOwnershipTests
         var steps = await DrainRetryAsync(kit);
 
         Assert.True(steps.All(s => s.Result.Outcome == XeroPushOutcome.NothingToDo), Steps(steps));
-        Assert.Contains(steps, s => s.Result.Reason?.Contains($"numbered {OrderNumber} there is not TempestOS's", StringComparison.Ordinal) == true);
+        Assert.Contains(steps, s => s.Result.Reason?.Contains($"{OrderNumber}, the one TempestOS sent for this order, was already deleted in Xero", StringComparison.Ordinal) == true);
         AssertNoDestroyAdvice(steps);
         Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
         Assert.Equal(handBody, Body(kit, "PurchaseOrders", hand));
@@ -249,7 +258,7 @@ public sealed class XeroPurchasingOwnershipTests
         var steps = await DrainRetryAsync(kit);
 
         Assert.True(steps.All(s => s.Result.Outcome == XeroPushOutcome.NothingToDo), Steps(steps));
-        Assert.Contains(steps, s => s.Result.Reason?.Contains("numbered NS-5 there is not TempestOS's", StringComparison.Ordinal) == true);
+        Assert.Contains(steps, s => s.Result.Reason?.Contains("NS-5, the one TempestOS sent for this expense, was already deleted in Xero", StringComparison.Ordinal) == true);
         AssertNoDestroyAdvice(steps);
         Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
         Assert.Equal(handBody, Body(kit, "Invoices", hand));
@@ -258,7 +267,7 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
-    public async Task Po_OursDeletedInXero_AHandOrderUnderTheNumber_LivePush_IsRejectedWithRetry_NeverTellingTheUserToDestroyIt()
+    public async Task Po_OursDeletedInXero_AHandOrderUnderTheNumber_LivePush_IsRejectedAsDeletedInXero_NeverTellingTheUserToDestroyIt()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         var (id, ours) = await LostOrderCreateAsync(kit);
@@ -270,7 +279,7 @@ public sealed class XeroPurchasingOwnershipTests
 
         Assert.Equal(2, steps.Count);
         Assert.All(steps, s => Assert.Equal(XeroPushOutcome.Rejected, s.Result.Outcome));
-        Assert.All(steps, s => Assert.Contains("Retry", s.Result.Reason, StringComparison.Ordinal));
+        Assert.All(steps, s => Assert.Contains("was deleted in Xero", s.Result.Reason, StringComparison.Ordinal));
         AssertNoDestroyAdvice(steps);
         Assert.Equal(handBody, Body(kit, "PurchaseOrders", hand));
         Assert.Null(await kit.OrderLinkAsync(id));
@@ -278,7 +287,7 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
-    public async Task Bill_OursDeletedInXero_AHandBillUnderTheNumber_LivePush_IsRejectedWithRetry_NeverTellingTheUserToDestroyIt()
+    public async Task Bill_OursDeletedInXero_AHandBillUnderTheNumber_LivePush_IsRejectedAsDeletedInXero_NeverTellingTheUserToDestroyIt()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
         var (id, ours) = await LostBillCreateAsync(kit);
@@ -290,7 +299,7 @@ public sealed class XeroPurchasingOwnershipTests
 
         Assert.Equal(2, steps.Count);
         Assert.All(steps, s => Assert.Equal(XeroPushOutcome.Rejected, s.Result.Outcome));
-        Assert.All(steps, s => Assert.Contains("Retry", s.Result.Reason, StringComparison.Ordinal));
+        Assert.All(steps, s => Assert.Contains("was deleted in Xero", s.Result.Reason, StringComparison.Ordinal));
         AssertNoDestroyAdvice(steps);
         Assert.Equal(handBody, Body(kit, "Invoices", hand));
         Assert.Null(await kit.ExpenseLinkAsync(id));
@@ -321,9 +330,9 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
-    public async Task Po_OursDeletedInXero_AnExactCopyReKeyedByHand_IsAmbiguous_PushRejected_CancelEndsNothingToDo_CopyUntouched()
+    public async Task Po_OursDeletedInXero_AnExactCopyReKeyedByHand_IsDeletedInXero_PushRejected_CancelEndsNothingToDo_CopyUntouched()
     {
-        // Same number, contact, reference and amounts as ours: deleted ours is evidence, so two records carry what one create sent.
+        // Same number, contact, reference and amounts as ours: ours is known by its id (the key's replay), so the copy is never ours.
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         var (id, ours) = await LostOrderCreateAsync(kit);
         kit.Simulator.DeleteInXero("PurchaseOrders", ours);
@@ -333,7 +342,7 @@ public sealed class XeroPurchasingOwnershipTests
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
         var push = Assert.Single(await kit.DrainAsync());
         Assert.Equal(XeroPushOutcome.Rejected, push.Result.Outcome);
-        Assert.Contains("cannot tell which", push.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("was deleted in Xero", push.Result.Reason, StringComparison.Ordinal);
         AssertNoDestroyAdvice([push]);
 
         Cancel(kit, id);
@@ -348,7 +357,7 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
-    public async Task Bill_OursDeletedInXero_AnExactCopyKeyedByHand_IsAmbiguous_PushRejected_DeleteEndsNothingToDo_CopyUntouched()
+    public async Task Bill_OursDeletedInXero_AnExactCopyKeyedByHand_IsDeletedInXero_PushRejected_DeleteEndsNothingToDo_CopyUntouched()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
         var (id, ours) = await LostBillCreateAsync(kit);
@@ -359,7 +368,7 @@ public sealed class XeroPurchasingOwnershipTests
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
         var push = Assert.Single(await kit.DrainAsync());
         Assert.Equal(XeroPushOutcome.Rejected, push.Result.Outcome);
-        Assert.Contains("cannot tell which", push.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("was deleted in Xero", push.Result.Reason, StringComparison.Ordinal);
         AssertNoDestroyAdvice([push]);
 
         Delete(kit, id);
@@ -374,22 +383,22 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
-    public async Task Bill_LostCreate_AndAnExactCopyKeyedByHand_BothLive_IsAmbiguous_DeleteEndsNothingToDo_BothUntouched()
+    public async Task Bill_LostCreate_AndAnExactCopyKeyedByHand_BothLive_OursIsKnownByItsId_DeleteDeletesOursOnly()
     {
+        // Matching cannot tell the two apart; the key's replay answers ours by its id.
         using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
         var (id, ours) = await LostBillCreateAsync(kit);
         var hand = await HandBillAsync(kit, "NS-5", net: 100m, vat: 20m);
-        var (ourBody, handBody) = (Body(kit, "Invoices", ours), Body(kit, "Invoices", hand));
+        var handBody = Body(kit, "Invoices", hand);
 
         Delete(kit, id);
         await kit.PlanExpenseAsync(id);
         var steps = await DrainRetryAsync(kit);
 
-        Assert.True(steps.All(s => s.Result.Outcome == XeroPushOutcome.NothingToDo), Steps(steps));
-        Assert.Contains(steps, s => s.Result.Reason?.Contains("cannot tell which", StringComparison.Ordinal) == true);
+        Assert.True(kit.Simulator.Find("Invoices", ours)!.Status == "DELETED", Steps(steps));
         Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
-        Assert.Equal(ourBody, Body(kit, "Invoices", ours));
         Assert.Equal(handBody, Body(kit, "Invoices", hand));
+        Assert.Equal("DRAFT", kit.Simulator.Find("Invoices", hand)!.Status);
         kit.AssertNoViolations();
     }
 
@@ -431,7 +440,7 @@ public sealed class XeroPurchasingOwnershipTests
             ? kit.FakeExpenses[id] with { NetAmount = 150m, VatAmount = 30m }
             : kit.FakeExpenses[id] with { Description = "Train to Leeds" };
         await kit.PlanExpenseAsync(id);
-        kit.Lost.LoseWrites = 1;
+        kit.LostNew.LoseNewWrites = 1; // The new create's answer, not the replay of the first.
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
         await kit.DrainAsync();
         var second = Assert.Single(kit.LiveBills).Id;
@@ -452,48 +461,46 @@ public sealed class XeroPurchasingOwnershipTests
     // ------------------------------------------------------------ edited in Xero after a lost create
 
     [Fact]
-    public async Task Po_LostCreate_ThenItsAmountsChangedInXero_IsNoLongerProvablyOurs_PushRejected_CancelLeavesIt()
+    public async Task Po_LostCreate_ThenItsAmountsChangedInXero_IsStillOursByItsId_LinkedAndDeletedByACancel()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         var (id, ours) = await LostOrderCreateAsync(kit);
         await EditByHandAsync(kit, "PurchaseOrders", ours, new JsonObject { ["LineItems"] = new JsonArray { SimulatorTestKit.Line("Steel plate 10 mm", 12m, 50m, "INPUT2", "310") } });
-        var edited = Body(kit, "PurchaseOrders", ours);
 
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
-        Assert.Equal(XeroPushOutcome.Rejected, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+        Assert.Equal(XeroPushOutcome.Succeeded, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+        Assert.Equal(ours, (await kit.OrderLinkAsync(id))!.XeroId);
 
         Cancel(kit, id);
         await kit.PlanOrderAsync(id);
-        var steps = await DrainRetryAsync(kit);
+        await DrainRetryAsync(kit);
 
-        Assert.True(steps.All(s => s.Result.Outcome == XeroPushOutcome.NothingToDo), Steps(steps));
+        Assert.Equal("DELETED", kit.Simulator.Find("PurchaseOrders", ours)!.Status);
+        Assert.Single(kit.Simulator.All("PurchaseOrders"));
         Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
-        Assert.Equal(edited, Body(kit, "PurchaseOrders", ours));
-        Assert.Null(await kit.OrderLinkAsync(id));
         kit.AssertNoViolations();
     }
 
     [Fact]
-    public async Task Bill_LostCreate_ThenItsAmountsChangedInXero_IsNoLongerProvablyOurs_PushRejected_DeleteLeavesIt()
+    public async Task Bill_LostCreate_ThenItsAmountsChangedInXero_IsStillOursByItsId_LinkedAndDeletedWithTheExpense()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
         var (id, ours) = await LostBillCreateAsync(kit);
         var line = SimulatorTestKit.Line("Train to Sheffield", 1m, 110m, "INPUT2", "493");
         line["TaxAmount"] = 22m;
         await EditByHandAsync(kit, "Invoices", ours, new JsonObject { ["LineItems"] = new JsonArray { line } });
-        var edited = Body(kit, "Invoices", ours);
 
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
-        Assert.Equal(XeroPushOutcome.Rejected, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+        Assert.Equal(XeroPushOutcome.Succeeded, Assert.Single(await kit.DrainAsync()).Result.Outcome);
+        Assert.Equal(ours, (await kit.ExpenseLinkAsync(id))!.XeroId);
 
         Delete(kit, id);
         await kit.PlanExpenseAsync(id);
-        var steps = await DrainRetryAsync(kit);
+        await DrainRetryAsync(kit);
 
-        Assert.True(steps.All(s => s.Result.Outcome == XeroPushOutcome.NothingToDo), Steps(steps));
+        Assert.Equal("DELETED", kit.Simulator.Find("Invoices", ours)!.Status);
+        Assert.Single(kit.Bills);
         Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
-        Assert.Equal(edited, Body(kit, "Invoices", ours));
-        Assert.Null(await kit.ExpenseLinkAsync(id));
         kit.AssertNoViolations();
     }
 

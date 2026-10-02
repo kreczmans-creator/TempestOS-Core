@@ -440,7 +440,7 @@ public sealed class XeroExpenseBillSyncTests
     }
 
     [Fact]
-    public async Task ALostCreateResponse_IsMatchedByNumberAndContact_AndMakesOneBill()
+    public async Task ALostCreateResponse_IsRecoveredByReplayingItsKey_AndMakesOneBill()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         var id = Guid.NewGuid();
@@ -456,10 +456,12 @@ public sealed class XeroExpenseBillSyncTests
         var second = Assert.Single(await kit.DrainAsync());
         Assert.Equal(XeroPushOutcome.Succeeded, second.Result.Outcome);
 
-        var lookup = Assert.Single(kit.Simulator.Requests.Skip(mark), r => r.Method == HttpMethod.Get && r.Path == "Invoices");
-        Assert.Equal($"EXP-{id:N}", lookup.Query["InvoiceNumbers"]);
-        Assert.Equal(kit.GeneralContactId, lookup.Query["ContactIDs"]);
-        Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        // Recovery re-sends the create exactly, under its own key (Xero replays its first answer), and reads the id back.
+        var first = Assert.Single(kit.Simulator.Requests.Take(mark), r => r.Method == HttpMethod.Put && r.Path == "Invoices");
+        var replay = Assert.Single(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        Assert.Equal(first.IdempotencyKey, replay.IdempotencyKey);
+        Assert.Equal(first.JsonBody!.ToJsonString(), replay.JsonBody!.ToJsonString());
+        Assert.Contains(kit.Simulator.Requests.Skip(mark), r => r.Method == HttpMethod.Get && r.Path == $"Invoices/{Assert.Single(kit.Bills).Id}");
 
         var bill = Assert.Single(kit.LiveBills);
         var link = await kit.ExpenseLinkAsync(id);

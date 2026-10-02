@@ -80,6 +80,34 @@ internal sealed class FakePurchasingFileSource : IXeroDocumentFileSource
         Task.FromResult(_files.TryGetValue(document, out var file) ? file : null);
 }
 
+/// <summary>
+/// Loses Xero's answer to the next <see cref="LoseNewWrites"/> writes whose
+/// <c>Idempotency-Key</c> it has not seen before — a new create's answer —
+/// while a replay of an earlier key (the handlers' recovery) goes through.
+/// </summary>
+internal sealed class NewWriteLossHandler : DelegatingHandler
+{
+    private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
+
+    public int LoseNewWrites { get; set; }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var isNew = request.Method != HttpMethod.Get
+                    && request.Headers.TryGetValues("Idempotency-Key", out var keys)
+                    && _seen.Add(keys.First());
+        var response = await base.SendAsync(request, cancellationToken);
+        if (isNew && LoseNewWrites > 0)
+        {
+            LoseNewWrites--;
+            response.Dispose();
+            throw new HttpRequestException("Simulated: the answer to a new write was lost after Xero committed it.");
+        }
+
+        return response;
+    }
+}
+
 /// <summary>One attempt the test drain made: the entry as claimed and what its handler answered.</summary>
 internal sealed record PurchasingDrainStep(XeroOutboxEntry Entry, XeroPushResult Result);
 
@@ -160,6 +188,9 @@ internal sealed class PurchasingSyncTestKit : IDisposable
 
     public LostResponseHandler Lost { get; }
 
+    /// <summary>Loses the answer to a new write only (a replay of an earlier key goes through).</summary>
+    public NewWriteLossHandler LostNew { get; private init; } = new();
+
     public XeroContactLinker Linker { get; }
 
     /// <summary>The Xero <c>ContactID</c> the supplier <see cref="SupplierReference"/> is linked to.</summary>
@@ -211,7 +242,8 @@ internal sealed class PurchasingSyncTestKit : IDisposable
         var simulator = new XeroApiSimulator(new XeroSimulatorOptions(TenantId: TenantId, AccessToken: XeroTestAuthoriser.AccessToken), clock);
 
         var settings = new FakeSettingsReader { Cached = UkDemoReading() };
-        var lost = new LostResponseHandler { InnerHandler = simulator };
+        var lostNew = new NewWriteLossHandler { InnerHandler = simulator };
+        var lost = new LostResponseHandler { InnerHandler = lostNew };
         var rateLimiter = new XeroRateLimiter(clock) { InnerHandler = lost };
         var safety = new XeroWriteSafetyHandler(() => settings, _ => Task.FromResult(false), () => new RecordingAuditRecorder(), timeProvider: clock)
         {
@@ -238,7 +270,10 @@ internal sealed class PurchasingSyncTestKit : IDisposable
         var kit = new PurchasingSyncTestKit(
             simulator, clock, client, api, secretStore, store, settings, lost, linker, supplierContactId, generalContactId,
             orders ?? new FakePurchaseOrderSource(), expenses ?? new FakeExpenseSource(),
-            options ?? new XeroPurchasingPlannerOptions { AutomaticFromUtc = DateTimeOffset.MinValue });
+            options ?? new XeroPurchasingPlannerOptions { AutomaticFromUtc = DateTimeOffset.MinValue })
+        {
+            LostNew = lostNew,
+        };
 
         if (chooseGeneralContact)
             await kit.GeneralContact.SetAsync(GeneralReference);

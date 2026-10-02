@@ -188,7 +188,7 @@ public sealed class XeroPurchaseOrderSyncTests
     }
 
     [Fact]
-    public async Task ALostCreateResponse_IsReconciledByNumber_AndMakesOneOrder()
+    public async Task ALostCreateResponse_IsRecoveredByReplayingItsKey_AndMakesOneOrder()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         var id = Guid.NewGuid();
@@ -211,7 +211,9 @@ public sealed class XeroPurchaseOrderSyncTests
         Assert.Equal(order.Id, link!.XeroId);
         Assert.Equal(XeroPurchasingMapper.LinkedByReconciled, link.LinkedBy);
         Assert.Equal(second.Entry.ContentHash, link.LastPushedContentHash);
-        Assert.Single(kit.WritesTo("PurchaseOrders"), w => w.Method == HttpMethod.Put);
+        // The only write recovery sends is the create again, under its own key: Xero replays its first answer.
+        Assert.Single(kit.WritesTo("PurchaseOrders").Where(w => w.Method == HttpMethod.Put).Select(w => (w.IdempotencyKey, w.JsonBody!.ToJsonString())).Distinct());
+        Assert.Single(kit.Simulator.All("PurchaseOrders"));
         Assert.Contains(kit.Audit.Rows, r => r.Action == "xero.link.reconciled");
         Assert.Empty(await kit.PlanOrderAsync(id));
         kit.AssertNoViolations();
