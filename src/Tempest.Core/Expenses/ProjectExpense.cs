@@ -54,6 +54,19 @@ public enum ExpenseCategory
 /// not a bespoke field this class invents.
 /// </para>
 /// <para>
+/// <b>Purchasing details (`v0.24.0` X5, build decisions Q3, Q4, Q6) are
+/// optional and additive.</b> <see cref="SupplierOrganisationId"/> and
+/// <see cref="SupplierInvoiceNumber"/> name who the cost was paid to and
+/// the number on their invoice, so the expense's draft bill in Xero goes
+/// against that supplier under that number; <see cref="SourcePurchaseOrderId"/>
+/// records the purchase order whose received lines the expense was recorded
+/// from (<c>PurchaseOrderService.RecordLinesAsExpensesAsync</c>), so it is
+/// not pushed as a second bill. An expense stored before `v0.24.0` carries
+/// none of them in its state and reads back with all three
+/// <see langword="null"/>; an expense that never sets them stores no key
+/// for them at all.
+/// </para>
+/// <para>
 /// <b><see cref="InvoicedBy"/> is set once and never cleared</b> — exactly
 /// <see cref="TimesheetEntry.InvoicedBy"/>'s own once-only shape, so a
 /// billable expense can be billed on at most one live invoice request.
@@ -72,13 +85,18 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
     private Money _vatAmount;
     private bool _billable;
     private Guid? _invoicedBy;
+    private string? _supplierOrganisationId;
+    private string? _supplierInvoiceNumber;
+    private Guid? _sourcePurchaseOrderId;
 
     /// <summary>Initialises a new instance of the <see cref="ProjectExpense"/> class.</summary>
+    /// <remarks>The last three parameters (`v0.24.0` X5) are optional, so every existing construction is unchanged.</remarks>
     public ProjectExpense(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
         Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount,
-        bool billable, Guid? invoicedBy = null)
+        bool billable, Guid? invoicedBy = null,
+        string? supplierOrganisationId = null, string? supplierInvoiceNumber = null, Guid? sourcePurchaseOrderId = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -91,6 +109,9 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
         _vatAmount = vatAmount;
         _billable = billable;
         _invoicedBy = invoicedBy;
+        _supplierOrganisationId = Normalise(supplierOrganisationId);
+        _supplierInvoiceNumber = Normalise(supplierInvoiceNumber);
+        _sourcePurchaseOrderId = sourcePurchaseOrderId;
     }
 
     /// <summary>The project this expense was incurred on. Always this expense's own <see cref="IHasParent.ParentId"/> too.</summary>
@@ -120,6 +141,15 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
 
     /// <summary>The invoice request this expense was billed on, set once and never cleared. <see langword="null"/> until then.</summary>
     public Guid? InvoicedBy => _invoicedBy;
+
+    /// <summary>The supplier the cost was paid to — an Organisation-catalogue id (the same tag <c>PurchaseOrder.SupplierOrganisationId</c> carries), never validated by this class. <see langword="null"/> when none is recorded; the expense's Xero bill then goes against the configured "General expenses" contact (Q3).</summary>
+    public string? SupplierOrganisationId => _supplierOrganisationId;
+
+    /// <summary>The supplier's own invoice number, as printed on their invoice or receipt. <see langword="null"/> when none is recorded; the expense's Xero bill is then numbered <c>EXP-{id}</c> (Q4).</summary>
+    public string? SupplierInvoiceNumber => _supplierInvoiceNumber;
+
+    /// <summary>The purchase order whose received lines this expense was recorded from (<c>PurchaseOrderService.RecordLinesAsExpensesAsync</c>), set once and never cleared. <see langword="null"/> for an expense entered by hand. Such an expense is not pushed to Xero as a separate bill — the purchase order's own "Copy to bill" in Xero is the bill (Q6).</summary>
+    public Guid? SourcePurchaseOrderId => _sourcePurchaseOrderId;
 
     /// <summary>Amends this expense's own description, category, amounts and billable flag — the only fields <see cref="ExpenseService.AmendAsync"/> may change, and only while <see cref="InvoicedBy"/> is unset.</summary>
     internal Task AmendAsync(
@@ -160,6 +190,44 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
             $"Invoiced by request '{requestId:N}'.",
             cancellationToken);
 
+    /// <summary>Sets (or, with <see langword="null"/>, clears) <see cref="SupplierOrganisationId"/> and <see cref="SupplierInvoiceNumber"/>. <see cref="ExpenseService.SetSupplierAsync"/> decides whether the expense may still change before this ever runs.</summary>
+    internal Task SetSupplierAsync(string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default)
+    {
+        var supplier = Normalise(supplierOrganisationId);
+        var number = Normalise(supplierInvoiceNumber);
+
+        return MutateTypeStateAndPersistAsync(
+            () => new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [nameof(SupplierOrganisationId)] = supplier,
+                [nameof(SupplierInvoiceNumber)] = number,
+            },
+            () =>
+            {
+                _supplierOrganisationId = supplier;
+                _supplierInvoiceNumber = number;
+            },
+            $"Supplier: '{supplier ?? "(none)"}', supplier invoice number '{number ?? "(none)"}'.",
+            cancellationToken);
+    }
+
+    /// <summary>Sets <see cref="SourcePurchaseOrderId"/> to <paramref name="purchaseOrderId"/>, once — <c>PurchaseOrderService.RecordLinesAsExpensesAsync</c> calls it on each expense it records, straight after recording it.</summary>
+    internal Task MarkSourcePurchaseOrderAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default)
+    {
+        if (_sourcePurchaseOrderId is { } existing)
+        {
+            return existing == purchaseOrderId
+                ? Task.CompletedTask
+                : throw new InvalidOperationException($"Expense '{Id}' was already recorded from purchase order '{existing}'.");
+        }
+
+        return MutateTypeStateAndPersistAsync(
+            () => new Dictionary<string, string?>(StringComparer.Ordinal) { [nameof(SourcePurchaseOrderId)] = purchaseOrderId.ToString() },
+            () => _sourcePurchaseOrderId = purchaseOrderId,
+            $"Recorded from purchase order '{purchaseOrderId:N}'.",
+            cancellationToken);
+    }
+
     /// <inheritdoc />
     protected override void CaptureTypeState(IDictionary<string, string?> state)
     {
@@ -171,6 +239,15 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
         WriteJson(state, nameof(VatAmount), _vatAmount);
         state[nameof(Billable)] = _billable.ToString();
         state[nameof(InvoicedBy)] = _invoicedBy?.ToString();
+
+        // `v0.24.0` X5: written only when set, so an expense that never uses
+        // them stores exactly the keys it stored before.
+        if (_supplierOrganisationId is not null)
+            state[nameof(SupplierOrganisationId)] = _supplierOrganisationId;
+        if (_supplierInvoiceNumber is not null)
+            state[nameof(SupplierInvoiceNumber)] = _supplierInvoiceNumber;
+        if (_sourcePurchaseOrderId is { } source)
+            state[nameof(SourcePurchaseOrderId)] = source.ToString();
     }
 
     /// <inheritdoc />
@@ -182,7 +259,12 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
         _vatAmount = state.TypeJson<Money>(nameof(VatAmount));
         _billable = ParseBillable(state);
         _invoicedBy = state.TypeGuid(nameof(InvoicedBy));
+        _supplierOrganisationId = Normalise(state.Type(nameof(SupplierOrganisationId)));
+        _supplierInvoiceNumber = Normalise(state.Type(nameof(SupplierInvoiceNumber)));
+        _sourcePurchaseOrderId = state.TypeGuid(nameof(SourcePurchaseOrderId));
     }
+
+    private static string? Normalise(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static ExpenseCategory ParseCategory(EngineeringObjectState state) =>
         Enum.TryParse<ExpenseCategory>(state.Type(nameof(Category)), out var value) ? value : ExpenseCategory.Other;
@@ -199,5 +281,8 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
             state.TypeJson<Money>(nameof(NetAmount)),
             state.TypeJson<Money>(nameof(VatAmount)),
             ParseBillable(state),
-            state.TypeGuid(nameof(InvoicedBy)));
+            state.TypeGuid(nameof(InvoicedBy)),
+            state.Type(nameof(SupplierOrganisationId)),
+            state.Type(nameof(SupplierInvoiceNumber)),
+            state.TypeGuid(nameof(SourcePurchaseOrderId)));
 }

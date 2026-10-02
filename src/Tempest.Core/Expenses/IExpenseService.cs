@@ -25,6 +25,17 @@ public interface IExpenseService
         Guid expenseId, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Sets (or, with <see langword="null"/>, clears) <paramref name="expenseId"/>'s
+    /// supplier and the supplier's own invoice number (`v0.24.0` X5, build
+    /// decisions Q3, Q4) — purchasing details only, which change nothing the
+    /// expense was recharged at, so they may be set after it was invoiced.
+    /// Refused, as a result, when the expense does not exist, is deleted, or
+    /// its project is archived.
+    /// </summary>
+    Task<ExpenseResult> SetSupplierAsync(
+        Guid expenseId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default);
+
     /// <summary>Soft-deletes <paramref name="expenseId"/>'s own expense. Refused, as a result, once the expense carries an <see cref="ProjectExpense.InvoicedBy"/> link.</summary>
     Task<ExpenseResult> DeleteAsync(Guid expenseId, CancellationToken cancellationToken = default);
 

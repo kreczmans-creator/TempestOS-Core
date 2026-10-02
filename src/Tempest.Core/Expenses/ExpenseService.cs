@@ -98,6 +98,22 @@ public sealed class ExpenseService : IExpenseService
     }
 
     /// <inheritdoc />
+    public async Task<ExpenseResult> SetSupplierAsync(
+        Guid expenseId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default)
+    {
+        var expense = await FindExpenseAsync(expenseId, cancellationToken).ConfigureAwait(false);
+        if (expense is null || !IsLive(expense))
+            return NotFound(expenseId);
+
+        if (await ArchivedAsync(expense, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await expense.SetSupplierAsync(supplierOrganisationId, supplierInvoiceNumber, cancellationToken).ConfigureAwait(false);
+
+        return new ExpenseResult(ExpenseRefusal.None, null, expense);
+    }
+
+    /// <inheritdoc />
     public async Task<ExpenseResult> MarkInvoicedAsync(Guid expenseId, Guid requestId, CancellationToken cancellationToken = default)
     {
         var expense = await FindExpenseAsync(expenseId, cancellationToken).ConfigureAwait(false);
