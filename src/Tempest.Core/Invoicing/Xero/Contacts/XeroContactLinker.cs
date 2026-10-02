@@ -452,8 +452,10 @@ public sealed class XeroContactLinker : IXeroContactLinker
 
             // The answer was lost, or Xero could not be reached: Xero may
             // still have made the contact. Look once more before reporting.
-            // The look-up is by the number in the body actually sent.
-            var lookupNumber = sentNumber ?? contactNumber;
+            // The look-up is by the number in the body actually sent: a resent
+            // body without one is not looked up by today's customer code,
+            // which it never carried (that code was already checked above).
+            var lookupNumber = sentNumber;
             if (created.Outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable && lookupNumber is not null)
             {
                 var after = await ReconcileByContactNumberAsync(tenantId, document, organisation, lookupNumber, cancellationToken).ConfigureAwait(false);

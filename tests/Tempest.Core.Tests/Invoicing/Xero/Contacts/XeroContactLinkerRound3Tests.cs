@@ -112,6 +112,30 @@ public sealed class XeroContactLinkerRound3Tests
         kit.AssertNoViolations();
     }
 
+    // Backlog X2-2: the look-up after an uncertain PUT used today's customer code when the resent body carried none.
+    [Fact]
+    public async Task Create_ResendingABodyWithNoContactNumber_LooksUpNothingAfterAnUncertainPut()
+    {
+        using var kit = await ContactLinkerTestKit.CreateAsync();
+        // A reference too long for ContactNumber and no customer code: the first body carries no ContactNumber.
+        var reference = "ACME-" + new string('7', 50);
+        var organisation = await kit.AddOrganisationAsync(reference: reference, customerCode: null);
+        kit.Lost.LoseWrites = 1;
+        Assert.NotEqual(ConnectorOutcome.Ok, (await kit.Linker.CreateAsync(reference)).Outcome);
+
+        await kit.Organisations.ReviseAsync(reference, organisation with { CustomerCode = "ACME2" }, OperationsFixtures.Verified(), "Code added.");
+        kit.Lost.LoseWrites = 1;
+        var retry = await kit.NewLinker().CreateAsync(reference);
+
+        Assert.NotEqual(ConnectorOutcome.Ok, retry.Outcome);
+        var requests = kit.Simulator.Requests.ToList();
+        var lastPut = requests.FindLastIndex(r => r.Method == HttpMethod.Put);
+        Assert.Null(requests[lastPut].JsonBody!["Contacts"]![0]!["ContactNumber"]);
+        Assert.DoesNotContain(requests.Skip(lastPut + 1), r => r.Method == HttpMethod.Get);
+        Assert.Single(kit.LiveContacts);
+        kit.AssertNoViolations();
+    }
+
     private static async Task WaitForInFlightAsync(ContactLinkerTestKit kit)
     {
         for (var i = 0; i < 500 && kit.Simulator.InFlight == 0; i++)
