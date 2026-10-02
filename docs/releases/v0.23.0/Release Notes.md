@@ -3,7 +3,7 @@
 **Status: draft.** Awaiting the Product Owner's verdict. This draft lives
 on `claude/focused-dirac-k0qilf`, on top of `main` (`v0.22.0`). The
 Product Owner's acceptance runbook for this build is the "TempestOS
-v0.23.0 Runbook" page (80 steps, sections A–J).
+v0.23.0 Runbook" page (sections A–K).
 
 ## Summary
 
@@ -148,6 +148,16 @@ including items waiting on a decision, is
   `packages.lock.json` and CI and the release restore in locked mode;
   after a package change run
   `dotnet restore src/TempestOS.slnx --force-evaluate` (`ADR-0160`).
+- **Every calculator shows a live 2D reference diagram (PO-2, `ADR-0158`).**
+  All 19 calculations draw their geometry or chart beside the inputs
+  (above them on a narrower window), marked "Not to scale · inputs only".
+  Labels read the form as typed (`L = 2000 mm`, or `L = ?` when blank or
+  unreadable); focusing a field highlights its shapes, and hovering or
+  clicking a shape marks or focuses its field. Variants follow the form
+  (support and loading, single or double shear, open or closed ends,
+  ball or roller). **A calculation is now complete only with its
+  diagram** (Engineering Principle 33): a coverage test fails CI for any
+  calculation without one.
 
 ## Documentation
 

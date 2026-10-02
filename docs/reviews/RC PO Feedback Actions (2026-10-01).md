@@ -49,32 +49,32 @@ D10–D13 (move/undo/attachments), E5–E12, F1–F7 (follow the Xero guide), F8
 
 No earlier written record of this was found; this entry records it.
 
-- **Today:** 16 calculations (`CalculationModuleDescriptors.All`), forms
-  generated from descriptors in `CalculationModulesView`; inputs already
-  carry symbols ("Span L", "Load W") and choices that set the geometry
-  (Support, Loading). Nothing is drawn.
-- **Design:** a declarative 2D diagram spec per calculation in Core
-  (members, supports, loads, dimensions, labels — each bound to an input
-  name; choice-driven variants), drawn by one Desktop control that
-  redraws as inputs change, highlights the shape for the focused field
-  (and the reverse), labels dimensions `L = 2000 mm` / `L = ?`, is marked
-  "not to scale", and says "No diagram yet" honestly where none exists.
-- **Tests:** a coverage test that every calculation has a diagram or is
-  on a shrink-only "no diagram yet" list, and that every bound input
-  exists; headless tests that editing a field updates its label and
-  focus highlights its shape.
+- **Before:** 16 calculations (`CalculationModuleDescriptors.All`), forms
+  generated from descriptors in `CalculationModulesView`; nothing drawn.
+- **Now (`ADR-0158`):** 19 calculations, **19 drawn, 0 without a
+  diagram.** A declarative 2D spec per calculation in Core, drawn by one
+  Desktop control beside the inputs: redrawn as inputs change, field and
+  shape highlighted both ways, labels `L = 2000 mm` / `L = ?`, marked
+  "not to scale · inputs only". "No diagram yet" remains only as a
+  defensive fallback.
+- **The PO's rule (2026-10-01):** "for future calculations the 2D diagram
+  will be a necessary item to consider it complete" — Engineering
+  Principle 33, `CONTRIBUTING.md` Definition of Done. The coverage test
+  fails for any calculation without exactly one diagram; the shrink-only
+  list is gone.
 
-| WP | Content | Size |
+| WP | Content | Status |
 |---|---|---|
-| A | Spec model, variants, coverage test (all 16 start on the list) | M |
-| B | Diagram control: shapes, dimension arrows, labels, theming, fallback, screen-reader text | M/L |
-| C | Wire into the calculator page: live redraw, two-way highlight, layout | S/M |
-| D1 | Simple diagrams: beam bending/deflection, column buckling, bolt shear, bearing at a hole, thermal expansion, shaft, pressure vessel | M |
-| D2 | Hard diagrams: bolt group, lifting lug, fillet weld, thick cylinder, bolted-joint preload, bearing life | L |
-| D3 | Charts not geometry: Miner S-N, material margin, joint diagram | M |
-| E | Same diagram on the recorded run and the calc-sheet export; ADR | S/M |
+| A | Spec model, variants, coverage test | Done |
+| B | Diagram control: shapes, dimension arrows, labels, theming, fallback, screen-reader text | Done |
+| C | Wire into the calculator page: live redraw, two-way highlight, layout (stacked under the inputs on a narrow window) | Done |
+| D1 | Simple diagrams: beam bending/deflection, column buckling, bolt shear, bearing at a hole, thermal expansion, shaft, pressure vessel (plus plane wall, resistance chain, tolerance stack) | Done |
+| D2 | Hard diagrams: bolt group, lifting lug, fillet weld, thick cylinder, bolted-joint preload | Done |
+| D3 | Charts not geometry: bearing life, Miner S-N, material margin | Done |
+| E | Same diagram on the recorded run and the calc-sheet export | Open (waits on Q5) |
 
-**Questions:** (1) is "not to scale" acceptable everywhere, or must some
-(lugs) be to scale? (2) above the inputs, or a fixed panel beside them?
-(3) charts acceptable for non-geometric calcs? (4) show results too
-(deflected shape, stress marker)? (5) on the issued calc sheet?
+**PO answers (2026-10-01):** (1) not to scale, everywhere — lugs
+included; (2) a fixed panel beside the inputs; (3) charts are acceptable
+for non-geometric calculations; (4) inputs only — no deflected shape, no
+stress marker. **Still open:** (5) whether the diagram goes on the issued
+calc sheet (WP E).

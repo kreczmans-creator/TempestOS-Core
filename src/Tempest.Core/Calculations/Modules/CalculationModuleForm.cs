@@ -237,6 +237,41 @@ public static class CalculationModuleForm
         _ => element.ToString(),
     };
 
+    /// <summary>
+    /// The form's own rule for reading a number input: <paramref name="text"/>
+    /// trimmed, invariant culture, finite; a whole number where the input
+    /// record's property is an <see cref="int"/> ("+2" and "02" read as 2,
+    /// "2.0" does not). Anything that shows a typed number — the reference
+    /// diagram's labels and variants — reads it by this same rule.
+    /// </summary>
+    public static bool TryReadNumber(string? text, bool wholeNumber, out double value)
+    {
+        value = 0;
+        var trimmed = text?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return false;
+
+        if (wholeNumber)
+        {
+            if (!int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+                return false;
+
+            value = count;
+            return true;
+        }
+
+        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
+    }
+
+    /// <summary>Whether <paramref name="module"/>'s input <paramref name="inputName"/> is a whole number (an <see cref="int"/> on its input record).</summary>
+    public static bool IsWholeNumber(CalculationModuleDescriptor module, string inputName)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+
+        var type = module.InputType.GetProperty(inputName)?.PropertyType;
+        return type is not null && (Nullable.GetUnderlyingType(type) ?? type) == typeof(int);
+    }
+
     /// <summary>A property name as a label: "MaximumBendingStress" reads "Maximum bending stress".</summary>
     public static string Humanise(string propertyName)
     {
@@ -333,24 +368,14 @@ public static class CalculationModuleForm
                     return null;
                 }
 
-                if (underlying == typeof(int))
+                var whole = underlying == typeof(int);
+                if (!TryReadNumber(field.Text, whole, out var number))
                 {
-                    if (!int.TryParse(field.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
-                    {
-                        Problem($"'{field.Text.Trim()}' is not a whole number");
-                        return null;
-                    }
-
-                    return count;
-                }
-
-                if (!double.TryParse(field.Text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
-                {
-                    Problem($"'{field.Text.Trim()}' is not a number");
+                    Problem(whole ? $"'{field.Text.Trim()}' is not a whole number" : $"'{field.Text.Trim()}' is not a number");
                     return null;
                 }
 
-                return number;
+                return whole ? (object)(int)number : number;
 
             case CalculationInputKind.Text:
                 if (string.IsNullOrWhiteSpace(field?.Text))
