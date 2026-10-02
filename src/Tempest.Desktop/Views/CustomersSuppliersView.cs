@@ -127,7 +127,10 @@ public sealed class CustomersSuppliersView : UserControl
 
     // The Link to Xero… prompt is modal within the view: while it is open a
     // full-size scrim takes every pointer hit and the body behind it is
-    // disabled, so the organisation shown cannot change under it.
+    // disabled, so the user cannot change the organisation shown under it.
+    // The prompt can only be opened from a section rendered for the
+    // organisation shown (LoadAsync withdraws it before looking up another),
+    // and its outcome is written for, and shown on, that organisation alone.
     private readonly Border _xeroScrim = new() { IsVisible = false, Opacity = 0.7 };
     private XeroContactLinker? _xero;
     private XeroContactLinkPrompt? _xeroPrompt;
@@ -417,18 +420,34 @@ public sealed class CustomersSuppliersView : UserControl
 
     private async Task LoadAsync(string recordId)
     {
+        // Another organisation: the Xero section (still showing the previous
+        // one) is withdrawn before the first await, so neither Unlink nor
+        // Link to Xero… can act on it while this one is looked up, and no
+        // answer for the previous one lands here.
+        var withdrawn = false;
+        if (!string.Equals(_editingRecordId, recordId, StringComparison.Ordinal))
+        {
+            HideXero();
+            SetXeroBusy(true);
+            withdrawn = true;
+        }
+
         var record = await _organisations.FindAsync(recordId).ConfigureAwait(true);
         if (record is null)
         {
+            // The organisation still shown keeps its (re-rendered) Xero section.
             _status.Text = $"'{recordId}' is no longer registered.";
+            if (withdrawn && _editingRecordId is not null)
+                await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
+            else if (withdrawn)
+                HideXero();
             return;
         }
 
         var o = record.Definition;
 
-        // Another organisation: the Xero section (still showing the previous
-        // one) is withdrawn before the first await, so neither Unlink nor
-        // Link to Xero… can act on it and no answer for the previous one lands here.
+        // The organisation shown may have changed during the look-up (a
+        // concurrent load): withdraw its section too.
         if (!string.Equals(_editingRecordId, recordId, StringComparison.Ordinal))
         {
             HideXero();
@@ -732,6 +751,19 @@ public sealed class CustomersSuppliersView : UserControl
             // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
             if (generation == _xeroGeneration)
             {
+                // The section may have been withdrawn (another organisation was
+                // just opened): show it, offering only Refresh from Xero, so the
+                // fault is seen and can be retried.
+                if (!_xeroSection.IsVisible && recordId is not null && IsStillShowing(recordId))
+                {
+                    _xeroShown = null;
+                    _xeroState.Text = string.Empty;
+                    _xeroDetails.IsVisible = false;
+                    SetXeroButtons(linked: null);
+                    _xeroRefreshButton.IsVisible = true;
+                    _xeroSection.IsVisible = true;
+                }
+
                 _xeroStatus.Text = $"Could not read the Xero link: {ex.Message}";
                 SetXeroBusy(false);
             }

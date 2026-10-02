@@ -229,6 +229,82 @@ public sealed class ContactLinkSwitchTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task LinkToXeroPressedWhileAnotherOrganisationIsBeingLookedUp_DoesNotOpenThePrompt()
+    {
+        await using var kit = await ContactLinkTestKit.CreateAsync();
+        await kit.AddOrganisationAsync();
+        await kit.AddOrganisationAsync(reference: "BRUNL", name: "Brunel Fabrication Ltd", customerCode: "BRUNL");
+        var (organisations, control) = InterceptingProxy<IOrganisationCatalog>.Wrap(kit.Organisations);
+        var (window, view) = await ShowAsync(kit, kit.Contacts, organisations);
+        await view.SelectAsync("ACME1");
+        await kit.WaitAsync(() => Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible && !view.IsXeroBusy);
+
+        // Hold the look-up of BRUNL: the form still shows ACME1 meanwhile.
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var entered = false;
+        control.Intercept = (method, args) =>
+            method.Name == nameof(IOrganisationCatalog.FindAsync) && Equals(args![0], "BRUNL") && !entered
+                ? HeldFindAsync()
+                : null;
+
+        async Task<IReferenceRecord<Organisation>?> HeldFindAsync()
+        {
+            entered = true;
+            await gate.Task.ConfigureAwait(true);
+            return await kit.Organisations.FindAsync("BRUNL").ConfigureAwait(true);
+        }
+
+        var opening = view.SelectAsync("BRUNL");
+        await kit.WaitAsync(() => entered);
+
+        Assert.False(Control(view, CustomersSuppliersView.XeroLinkStateName).IsEffectivelyVisible);
+        Click(view, CustomersSuppliersView.LinkToXeroName);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.False(view.XeroLinkPrompt!.IsVisible);
+
+        gate.SetResult();
+        await opening;
+        await kit.WaitAsync(() => view.EditingRecordId == "BRUNL" && Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible && !view.IsXeroBusy);
+        Assert.False(view.XeroLinkPrompt.IsVisible);
+        control.Intercept = null;
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task AStoreFaultOnTheFirstRefreshAfterSwitching_IsShown()
+    {
+        await using var kit = await ContactLinkTestKit.CreateAsync();
+        await LinkBothAsync(kit);
+        var (organisations, control) = InterceptingProxy<IOrganisationCatalog>.Wrap(kit.Organisations);
+        var (window, view) = await ShowAsync(kit, kit.Contacts, organisations);
+        await view.SelectAsync("ACME1");
+        await kit.WaitAsync(() => Text(view, CustomersSuppliersView.XeroLinkStateName).StartsWith("Linked to Acme Engineering Ltd in Xero", StringComparison.Ordinal) && !view.IsXeroBusy);
+
+        // BRUNL's own look-up succeeds; the Xero section's look-up of it faults.
+        var brunelLookUps = 0;
+        control.Intercept = (method, args) =>
+            method.Name == nameof(IOrganisationCatalog.FindAsync) && Equals(args![0], "BRUNL") && ++brunelLookUps > 1
+                ? Task.FromException<IReferenceRecord<Organisation>?>(new IOException("The organisation store is unreadable."))
+                : null;
+
+        await view.SelectAsync("BRUNL");
+        await kit.WaitAsync(() => Text(view, CustomersSuppliersView.XeroStatusName).StartsWith("Could not read the Xero link", StringComparison.Ordinal) && !view.IsXeroBusy);
+
+        Assert.Equal("BRUNL", view.EditingRecordId);
+        Assert.True(Control(view, CustomersSuppliersView.XeroStatusName).IsEffectivelyVisible);
+        Assert.DoesNotContain("Acme", Text(view, CustomersSuppliersView.XeroLinkStateName), StringComparison.Ordinal);
+        Assert.False(Button(view, CustomersSuppliersView.UnlinkFromXeroName).IsEffectivelyVisible);
+        Assert.False(Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible);
+        Assert.True(Button(view, CustomersSuppliersView.RefreshFromXeroName).IsEffectivelyVisible);
+
+        // Retrying once the store reads again renders BRUNL.
+        control.Intercept = null;
+        Click(view, CustomersSuppliersView.RefreshFromXeroName);
+        await kit.WaitAsync(() => Text(view, CustomersSuppliersView.XeroLinkStateName).StartsWith("Linked to Brunel Fabrication Ltd in Xero", StringComparison.Ordinal) && !view.IsXeroBusy);
+        window.Close();
+    }
+
     private static async Task LinkBothAsync(ContactLinkTestKit kit)
     {
         await kit.AddOrganisationAsync();
