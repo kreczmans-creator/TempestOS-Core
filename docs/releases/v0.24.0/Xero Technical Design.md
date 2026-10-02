@@ -240,7 +240,7 @@ DELETED, AUTHORISED, PAID, VOIDED` [S5].
   `ContactNumber`, exact name, then similar name; the PO confirms
   (`LinkExistingAsync`) or creates (`CreateAsync`, which first looks up
   `ContactNumber` = `Organisation.Reference` so a lost response never
-  makes two). Linking an existing contact writes nothing to Xero (Q7).
+  makes two). Linking an existing contact writes only the customer code into an empty `ContactNumber` (Q7, Build Decisions); nothing else.
   Billing address, VAT number and payment terms are read with
   `ReadDetailsAsync` and shown read-only; never pushed.
 
@@ -577,7 +577,7 @@ outside its row.
 | Q4 | Bill number: TempestOS's `EXP-{id}`, or should the expense record the supplier's own invoice number? | `EXP-{id}`; supplier number later |
 | Q5 | Invoice PDF attachment: visible on Xero's online invoice to the client (`IncludeOnline=true`), or kept internal? | internal (false) |
 | Q6 | An expense recorded from a received PO's lines: also a separate draft bill, or left for Xero's own *Copy to bill* from the PO (avoids two bills)? | not pushed when the PO is in Xero |
-| Q7 | When linking to an existing Xero contact, may TempestOS write its customer code into the contact's `ContactNumber` (an identifier, not billing details)? | no |
+| Q7 | When linking to an existing Xero contact, may TempestOS write its customer code into the contact's `ContactNumber` (an identifier, not billing details)? | yes, only when empty (Build Decisions Q7) |
 | Q8 | Quotes and invoices raised before v0.24.0: push them on demand (a *Send to Xero* action), or leave them out? | on demand only |
 | Q9 | Dropping `openid profile email` from the requested scopes (unused) — confirm, subject to the Demo Company check in B1. | drop if the check passes |
 | Q10 | Which Xero accounts for sales and for each expense category (Travel, Subsistence, Materials, Subcontract, Other)? | none — pushes Blocked until chosen |
