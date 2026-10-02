@@ -421,6 +421,19 @@ public sealed class XeroContactLinker : IXeroContactLinker
             // rather than making a second contact.
             var attempt = await BeginAttemptAsync(CreateOperation, tenantId, document.TempestKey, JsonSerializer.Serialize(body, XeroWire.JsonOptions), cancellationToken).ConfigureAwait(false);
             var sent = ReadCreateBody(attempt);
+
+            // A retry resends the earlier body, whose ContactNumber may differ
+            // from today's customer code: look that number up too, so the
+            // resend is checked against its own natural key (§6.4.3) and does
+            // not rely on Xero still holding the Idempotency-Key.
+            var sentNumber = string.IsNullOrWhiteSpace(sent.ContactNumber) ? null : sent.ContactNumber.Trim();
+            if (sentNumber is not null && !string.Equals(sentNumber, contactNumber, StringComparison.OrdinalIgnoreCase))
+            {
+                var resent = await ReconcileByContactNumberAsync(tenantId, document, organisation, sentNumber, cancellationToken).ConfigureAwait(false);
+                if (resent is not null)
+                    return resent;
+            }
+
             var created = await _api.CreateContactAsync(sent, CreateKey(tenantId, document, attempt.Payload!, attempt.Occurrence), cancellationToken).ConfigureAwait(false);
 
             if (created.Outcome == ConnectorOutcome.Ok)
@@ -439,9 +452,11 @@ public sealed class XeroContactLinker : IXeroContactLinker
 
             // The answer was lost, or Xero could not be reached: Xero may
             // still have made the contact. Look once more before reporting.
-            if (created.Outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable && contactNumber is not null)
+            // The look-up is by the number in the body actually sent.
+            var lookupNumber = sentNumber ?? contactNumber;
+            if (created.Outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable && lookupNumber is not null)
             {
-                var after = await ReconcileByContactNumberAsync(tenantId, document, organisation, contactNumber, cancellationToken).ConfigureAwait(false);
+                var after = await ReconcileByContactNumberAsync(tenantId, document, organisation, lookupNumber, cancellationToken).ConfigureAwait(false);
                 if (after is { Outcome: ConnectorOutcome.Ok or ConnectorOutcome.Rejected })
                     return after;
             }
@@ -492,15 +507,31 @@ public sealed class XeroContactLinker : IXeroContactLinker
         var now = _time.GetUtcNow();
         var details = ToDetails(read.Value!, link.XeroId, now);
 
-        if (!PersistenceXeroLinkStore.IsFromNewerVersion(link))
+        // The GET ran outside the write gate: the link may have been
+        // unlinked, or relinked to another contact, meanwhile. Stamp the
+        // refresh onto the link as it is now, and only when it still points
+        // at the contact just read; otherwise save nothing (an unlink must
+        // not be undone, and the store refuses a changed Xero id).
+        await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            var refreshed = link with
+            var current = await FindLinkAsync(tenantId, organisationReference, cancellationToken).ConfigureAwait(false);
+            if (current is not null
+                && string.Equals(current.XeroId, link.XeroId, StringComparison.OrdinalIgnoreCase)
+                && !PersistenceXeroLinkStore.IsFromNewerVersion(current))
             {
-                XeroNumber = Blank(read.Value!.ContactNumber),
-                LastKnownXeroStatus = StatusOf(read.Value!),
-                LastReadAtUtc = now,
-            };
-            await _links.SaveAsync(refreshed, cancellationToken).ConfigureAwait(false);
+                var refreshed = current with
+                {
+                    XeroNumber = Blank(read.Value!.ContactNumber),
+                    LastKnownXeroStatus = StatusOf(read.Value!),
+                    LastReadAtUtc = now,
+                };
+                await _links.SaveAsync(refreshed, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _writeGate.Release();
         }
 
         return ConnectorResult<XeroContactDetails>.Ok(details);
