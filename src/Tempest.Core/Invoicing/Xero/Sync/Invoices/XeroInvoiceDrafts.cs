@@ -507,7 +507,9 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         if (own is null)
         {
             return withReference.Count > 0
-                ? ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.OwnReferenceOtherContact, null, withReference[0].Status))
+                // The status of one still live there when any is, so a caller can tell "every one voided or deleted" apart.
+                ? ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(
+                    InvoiceNumberHolder.OwnReferenceOtherContact, null, (withReference.FirstOrDefault(i => !IsGone(i.Status)) ?? withReference[0]).Status))
                 : ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.AnotherInvoice, null, found.Value[0].Status));
         }
 
@@ -519,6 +521,10 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         var invoice = new CreatedInvoice(own.InvoiceId, own.InvoiceNumber ?? document.InvoiceNumber, own.Reference ?? document.Reference);
         return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.Own, invoice, own.Status));
     }
+
+    /// <summary>Whether Xero's <paramref name="status"/> is one an invoice never comes back from (<c>VOIDED</c>, <c>DELETED</c>).</summary>
+    private static bool IsGone(string? status) =>
+        string.Equals(status, "VOIDED", StringComparison.OrdinalIgnoreCase) || string.Equals(status, "DELETED", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>After reconciling a lost create: the draft brought to the request's current content (while still a draft); a failure is left for the planner's <see cref="XeroOperation.UpdateInvoiceDraft"/>.</summary>
     private async Task BringUpToDateAsync(string tenantId, InvoiceDraftDocument document, XeroSalesInvoiceDraft draft, CancellationToken cancellationToken)

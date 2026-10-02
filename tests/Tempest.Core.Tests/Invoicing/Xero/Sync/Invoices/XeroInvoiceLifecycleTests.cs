@@ -382,6 +382,40 @@ public sealed class XeroInvoiceLifecycleTests
         kit.AssertSafe();
     }
 
+    // Backlog X4-1: after a relink the refusal ignored the Xero invoice's status, so voiding it in Xero (the only way
+    // once it is approved) never unblocked the request and its lines stayed held for good.
+    [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_ClientRelinked_ThenApprovedAndVoidedInXero_GoesAhead()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV7");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV7");
+        var completionId = Assert.Single(request.Lines).SourceId;
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+        Assert.True(await kit.Linker.UnlinkAsync(organisationId));
+        var other = kit.Simulator.SeedContact("Other Client Ltd");
+        Assert.Equal(ConnectorOutcome.Ok, (await kit.Linker.LinkExistingAsync(organisationId, other)).Outcome);
+
+        // While it is live there the void is refused, and the message says what unblocks it.
+        kit.Simulator.ApproveInXero(lost.Id);
+        var refused = await kit.Service.VoidAsync(request.Id);
+        Assert.False(refused.Succeeded);
+        Assert.Contains("delete or void it there", refused.Reason, StringComparison.Ordinal);
+
+        kit.Simulator.VoidInXero(lost.Id);
+        var mark = kit.Mark;
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.True(voided.Succeeded, voided.Reason);
+        Assert.Equal(InvoiceRequestStatus.Voided, (await kit.ReloadAsync(request.Id)).Status);
+        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
+        Assert.True((await kit.Service.RaiseFromCompletionAsync(completionId)).Succeeded);
+        kit.AssertSafe();
+    }
+
     [Fact]
     public async Task Void_ADraftWhoseSendAnswerWasLost_LookUpRefusedByTheSystem_IsRefused_TheRequestStaysDraft()
     {

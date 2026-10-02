@@ -563,10 +563,13 @@ public sealed class InvoicingService : IInvoicingService
             case InvoiceNumberHolder.AnotherInvoice:
                 return null; // Nothing carrying its number there is TempestOS's own: the void is local only.
 
+            case InvoiceNumberHolder.OwnReferenceOtherContact when IsGoneThere(finding.ExternalStatus):
+                return null; // Every invoice with its reference there, under the other contact, is voided or deleted: nothing live is left.
+
             case InvoiceNumberHolder.OwnReferenceOtherContact:
                 return new InvoiceRequestResult(
                     InvoiceRequestRefusal.TransitionNotPermitted,
-                    $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName} holds {document.InvoiceNumber} with this invoice's reference under another contact; check {drafts.ConnectorName}. The request is unchanged.",
+                    $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName} holds {document.InvoiceNumber} with this invoice's reference under another contact; check {drafts.ConnectorName}: delete or void it there (or link the client back to that contact), then void again. The request is unchanged.",
                     request);
 
             case InvoiceNumberHolder.Own when finding.Invoice is not null:
