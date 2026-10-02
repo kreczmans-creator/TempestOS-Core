@@ -13,104 +13,126 @@ namespace Tempest.Core.Tests.Invoicing.Connectors;
 /// no test in this class ever touches the network (`WP 19.1A` part 2 brief
 /// §3): create ok/rejected/401/429/timeout, find-by-reference found/not
 /// found, and a paid status reading, each mapped to the outcome §2 names.
+/// `v0.24.0` X4: the create is a DRAFT by ContactID through the typed
+/// client; the name-only snapshot create refuses (M21). The X4 journeys over
+/// the simulator are in <c>Invoicing/Xero/Sync/Invoices</c>.
 /// </summary>
 public sealed class XeroConnectorTests
 {
+    // `v0.24.0` X4: a Xero sales invoice is created from a resolved
+    // `XeroSalesInvoiceDraft` — contact by ContactID, TempestOS's own number,
+    // DRAFT — through the typed client (`PUT Invoices?summarizeErrors=true`).
+    // The `WP 19.1A` snapshot overload, which knows the client only by name,
+    // refuses without calling Xero (M21: never a contact by name).
+
     [Fact]
-    public async Task CreateDraftInvoiceAsync_Ok_CarriesTheRequestIdAsReferenceAndIdempotencyKey_AndReturnsTheCreatedInvoice()
+    public async Task CreateDraftInvoiceAsync_Ok_PutsADraftByContactId_WithTheSameNumber_AndTheIdempotencyKey()
     {
         var (connector, handler, _) = await BuildAsync();
-        var requestId = Guid.NewGuid();
-        var idempotencyKey = requestId.ToString();
+        const string Key = "tos:Invoice:abc:PushInvoiceDraft:0123";
 
-        handler.When(HttpMethod.Post, "Invoices", (request, body) =>
+        handler.When(HttpMethod.Put, "Invoices", (request, body) =>
         {
-            Assert.Contains($"\"Reference\":\"{idempotencyKey}\"", body, StringComparison.Ordinal);
-            Assert.Contains("\"Name\":\"Fictional Client Ltd\"", body, StringComparison.Ordinal);
-            Assert.DoesNotContain("\"Name\":\"ORG-1\"", body, StringComparison.Ordinal);
-            Assert.Equal(idempotencyKey, request.Headers.GetValues("Idempotency-Key").Single());
+            Assert.Contains("summarizeErrors=true", request.RequestUri!.Query, StringComparison.Ordinal);
+            Assert.Contains("\"ContactID\":\"contact-1\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"InvoiceNumber\":\"ACME1-BRIDG1-INV-001\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"Status\":\"DRAFT\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"Type\":\"ACCREC\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"Reference\":\"ACME1-BRIDG1 \\u00B7 Bridge study\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"Date\":\"2026-10-02\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"DueDate\":\"2026-11-01\"", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("\"Name\"", body, StringComparison.Ordinal);
+            Assert.Equal(Key, request.Headers.GetValues("Idempotency-Key").Single());
             Assert.Equal("Bearer seeded-access-token", request.Headers.Authorization!.ToString());
             Assert.Equal("tenant-1", request.Headers.GetValues("xero-tenant-id").Single());
 
-            return JsonResponse(HttpStatusCode.OK, $$"""{"Invoices":[{"InvoiceID":"inv-001","InvoiceNumber":"INV-0001","Reference":"{{idempotencyKey}}","Status":"DRAFT"}]}""");
+            return JsonResponse(HttpStatusCode.OK, """{"Invoices":[{"InvoiceID":"inv-001","InvoiceNumber":"ACME1-BRIDG1-INV-001","Reference":"ACME1-BRIDG1 · Bridge study","Status":"DRAFT"}]}""");
         });
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(requestId), idempotencyKey);
+        var result = await connector.CreateDraftInvoiceAsync(Draft(), Key);
 
         Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
         Assert.Equal("inv-001", result.Value!.ExternalId);
-        Assert.Equal("INV-0001", result.Value.ExternalInvoiceNumber);
-        Assert.Equal(idempotencyKey, result.Value.Reference);
+        Assert.Equal("ACME1-BRIDG1-INV-001", result.Value.ExternalInvoiceNumber);
+        Assert.Equal("ACME1-BRIDG1 · Bridge study", result.Value.Reference);
     }
 
-    /// <summary>`WP 21.3B`: each line's own <see cref="VatRate"/> is mapped to Xero's own tax type before the payload is ever built.</summary>
+    /// <summary>`WP 21.3B` carried into X4: each line carries the tax type and account code resolved for it.</summary>
     [Fact]
-    public async Task CreateDraftInvoiceAsync_MapsEachLinesOwnVatRate_ToXerosOwnTaxType()
+    public async Task CreateDraftInvoiceAsync_CarriesEachLinesOwnTaxTypeAndAccountCode()
     {
         var (connector, handler, _) = await BuildAsync();
-        var requestId = Guid.NewGuid();
 
-        handler.When(HttpMethod.Post, "Invoices", (_, body) =>
+        handler.When(HttpMethod.Put, "Invoices", (_, body) =>
         {
             Assert.Contains("\"TaxType\":\"OUTPUT2\"", body, StringComparison.Ordinal);
             Assert.Contains("\"TaxType\":\"ZERORATEDOUTPUT\"", body, StringComparison.Ordinal);
-            return JsonResponse(HttpStatusCode.OK, $$"""{"Invoices":[{"InvoiceID":"inv-001","Reference":"{{requestId}}","Status":"DRAFT"}]}""");
+            Assert.Contains("\"AccountCode\":\"200\"", body, StringComparison.Ordinal);
+            Assert.Contains("\"LineAmountTypes\":\"Exclusive\"", body, StringComparison.Ordinal);
+            return JsonResponse(HttpStatusCode.OK, """{"Invoices":[{"InvoiceID":"inv-001","Status":"DRAFT"}]}""");
         });
 
-        var snapshot = new InvoiceRequestSnapshot(
-            requestId, "ORG-1", "Fictional Client Ltd", "PO-1", CurrencyCode.Gbp,
+        var draft = Draft() with
+        {
+            Lines =
             [
-                new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Standard-rated time", 5m, new Money(100m, CurrencyCode.Gbp), new Money(500m, CurrencyCode.Gbp), VatRate.Standard),
-                new InvoiceRequestLine("ProjectExpense", Guid.NewGuid(), "Zero-rated expense", 1m, new Money(200m, CurrencyCode.Gbp), new Money(200m, CurrencyCode.Gbp), VatRate.Zero),
+                new XeroSalesInvoiceDraftLine("Standard-rated time", 5m, 100m, "OUTPUT2", "200"),
+                new XeroSalesInvoiceDraftLine("Zero-rated expense", 1m, 200m, "ZERORATEDOUTPUT", "200"),
             ],
-            new Money(700m, CurrencyCode.Gbp));
+        };
 
-        var result = await connector.CreateDraftInvoiceAsync(snapshot, requestId.ToString());
+        var result = await connector.CreateDraftInvoiceAsync(draft, "tos:key");
 
         Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
     }
 
-    /// <summary>`WP 21.3B`: refused before the payload is ever built or any HTTP call is ever made — the identical "a result, never an exception" discipline every other rejection here already follows.</summary>
+    /// <summary>M21: the `WP 19.1A` snapshot names the client only by name, so it never reaches Xero — no HTTP call (the stub would throw for one).</summary>
     [Fact]
-    public async Task CreateDraftInvoiceAsync_ALineWithAnUnmappableVatRate_IsRejectedWithNoHttpCall()
+    public async Task CreateDraftInvoiceAsync_FromASnapshot_IsRejected_NeverSendsAContactByName()
     {
         var (connector, handler, _) = await BuildAsync();
 
-        // No `handler.When` registered at all — if the connector attempted
-        // an HTTP call regardless, `StubHttpMessageHandler` would throw for
-        // the unregistered request and this test would fail with that
-        // exception rather than the clean assertion below.
-        var requestId = Guid.NewGuid();
-        var badLine = new InvoiceRequestLine("TimesheetEntry", Guid.NewGuid(), "Undeclared rate", 1m, new Money(100m, CurrencyCode.Gbp), new Money(100m, CurrencyCode.Gbp), (VatRate)99);
-        var snapshot = new InvoiceRequestSnapshot(requestId, "ORG-1", "Fictional Client Ltd", "PO-1", CurrencyCode.Gbp, [badLine], new Money(100m, CurrencyCode.Gbp));
-
-        var result = await connector.CreateDraftInvoiceAsync(snapshot, requestId.ToString());
+        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
 
         Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
-        Assert.Contains("Undeclared rate", result.Reason, StringComparison.Ordinal);
+        Assert.Contains("ContactID", result.Reason, StringComparison.Ordinal);
+        Assert.Contains("ORG-1", result.Reason, StringComparison.Ordinal);
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    public async Task CreateDraftInvoiceAsync_ADraftWithNoContactId_IsRejectedWithNoHttpCall()
+    {
+        var (connector, handler, _) = await BuildAsync();
+
+        var result = await connector.CreateDraftInvoiceAsync(Draft() with { ContactId = " " }, "tos:key");
+
+        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Contains("ContactID", result.Reason, StringComparison.Ordinal);
+        Assert.Empty(handler.Calls);
     }
 
     [Fact]
     public async Task CreateDraftInvoiceAsync_Rejected_ReturnsTheValidationMessageFromTheBody()
     {
         var (connector, handler, _) = await BuildAsync();
-        handler.When(HttpMethod.Post, "Invoices", (_, _) => JsonResponse(
+        handler.When(HttpMethod.Put, "Invoices", (_, _) => JsonResponse(
             HttpStatusCode.BadRequest,
-            """{"Message":"A validation exception occurred","Elements":[{"ValidationErrors":[{"Message":"The contact name is required."}]}]}"""));
+            """{"Message":"A validation exception occurred","Elements":[{"ValidationErrors":[{"Message":"Invoice # must be unique."}]}]}"""));
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
+        var result = await connector.CreateDraftInvoiceAsync(Draft(), "tos:key");
 
         Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
-        Assert.Equal("The contact name is required.", result.Reason);
+        Assert.Equal("Invoice # must be unique.", result.Reason);
     }
 
     [Fact]
     public async Task CreateDraftInvoiceAsync_401_MapsToReauthorise()
     {
         var (connector, handler, _) = await BuildAsync();
-        handler.When(HttpMethod.Post, "Invoices", (_, _) => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        handler.When(HttpMethod.Put, "Invoices", (_, _) => new HttpResponseMessage(HttpStatusCode.Unauthorized));
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
+        var result = await connector.CreateDraftInvoiceAsync(Draft(), "tos:key");
 
         Assert.Equal(ConnectorOutcome.Reauthorise, result.Outcome);
     }
@@ -119,9 +141,9 @@ public sealed class XeroConnectorTests
     public async Task CreateDraftInvoiceAsync_429_MapsToUnavailable()
     {
         var (connector, handler, _) = await BuildAsync();
-        handler.When(HttpMethod.Post, "Invoices", (_, _) => new HttpResponseMessage((HttpStatusCode)429));
+        handler.When(HttpMethod.Put, "Invoices", (_, _) => new HttpResponseMessage((HttpStatusCode)429));
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
+        var result = await connector.CreateDraftInvoiceAsync(Draft(), "tos:key");
 
         Assert.Equal(ConnectorOutcome.Unavailable, result.Outcome);
     }
@@ -130,9 +152,9 @@ public sealed class XeroConnectorTests
     public async Task CreateDraftInvoiceAsync_ATransportTimeout_MapsToUnavailable()
     {
         var (connector, handler, _) = await BuildAsync();
-        handler.WhenThrows(HttpMethod.Post, "Invoices", new TaskCanceledException("The request timed out."));
+        handler.WhenThrows(HttpMethod.Put, "Invoices", new TaskCanceledException("The request timed out."));
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
+        var result = await connector.CreateDraftInvoiceAsync(Draft(), "tos:key");
 
         Assert.Equal(ConnectorOutcome.Unavailable, result.Outcome);
     }
@@ -226,33 +248,11 @@ public sealed class XeroConnectorTests
     {
         var (connector, handler, _) = await BuildAsync(tenantId: null);
 
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
+        var fromDraft = await connector.CreateDraftInvoiceAsync(Draft(), "tos:key");
+        var fromSnapshot = await connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString());
 
-        Assert.Equal(ConnectorOutcome.Reauthorise, result.Outcome);
-        Assert.Empty(handler.Calls);
-    }
-
-    [Fact]
-    public async Task CreateDraftInvoiceAsync_NoClientName_ReturnsRejected_NamingTheOrganisationId_NeverCallsXero()
-    {
-        var (connector, handler, _) = await BuildAsync();
-
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(clientName: null), Guid.NewGuid().ToString());
-
-        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
-        Assert.Contains("ORG-1", result.Reason, StringComparison.Ordinal);
-        Assert.Contains("not in the catalogue", result.Reason, StringComparison.Ordinal);
-        Assert.Empty(handler.Calls);
-    }
-
-    [Fact]
-    public async Task CreateDraftInvoiceAsync_BlankClientName_ReturnsRejected_SameAsNull()
-    {
-        var (connector, handler, _) = await BuildAsync();
-
-        var result = await connector.CreateDraftInvoiceAsync(Snapshot(clientName: "   "), Guid.NewGuid().ToString());
-
-        Assert.Equal(ConnectorOutcome.Rejected, result.Outcome);
+        Assert.Equal(ConnectorOutcome.Reauthorise, fromDraft.Outcome);
+        Assert.Equal(ConnectorOutcome.Reauthorise, fromSnapshot.Outcome);
         Assert.Empty(handler.Calls);
     }
 
@@ -261,7 +261,7 @@ public sealed class XeroConnectorTests
     {
         var (connector, _, _) = await BuildAsync();
 
-        var exception = await Record.ExceptionAsync(() => connector.CreateDraftInvoiceAsync(Snapshot(), Guid.NewGuid().ToString()));
+        var exception = await Record.ExceptionAsync(() => connector.CreateDraftInvoiceAsync(Draft(), "tos:key"));
 
         var invalidOperation = Assert.IsType<InvalidOperationException>(exception);
         Assert.Contains("Network guard", invalidOperation.Message, StringComparison.Ordinal);
@@ -270,6 +270,10 @@ public sealed class XeroConnectorTests
     // ====================================================================
     // Fixtures
     // ====================================================================
+
+    private static XeroSalesInvoiceDraft Draft() => new(
+        "contact-1", "ACME1-BRIDG1-INV-001", "ACME1-BRIDG1 · Bridge study", new DateOnly(2026, 10, 2), new DateOnly(2026, 11, 1), "GBP",
+        [new XeroSalesInvoiceDraftLine("Engineering time", 5m, 100m, "OUTPUT2", "200")]);
 
     private static InvoiceRequestSnapshot Snapshot(Guid? requestId = null, string? clientName = "Fictional Client Ltd") => new(
         requestId ?? Guid.NewGuid(), "ORG-1", clientName, "PO-1", CurrencyCode.Gbp,

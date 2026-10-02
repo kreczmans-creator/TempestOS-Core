@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Configuration;
 using Tempest.Core.Invoicing.OAuth;
+using Tempest.Core.Invoicing.Xero.Api;
+using Tempest.Core.Invoicing.Xero.Sync;
 
 namespace Tempest.Core.Invoicing.Xero;
 
@@ -18,23 +19,24 @@ namespace Tempest.Core.Invoicing.Xero;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Contacts.</b> An invoice's own <c>Contact</c> carries
-/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientName"/> as its
-/// <c>Name</c> — the client organisation's own name, resolved from the
-/// Organisation catalogue by <c>InvoicingService</c> and filled onto the
-/// snapshot before this connector ever sees it (<c>WP 19.1A-R1</c>
-/// disclosure #3; previously this connector matched by
-/// <see cref="Invoicing.InvoiceRequestSnapshot.ClientOrganisationId"/>
-/// itself, a bare catalogue id no accounting system's own contact list
-/// was ever going to already hold). Xero itself matches an existing
-/// contact by that name, or creates one when absent — documented Xero
-/// behaviour for an invoice's inline <c>Contact</c> object, so this
-/// connector defers contact search/creation to Xero rather than adding
-/// its own <c>/Contacts</c> round trip before every send. A
-/// <see langword="null"/> or blank <c>ClientName</c> means the id did not
-/// resolve in the catalogue at all; <see cref="CreateDraftInvoiceAsync"/>
-/// rejects outright rather than handing Xero a contact named after a raw,
-/// meaningless id.
+/// <b>Contacts, by <c>ContactID</c> only (`v0.24.0` X4; X2, review item
+/// M21).</b> Until v0.24.0 an invoice's inline <c>Contact</c> carried the
+/// client's name for Xero to match or silently create. It no longer does:
+/// a sales invoice is created only from a <see cref="XeroSalesInvoiceDraft"/>
+/// — the contact already linked by <c>ContactID</c>, every line's tax type
+/// and account code already checked against Xero's own (X1) — through
+/// <see cref="CreateDraftInvoiceAsync(XeroSalesInvoiceDraft, string, CancellationToken)"/>,
+/// which <c>Tempest.Core.Invoicing.Xero.Sync.Invoices.XeroInvoiceDrafts</c>
+/// drives for <see cref="InvoicingService"/>. The `WP 19.1A` snapshot
+/// overload, which knows only the client's name, therefore refuses.
+/// </para>
+/// <para>
+/// <b>Drafts only (D3, D4).</b> The invoice is created <c>DRAFT</c> with
+/// TempestOS's own number; its content is changed only while Xero still
+/// holds it as <c>DRAFT</c>, and only TempestOS's own draft is ever deleted.
+/// No member approves, emails or marks anything sent; every request passes
+/// <see cref="Api.XeroWriteSafetyHandler"/> in the shared Xero
+/// <see cref="HttpClient"/>, which refuses such a request again.
 /// </para>
 /// </remarks>
 public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAuthorisableConnector
@@ -47,6 +49,7 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     private readonly HttpClient _httpClient;
     private readonly OAuthAuthoriser _authoriser;
     private readonly IConfigurationProvider? _configuration;
+    private readonly XeroAccountingApi _api;
 
     /// <summary>Initialises a new instance of the <see cref="XeroConnector"/> class.</summary>
     /// <param name="configuration">Where <see cref="BaseCurrencyConfigurationKey"/> is read from. <see langword="null"/> is honoured — <see cref="IAccountsConnector.ReadCashPositionAsync"/> then falls back to GBP, this platform's own fixture currency throughout.</param>
@@ -58,18 +61,31 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         _httpClient = httpClient;
         _authoriser = authoriser;
         _configuration = configuration;
+        _api = new XeroAccountingApi(httpClient, authoriser);
     }
 
     /// <inheritdoc />
     public string Name => "Xero";
 
     /// <inheritdoc />
+    /// <remarks>
+    /// `v0.24.0` X4: <see cref="ConnectorOutcome.Reauthorise"/> when Xero is
+    /// not configured, authorised or connected (as before); otherwise always
+    /// <see cref="ConnectorOutcome.Rejected"/>, with no call to Xero. The snapshot knows the client only by name, and a Xero
+    /// invoice names its contact by <c>ContactID</c> (X2, M21) — never a name
+    /// for Xero to match or create. A Xero invoice is created by
+    /// <see cref="CreateDraftInvoiceAsync(XeroSalesInvoiceDraft, string, CancellationToken)"/>,
+    /// which <see cref="InvoicingService"/> reaches through its
+    /// <see cref="IInvoiceDraftSync"/> seam.
+    /// </remarks>
     public async Task<ConnectorResult<CreatedInvoice>> CreateDraftInvoiceAsync(
         InvoiceRequestSnapshot request, string idempotencyKey, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
+        // The authorisation answer comes first, exactly as before: an
+        // unconfigured or unauthorised connector still says "re-authorise".
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         if (access.Outcome != AccessTokenOutcome.Ok)
             return MapAccessFailure<CreatedInvoice>(access);
@@ -77,44 +93,237 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         if (string.IsNullOrEmpty(access.TenantId))
             return ConnectorResult<CreatedInvoice>.Reauthorise("No Xero organisation is connected; re-authorise to select one.");
 
-        if (string.IsNullOrWhiteSpace(request.ClientName))
-            return ConnectorResult<CreatedInvoice>.Rejected($"client organisation '{request.ClientOrganisationId}' is not in the catalogue");
-
-        // `WP 21.3B`: refuse outright, before ever building the payload,
-        // rather than send Xero a line it would itself reject — the
-        // identical "a result, never an exception" discipline this
-        // connector already applies to every other rejection (`ADR-0151`).
-        if (VatRateTaxTypeMapping.FindUnmappableReason(request.Lines) is { } unmappableReason)
-            return ConnectorResult<CreatedInvoice>.Rejected(unmappableReason);
-
-        var payload = new XeroInvoicesEnvelope(
-        [
-            new XeroInvoice(
-                Type: "ACCREC",
-                Contact: new XeroContact(Name: request.ClientName),
-                LineItems: [.. request.Lines.Select(ToXeroLineItem)],
-                Reference: idempotencyKey,
-                CurrencyCode: request.Currency.ToString()),
-        ]);
-
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "Invoices") { Content = JsonContent.Create(payload, options: JsonOptions) };
-        ApplyAuthHeaders(httpRequest, access);
-        httpRequest.Headers.Add("Idempotency-Key", idempotencyKey);
-
-        try
-        {
-            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false);
-            return await InterpretCreateResponseAsync(response, idempotencyKey, cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
-        {
-            return ConnectorResult<CreatedInvoice>.Unavailable(ConnectorHttpOutcome.DescribeTransportFailure(ex));
-        }
+        return ConnectorResult<CreatedInvoice>.Rejected(
+            $"A Xero invoice names its client by the linked Xero contact (ContactID), never by name; client organisation '{request.ClientOrganisationId}' "
+            + "has to go through TempestOS's Xero invoice export (link it under Customers & suppliers first).");
     }
+
+    /// <summary>
+    /// Creates <paramref name="draft"/> in Xero as an <c>ACCREC</c> invoice
+    /// with status <c>DRAFT</c> (<c>PUT Invoices</c>, `v0.24.0` X4, D3): the
+    /// contact by <c>ContactID</c>, TempestOS's own <c>InvoiceNumber</c>, the
+    /// reference text, dates, currency and net lines with their tax types and
+    /// account codes. Nothing is sent to the client (D4).
+    /// </summary>
+    /// <param name="draft">The resolved invoice.</param>
+    /// <param name="idempotencyKey">The fixed <c>Idempotency-Key</c> for this body (at most 128 characters); a repeat replays Xero's own answer.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The created invoice: Xero's <c>InvoiceID</c>, its number and the reference it carries.</returns>
+    public async Task<ConnectorResult<CreatedInvoice>> CreateDraftInvoiceAsync(
+        XeroSalesInvoiceDraft draft, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
+
+        if (FindDraftProblem(draft) is { } problem)
+            return ConnectorResult<CreatedInvoice>.Rejected(problem);
+
+        var created = await _api.CreateSalesInvoiceDraftAsync(ToWrite(draft), idempotencyKey, cancellationToken).ConfigureAwait(false);
+        if (created.Outcome != ConnectorOutcome.Ok)
+            return ToConnectorResult<XeroWireInvoice, CreatedInvoice>(created);
+
+        var invoice = created.Value!;
+        return ConnectorResult<CreatedInvoice>.Ok(new CreatedInvoice(invoice.InvoiceID!, invoice.InvoiceNumber ?? draft.InvoiceNumber, invoice.Reference ?? draft.Reference));
+    }
+
+    /// <summary>
+    /// The sales invoices Xero holds under <paramref name="invoiceNumber"/>
+    /// (<c>GET Invoices?InvoiceNumbers=</c>, `v0.24.0` X4, design §6.4) —
+    /// deleted ones and bills left out, since neither holds a sales number.
+    /// </summary>
+    /// <param name="invoiceNumber">TempestOS's invoice number.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public async Task<ConnectorResult<IReadOnlyList<XeroInvoiceReading>>> FindSalesInvoicesByNumberAsync(string invoiceNumber, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceNumber);
+
+        var found = await _api.FindInvoicesByNumberAsync(invoiceNumber, cancellationToken).ConfigureAwait(false);
+        if (found.Outcome != ConnectorOutcome.Ok)
+            return ToConnectorResult<IReadOnlyList<XeroWireInvoice>, IReadOnlyList<XeroInvoiceReading>>(found);
+
+        IReadOnlyList<XeroInvoiceReading> readings = [.. found.Value!
+            .Where(i => string.Equals(i.Type ?? XeroWire.InvoiceTypeSales, XeroWire.InvoiceTypeSales, StringComparison.OrdinalIgnoreCase))
+            .Where(i => string.Equals(i.InvoiceNumber, invoiceNumber.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(ToReading)
+            .Where(r => !string.Equals(r.Status, DeletedStatus, StringComparison.OrdinalIgnoreCase))];
+
+        return ConnectorResult<IReadOnlyList<XeroInvoiceReading>>.Ok(readings);
+    }
+
+    /// <summary>Reads the invoice <paramref name="invoiceId"/> back from Xero (<c>GET Invoices/{InvoiceID}</c>); one Xero no longer has is <see cref="ConnectorOutcome.Rejected"/>.</summary>
+    /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public async Task<ConnectorResult<XeroInvoiceReading>> ReadInvoiceAsync(string invoiceId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceId);
+
+        var read = await _api.GetInvoiceAsync(invoiceId, cancellationToken).ConfigureAwait(false);
+        return read.Outcome == ConnectorOutcome.Ok
+            ? ConnectorResult<XeroInvoiceReading>.Ok(ToReading(read.Value!))
+            : ToConnectorResult<XeroWireInvoice, XeroInvoiceReading>(read);
+    }
+
+    /// <summary>
+    /// Changes the content of TempestOS's draft <paramref name="invoiceId"/>
+    /// to <paramref name="draft"/> (`v0.24.0` X4) — only while Xero still
+    /// holds it as <c>DRAFT</c>: it is read first, and any other status is
+    /// answered <see cref="InvoiceDraftChangeOutcome.NotDraft"/> with Xero's
+    /// status word, and nothing is written. The write itself states
+    /// <c>Status: DRAFT</c>, so an approval in Xero between the read and the
+    /// write makes Xero refuse it rather than change an approved invoice.
+    /// </summary>
+    /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
+    /// <param name="draft">The new content.</param>
+    /// <param name="idempotencyKey">The fixed <c>Idempotency-Key</c> for this update.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    public async Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftInvoiceAsync(
+        string invoiceId, XeroSalesInvoiceDraft draft, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceId);
+        ArgumentNullException.ThrowIfNull(draft);
+        ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
+
+        if (FindDraftProblem(draft) is { } problem)
+            return ConnectorResult<InvoiceDraftChange>.Rejected(problem);
+
+        var current = await ReadInvoiceAsync(invoiceId, cancellationToken).ConfigureAwait(false);
+        if (current.Outcome != ConnectorOutcome.Ok)
+            return Retype<XeroInvoiceReading, InvoiceDraftChange>(current);
+
+        if (!IsDraft(current.Value!.Status))
+            return ConnectorResult<InvoiceDraftChange>.Ok(new InvoiceDraftChange(InvoiceDraftChangeOutcome.NotDraft, current.Value.Status));
+
+        var updated = await _api.UpdateInvoiceContentAsync(invoiceId, ToWrite(draft), idempotencyKey, cancellationToken).ConfigureAwait(false);
+        return updated.Outcome == ConnectorOutcome.Ok
+            ? ConnectorResult<InvoiceDraftChange>.Ok(new InvoiceDraftChange(InvoiceDraftChangeOutcome.Applied, updated.Value!.Status ?? DraftStatus))
+            : ToConnectorResult<XeroWireInvoice, InvoiceDraftChange>(updated);
+    }
+
+    /// <summary>
+    /// Deletes TempestOS's draft <paramref name="invoiceId"/> (`v0.24.0` X4,
+    /// design §4.2: a voided TempestOS invoice deletes its Xero draft only) —
+    /// read first; deleted only while Xero holds it as a draft
+    /// (<c>DRAFT</c>, or <c>SUBMITTED</c> awaiting approval). Any other
+    /// status is answered <see cref="InvoiceDraftChangeOutcome.NotDraft"/>
+    /// with Xero's status word, and nothing is written.
+    /// </summary>
+    /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
+    /// <param name="idempotencyKey">The fixed <c>Idempotency-Key</c> for this delete.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    public async Task<ConnectorResult<InvoiceDraftChange>> DeleteDraftInvoiceAsync(
+        string invoiceId, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
+
+        var current = await ReadInvoiceAsync(invoiceId, cancellationToken).ConfigureAwait(false);
+        if (current.Outcome != ConnectorOutcome.Ok)
+            return Retype<XeroInvoiceReading, InvoiceDraftChange>(current);
+
+        if (!IsDraft(current.Value!.Status) && !IsAwaitingApproval(current.Value.Status))
+            return ConnectorResult<InvoiceDraftChange>.Ok(new InvoiceDraftChange(InvoiceDraftChangeOutcome.NotDraft, current.Value.Status));
+
+        var deleted = await _api.DeleteInvoiceDraftAsync(invoiceId, idempotencyKey, cancellationToken).ConfigureAwait(false);
+        return deleted.Outcome == ConnectorOutcome.Ok
+            ? ConnectorResult<InvoiceDraftChange>.Ok(new InvoiceDraftChange(InvoiceDraftChangeOutcome.Applied, deleted.Value!.Status ?? DeletedStatus))
+            : ToConnectorResult<XeroWireInvoice, InvoiceDraftChange>(deleted);
+    }
+
+    /// <summary>
+    /// Attaches TempestOS's PDF to the invoice <paramref name="invoiceId"/>
+    /// (<c>PUT Invoices/{id}/Attachments/{FileName}</c>; <c>POST</c> to
+    /// replace a file of the same name). <paramref name="includeOnline"/> is
+    /// Q5's choice — off by default, so the client does not see it on Xero's
+    /// online invoice.
+    /// </summary>
+    /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
+    /// <param name="file">The PDF.</param>
+    /// <param name="replaceExisting">Whether a file of the same name was uploaded before.</param>
+    /// <param name="includeOnline">Whether the client sees it on Xero's online invoice (Q5).</param>
+    /// <param name="idempotencyKey">The fixed <c>Idempotency-Key</c> for this upload.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public async Task<ConnectorResult<XeroWireAttachment>> AttachInvoiceFileAsync(
+        string invoiceId, XeroDocumentFile file, bool replaceExisting, bool includeOnline, string idempotencyKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceId);
+        ArgumentNullException.ThrowIfNull(file);
+
+        var uploaded = await _api.UploadAttachmentAsync(
+            XeroAttachableResource.Invoices, invoiceId, file, idempotencyKey, replaceExisting, includeOnline, cancellationToken).ConfigureAwait(false);
+        return uploaded.Outcome == ConnectorOutcome.Ok
+            ? ConnectorResult<XeroWireAttachment>.Ok(uploaded.Value!)
+            : ToConnectorResult<XeroWireAttachment, XeroWireAttachment>(uploaded);
+    }
+
+    /// <summary>Xero's status word for a draft invoice — the only status TempestOS creates (D3).</summary>
+    public const string DraftStatus = "DRAFT";
+
+    /// <summary>Xero's status word for a deleted draft — the only other status TempestOS writes.</summary>
+    public const string DeletedStatus = "DELETED";
+
+    /// <summary>Whether Xero's <paramref name="status"/> is <see cref="DraftStatus"/>.</summary>
+    /// <param name="status">Xero's status word.</param>
+    public static bool IsDraft(string? status) => string.Equals(status?.Trim(), DraftStatus, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Whether Xero's <paramref name="status"/> is its submitted-for-approval word (a draft awaiting approval in Xero) — read side only.</summary>
+    /// <param name="status">Xero's status word.</param>
+    public static bool IsAwaitingApproval(string? status) =>
+        status is not null && status.Trim().StartsWith("SUBMIT", StringComparison.OrdinalIgnoreCase);
+
+    private static string? FindDraftProblem(XeroSalesInvoiceDraft draft)
+    {
+        if (string.IsNullOrWhiteSpace(draft.ContactId))
+            return "The invoice has no Xero contact (ContactID); link the client under Customers & suppliers.";
+
+        if (string.IsNullOrWhiteSpace(draft.InvoiceNumber))
+            return "The invoice has no number.";
+
+        if (draft.Lines.Count == 0)
+            return "The invoice has no lines.";
+
+        if (draft.Lines.FirstOrDefault(l => string.IsNullOrWhiteSpace(l.Description)) is not null)
+            return "Every invoice line needs a description.";
+
+        return draft.Lines.FirstOrDefault(l => string.IsNullOrWhiteSpace(l.TaxType) || string.IsNullOrWhiteSpace(l.AccountCode)) is { } line
+            ? $"Line '{line.Description}' has no Xero tax type or account code."
+            : null;
+    }
+
+    private static XeroWireInvoiceWrite ToWrite(XeroSalesInvoiceDraft draft) => new(
+        Contact: new XeroWireContactRef(draft.ContactId.Trim()),
+        InvoiceNumber: draft.InvoiceNumber.Trim(),
+        Reference: draft.Reference,
+        Date: XeroWire.FormatDate(draft.Date),
+        DueDate: XeroWire.FormatDate(draft.DueDate),
+        CurrencyCode: draft.CurrencyCode,
+        LineAmountTypes: XeroWire.LineAmountTypesExclusive,
+        LineItems: [.. draft.Lines.Select(l => new XeroWireLineItem(l.Description, l.Quantity, l.UnitAmount, l.AccountCode, l.TaxType))]);
+
+    private static XeroInvoiceReading ToReading(XeroWireInvoice invoice) => new(
+        invoice.InvoiceID!,
+        invoice.InvoiceNumber,
+        string.IsNullOrWhiteSpace(invoice.Status) ? "UNKNOWN" : invoice.Status.Trim(),
+        invoice.Reference,
+        invoice.Contact?.ContactID,
+        invoice.Type,
+        XeroWire.ParseDate(invoice.Date),
+        XeroWire.ParseDate(invoice.FullyPaidOnDate));
+
+    private static ConnectorResult<TTo> ToConnectorResult<TFrom, TTo>(XeroApiResult<TFrom> result) => result.Outcome switch
+    {
+        ConnectorOutcome.Rejected => ConnectorResult<TTo>.Rejected(string.IsNullOrWhiteSpace(result.Reason) ? "Xero rejected the request." : result.Reason),
+        ConnectorOutcome.Reauthorise => ConnectorResult<TTo>.Reauthorise(result.Reason),
+        ConnectorOutcome.Unavailable => ConnectorResult<TTo>.Unavailable(result.Reason),
+        _ => ConnectorResult<TTo>.Unknown(result.Reason),
+    };
+
+    private static ConnectorResult<TTo> Retype<TFrom, TTo>(ConnectorResult<TFrom> result) => result.Outcome switch
+    {
+        ConnectorOutcome.Rejected => ConnectorResult<TTo>.Rejected(result.Reason ?? "Xero rejected the request."),
+        ConnectorOutcome.Reauthorise => ConnectorResult<TTo>.Reauthorise(result.Reason),
+        ConnectorOutcome.Unavailable => ConnectorResult<TTo>.Unavailable(result.Reason),
+        _ => ConnectorResult<TTo>.Unknown(result.Reason),
+    };
 
     /// <inheritdoc />
     public async Task<ConnectorResult<InvoiceStatusReading>> ReadStatusAsync(string externalId, CancellationToken cancellationToken = default)
@@ -451,13 +660,6 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         return (access, null);
     }
 
-    /// <summary>Builds one outbound line item, mapping <paramref name="line"/>'s own <see cref="Tempest.Core.BusinessGovernance.VatRate"/> to Xero's own tax type (`WP 21.3B`) — never called once <see cref="VatRateTaxTypeMapping.FindUnmappableReason"/> has already found a line this table cannot map, so <see cref="VatRateTaxTypeMapping.TryMap"/> always succeeds here.</summary>
-    private static XeroLineItem ToXeroLineItem(InvoiceRequestLine line)
-    {
-        VatRateTaxTypeMapping.TryMap(line.VatRate, out var taxType);
-        return new XeroLineItem(line.Description, line.Quantity, line.UnitRate.Amount, line.Amount.Amount, taxType);
-    }
-
     private static BillDue ToBillDue(XeroInvoice invoice) => new(
         Supplier: invoice.Contact?.Name ?? string.Empty,
         Reference: invoice.Reference ?? invoice.InvoiceNumber ?? invoice.InvoiceID ?? string.Empty,
@@ -527,21 +729,6 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         _configuration is not null && _configuration.TryGetValue(BaseCurrencyConfigurationKey, out var configured) && !string.IsNullOrWhiteSpace(configured)
             ? new CurrencyCode(configured)
             : CurrencyCode.Gbp;
-
-    private async Task<ConnectorResult<CreatedInvoice>> InterpretCreateResponseAsync(HttpResponseMessage response, string idempotencyKey, CancellationToken cancellationToken)
-    {
-        var outcome = ConnectorHttpOutcome.Classify(response.StatusCode);
-        var body = await ConnectorHttpOutcome.ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
-
-        if (outcome != ConnectorOutcome.Ok)
-            return MapNonOkOutcome<CreatedInvoice>(outcome, response, body);
-
-        var invoice = TryParseInvoicesEnvelope(body)?.Invoices?.FirstOrDefault();
-        if (invoice?.InvoiceID is null)
-            return ConnectorResult<CreatedInvoice>.Unknown("Xero accepted the call but returned no invoice id.");
-
-        return ConnectorResult<CreatedInvoice>.Ok(new CreatedInvoice(invoice.InvoiceID, invoice.InvoiceNumber, invoice.Reference ?? idempotencyKey));
-    }
 
     private static ConnectorResult<T> MapNonOkOutcome<T>(ConnectorOutcome outcome, HttpResponseMessage response, string body) => outcome switch
     {
