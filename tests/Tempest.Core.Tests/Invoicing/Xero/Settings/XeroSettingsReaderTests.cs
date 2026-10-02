@@ -298,6 +298,41 @@ public sealed class XeroSettingsReaderTests
         Assert.Empty(rig.Simulator.Violations);
     }
 
+    // Backlog X1-3: If-Modified-Since never returns an account deleted in Xero, so a code reused by a new
+    // account left the stale one first in the merge and Check answered its status.
+    [Fact]
+    public void AnIncrementalMerge_DropsAnEarlierAccountWhoseCodeANewAccountNowCarries()
+    {
+        var organisation = new XeroWireOrganisation("org", "Org");
+        var previous = XeroSettingsReader.Build(
+            "t", organisation, [],
+            [
+                new XeroWireAccount("acc-old", "493", "Travel (old)", "OVERHEADS", "EXPENSE", "ARCHIVED"),
+                new XeroWireAccount("acc-200", "200", "Sales", "REVENUE", "REVENUE", "ACTIVE"),
+            ],
+            null, DateTimeOffset.UnixEpoch)!;
+
+        var merged = XeroSettingsReader.Build(
+            "t", organisation, [], [new XeroWireAccount("acc-new", "493", "Travel", "OVERHEADS", "EXPENSE", "ACTIVE")], previous, DateTimeOffset.UnixEpoch.AddDays(1))!;
+
+        Assert.Equal(["acc-200", "acc-new"], merged.Accounts.Select(a => a.AccountId).Order(StringComparer.Ordinal));
+        Assert.Equal("493", XeroAccountCodeMap.Check("493", XeroAccountPurpose.Expense, merged).Code);
+    }
+
+    [Fact]
+    public void Check_PrefersTheActiveAccount_WhenAnArchivedOneSharesItsCode()
+    {
+        var reading = XeroSettingsReader.Build(
+            "t", new XeroWireOrganisation("org", "Org"), [],
+            [
+                new XeroWireAccount("acc-old", "493", "Travel (old)", "OVERHEADS", "EXPENSE", "ARCHIVED"),
+                new XeroWireAccount("acc-new", "493", "Travel", "OVERHEADS", "EXPENSE", "ACTIVE"),
+            ],
+            null, DateTimeOffset.UnixEpoch)!;
+
+        Assert.Equal("493", XeroAccountCodeMap.Check("493", XeroAccountPurpose.Expense, reading).Code);
+    }
+
     [Fact]
     public void Build_PrefersTheStreetAddressAndTheDefaultPhone_AndFallsBackOnPoBoxAndLegalName()
     {

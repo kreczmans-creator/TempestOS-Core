@@ -138,7 +138,11 @@ public sealed class XeroAccountCodeMap
             return XeroCodeResolution.Blocked("Xero's chart of accounts has not been read yet; refresh Xero in Settings.");
 
         var trimmed = code.Trim();
-        var account = reading.Accounts.FirstOrDefault(a => string.Equals(a.Code, trimmed, StringComparison.OrdinalIgnoreCase));
+        // Xero can hold an archived account beside an active one that reuses its code: the active one is the one a line posts to.
+        var account = reading.Accounts
+            .Where(a => string.Equals(a.Code, trimmed, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(a => string.Equals(a.Status, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
         if (account is null)
             return XeroCodeResolution.Blocked($"Xero has no account {trimmed}; choose a {what} account Xero holds in Settings.");
 

@@ -293,12 +293,18 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
 
     private static List<XeroAccount> MergeAccounts(IReadOnlyList<XeroAccount>? previous, IEnumerable<XeroAccount> fresh)
     {
-        var merged = new List<XeroAccount>(previous ?? []);
+        var freshAccounts = fresh.ToList();
+
+        // An earlier account whose code a freshly read one now carries is stale: Xero gave the code to
+        // another account (the earlier one deleted or renumbered), and If-Modified-Since never returns it.
+        var freshIds = new HashSet<string>(freshAccounts.Select(a => a.AccountId), StringComparer.OrdinalIgnoreCase);
+        var freshCodes = new HashSet<string>(freshAccounts.Where(a => a.Code is not null).Select(a => a.Code!), StringComparer.OrdinalIgnoreCase);
+        var merged = new List<XeroAccount>((previous ?? []).Where(a => freshIds.Contains(a.AccountId) || a.Code is null || !freshCodes.Contains(a.Code)));
         var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < merged.Count; i++)
             index[merged[i].AccountId] = i;
 
-        foreach (var account in fresh)
+        foreach (var account in freshAccounts)
         {
             if (index.TryGetValue(account.AccountId, out var at))
             {
