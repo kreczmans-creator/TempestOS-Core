@@ -15,3 +15,9 @@ is easy to change and is listed for the Product Owner to confirm.
 | Q8 | Pre-v0.24.0 quotes and invoices are not pushed automatically; each has a "Send to Xero" action. |
 | Q9 | Drop `openid profile email`; the Demo Company smoke test confirms the connection still works. |
 | Q10 | Account codes are read from Xero; Settings maps the sales account and each expense category, defaulting to the UK Demo Company's codes (200 Sales; 400-series expenses). |
+
+## Chief-engineer sign-offs during the build
+
+- **B2 follow-up for X6 (2026-10-02):** `PersistenceXeroOutbox` gains an additive claim filter by entry state, so the sync engine can recover lost creates before other work. Owned by B2; approved for X6.
+- **X5 key lifetime:** a lost create not recovered within `IdempotencyKeyLifetime` (5 min, under Xero's documented 6 min key retention, to be confirmed on the Demo Company) stays "can't tell" and is never re-sent; X6 recovers lost creates first, every drain.
+- **X3 hand-keyed quotes:** a quote keyed into Xero by hand is linked only when its values match what TempestOS sent; otherwise the user is told what to change and Retries.
