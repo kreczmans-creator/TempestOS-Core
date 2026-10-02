@@ -693,9 +693,82 @@ public sealed class PersistenceXeroOutboxTests
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Outbox().EnqueueAsync((XeroOperation)999, Quote(1), "h1"));
     }
 
+    [Fact]
+    public async Task ClaimFromStates_ClaimsOnlyTheStatesAsked_KeepingPerDocumentOrder()
+    {
+        IXeroOutboxDrain drain = Outbox();
+        var pending = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "p");
+        var unknown = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(2), "u");
+        var behindUnknown = await Outbox().EnqueueAsync(XeroOperation.UploadAttachment, Quote(2), "a", "quote.pdf");
+
+        // Make the second entry Unknown (claimed, then its answer lost).
+        Assert.Equal(pending.Id, (await drain.ClaimNextDueAsync())!.Id);
+        Assert.Equal(unknown.Id, (await drain.ClaimNextDueAsync())!.Id);
+        await drain.RecordOutcomeAsync(unknown.Id, XeroOutboxState.Unknown, "lost");
+        await drain.RecordOutcomeAsync(pending.Id, XeroOutboxState.Pending);
+
+        // Unknown asked: the Unknown head, though a Pending entry is older.
+        var recovered = await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]);
+        Assert.Equal(unknown.Id, recovered!.Id);
+        Assert.Equal(XeroOutboxState.InFlight, recovered.State);
+        Assert.Equal(2, recovered.Attempts);
+        Assert.Null(await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]));
+
+        // Pending asked: never the entry queued behind the in-flight one of its document.
+        Assert.Equal(pending.Id, (await drain.ClaimNextDueAsync([XeroOutboxState.Pending]))!.Id);
+        Assert.Null(await drain.ClaimNextDueAsync([XeroOutboxState.Pending]));
+        Assert.Equal(XeroOutboxState.Pending, (await drain.FindAsync(behindUnknown.Id))!.State);
+
+        // Empty means Pending or Unknown, as the unfiltered claim.
+        await drain.RecordOutcomeAsync(unknown.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(behindUnknown.Id, (await drain.ClaimNextDueAsync([]))!.Id);
+    }
+
+    [Fact]
+    public async Task ClaimFromStates_HonoursNotBefore_AndRefusesNull()
+    {
+        IXeroOutboxDrain drain = Outbox();
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "u");
+        await drain.ClaimNextDueAsync();
+        await drain.RecordOutcomeAsync(entry.Id, XeroOutboxState.Unknown, "lost", Start.AddMinutes(5));
+
+        Assert.Null(await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]));
+        _clock.Advance(TimeSpan.FromMinutes(5));
+        Assert.Equal(entry.Id, (await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]))!.Id);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() => drain.ClaimNextDueAsync(null!));
+    }
+
+    [Fact]
+    public async Task ClaimFromStates_DefaultImplementation_ClaimsAsTheUnfilteredClaim()
+    {
+        IXeroOutboxDrain drain = new UnfilteredDrain(Outbox());
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "p");
+
+        // A drain that predates the overload ignores the preference rather than failing.
+        Assert.Equal(entry.Id, (await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]))!.Id);
+    }
+
     private async Task SucceedNextAsync()
     {
         var claimed = await Outbox().ClaimNextDueAsync();
         await Outbox().RecordOutcomeAsync(claimed!.Id, XeroOutboxState.Succeeded);
+    }
+
+    /// <summary>An <see cref="IXeroOutboxDrain"/> that implements only the members it must.</summary>
+    private sealed class UnfilteredDrain(IXeroOutboxDrain inner) : IXeroOutboxDrain
+    {
+        public Task<XeroOutboxEntry?> ClaimNextDueAsync(CancellationToken cancellationToken = default) => inner.ClaimNextDueAsync(cancellationToken);
+
+        public Task<XeroOutboxEntry?> RecordOutcomeAsync(
+            Guid entryId, XeroOutboxState state, string? lastError = null, DateTimeOffset? notBeforeUtc = null,
+            CancellationToken cancellationToken = default) =>
+            inner.RecordOutcomeAsync(entryId, state, lastError, notBeforeUtc, cancellationToken);
+
+        public Task<int> RecoverInFlightAsync(CancellationToken cancellationToken = default) => inner.RecoverInFlightAsync(cancellationToken);
+
+        public Task<int> ResumeAfterAuthorisationAsync(CancellationToken cancellationToken = default) => inner.ResumeAfterAuthorisationAsync(cancellationToken);
+
+        public Task<XeroOutboxEntry?> FindAsync(Guid entryId, CancellationToken cancellationToken = default) => inner.FindAsync(entryId, cancellationToken);
     }
 }
