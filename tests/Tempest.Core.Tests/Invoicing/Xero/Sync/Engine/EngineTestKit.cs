@@ -74,6 +74,9 @@ internal sealed class EngineFaultHop : DelegatingHandler
     /// <summary>When set, the next new write whose path contains <c>PathContains</c> is committed by Xero and then the "process" is cancelled mid-request.</summary>
     public (string PathContains, CancellationTokenSource Process)? CrashOnNewWrite { get; set; }
 
+    /// <summary>When set, every 429 reaches the client without its <c>Retry-After</c> (Xero may omit it; design §6.5: then 60 s).</summary>
+    public bool StripRetryAfter { get; set; }
+
     /// <summary>The paths of the writes the hop cut off by a crash.</summary>
     public List<string> Crashed { get; } = [];
 
@@ -83,6 +86,8 @@ internal sealed class EngineFaultHop : DelegatingHandler
                     && request.Headers.TryGetValues("Idempotency-Key", out var keys)
                     && _seen.Add(keys.First());
         var response = await base.SendAsync(request, cancellationToken);
+        if (StripRetryAfter && response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            response.Headers.RetryAfter = null;
 
         if (isNew && CrashOnNewWrite is { } crash && request.RequestUri!.AbsolutePath.Contains(crash.PathContains, StringComparison.Ordinal))
         {

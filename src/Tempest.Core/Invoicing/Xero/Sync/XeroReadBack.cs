@@ -1,6 +1,7 @@
 using System.Globalization;
 using Tempest.Core.Audit;
 using Tempest.Core.Invoicing.Xero.Api;
+using Tempest.Core.Logging;
 
 namespace Tempest.Core.Invoicing.Xero.Sync;
 
@@ -58,6 +59,7 @@ public sealed class XeroReadBack
     private readonly IInvoicingService? _invoicing;
     private readonly XeroRateLimiter? _rateLimiter;
     private readonly IAuditRecorder? _audit;
+    private readonly ILogger? _logger;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="XeroReadBack"/> class.</summary>
@@ -67,9 +69,10 @@ public sealed class XeroReadBack
     /// <param name="rateLimiter">The client-side limiter, whose pause stops a pass early; <see langword="null"/> when none.</param>
     /// <param name="audit">The audit recorder; <see langword="null"/> records nothing.</param>
     /// <param name="timeProvider">The clock links are stamped with; <see langword="null"/> for the system clock.</param>
+    /// <param name="logger">Where an audit row that could not be written is logged; <see langword="null"/> logs nothing.</param>
     public XeroReadBack(
         XeroAccountingApi api, IXeroLinkStore links, IInvoicingService? invoicing = null, XeroRateLimiter? rateLimiter = null,
-        IAuditRecorder? audit = null, TimeProvider? timeProvider = null)
+        IAuditRecorder? audit = null, TimeProvider? timeProvider = null, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(links);
@@ -79,6 +82,7 @@ public sealed class XeroReadBack
         _invoicing = invoicing;
         _rateLimiter = rateLimiter;
         _audit = audit;
+        _logger = logger;
         _time = timeProvider ?? TimeProvider.System;
     }
 
@@ -239,16 +243,25 @@ public sealed class XeroReadBack
         if (_audit is null)
             return;
 
-        await _audit.RecordAsync(AuditStatusRead, new Dictionary<string, string>
+        // Isolated, as the engine's own audit is: a failing recorder must
+        // not abort the pass (the status is already saved on the link).
+        try
         {
-            ["document"] = link.Document.TempestKey,
-            ["kind"] = link.Document.Kind.ToString(),
-            ["xeroId"] = link.XeroId,
-            ["xeroNumber"] = link.XeroNumber ?? string.Empty,
-            ["previousStatus"] = previous ?? string.Empty,
-            ["status"] = link.LastKnownXeroStatus ?? string.Empty,
-            ["readAtUtc"] = _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
-        }, cancellationToken).ConfigureAwait(false);
+            await _audit.RecordAsync(AuditStatusRead, new Dictionary<string, string>
+            {
+                ["document"] = link.Document.TempestKey,
+                ["kind"] = link.Document.Kind.ToString(),
+                ["xeroId"] = link.XeroId,
+                ["xeroNumber"] = link.XeroNumber ?? string.Empty,
+                ["previousStatus"] = previous ?? string.Empty,
+                ["status"] = link.LastKnownXeroStatus ?? string.Empty,
+                ["readAtUtc"] = _time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
+            }, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.Error($"Xero read-back could not write the audit row '{AuditStatusRead}' for {link.Document.Kind} {link.Document.TempestKey}.", ex);
+        }
     }
 
     private static string? Word(string? status) => string.IsNullOrWhiteSpace(status) ? null : status.Trim().ToUpperInvariant();

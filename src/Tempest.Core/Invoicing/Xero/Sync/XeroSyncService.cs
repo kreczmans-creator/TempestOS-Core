@@ -657,8 +657,10 @@ public sealed class XeroSyncService : IXeroSyncService
             if (tenantId is null || await IsPausedAsync(cancellationToken).ConfigureAwait(false))
                 return null;
 
-            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, cancellationToken).ConfigureAwait(false);
+            // Stamped before the pass, so a pass that throws is not retried
+            // on every wake of the loop but on the next interval.
             _lastReadBackUtc = _time.GetUtcNow();
+            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, cancellationToken).ConfigureAwait(false);
             await NoteRateLimiterPauseAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -922,34 +924,55 @@ public sealed class XeroSyncService : IXeroSyncService
         return resumed;
     }
 
-    /// <summary>When the engine next has work: the earliest due entry (now when one is due), the end of a 429 pause, or the next read-back; <see langword="null"/> when nothing is scheduled.</summary>
+    /// <summary>
+    /// When the engine next has work it can actually do: the earliest due
+    /// entry (now when one is due) and the next read-back, each held back to
+    /// the end of a 429 pause; <see langword="null"/> when nothing can be done
+    /// before something wakes the engine. With no organisation connected, or
+    /// while writes wait for re-authorisation, nothing is due — neither the
+    /// drain nor the read-back could run — so the hosted loop waits its whole
+    /// <see cref="XeroSyncOptions.SyncInterval"/> (a connect or a
+    /// re-authorisation wakes it at once through <see cref="NotifyAuthorisedAsync"/>)
+    /// rather than waking every second to find it still cannot.
+    /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<DateTimeOffset?> NextWorkDueAtAsync(CancellationToken cancellationToken = default)
     {
+        if (await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is null
+            || await IsWaitingForAuthorisationAsync(cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
         var now = _time.GetUtcNow();
         DateTimeOffset? next = null;
 
         void Consider(DateTimeOffset at) => next = next is { } current && current <= at ? current : at;
 
+        // Only the head of each document's queue can be sent; an entry
+        // behind a Failed or waiting one is not work yet.
+        var heads = (await _parts.Outbox.ListAsync([], cancellationToken).ConfigureAwait(false))
+            .Where(e => e.State is not (XeroOutboxState.Succeeded or XeroOutboxState.Superseded))
+            .GroupBy(e => e.Document)
+            .Select(g => g.First())
+            .Where(e => e.State is XeroOutboxState.Pending or XeroOutboxState.Unknown && e.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion);
+        foreach (var entry in heads)
+            Consider(entry.NotBeforeUtc is { } notBefore && notBefore > now ? notBefore : now);
+
+        if (_readBack is not null)
+            Consider(_lastReadBackUtc is { } last ? last + _options.ReadBackInterval : now);
+
+        // A 429 pause (persisted, or the client-side limiter's own) holds back
+        // everything that goes to Xero: nothing is due before it ends.
         var pausedUntil = await ReadTimeAsync(PausedUntilKey, cancellationToken).ConfigureAwait(false);
-        if (!await IsWaitingForAuthorisationAsync(cancellationToken).ConfigureAwait(false))
+        if (_rateLimiter?.DelayBeforeNextCall() is { } limiterWait && limiterWait > TimeSpan.Zero
+            && (pausedUntil is null || now + limiterWait > pausedUntil))
         {
-            // Only the head of each document's queue can be sent; an entry
-            // behind a Failed or waiting one is not work yet.
-            var heads = (await _parts.Outbox.ListAsync([], cancellationToken).ConfigureAwait(false))
-                .Where(e => e.State is not (XeroOutboxState.Succeeded or XeroOutboxState.Superseded))
-                .GroupBy(e => e.Document)
-                .Select(g => g.First())
-                .Where(e => e.State is XeroOutboxState.Pending or XeroOutboxState.Unknown && e.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion);
-            foreach (var entry in heads)
-                Consider(entry.NotBeforeUtc is { } notBefore && notBefore > now ? notBefore : now);
+            pausedUntil = now + limiterWait;
         }
 
         if (next is { } due && pausedUntil is { } until && until > due)
             next = until;
-
-        if (_readBack is not null)
-            Consider(_lastReadBackUtc is { } last ? last + _options.ReadBackInterval : now);
 
         return next;
     }
@@ -1102,7 +1125,7 @@ public sealed class XeroSyncService : IXeroSyncService
             await OnTenantAsync(tenantId, cancellationToken).ConfigureAwait(false);
 
         if (await IsWaitingForAuthorisationAsync(cancellationToken).ConfigureAwait(false)
-            && !await TryResumeAsync(cancellationToken).ConfigureAwait(false))
+            && !await TryResumeAsync(refreshSettings: !recoveryOnly, cancellationToken).ConfigureAwait(false))
         {
             return new XeroDrainReport(0, 0, 0, 0, PausedForAuthorisation: true, ResumeNotBeforeUtc: null);
         }
@@ -1262,9 +1285,8 @@ public sealed class XeroSyncService : IXeroSyncService
                 await AuditAsync(AuditReauthorisationRequired, detail, cancellationToken).ConfigureAwait(false);
                 return (Step.StopAuthorisation, XeroOutboxState.WaitingForAuthorisation);
 
-            case XeroPushOutcome.RetryLater when result.RetryAfter is { } retryAfter:
+            case XeroPushOutcome.RetryLater when RateLimitedUntil(result, now) is { } until:
             {
-                var until = now + XeroBackoff.RateLimitPause(retryAfter);
                 var asUnknown = recovering || IsCreate(entry.Operation);
                 await _drain.RecordOutcomeAsync(entry.Id, asUnknown ? XeroOutboxState.Unknown : XeroOutboxState.Pending, result.Reason, until, cancellationToken).ConfigureAwait(false);
                 if (asUnknown && track.RecoveringSinceUtc is null)
@@ -1330,6 +1352,25 @@ public sealed class XeroSyncService : IXeroSyncService
         }
     }
 
+    /// <summary>
+    /// When a RetryLater answer was a 429 (design §6.3, §6.5: <b>pause all</b>),
+    /// until when everything pauses; <see langword="null"/> for a transport
+    /// failure or a 5xx. A 429 is known by its <c>Retry-After</c> (+1 s), or —
+    /// when the handler did not pass it on (X4's invoice handlers never do) or
+    /// Xero sent none — by the client-side limiter having paused on the
+    /// answer it just saw (its own <c>Retry-After</c> + 1 s, or 60 s when
+    /// absent). The drain claims nothing while the limiter is paused, so a
+    /// pause found after the request is that request's.
+    /// </summary>
+    private DateTimeOffset? RateLimitedUntil(XeroPushResult result, DateTimeOffset now)
+    {
+        DateTimeOffset? until = result.RetryAfter is { } retryAfter ? now + XeroBackoff.RateLimitPause(retryAfter) : null;
+        if (_rateLimiter?.PausedUntilUtc is { } limiterUntil && (until is null || limiterUntil > until))
+            until = limiterUntil;
+
+        return until;
+    }
+
     /// <summary>Whether <paramref name="operation"/> creates a Xero record — a request that, if it failed in transport, may still have made one.</summary>
     private static bool IsCreate(XeroOperation operation) =>
         operation is XeroOperation.PushQuote or XeroOperation.PushInvoiceDraft or XeroOperation.PushPurchaseOrder or XeroOperation.PushExpenseBill;
@@ -1344,8 +1385,17 @@ public sealed class XeroSyncService : IXeroSyncService
     private async Task<bool> IsWaitingForAuthorisationAsync(CancellationToken cancellationToken) =>
         (await _parts.Outbox.ListAsync([XeroOutboxState.WaitingForAuthorisation], cancellationToken).ConfigureAwait(false)).Count > 0;
 
-    /// <summary>Whether the grant is usable again, so the waiting writes resume: seen unusable since the pause (a re-authorisation happened), or the probe interval passed. The caller holds <see cref="_networkGate"/>.</summary>
-    private async Task<bool> TryResumeAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Whether the grant is usable again, so the waiting writes resume: seen
+    /// unusable since the pause (a re-authorisation happened), or the probe
+    /// interval passed. On resuming, the X1 settings are read (on connect) —
+    /// unless <paramref name="refreshSettings"/> is <see langword="false"/>
+    /// (the start-up recovery, which comes before any other work, the
+    /// settings refresh included): then they are only marked unread, so the
+    /// first cycle after recovery reads them. The caller holds
+    /// <see cref="_networkGate"/>.
+    /// </summary>
+    private async Task<bool> TryResumeAsync(bool refreshSettings, CancellationToken cancellationToken)
     {
         if (_connection is null)
             return false;
@@ -1373,7 +1423,16 @@ public sealed class XeroSyncService : IXeroSyncService
             return false;
 
         await ResumeCoreAsync(_sawUnusableGrant ? "re-authorised" : "trying again after the re-authorisation interval", cancellationToken).ConfigureAwait(false);
-        await RefreshSettingsCoreAsync(force: true, cancellationToken).ConfigureAwait(false);
+        if (refreshSettings)
+        {
+            await RefreshSettingsCoreAsync(force: true, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            _settingsReadThisSession = false;
+            _lastSettingsAttemptUtc = null;
+        }
+
         return true;
     }
 
