@@ -88,6 +88,9 @@ public sealed class XeroContactLinkPrompt : Border
     private string _organisationName = string.Empty;
     private bool _searching;
     private bool _writing;
+
+    /// <summary>The caller's token fired while a write ran: the prompt closes as cancelled once that write ends without a link.</summary>
+    private bool _cancelRequested;
     private bool _searched;
 
     /// <summary>Initialises a new instance of the <see cref="XeroContactLinkPrompt"/> class, initially hidden.</summary>
@@ -206,7 +209,7 @@ public sealed class XeroContactLinkPrompt : Border
         var pending = new TaskCompletionSource<XeroLink?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pending = pending;
         if (cancellationToken.CanBeCanceled)
-            _pendingRegistration = cancellationToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (ReferenceEquals(_pending, pending)) Cancel(); }));
+            _pendingRegistration = cancellationToken.Register(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => { if (ReferenceEquals(_pending, pending)) CancelFromCaller(); }));
 
         _ = SearchAsync();
         _cancelButton.Focus();
@@ -442,6 +445,13 @@ public sealed class XeroContactLinkPrompt : Border
             return;
         }
 
+        if (ReferenceEquals(_pending, pending) && _cancelRequested)
+        {
+            // The caller cancelled while the write ran; it ended without a link, so the prompt closes now.
+            Complete(null);
+            return;
+        }
+
         if (result is not null && ReferenceEquals(_pending, pending))
             _status.Text = DescribeFailure(result, action);
 
@@ -466,8 +476,24 @@ public sealed class XeroContactLinkPrompt : Border
         Complete(null);
     }
 
+    /// <summary>
+    /// The caller's cancellation: closes the prompt at once, or — while a
+    /// write runs, which is never cancelled — once that write ends without a link.
+    /// </summary>
+    private void CancelFromCaller()
+    {
+        if (_writing)
+        {
+            _cancelRequested = true;
+            return;
+        }
+
+        Complete(null);
+    }
+
     private void Complete(XeroLink? link)
     {
+        _cancelRequested = false;
         _searchCancellation?.Cancel();
         _searchCancellation = null;
         _searching = false;

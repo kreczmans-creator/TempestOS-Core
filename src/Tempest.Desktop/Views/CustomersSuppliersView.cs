@@ -134,6 +134,9 @@ public sealed class CustomersSuppliersView : UserControl
     private int _xeroGeneration;
     private bool _xeroBusy;
 
+    /// <summary>The record Id and organisation the Xero section was last rendered for; Link and Unlink act on these alone.</summary>
+    private (string RecordId, Organisation Organisation)? _xeroShown;
+
     private IReadOnlyList<IReferenceRecord<Organisation>> _all = [];
     private string? _editingRecordId;
     private string? _editingContactId;
@@ -422,6 +425,16 @@ public sealed class CustomersSuppliersView : UserControl
         }
 
         var o = record.Definition;
+
+        // Another organisation: the Xero section (still showing the previous
+        // one) is withdrawn before the first await, so neither Unlink nor
+        // Link to Xero… can act on it and no answer for the previous one lands here.
+        if (!string.Equals(_editingRecordId, recordId, StringComparison.Ordinal))
+        {
+            HideXero();
+            SetXeroBusy(true);
+        }
+
         _editingRecordId = recordId;
         _formHeading.Text = $"Edit {o.Name}";
         _saveButton.Content = "Save organisation";
@@ -692,6 +705,7 @@ public sealed class CustomersSuppliersView : UserControl
     private void HideXero()
     {
         _xeroGeneration++;
+        _xeroShown = null;
         SetXeroBusy(false);
         _xeroSection.IsVisible = false;
         _xeroDetails.IsVisible = false;
@@ -707,6 +721,7 @@ public sealed class CustomersSuppliersView : UserControl
     internal async Task RefreshXeroAsync(bool readDetails)
     {
         var generation = ++_xeroGeneration;
+        var recordId = _editingRecordId;
         Organisation? organisation;
         try
         {
@@ -716,17 +731,28 @@ public sealed class CustomersSuppliersView : UserControl
         {
             // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
             if (generation == _xeroGeneration)
+            {
                 _xeroStatus.Text = $"Could not read the Xero link: {ex.Message}";
+                SetXeroBusy(false);
+            }
+
             return;
         }
 
-        if (_xero is null || organisation is null || generation != _xeroGeneration)
+        if (_xero is null || organisation is null || recordId is null || generation != _xeroGeneration || !IsStillShowing(recordId))
         {
             if (generation == _xeroGeneration)
+            {
+                _xeroShown = null;
                 _xeroSection.IsVisible = false;
+                SetXeroBusy(false);
+            }
+
             return;
         }
 
+        // From here the section is rendered for this organisation: Link and Unlink act on it.
+        _xeroShown = (recordId, organisation);
         _xeroSection.IsVisible = true;
         _xeroDetails.IsVisible = false;
         _xeroStatus.Text = string.Empty;
@@ -803,12 +829,13 @@ public sealed class CustomersSuppliersView : UserControl
 
     /// <summary>
     /// Marks a Xero read or unlink as in flight (or not): while one is,
-    /// Refresh and Unlink are disabled, so neither is silently ignored nor
+    /// Link to Xero…, Refresh and Unlink are disabled, so neither is silently ignored nor
     /// races the other's bookkeeping.
     /// </summary>
     private void SetXeroBusy(bool busy)
     {
         _xeroBusy = busy;
+        _xeroLinkButton.IsEnabled = !busy;
         _xeroRefreshButton.IsEnabled = !busy;
         _xeroUnlinkButton.IsEnabled = !busy;
     }
@@ -872,8 +899,8 @@ public sealed class CustomersSuppliersView : UserControl
     {
         try
         {
-            if (_xeroPrompt is null || _editingRecordId is not { } recordId
-                || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
+            // The organisation the Xero section was rendered for — never a fresh look-up of the form's.
+            if (_xeroPrompt is null || _xeroBusy || _xeroShown is not var (recordId, organisation) || !IsStillShowing(recordId))
                 return;
 
             var link = await _xeroPrompt.PromptAsync(organisation.Reference, organisation.Name).ConfigureAwait(true);
@@ -897,20 +924,17 @@ public sealed class CustomersSuppliersView : UserControl
 
     private async Task UnlinkFromXeroAsync()
     {
-        if (_xero is null || _xeroBusy || _editingRecordId is not { } recordId)
+        // The organisation the Xero section was rendered for — never a fresh
+        // look-up of the form's, which may already be another organisation.
+        if (_xero is null || _xeroBusy || _xeroShown is not var (recordId, organisation) || !IsStillShowing(recordId))
             return;
 
         // Busy from the click: Refresh and Unlink wait for this unlink.
         var generation = ++_xeroGeneration;
         SetXeroBusy(true);
-        Organisation? organisation = null;
         bool removed;
         try
         {
-            organisation = await EditingOrganisationAsync().ConfigureAwait(true);
-            if (organisation is null)
-                return;
-
             removed = await _xero.UnlinkAsync(organisation.Reference).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
