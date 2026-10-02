@@ -1,0 +1,138 @@
+using Tempest.Core.Invoicing.Xero.Api;
+using Tempest.Core.Invoicing.Xero.Sync;
+using Tempest.Core.Invoicing.Xero.Sync.Quotes;
+using Tempest.Core.Quotations;
+
+namespace Tempest.Core.Tests.Invoicing.Xero.Sync.Quotes;
+
+/// <summary>`v0.24.0` X3 planner: Q8 (quotations from before Xero sync go only on an explicit <em>Send to Xero</em>), the status walk, and the pure mapping helpers.</summary>
+public sealed class XeroQuotePlannerTests
+{
+    private static readonly DateTimeOffset SyncBegan = new(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public async Task AQuotationIssuedBeforeSyncBegan_IsLeftOut_UntilTheProductOwnerSendsItToXero()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions { AutomaticFromUtc = SyncBegan });
+        var old = Guid.NewGuid();
+        kit.FakeQuotes[old] = QuoteSyncTestKit.Quote(old, QuotationStatus.Accepted, issuedAt: SyncBegan.AddDays(-30));
+        kit.Files.Store(old, "R1 sheet");
+
+        Assert.Empty(await kit.PlanAsync(old));
+        Assert.Equal(0, await kit.Planner.ScanAsync());
+
+        var sent = await kit.Planner.SendToXeroAsync(old);
+        Assert.True(sent.Queued);
+        Assert.Equal(4, sent.Entries.Count);
+        Assert.Contains(kit.Audit.Rows, r => r.Action == XeroQuotePlanner.AuditSendToXero && r.Detail!["number"] == "P0012-Q-001");
+
+        await kit.DrainAsync();
+        Assert.Equal("ACCEPTED", kit.OnlyQuote.Status);
+
+        // Linked now: it stays in scope without asking again.
+        Assert.Empty(await kit.PlanAsync(old));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task SendToXero_OnADraftQuotation_IsRefusedWithTheReason()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Draft, revision: 0);
+
+        var refused = await kit.Planner.SendToXeroAsync(id);
+        Assert.False(refused.Queued);
+        Assert.Contains("Draft", refused.Reason, StringComparison.Ordinal);
+        Assert.False((await kit.Planner.SendToXeroAsync(Guid.NewGuid())).Queued);
+    }
+
+    [Fact]
+    public async Task SendToXero_CountsAsExported_ForAnApprovedQuotationWhosePdfIsNotHeld()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id);
+
+        Assert.Empty(await kit.PlanAsync(id));
+        var sent = await kit.Planner.SendToXeroAsync(id);
+        Assert.Equal(XeroOperation.PushQuote, Assert.Single(sent.Entries).Operation);
+    }
+
+    [Fact]
+    public async Task WithNoConfiguredStart_SyncBeginsTheFirstTimeThePlannerIsAsked_AndThatMomentIsKept()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions());
+        var began = await kit.Planner.AutomaticFromAsync();
+        Assert.Equal(kit.Clock.GetUtcNow(), began);
+
+        kit.Clock.Advance(TimeSpan.FromDays(3));
+        var restarted = new XeroQuotePlanner(kit.Quotes, kit.Links, kit.Outbox, kit.Store, kit.Secrets, kit.Files, timeProvider: kit.Clock);
+        Assert.Equal(began, await restarted.AutomaticFromAsync());
+
+        var before = Guid.NewGuid();
+        kit.FakeQuotes[before] = QuoteSyncTestKit.Quote(before, QuotationStatus.Sent, reference: "Q-OLD", issuedAt: began.AddMinutes(-1));
+        var after = Guid.NewGuid();
+        kit.FakeQuotes[after] = QuoteSyncTestKit.Quote(after, QuotationStatus.Sent, reference: "Q-NEW", issuedAt: began.AddMinutes(1));
+        var unknown = Guid.NewGuid();
+        kit.FakeQuotes[unknown] = QuoteSyncTestKit.Quote(unknown, QuotationStatus.Sent, reference: "Q-UNK") with { IssuedAtUtc = null };
+
+        Assert.Empty(await restarted.PlanAsync(before, null));
+        Assert.NotEmpty(await restarted.PlanAsync(after, null));
+        Assert.Empty(await restarted.PlanAsync(unknown, null));
+    }
+
+    [Fact]
+    public async Task TheStatusWalk_PlansOnlyTheStepsXeroHasNotReached()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync();
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted);
+        var hash = XeroQuoteMapper.ContentHash(kit.FakeQuotes[id]);
+        var link = new XeroLink(
+            XeroLink.CurrentSchemaVersion, QuoteSyncTestKit.TenantId, QuoteSyncTestKit.Ref(id), "q-1", "P0012-Q-001", hash, "SENT",
+            null, null, DateTimeOffset.UnixEpoch, null, XeroQuoteMapper.LinkedByCreated);
+
+        var planned = await kit.Planner.PlanAsync(id, link);
+        Assert.Equal("ACCEPTED", Assert.Single(planned).Argument);
+
+        // Xero says ACCEPTED, TempestOS says Declined: never ACCEPTED → DECLINED (Xero refuses it); the badge notes it.
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Declined);
+        Assert.Empty(await kit.Planner.PlanAsync(id, link with { LastKnownXeroStatus = "ACCEPTED" }));
+        Assert.Equal(
+            "Xero shows this quote as ACCEPTED; TempestOS has it as Declined.",
+            XeroQuoteMapper.DriftNote("ACCEPTED", QuotationStatus.Declined));
+
+        // Deleted in Xero: nothing planned.
+        Assert.Empty(await kit.Planner.PlanAsync(id, link with { LastKnownXeroStatus = "DELETED" }));
+        Assert.Equal("Deleted in Xero.", XeroQuoteMapper.DriftNote("DELETED", QuotationStatus.Sent));
+        Assert.Null(XeroQuoteMapper.DriftNote("SENT", QuotationStatus.Sent));
+    }
+
+    [Fact]
+    public void TheStatusPath_IsDraftSentThenAcceptedOrDeclined()
+    {
+        Assert.Empty(XeroQuoteMapper.StatusPath(QuotationStatus.Approved));
+        Assert.Equal([XeroQuoteWriteStatus.Sent], XeroQuoteMapper.StatusPath(QuotationStatus.Sent));
+        Assert.Equal([XeroQuoteWriteStatus.Sent, XeroQuoteWriteStatus.Accepted], XeroQuoteMapper.StatusPath(QuotationStatus.Accepted));
+        Assert.Equal([XeroQuoteWriteStatus.Sent, XeroQuoteWriteStatus.Declined], XeroQuoteMapper.StatusPath(QuotationStatus.Declined));
+        Assert.Null(XeroQuoteMapper.Rank("INVOICED"));
+        Assert.Equal("Q-2026-001.pdf", XeroQuoteMapper.AttachmentFileName("Q-2026/001"));
+    }
+
+    [Fact]
+    public void TheContentHash_ChangesWithTheRevisionAndLines_AndFitsAnIdempotencyKey()
+    {
+        var id = Guid.NewGuid();
+        var r1 = QuoteSyncTestKit.Quote(id);
+        var hash = XeroQuoteMapper.ContentHash(r1);
+
+        Assert.Equal(hash, XeroQuoteMapper.ContentHash(QuoteSyncTestKit.Quote(id)));
+        Assert.NotEqual(hash, XeroQuoteMapper.ContentHash(QuoteSyncTestKit.Quote(id, revision: 2)));
+        Assert.NotEqual(hash, XeroQuoteMapper.ContentHash(r1 with { Lines = [r1.Lines[0]] }));
+
+        var key = XeroIdempotencyKey.Create(QuoteSyncTestKit.Ref(id), XeroOperation.PushQuote, hash);
+        Assert.True(key.Length <= XeroOutboxEntry.MaximumIdempotencyKeyLength);
+        Assert.EndsWith(hash, key, StringComparison.Ordinal);
+    }
+}
