@@ -100,7 +100,7 @@ internal sealed class QuoteSyncTestKit : IDisposable
         SettingsProvider = new InMemorySettingsProvider();
         Planner = new XeroQuotePlanner(quotes, Links, Outbox, store, Secrets, Files, Audit, clock, plannerOptions);
         PushHandler = new XeroQuotePushHandler(
-            api, Links, quotes, linker, new XeroTaxTypeResolver(settings, SettingsProvider), new XeroAccountCodeMap(settings, SettingsProvider), Audit, clock);
+            api, Links, quotes, store, linker, new XeroTaxTypeResolver(settings, SettingsProvider), new XeroAccountCodeMap(settings, SettingsProvider), Audit, clock);
         AttachmentHandler = new XeroQuoteAttachmentHandler(api, Links, quotes, Files, clock);
     }
 

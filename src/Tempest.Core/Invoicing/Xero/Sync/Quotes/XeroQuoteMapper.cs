@@ -419,64 +419,162 @@ public static class XeroQuoteMapper
             LineItems: lines);
     }
 
+    // ------------------------------------------------------------------------
+    // The ownership rule (X3, one rule for every quote-handler path).
+    //
+    // A Xero quote is TempestOS's own ("ours") only when
+    //   (1) it is the quote this document's link names, or
+    //   (2) its QuoteNumber is the quotation's number, its contact is the
+    //       contact of this quotation's client, and its value-bearing content
+    //       (ValueFingerprint: date, expiry, currency, line amount type and
+    //       each line's quantity, unit amount and tax type — the totals
+    //       follow from these) equals content TempestOS is known to have sent
+    //       to that contact for this document: the current entry's body, or
+    //       any earlier send the push handler recorded before writing
+    //       (XeroQuotePushHandler.SentCollection), so a superseded entry's
+    //       write counts too. Reference, Title, Summary, Terms, line
+    //       descriptions and account codes — text a bookkeeper may edit —
+    //       are ignored by this test.
+    // Only an "ours" quote is ever updated, moved, given a PDF or linked.
+    // Anything else is never touched: the push answers one actionable
+    // message (Rejected — fix it in Xero, then Retry — or NothingToDo for an
+    // entry a newer one supersedes). Which content an "ours" quote holds is
+    // read the same way (Identify): Exact (every field TempestOS writes but
+    // Reference and contact), ValuesOnly (its text was changed in Xero by
+    // hand) or None (its values were changed in Xero by hand).
+    // ------------------------------------------------------------------------
+
     /// <summary>
-    /// Whether the Xero quote <paramref name="held"/> carries exactly the
-    /// content <paramref name="body"/> would write — number, revision
-    /// (<c>Reference</c>), title, summary, dates, terms, currency, contact
-    /// and every line (description, quantity, unit amount, account, tax
-    /// type), compared as values, not text (<c>12</c> is <c>12.0000</c>, a
-    /// date is a date whatever its wire form). This is the evidence that a
-    /// write whose answer was lost landed: what Xero holds is then this
-    /// content, whoever wrote it, so a link may record its hash. A quote
-    /// changed since (by hand, or by Xero normalising a value this does not
-    /// expect) does not match — the caller then records only the revision
-    /// Xero's <c>Reference</c> names (<see cref="ReconciledHash"/>).
+    /// The value-bearing content of a quote write — date, expiry, currency,
+    /// line amount type and each line's quantity, unit amount and tax type,
+    /// in order, compared as values (<c>12</c> is <c>12.0000</c>, a date is a
+    /// date whatever its wire form) — as a lower-case hex SHA-256. Free text
+    /// (<c>Reference</c>, title, summary, terms, descriptions) and account
+    /// codes are left out: a bookkeeper may edit them, and they move no amount.
     /// </summary>
+    /// <param name="body">The write TempestOS sends.</param>
+    public static string ValueFingerprint(XeroWireQuoteWrite body)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        return Fingerprint(false, body.Title, body.Summary, body.Terms, body.Date, body.ExpiryDate, body.CurrencyCode, body.LineAmountTypes, body.LineItems);
+    }
+
+    /// <summary>The <see cref="ValueFingerprint(XeroWireQuoteWrite)"/> of a quote as Xero holds it.</summary>
     /// <param name="held">The Xero quote as read.</param>
-    /// <param name="body">The write TempestOS would send.</param>
-    /// <param name="includeContact"><see langword="false"/> to compare everything but the contact (a quote whose contact was changed in Xero by hand).</param>
-    public static bool HoldsContent(XeroWireQuote held, XeroWireQuoteWrite body, bool includeContact = true)
+    public static string ValueFingerprint(XeroWireQuote held)
     {
         ArgumentNullException.ThrowIfNull(held);
+        return Fingerprint(false, held.Title, held.Summary, held.Terms, held.Date, held.ExpiryDate, held.CurrencyCode, held.LineAmountTypes, held.LineItems ?? []);
+    }
+
+    /// <summary>
+    /// Everything a quote write carries but its <c>QuoteNumber</c>,
+    /// <c>Reference</c> and contact — the <see cref="ValueFingerprint(XeroWireQuoteWrite)"/>
+    /// fields plus title, summary, terms and each line's description and
+    /// account code — as a lower-case hex SHA-256: equal when Xero holds
+    /// exactly the content a write carried.
+    /// </summary>
+    /// <param name="body">The write TempestOS sends.</param>
+    public static string ContentFingerprint(XeroWireQuoteWrite body)
+    {
         ArgumentNullException.ThrowIfNull(body);
+        return Fingerprint(true, body.Title, body.Summary, body.Terms, body.Date, body.ExpiryDate, body.CurrencyCode, body.LineAmountTypes, body.LineItems);
+    }
 
-        if (!string.Equals(held.QuoteNumber?.Trim(), body.QuoteNumber.Trim(), StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(Text(held.Reference), Text(body.Reference), StringComparison.OrdinalIgnoreCase)
-            || !string.Equals(Text(held.Title), Text(body.Title), StringComparison.Ordinal)
-            || !string.Equals(Text(held.Summary), Text(body.Summary), StringComparison.Ordinal)
-            || !string.Equals(Text(held.Terms), Text(body.Terms), StringComparison.Ordinal)
-            || XeroWire.ParseDate(held.Date) != XeroWire.ParseDate(body.Date)
-            || XeroWire.ParseDate(held.ExpiryDate) != XeroWire.ParseDate(body.ExpiryDate))
+    /// <summary>The <see cref="ContentFingerprint(XeroWireQuoteWrite)"/> of a quote as Xero holds it.</summary>
+    /// <param name="held">The Xero quote as read.</param>
+    public static string ContentFingerprint(XeroWireQuote held)
+    {
+        ArgumentNullException.ThrowIfNull(held);
+        return Fingerprint(true, held.Title, held.Summary, held.Terms, held.Date, held.ExpiryDate, held.CurrencyCode, held.LineAmountTypes, held.LineItems ?? []);
+    }
+
+    /// <summary>
+    /// Which content TempestOS sent a Xero quote holds (see the ownership
+    /// rule above): the last of <paramref name="sent"/> (so the current
+    /// entry, passed last, wins a tie) whose <see cref="ContentFingerprint(XeroWireQuote)"/>
+    /// matches — <see cref="XeroQuoteContentMatch.Exact"/>; else the last
+    /// whose <see cref="ValueFingerprint(XeroWireQuote)"/> matches —
+    /// <see cref="XeroQuoteContentMatch.ValuesOnly"/>; else
+    /// <see cref="XeroQuoteContentMatch.None"/>. With <paramref name="contactId"/>,
+    /// only sends to that contact count.
+    /// </summary>
+    /// <param name="held">The Xero quote as read.</param>
+    /// <param name="sent">What TempestOS is known to have sent for the document, oldest first.</param>
+    /// <param name="contactId">The contact a send must have gone to; <see langword="null"/> for any.</param>
+    public static (XeroQuoteContentMatch Match, XeroQuoteSentContent? Send) Identify(XeroWireQuote held, IReadOnlyList<XeroQuoteSentContent> sent, string? contactId = null)
+    {
+        ArgumentNullException.ThrowIfNull(held);
+        ArgumentNullException.ThrowIfNull(sent);
+
+        var candidates = contactId is null ? sent : [.. sent.Where(s => SameId(s.ContactId, contactId))];
+        var content = ContentFingerprint(held);
+        if (candidates.LastOrDefault(s => string.Equals(s.ContentFingerprint, content, StringComparison.Ordinal)) is { } exact)
+            return (XeroQuoteContentMatch.Exact, exact);
+
+        var values = ValueFingerprint(held);
+        return candidates.LastOrDefault(s => string.Equals(s.ValueFingerprint, values, StringComparison.Ordinal)) is { } valuesOnly
+            ? (XeroQuoteContentMatch.ValuesOnly, valuesOnly)
+            : (XeroQuoteContentMatch.None, null);
+    }
+
+    /// <summary>
+    /// The ownership test for a Xero quote no link names (see the rule
+    /// above): its number is <paramref name="quoteNumber"/>, its contact is
+    /// <paramref name="contactId"/>, and its values are content TempestOS
+    /// sent to that contact (<see cref="Identify"/> is not
+    /// <see cref="XeroQuoteContentMatch.None"/>). The send it holds, or
+    /// <see langword="null"/> when the quote is not TempestOS's own.
+    /// </summary>
+    /// <param name="held">The Xero quote as read.</param>
+    /// <param name="quoteNumber">The quotation's number.</param>
+    /// <param name="contactId">The Xero contact of the quotation's client.</param>
+    /// <param name="sent">What TempestOS is known to have sent for the document, oldest first (the current entry last).</param>
+    public static (XeroQuoteContentMatch Match, XeroQuoteSentContent Send)? OwnSend(
+        XeroWireQuote held, string quoteNumber, string contactId, IReadOnlyList<XeroQuoteSentContent> sent)
+    {
+        ArgumentNullException.ThrowIfNull(held);
+        ArgumentException.ThrowIfNullOrWhiteSpace(quoteNumber);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
+
+        if (!SameId(held.QuoteNumber, quoteNumber) || !SameId(held.Contact?.ContactID, contactId))
+            return null;
+
+        var (match, send) = Identify(held, sent, contactId);
+        return match == XeroQuoteContentMatch.None ? null : (match, send!);
+    }
+
+    private static bool SameId(string? a, string? b) =>
+        string.Equals(a?.Trim(), b?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private static string Fingerprint(
+        bool withText, string? title, string? summary, string? terms, string? date, string? expiry, string? currency, string? lineAmountTypes,
+        IReadOnlyList<XeroWireLineItem> lines)
+    {
+        var builder = new StringBuilder();
+        builder.Append(withText ? "content/1" : "values/1")
+            .Append('|').Append(Day(date))
+            .Append('|').Append(Day(expiry))
+            .Append('|').Append(Text(currency).ToUpperInvariant())
+            .Append('|').Append(Text(lineAmountTypes).ToUpperInvariant())
+            .Append('|').Append(lines.Count.ToString(CultureInfo.InvariantCulture));
+        if (withText)
+            builder.Append('|').Append(Text(title)).Append('|').Append(Text(summary)).Append('|').Append(Text(terms));
+
+        foreach (var line in lines)
         {
-            return false;
+            builder.Append("|L|").Append(Number(line.Quantity)).Append('|').Append(Number(line.UnitAmount)).Append('|').Append(Text(line.TaxType).ToUpperInvariant());
+            if (withText)
+                builder.Append('|').Append(Text(line.Description)).Append('|').Append(Text(line.AccountCode).ToUpperInvariant());
         }
 
-        if (body.CurrencyCode is not null && !string.Equals(Text(held.CurrencyCode), Text(body.CurrencyCode), StringComparison.OrdinalIgnoreCase))
-            return false;
+        // Text parts are JSON strings (quoted and escaped), so text holding
+        // '|' cannot shift one field into the next.
+        return Sha256Hex(builder.ToString());
 
-        if (includeContact && !string.Equals(held.Contact?.ContactID?.Trim(), body.Contact.ContactID?.Trim(), StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        var lines = held.LineItems ?? [];
-        if (lines.Count != body.LineItems.Count)
-            return false;
-
-        for (var i = 0; i < lines.Count; i++)
-        {
-            var (h, b) = (lines[i], body.LineItems[i]);
-            if (!string.Equals(Text(h.Description), Text(b.Description), StringComparison.Ordinal)
-                || h.Quantity != b.Quantity
-                || h.UnitAmount != b.UnitAmount
-                || !string.Equals(Text(h.AccountCode), Text(b.AccountCode), StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(Text(h.TaxType), Text(b.TaxType), StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-        }
-
-        return true;
-
-        static string Text(string? value) => (value ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
+        static string Day(string? raw) => XeroWire.ParseDate(raw) is { } day ? XeroWire.FormatDate(day) : "-";
+        static string Number(decimal value) => value.ToString("0.############################", CultureInfo.InvariantCulture);
+        static string Text(string? value) => JsonSerializer.Serialize((value ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Trim());
     }
 
     /// <summary>
@@ -567,4 +665,46 @@ public static class XeroQuoteMapper
         value is null ? null : value.Length <= max ? value : value[..max];
 
     private static string Sha256Hex(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+}
+
+/// <summary>How a Xero quote's content relates to what TempestOS sent (<see cref="XeroQuoteMapper.Identify"/>).</summary>
+public enum XeroQuoteContentMatch
+{
+    /// <summary>It matches nothing TempestOS sent: its values were changed in Xero by hand, or it was keyed in there.</summary>
+    None,
+
+    /// <summary>Its values match a send, but its text (title, summary, terms, descriptions, account codes) was changed in Xero by hand.</summary>
+    ValuesOnly,
+
+    /// <summary>It holds exactly what a send carried (but for <c>Reference</c> and contact).</summary>
+    Exact,
+}
+
+/// <summary>
+/// One quote write TempestOS sent — or was about to send — for a quotation
+/// (X3): recorded by <see cref="XeroQuotePushHandler"/> before each create or
+/// content update (<see cref="XeroQuotePushHandler.SentCollection"/>), so a
+/// later attempt can tell its own quote from anyone else's (the ownership
+/// rule on <see cref="XeroQuoteMapper"/>) even when the entry that wrote it
+/// was superseded.
+/// </summary>
+/// <param name="ValueFingerprint">The write's <see cref="XeroQuoteMapper.ValueFingerprint(XeroWireQuoteWrite)"/>.</param>
+/// <param name="ContentFingerprint">The write's <see cref="XeroQuoteMapper.ContentFingerprint(XeroWireQuoteWrite)"/>.</param>
+/// <param name="ContactId">The Xero <c>ContactID</c> it was sent to.</param>
+/// <param name="ContentHash">The entry's <see cref="XeroQuoteMapper.ContentHash"/> — what a link records once Xero is known to hold it.</param>
+public sealed record XeroQuoteSentContent(
+    [property: System.Text.Json.Serialization.JsonPropertyName("values")] string ValueFingerprint,
+    [property: System.Text.Json.Serialization.JsonPropertyName("content")] string ContentFingerprint,
+    [property: System.Text.Json.Serialization.JsonPropertyName("contact")] string ContactId,
+    [property: System.Text.Json.Serialization.JsonPropertyName("hash")] string ContentHash)
+{
+    /// <summary>The record of sending <paramref name="body"/> for the entry whose content hash is <paramref name="contentHash"/>.</summary>
+    /// <param name="body">The write.</param>
+    /// <param name="contentHash">The entry's content hash.</param>
+    public static XeroQuoteSentContent Of(XeroWireQuoteWrite body, string contentHash)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentHash);
+        return new(XeroQuoteMapper.ValueFingerprint(body), XeroQuoteMapper.ContentFingerprint(body), body.Contact.ContactID ?? string.Empty, contentHash);
+    }
 }

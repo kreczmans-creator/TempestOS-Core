@@ -196,7 +196,7 @@ public sealed class XeroQuoteLostAnswerTests
     }
 
     [Fact]
-    public async Task ACopyKeyedInByHand_AfterAnAttemptThatNeverReachedTheCreate_IsBroughtUpToDate_NotTakenForTheCreate()
+    public async Task ACopyKeyedInByHand_AfterAnAttemptThatNeverReachedTheCreate_IsNeverTakenOrTouched_UntilItsValuesMatch_ThenRetry()
     {
         using var kit = await QuoteSyncTestKit.CreateAsync();
         kit.Settings.Cached = QuoteSyncTestKit.UkDemoReading() with { Accounts = [] };
@@ -210,25 +210,41 @@ public sealed class XeroQuoteLostAnswerTests
         Assert.Empty(kit.QuoteWrites);
 
         // Someone keys the quote into Xero by hand: same number, same contact, Reference R1, other lines.
-        await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001");
-        Assert.Single(kit.OnlyQuote.Body["LineItems"]!.AsArray());
+        var handKeyed = await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001");
+        var handBody = kit.OnlyQuote.Body.ToJsonString();
 
         kit.Settings.Cached = QuoteSyncTestKit.UkDemoReading();
         Assert.True(await kit.Outbox.RetryAsync(blocked.Entry.Id));
-        var steps = await kit.DrainAsync();
-        var push = Assert.Single(steps, s => s.Entry.Operation == XeroOperation.PushQuote);
-        Assert.Equal(2, push.Entry.Attempts);
-        Assert.Equal(XeroPushOutcome.Succeeded, push.Result.Outcome);
+        var refused = Assert.Single(await kit.DrainAsync()); // the upload waits behind the refusal
+        Assert.Equal(XeroOperation.PushQuote, refused.Entry.Operation);
+        Assert.Equal(XeroPushOutcome.Rejected, refused.Result.Outcome);
+        Assert.Contains("already used in Xero", refused.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("for this client whose lines, dates or currency match nothing TempestOS sent", refused.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("then Retry", refused.Result.Reason, StringComparison.Ordinal);
 
-        Assert.Equal(2, kit.OnlyQuote.Body["LineItems"]!.AsArray().Count); // brought up to date, not left with the hand-keyed lines
+        // Never taken, never touched: no link, no write of any kind, the copy as it was keyed.
+        Assert.Null(await kit.LinkAsync(id));
+        Assert.Empty(OwnWrites(kit));
+        Assert.Equal(handBody, kit.OnlyQuote.Body.ToJsonString());
+        Assert.Empty(kit.OnlyQuote.Attachments);
+
+        // The actionable path: its lines brought in line with the quotation in Xero, then Retry → it is TempestOS's own.
+        await kit.EditQuoteInXeroByHandAsync(handKeyed, q => q["LineItems"] = DefaultLines());
+        Assert.True(await kit.Outbox.RetryAsync(refused.Entry.Id));
+        var steps = await kit.DrainAsync();
+        Assert.All(steps, s => Assert.True(s.Result.Outcome is XeroPushOutcome.Succeeded or XeroPushOutcome.NothingToDo, s.Result.Reason));
+
         var link = (await kit.LinkAsync(id))!;
+        Assert.Equal(handKeyed, link.XeroId);
         Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link.LinkedBy);
         Assert.Equal(XeroQuoteMapper.ContentHash(r1), link.LastPushedContentHash);
+        Assert.Equal("P0012 Bracket programme", kit.OnlyQuote.Body["Summary"]!.GetValue<string>()); // a DRAFT of its own follows TempestOS
+        Assert.Single(kit.OnlyQuote.Attachments);
         kit.AssertNoViolations();
     }
 
     [Fact]
-    public async Task ALostCreate_ThenItsContactChangedByHand_IsLinked_NotRefusedAsSomeoneElses()
+    public async Task ALostCreate_ThenItsContactChangedByHand_IsRefusedWithWhatToChange_AndLinkedOnceTheContactIsSetBack()
     {
         using var kit = await QuoteSyncTestKit.CreateAsync();
         var other = kit.Simulator.SeedContact("Someone Else Ltd");
@@ -238,15 +254,28 @@ public sealed class XeroQuoteLostAnswerTests
         await kit.PlanAsync(id);
         kit.Lost.LoseWrites = 1;
         await kit.DrainAsync();
-        await kit.EditQuoteInXeroByHandAsync(kit.OnlyQuote.Id, q => q["Contact"] = new JsonObject { ["ContactID"] = other });
+        var quoteId = kit.OnlyQuote.Id;
+        await kit.EditQuoteInXeroByHandAsync(quoteId, q => q["Contact"] = new JsonObject { ["ContactID"] = other });
+        var writes = OwnWrites(kit).Count;
 
+        // The ownership rule needs the contact: the quote is not touched, and the message says what to change.
         kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        var refused = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(XeroPushOutcome.Rejected, refused.Result.Outcome);
+        Assert.Contains("for a different contact than this quotation's client", refused.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("set its contact back", refused.Result.Reason, StringComparison.Ordinal);
+        Assert.Null(await kit.LinkAsync(id));
+        Assert.Equal(writes, OwnWrites(kit).Count);
+        Assert.Equal(other, kit.OnlyQuote.Body["Contact"]!["ContactID"]!.GetValue<string>());
+
+        // Set back in Xero, then Retry: TempestOS's own create (its sent values), linked — never a second quote.
+        await kit.EditQuoteInXeroByHandAsync(quoteId, q => q["Contact"] = new JsonObject { ["ContactID"] = kit.ContactId });
+        Assert.True(await kit.Outbox.RetryAsync(refused.Entry.Id));
         var steps = await kit.DrainAsync();
         Assert.All(steps, s => Assert.Equal(XeroPushOutcome.Succeeded, s.Result.Outcome));
-
-        Assert.Single(kit.LiveQuotes);
-        Assert.Equal(kit.ContactId, kit.OnlyQuote.Body["Contact"]!["ContactID"]!.GetValue<string>()); // the DRAFT follows TempestOS
+        Assert.Equal(quoteId, Assert.Single(kit.LiveQuotes).Id);
         Assert.Equal(XeroQuoteMapper.LinkedByReconciled, (await kit.LinkAsync(id))!.LinkedBy);
+        Assert.Single(kit.OnlyQuote.Attachments);
         kit.AssertNoViolations();
     }
 
@@ -297,7 +326,7 @@ public sealed class XeroQuoteLostAnswerTests
     }
 
     [Fact]
-    public void HoldsContent_ComparesValuesNotText_AndSeesAnyChange()
+    public void TheFingerprints_CompareValuesNotText_ValuesIgnoreFreeText_AndContentSeesEveryWrittenField()
     {
         var body = new XeroWireQuoteWrite(
             "P0012-Q-001", "R2", "Bracket redesign", "P0012", new XeroWireContactRef("c-1"), "2026-10-02", "2026-11-01", "Payment within 30 days.", "GBP",
@@ -306,15 +335,75 @@ public sealed class XeroQuoteLostAnswerTests
             "q-1", "p0012-q-001", "R2", "SENT", new XeroWireContactRef("C-1"), "/Date(1790899200000+0000)/", "2026-11-01T00:00:00", "Bracket redesign",
             "P0012", "Payment within 30 days.\r\n", "GBP", "EXCLUSIVE", [new XeroWireLineItem("Concept design", 12.0000m, 95.00m, "200", "output2", 228m, 1140m, "l-1")]);
 
-        Assert.True(XeroQuoteMapper.HoldsContent(held, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { Reference = "R1" }, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { Title = "Edited" }, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { LineItems = [held.LineItems![0] with { Quantity = 13m }] }, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { LineItems = [] }, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { Date = "2026-10-03" }, body));
-        Assert.False(XeroQuoteMapper.HoldsContent(held with { Contact = new XeroWireContactRef("c-2") }, body));
-        Assert.True(XeroQuoteMapper.HoldsContent(held with { Contact = new XeroWireContactRef("c-2") }, body, includeContact: false));
+        Assert.Equal(XeroQuoteMapper.ValueFingerprint(body), XeroQuoteMapper.ValueFingerprint(held));
+        Assert.Equal(XeroQuoteMapper.ContentFingerprint(body), XeroQuoteMapper.ContentFingerprint(held));
+
+        // Free text a bookkeeper may edit, and the contact: never in either fingerprint's ownership test of values.
+        foreach (var edited in new[]
+                 {
+                     held with { Reference = "Rev 2 - ACME PO 4471" }, held with { Title = "Edited" }, held with { Summary = "x" }, held with { Terms = "y" },
+                     held with { LineItems = [held.LineItems![0] with { Description = "Concept design (typo fixed)" }] },
+                     held with { LineItems = [held.LineItems![0] with { AccountCode = "201" }] },
+                 })
+        {
+            Assert.Equal(XeroQuoteMapper.ValueFingerprint(body), XeroQuoteMapper.ValueFingerprint(edited));
+        }
+
+        Assert.Equal(XeroQuoteMapper.ContentFingerprint(body), XeroQuoteMapper.ContentFingerprint(held with { Reference = "Rev 2 - ACME", Contact = new XeroWireContactRef("c-2") }));
+        Assert.NotEqual(XeroQuoteMapper.ContentFingerprint(body), XeroQuoteMapper.ContentFingerprint(held with { Title = "Edited" }));
+        Assert.NotEqual(XeroQuoteMapper.ContentFingerprint(body), XeroQuoteMapper.ContentFingerprint(held with { LineItems = [held.LineItems![0] with { Description = "x" }] }));
+
+        // Every value-bearing field is seen.
+        foreach (var edited in new[]
+                 {
+                     held with { LineItems = [held.LineItems![0] with { Quantity = 13m }] }, held with { LineItems = [held.LineItems![0] with { UnitAmount = 96m }] },
+                     held with { LineItems = [held.LineItems![0] with { TaxType = "OUTPUT" }] }, held with { LineItems = [] },
+                     held with { Date = "2026-10-03" }, held with { ExpiryDate = "2026-11-02" }, held with { CurrencyCode = "EUR" }, held with { LineAmountTypes = "Inclusive" },
+                 })
+        {
+            Assert.NotEqual(XeroQuoteMapper.ValueFingerprint(body), XeroQuoteMapper.ValueFingerprint(edited));
+        }
     }
+
+    [Fact]
+    public void TheOwnershipRule_NeedsTheNumberTheContactAndValuesTempestOsSentToThatContact()
+    {
+        var body = new XeroWireQuoteWrite(
+            "P0012-Q-001", "R1", "Bracket redesign", "P0012", new XeroWireContactRef("c-1"), "2026-10-02", "2026-11-01", null, "GBP",
+            "Exclusive", [new XeroWireLineItem("Concept design", 12m, 95m, "200", "OUTPUT2")]);
+        var held = new XeroWireQuote(
+            "q-1", "P0012-Q-001", "Rev 1 - PO 4471", "SENT", new XeroWireContactRef("c-1"), "2026-10-02", "2026-11-01", "Retitled by hand", "P0012", null, "GBP", "EXCLUSIVE",
+            [new XeroWireLineItem("Concept design", 12m, 95m, "200", "OUTPUT2")]);
+        var sent = new[] { XeroQuoteSentContent.Of(body, "R1.aaaa") };
+
+        var own = XeroQuoteMapper.OwnSend(held, "P0012-Q-001", "c-1", sent);
+        Assert.NotNull(own);
+        Assert.Equal(XeroQuoteContentMatch.ValuesOnly, own.Value.Match); // its title was changed by hand; its Reference never counts
+        Assert.Equal("R1.aaaa", own.Value.Send.ContentHash);
+
+        Assert.Null(XeroQuoteMapper.OwnSend(held with { QuoteNumber = "P0012-Q-002" }, "P0012-Q-001", "c-1", sent));
+        Assert.Null(XeroQuoteMapper.OwnSend(held with { Contact = new XeroWireContactRef("c-2") }, "P0012-Q-001", "c-1", sent));
+        Assert.Null(XeroQuoteMapper.OwnSend(held with { LineItems = [held.LineItems![0] with { Quantity = 13m }] }, "P0012-Q-001", "c-1", sent));
+        Assert.Null(XeroQuoteMapper.OwnSend(held, "P0012-Q-001", "c-1", []));
+        Assert.Null(XeroQuoteMapper.OwnSend(held with { Contact = new XeroWireContactRef("c-2") }, "P0012-Q-001", "c-2", sent)); // sent to c-1, not c-2
+
+        // A later send with the same values wins the tie; an exact match beats a values-only one.
+        var later = XeroQuoteSentContent.Of(body with { Title = "Retitled by hand" }, "R1.bbbb");
+        Assert.Equal((XeroQuoteContentMatch.Exact, later), XeroQuoteMapper.Identify(held, [later, .. sent]));
+        Assert.Equal(XeroQuoteContentMatch.ValuesOnly, XeroQuoteMapper.Identify(held with { Title = "Other" }, [.. sent, later]).Match);
+        Assert.Equal("R1.bbbb", XeroQuoteMapper.Identify(held with { Title = "Other" }, [.. sent, later]).Send!.ContentHash);
+    }
+
+    /// <summary>The default quotation's lines as Xero holds them (UK Demo codes).</summary>
+    internal static JsonArray DefaultLines() =>
+    [
+        Tempest.Core.Tests.Invoicing.Xero.Simulator.SimulatorTestKit.Line("Concept design", 12m, 95m),
+        Tempest.Core.Tests.Invoicing.Xero.Simulator.SimulatorTestKit.Line("Drawing pack", 1m, 1_200m),
+    ];
+
+    /// <summary>The quote writes TempestOS sent (its own keys), not the ones made by hand.</summary>
+    internal static IReadOnlyList<Tempest.Core.Tests.Invoicing.Xero.Simulator.XeroSimulatedRequest> OwnWrites(QuoteSyncTestKit kit) =>
+        [.. kit.QuoteWrites.Where(r => r.IdempotencyKey?.StartsWith(XeroIdempotencyKey.Prefix, StringComparison.Ordinal) == true)];
 
     [Fact]
     public void TheContentUpdateKey_IsFixedPerEntry_NeverTheEntrysOwnKey_AndFitsXero()

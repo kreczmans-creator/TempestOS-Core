@@ -608,13 +608,15 @@ public sealed class XeroQuoteSyncTests
     }
 
     [Fact]
-    public async Task SendToXero_OnAnAcceptedQuotationKeyedIntoXeroByHand_LinksIt_WithoutARefusal()
+    public async Task SendToXero_OnAnAcceptedQuotationKeyedIntoXeroByHandWithItsValues_LinksIt_WithoutARefusal()
     {
         using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions { AutomaticFromUtc = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) });
-        var xeroId = await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001", "SENT", "ACCEPTED");
-        var writes = kit.QuoteWrites.Count;
+        var xeroId = await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001");
+        await kit.EditQuoteInXeroByHandAsync(xeroId, q => q["LineItems"] = XeroQuoteLostAnswerTests.DefaultLines());
+        await kit.SetStatusInXeroAsync(xeroId, "SENT");
+        await kit.SetStatusInXeroAsync(xeroId, "ACCEPTED");
 
-        // An older quotation (Q8), accepted in TempestOS; its Xero copy is already ACCEPTED.
+        // An older quotation (Q8), accepted in TempestOS; its Xero copy carries its lines, dates and currency and is already ACCEPTED.
         var id = Guid.NewGuid();
         kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted, issuedAt: new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero));
         Assert.True((await kit.Planner.SendToXeroAsync(id)).Queued);
@@ -625,9 +627,34 @@ public sealed class XeroQuoteSyncTests
         Assert.Equal(xeroId, link!.XeroId);
         Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link.LinkedBy);
         Assert.Equal("ACCEPTED", link.LastKnownXeroStatus);
-        Assert.Equal(writes, kit.QuoteWrites.Count); // nothing written: the copy already matches
+        Assert.Empty(XeroQuoteLostAnswerTests.OwnWrites(kit)); // nothing written: the copy already matches
         Assert.Empty(await kit.PlanAsync(id));
         Assert.All(await kit.Outbox.ListForDocumentAsync(QuoteSyncTestKit.Ref(id)), e => Assert.Equal(XeroOutboxState.Succeeded, e.State));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task SendToXero_OnAnAcceptedQuotationWhoseXeroCopyWasKeyedInWithOtherLines_NeverTouchesIt_AndSaysWhatToChange()
+    {
+        using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions { AutomaticFromUtc = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) });
+        var xeroId = await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001", "SENT");
+
+        var id = Guid.NewGuid();
+        kit.FakeQuotes[id] = QuoteSyncTestKit.Quote(id, QuotationStatus.Accepted, issuedAt: new DateTimeOffset(2026, 9, 1, 9, 0, 0, TimeSpan.Zero));
+        kit.Files.Store(id, "R1 sheet");
+        Assert.True((await kit.Planner.SendToXeroAsync(id)).Queued);
+
+        var refused = Assert.Single(await kit.DrainAsync()); // the upload and status changes wait behind it
+        Assert.Equal(XeroOperation.PushQuote, refused.Entry.Operation);
+        Assert.Equal(XeroPushOutcome.Rejected, refused.Result.Outcome);
+        Assert.Contains("match nothing TempestOS sent", refused.Result.Reason, StringComparison.Ordinal);
+        Assert.Contains("Retry", refused.Result.Reason, StringComparison.Ordinal);
+
+        // Never updated, moved, given a PDF or linked.
+        Assert.Null(await kit.LinkAsync(id));
+        Assert.Empty(XeroQuoteLostAnswerTests.OwnWrites(kit));
+        Assert.Equal("SENT", kit.Simulator.Find("Quotes", xeroId)!.Status);
+        Assert.Empty(kit.OnlyQuote.Attachments);
         kit.AssertNoViolations();
     }
 
@@ -815,12 +842,12 @@ public sealed class XeroQuoteSyncTests
         await kit.PlanAsync(id);
         var steps = await kit.DrainAsync();
 
-        // The stale R1 entry's own create landed: the link records the revision Xero holds (R1), not "unknown" —
-        // and no content hash, since a stale entry's content can no longer be compared with Xero's (X3 verifier round 4, defect 2).
+        // The stale R1 entry's own create landed: it is TempestOS's own by the send recorded before the create,
+        // and the link records exactly that send (R1's content hash) — never inferred from Reference or the attempt count.
         var link = await kit.LinkAsync(id);
         Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link!.LinkedBy);
         Assert.Equal("R1", XeroQuoteMapper.RevisionOf(link.LastPushedContentHash));
-        Assert.Equal(XeroQuoteMapper.ReconciledHash("R1"), link.LastPushedContentHash);
+        Assert.Equal(XeroQuoteMapper.ContentHash(r1), link.LastPushedContentHash);
         Assert.Equal(XeroQuoteMapper.RevisionNotSentNote("P0012-Q-001", "SENT", "R2"), XeroQuoteMapper.DriftNote(r2, link));
         Assert.DoesNotContain(steps, s => s.Entry.Operation == XeroOperation.UploadAttachment && s.Result.Outcome == XeroPushOutcome.Succeeded);
         Assert.DoesNotContain(kit.OnlyQuote.Attachments, a => a.Length == "R2 sheet!!".Length);
@@ -828,10 +855,10 @@ public sealed class XeroQuoteSyncTests
     }
 
     [Fact]
-    public async Task SendToXero_OnAnOlderQuotationWhoseXeroCopyShowsAnEarlierRevision_DoesNotAttachThisRevisionsPdf()
+    public async Task SendToXero_OnAnOlderQuotationWhoseXeroCopyShowsAnEarlierRevision_NeverAttachesThisRevisionsPdf()
     {
         using var kit = await QuoteSyncTestKit.CreateAsync(plannerOptions: new XeroQuotePlannerOptions { AutomaticFromUtc = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) });
-        await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001", "SENT"); // Reference R1
+        await kit.CreateQuoteInXeroByHandAsync(kit.ContactId, "P0012-Q-001", "SENT"); // Reference R1, keyed in by hand
 
         // An older quotation, now at R2 and sent in TempestOS, with R2's PDF.
         var id = Guid.NewGuid();
@@ -839,13 +866,13 @@ public sealed class XeroQuoteSyncTests
         kit.FakeQuotes[id] = r2;
         kit.Files.Store(id, "R2 sheet!!");
         Assert.True((await kit.Planner.SendToXeroAsync(id)).Queued);
-        await kit.DrainAsync();
+        var steps = await kit.DrainAsync();
 
-        var link = await kit.LinkAsync(id);
-        Assert.Equal(XeroQuoteMapper.LinkedByReconciled, link!.LinkedBy);
+        // Not TempestOS's own (its values match nothing TempestOS sent): never linked, never given a PDF.
+        Assert.Equal(XeroPushOutcome.Rejected, Assert.Single(steps).Result.Outcome);
+        Assert.Null(await kit.LinkAsync(id));
         Assert.Empty(kit.OnlyQuote.Attachments);
-        Assert.Contains("revision R2 was not sent", XeroQuoteMapper.DriftNote(r2, link), StringComparison.Ordinal);
-        Assert.DoesNotContain(await kit.PlanAsync(id), e => e.Operation == XeroOperation.UploadAttachment);
+        Assert.Empty(XeroQuoteLostAnswerTests.OwnWrites(kit));
         kit.AssertNoViolations();
     }
 
