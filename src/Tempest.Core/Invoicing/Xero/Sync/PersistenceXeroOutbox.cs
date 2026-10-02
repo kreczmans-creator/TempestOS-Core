@@ -455,20 +455,24 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
                 entries.Add(stored);
         }
 
-        // An entry stored without a usable Sequence takes the largest stored
-        // sequence among entries queued at or before it (0 when none), so it
-        // sorts after everything queued before it and the time and id
-        // tie-breaks order it among its peers: it never jumps ahead of work
-        // its document queued earlier.
-        var sequenced = entries.Where(s => s.HasSequence).ToList();
-        for (var i = 0; i < entries.Count; i++)
+        // An entry stored without a usable Sequence is given one the way it
+        // was first assigned: walking the entries in the order they were
+        // queued (time, then id), it takes one more than the largest sequence
+        // seen so far, stored or already filled in, superseded entries
+        // included. It therefore sorts after everything queued before it,
+        // including the low sequence a replacement inherits from the entry it
+        // superseded: it never jumps ahead of work its document queued earlier.
+        var byQueueOrder = Enumerable.Range(0, entries.Count)
+            .OrderBy(i => entries[i].Entry.EnqueuedAtUtc)
+            .ThenBy(i => entries[i].Entry.Id)
+            .ToList();
+        var largestSoFar = 0L;
+        foreach (var i in byQueueOrder)
         {
-            if (entries[i].HasSequence)
-                continue;
+            if (!entries[i].HasSequence)
+                entries[i] = entries[i] with { Sequence = largestSoFar == long.MaxValue ? long.MaxValue : largestSoFar + 1 };
 
-            var at = entries[i].Entry.EnqueuedAtUtc;
-            var imputed = sequenced.Where(s => s.Entry.EnqueuedAtUtc <= at).Select(s => s.Sequence).DefaultIfEmpty(0).Max();
-            entries[i] = entries[i] with { Sequence = imputed };
+            largestSoFar = Math.Max(largestSoFar, entries[i].Sequence);
         }
 
         entries.Sort(static (a, b) =>

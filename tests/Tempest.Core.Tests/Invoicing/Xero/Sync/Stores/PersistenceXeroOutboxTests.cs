@@ -457,6 +457,28 @@ public sealed class PersistenceXeroOutboxTests
     }
 
     [Fact]
+    public async Task EntryWithNoSequence_QueuedBeforeASupersedingCreate_StillWaitsForThatCreate()
+    {
+        // Re-verify round 3: the replacement create inherits sequence 1 but a
+        // later time; the status change, stripped of its sequence, must still
+        // be filled in after it, never level with the superseded original.
+        await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        _clock.Advance(TimeSpan.FromSeconds(1));
+        var replacement = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+        var key = status.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json.Remove("Sequence");
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        Assert.Equal(replacement.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+        await Outbox().RecordOutcomeAsync(replacement.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(status.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+    }
+
+    [Fact]
     public async Task EntryWithNoSequence_IsRewrittenWithoutOne_SoARetryCannotMoveItAhead()
     {
         // A rewrite (here Failed -> Retry) of an unsequenced entry must not
