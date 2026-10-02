@@ -11,6 +11,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Expenses;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Desktop;
 using Tempest.Desktop.Documents;
 using Tempest.Desktop.Documents.Invoicing;
@@ -103,6 +104,7 @@ public sealed class InvoicingView : UserControl
     private readonly StackPanel _groups = new() { Spacing = DesignTokens.SpaceMd };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
+    private readonly List<XeroSyncBadgeControl> _xeroBadges = [];
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -117,6 +119,14 @@ public sealed class InvoicingView : UserControl
     /// unavailable rather than run without asking.
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
+
+    /// <summary>
+    /// Where each invoice request's and expense's Xero badge is read from
+    /// (`v0.24.0` U3, <see cref="XeroSyncBadgeControl"/>). <see langword="null"/>
+    /// — Xero is not the configured connector, or a test that does not
+    /// thread it through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
 
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -283,6 +293,7 @@ public sealed class InvoicingView : UserControl
             .ToList();
 
         _groups.Children.Clear();
+        _xeroBadges.Clear();
         _groups.Children.Add(BuildStandardGroup(
             "New", $"New ({newRows.Count})", "No draft requests.", newRows.Select(BuildNewRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
@@ -298,6 +309,22 @@ public sealed class InvoicingView : UserControl
             outstandingRows.Select(r => BuildOutstandingRow(r, asOf)).ToList()));
         _groups.Children.Add(BuildClosedGroup(
             $"Closed ({closedRows.Count})", "Nothing has been rejected or voided.", closedRows.Select(BuildClosedRow).ToList()));
+
+        // `v0.24.0` U3: each badge reads local state only (never Xero); the
+        // list is already shown while they load.
+        await Task.WhenAll(_xeroBadges.Select(b => b.LoadAsync())).ConfigureAwait(true);
+    }
+
+    /// <summary>Adds the record's Xero badge under <paramref name="rows"/> when a badge source is composed (`v0.24.0` U3).</summary>
+    private void AddXeroBadge(StackPanel rows, XeroDocumentKind kind, Guid id, string reference, bool offerSendToXero)
+    {
+        if (XeroBadges is not { } xero || string.IsNullOrWhiteSpace(reference))
+            return;
+
+        var badge = new XeroSyncBadgeControl(xero, XeroDocumentRef.For(kind, id), reference, offerSendToXero);
+        badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+        _xeroBadges.Add(badge);
+        rows.Children.Add(badge);
     }
 
     /// <summary>
@@ -493,6 +520,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(SendButton(request));
         actions.Children.Add(VoidButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -564,6 +592,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(raise);
 
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.ExpenseBill, expense.Id, expense.Description, offerSendToXero: true);
 
         return RowBorder(rows, expense.Id);
     }
@@ -582,6 +611,7 @@ public sealed class InvoicingView : UserControl
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted)
             actions.Children.Add(ReconcileButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -619,6 +649,7 @@ public sealed class InvoicingView : UserControl
         }
 
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
         return RowBorder(rows, request.Id);
     }
 
@@ -655,6 +686,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(ReviewButton(request));
         actions.Children.Add(ExportButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -837,9 +869,20 @@ public sealed class InvoicingView : UserControl
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_invoiceRenderer, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        // `v0.24.0` U3: the exporter's own naming and folder, unchanged; the
+        // renderer is wrapped only to keep the exact bytes it saved, so a sent
+        // request keeps them and its Xero copy carries the same PDF.
+        var capturing = new CapturingDocumentRenderer<InvoiceDocumentModel>(_invoiceRenderer);
+        var result = await _documentExporter.ExportAsync(capturing, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        if (result.Succeeded && result.Destination is { } destination && capturing.LastRender is { } bytes && IsIssued(request))
+            await XeroIssuedPdf.AttachAsync(request, Path.GetFileName(destination), bytes, CancellationToken.None).ConfigureAwait(true);
+
         Report(result.Message, succeeded: result.Succeeded);
     }
+
+    /// <summary>Whether <paramref name="request"/> was sent, so its exported document is the one its Xero draft should carry — never a draft, rejected or voided request's.</summary>
+    private static bool IsIssued(InvoiceRequest request) =>
+        request.Status is not (InvoiceRequestStatus.Draft or InvoiceRequestStatus.Rejected or InvoiceRequestStatus.Voided);
 
     private async Task<(string Code, string Name)> ResolveProjectAsync(Guid? projectId)
     {

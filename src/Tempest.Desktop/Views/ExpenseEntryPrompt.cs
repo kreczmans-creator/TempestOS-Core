@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using System.Globalization;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Expenses;
 using Tempest.Workspace.Mechanical;
@@ -20,7 +21,15 @@ namespace Tempest.Desktop.Views;
 /// <param name="NetAmount">The amount before VAT, as the receipt states it.</param>
 /// <param name="VatAmount">The VAT amount, as the receipt states it.</param>
 /// <param name="Billable">Whether the expense is billable to the client.</param>
-public sealed record ExpenseEntryInput(Guid ProjectId, DateOnly Date, string Description, ExpenseCategory Category, Money NetAmount, Money VatAmount, bool Billable);
+/// <param name="SupplierOrganisationId">`v0.24.0` (X5, build decisions Q3): the supplier the cost was paid to, a Business → Customers &amp; Suppliers record id; <see langword="null"/> when none was chosen — the expense's Xero bill then goes against the configured "General expenses" contact.</param>
+/// <param name="SupplierInvoiceNumber">`v0.24.0` (X5, build decisions Q4): the supplier's own invoice number, used as the Xero bill's number; <see langword="null"/> when none was entered (the bill is then <c>EXP-{id}</c>).</param>
+public sealed record ExpenseEntryInput(
+    Guid ProjectId, DateOnly Date, string Description, ExpenseCategory Category, Money NetAmount, Money VatAmount, bool Billable,
+    string? SupplierOrganisationId = null, string? SupplierInvoiceNumber = null)
+{
+    /// <summary>Whether a supplier or a supplier invoice number was entered (`v0.24.0` X5).</summary>
+    public bool HasPurchasingDetails => SupplierOrganisationId is not null || SupplierInvoiceNumber is not null;
+}
 
 /// <summary>
 /// The "Record expense…" dialog (`WP 21.3B`) — reachable from Business →
@@ -28,7 +37,10 @@ public sealed record ExpenseEntryInput(Guid ProjectId, DateOnly Date, string Des
 /// Mirrors <see cref="TimesheetEntryPrompt"/>'s own shape: a project
 /// picker over every open project, a date (defaulting to today),
 /// description, category, net and VAT amounts (as the receipt states
-/// them, in the project's own currency), and billable. Initially hidden,
+/// them, in the project's own currency), billable, and — `v0.24.0` (X5,
+/// build decisions Q3/Q4) — an optional supplier (from Business → Customers
+/// &amp; Suppliers) and the supplier's own invoice number, which name the
+/// expense's draft bill in Xero. Initially hidden,
 /// shares the Dialog Framework's own established panel styling and real
 /// modal behaviour.
 /// </summary>
@@ -44,6 +56,10 @@ public sealed class ExpenseEntryPrompt : Border
     private readonly NumericUpDown _netAmount = new() { Minimum = 0m, Increment = 1m, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly NumericUpDown _vatAmount = new() { Minimum = 0m, Increment = 1m, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly CheckBox _billable = new() { Content = "Billable", IsChecked = true, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+    private readonly Button _supplierButton = new() { Content = "Supplier…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _supplierLabel = new() { Text = NoSupplierText, VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBox _supplierInvoiceNumber = new() { Watermark = "Supplier invoice number (optional)", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+    private string? _supplierOrganisationId;
     private readonly TextBlock _validation = new() { FontSize = DesignTokens.FontSizeCaption, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
 
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.ControlSizeMedium };
@@ -51,6 +67,29 @@ public sealed class ExpenseEntryPrompt : Border
 
     private IReadOnlyList<(Guid Id, string Label)> _projects = [];
     private TaskCompletionSource<ExpenseEntryInput?>? _pending;
+
+    /// <summary>The supplier line's text while no supplier is chosen.</summary>
+    public const string NoSupplierText = "No supplier (Xero: General expenses)";
+
+    /// <summary>
+    /// Chooses the expense's optional supplier from Business → Customers
+    /// &amp; Suppliers (`v0.24.0` X5, Q3) — <see cref="OrganisationPicker.PickSupplierAsync"/>
+    /// in the real shell — returning its record id, an empty string for no
+    /// supplier, or <see langword="null"/> if cancelled. <see langword="null"/>
+    /// leaves the Supplier button unavailable.
+    /// </summary>
+    public Func<CancellationToken, Task<string?>>? PickSupplierAsync { get; set; }
+
+    /// <summary>Resolves the chosen supplier's name for the supplier line; <see langword="null"/> shows its record id.</summary>
+    public IOrganisationCatalog? Organisations { get; set; }
+
+    /// <summary>
+    /// Saves the supplier and supplier invoice number on the recorded expense
+    /// (<see cref="ApplyPurchasingDetailsAsync"/>, X5's
+    /// <see cref="IExpenseService.SetSupplierAsync"/>). <see langword="null"/>
+    /// saves neither, and says so.
+    /// </summary>
+    public IExpenseService? ExpenseService { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="ExpenseEntryPrompt"/> class, initially hidden.</summary>
     public ExpenseEntryPrompt(EngineeringDomainContext domainContext)
@@ -88,6 +127,11 @@ public sealed class ExpenseEntryPrompt : Border
         body.Children.Add(_netAmount);
         body.Children.Add(_vatAmount);
         body.Children.Add(_billable);
+        var supplierRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+        supplierRow.Children.Add(_supplierButton);
+        supplierRow.Children.Add(_supplierLabel);
+        body.Children.Add(supplierRow);
+        body.Children.Add(_supplierInvoiceNumber);
         body.Children.Add(_validation);
         body.Children.Add(buttons);
         Child = body;
@@ -101,6 +145,12 @@ public sealed class ExpenseEntryPrompt : Border
         AutomationProperties.SetName(_netAmount, "Net amount");
         AutomationProperties.SetName(_vatAmount, "VAT amount");
         AutomationProperties.SetName(_billable, "Billable");
+        AutomationProperties.SetName(_supplierButton, "Supplier…");
+        AutomationProperties.SetName(_supplierLabel, "Supplier");
+        AutomationProperties.SetName(_supplierInvoiceNumber, "Supplier invoice number");
+        ToolTip.SetTip(_supplierButton, "Optional: who the cost was paid to (Business → Customers & Suppliers); names the expense's draft bill in Xero");
+        _supplierButton.Classes.Add(ChromeStyles.Subtle);
+        _supplierButton.Click += async (_, _) => await OnPickSupplierAsync().ConfigureAwait(true);
         AutomationProperties.SetName(_recordButton, "Record");
         AutomationProperties.SetName(_cancelButton, "Cancel");
         ToolTip.SetTip(_recordButton, "Record");
@@ -139,6 +189,10 @@ public sealed class ExpenseEntryPrompt : Border
         _netAmount.Value = 0m;
         _vatAmount.Value = 0m;
         _billable.IsChecked = true;
+        _supplierOrganisationId = null;
+        _supplierLabel.Text = NoSupplierText;
+        _supplierInvoiceNumber.Text = string.Empty;
+        _supplierButton.IsEnabled = PickSupplierAsync is not null;
         _validation.IsVisible = false;
 
         await ReloadProjectsAsync(cancellationToken).ConfigureAwait(true);
@@ -217,7 +271,55 @@ public sealed class ExpenseEntryPrompt : Border
         var net = new Money(_netAmount.Value ?? 0m, CurrencyCode.Gbp);
         var vat = new Money(_vatAmount.Value ?? 0m, CurrencyCode.Gbp);
 
-        Complete(new ExpenseEntryInput(projectId, DateOnly.FromDateTime(date.Date), description, category, net, vat, _billable.IsChecked ?? false));
+        var supplierInvoiceNumber = _supplierInvoiceNumber.Text?.Trim();
+        Complete(new ExpenseEntryInput(
+            projectId, DateOnly.FromDateTime(date.Date), description, category, net, vat, _billable.IsChecked ?? false,
+            _supplierOrganisationId, string.IsNullOrEmpty(supplierInvoiceNumber) ? null : supplierInvoiceNumber));
+    }
+
+    /// <summary>
+    /// `v0.24.0` (X5, Q3/Q4): saves <paramref name="input"/>'s supplier and
+    /// supplier invoice number on the expense just recorded as
+    /// <paramref name="expenseId"/> — called by whoever recorded it, straight
+    /// after the record succeeds. Nothing to do when neither was entered.
+    /// </summary>
+    /// <param name="expenseId">The recorded expense.</param>
+    /// <param name="input">What the prompt collected.</param>
+    /// <param name="cancellationToken">Cancels the save.</param>
+    /// <returns><see langword="null"/> when saved (or nothing to save); otherwise why the details were not saved, to show the person.</returns>
+    public async Task<string?> ApplyPurchasingDetailsAsync(Guid expenseId, ExpenseEntryInput input, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        if (!input.HasPurchasingDetails)
+            return null;
+
+        if (ExpenseService is null)
+            return "The supplier details were not saved: nothing here can save them.";
+
+        var result = await ExpenseService.SetSupplierAsync(expenseId, input.SupplierOrganisationId, input.SupplierInvoiceNumber, cancellationToken).ConfigureAwait(true);
+        return result.Succeeded ? null : $"The supplier details were not saved: {result.Reason ?? "refused."}";
+    }
+
+    private async Task OnPickSupplierAsync()
+    {
+        if (PickSupplierAsync is not { } pick)
+            return;
+
+        var picked = await pick(CancellationToken.None).ConfigureAwait(true);
+        if (picked is null)
+            return; // Cancelled: keep what was chosen.
+
+        if (string.IsNullOrWhiteSpace(picked))
+        {
+            _supplierOrganisationId = null;
+            _supplierLabel.Text = NoSupplierText;
+            return;
+        }
+
+        _supplierOrganisationId = picked.Trim();
+        var name = Organisations is null ? null : (await Organisations.FindAsync(_supplierOrganisationId, CancellationToken.None).ConfigureAwait(true))?.Definition.Name;
+        _supplierLabel.Text = $"Supplier: {name ?? _supplierOrganisationId}";
     }
 
     private void ShowValidationError(string message)

@@ -8,6 +8,7 @@ using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Quotations;
 using Tempest.Desktop;
 using Tempest.Desktop.Quotations;
@@ -78,6 +79,15 @@ public sealed class QuotesView : UserControl
     private readonly Button _newQuoteButton = new() { Content = "New Quote", MinHeight = DesignTokens.ControlSizeMedium };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
+    private readonly List<XeroSyncBadgeControl> _xeroBadges = [];
+
+    /// <summary>
+    /// Where each quotation's Xero badge is read from (`v0.24.0` U3,
+    /// <see cref="XeroSyncBadgeControl"/>). <see langword="null"/> — Xero is
+    /// not the configured connector, or a test that does not thread it
+    /// through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
 
     /// <summary>
     /// Where an export starts — the quote's own project folder (or its
@@ -196,9 +206,14 @@ public sealed class QuotesView : UserControl
         var outstanding = sent.Where(r => IsOutstanding(r.Quotation, asOf)).ToList();
 
         _groups.Children.Clear();
+        _xeroBadges.Clear();
         _groups.Children.Add(BuildGroup("New", draft));
         _groups.Children.Add(BuildGroup("Sent", sent));
         _groups.Children.Add(BuildGroup("Outstanding (sent more than seven days ago)", outstanding));
+
+        // `v0.24.0` U3: each badge reads local state only (never Xero), off
+        // no thread but this one's continuations — the list is already shown.
+        await Task.WhenAll(_xeroBadges.Select(b => b.LoadAsync())).ConfigureAwait(true);
     }
 
     /// <summary>A disclosed heuristic — Sent, and more than seven days since <see cref="Quotation.SentOn"/>, mirroring <c>OperationalGovernance.IsOverdueAt</c>'s own named "days since" shape.</summary>
@@ -299,6 +314,15 @@ public sealed class QuotesView : UserControl
 
         rows.Children.Add(actions);
 
+        if (XeroBadges is { } xero)
+        {
+            var badge = new XeroSyncBadgeControl(
+                xero, XeroDocumentRef.For(XeroDocumentKind.Quote, quote.Id), quote.Reference, offerSendToXero: XeroIssuedPdf.IsIssued(quote));
+            badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+            _xeroBadges.Add(badge);
+            rows.Children.Add(badge);
+        }
+
         var border = new Border
         {
             Padding = DesignTokens.PanelPadding,
@@ -364,7 +388,12 @@ public sealed class QuotesView : UserControl
         var bytes = _sheetRenderer.Render(model).ToArray();
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
 
-        Report($"Exported to '{destination}'.", succeeded: true);
+        // `v0.24.0` U3: an issued quotation keeps the exact bytes saved, so
+        // its Xero copy carries the same PDF (X6's file source reads it back).
+        var attached = XeroIssuedPdf.IsIssued(quote)
+                       && await XeroIssuedPdf.AttachAsync(quote, QuotationExport.FileName(quote), bytes, CancellationToken.None).ConfigureAwait(true);
+
+        Report($"Exported to '{destination}'.{(attached ? " Quote sheet kept on the quotation." : string.Empty)}", succeeded: true);
     }
 
     private Task<string> ResolveClientNameAsync(string? clientOrganisationId) =>

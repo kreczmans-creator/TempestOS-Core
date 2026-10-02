@@ -14,6 +14,7 @@ using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Quotations;
 using Tempest.Core.ReferenceData;
 using Tempest.Core.Requirements;
@@ -180,6 +181,17 @@ public sealed class ProjectQuoteView : UserControl
     /// </summary>
     public IRateCardCatalog? RateCards { get; set; }
 
+    /// <summary>
+    /// Where the selected quotation's Xero badge is read from (`v0.24.0` U3,
+    /// <see cref="XeroSyncBadgeControl"/>). <see langword="null"/> — Xero is
+    /// not the configured connector, or a test that does not thread it
+    /// through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
+
+    /// <summary>The selected quotation's Xero badge as last rendered; <see langword="null"/> when none is shown.</summary>
+    internal XeroSyncBadgeControl? XeroBadge { get; private set; }
+
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -336,6 +348,7 @@ public sealed class ProjectQuoteView : UserControl
     private async Task RenderDetailAsync(Guid projectId)
     {
         _detailPanel.Children.Clear();
+        XeroBadge = null;
 
         if (_selectedQuotationId is not { } quoteId || _quotations.FirstOrDefault(q => q.Id == quoteId) is not { } quote)
         {
@@ -399,6 +412,17 @@ public sealed class ProjectQuoteView : UserControl
             AutomationProperties.SetName(signOffState, SignOffStateName);
             identity.Children.Add(signOffState);
         }
+
+        // `v0.24.0` U3: the quotation's Xero badge, from local state only.
+        if (XeroBadges is { } xero)
+        {
+            var badge = new XeroSyncBadgeControl(
+                xero, XeroDocumentRef.For(XeroDocumentKind.Quote, quote.Id), quote.Reference, offerSendToXero: XeroIssuedPdf.IsIssued(quote));
+            badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+            identity.Children.Add(badge);
+            XeroBadge = badge;
+        }
+
         _detailPanel.Children.Add(identity);
 
         var rateCard = await LoadRateCardAsync(quote).ConfigureAwait(true);
@@ -416,6 +440,9 @@ public sealed class ProjectQuoteView : UserControl
 
         if (quote.Status == QuotationStatus.Accepted)
             _detailPanel.Children.Add(await BuildAcceptedResultsSectionAsync(quote).ConfigureAwait(true));
+
+        if (XeroBadge is { } shown)
+            await shown.LoadAsync().ConfigureAwait(true);
     }
 
     private Control BuildLinesSection(Quotation quote, RateCard? rateCard)
@@ -1084,6 +1111,11 @@ public sealed class ProjectQuoteView : UserControl
 
         var bytes = await RenderSheetAsync(quote).ConfigureAwait(true);
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
+
+        // `v0.24.0` U3: an issued quotation keeps the exact bytes saved, so
+        // its Xero copy carries the same PDF (X6's file source reads it back).
+        if (XeroIssuedPdf.IsIssued(quote))
+            await XeroIssuedPdf.AttachAsync(quote, QuotationExport.FileName(quote), bytes, CancellationToken.None).ConfigureAwait(true);
 
         // Reading and saving a copy changes nothing in the domain — never
         // `ActionOutcome.Changed`, mirroring `ObjectEditorView.OnExportAttachmentAsync`'s
