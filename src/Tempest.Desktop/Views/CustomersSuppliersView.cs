@@ -140,6 +140,14 @@ public sealed class CustomersSuppliersView : UserControl
     /// <summary>The record Id and organisation the Xero section was last rendered for; Link and Unlink act on these alone.</summary>
     private (string RecordId, Organisation Organisation)? _xeroShown;
 
+    /// <summary>
+    /// How many <see cref="LoadAsync"/> look-ups are still awaiting their
+    /// <c>FindAsync</c>. While any is pending the Xero section is never
+    /// rendered (or re-shown) for the organisation the form still holds: the
+    /// last look-up to end renders it, for whatever the form then shows.
+    /// </summary>
+    private int _pendingLoads;
+
     private IReadOnlyList<IReferenceRecord<Organisation>> _all = [];
     private string? _editingRecordId;
     private string? _editingContactId;
@@ -343,6 +351,9 @@ public sealed class CustomersSuppliersView : UserControl
     /// <summary>The record id of the organisation the form is editing, or <see langword="null"/> while it holds a new one.</summary>
     internal string? EditingRecordId => _editingRecordId;
 
+    /// <summary>The form's status line (a look-up's outcome or fault).</summary>
+    internal string StatusText => _status.Text ?? string.Empty;
+
     /// <summary>Re-reads every organisation, keeping the one being edited selected.</summary>
     public async Task RefreshAsync()
     {
@@ -424,23 +435,49 @@ public sealed class CustomersSuppliersView : UserControl
         // one) is withdrawn before the first await, so neither Unlink nor
         // Link to Xero… can act on it while this one is looked up, and no
         // answer for the previous one lands here.
-        var withdrawn = false;
         if (!string.Equals(_editingRecordId, recordId, StringComparison.Ordinal))
         {
             HideXero();
             SetXeroBusy(true);
-            withdrawn = true;
         }
 
-        var record = await _organisations.FindAsync(recordId).ConfigureAwait(true);
+        IReferenceRecord<Organisation>? record;
+        Exception? fault = null;
+        _pendingLoads++;
+        try
+        {
+            record = await _organisations.FindAsync(recordId).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // The UI boundary: a store fault is shown, never left to the dispatcher.
+            record = null;
+            fault = ex;
+        }
+        finally
+        {
+            _pendingLoads--;
+        }
+
         if (record is null)
         {
-            // The organisation still shown keeps its (re-rendered) Xero section.
-            _status.Text = $"'{recordId}' is no longer registered.";
-            if (withdrawn && _editingRecordId is not null)
-                await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
-            else if (withdrawn)
-                HideXero();
+            _status.Text = fault is null
+                ? $"'{recordId}' is no longer registered."
+                : $"Could not open '{recordId}': {fault.Message}";
+
+            // The organisation still shown keeps its (re-rendered) Xero
+            // section — but only once no other look-up is pending; until then
+            // the section stays withdrawn and the last look-up to end renders
+            // it (a refresh started meanwhile renders nothing, so this one
+            // always does, which also ends any busy state it left).
+            if (_pendingLoads == 0)
+            {
+                if (_editingRecordId is not null)
+                    await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
+                else
+                    HideXero();
+            }
+
             return;
         }
 
@@ -749,7 +786,9 @@ public sealed class CustomersSuppliersView : UserControl
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // The UI boundary: any fault (a store defect included) is shown, never left to the dispatcher.
-            if (generation == _xeroGeneration)
+            // A look-up of another organisation is pending: the section stays
+            // withdrawn; that look-up renders it when it ends.
+            if (generation == _xeroGeneration && _pendingLoads == 0)
             {
                 // The section may have been withdrawn (another organisation was
                 // just opened): show it, offering only Refresh from Xero, so the
@@ -770,6 +809,11 @@ public sealed class CustomersSuppliersView : UserControl
 
             return;
         }
+
+        // A look-up of another organisation is pending: never render the one
+        // the form still holds meanwhile; that look-up renders the section.
+        if (_pendingLoads > 0)
+            return;
 
         if (_xero is null || organisation is null || recordId is null || generation != _xeroGeneration || !IsStillShowing(recordId))
         {

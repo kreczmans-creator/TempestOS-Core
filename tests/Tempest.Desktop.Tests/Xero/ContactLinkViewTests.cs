@@ -316,7 +316,7 @@ internal sealed class ContactLinkTestKit : IAsyncDisposable
     private readonly string _root;
 
     private ContactLinkTestKit(
-        XeroSimulatorClock clock, XeroApiSimulator simulator, HttpClient client, InMemorySecretStore secretStore,
+        XeroSimulatorClock clock, XeroApiSimulator simulator, HttpClient client, ContactLinkSecretStore secretStore,
         OrganisationCatalog organisations, ContactCatalog contacts, PersistenceXeroLinkStore links, RecordingAudit audit,
         XeroContactLinker linker, TestSettingsReader settings, SqlitePersistenceStore store, string root)
     {
@@ -338,7 +338,7 @@ internal sealed class ContactLinkTestKit : IAsyncDisposable
 
     public XeroApiSimulator Simulator { get; }
 
-    public InMemorySecretStore SecretStore { get; }
+    public ContactLinkSecretStore SecretStore { get; }
 
     public OrganisationCatalog Organisations { get; }
 
@@ -373,7 +373,7 @@ internal sealed class ContactLinkTestKit : IAsyncDisposable
         };
         var client = new HttpClient(safety) { BaseAddress = XeroApiSimulator.BaseAddress };
 
-        var secretStore = new InMemorySecretStore();
+        var secretStore = new ContactLinkSecretStore();
         await secretStore.SetAsync("Invoicing:Xero:AccessToken", AccessToken);
         await secretStore.SetAsync("Invoicing:Xero:RefreshToken", "u2-refresh-token");
         await secretStore.SetAsync("Invoicing:Xero:ExpiresAtUtc", DateTimeOffset.UtcNow.AddHours(1).ToString("O"));
@@ -496,7 +496,7 @@ internal sealed class TestSettingsReader(bool isDemoCompany) : IXeroSettingsRead
 }
 
 /// <summary>An in-memory <see cref="ISecretStore"/>.</summary>
-internal sealed class InMemorySecretStore : ISecretStore
+internal sealed class ContactLinkSecretStore : ISecretStore
 {
     private readonly Dictionary<string, string> _values = new(StringComparer.Ordinal);
     private TaskCompletionSource? _hold;
