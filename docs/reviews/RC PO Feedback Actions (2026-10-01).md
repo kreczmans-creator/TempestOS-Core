@@ -23,6 +23,14 @@ follow-up messages on 1 Oct. Score: 46/64 scored — 37 PASS, 2 FAIL
 |---|---|---|
 | PO-SO | "This software is initially for a single-user consultancy, so EVERYTHING needing a second person to verify/approve cannot be the case. Add into the settings a switch to flick second-person sign-off on/off globally." | One global switch, Settings → **Sign-off** → *Second-person sign-off*, **off by default** (`ISignOffPolicy`, `ADR-0161`; amends `ADR-0152` and `ADR-0148`). Off: the author may approve their own quote and check their own evidence; somebody must still be signed in, and the revision/check/audit row says it was a self-approval. On: every colour review board B1 rule exactly as before. Every change of the switch is audited (who, when, old → new); the Quote tab shows the current state. Survey: the only separation-of-duty rules in the code were the quote approval and the evidence independent check; reference-data verify/release, timesheets, calculations, requirements and documents had none, so nothing changes there. |
 
+## Decided, scheduled for v0.24.0: Xero integration (PO, 2026-10-02)
+
+TempestOS stays the master for quotes, deliverables, POs and expenses;
+Xero gets an identical copy (same number, PDF attached) and is the master
+for company details, VAT codes and contact billing details. Invoices go
+to Xero as **drafts** and the PO sends them **manually from Xero**. Scope
+and work packages: `docs/releases/v0.24.0/Xero Integration Plan.md`.
+
 ## Already in hand elsewhere (do not duplicate)
 
 | Ref | Item | Where |
