@@ -77,6 +77,9 @@ internal sealed class EngineFaultHop : DelegatingHandler
     /// <summary>When set, every 429 reaches the client without its <c>Retry-After</c> (Xero may omit it; design §6.5: then 60 s).</summary>
     public bool StripRetryAfter { get; set; }
 
+    /// <summary>When set, every answer carries this <c>X-MinLimit-Remaining</c> (a minute nearly spent by another client of the same app).</summary>
+    public int? MinuteRemaining { get; set; }
+
     /// <summary>The paths of the writes the hop cut off by a crash.</summary>
     public List<string> Crashed { get; } = [];
 
@@ -88,6 +91,12 @@ internal sealed class EngineFaultHop : DelegatingHandler
         var response = await base.SendAsync(request, cancellationToken);
         if (StripRetryAfter && response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             response.Headers.RetryAfter = null;
+
+        if (MinuteRemaining is { } remaining)
+        {
+            response.Headers.Remove("X-MinLimit-Remaining");
+            response.Headers.TryAddWithoutValidation("X-MinLimit-Remaining", remaining.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
 
         if (isNew && CrashOnNewWrite is { } crash && request.RequestUri!.AbsolutePath.Contains(crash.PathContains, StringComparison.Ordinal))
         {

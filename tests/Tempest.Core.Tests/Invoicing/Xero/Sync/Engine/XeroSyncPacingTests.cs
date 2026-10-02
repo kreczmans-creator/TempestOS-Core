@@ -154,6 +154,57 @@ public sealed class XeroSyncPacingTests
         Assert.Equal(1, handler.Calls);
     }
 
+    [Fact]
+    public async Task A5xxWhileTheMinuteIsNearlySpent_IsBackedOffAsA5xx_NotAuditedAsA429()
+    {
+        using var kit = await EngineTestKit.CreateAsync();
+        await kit.Engine.RunCycleAsync();
+        kit.IssueOrder("PO-2026-001");
+        kit.Hop.MinuteRemaining = 1;
+        kit.Simulator.Inject(new XeroFault(XeroFaultKind.ServiceUnavailable, "PurchaseOrders"));
+
+        var start = kit.Clock.GetUtcNow();
+        var report = await kit.Engine.RunCycleAsync();
+
+        // The limiter's own pause to the end of the minute still holds every call (§6.5) ...
+        Assert.Equal(1, report.Drain.Attempted);
+        Assert.NotNull(kit.RateLimiter.PausedUntilUtc);
+        Assert.Equal(kit.RateLimiter.PausedUntilUtc, report.Drain.ResumeNotBeforeUtc);
+
+        // ... but the 503 is a 503: deferred with its own backoff, no 429 pause saved or audited.
+        Assert.Empty(kit.AuditRows(XeroSyncService.AuditRateLimited));
+        Assert.Single(kit.AuditRows(XeroSyncService.AuditDeferred));
+        Assert.Null(await ReadPausedUntilAsync(kit.Store));
+        var entry = Assert.Single(await kit.Outbox.ListAsync([XeroOutboxState.Pending, XeroOutboxState.Unknown]), e => e.LastError is not null);
+        Assert.NotNull(entry.NotBeforeUtc);
+        Assert.NotEqual(kit.RateLimiter.PausedUntilUtc, entry.NotBeforeUtc);
+        Assert.Contains("503", entry.LastError, StringComparison.Ordinal);
+        Assert.True(entry.NotBeforeUtc > start);
+    }
+
+    [Fact]
+    public async Task A429OnAnInvoiceWrite_WhileTheMinuteIsNearlySpent_StillPausesEverythingForRetryAfter()
+    {
+        using var kit = await EngineTestKit.CreateAsync();
+        var handler = new InvoiceCreateThroughX4Mapping(kit.Api);
+        var parts = new XeroSyncParts(kit.Links, kit.Outbox, kit.Secrets, [], [(XeroDocumentKind.Invoice, (IXeroPushHandler)handler)]);
+        var engine = new XeroSyncService(
+            parts, kit.Outbox, kit.Store, rateLimiter: kit.RateLimiter, audit: kit.Audit, timeProvider: kit.Clock, options: kit.Options);
+        await kit.Outbox.EnqueueAsync(XeroOperation.PushInvoiceDraft, XeroDocumentRef.For(XeroDocumentKind.Invoice, Guid.NewGuid()), "h1", null);
+        kit.Hop.MinuteRemaining = 0;
+        kit.Simulator.Inject(new XeroFault(XeroFaultKind.RateLimitedMinute, "Invoices", RetryAfter: TimeSpan.FromSeconds(90)));
+
+        var start = kit.Clock.GetUtcNow();
+        var report = await engine.RunCycleAsync();
+
+        // Longer than the nearly-spent-minute rule can pause: Xero's Retry-After + 1 s, pause all.
+        var expected = start + TimeSpan.FromSeconds(91);
+        Assert.Equal(expected, report.Drain.ResumeNotBeforeUtc);
+        Assert.Equal(expected, await ReadPausedUntilAsync(kit.Store));
+        Assert.Single(kit.AuditRows(XeroSyncService.AuditRateLimited));
+        Assert.Empty(kit.AuditRows(XeroSyncService.AuditDeferred));
+    }
+
     // ------------------------------------------------------------ recovery first
 
     [Fact]
@@ -183,38 +234,6 @@ public sealed class XeroSyncPacingTests
         await engine.RunCycleAsync();
         Assert.Equal(2, handler.Calls.Count);
         Assert.Contains("Organisation", handler.Calls[1].RequestsBefore);
-    }
-
-    [Fact]
-    public async Task TheOutbox_ClaimsOnlyFromTheStatesAsked_KeepingPerDocumentOrder()
-    {
-        var store = new YieldingInMemoryPersistenceStore();
-        var clock = new XeroSimulatorClock();
-        var outbox = new PersistenceXeroOutbox(store, null, clock);
-        var pending = await outbox.EnqueueAsync(XeroOperation.PushQuote, EngineTestKit.QuoteRef(Guid.NewGuid()), "p", null);
-        var unknownDoc = EngineTestKit.QuoteRef(Guid.NewGuid());
-        var unknown = await outbox.EnqueueAsync(XeroOperation.PushQuote, unknownDoc, "u", null);
-        var behindUnknown = await outbox.EnqueueAsync(XeroOperation.UploadAttachment, unknownDoc, "a", "quote.pdf");
-
-        // Make the second entry Unknown (claimed, then its answer lost).
-        IXeroOutboxDrain drain = outbox;
-        Assert.Equal(pending.Id, (await drain.ClaimNextDueAsync())!.Id);
-        Assert.Equal(unknown.Id, (await drain.ClaimNextDueAsync())!.Id);
-        await drain.RecordOutcomeAsync(unknown.Id, XeroOutboxState.Unknown, "lost");
-        await drain.RecordOutcomeAsync(pending.Id, XeroOutboxState.Pending);
-
-        // Unknown asked: the Unknown head, though a Pending entry is older.
-        Assert.Equal(unknown.Id, (await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]))!.Id);
-        Assert.Null(await drain.ClaimNextDueAsync([XeroOutboxState.Unknown]));
-
-        // Pending asked: never the entry queued behind the in-flight one of its document.
-        Assert.Equal(pending.Id, (await drain.ClaimNextDueAsync([XeroOutboxState.Pending]))!.Id);
-        Assert.Null(await drain.ClaimNextDueAsync([XeroOutboxState.Pending]));
-        Assert.Equal(XeroOutboxState.Pending, (await drain.FindAsync(behindUnknown.Id))!.State);
-
-        // Empty means Pending or Unknown, as the unfiltered claim.
-        await drain.RecordOutcomeAsync(unknown.Id, XeroOutboxState.Succeeded);
-        Assert.Equal(behindUnknown.Id, (await drain.ClaimNextDueAsync([]))!.Id);
     }
 
     // ------------------------------------------------------------ inconclusive

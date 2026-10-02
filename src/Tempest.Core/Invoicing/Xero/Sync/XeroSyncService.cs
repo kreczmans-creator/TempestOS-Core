@@ -56,6 +56,16 @@ public sealed record XeroSyncOptions
     /// <summary>How many transport or 5xx failures in a row stop a drain (Xero looks down; the rest wait for the next wake rather than each failing in turn).</summary>
     public int MaximumConsecutiveTransientFailures { get; init; } = 3;
 
+    /// <summary>
+    /// After a drain stopped on <see cref="MaximumConsecutiveTransientFailures"/>
+    /// (Xero looks down), how long before the next drain may send anything —
+    /// so the entries it did not try, still due, are not tried at the hosted
+    /// loop's one-second floor. Short (the first recovery backoff,
+    /// <see cref="XeroBackoff.RecoveryBaseDelay"/>), so a lost create is
+    /// still looked up well inside its key's lifetime. In memory only.
+    /// </summary>
+    public TimeSpan TransientStopPause { get; init; } = XeroBackoff.RecoveryBaseDelay;
+
     /// <summary>The jitter source: a number in <c>[0, 1)</c> per backoff (<see cref="XeroBackoff"/>); <see langword="null"/> for <see cref="Random.Shared"/>.</summary>
     public Func<double>? Jitter { get; init; }
 
@@ -361,7 +371,7 @@ public sealed record XeroSyncCycleReport(int Planned, XeroDrainReport Drain, Xer
 /// transport failure or 5xx → this entry backs off
 /// <c>min(30 s × 2^(n−1), 30 min)</c> ± 20 % (<see cref="XeroBackoff"/>) and
 /// the drain stops after <see cref="XeroSyncOptions.MaximumConsecutiveTransientFailures"/>
-/// in a row; Unknown → reconciled by its handler's lookup on the next
+/// in a row and sends nothing for <see cref="XeroSyncOptions.TransientStopPause"/>; Unknown → reconciled by its handler's lookup on the next
 /// attempt, Failed after <see cref="XeroSyncOptions.MaximumUnknownAnswers"/>
 /// inconclusive answers.
 /// </para>
@@ -443,6 +453,9 @@ public sealed class XeroSyncService : IXeroSyncService
     private static readonly XeroOutboxState[] UnknownOnly = [XeroOutboxState.Unknown];
     private static readonly XeroOutboxState[] PendingOnly = [XeroOutboxState.Pending];
 
+    /// <summary>The longest pause the limiter's nearly-spent-minute rule sets after a reading.</summary>
+    private static readonly TimeSpan NearlySpentMinutePause = TimeSpan.FromMinutes(1);
+
     private readonly XeroSyncParts _parts;
     private readonly IXeroOutboxDrain _drain;
     private readonly IPersistenceStore _store;
@@ -469,6 +482,7 @@ public sealed class XeroSyncService : IXeroSyncService
     private DateTimeOffset? _lastReadBackUtc;
     private DateTimeOffset? _lastBlockedRetryUtc;
     private DateTimeOffset? _lastScanUtc;
+    private long _drainHeldUntilUtcTicks;
 
     /// <summary>Initialises a new instance of the <see cref="XeroSyncService"/> class.</summary>
     /// <param name="parts">The planners and handlers it drives.</param>
@@ -956,8 +970,13 @@ public sealed class XeroSyncService : IXeroSyncService
             .GroupBy(e => e.Document)
             .Select(g => g.First())
             .Where(e => e.State is XeroOutboxState.Pending or XeroOutboxState.Unknown && e.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion);
+        // After a drain stopped on an outage, nothing is sent before its hold ends.
+        var held = DrainHeldUntil(now) ?? now;
         foreach (var entry in heads)
-            Consider(entry.NotBeforeUtc is { } notBefore && notBefore > now ? notBefore : now);
+        {
+            var dueAt = entry.NotBeforeUtc is { } notBefore && notBefore > now ? notBefore : now;
+            Consider(dueAt > held ? dueAt : held);
+        }
 
         if (_readBack is not null)
             Consider(_lastReadBackUtc is { } last ? last + _options.ReadBackInterval : now);
@@ -1133,6 +1152,9 @@ public sealed class XeroSyncService : IXeroSyncService
         if (await ReadTimeAsync(PausedUntilKey, cancellationToken).ConfigureAwait(false) is { } pausedUntil && pausedUntil > _time.GetUtcNow())
             return new XeroDrainReport(0, 0, 0, 0, PausedForAuthorisation: false, ResumeNotBeforeUtc: pausedUntil);
 
+        if (DrainHeldUntil(_time.GetUtcNow()) is not null)
+            return new XeroDrainReport(0, 0, 0, 0, PausedForAuthorisation: false, ResumeNotBeforeUtc: null);
+
         int attempted = 0, succeeded = 0, failed = 0, deferred = 0, transientInARow = 0;
         DateTimeOffset? resume = null;
         var pausedForAuthorisation = false;
@@ -1201,10 +1223,20 @@ public sealed class XeroSyncService : IXeroSyncService
             }
 
             if (transientInARow >= _options.MaximumConsecutiveTransientFailures)
+            {
+                Interlocked.Exchange(ref _drainHeldUntilUtcTicks, (_time.GetUtcNow() + _options.TransientStopPause).UtcTicks);
                 break;
+            }
         }
 
         return new XeroDrainReport(attempted, succeeded, failed, deferred, pausedForAuthorisation, resume);
+    }
+
+    /// <summary>Until when the drain holds off after stopping on an outage; <see langword="null"/> when it does not.</summary>
+    private DateTimeOffset? DrainHeldUntil(DateTimeOffset now)
+    {
+        var ticks = Interlocked.Read(ref _drainHeldUntilUtcTicks);
+        return ticks > now.UtcTicks ? new DateTimeOffset(ticks, TimeSpan.Zero) : null;
     }
 
     /// <summary>Sends one claimed entry and records what happened.</summary>
@@ -1212,6 +1244,11 @@ public sealed class XeroSyncService : IXeroSyncService
     {
         var track = await ReadTrackAsync(entry.Id, cancellationToken).ConfigureAwait(false);
         var recovering = claimedFromUnknown || track.RecoveringSinceUtc is not null;
+
+        // What the client-side limiter looked like before this entry's
+        // requests, so a pause it takes on during them can be told apart
+        // from one it already had (RateLimitedUntil).
+        var limiterBefore = new LimiterSnapshot(_rateLimiter?.PausedUntilUtc, _rateLimiter?.LastReading, _time.GetUtcNow());
 
         XeroPushResult result;
         if (_parts.HandlerFor(entry.Operation, entry.Document.Kind) is not { } handler)
@@ -1238,11 +1275,11 @@ public sealed class XeroSyncService : IXeroSyncService
             }
         }
 
-        return await RecordAsync(entry, result, track, recovering, cancellationToken).ConfigureAwait(false);
+        return await RecordAsync(entry, result, track, recovering, limiterBefore, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<(Step Step, XeroOutboxState Outcome)> RecordAsync(
-        XeroOutboxEntry entry, XeroPushResult result, EntryTrack track, bool recovering, CancellationToken cancellationToken)
+        XeroOutboxEntry entry, XeroPushResult result, EntryTrack track, bool recovering, LimiterSnapshot limiterBefore, CancellationToken cancellationToken)
     {
         var now = _time.GetUtcNow();
         var detail = Detail(entry, result);
@@ -1285,7 +1322,7 @@ public sealed class XeroSyncService : IXeroSyncService
                 await AuditAsync(AuditReauthorisationRequired, detail, cancellationToken).ConfigureAwait(false);
                 return (Step.StopAuthorisation, XeroOutboxState.WaitingForAuthorisation);
 
-            case XeroPushOutcome.RetryLater when RateLimitedUntil(result, now) is { } until:
+            case XeroPushOutcome.RetryLater when RateLimitedUntil(result, now, limiterBefore) is { } until:
             {
                 var asUnknown = recovering || IsCreate(entry.Operation);
                 await _drain.RecordOutcomeAsync(entry.Id, asUnknown ? XeroOutboxState.Unknown : XeroOutboxState.Pending, result.Reason, until, cancellationToken).ConfigureAwait(false);
@@ -1355,21 +1392,49 @@ public sealed class XeroSyncService : IXeroSyncService
     /// <summary>
     /// When a RetryLater answer was a 429 (design §6.3, §6.5: <b>pause all</b>),
     /// until when everything pauses; <see langword="null"/> for a transport
-    /// failure or a 5xx. A 429 is known by its <c>Retry-After</c> (+1 s), or —
-    /// when the handler did not pass it on (X4's invoice handlers never do) or
-    /// Xero sent none — by the client-side limiter having paused on the
-    /// answer it just saw (its own <c>Retry-After</c> + 1 s, or 60 s when
-    /// absent). The drain claims nothing while the limiter is paused, so a
-    /// pause found after the request is that request's.
+    /// failure or a 5xx. A 429 is known by its <c>Retry-After</c> (+1 s; only
+    /// a 429's is passed on), or — when the handler did not pass it on (X4's
+    /// invoice handlers never do) or Xero sent none — by the client-side
+    /// limiter: it held the request back (it was already paused before the
+    /// request), or it paused on an answer seen during the request (its own
+    /// <c>Retry-After</c> + 1 s, or 60 s when absent). The limiter also pauses,
+    /// on <em>any</em> answer, when Xero's <c>X-MinLimit-Remaining</c> is at
+    /// or below <see cref="XeroRateLimiter.MinuteRemainingFloor"/> — to the
+    /// end of the minute, at most 60 s after that answer was read. A pause
+    /// that rule alone explains is not a 429: the answer (a 5xx, say) is
+    /// backed off as itself, and the limiter still holds every call until its
+    /// pause ends, so the drain stops there anyway (§6.5).
     /// </summary>
-    private DateTimeOffset? RateLimitedUntil(XeroPushResult result, DateTimeOffset now)
+    private DateTimeOffset? RateLimitedUntil(XeroPushResult result, DateTimeOffset now, LimiterSnapshot before)
     {
         DateTimeOffset? until = result.RetryAfter is { } retryAfter ? now + XeroBackoff.RateLimitPause(retryAfter) : null;
-        if (_rateLimiter?.PausedUntilUtc is { } limiterUntil && (until is null || limiterUntil > until))
+
+        if (_rateLimiter?.PausedUntilUtc is { } limiterUntil
+            && (until is not null || before.PausedUntilUtc is not null || !ExplainedByNearlySpentMinute(limiterUntil, before))
+            && (until is null || limiterUntil > until))
+        {
             until = limiterUntil;
+        }
 
         return until;
     }
+
+    /// <summary>
+    /// Whether the limiter's pause to <paramref name="limiterUntil"/>, taken
+    /// during the request, is the nearly-spent-minute rule's rather than a
+    /// 429's: the reading taken during the request was at or below the floor,
+    /// and the pause ends no later than that rule can set it (the oldest call
+    /// of the minute + 60 s, which is never after the reading + 60 s).
+    /// </summary>
+    private bool ExplainedByNearlySpentMinute(DateTimeOffset limiterUntil, LimiterSnapshot before) =>
+        _rateLimiter?.LastReading is { MinuteRemaining: { } remaining } reading
+        && !ReferenceEquals(reading, before.Reading)
+        && reading.ReadAtUtc >= before.TakenAtUtc
+        && remaining <= XeroRateLimiter.MinuteRemainingFloor
+        && limiterUntil <= reading.ReadAtUtc + NearlySpentMinutePause;
+
+    /// <summary>The client-side limiter as it was before an entry's requests.</summary>
+    private readonly record struct LimiterSnapshot(DateTimeOffset? PausedUntilUtc, XeroRateLimitReading? Reading, DateTimeOffset TakenAtUtc);
 
     /// <summary>Whether <paramref name="operation"/> creates a Xero record — a request that, if it failed in transport, may still have made one.</summary>
     private static bool IsCreate(XeroOperation operation) =>

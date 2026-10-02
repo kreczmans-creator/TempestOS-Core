@@ -70,11 +70,17 @@ public sealed class XeroSyncResilienceTests
         Assert.Equal(3, first.Drain.Attempted); // three failures in a row stop the drain: Xero looks down
         Assert.Equal(3, first.Drain.Deferred);
 
-        // Nothing is due yet: a cycle straight after sends nothing.
+        // Xero looks down: a cycle straight after sends nothing, not even the
+        // fourth quote (never tried, still due) — the drain holds off briefly.
         var before = kit.Simulator.Requests.Count;
-        var again = await kit.Engine.RunCycleAsync();
-        Assert.Equal(1, again.Drain.Attempted); // only the fourth quote, never tried, is due
-        Assert.Equal(before + 1, kit.Simulator.Requests.Count);
+        var stopped = kit.Clock.GetUtcNow();
+        Assert.Equal(0, (await kit.Engine.RunCycleAsync()).Drain.Attempted);
+        Assert.Equal(before, kit.Simulator.Requests.Count);
+        Assert.Equal(stopped + kit.Options.TransientStopPause, await kit.Engine.NextWorkDueAtAsync());
+
+        // Once the hold ends the drain tries again (the lost creates are looked up after their short recovery backoff).
+        kit.Clock.Advance(kit.Options.TransientStopPause);
+        Assert.True((await kit.Engine.RunCycleAsync()).Drain.Attempted > 0);
 
         for (var i = 0; i < 30 && kit.LiveQuotes.Count < 4; i++)
         {
