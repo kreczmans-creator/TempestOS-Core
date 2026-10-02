@@ -5,8 +5,10 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using System.Globalization;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Expenses;
+using Tempest.Workspace.Files;
 using Tempest.Workspace.Mechanical;
 using Tempest.Desktop.Theming;
 
@@ -20,7 +22,37 @@ namespace Tempest.Desktop.Views;
 /// <param name="NetAmount">The amount before VAT, as the receipt states it.</param>
 /// <param name="VatAmount">The VAT amount, as the receipt states it.</param>
 /// <param name="Billable">Whether the expense is billable to the client.</param>
-public sealed record ExpenseEntryInput(Guid ProjectId, DateOnly Date, string Description, ExpenseCategory Category, Money NetAmount, Money VatAmount, bool Billable);
+/// <param name="SupplierOrganisationId">`v0.24.0` (X5, build decisions Q3): the supplier the cost was paid to, a Business → Customers &amp; Suppliers record id; <see langword="null"/> when none was chosen — the expense's Xero bill then goes against the configured "General expenses" contact.</param>
+/// <param name="SupplierInvoiceNumber">`v0.24.0` (X5, build decisions Q4): the supplier's own invoice number, used as the Xero bill's number; <see langword="null"/> when none was entered (the bill is then <c>EXP-{id}</c>).</param>
+/// <param name="Receipt">`v0.24.0` (U3, X5 "expense → bill … receipt"): the receipt file chosen — a PDF, JPEG or PNG — attached to the expense once recorded, which its Xero bill then carries (X6's file source); <see langword="null"/> when none was chosen.</param>
+public sealed record ExpenseEntryInput(
+    Guid ProjectId, DateOnly Date, string Description, ExpenseCategory Category, Money NetAmount, Money VatAmount, bool Billable,
+    string? SupplierOrganisationId = null, string? SupplierInvoiceNumber = null, ExpenseReceipt? Receipt = null)
+{
+    /// <summary>Whether a supplier, a supplier invoice number or a receipt was entered (`v0.24.0` X5, U3) — what <see cref="ExpenseEntryPrompt.ApplyPurchasingDetailsAsync"/> saves after the expense is recorded.</summary>
+    public bool HasPurchasingDetails => SupplierOrganisationId is not null || SupplierInvoiceNumber is not null || Receipt is not null;
+}
+
+/// <summary>A receipt file chosen in the "Record expense…" dialog (`v0.24.0` U3).</summary>
+/// <param name="FileName">The file's own name.</param>
+/// <param name="ContentType">Its MIME type: <c>application/pdf</c>, <c>image/jpeg</c> or <c>image/png</c>.</param>
+/// <param name="Content">Its bytes, read when it was chosen.</param>
+public sealed record ExpenseReceipt(string FileName, string ContentType, ReadOnlyMemory<byte> Content)
+{
+    /// <summary>The receipt file types an expense's Xero bill can carry (X6's file source), by extension.</summary>
+    public static IReadOnlyDictionary<string, string> TypesByExtension { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        [".pdf"] = "application/pdf",
+        [".jpg"] = "image/jpeg",
+        [".jpeg"] = "image/jpeg",
+        [".png"] = "image/png",
+    };
+
+    /// <summary>The MIME type a receipt named <paramref name="fileName"/> is kept as, or <see langword="null"/> when it is not a PDF, JPEG or PNG.</summary>
+    /// <param name="fileName">The file's name.</param>
+    public static string? ContentTypeFor(string fileName) =>
+        TypesByExtension.TryGetValue(Path.GetExtension(fileName ?? string.Empty), out var type) ? type : null;
+}
 
 /// <summary>
 /// The "Record expense…" dialog (`WP 21.3B`) — reachable from Business →
@@ -28,7 +60,11 @@ public sealed record ExpenseEntryInput(Guid ProjectId, DateOnly Date, string Des
 /// Mirrors <see cref="TimesheetEntryPrompt"/>'s own shape: a project
 /// picker over every open project, a date (defaulting to today),
 /// description, category, net and VAT amounts (as the receipt states
-/// them, in the project's own currency), and billable. Initially hidden,
+/// them, in the project's own currency), billable, and — `v0.24.0` (X5,
+/// build decisions Q3/Q4) — an optional supplier (from Business → Customers
+/// &amp; Suppliers) and the supplier's own invoice number, which name the
+/// expense's draft bill in Xero, and (U3) an optional receipt file (PDF,
+/// JPEG or PNG) its draft bill carries. Initially hidden,
 /// shares the Dialog Framework's own established panel styling and real
 /// modal behaviour.
 /// </summary>
@@ -44,6 +80,13 @@ public sealed class ExpenseEntryPrompt : Border
     private readonly NumericUpDown _netAmount = new() { Minimum = 0m, Increment = 1m, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly NumericUpDown _vatAmount = new() { Minimum = 0m, Increment = 1m, MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly CheckBox _billable = new() { Content = "Billable", IsChecked = true, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+    private readonly Button _supplierButton = new() { Content = "Supplier…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _supplierLabel = new() { Text = NoSupplierText, VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBox _supplierInvoiceNumber = new() { Watermark = "Supplier invoice number (optional)", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+    private string? _supplierOrganisationId;
+    private readonly Button _receiptButton = new() { Content = "Receipt…", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly TextBlock _receiptLabel = new() { Text = NoReceiptText, VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private ExpenseReceipt? _receipt;
     private readonly TextBlock _validation = new() { FontSize = DesignTokens.FontSizeCaption, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0), IsVisible = false };
 
     private readonly Button _recordButton = new() { Content = "Record", MinHeight = DesignTokens.ControlSizeMedium };
@@ -51,6 +94,39 @@ public sealed class ExpenseEntryPrompt : Border
 
     private IReadOnlyList<(Guid Id, string Label)> _projects = [];
     private TaskCompletionSource<ExpenseEntryInput?>? _pending;
+
+    /// <summary>The supplier line's text while no supplier is chosen.</summary>
+    public const string NoSupplierText = "No supplier (Xero: General expenses)";
+
+    /// <summary>The receipt line's text while no receipt is chosen.</summary>
+    public const string NoReceiptText = "No receipt";
+
+    /// <summary>
+    /// Chooses the optional receipt file (`v0.24.0` U3): a PDF, JPEG or PNG,
+    /// attached to the expense once recorded so its Xero bill carries it.
+    /// <see langword="null"/> leaves the Receipt button unavailable.
+    /// </summary>
+    public IFilePicker? FilePicker { get; set; }
+
+    /// <summary>
+    /// Chooses the expense's optional supplier from Business → Customers
+    /// &amp; Suppliers (`v0.24.0` X5, Q3) — <see cref="OrganisationPicker.PickSupplierAsync"/>
+    /// in the real shell — returning its record id, an empty string for no
+    /// supplier, or <see langword="null"/> if cancelled. <see langword="null"/>
+    /// leaves the Supplier button unavailable.
+    /// </summary>
+    public Func<CancellationToken, Task<string?>>? PickSupplierAsync { get; set; }
+
+    /// <summary>Resolves the chosen supplier's name for the supplier line; <see langword="null"/> shows its record id.</summary>
+    public IOrganisationCatalog? Organisations { get; set; }
+
+    /// <summary>
+    /// Saves the supplier and supplier invoice number on the recorded expense
+    /// (<see cref="ApplyPurchasingDetailsAsync"/>, X5's
+    /// <see cref="IExpenseService.SetSupplierAsync"/>). <see langword="null"/>
+    /// saves neither, and says so.
+    /// </summary>
+    public IExpenseService? ExpenseService { get; set; }
 
     /// <summary>Initialises a new instance of the <see cref="ExpenseEntryPrompt"/> class, initially hidden.</summary>
     public ExpenseEntryPrompt(EngineeringDomainContext domainContext)
@@ -88,6 +164,15 @@ public sealed class ExpenseEntryPrompt : Border
         body.Children.Add(_netAmount);
         body.Children.Add(_vatAmount);
         body.Children.Add(_billable);
+        var supplierRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+        supplierRow.Children.Add(_supplierButton);
+        supplierRow.Children.Add(_supplierLabel);
+        body.Children.Add(supplierRow);
+        body.Children.Add(_supplierInvoiceNumber);
+        var receiptRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+        receiptRow.Children.Add(_receiptButton);
+        receiptRow.Children.Add(_receiptLabel);
+        body.Children.Add(receiptRow);
         body.Children.Add(_validation);
         body.Children.Add(buttons);
         Child = body;
@@ -101,6 +186,17 @@ public sealed class ExpenseEntryPrompt : Border
         AutomationProperties.SetName(_netAmount, "Net amount");
         AutomationProperties.SetName(_vatAmount, "VAT amount");
         AutomationProperties.SetName(_billable, "Billable");
+        AutomationProperties.SetName(_supplierButton, "Supplier…");
+        AutomationProperties.SetName(_supplierLabel, "Supplier");
+        AutomationProperties.SetName(_supplierInvoiceNumber, "Supplier invoice number");
+        ToolTip.SetTip(_supplierButton, "Optional: who the cost was paid to (Business → Customers & Suppliers); names the expense's draft bill in Xero");
+        _supplierButton.Classes.Add(ChromeStyles.Subtle);
+        _supplierButton.Click += async (_, _) => await OnPickSupplierAsync().ConfigureAwait(true);
+        AutomationProperties.SetName(_receiptButton, "Receipt…");
+        AutomationProperties.SetName(_receiptLabel, "Receipt");
+        ToolTip.SetTip(_receiptButton, "Optional: the receipt (PDF, JPEG or PNG), kept on the expense and attached to its draft bill in Xero");
+        _receiptButton.Classes.Add(ChromeStyles.Subtle);
+        _receiptButton.Click += async (_, _) => await OnPickReceiptAsync().ConfigureAwait(true);
         AutomationProperties.SetName(_recordButton, "Record");
         AutomationProperties.SetName(_cancelButton, "Cancel");
         ToolTip.SetTip(_recordButton, "Record");
@@ -139,6 +235,13 @@ public sealed class ExpenseEntryPrompt : Border
         _netAmount.Value = 0m;
         _vatAmount.Value = 0m;
         _billable.IsChecked = true;
+        _supplierOrganisationId = null;
+        _supplierLabel.Text = NoSupplierText;
+        _supplierInvoiceNumber.Text = string.Empty;
+        _supplierButton.IsEnabled = PickSupplierAsync is not null;
+        _receipt = null;
+        _receiptLabel.Text = NoReceiptText;
+        _receiptButton.IsEnabled = FilePicker is not null;
         _validation.IsVisible = false;
 
         await ReloadProjectsAsync(cancellationToken).ConfigureAwait(true);
@@ -217,7 +320,121 @@ public sealed class ExpenseEntryPrompt : Border
         var net = new Money(_netAmount.Value ?? 0m, CurrencyCode.Gbp);
         var vat = new Money(_vatAmount.Value ?? 0m, CurrencyCode.Gbp);
 
-        Complete(new ExpenseEntryInput(projectId, DateOnly.FromDateTime(date.Date), description, category, net, vat, _billable.IsChecked ?? false));
+        var supplierInvoiceNumber = _supplierInvoiceNumber.Text?.Trim();
+        Complete(new ExpenseEntryInput(
+            projectId, DateOnly.FromDateTime(date.Date), description, category, net, vat, _billable.IsChecked ?? false,
+            _supplierOrganisationId, string.IsNullOrEmpty(supplierInvoiceNumber) ? null : supplierInvoiceNumber, _receipt));
+    }
+
+    /// <summary>
+    /// `v0.24.0` (X5, Q3/Q4; U3): saves <paramref name="input"/>'s supplier
+    /// and supplier invoice number on the expense just recorded as
+    /// <paramref name="expenseId"/>, and attaches its receipt — called by
+    /// whoever recorded it, straight after the record succeeds. Nothing to do
+    /// when none was entered.
+    /// </summary>
+    /// <param name="expenseId">The recorded expense.</param>
+    /// <param name="input">What the prompt collected.</param>
+    /// <param name="cancellationToken">Cancels the save.</param>
+    /// <returns><see langword="null"/> when saved (or nothing to save); otherwise why the details were not saved, to show the person.</returns>
+    public async Task<string?> ApplyPurchasingDetailsAsync(Guid expenseId, ExpenseEntryInput input, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        if (!input.HasPurchasingDetails)
+            return null;
+
+        var notes = new List<string>(2);
+        if (input.SupplierOrganisationId is not null || input.SupplierInvoiceNumber is not null)
+        {
+            if (ExpenseService is null)
+            {
+                notes.Add("The supplier details were not saved: nothing here can save them.");
+            }
+            else
+            {
+                var result = await ExpenseService.SetSupplierAsync(expenseId, input.SupplierOrganisationId, input.SupplierInvoiceNumber, cancellationToken).ConfigureAwait(true);
+                if (!result.Succeeded)
+                    notes.Add($"The supplier details were not saved: {result.Reason ?? "refused."}");
+            }
+        }
+
+        if (input.Receipt is { } receipt && await AttachReceiptAsync(expenseId, receipt, cancellationToken).ConfigureAwait(true) is { } receiptNote)
+            notes.Add(receiptNote);
+
+        return notes.Count == 0 ? null : string.Join(" ", notes);
+    }
+
+    /// <summary>Attaches <paramref name="receipt"/> to the recorded expense; <see langword="null"/> when attached, otherwise why not.</summary>
+    private async Task<string?> AttachReceiptAsync(Guid expenseId, ExpenseReceipt receipt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (await _domainContext.Repository.FindAsync(expenseId, cancellationToken).ConfigureAwait(true) is not IHasAttachments expense)
+                return "The receipt was not kept: the expense could not be found.";
+
+            await expense.AttachContentAsync(receipt.FileName, receipt.ContentType, receipt.Content, cancellationToken).ConfigureAwait(true);
+            return null;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or EngineeringDomainException or IOException or UnauthorizedAccessException)
+        {
+            return $"The receipt was not kept: {ex.Message}";
+        }
+    }
+
+    private async Task OnPickReceiptAsync()
+    {
+        if (FilePicker is not { } picker)
+            return;
+
+        var picked = await picker.PickFilesAsync(
+            new FilePickerRequest("Choose the receipt", AllowMultiple: false, FileTypeDescription: "Receipts (PDF, JPEG, PNG)", Extensions: ["pdf", "jpg", "jpeg", "png"]),
+            CancellationToken.None).ConfigureAwait(true);
+        if (picked.Count == 0)
+            return; // Cancelled: keep what was chosen.
+
+        var file = picked[0];
+        if (ExpenseReceipt.ContentTypeFor(file.Name) is not { } contentType)
+        {
+            ShowValidationError($"'{file.Name}' is not a PDF, JPEG or PNG receipt.");
+            return;
+        }
+
+        ReadOnlyMemory<byte> content;
+        try
+        {
+            content = await file.ReadAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowValidationError($"'{file.Name}' could not be read: {ex.Message}");
+            return;
+        }
+
+        _receipt = new ExpenseReceipt(file.Name, contentType, content);
+        _receiptLabel.Text = $"Receipt: {file.Name}";
+        _validation.IsVisible = false;
+    }
+
+    private async Task OnPickSupplierAsync()
+    {
+        if (PickSupplierAsync is not { } pick)
+            return;
+
+        var picked = await pick(CancellationToken.None).ConfigureAwait(true);
+        if (picked is null)
+            return; // Cancelled: keep what was chosen.
+
+        if (string.IsNullOrWhiteSpace(picked))
+        {
+            _supplierOrganisationId = null;
+            _supplierLabel.Text = NoSupplierText;
+            return;
+        }
+
+        _supplierOrganisationId = picked.Trim();
+        var name = Organisations is null ? null : (await Organisations.FindAsync(_supplierOrganisationId, CancellationToken.None).ConfigureAwait(true))?.Definition.Name;
+        _supplierLabel.Text = $"Supplier: {name ?? _supplierOrganisationId}";
     }
 
     private void ShowValidationError(string message)

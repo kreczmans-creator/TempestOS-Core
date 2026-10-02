@@ -11,6 +11,7 @@ using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Expenses;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Desktop;
 using Tempest.Desktop.Documents;
 using Tempest.Desktop.Documents.Invoicing;
@@ -103,6 +104,7 @@ public sealed class InvoicingView : UserControl
     private readonly StackPanel _groups = new() { Spacing = DesignTokens.SpaceMd };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
+    private readonly List<XeroSyncBadgeControl> _xeroBadges = [];
 
     /// <summary>Raised after an action completes — mirrors every other Desktop View's own <c>ActionCompleted</c> convention (`TD-58`).</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -117,6 +119,14 @@ public sealed class InvoicingView : UserControl
     /// unavailable rather than run without asking.
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
+
+    /// <summary>
+    /// Where each invoice request's and expense's Xero badge is read from
+    /// (`v0.24.0` U3, <see cref="XeroSyncBadgeControl"/>). <see langword="null"/>
+    /// — Xero is not the configured connector, or a test that does not
+    /// thread it through — shows no badge.
+    /// </summary>
+    public IXeroBadgeSource? XeroBadges { get; set; }
 
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -183,6 +193,7 @@ public sealed class InvoicingView : UserControl
         var requestRows = new List<RequestRow>();
         var completionCandidates = new List<CompletionRow>();
         var expenseCandidates = new List<ExpenseRow>();
+        var allExpenses = new List<ExpenseRow>();
 
         foreach (var project in projects)
         {
@@ -202,8 +213,12 @@ public sealed class InvoicingView : UserControl
             // `WP 21.3B`: a billable, unbilled expense is "available to
             // invoice" exactly as an unbilled completion is — read over the
             // identical live child entries (`WP 21.5B`'s index idiom).
-            foreach (var expense in (await _domainContext.Repository.MaterialiseAsync<ProjectExpense>(liveChildEntries).ConfigureAwait(true)).Where(e => e.Billable && e.InvoicedBy is null))
-                expenseCandidates.Add(new ExpenseRow(expense, projectName));
+            foreach (var expense in await _domainContext.Repository.MaterialiseAsync<ProjectExpense>(liveChildEntries).ConfigureAwait(true))
+            {
+                allExpenses.Add(new ExpenseRow(expense, projectName));
+                if (expense.Billable && expense.InvoicedBy is null)
+                    expenseCandidates.Add(new ExpenseRow(expense, projectName));
+            }
 
             var unbilled = (await _domainContext.Repository.MaterialiseAsync<DeliverableCompletion>(liveChildEntries).ConfigureAwait(true))
                 .Where(c => c.InvoicedBy is null)
@@ -283,6 +298,7 @@ public sealed class InvoicingView : UserControl
             .ToList();
 
         _groups.Children.Clear();
+        _xeroBadges.Clear();
         _groups.Children.Add(BuildStandardGroup(
             "New", $"New ({newRows.Count})", "No draft requests.", newRows.Select(BuildNewRow).ToList()));
         _groups.Children.Add(BuildStandardGroup(
@@ -298,6 +314,37 @@ public sealed class InvoicingView : UserControl
             outstandingRows.Select(r => BuildOutstandingRow(r, asOf)).ToList()));
         _groups.Children.Add(BuildClosedGroup(
             $"Closed ({closedRows.Count})", "Nothing has been rejected or voided.", closedRows.Select(BuildClosedRow).ToList()));
+
+        // `v0.24.0` U3: every recorded expense becomes a Xero bill (X5), not
+        // only the billable ones still awaiting an invoice — so every other
+        // expense's bill badge (Retry, Can't tell, Send again on a deleted
+        // bill, Send to Xero) is reachable here too.
+        if (XeroBadges is not null)
+        {
+            var shown = availableExpenseRows.Select(e => e.Expense.Id).ToHashSet();
+            var otherExpenseRows = allExpenses
+                .Where(e => !shown.Contains(e.Expense.Id))
+                .OrderByDescending(e => e.Expense.Date)
+                .ThenBy(e => e.Expense.Description, StringComparer.Ordinal)
+                .ToList();
+            _groups.Children.Add(BuildExpenseBillsGroup(otherExpenseRows.Select(BuildExpenseBillRow).ToList()));
+        }
+
+        // `v0.24.0` U3: each badge reads local state only (never Xero); the
+        // list is already shown while they load.
+        await Task.WhenAll(_xeroBadges.Select(b => b.LoadAsync())).ConfigureAwait(true);
+    }
+
+    /// <summary>Adds the record's Xero badge under <paramref name="rows"/> when a badge source is composed (`v0.24.0` U3).</summary>
+    private void AddXeroBadge(StackPanel rows, XeroDocumentKind kind, Guid id, string reference, bool offerSendToXero)
+    {
+        if (XeroBadges is not { } xero || string.IsNullOrWhiteSpace(reference))
+            return;
+
+        var badge = new XeroSyncBadgeControl(xero, XeroDocumentRef.For(kind, id), reference, offerSendToXero);
+        badge.ActionCompleted += (message, outcome) => Report(message, outcome.Succeeded);
+        _xeroBadges.Add(badge);
+        rows.Children.Add(badge);
     }
 
     /// <summary>
@@ -375,6 +422,57 @@ public sealed class InvoicingView : UserControl
         var expander = new Expander { Header = headerText, IsExpanded = false, Padding = DesignTokens.PanelPadding, Content = panel };
         AutomationProperties.SetName(expander, "Closed");
         return expander;
+    }
+
+    /// <summary>The automation name of the group listing every other expense's Xero bill (`v0.24.0` U3).</summary>
+    internal const string ExpenseBillsGroupName = "Expense bills in Xero";
+
+    /// <summary>`v0.24.0` U3: every expense not already listed under Available to invoice — not billable, already invoiced, or on a request — each with its Xero bill badge.</summary>
+    private static Control BuildExpenseBillsGroup(IReadOnlyList<Control> rowControls)
+    {
+        var panel = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        if (rowControls.Count == 0)
+            panel.Children.Add(new TextBlock { Text = "No other expenses.", Opacity = 0.6, FontSize = DesignTokens.FontSizeCaption });
+        else
+            foreach (var row in rowControls)
+                panel.Children.Add(row);
+
+        var expander = new Expander
+        {
+            Header = $"{ExpenseBillsGroupName} ({rowControls.Count}) — every other recorded expense's bill",
+            IsExpanded = false,
+            Padding = DesignTokens.PanelPadding,
+            Content = panel,
+        };
+        AutomationProperties.SetName(expander, ExpenseBillsGroupName);
+        return expander;
+    }
+
+    /// <summary>One expense under <see cref="ExpenseBillsGroupName"/>: what it is, Open expense, and its Xero bill badge.</summary>
+    private Control BuildExpenseBillRow(ExpenseRow candidate)
+    {
+        var expense = candidate.Expense;
+
+        var rows = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        rows.Children.Add(new TextBlock
+        {
+            Text = $"{candidate.ProjectName} — {expense.Description} — {expense.Category} — {expense.Date:yyyy-MM-dd}"
+                + $" — {MoneyDisplay.Format(expense.NetAmount)} net, {MoneyDisplay.Format(expense.VatAmount)} VAT"
+                + (expense.Billable ? expense.InvoicedBy is null ? " — on an invoice request" : " — invoiced" : " — not billable"),
+            FontSize = DesignTokens.FontSizeBody,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        });
+
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        var open = new Button { Content = "Open expense", MinHeight = DesignTokens.MinControlSize };
+        open.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(open, $"Open the expense {expense.Description}");
+        open.Click += (_, _) => _openObject(expense.Id, ProjectExpense.CanonicalKind);
+        actions.Children.Add(open);
+        rows.Children.Add(actions);
+
+        AddXeroBadge(rows, XeroDocumentKind.ExpenseBill, expense.Id, expense.Description, offerSendToXero: true);
+        return RowBorder(rows, expense.Id);
     }
 
     private static TextBlock HeadingLine(RequestRow row)
@@ -493,6 +591,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(SendButton(request));
         actions.Children.Add(VoidButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -564,6 +663,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(raise);
 
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.ExpenseBill, expense.Id, expense.Description, offerSendToXero: true);
 
         return RowBorder(rows, expense.Id);
     }
@@ -582,6 +682,7 @@ public sealed class InvoicingView : UserControl
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted)
             actions.Children.Add(ReconcileButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -619,6 +720,7 @@ public sealed class InvoicingView : UserControl
         }
 
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
         return RowBorder(rows, request.Id);
     }
 
@@ -655,6 +757,7 @@ public sealed class InvoicingView : UserControl
         actions.Children.Add(ReviewButton(request));
         actions.Children.Add(ExportButton(request));
         rows.Children.Add(actions);
+        AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
     }
@@ -837,7 +940,17 @@ public sealed class InvoicingView : UserControl
             GeneratedAtUtc: DateTimeOffset.UtcNow,
             ApplicationVersionText: _applicationVersionText());
 
-        var result = await _documentExporter.ExportAsync(_invoiceRenderer, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        // `v0.24.0` U3: the exporter's own naming and folder, unchanged; the
+        // renderer is wrapped only to keep the exact bytes it saved, so a sent
+        // request keeps them and its Xero copy carries the same PDF.
+        var capturing = new CapturingDocumentRenderer<InvoiceDocumentModel>(_invoiceRenderer);
+        var result = await _documentExporter.ExportAsync(capturing, model, request.DisplayName, cancellationToken: CancellationToken.None).ConfigureAwait(true);
+        if (result.Succeeded && result.Destination is { } destination && capturing.LastRender is { } bytes && XeroIssuedPdf.IsSent(request.Status))
+        {
+            await XeroIssuedPdf.AttachAsync(
+                request, Path.GetFileName(destination), bytes, at => capturing.RenderAgain(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
+        }
+
         Report(result.Message, succeeded: result.Succeeded);
     }
 
