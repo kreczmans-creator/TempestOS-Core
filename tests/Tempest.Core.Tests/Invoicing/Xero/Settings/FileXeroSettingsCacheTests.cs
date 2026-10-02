@@ -144,4 +144,18 @@ public sealed class FileXeroSettingsCacheTests
 
         Assert.Null(await cache.ReadAsync());
     }
+
+    // Backlog X1-2: a null address line would reach the PDF's company details.
+    [Fact]
+    public async Task AFileWithANullAddressLine_ReadsAsNoReading()
+    {
+        using var temp = new TempDirectory();
+        var cache = new FileXeroSettingsCache(temp.Path);
+        await cache.SaveAsync(Sample);
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(cache.FilePath))!.AsObject();
+        json["Organisation"]!["Address"]!["Lines"]!.AsArray().Add(null);
+        await File.WriteAllTextAsync(cache.FilePath, json.ToJsonString());
+
+        Assert.Null(await cache.ReadAsync());
+    }
 }

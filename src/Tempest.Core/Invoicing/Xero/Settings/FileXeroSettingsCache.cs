@@ -235,7 +235,7 @@ public sealed class FileXeroSettingsCache : IXeroSettingsCache
             && organisation.BaseCurrency is not null
             && organisation.CountryCode is not null
             && organisation.BankAccounts is not null && organisation.BankAccounts.All(b => b is not null && b.Name is not null)
-            && (organisation.Address is null || (organisation.Address.Lines is not null && organisation.Address.AddressType is not null))
+            && (organisation.Address is null || (organisation.Address.Lines is not null && organisation.Address.Lines.All(line => line is not null) && organisation.Address.AddressType is not null))
             && reading.TaxRates is not null && reading.TaxRates.All(r => r is not null && r.TaxType is not null && r.Name is not null && r.Status is not null)
             && reading.Accounts is not null && reading.Accounts.All(a => a is not null && a.AccountId is not null && a.Name is not null && a.Type is not null && a.Status is not null);
     }
