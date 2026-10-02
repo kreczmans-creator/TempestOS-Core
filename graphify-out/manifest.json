@@ -6870,9 +6870,9 @@
     "semantic_hash": "add10a9fa986751adf1cc2e89426f875"
   },
   "src/Tempest.Desktop/Composition/MainWindowComposer.cs": {
-    "mtime": 1790978249.6715934,
-    "seen": 1790979421.710339,
-    "ast_hash": "1efe60d5c00dcaa0d3d47e0d434ee13a",
+    "mtime": 1790981079.5119805,
+    "seen": 1790981792.9953988,
+    "ast_hash": "cfaa8e224ad65fa385c40ed34f7f5166",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Composition/ProjectDeliveryCoordinator.cs": {
@@ -7644,9 +7644,9 @@
     "semantic_hash": "bd6bb15a7eada38feaefa8aec5a38c6d"
   },
   "src/Tempest.Desktop/Views/ExpenseEntryPrompt.cs": {
-    "mtime": 1790978224.930338,
-    "seen": 1790979421.7104745,
-    "ast_hash": "9e05a76ddda1771e56e78303a31e476a",
+    "mtime": 1790981387.0494823,
+    "seen": 1790981792.9955404,
+    "ast_hash": "fef2f9199c8672ca2da1e0f15b41d170",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/GlobalNavigationRail.cs": {
@@ -7662,9 +7662,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/InvoicingView.cs": {
-    "mtime": 1790978176.7036784,
-    "seen": 1790979421.7104774,
-    "ast_hash": "ce2f11b59d1d1bb61514511e1bd267d9",
+    "mtime": 1790981387.0475361,
+    "seen": 1790981792.9955432,
+    "ast_hash": "af904bc8a63083de178c7e1b6961b75f",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/IssueEntry.cs": {
@@ -7770,9 +7770,9 @@
     "semantic_hash": "66539518ef1decd27c4d030fe2bd3920"
   },
   "src/Tempest.Desktop/Views/ProjectQuoteView.cs": {
-    "mtime": 1790978108.9716742,
-    "seen": 1790979421.7104933,
-    "ast_hash": "446a47b2768317b6165b02ba5b7cc0b6",
+    "mtime": 1790981005.0299082,
+    "seen": 1790981792.9955626,
+    "ast_hash": "14d88df5c080601d9de9f7ba0bff316a",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/ProjectRequirementsView.cs": {
@@ -7830,15 +7830,15 @@
     "semantic_hash": "1a0cb86ae70dfcf67a2a2ab6f3fdf46f"
   },
   "src/Tempest.Desktop/Views/PurchaseOrdersView.cs": {
-    "mtime": 1790978167.7651508,
-    "seen": 1790979421.7105029,
-    "ast_hash": "e5c098b3e58fa077729a148f04c9c72d",
+    "mtime": 1790981005.031169,
+    "seen": 1790981792.9955723,
+    "ast_hash": "e8c87c2f4ca230e1dfbcb34cd4eef327",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/QuotesView.cs": {
-    "mtime": 1790978079.0571194,
-    "seen": 1790979421.710504,
-    "ast_hash": "457f75db2400d99bad4b7428b93f40c2",
+    "mtime": 1790981005.0285327,
+    "seen": 1790981792.995573,
+    "ast_hash": "f469ba4cb50cad5022786f7a43c2c45e",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/RateCardPicker.cs": {
@@ -18306,9 +18306,9 @@
     "semantic_hash": ""
   },
   "docs/releases/v0.24.0/Xero Build Decisions.md": {
-    "mtime": 1790976641.5940728,
-    "seen": 1790979421.7140467,
-    "ast_hash": "cd4a0538b44a5eab69b7488e2b16a5a2",
+    "mtime": 1790981399.61587,
+    "seen": 1790981792.9988678,
+    "ast_hash": "c7fd7e1d3d18ea3ebfa4e026806fbb28",
     "semantic_hash": ""
   },
   "docs/releases/v0.24.0/Xero Integration Plan.md": {
@@ -30300,27 +30300,33 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/XeroSyncBadge.cs": {
-    "mtime": 1790978261.769209,
-    "seen": 1790979421.7105231,
-    "ast_hash": "d694b12c1cb9fa0d2587454be912d6af",
+    "mtime": 1790981387.04548,
+    "seen": 1790981792.9955976,
+    "ast_hash": "15aa36b0a606d3d9b0e127e456a03fe3",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/BadgeControlTests.cs": {
-    "mtime": 1790978427.6004078,
-    "seen": 1790979421.7119167,
-    "ast_hash": "f2356ad7b1fa3ae624d5b5fae565741d",
+    "mtime": 1790981183.9865575,
+    "seen": 1790981792.9968405,
+    "ast_hash": "d34d9ec380ae9d35955829c262290a57",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/BadgeTextTests.cs": {
-    "mtime": 1790978354.487689,
-    "seen": 1790979421.7119184,
-    "ast_hash": "ff71d4a6f3e5400f7ff52b8d7460329f",
+    "mtime": 1790981158.524548,
+    "seen": 1790981792.996844,
+    "ast_hash": "a3278e0dd627a0067dcb28a2608d3efc",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/BadgeViewsTests.cs": {
-    "mtime": 1790978669.9602659,
-    "seen": 1790979421.7119193,
-    "ast_hash": "b19a0f938582eacfc53b6d3fda08c1fb",
+    "mtime": 1790981297.543227,
+    "seen": 1790981792.9968452,
+    "ast_hash": "7111aaebd429ac5ad9c3b70e9c84e98b",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/Xero/BadgeIssuedPdfTests.cs": {
+    "mtime": 1790981141.4958546,
+    "seen": 1790981792.9968421,
+    "ast_hash": "6a86af1e24f1e398218fd2d3b11b428c",
     "semantic_hash": ""
   }
 }
