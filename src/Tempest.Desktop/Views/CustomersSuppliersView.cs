@@ -1,8 +1,12 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.Xero.Contacts;
+using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Projects;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Theming;
@@ -50,6 +54,18 @@ namespace Tempest.Desktop.Views;
 /// their drop-downs immediately, and one added through their "Add
 /// organisation…" shortcut appears here.
 /// </para>
+/// <para>
+/// <b>Xero (`v0.24.0` U2, Xero Technical Design §5, §11).</b> When Xero is
+/// the connector (<see cref="XeroContacts"/> set), each organisation shows
+/// its Xero link — <i>Not linked</i>, or <i>Linked to</i> the Xero contact's
+/// name — with <b>Link to Xero…</b> (<see cref="XeroContactLinkPrompt"/>:
+/// the ranked matches to confirm, or <b>Create in Xero</b>),
+/// <b>Refresh from Xero</b> and <b>Unlink</b>. The billing address, VAT
+/// number and payment terms Xero holds are shown read-only with a
+/// <i>from Xero, read at …</i> note: Xero is their source of truth and
+/// TempestOS never pushes them. Every Xero call is awaited off the UI
+/// thread; an answer for an organisation no longer shown is dropped.
+/// </para>
 /// </remarks>
 public sealed class CustomersSuppliersView : UserControl
 {
@@ -93,6 +109,24 @@ public sealed class CustomersSuppliersView : UserControl
     private readonly TextBox _contactPhone = Field("Contact phone");
     private readonly Button _saveContactButton = new() { Content = "Add contact", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _newContactButton = new() { Content = "New contact", MinHeight = DesignTokens.ControlSizeMedium };
+
+    // v0.24.0 U2: the organisation's Xero link, shown only when Xero is the connector.
+    private readonly StackPanel _xeroSection = new() { Spacing = DesignTokens.SpaceSm, IsVisible = false };
+    private readonly TextBlock _xeroState = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly StackPanel _xeroDetails = new() { Spacing = 2, IsVisible = false };
+    private readonly TextBlock _xeroAddress = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBlock _xeroVat = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBlock _xeroTerms = new() { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBlock _xeroNote = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly TextBlock _xeroStatus = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly Button _xeroLinkButton = new() { Content = LinkToXeroName, MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
+    private readonly Button _xeroRefreshButton = new() { Content = RefreshFromXeroName, MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
+    private readonly Button _xeroUnlinkButton = new() { Content = "Unlink", MinHeight = DesignTokens.ControlSizeMedium, IsVisible = false };
+    private readonly Panel _overlay = new();
+    private XeroContactLinker? _xero;
+    private XeroContactLinkPrompt? _xeroPrompt;
+    private int _xeroGeneration;
+    private bool _xeroBusy;
 
     private IReadOnlyList<IReferenceRecord<Organisation>> _all = [];
     private string? _editingRecordId;
@@ -178,6 +212,36 @@ public sealed class CustomersSuppliersView : UserControl
             contactForm.Children.Add(button);
         }
 
+        foreach (var (control, name) in new (Control, string)[]
+                 {
+                     (_xeroState, XeroLinkStateName), (_xeroAddress, "Xero billing address"), (_xeroVat, "Xero VAT number"),
+                     (_xeroTerms, "Xero payment terms"), (_xeroNote, XeroDetailsNoteName), (_xeroStatus, XeroStatusName),
+                     (_xeroLinkButton, LinkToXeroName), (_xeroRefreshButton, RefreshFromXeroName), (_xeroUnlinkButton, UnlinkFromXeroName),
+                 })
+            AutomationProperties.SetName(control, name);
+        AutomationProperties.SetLiveSetting(_xeroStatus, AutomationLiveSetting.Polite);
+        ToolTip.SetTip(_xeroUnlinkButton, "Remove the link to the Xero contact. Nothing is changed in Xero.");
+        _xeroLinkButton.Classes.Add(ChromeStyles.Primary);
+        _xeroRefreshButton.Classes.Add(ChromeStyles.Subtle);
+        _xeroUnlinkButton.Classes.Add(ChromeStyles.Subtle);
+        _xeroLinkButton.Click += async (_, _) => await LinkToXeroAsync().ConfigureAwait(true);
+        _xeroRefreshButton.Click += async (_, _) => await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
+        _xeroUnlinkButton.Click += async (_, _) => await UnlinkFromXeroAsync().ConfigureAwait(true);
+
+        _xeroDetails.Children.Add(_xeroAddress);
+        _xeroDetails.Children.Add(_xeroVat);
+        _xeroDetails.Children.Add(_xeroTerms);
+        _xeroDetails.Children.Add(_xeroNote);
+        var xeroButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        xeroButtons.Children.Add(_xeroLinkButton);
+        xeroButtons.Children.Add(_xeroRefreshButton);
+        xeroButtons.Children.Add(_xeroUnlinkButton);
+        _xeroSection.Children.Add(SectionHeading("Xero"));
+        _xeroSection.Children.Add(_xeroState);
+        _xeroSection.Children.Add(_xeroDetails);
+        _xeroSection.Children.Add(xeroButtons);
+        _xeroSection.Children.Add(_xeroStatus);
+
         _contactsSection.Children.Add(SectionHeading("Contacts"));
         _contactsSection.Children.Add(_contactList);
         _contactsSection.Children.Add(contactForm);
@@ -193,11 +257,57 @@ public sealed class CustomersSuppliersView : UserControl
         body.Children.Add(_formHeading);
         body.Children.Add(form);
         body.Children.Add(_saveButton);
+        body.Children.Add(_xeroSection);
         body.Children.Add(_contactsSection);
 
         AutomationProperties.SetName(this, "Customers & Suppliers");
-        Content = new ScrollViewer { Content = body };
+        _overlay.Children.Add(new ScrollViewer { Content = body });
+        Content = _overlay;
     }
+
+    /// <summary>The automation name of the line saying whether the organisation is linked to a Xero contact.</summary>
+    public const string XeroLinkStateName = "Xero link";
+
+    /// <summary>The automation name of the note saying the details shown are Xero's, and when they were read.</summary>
+    public const string XeroDetailsNoteName = "Xero details note";
+
+    /// <summary>The automation name of the line reporting a Xero action's outcome or failure.</summary>
+    public const string XeroStatusName = "Xero status";
+
+    /// <summary>The automation name (and caption) of the button that opens <see cref="XeroContactLinkPrompt"/>.</summary>
+    public const string LinkToXeroName = "Link to Xero…";
+
+    /// <summary>The automation name (and caption) of the button that reads the linked contact's details again.</summary>
+    public const string RefreshFromXeroName = "Refresh from Xero";
+
+    /// <summary>The automation name of the Unlink button.</summary>
+    public const string UnlinkFromXeroName = "Unlink from Xero";
+
+    /// <summary>
+    /// The X2 contact linker (`v0.24.0` U2): set when Xero is the connector,
+    /// which shows each organisation's Xero link and the Link / Refresh /
+    /// Unlink actions; <see langword="null"/> (the default) shows no Xero
+    /// section at all.
+    /// </summary>
+    public XeroContactLinker? XeroContacts
+    {
+        get => _xero;
+        init
+        {
+            _xero = value;
+            if (value is null)
+                return;
+
+            _xeroPrompt = new XeroContactLinkPrompt(value);
+            _overlay.Children.Add(_xeroPrompt);
+        }
+    }
+
+    /// <summary>The prompt <b>Link to Xero…</b> opens; <see langword="null"/> without <see cref="XeroContacts"/>.</summary>
+    internal XeroContactLinkPrompt? XeroLinkPrompt => _xeroPrompt;
+
+    /// <summary>Whether a Xero read or unlink for the organisation shown is in flight.</summary>
+    internal bool IsXeroBusy => _xeroBusy;
 
     /// <summary>The record id of the organisation the form is editing, or <see langword="null"/> while it holds a new one.</summary>
     internal string? EditingRecordId => _editingRecordId;
@@ -315,6 +425,7 @@ public sealed class CustomersSuppliersView : UserControl
         _contactsSection.IsVisible = true;
         BeginNewContact();
         await ReloadContactsAsync(o.Reference).ConfigureAwait(true);
+        await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
     }
 
     private void BeginNew()
@@ -327,6 +438,7 @@ public sealed class CustomersSuppliersView : UserControl
         _codeEditedByHand = false;
         _type.SelectedIndex = 0;
         _contactsSection.IsVisible = false;
+        HideXero();
         _list.SelectedItem = null;
         _status.Text = string.Empty;
         _name.Focus();
@@ -546,6 +658,210 @@ public sealed class CustomersSuppliersView : UserControl
 
         BeginNewContact();
         await ReloadContactsAsync(organisation.Reference).ConfigureAwait(true);
+    }
+
+    // ------------------------------------------------------------------
+    // v0.24.0 U2: Xero contact link.
+    // ------------------------------------------------------------------
+
+    private void HideXero()
+    {
+        _xeroGeneration++;
+        _xeroBusy = false;
+        _xeroSection.IsVisible = false;
+        _xeroDetails.IsVisible = false;
+        _xeroStatus.Text = string.Empty;
+    }
+
+    /// <summary>
+    /// Shows the edited organisation's Xero link from the link store (no
+    /// network), then — when linked and <paramref name="readDetails"/> — reads
+    /// the contact's billing details from Xero. An answer arriving after
+    /// another organisation was opened is dropped.
+    /// </summary>
+    internal async Task RefreshXeroAsync(bool readDetails)
+    {
+        var generation = ++_xeroGeneration;
+        if (_xero is null || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation || generation != _xeroGeneration)
+        {
+            if (generation == _xeroGeneration)
+                _xeroSection.IsVisible = false;
+            return;
+        }
+
+        _xeroSection.IsVisible = true;
+        _xeroDetails.IsVisible = false;
+        _xeroStatus.Text = string.Empty;
+        SetXeroButtons(linked: null);
+
+        _xeroBusy = true;
+        try
+        {
+            var tenantId = await _xero.ReadTenantIdAsync().ConfigureAwait(true);
+            if (generation != _xeroGeneration)
+                return;
+
+            if (tenantId is null)
+            {
+                _xeroState.Text = "Xero is not connected. Connect it in Settings → Invoicing to link this organisation to a Xero contact.";
+                return;
+            }
+
+            var link = await _xero.FindLinkAsync(tenantId, organisation.Reference).ConfigureAwait(true);
+            if (generation != _xeroGeneration)
+                return;
+
+            if (link is null)
+            {
+                _xeroState.Text = "Not linked to a Xero contact. Documents for this organisation wait until it is linked.";
+                SetXeroButtons(linked: false);
+                return;
+            }
+
+            if (PersistenceXeroLinkStore.IsFromNewerVersion(link))
+            {
+                _xeroState.Text = $"Linked to Xero contact {link.XeroId}, but the link was {PersistenceXeroLinkStore.NewerVersionNote}; this TempestOS leaves it alone.";
+                return;
+            }
+
+            _xeroState.Text = DescribeLink(link, contactName: null);
+            SetXeroButtons(linked: true);
+            if (!readDetails)
+                return;
+
+            _xeroStatus.Text = "Reading the contact's details from Xero…";
+            var details = await _xero.ReadDetailsAsync(organisation.Reference).ConfigureAwait(true);
+            if (generation != _xeroGeneration)
+                return;
+
+            if (details is { Outcome: ConnectorOutcome.Ok, Value: { } read })
+            {
+                // The read may have refreshed the link's status (archived in Xero).
+                var current = await _xero.FindLinkAsync(tenantId, organisation.Reference).ConfigureAwait(true) ?? link;
+                if (generation != _xeroGeneration)
+                    return;
+
+                _xeroState.Text = DescribeLink(current, read.Name);
+                ShowXeroDetails(read);
+                _xeroStatus.Text = string.Empty;
+            }
+            else
+            {
+                _xeroStatus.Text = XeroContactLinkPrompt.DescribeFailure(details, "read the contact's details from Xero");
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (generation == _xeroGeneration)
+                _xeroStatus.Text = $"Could not read the Xero link: {ex.Message}";
+        }
+        finally
+        {
+            if (generation == _xeroGeneration)
+                _xeroBusy = false;
+        }
+    }
+
+    private void SetXeroButtons(bool? linked)
+    {
+        _xeroLinkButton.IsVisible = linked == false;
+        _xeroRefreshButton.IsVisible = linked == true;
+        _xeroUnlinkButton.IsVisible = linked == true;
+    }
+
+    private void ShowXeroDetails(XeroContactDetails details)
+    {
+        _xeroAddress.Text = "Billing address: " + (details.BillingAddress.Count == 0 ? "none in Xero" : string.Join(", ", details.BillingAddress));
+        _xeroVat.Text = "VAT number: " + (string.IsNullOrWhiteSpace(details.TaxNumber) ? "none in Xero" : details.TaxNumber.Trim());
+        _xeroTerms.Text = "Payment terms: " + DescribePaymentTerms(details.SalesPaymentTermsDays, details.SalesPaymentTermsType);
+        _xeroNote.Text = $"From Xero, read at {FormatReadAt(details.ReadAtUtc)}. Change these in Xero; TempestOS never sends them.";
+        _xeroDetails.IsVisible = true;
+    }
+
+    /// <summary>"Linked to Acme Ltd in Xero (you chose it)": the link line, naming the contact once its details were read.</summary>
+    internal static string DescribeLink(XeroLink link, string? contactName)
+    {
+        ArgumentNullException.ThrowIfNull(link);
+
+        var who = string.IsNullOrWhiteSpace(contactName) ? $"Xero contact {link.XeroId}" : $"{contactName.Trim()} in Xero";
+        var how = link.LinkedBy switch
+        {
+            XeroContactLinker.LinkedByLinked => " (an existing contact you confirmed)",
+            XeroContactLinker.LinkedByCreated => " (created in Xero by TempestOS)",
+            XeroContactLinker.LinkedByReconciled => " (found in Xero by its customer code)",
+            _ => string.Empty,
+        };
+        var status = link.LastKnownXeroStatus is { } word && !string.Equals(word, XeroContactMatcher.ActiveStatus, StringComparison.OrdinalIgnoreCase)
+            ? $" It is {word.ToLowerInvariant()} in Xero, so documents for it are blocked: restore it in Xero, or unlink it and link another."
+            : string.Empty;
+        return $"Linked to {who}{how}.{status}";
+    }
+
+    /// <summary>Xero's sales payment terms in words: "30 days after the invoice date", …; "none set in Xero" when it has none.</summary>
+    internal static string DescribePaymentTerms(int? days, string? type)
+    {
+        if (string.IsNullOrWhiteSpace(type))
+            return "none set in Xero";
+
+        return type.Trim().ToUpperInvariant() switch
+        {
+            "DAYSAFTERBILLDATE" => days is { } d ? $"{d.ToString(CultureInfo.InvariantCulture)} days after the invoice date" : "days after the invoice date",
+            "DAYSAFTERBILLMONTH" => "days after the end of the invoice month (see Xero for the number)",
+            "OFCURRENTMONTH" => "a day of the current month (see Xero for the day)",
+            "OFFOLLOWINGMONTH" => "a day of the following month (see Xero for the day)",
+            _ => $"Xero terms '{type.Trim()}'",
+        };
+    }
+
+    /// <summary>"2 Oct 2026 14:05" in the user's local time.</summary>
+    internal static string FormatReadAt(DateTimeOffset readAtUtc) =>
+        readAtUtc.ToLocalTime().ToString("d MMM yyyy HH:mm", CultureInfo.InvariantCulture);
+
+    private async Task LinkToXeroAsync()
+    {
+        if (_xeroPrompt is null || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
+            return;
+
+        var link = await _xeroPrompt.PromptAsync(organisation.Reference, organisation.Name).ConfigureAwait(true);
+        if (link is null)
+            return;
+
+        await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
+        if (string.IsNullOrEmpty(_xeroStatus.Text))
+        {
+            _xeroStatus.Text = link.LinkedBy == XeroContactLinker.LinkedByCreated
+                ? $"Created '{organisation.Name}' in Xero and linked it."
+                : $"Linked '{organisation.Name}' to its Xero contact.";
+        }
+    }
+
+    private async Task UnlinkFromXeroAsync()
+    {
+        if (_xero is null || _xeroBusy || await EditingOrganisationAsync().ConfigureAwait(true) is not { } organisation)
+            return;
+
+        _xeroBusy = true;
+        _xeroUnlinkButton.IsEnabled = false;
+        bool removed;
+        try
+        {
+            removed = await _xero.UnlinkAsync(organisation.Reference).ConfigureAwait(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _xeroStatus.Text = $"Could not unlink: {ex.Message}";
+            return;
+        }
+        finally
+        {
+            _xeroBusy = false;
+            _xeroUnlinkButton.IsEnabled = true;
+        }
+
+        await RefreshXeroAsync(readDetails: false).ConfigureAwait(true);
+        _xeroStatus.Text = removed
+            ? $"Unlinked '{organisation.Name}' from its Xero contact. Nothing was changed in Xero; link it again before its next document goes to Xero."
+            : "There was no Xero link to remove.";
     }
 
     private static string? NullIfEmpty(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();

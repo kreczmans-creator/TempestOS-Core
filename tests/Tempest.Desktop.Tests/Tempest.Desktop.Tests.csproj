@@ -42,4 +42,17 @@
     <ProjectReference Include="..\..\src\Tempest.Desktop\Tempest.Desktop.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      v0.24.0 U2 (Xero Technical Design §10.1, §11): the in-process Xero API
+      simulator S1 owns, compiled into this project too (linked, not copied)
+      so Desktop tests drive real views end to end through the real Xero
+      client and safety handler with no network. Its own self-tests stay in
+      Tempest.Core.Tests.
+    -->
+    <Compile Include="..\Tempest.Core.Tests\Invoicing\Xero\Simulator\XeroApiSimulator*.cs;..\Tempest.Core.Tests\Invoicing\Xero\Simulator\XeroSimulatorClock.cs;..\Tempest.Core.Tests\Invoicing\Xero\Simulator\SimulatorSeed.UkDemo.cs"
+             Exclude="..\Tempest.Core.Tests\Invoicing\Xero\Simulator\*Tests.cs"
+             Link="Xero\Simulator\%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
