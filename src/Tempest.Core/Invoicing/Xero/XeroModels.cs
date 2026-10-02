@@ -101,3 +101,43 @@ internal sealed record XeroReportRow(
 
 /// <summary>One cell of a Xero report grid row — always text on the wire, parsed by the reader that knows which column it is.</summary>
 internal sealed record XeroReportCell([property: JsonPropertyName("Value")] string? Value = null);
+
+// ========================================================================
+// `v0.24.0` X4 — a sales invoice as TempestOS hands it to Xero, once every
+// Xero-side fact has been resolved locally: the contact by `ContactID`
+// (X2), each line's tax type and account code checked against the X1
+// reading. `XeroConnector` builds the wire request from it; the request can
+// only ever be a DRAFT (D3), and nothing in it sends anything (D4).
+// ========================================================================
+
+/// <summary>A sales invoice ready for Xero (`v0.24.0` X4, design §3): every code already resolved and checked.</summary>
+/// <param name="ContactId">Xero's <c>ContactID</c> for the client — never a name for Xero to match (X2, M21).</param>
+/// <param name="InvoiceNumber">TempestOS's own invoice number — the same number in both systems.</param>
+/// <param name="Reference"><c>{project code} · {deliverable or "time &amp; expenses"}</c>.</param>
+/// <param name="Date">The invoice date (the send date).</param>
+/// <param name="DueDate">The invoice date plus the client's payment terms.</param>
+/// <param name="CurrencyCode">The ISO currency code.</param>
+/// <param name="Lines">The net lines.</param>
+public sealed record XeroSalesInvoiceDraft(
+    string ContactId, string InvoiceNumber, string Reference, DateOnly Date, DateOnly DueDate, string CurrencyCode,
+    IReadOnlyList<XeroSalesInvoiceDraftLine> Lines);
+
+/// <summary>One net line of a <see cref="XeroSalesInvoiceDraft"/>.</summary>
+/// <param name="Description">The line's description.</param>
+/// <param name="Quantity">Hours, or 1.</param>
+/// <param name="UnitAmount">The net unit price.</param>
+/// <param name="TaxType">Xero's output tax type, checked against the X1 reading.</param>
+/// <param name="AccountCode">The sales account code, checked against the X1 reading.</param>
+public sealed record XeroSalesInvoiceDraftLine(string Description, decimal Quantity, decimal UnitAmount, string TaxType, string AccountCode);
+
+/// <summary>A Xero invoice as read back (`v0.24.0` X4): enough to decide whether it is TempestOS's own, and whether it may still be changed.</summary>
+/// <param name="InvoiceId">Xero's <c>InvoiceID</c>.</param>
+/// <param name="InvoiceNumber">Its number.</param>
+/// <param name="Status">Xero's status word, verbatim (<c>"UNKNOWN"</c> when Xero sent none).</param>
+/// <param name="Reference">Its reference.</param>
+/// <param name="ContactId">Its contact's <c>ContactID</c>.</param>
+/// <param name="Type"><c>ACCREC</c> or <c>ACCPAY</c>.</param>
+/// <param name="Date">Its date.</param>
+/// <param name="FullyPaidOnDate">When it was paid in full — read only.</param>
+public sealed record XeroInvoiceReading(
+    string InvoiceId, string? InvoiceNumber, string Status, string? Reference, string? ContactId, string? Type, DateOnly? Date, DateOnly? FullyPaidOnDate);

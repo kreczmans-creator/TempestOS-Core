@@ -56,6 +56,7 @@ public sealed class InvoicingService : IInvoicingService
     private readonly IOrganisationCatalog _organisations;
     private readonly IExpenseService? _expenses;
     private readonly TimeProvider _time;
+    private readonly IInvoiceDraftSync? _drafts;
 
     /// <summary>Initialises a new instance of the <see cref="InvoicingService"/> class.</summary>
     /// <param name="expenses">
@@ -66,10 +67,22 @@ public sealed class InvoicingService : IInvoicingService
     /// host) that has not composed the Expenses discipline; every
     /// production composition root supplies it.
     /// </param>
+    /// <param name="draftSync">
+    /// `v0.24.0` X4: the numbered-draft seam of the connector named
+    /// <see cref="IInvoiceDraftSync.ConnectorName"/> (Xero's is
+    /// <c>Tempest.Core.Invoicing.Xero.Sync.Invoices.XeroInvoiceDrafts</c>,
+    /// registered only when Xero is the connector). When it names
+    /// <paramref name="connector"/>, a send creates the draft with
+    /// TempestOS's own invoice number and the client's linked contact,
+    /// reconciles a lost response by that number, and a revision or void
+    /// of a sent request changes the draft only while it is still a draft.
+    /// <see langword="null"/> — every other connector — keeps the `WP
+    /// 19.1A` behaviour unchanged.
+    /// </param>
     public InvoicingService(
         EngineeringDomainContext context, IRateCardCatalog rateCards, ITimesheetService timesheets, IDeliverableService deliverables,
         IInvoicingConnector connector, IOrganisationCatalog organisations, TimeProvider? timeProvider = null,
-        IExpenseService? expenses = null)
+        IExpenseService? expenses = null, IInvoiceDraftSync? draftSync = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -86,7 +99,12 @@ public sealed class InvoicingService : IInvoicingService
         _organisations = organisations;
         _time = timeProvider ?? TimeProvider.System;
         _expenses = expenses;
+        _drafts = draftSync;
     }
+
+    /// <summary>The numbered-draft seam, when it belongs to this service's own connector; <see langword="null"/> otherwise.</summary>
+    private IInvoiceDraftSync? Drafts =>
+        _drafts is not null && string.Equals(_drafts.ConnectorName, _connector.Name, StringComparison.Ordinal) ? _drafts : null;
 
     /// <inheritdoc />
     public async Task<InvoiceRequestResult> RaiseFromCompletionAsync(Guid deliverableCompletionId, CancellationToken cancellationToken = default)
@@ -322,7 +340,21 @@ public sealed class InvoicingService : IInvoicingService
     }
 
     /// <inheritdoc />
-    public async Task<InvoiceRequestResult> SendAsync(Guid requestId, CancellationToken cancellationToken = default)
+    public Task<InvoiceRequestResult> SendAsync(Guid requestId, CancellationToken cancellationToken = default) =>
+        SendAsync(requestId, queueWhenUnavailable: true, cancellationToken);
+
+    /// <summary>
+    /// <see cref="SendAsync(Guid, CancellationToken)"/>, with the choice of
+    /// whether an unreachable connector re-queues the send (`v0.24.0` X4,
+    /// design §4.2: "request back to Draft and PushInvoiceDraft queued").
+    /// The outbox's own push handler sends with
+    /// <paramref name="queueWhenUnavailable"/> <see langword="false"/> — its
+    /// own entry is already the queued retry.
+    /// </summary>
+    /// <param name="requestId">The request to send.</param>
+    /// <param name="queueWhenUnavailable">Whether an unreachable connector queues a retry through <see cref="IInvoiceDraftSync.QueueSendAsync"/>.</param>
+    /// <param name="cancellationToken">Cancels the act.</param>
+    internal async Task<InvoiceRequestResult> SendAsync(Guid requestId, bool queueWhenUnavailable, CancellationToken cancellationToken)
     {
         var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
         if (request is null)
@@ -339,19 +371,46 @@ public sealed class InvoicingService : IInvoicingService
         if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+        var drafts = Drafts;
+        InvoiceDraftDocument? document = null;
+        ConnectorResult<CreatedInvoice> result;
 
-        var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
+        if (drafts is not null)
+        {
+            // `v0.24.0` X4: everything the draft needs that TempestOS holds
+            // locally — the client's contact link (X2), a tax type and the
+            // sales account for every line (X1) — is checked before the
+            // request ever moves to Sending, so an unlinked client is
+            // refused with the reason rather than sent half-formed.
+            document = await ToDraftDocumentAsync(request, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            if (await drafts.FindBlockingReasonAsync(document, cancellationToken).ConfigureAwait(false) is { } blocked)
+            {
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{requestId}' cannot be sent to {drafts.ConnectorName} yet: {blocked}",
+                    request);
+            }
 
-        var result = await _connector
-            .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
-            .ConfigureAwait(false);
+            await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+            result = await drafts.CreateDraftAsync(document, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+
+            var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
+
+            result = await _connector
+                .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         switch (result.Outcome)
         {
             case ConnectorOutcome.Ok:
                 var invoice = result.Value!;
-                await request.MarkSentAsync(invoice.ExternalId, invoice.ExternalInvoiceNumber, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                await request.MarkSentAsync(
+                    invoice.ExternalId, invoice.ExternalInvoiceNumber, _time.GetUtcNow(), drafts?.CreatedStatus, cancellationToken).ConfigureAwait(false);
                 await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
                 break;
 
@@ -365,9 +424,14 @@ public sealed class InvoicingService : IInvoicingService
 
             case ConnectorOutcome.Unavailable:
                 // Stays Draft, deliberately never a stored `Unavailable`
-                // status — InvoiceRequestStatus.Unavailable's own remarks,
-                // and not retried automatically (the row's own words).
+                // status — InvoiceRequestStatus.Unavailable's own remarks.
+                // `v0.24.0` X4: where the connector has a draft seam, the
+                // send is queued again (design §4.2) rather than left for
+                // someone to notice; any other connector is not retried
+                // automatically (the `WP 19.1A` row's own words).
                 await request.RevertToDraftAsync(result.Reason ?? "The connector could not be reached.", cancellationToken).ConfigureAwait(false);
+                if (drafts is not null && document is not null && queueWhenUnavailable)
+                    await drafts.QueueSendAsync(document, cancellationToken).ConfigureAwait(false);
                 break;
 
             case ConnectorOutcome.Unknown:
@@ -411,11 +475,21 @@ public sealed class InvoicingService : IInvoicingService
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// `v0.24.0` X4: a <see cref="InvoiceRequestStatus.Sent"/> request whose
+    /// connector has a draft seam (<see cref="IInvoiceDraftSync"/>, Xero) may
+    /// also be voided — by deleting its draft there, and only while the
+    /// accounting system still holds it as a draft (design §4.2). Once it is
+    /// approved there it is voided there instead, and read back.
+    /// </remarks>
     public async Task<InvoiceRequestResult> VoidAsync(Guid requestId, CancellationToken cancellationToken = default)
     {
         var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
         if (request is null)
             return NotFound(requestId);
+
+        if (request.Status is InvoiceRequestStatus.Sent && Drafts is { } drafts && IsThroughDrafts(request, drafts))
+            return await VoidSentDraftAsync(request, drafts, cancellationToken).ConfigureAwait(false);
 
         if (request.Status is not (InvoiceRequestStatus.Draft or InvoiceRequestStatus.Rejected))
         {
@@ -434,8 +508,241 @@ public sealed class InvoicingService : IInvoicingService
         return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
     }
 
+    /// <summary>
+    /// Revises the lines of <paramref name="requestId"/>'s own request
+    /// (`v0.24.0` X4): each <see cref="InvoiceRequestLineRevision"/> names a
+    /// line by its source and gives its new description, quantity, unit
+    /// rate and VAT rate; lines not named are unchanged, and no source is
+    /// ever added or dropped. A <see cref="InvoiceRequestStatus.Draft"/> or
+    /// <see cref="InvoiceRequestStatus.Rejected"/> request is revised
+    /// locally. A <see cref="InvoiceRequestStatus.Sent"/> request is revised
+    /// only through its connector's draft seam, and only while the
+    /// accounting system still holds the invoice as a draft — otherwise the
+    /// revision is refused with the reason (<i>"Xero holds it as AUTHORISED;
+    /// change it in Xero"</i>), and the request is left exactly as it was.
+    /// </summary>
+    /// <param name="requestId">The request to revise.</param>
+    /// <param name="revisions">The line revisions (at least one; each source once).</param>
+    /// <param name="cancellationToken">Cancels the act.</param>
+    /// <returns>The revised request, or a refusal saying why it was not revised.</returns>
+    public async Task<InvoiceRequestResult> ReviseLinesAsync(
+        Guid requestId, IReadOnlyList<InvoiceRequestLineRevision> revisions, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(revisions);
+
+        var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
+        if (request is null)
+            return NotFound(requestId);
+
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        if (ApplyRevisions(request, revisions, out var lines, out var problem) is false)
+            return new InvoiceRequestResult(InvoiceRequestRefusal.TransitionNotPermitted, $"Invoice request '{requestId}' was not revised: {problem}", request);
+
+        var total = Money.Sum(lines.Select(l => l.Amount), request.Currency);
+
+        if (request.Status is InvoiceRequestStatus.Draft or InvoiceRequestStatus.Rejected)
+        {
+            await request.ReviseLinesAsync(lines, total, "Lines revised.", cancellationToken).ConfigureAwait(false);
+            return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+        }
+
+        if (request.Status is InvoiceRequestStatus.Sent && Drafts is { } drafts && IsThroughDrafts(request, drafts))
+        {
+            var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false) with
+            {
+                Lines = lines,
+                Total = total,
+            };
+
+            var change = await drafts.UpdateDraftAsync(document, cancellationToken).ConfigureAwait(false);
+            if (change.Outcome != ConnectorOutcome.Ok)
+            {
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{requestId}' was not revised: {drafts.ConnectorName} did not take the change ({change.Reason ?? change.Outcome.ToString()}); the request is unchanged — try again.",
+                    request);
+            }
+
+            var answer = change.Value!;
+            switch (answer.Outcome)
+            {
+                case InvoiceDraftChangeOutcome.Applied:
+                    await request.ReviseLinesAsync(lines, total, $"Lines revised; {drafts.ConnectorName}'s draft updated to match.", cancellationToken).ConfigureAwait(false);
+                    return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+
+                case InvoiceDraftChangeOutcome.NotDraft:
+                    return new InvoiceRequestResult(
+                        InvoiceRequestRefusal.TransitionNotPermitted,
+                        $"{drafts.ConnectorName} holds it as {answer.ExternalStatus}; change it in {drafts.ConnectorName}.",
+                        request);
+
+                default:
+                    return new InvoiceRequestResult(
+                        InvoiceRequestRefusal.TransitionNotPermitted,
+                        $"Invoice request '{requestId}' was not revised: {answer.Reason}",
+                        request);
+            }
+        }
+
+        return new InvoiceRequestResult(
+            InvoiceRequestRefusal.TransitionNotPermitted,
+            request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted
+                ? $"Invoice request '{requestId}' is {request.Status} through {request.Connector}; change it there."
+                : $"Invoice request '{requestId}' is {request.Status}; only a Draft or Rejected request, or a Sent one its accounting system still holds as a draft, can be revised.",
+            request);
+    }
+
+    /// <summary>Whether <paramref name="request"/> went out through <paramref name="drafts"/>'s own connector and is known there.</summary>
+    private static bool IsThroughDrafts(InvoiceRequest request, IInvoiceDraftSync drafts) =>
+        request.ExternalId is not null && string.Equals(request.Connector, drafts.ConnectorName, StringComparison.Ordinal);
+
+    /// <summary>`v0.24.0` X4: voids a Sent request by deleting its draft in the accounting system — only while it is still a draft there.</summary>
+    private async Task<InvoiceRequestResult> VoidSentDraftAsync(InvoiceRequest request, IInvoiceDraftSync drafts, CancellationToken cancellationToken)
+    {
+        if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        var change = await drafts.DeleteDraftAsync(document, cancellationToken).ConfigureAwait(false);
+
+        if (change.Outcome != ConnectorOutcome.Ok)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.TransitionNotPermitted,
+                $"Invoice request '{request.Id}' was not voided: its {drafts.ConnectorName} draft could not be deleted ({change.Reason ?? change.Outcome.ToString()}); the request stays Sent — try again.",
+                request);
+        }
+
+        var answer = change.Value!;
+        switch (answer.Outcome)
+        {
+            case InvoiceDraftChangeOutcome.Applied:
+                await request.RecordStatusReadingAsync(
+                    InvoiceRequestStatus.Voided, answer.ExternalStatus ?? "DELETED", null, null, null,
+                    $"Voided in TempestOS; its {drafts.ConnectorName} draft was deleted.", cancellationToken).ConfigureAwait(false);
+                return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+
+            case InvoiceDraftChangeOutcome.NotDraft when IsGoneThere(answer.ExternalStatus):
+                // Already deleted or voided there: read back, as reconciliation would.
+                await request.RecordStatusReadingAsync(
+                    InvoiceRequestStatus.Voided, answer.ExternalStatus!, null, null, null,
+                    $"Already {answer.ExternalStatus!.ToLowerInvariant()} in {drafts.ConnectorName}.", cancellationToken).ConfigureAwait(false);
+                return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+
+            case InvoiceDraftChangeOutcome.NotDraft:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"{drafts.ConnectorName} holds it as {answer.ExternalStatus}; void it in {drafts.ConnectorName} — TempestOS reads it back.",
+                    request);
+
+            default:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{request.Id}' was not voided: {answer.Reason}",
+                    request);
+        }
+    }
+
+    private static bool IsGoneThere(string? externalStatus) =>
+        externalStatus is not null
+        && (externalStatus.Contains("DELETE", StringComparison.OrdinalIgnoreCase) || externalStatus.Contains("VOID", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Applies <paramref name="revisions"/> to <paramref name="request"/>'s lines, or says why they cannot be applied.</summary>
+    private static bool ApplyRevisions(
+        InvoiceRequest request, IReadOnlyList<InvoiceRequestLineRevision> revisions, out List<InvoiceRequestLine> lines, out string? problem)
+    {
+        lines = [.. request.Lines];
+        problem = null;
+
+        if (revisions.Count == 0)
+        {
+            problem = "no line revision was given.";
+            return false;
+        }
+
+        var seen = new HashSet<Guid>();
+        foreach (var revision in revisions)
+        {
+            if (revision is null)
+            {
+                problem = "a line revision is missing.";
+                return false;
+            }
+
+            if (!seen.Add(revision.SourceId))
+            {
+                problem = $"source '{revision.SourceId}' is revised twice.";
+                return false;
+            }
+
+            var index = lines.FindIndex(l => l.SourceId == revision.SourceId);
+            if (index < 0)
+            {
+                problem = $"it carries no line for source '{revision.SourceId}'; a revision never adds a line.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(revision.Description))
+            {
+                problem = $"the line for source '{revision.SourceId}' needs a description.";
+                return false;
+            }
+
+            if (revision.Quantity <= 0m)
+            {
+                problem = $"the line for source '{revision.SourceId}' needs a quantity greater than zero.";
+                return false;
+            }
+
+            if (revision.UnitRate.Currency != request.Currency)
+            {
+                problem = $"the line for source '{revision.SourceId}' is priced in {revision.UnitRate.Currency}, not the request's {request.Currency}.";
+                return false;
+            }
+
+            if (!Enum.IsDefined(revision.VatRate))
+            {
+                problem = $"the line for source '{revision.SourceId}' has no recognised VAT rate.";
+                return false;
+            }
+
+            var line = lines[index];
+            lines[index] = line with
+            {
+                Description = revision.Description.Trim(),
+                Quantity = revision.Quantity,
+                UnitRate = revision.UnitRate,
+                Amount = (revision.UnitRate * revision.Quantity).RoundTo(2),
+                VatRate = revision.VatRate,
+            };
+        }
+
+        return true;
+    }
+
     private async Task ReconcileUnknownAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
     {
+        // `v0.24.0` X4 (design §6.4 item 5): by the request's own invoice
+        // number first; only when nothing carries it, by the reference a
+        // pre-v0.24 send wrote (the request id).
+        if (Drafts is { } drafts)
+        {
+            var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            var byNumber = await drafts.FindByInvoiceNumberAsync(document, cancellationToken).ConfigureAwait(false);
+
+            if (byNumber.Outcome != ConnectorOutcome.Ok)
+                return; // Unreachable, or the number is held by another invoice: nothing safe to conclude; the reason is left for the next attempt.
+
+            if (byNumber.Value is { } numbered)
+            {
+                await request.ReconcileFoundAsync(numbered.ExternalId, numbered.ExternalInvoiceNumber, cancellationToken).ConfigureAwait(false);
+                await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+        }
+
         var found = await _connector.FindByReferenceAsync(requestId.ToString(), cancellationToken).ConfigureAwait(false);
 
         if (found.Outcome != ConnectorOutcome.Ok)
@@ -472,9 +779,25 @@ public sealed class InvoicingService : IInvoicingService
             ? interpreted
             : request.Status;
 
+        // `v0.24.0` X4 (design §4.2): a draft is not issued — its date is
+        // only the date it was raised as a draft — so the issued date is
+        // read once the invoice is approved (Accepted: AUTHORISED or PAID),
+        // never from a draft awaiting the Product Owner or one deleted.
+        var issuedDate = newStatus == InvoiceRequestStatus.Accepted ? statusReading.IssuedDate : null;
+        var note = newStatus == InvoiceRequestStatus.Voided && request.Status != InvoiceRequestStatus.Voided
+            && statusReading.ExternalStatus.Contains("DELETE", StringComparison.OrdinalIgnoreCase)
+            ? $"Deleted in {request.Connector ?? _connector.Name}."
+            : null;
+
         await request.RecordStatusReadingAsync(
-            newStatus, statusReading.ExternalStatus, statusReading.ExternalInvoiceNumber, statusReading.IssuedDate, statusReading.PaidDate,
-            cancellationToken).ConfigureAwait(false);
+            newStatus, statusReading.ExternalStatus, statusReading.ExternalInvoiceNumber, issuedDate, statusReading.PaidDate,
+            note, cancellationToken).ConfigureAwait(false);
+
+        if (Drafts is { } drafts && IsThroughDrafts(request, drafts))
+        {
+            var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            await drafts.RecordStatusReadingAsync(document, statusReading.ExternalStatus, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async Task LinkLinesAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
@@ -591,20 +914,127 @@ public sealed class InvoicingService : IInvoicingService
     }
 
     /// <summary>
+    /// The invoice number a request carries in the accounting system
+    /// (`v0.24.0` X4, design §3: "the same number in both systems"): once
+    /// sent, the number the accounting system recorded; before then, the
+    /// request's own <see cref="EngineeringObjectBase.Identifier"/>
+    /// (<c>CUSTOMER-PROJECTREF-INV-NNN</c>), or — for a request raised in a
+    /// project without project-centric numbering — <c>TOS-</c> and its id.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    public static string InvoiceNumberFor(InvoiceRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted or InvoiceRequestStatus.Voided
+            && !string.IsNullOrWhiteSpace(request.ExternalInvoiceNumber))
+        {
+            return request.ExternalInvoiceNumber!;
+        }
+
+        return string.IsNullOrWhiteSpace(request.Identifier) ? $"TOS-{request.Id:N}".ToUpperInvariant() : request.Identifier!.Trim();
+    }
+
+    /// <summary>
+    /// Builds what a draft seam is handed for <paramref name="request"/>
+    /// (`v0.24.0` X4): its number, its client (catalogue id, reference and
+    /// name), its lines, the date it is (or was) sent and its due date, and
+    /// the reference text <c>{project code} · {deliverable or "time &amp;
+    /// expenses"}</c>.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="sentAt">When it is (or was) sent — the invoice date.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    internal async Task<InvoiceDraftDocument> ToDraftDocumentAsync(InvoiceRequest request, DateTimeOffset sentAt, CancellationToken cancellationToken)
+    {
+        var organisation = await _organisations.FindAsync(request.ClientOrganisationId, cancellationToken).ConfigureAwait(false);
+        var date = DateOnly.FromDateTime(sentAt.UtcDateTime);
+        var dueDate = request.DueOn ?? date.AddDays(request.PaymentTerms.Days());
+
+        return new InvoiceDraftDocument(
+            request.Id,
+            InvoiceNumberFor(request),
+            request.ClientOrganisationId,
+            organisation?.Definition.Reference,
+            organisation?.Definition.Name,
+            request.Currency,
+            request.Lines,
+            request.Total,
+            date,
+            dueDate,
+            await ReferenceForAsync(request, cancellationToken).ConfigureAwait(false),
+            request.ExternalId);
+    }
+
+    /// <summary>
+    /// Builds the draft-seam document for the request <paramref name="requestId"/>
+    /// as it stands — for the Xero outbox's update and delete handlers
+    /// (`v0.24.0` X4). <see langword="null"/> when no live request has that id.
+    /// </summary>
+    /// <param name="requestId">The request.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    internal async Task<(InvoiceRequest Request, InvoiceDraftDocument Document)?> FindDraftDocumentAsync(Guid requestId, CancellationToken cancellationToken)
+    {
+        var request = await FindRequestAsync(requestId, cancellationToken).ConfigureAwait(false);
+        if (request is null)
+            return null;
+
+        return (request, await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>The longest reference text built (Xero's own <c>Reference</c> limit).</summary>
+    private const int MaximumReferenceLength = 255;
+
+    /// <summary><c>{project code} · {deliverable or "time &amp; expenses"}</c> for <paramref name="request"/> (design §3).</summary>
+    private async Task<string> ReferenceForAsync(InvoiceRequest request, CancellationToken cancellationToken)
+    {
+        var projectCode = "TempestOS";
+        if (request.ParentId is { } projectId
+            && await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is Project project)
+        {
+            projectCode = string.IsNullOrWhiteSpace(project.Identifier) ? project.DisplayName : project.Identifier!;
+        }
+
+        string? deliverable = null;
+        foreach (var line in request.Lines.Where(l => string.Equals(l.SourceKind, DeliverableCompletion.CanonicalKind, StringComparison.Ordinal)))
+        {
+            if (await _context.Repository.FindAsync(line.SourceId, cancellationToken).ConfigureAwait(false) is DeliverableCompletion completion
+                && await _context.Repository.FindAsync(completion.DeliverableId, cancellationToken).ConfigureAwait(false) is EngineeringObjectBase named)
+            {
+                deliverable = string.IsNullOrWhiteSpace(named.DisplayName) ? named.BusinessIdentifier : named.DisplayName;
+                break;
+            }
+        }
+
+        var reference = $"{projectCode.Trim()} · {deliverable?.Trim() ?? "time & expenses"}";
+        return reference.Length <= MaximumReferenceLength ? reference : reference[..MaximumReferenceLength];
+    }
+
+    /// <summary>
     /// Maps a connector's own free-form status word to what it means for
     /// this Kind's own lifecycle — the one place that decision is made
     /// (<see cref="IInvoicingConnector.ReadStatusAsync"/>'s own remarks:
     /// a connector never maps its own words itself). Matches the
     /// vocabulary real accounting systems actually use (Xero: <c>DRAFT</c>,
-    /// <c>SUBMITTED</c>, <c>AUTHORISED</c>, <c>PAID</c>, <c>VOIDED</c>) case-
-    /// insensitively and by substring, so a provider-specific decoration
-    /// around the same word still matches. Anything unrecognised leaves
-    /// <paramref name="current"/> unchanged rather than guessing.
+    /// <c>SUBMITTED</c>, <c>AUTHORISED</c>, <c>PAID</c>, <c>VOIDED</c>,
+    /// <c>DELETED</c>) case-insensitively and by substring, so a
+    /// provider-specific decoration around the same word still matches.
+    /// <c>DRAFT</c> and <c>SUBMITTED</c> leave a Sent request Sent (still a
+    /// draft awaiting the Product Owner, D3); <c>DELETED</c> — a draft
+    /// deleted in the accounting system — is Voided (`v0.24.0` X4, design
+    /// §4.2), which frees its lines exactly as a voided invoice does.
+    /// Anything unrecognised leaves <paramref name="current"/> unchanged
+    /// rather than guessing.
     /// </summary>
-    private static InvoiceRequestStatus InterpretStatus(string externalStatus, InvoiceRequestStatus current)
+    internal static InvoiceRequestStatus InterpretStatus(string externalStatus, InvoiceRequestStatus current)
     {
-        if (externalStatus.Contains("VOID", StringComparison.OrdinalIgnoreCase))
+        ArgumentNullException.ThrowIfNull(externalStatus);
+
+        if (externalStatus.Contains("VOID", StringComparison.OrdinalIgnoreCase)
+            || externalStatus.Contains("DELETE", StringComparison.OrdinalIgnoreCase))
+        {
             return InvoiceRequestStatus.Voided;
+        }
 
         if (externalStatus.Contains("AUTHORIS", StringComparison.OrdinalIgnoreCase)
             || externalStatus.Contains("APPROV", StringComparison.OrdinalIgnoreCase)
@@ -617,4 +1047,118 @@ public sealed class InvoicingService : IInvoicingService
     }
 
     private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
+}
+
+/// <summary>
+/// What a draft seam (<see cref="IInvoiceDraftSync"/>) is handed for one
+/// invoice request (`v0.24.0` X4) — plain data, built by
+/// <see cref="InvoicingService"/> exactly as <see cref="InvoiceRequestSnapshot"/>
+/// is, widened with what a numbered draft needs.
+/// </summary>
+/// <param name="RequestId">The request's own id.</param>
+/// <param name="InvoiceNumber">The number the invoice carries in both systems (<see cref="InvoicingService.InvoiceNumberFor"/>).</param>
+/// <param name="ClientOrganisationId">The client's Organisation-catalogue id.</param>
+/// <param name="ClientReference">The client organisation's own reference (the key its accounting-system contact link is kept under); <see langword="null"/> when the id resolves to no organisation.</param>
+/// <param name="ClientName">The client organisation's own name; <see langword="null"/> when unresolved.</param>
+/// <param name="Currency">The currency every line is stated in.</param>
+/// <param name="Lines">The lines, in order.</param>
+/// <param name="Total">Their net total.</param>
+/// <param name="Date">The invoice date — the date it is (or was) sent.</param>
+/// <param name="DueDate">The invoice date plus the request's own payment terms.</param>
+/// <param name="Reference">The reference text: <c>{project code} · {deliverable or "time &amp; expenses"}</c>.</param>
+/// <param name="ExternalId">The accounting system's own id, once the request has been sent; <see langword="null"/> before.</param>
+public sealed record InvoiceDraftDocument(
+    Guid RequestId,
+    string InvoiceNumber,
+    string ClientOrganisationId,
+    string? ClientReference,
+    string? ClientName,
+    CurrencyCode Currency,
+    IReadOnlyList<InvoiceRequestLine> Lines,
+    Money Total,
+    DateOnly Date,
+    DateOnly DueDate,
+    string Reference,
+    string? ExternalId);
+
+/// <summary>What a draft seam did with a change to an invoice it already created (`v0.24.0` X4).</summary>
+public enum InvoiceDraftChangeOutcome
+{
+    /// <summary>The accounting system still held the invoice as a draft and took the change (or the deletion).</summary>
+    Applied,
+
+    /// <summary>The accounting system holds the invoice at another status (<see cref="InvoiceDraftChange.ExternalStatus"/>); nothing was changed — the change belongs in the accounting system now.</summary>
+    NotDraft,
+
+    /// <summary>Something TempestOS holds locally is missing (a contact link, a tax type, an account code); nothing was sent. <see cref="InvoiceDraftChange.Reason"/> says what.</summary>
+    Blocked,
+}
+
+/// <summary>The answer to a draft change (`v0.24.0` X4).</summary>
+/// <param name="Outcome">What happened.</param>
+/// <param name="ExternalStatus">The accounting system's own status word for the invoice, as read when deciding.</param>
+/// <param name="Reason">Why, for <see cref="InvoiceDraftChangeOutcome.Blocked"/>.</param>
+public sealed record InvoiceDraftChange(InvoiceDraftChangeOutcome Outcome, string? ExternalStatus = null, string? Reason = null);
+
+/// <summary>
+/// The numbered-draft seam of an accounting connector (`v0.24.0` X4,
+/// `ADR-0162` D3/D4): create a sales invoice as a draft carrying
+/// TempestOS's own invoice number and the client's linked contact; find it
+/// again by that number after a lost response; change or delete it only
+/// while the accounting system still holds it as a draft; re-queue a send
+/// the connector could not reach. Never approves, never sends anything to
+/// the client. Xero's implementation is
+/// <c>Tempest.Core.Invoicing.Xero.Sync.Invoices.XeroInvoiceDrafts</c>;
+/// <see cref="InvoicingService"/> uses it only when
+/// <see cref="ConnectorName"/> names its own connector.
+/// </summary>
+/// <remarks>
+/// A result, never an exception, for anything the accounting system or the
+/// network did (`ADR-0151`).
+/// </remarks>
+public interface IInvoiceDraftSync
+{
+    /// <summary>The connector this seam belongs to (<see cref="IInvoicingConnector.Name"/>).</summary>
+    string ConnectorName { get; }
+
+    /// <summary>The accounting system's own status word for a draft it has just created (Xero: <c>DRAFT</c>).</summary>
+    string CreatedStatus { get; }
+
+    /// <summary>
+    /// Why <paramref name="document"/> cannot be sent yet, from what
+    /// TempestOS holds locally (the client's contact link, a tax type and
+    /// account code for every line) — or <see langword="null"/> when nothing
+    /// local stands in the way. No network call.
+    /// </summary>
+    Task<string?> FindBlockingReasonAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates <paramref name="document"/> as a draft — or, when the
+    /// accounting system already holds an invoice with its number that is
+    /// TempestOS's own (a lost response), links that one instead; an invoice
+    /// with its number that is not TempestOS's own is
+    /// <see cref="ConnectorOutcome.Rejected"/>, never a duplicate.
+    /// <see cref="CreatedInvoice.Reference"/> is the reference text the draft carries.
+    /// </summary>
+    Task<ConnectorResult<CreatedInvoice>> CreateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The invoice carrying <paramref name="document"/>'s number, when it is
+    /// TempestOS's own (linked as found); <see langword="null"/> (Ok) when
+    /// nothing carries the number; <see cref="ConnectorOutcome.Rejected"/>
+    /// when another invoice holds it.
+    /// </summary>
+    Task<ConnectorResult<CreatedInvoice?>> FindByInvoiceNumberAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>Changes the draft for <paramref name="document"/> to its content — only while the accounting system still holds it as a draft.</summary>
+    Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes the draft for <paramref name="document"/> — only while the accounting system still holds it as a draft (a voided TempestOS invoice deletes its draft only).</summary>
+    Task<ConnectorResult<InvoiceDraftChange>> DeleteDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>Queues the send of <paramref name="document"/> again, durably, after the connector could not be reached.</summary>
+    Task QueueSendAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default);
+
+    /// <summary>Records <paramref name="externalStatus"/>, as just read back, against the request's link — local only.</summary>
+    Task RecordStatusReadingAsync(InvoiceDraftDocument document, string externalStatus, CancellationToken cancellationToken = default);
 }
