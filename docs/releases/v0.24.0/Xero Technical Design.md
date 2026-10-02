@@ -430,8 +430,12 @@ longer; Xero answers 400 above 128 [S7]).
 - **Account codes.** Settings holds one sales account code (quotes,
   invoices) and one per `ExpenseCategory` (bills, PO lines), chosen from
   the reading's `ACTIVE` accounts of class `REVENUE` / `EXPENSE`; a code
-  Xero lacks Blocks the push. No defaults are invented: the Demo Company
-  runbook names the codes to pick.
+  Xero lacks Blocks the push. Defaults follow build decision Q10: the UK
+  Demo Company's own codes (sales `200`; Travel and Subsistence `493`;
+  Materials and Other `429`; Subcontract `412`), so the Demo Company works
+  with no set-up. A live organisation whose chart lacks a default is
+  Blocked with the reason until Settings names a code it holds. The
+  per-category choices await Product Owner confirmation (Q10).
 
 ## 9. Security
 
