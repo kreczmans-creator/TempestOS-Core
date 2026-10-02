@@ -242,6 +242,95 @@ public sealed class XeroExpenseBillSyncTests
     }
 
     [Fact]
+    public async Task TwoExpenses_SharingTheSuppliersInvoiceNumber_GetABillEach_AndDeletingOneLeavesTheOther()
+    {
+        // One receipt split across two categories: both expenses carry the supplier's invoice number.
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var steel = Guid.NewGuid();
+        var delivery = Guid.NewGuid();
+        kit.FakeExpenses[steel] = PurchasingSyncTestKit.Expense(
+            steel, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-1", net: 100m, vat: 20m,
+            category: ExpenseCategory.Materials, description: "Steel");
+        kit.FakeExpenses[delivery] = PurchasingSyncTestKit.Expense(
+            delivery, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-1", net: 30m, vat: 6m,
+            category: ExpenseCategory.Other, description: "Delivery");
+
+        await kit.PlanExpenseAsync(steel);
+        await kit.DrainAsync();
+        await kit.PlanExpenseAsync(delivery);
+        Assert.All(await kit.DrainAsync(), s => Assert.Equal(XeroPushOutcome.Succeeded, s.Result.Outcome));
+
+        var steelLink = await kit.ExpenseLinkAsync(steel);
+        var deliveryLink = await kit.ExpenseLinkAsync(delivery);
+        Assert.NotEqual(steelLink!.XeroId, deliveryLink!.XeroId);
+        Assert.Equal(2, kit.LiveBills.Count);
+
+        var steelBill = kit.Simulator.Find("Invoices", steelLink.XeroId)!;
+        Assert.Equal("P0012 · Steel", steelBill.Body["LineItems"]![0]!["Description"]!.GetValue<string>());
+        Assert.Equal(100m, steelBill.Body["LineItems"]![0]!["UnitAmount"]!.GetValue<decimal>());
+
+        // Deleting the delivery expense deletes its own bill only.
+        kit.FakeExpenses[delivery] = kit.FakeExpenses[delivery] with { IsDeleted = true };
+        await kit.PlanExpenseAsync(delivery);
+        await kit.DrainAsync();
+        var left = Assert.Single(kit.LiveBills);
+        Assert.Equal(steelLink.XeroId, left.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ADraftBillTypedIntoXeroByHand_UnderTheSuppliersNumber_IsRefused_NeverTakenOverOrOverwritten()
+    {
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var handBillId = await XeroPurchaseOrderSyncTests.PutByHandAsync(
+            kit.Simulator, "Invoices", SimulatorTestKit.Invoice(kit.SupplierContactId, "NS-9", type: "ACCPAY"));
+        var before = kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString();
+
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(
+            id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-9", net: 30m, vat: 6m, description: "Delivery");
+        await kit.PlanExpenseAsync(id);
+
+        var step = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Contains("already used in Xero by another bill", step.Result.Reason, StringComparison.Ordinal);
+        Assert.Null(await kit.ExpenseLinkAsync(id));
+        Assert.Equal(before, kit.Simulator.Find("Invoices", handBillId)!.Body.ToJsonString());
+        Assert.Single(kit.LiveBills);
+
+        // Nor does deleting the expense touch it.
+        kit.FakeExpenses[id] = kit.FakeExpenses[id] with { IsDeleted = true };
+        await kit.PlanExpenseAsync(id);
+        await kit.DrainAsync();
+        Assert.Equal("DRAFT", kit.Simulator.Find("Invoices", handBillId)!.Status);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ALostCreateUnderTheSuppliersNumber_ThenTheExpenseAmended_StillMakesOneBill()
+    {
+        using var kit = await PurchasingSyncTestKit.CreateAsync(chooseGeneralContact: false);
+        var id = Guid.NewGuid();
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-5");
+        await kit.PlanExpenseAsync(id);
+
+        kit.Lost.LoseWrites = 1;
+        await kit.DrainAsync();
+        Assert.Single(kit.LiveBills);
+
+        kit.FakeExpenses[id] = PurchasingSyncTestKit.Expense(id, supplier: PurchasingSyncTestKit.SupplierReference, supplierInvoiceNumber: "NS-5", net: 110m, vat: 22m);
+        await kit.PlanExpenseAsync(id);
+        kit.Clock.Advance(TimeSpan.FromMinutes(1));
+        await kit.DrainAsync();
+
+        var bill = Assert.Single(kit.LiveBills);
+        Assert.Equal(bill.Id, (await kit.ExpenseLinkAsync(id))!.XeroId);
+        Assert.Equal(110m, bill.Body["LineItems"]![0]!["UnitAmount"]!.GetValue<decimal>());
+        Assert.Empty(await kit.PlanExpenseAsync(id));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
     public async Task ALostCreateResponse_IsMatchedByNumberAndContact_AndMakesOneBill()
     {
         using var kit = await PurchasingSyncTestKit.CreateAsync();

@@ -222,7 +222,7 @@ public static class XeroPurchasingMapper
         blockedReason = null;
         return new XeroWirePurchaseOrderWrite(
             PurchaseOrderNumber: order.Reference.Trim(),
-            Reference: Truncate(order.ProjectCode, XeroAccountingApi.MaximumPurchaseOrderReferenceLength),
+            Reference: PurchaseOrderReference(order),
             Contact: contact,
             Date: XeroWire.FormatDate(issued),
             DeliveryDate: order.ExpectedDelivery is { } delivery ? XeroWire.FormatDate(delivery) : null,
@@ -318,6 +318,13 @@ public static class XeroPurchasingMapper
         foreach (var c in name)
             builder.Append(invalid.Contains(c) || c is '/' or '\\' or '?' or '#' or '%' || char.IsControl(c) ? '-' : c);
         return builder.Length == 0 ? "file" : builder.ToString();
+    }
+
+    /// <summary>The <c>Reference</c> a purchase order is written to Xero with — its project's code — and so the mark by which an existing Xero order is known as TempestOS's own (§6.4 item 4).</summary>
+    public static string? PurchaseOrderReference(XeroPurchaseOrderSnapshot order)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        return Truncate(order.ProjectCode, XeroAccountingApi.MaximumPurchaseOrderReferenceLength);
     }
 
     private static string? Truncate(string? value, int max) =>

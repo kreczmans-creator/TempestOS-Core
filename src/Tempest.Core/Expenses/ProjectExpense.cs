@@ -211,7 +211,7 @@ public sealed class ProjectExpense : EngineeringObjectBase, IRehydratable<Projec
             cancellationToken);
     }
 
-    /// <summary>Sets <see cref="SourcePurchaseOrderId"/> to <paramref name="purchaseOrderId"/>, once — <c>PurchaseOrderService.RecordLinesAsExpensesAsync</c> calls it on each expense it records, straight after recording it.</summary>
+    /// <summary>Sets <see cref="SourcePurchaseOrderId"/> to <paramref name="purchaseOrderId"/>, once — an expense recorded from an order carries it from its first revision (<c>IExpenseService.RecordAsync</c> with the order id); this marks one recorded without it.</summary>
     internal Task MarkSourcePurchaseOrderAsync(Guid purchaseOrderId, CancellationToken cancellationToken = default)
     {
         if (_sourcePurchaseOrderId is { } existing)

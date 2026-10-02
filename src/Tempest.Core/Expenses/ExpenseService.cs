@@ -21,9 +21,15 @@ public sealed class ExpenseService : IExpenseService
     }
 
     /// <inheritdoc />
+    public Task<ExpenseResult> RecordAsync(
+        Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+        CancellationToken cancellationToken = default) =>
+        RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId: null, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<ExpenseResult> RecordAsync(
         Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
-        CancellationToken cancellationToken = default)
+        Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -44,7 +50,7 @@ public sealed class ExpenseService : IExpenseService
             _context,
             (doc, rev) => new ProjectExpense(
                 doc, rev, _context, identifier: null, $"{description} — {date:yyyy-MM-dd}", EngineeringObjectMetadata.Empty,
-                projectId, date, description, category, netAmount, vatAmount, billable))
+                projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId: sourcePurchaseOrderId))
             .CreateAsync($"Expense recorded — {description}.", cancellationToken)
             .ConfigureAwait(false);
 

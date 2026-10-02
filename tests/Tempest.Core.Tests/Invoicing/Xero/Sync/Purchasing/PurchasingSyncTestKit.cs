@@ -126,7 +126,7 @@ internal sealed class PurchasingSyncTestKit : IDisposable
         OrderPlanner = new XeroPurchaseOrderPlanner(orders, Links, Outbox, State, Files);
         ExpensePlanner = new XeroExpenseBillPlanner(expenses, Links, Outbox, State, Files, orders);
         OrderHandler = new XeroPurchaseOrderPushHandler(api, Links, orders, linker, taxTypes, accounts, Audit, clock);
-        BillHandler = new XeroExpenseBillPushHandler(api, Links, expenses, linker, GeneralContact, taxTypes, accounts, Audit, clock);
+        BillHandler = new XeroExpenseBillPushHandler(api, Links, Outbox, expenses, linker, GeneralContact, taxTypes, accounts, Audit, clock);
         OrderAttachments = new XeroPurchaseOrderAttachmentHandler(api, Links, orders, Files, clock);
         BillAttachments = new XeroExpenseBillAttachmentHandler(api, Links, Files, clock);
     }

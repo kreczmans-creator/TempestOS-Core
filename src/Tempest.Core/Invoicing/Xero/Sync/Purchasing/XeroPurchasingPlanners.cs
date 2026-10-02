@@ -30,6 +30,13 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// Received and Closed change nothing in Xero (billing is the order's own
 /// <em>Copy to bill</em> there). A copy deleted in Xero plans nothing more.
 /// </para>
+/// <para>
+/// <b>Automatic from when.</b> An order goes automatically when it was issued
+/// on or after the <em>date</em> automatic sync began (the order holds an
+/// issue date, not an instant: day granularity, inclusive); an expense
+/// compares its recording instant with the instant sync began. Anything
+/// earlier goes only when sent to Xero by hand.
+/// </para>
 /// </remarks>
 public sealed class XeroPurchaseOrderPlanner : IXeroSyncPlanner
 {
@@ -98,6 +105,14 @@ public sealed class XeroPurchaseOrderPlanner : IXeroSyncPlanner
 
         if (link is null)
         {
+            // Day granularity, inclusive — deliberately unlike an expense's
+            // instant comparison: a TempestOS order carries only the date it
+            // was issued (no time), so an order issued on the day automatic
+            // sync began counts as issued after it, even if issued earlier
+            // that day. The cost is at most a few DRAFT orders from that one
+            // day reaching Xero (deletable there); the alternative — excluding
+            // the whole first day — would silently miss orders issued after
+            // sync began. Pinned by AnOrderIssuedOnTheDaySyncBegan_IsAutomatic.
             var automatic = order.IssuedDate is { } issued
                             && issued >= DateOnly.FromDateTime((await _state.AutomaticFromAsync(cancellationToken).ConfigureAwait(false)).UtcDateTime);
             if (!automatic && !await _state.IsOptedInAsync(document, cancellationToken).ConfigureAwait(false))

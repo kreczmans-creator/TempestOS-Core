@@ -90,6 +90,84 @@ public sealed class XeroPurchasingDomainJourneyTests
     }
 
     [Fact]
+    public async Task AnExpenseRecordedFromAnOrdersLine_CarriesTheOrderInItsFirstRevision_SoACrashStraightAfterNeverLeavesItBillable()
+    {
+        // Q6: were the order written in a later revision, a crash (or a sync
+        // reader) between the two would see a PO-sourced expense with no
+        // source, bill it, and double the order's Copy to bill.
+        using var temp = new TempDirectory();
+        var (host, manager) = await ExpenseTestHost.StartAsync(temp.Path);
+        try
+        {
+            ExpenseTestHost.SignIn(host);
+            var domain = ExpenseTestHost.Domain(host);
+            var organisations = ExpenseTestHost.Organisations(host);
+            using var kit = await PurchasingSyncTestKit.CreateAsync(
+                new DomainXeroPurchaseOrderSource(domain, organisations), new DomainXeroExpenseSource(domain, organisations), organisations: organisations);
+
+            var projectId = await ExpenseTestHost.CreateProjectAsync(host, "P0012", "Bracket programme");
+            var orders = (IPurchaseOrderService)host.Services!.GetService(typeof(IPurchaseOrderService));
+            var created = await orders.CreateAsync(projectId, supplierOrganisationId: PurchasingSyncTestKit.SupplierReference);
+            var orderId = created.Order!.Id;
+            Assert.True((await orders.AddLineAsync(orderId, "Steel plate", 10m, new Money(50m, CurrencyCode.Gbp), VatRate.Standard)).Succeeded);
+            Assert.True((await orders.IssueAsync(orderId)).Succeeded);
+            Assert.True((await orders.ReceiveAsync(orderId)).Succeeded);
+
+            var crashing = new PurchaseOrderService(domain, ExpenseTestHost.RateCards(host), new CrashAfterRecordExpenseService(ExpenseTestHost.Expenses(host)));
+            await Assert.ThrowsAsync<IOException>(() => crashing.RecordLinesAsExpensesAsync(orderId));
+
+            var expense = Assert.Single(await ExpenseTestHost.Expenses(host).ListForProjectAsync(projectId));
+            Assert.Equal(orderId, expense.SourcePurchaseOrderId);
+            Assert.Empty(await kit.PlanExpenseAsync(expense.Id));
+            Assert.Equal(0, await kit.ExpensePlanner.ScanAsync());
+            Assert.Empty(kit.Bills);
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    /// <summary>Records through the real service, then fails as a process would that died straight after the expense was committed.</summary>
+    private sealed class CrashAfterRecordExpenseService(IExpenseService inner) : IExpenseService
+    {
+        public async Task<ExpenseResult> RecordAsync(
+            Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+            CancellationToken cancellationToken = default)
+        {
+            await inner.RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, cancellationToken);
+            throw new IOException("Simulated crash after the expense was committed.");
+        }
+
+        public async Task<ExpenseResult> RecordAsync(
+            Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+            Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default)
+        {
+            await inner.RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId, cancellationToken);
+            throw new IOException("Simulated crash after the expense was committed.");
+        }
+
+        public Task<ExpenseResult> AmendAsync(
+            Guid expenseId, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable, CancellationToken cancellationToken = default) =>
+            inner.AmendAsync(expenseId, description, category, netAmount, vatAmount, billable, cancellationToken);
+
+        public Task<ExpenseResult> SetSupplierAsync(Guid expenseId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default) =>
+            inner.SetSupplierAsync(expenseId, supplierOrganisationId, supplierInvoiceNumber, cancellationToken);
+
+        public Task<ExpenseResult> DeleteAsync(Guid expenseId, CancellationToken cancellationToken = default) => inner.DeleteAsync(expenseId, cancellationToken);
+
+        public Task<ExpenseResult> MarkInvoicedAsync(Guid expenseId, Guid requestId, CancellationToken cancellationToken = default) =>
+            inner.MarkInvoicedAsync(expenseId, requestId, cancellationToken);
+
+        public Task<IReadOnlyList<ProjectExpense>> ListForProjectAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+            inner.ListForProjectAsync(projectId, cancellationToken);
+
+        public Task<IReadOnlyList<ProjectExpense>> ListUnbilledForProjectAsync(Guid projectId, CancellationToken cancellationToken = default) =>
+            inner.ListUnbilledForProjectAsync(projectId, cancellationToken);
+    }
+
+    [Fact]
     public async Task ARecordedExpense_WithItsSupplier_IsADraftBill_StillRechargeable_AndDeletedWithIt()
     {
         using var temp = new TempDirectory();

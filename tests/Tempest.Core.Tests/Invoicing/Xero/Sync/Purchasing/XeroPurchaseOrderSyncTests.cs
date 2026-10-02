@@ -237,8 +237,9 @@ public sealed class XeroPurchaseOrderSyncTests
     }
 
     [Fact]
-    public async Task AnOrderEnteredByHandInXero_ForTheSameSupplier_IsLinked_NotDuplicated()
+    public async Task AnOrderInXero_WithTheNumberSupplierAndOurProjectReference_IsLinked_NotDuplicated()
     {
+        // §6.4 item 4: "found with our reference → link". The simulator's order carries Reference "P0012", the project code.
         using var kit = await PurchasingSyncTestKit.CreateAsync();
         await PutByHandAsync(kit.Simulator, "PurchaseOrders", SimulatorTestKit.PurchaseOrder(kit.SupplierContactId, "PO-2026-001"));
 
@@ -251,6 +252,47 @@ public sealed class XeroPurchaseOrderSyncTests
         Assert.Single(kit.LiveOrders);
         Assert.Equal(XeroPurchasingMapper.LinkedByReconciled, (await kit.OrderLinkAsync(id))!.LinkedBy);
         kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AnOrderEnteredByHandInXero_ForTheSameSupplier_WithoutOurReference_IsRefused_AndNeverDeletedByACancel()
+    {
+        // §6.4 item 4: "found otherwise → Failed". Xero numbers its own orders PO-…, so a clash is likely.
+        using var kit = await PurchasingSyncTestKit.CreateAsync();
+        var handEntered = SimulatorTestKit.PurchaseOrder(kit.SupplierContactId, "PO-2026-001");
+        handEntered["PurchaseOrders"]![0]!["Reference"] = "Bookkeeper's own order";
+        var handId = await PutByHandAsync(kit.Simulator, "PurchaseOrders", handEntered);
+
+        var id = Guid.NewGuid();
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id);
+        await kit.PlanOrderAsync(id);
+
+        var step = Assert.Single(await kit.DrainAsync());
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Contains("PO-2026-001 is already used in Xero", step.Result.Reason, StringComparison.Ordinal);
+        Assert.Null(await kit.OrderLinkAsync(id));
+        Assert.Equal(handId, Assert.Single(kit.LiveOrders).Id);
+
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id, PurchaseOrderStatus.Cancelled);
+        await kit.PlanOrderAsync(id);
+        await kit.DrainAsync();
+        Assert.Equal("DRAFT", kit.Simulator.Find("PurchaseOrders", handId)!.Status);
+        Assert.Null(await kit.OrderLinkAsync(id));
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AnOrderIssuedOnTheDaySyncBegan_IsAutomatic_DayGranularity()
+    {
+        // An order holds an issue date, not an instant: the cut-off compares dates, inclusive (planner remarks).
+        using var kit = await PurchasingSyncTestKit.CreateAsync(options: new XeroPurchasingPlannerOptions { AutomaticFromUtc = new DateTimeOffset(2026, 10, 5, 15, 0, 0, TimeSpan.Zero) });
+        var sameDay = Guid.NewGuid();
+        kit.FakeOrders[sameDay] = PurchasingSyncTestKit.Order(sameDay, issued: new DateOnly(2026, 10, 5));
+        var dayBefore = Guid.NewGuid();
+        kit.FakeOrders[dayBefore] = PurchasingSyncTestKit.Order(dayBefore, reference: "PO-2026-002", issued: new DateOnly(2026, 10, 4));
+
+        Assert.Single(await kit.PlanOrderAsync(sameDay));
+        Assert.Empty(await kit.PlanOrderAsync(dayBefore));
     }
 
     [Fact]
