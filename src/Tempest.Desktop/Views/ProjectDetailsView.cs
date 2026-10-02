@@ -443,14 +443,16 @@ public sealed class ProjectDetailsView : UserControl
             return;
         }
 
+        // The supplier details go in the expense's first revision (X5, Q3/Q4), so its bill is never sent as EXP-{id} first.
         var command = new Tempest.Workspace.Expenses.RecordExpenseCommand(
-            input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable);
+            input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable,
+            input.SupplierOrganisationId, input.SupplierInvoiceNumber);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         var message = result.Succeeded ? result.Message ?? "Expense recorded." : result.Message ?? "Record expense failed.";
 
-        // `v0.24.0` U3 (X5, Q3/Q4): the prompt's optional supplier details.
-        if (result.Succeeded && result.SubjectId is { } recordedId && await _recordExpensePrompt.ApplyPurchasingDetailsAsync(recordedId, input).ConfigureAwait(true) is { } supplierNote)
+        // `v0.24.0` U3: the prompt's optional receipt (the supplier details were recorded with the expense).
+        if (result.Succeeded && result.SubjectId is { } recordedId && await _recordExpensePrompt.ApplyPurchasingDetailsAsync(recordedId, input, supplierRecorded: true).ConfigureAwait(true) is { } supplierNote)
             message = $"{message} {supplierNote}";
 
         if (result.Succeeded)

@@ -129,6 +129,48 @@ public sealed class XeroPurchasingDomainJourneyTests
         }
     }
 
+    // Backlog U3 open item: the supplier and its invoice number were saved in a follow-up commit, so the expense's
+    // bill could be planned against "General expenses" as EXP-{id} in between.
+    [Fact]
+    public async Task AnExpenseRecordedWithItsSupplier_CarriesItInItsFirstRevision_SoItsBillIsNeverSentAsGeneralExpenses()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await ExpenseTestHost.StartAsync(temp.Path);
+        try
+        {
+            ExpenseTestHost.SignIn(host);
+            var domain = ExpenseTestHost.Domain(host);
+            var organisations = ExpenseTestHost.Organisations(host);
+            using var kit = await PurchasingSyncTestKit.CreateAsync(
+                new DomainXeroPurchaseOrderSource(domain, organisations), new DomainXeroExpenseSource(domain, organisations), organisations: organisations);
+            var projectId = await ExpenseTestHost.CreateProjectAsync(host, "P0012", "Bracket programme");
+
+            // The process dies straight after the record commits: nothing after it runs.
+            var handler = new Tempest.Workspace.Expenses.RecordExpenseCommandHandler(new CrashAfterRecordExpenseService(ExpenseTestHost.Expenses(host)));
+            var command = new Tempest.Workspace.Expenses.RecordExpenseCommand(
+                projectId, new DateOnly(2026, 9, 28), "Steel offcuts", ExpenseCategory.Materials,
+                new Money(400m, CurrencyCode.Gbp), new Money(80m, CurrencyCode.Gbp), billable: true,
+                PurchasingSyncTestKit.SupplierReference, " NS-4471 ");
+            await Assert.ThrowsAsync<IOException>(() => handler.HandleAsync(command, CancellationToken.None));
+
+            var expense = Assert.Single(await ExpenseTestHost.Expenses(host).ListForProjectAsync(projectId));
+            Assert.Equal(PurchasingSyncTestKit.SupplierReference, expense.SupplierOrganisationId);
+            Assert.Equal("NS-4471", expense.SupplierInvoiceNumber);
+
+            await kit.PlanExpenseAsync(expense.Id);
+            await kit.DrainAsync();
+            var bill = Assert.Single(kit.LiveBills);
+            Assert.Equal("NS-4471", bill.Number);
+            Assert.Equal(kit.SupplierContactId, bill.Body["Contact"]!["ContactID"]!.GetValue<string>());
+            kit.AssertNoViolations();
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     /// <summary>Records through the real service, then fails as a process would that died straight after the expense was committed.</summary>
     private sealed class CrashAfterRecordExpenseService(IExpenseService inner) : IExpenseService
     {
@@ -145,6 +187,14 @@ public sealed class XeroPurchasingDomainJourneyTests
             Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default)
         {
             await inner.RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId, cancellationToken);
+            throw new IOException("Simulated crash after the expense was committed.");
+        }
+
+        public async Task<ExpenseResult> RecordAsync(
+            Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+            Guid? sourcePurchaseOrderId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default)
+        {
+            await inner.RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId, supplierOrganisationId, supplierInvoiceNumber, cancellationToken);
             throw new IOException("Simulated crash after the expense was committed.");
         }
 

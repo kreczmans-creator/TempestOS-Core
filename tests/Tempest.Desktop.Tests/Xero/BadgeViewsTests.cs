@@ -415,6 +415,33 @@ public sealed class BadgeViewsTests
         Assert.NotNull(await new ExpenseEntryPrompt(fixture.Domain).ApplyPurchasingDetailsAsync(recorded.Expense.Id, input));
     }
 
+    // Backlog U3 open item: Record expense now records the supplier details with the expense (its first revision),
+    // so afterwards only the receipt is left to apply — no second save of the supplier.
+    [AvaloniaFact]
+    public async Task RecordExpense_WithTheSupplier_RecordsItInTheFirstRevision_AndApplyAddsNoSecondSave()
+    {
+        await using var fixture = await Fixture.StartAsync();
+        var dispatcher = fixture.Resolve<ICommandDispatcher>();
+        var input = new ExpenseEntryInput(
+            fixture.ProjectId, new DateOnly(2026, 9, 28), "Fixings", ExpenseCategory.Materials,
+            new Money(25m, CurrencyCode.Gbp), new Money(5m, CurrencyCode.Gbp), Billable: true, "ORG-SUPPLIER-1", "SUP-778");
+
+        var result = await dispatcher.DispatchAsync(
+            new Tempest.Workspace.Expenses.RecordExpenseCommand(
+                input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable,
+                input.SupplierOrganisationId, input.SupplierInvoiceNumber),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded, result.Message);
+        var expense = (ProjectExpense)(await fixture.Domain.Repository.FindAsync(result.SubjectId!.Value))!;
+        Assert.Equal("ORG-SUPPLIER-1", expense.SupplierOrganisationId);
+        Assert.Equal("SUP-778", expense.SupplierInvoiceNumber);
+
+        // No expense service here: had Apply tried to save the supplier again it would say it could not.
+        Assert.Null(await new ExpenseEntryPrompt(fixture.Domain).ApplyPurchasingDetailsAsync(expense.Id, input, supplierRecorded: true));
+        Assert.NotNull(await new ExpenseEntryPrompt(fixture.Domain).ApplyPurchasingDetailsAsync(expense.Id, input));
+    }
+
     [AvaloniaFact]
     public async Task ExpensePrompt_TakesAnOptionalReceipt_AndKeepsItOnTheExpense_ForItsXeroBill()
     {

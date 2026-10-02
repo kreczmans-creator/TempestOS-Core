@@ -27,9 +27,15 @@ public sealed class ExpenseService : IExpenseService
         RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId: null, cancellationToken);
 
     /// <inheritdoc />
+    public Task<ExpenseResult> RecordAsync(
+        Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+        Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default) =>
+        RecordAsync(projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId, supplierOrganisationId: null, supplierInvoiceNumber: null, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<ExpenseResult> RecordAsync(
         Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
-        Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default)
+        Guid? sourcePurchaseOrderId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -50,7 +56,8 @@ public sealed class ExpenseService : IExpenseService
             _context,
             (doc, rev) => new ProjectExpense(
                 doc, rev, _context, identifier: null, $"{description} — {date:yyyy-MM-dd}", EngineeringObjectMetadata.Empty,
-                projectId, date, description, category, netAmount, vatAmount, billable, sourcePurchaseOrderId: sourcePurchaseOrderId))
+                projectId, date, description, category, netAmount, vatAmount, billable,
+                supplierOrganisationId: supplierOrganisationId, supplierInvoiceNumber: supplierInvoiceNumber, sourcePurchaseOrderId: sourcePurchaseOrderId))
             .CreateAsync($"Expense recorded — {description}.", cancellationToken)
             .ConfigureAwait(false);
 
