@@ -104,6 +104,18 @@ public sealed class XeroSafetyArchitectureTests
         Assert.Empty(CodeOf("""   // SentToContact stays false"""));
     }
 
+    // Re-verifier B1 defect 3: a line starting with "/*" was skipped whole, so code after the closing "*/" went unscanned.
+    [Fact]
+    public void TheScan_ReadsCodeAfterABlockCommentOnTheSameLine()
+    {
+        Assert.Contains(ForbiddenInCode, p => p.IsMatch(CodeOf("""/* x */ var s = "AUTHORISED";""")));
+        Assert.Contains(ForbiddenInCode, p => p.IsMatch(CodeOf("""   /* a */ /* b */ SentToContact = true,""")));
+        Assert.Contains(ForbiddenInCode, p => p.IsMatch(CodeOf(""" * end of a comment */ var s = "SUBMITTED";""")));
+        Assert.Empty(CodeOf("""/* "AUTHORISED" is never written"""));
+        Assert.Empty(CodeOf("""/* "AUTHORISED" */"""));
+        Assert.Empty(CodeOf(""" * "AUTHORISED" stays in the comment"""));
+    }
+
     [Fact]
     public void TheScan_CatchesAJsonEscapedStatusWrite()
     {
@@ -189,13 +201,28 @@ public sealed class XeroSafetyArchitectureTests
     private static bool IsReadSideLine(string relative, string code) =>
         ReadSideLines.Any(allowed => string.Equals(allowed.File, relative, StringComparison.Ordinal) && string.Equals(allowed.Line, code.Trim(), StringComparison.Ordinal));
 
-    /// <summary>A line's code, or empty for a whole-line comment (<c>//</c>, <c>///</c>, or a <c>*</c> block-comment line).</summary>
+    /// <summary>
+    /// A line's code: empty for a whole-line comment (<c>//</c>, <c>///</c>, or a <c>*</c> block-comment line); a leading
+    /// block comment that closes on the line (<c>/* x */ code</c>, <c>* x */ code</c>) is removed and the rest is scanned.
+    /// </summary>
     private static string CodeOf(string line)
     {
         var trimmed = line.TrimStart();
-        return trimmed.StartsWith("//", StringComparison.Ordinal) || trimmed.StartsWith("/*", StringComparison.Ordinal) || trimmed.StartsWith('*')
-            ? string.Empty
-            : trimmed;
+        while (true)
+        {
+            if (trimmed.StartsWith("//", StringComparison.Ordinal))
+                return string.Empty;
+
+            var opens = trimmed.StartsWith("/*", StringComparison.Ordinal);
+            if (!opens && !trimmed.StartsWith('*'))
+                return trimmed;
+
+            var end = trimmed.IndexOf("*/", opens ? 2 : 0, StringComparison.Ordinal);
+            if (end < 0)
+                return string.Empty;
+
+            trimmed = trimmed[(end + 2)..].TrimStart();
+        }
     }
 
     /// <summary>The <see cref="HttpClient"/> one of TempestOS's own Xero callers holds (its private field — our own type, read for this test only).</summary>

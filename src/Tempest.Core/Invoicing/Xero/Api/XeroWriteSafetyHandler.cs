@@ -153,7 +153,7 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     {
         var segments = ApiPathSegments(request.RequestUri);
 
-        if (segments is { Count: > 0 } && string.Equals(segments[^1], "Email", StringComparison.OrdinalIgnoreCase))
+        if (segments is { Count: > 0 } && string.Equals(segments[^1].Split(PathSeparators)[^1], "Email", StringComparison.OrdinalIgnoreCase))
             return (RuleEmail, "TempestOS never emails a client; the Product Owner sends from Xero (D4).");
 
         if (request.Method == HttpMethod.Get)
@@ -161,6 +161,10 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
         if (segments is null)
             return (RuleWriteAllowList, "TempestOS writes only to Xero's Accounting API documents.");
+
+        // An escaped '/' or '\' (%2F, %5C) inside a segment would read as one segment here but as two to anything that decodes it later.
+        if (segments.Any(segment => segment.IndexOfAny(PathSeparators) >= 0))
+            return (RuleWriteAllowList, "A Xero write's path must not hide a '/' or '\\' inside an escaped segment.");
 
         var isAttachment = IsAttachmentPath(segments);
         if (!(request.Method == HttpMethod.Put || request.Method == HttpMethod.Post) || !(isAttachment || IsDocumentPath(segments)))
@@ -187,6 +191,8 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
         return await CheckLiveOrganisationAsync(request, cancellationToken).ConfigureAwait(false);
     }
+
+    private static readonly char[] PathSeparators = ['/', '\\'];
 
     /// <summary>The path's segments after the API root (<c>/api.xro/2.0/</c>), unescaped; <see langword="null"/> when the request is not to the API root at all.</summary>
     private static List<string>? ApiPathSegments(Uri? uri)

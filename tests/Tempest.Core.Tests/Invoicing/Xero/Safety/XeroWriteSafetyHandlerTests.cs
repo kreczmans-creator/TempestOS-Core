@@ -222,6 +222,36 @@ public sealed class XeroWriteSafetyHandlerTests
         await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleEmail);
     }
 
+    // Re-verifier B1 defect 1: the path was split before unescaping, so %2F / %5C hid an Email segment inside an id.
+    [Theory]
+    [InlineData("POST", "Invoices/abc%2FEmail")]
+    [InlineData("POST", "Invoices/abc%5CEmail")]
+    [InlineData("PUT", "Invoices/abc%2femail")]
+    [InlineData("GET", "Invoices/abc%2FEmail")]
+    public async Task AnEmailSegmentHiddenBehindAnEscapedSeparator_IsBlocked(string method, string path)
+    {
+        var rig = Rig.Demo();
+
+        var response = method == "GET"
+            ? await rig.Client.GetAsync(path)
+            : await rig.SendJsonAsync(new HttpMethod(method), path, "{}");
+
+        await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleEmail);
+    }
+
+    [Theory]
+    [InlineData("Invoices/abc%2Fdef")]
+    [InlineData("Invoices/abc%5Cdef")]
+    [InlineData("Invoices%2Finv-1")]
+    public async Task AWriteWithAnEscapedSeparatorInASegment_IsBlocked(string path)
+    {
+        var rig = Rig.Demo();
+
+        var response = await rig.SendJsonAsync(HttpMethod.Post, path, """{"InvoiceID":"inv-1"}""");
+
+        await AssertBlockedAsync(rig, response, XeroWriteSafetyHandler.RuleWriteAllowList);
+    }
+
     [Theory]
     [InlineData("""{"Invoices":[{"Status":"DRAFT","SentToContact":true}]}""")]
     [InlineData("""{"Invoices":[{"Status":"DRAFT","sentToContact":"true"}]}""")]
