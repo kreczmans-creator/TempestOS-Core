@@ -184,7 +184,7 @@ public sealed class SettingsXeroIdentityTests
         }
     }
 
-    private sealed class InMemorySettings : ISettingsProvider
+    internal sealed class InMemorySettings : ISettingsProvider
     {
         private readonly Dictionary<string, string> _values = [];
 

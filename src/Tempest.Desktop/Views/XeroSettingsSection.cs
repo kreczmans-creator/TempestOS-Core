@@ -204,6 +204,11 @@ public sealed class XeroSettingsSection : UserControl
     private readonly TextBlock _status = Caption();
 
     private XeroSettingsReading? _reading;
+
+    // Set once RefreshAsync has filled the IncludeOnline and Allow-live
+    // checkboxes from Settings; until then SaveAsync leaves both keys alone,
+    // so an unfilled (unchecked) box never overwrites a stored "True".
+    private bool _loaded;
     private bool _definitionsEnsured;
     private int _failedCount;
 
@@ -306,6 +311,7 @@ public sealed class XeroSettingsSection : UserControl
 
         _allowLiveOrganisation.IsChecked = await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
         _includeOnline.IsChecked = await ReadBoolAsync(XeroInvoiceDrafts.IncludeOnlineSettingKey, cancellationToken).ConfigureAwait(true);
+        _loaded = true;
         DescribeLiveOrganisation();
 
         await LoadGeneralExpensesContactAsync(cancellationToken).ConfigureAwait(true);
@@ -385,6 +391,18 @@ public sealed class XeroSettingsSection : UserControl
         if (SelectedCode(_generalExpensesContact) is { } contact)
             await new XeroGeneralExpensesContact(_settings).SetAsync(contact, cancellationToken).ConfigureAwait(true);
 
+        // Until RefreshAsync has filled the two checkboxes they show "off",
+        // not what is stored: writing them then would silently turn a stored
+        // IncludeOnline / Allow-live "True" into "False".
+        if (_loaded)
+            await SaveSwitchesAsync(cancellationToken).ConfigureAwait(true);
+
+        DescribeLiveOrganisation();
+        await ShowMappingProblemsAsync(cancellationToken).ConfigureAwait(true);
+    }
+
+    private async Task SaveSwitchesAsync(CancellationToken cancellationToken)
+    {
         await _settings.SetValueAsync(XeroInvoiceDrafts.IncludeOnlineSettingKey, Format(_includeOnline.IsChecked == true), cancellationToken).ConfigureAwait(true);
 
         // D7: through the one key the write-safety handler reads, and audited
@@ -409,9 +427,6 @@ public sealed class XeroSettingsSection : UserControl
                     cancellationToken).ConfigureAwait(true);
             }
         }
-
-        DescribeLiveOrganisation();
-        await ShowMappingProblemsAsync(cancellationToken).ConfigureAwait(true);
     }
 
     /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken when the engine is present), then the summary re-read.</summary>
@@ -463,6 +478,17 @@ public sealed class XeroSettingsSection : UserControl
             {
                 if (_afterAuthorised is not null)
                     await _afterAuthorised(cancellationToken).ConfigureAwait(true);
+
+                // The sign-in may have chosen another organisation, which has
+                // no cached reading yet: re-read the cache so the section and
+                // every document stop showing the previous organisation's
+                // name, Demo flag and company details (falling back to
+                // Settings → Organisation until Xero is read).
+                if (_services.Reader is { } reader)
+                {
+                    await ShowReadingAsync(await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true), cancellationToken).ConfigureAwait(true);
+                    DescribeLiveOrganisation();
+                }
 
                 await RefreshConnectionAsync(cancellationToken).ConfigureAwait(true);
                 await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
@@ -626,7 +652,7 @@ public sealed class XeroSettingsSection : UserControl
             _companyDetails.Text = DescribeCompany(details);
         }
 
-        _services.Identity?.UseXeroCompanyDetails(details);
+        _services.Identity?.UseXeroReading(reading);
         ReadingChanged?.Invoke(details);
 
         await LoadTaxTypesAsync(reading, cancellationToken).ConfigureAwait(true);

@@ -29,7 +29,7 @@ public sealed class OrganisationIdentitySettings
     public const string SettingKey = "Desktop.OrganisationIdentity";
 
     private readonly SettingsDocument<OrganisationIdentityDto> _document;
-    private XeroCompanyDetails? _xeroCompanyDetails;
+    private XeroSource? _xero;
 
     /// <summary>Initialises a new instance of the <see cref="OrganisationIdentitySettings"/> class, every field at the Tempest defaults.</summary>
     public OrganisationIdentitySettings(ISettingsProvider settingsProvider, ILogger? logger = null)
@@ -86,7 +86,10 @@ public sealed class OrganisationIdentitySettings
     public string BankIban { get; set; }
 
     /// <summary>The company details from the last reading of Xero that documents print, or <see langword="null"/> when there is none and the values typed here are used.</summary>
-    public XeroCompanyDetails? XeroCompanyDetails => Volatile.Read(ref _xeroCompanyDetails);
+    public XeroCompanyDetails? XeroCompanyDetails => Volatile.Read(ref _xero)?.Details;
+
+    /// <summary>The base currency (ISO 4217) of the organisation <see cref="XeroCompanyDetails"/> came from, used to choose the bank account printed; <see langword="null"/> when unknown.</summary>
+    public string? XeroBaseCurrency => Volatile.Read(ref _xero)?.BaseCurrency;
 
     /// <summary>
     /// The flat, immutable snapshot a document renderer reads at render time — the "renderer reads a flat model, draws it" discipline every document model in this codebase already follows.
@@ -95,7 +98,7 @@ public sealed class OrganisationIdentitySettings
     public OrganisationIdentity ToIdentity()
     {
         var local = ToSettingsIdentity();
-        return XeroCompanyDetails is { } xero ? Overlay(local, xero) : local;
+        return Volatile.Read(ref _xero) is { } xero ? Overlay(local, xero.Details, xero.BaseCurrency) : local;
     }
 
     /// <summary>The identity made of the values typed in Settings → Organisation alone, ignoring any reading of Xero — the offline fallback.</summary>
@@ -119,7 +122,27 @@ public sealed class OrganisationIdentitySettings
     /// Safe to call from any thread.
     /// </summary>
     /// <param name="details">The company details from Xero, or <see langword="null"/>.</param>
-    public void UseXeroCompanyDetails(XeroCompanyDetails? details) => Volatile.Write(ref _xeroCompanyDetails, details);
+    public void UseXeroCompanyDetails(XeroCompanyDetails? details) => UseXeroCompanyDetails(details, baseCurrency: null);
+
+    /// <summary>
+    /// As <see cref="UseXeroCompanyDetails(XeroCompanyDetails?)"/>, with the
+    /// organisation's base currency, so the bank account printed is one in
+    /// that currency when Xero holds one (<see cref="Overlay(OrganisationIdentity, XeroCompanyDetails, string?)"/>).
+    /// </summary>
+    /// <param name="details">The company details from Xero, or <see langword="null"/>.</param>
+    /// <param name="baseCurrency">The organisation's base currency (ISO 4217), or <see langword="null"/> when unknown.</param>
+    public void UseXeroCompanyDetails(XeroCompanyDetails? details, string? baseCurrency) =>
+        Volatile.Write(ref _xero, details is null ? null : new XeroSource(details, NullIfBlank(baseCurrency)));
+
+    /// <summary>Uses the company details and base currency of <paramref name="reading"/>; <see langword="null"/> goes back to the values typed in Settings.</summary>
+    /// <param name="reading">A reading of Xero, or <see langword="null"/>.</param>
+    /// <returns>The company details now used, or <see langword="null"/> when the typed values are.</returns>
+    public XeroCompanyDetails? UseXeroReading(XeroSettingsReading? reading)
+    {
+        var details = reading is null ? null : XeroCompanyDetails.From(reading);
+        UseXeroCompanyDetails(details, reading?.Organisation.BaseCurrency);
+        return details;
+    }
 
     /// <summary>
     /// Reads the last cached reading of Xero (no network call) and uses its
@@ -135,9 +158,7 @@ public sealed class OrganisationIdentitySettings
         ArgumentNullException.ThrowIfNull(reader);
 
         var reading = await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(false);
-        var details = reading is null ? null : XeroCompanyDetails.From(reading);
-        UseXeroCompanyDetails(details);
-        return details;
+        return UseXeroReading(reading);
     }
 
     /// <summary>
@@ -147,20 +168,32 @@ public sealed class OrganisationIdentitySettings
     /// website — each as Xero holds it, absent when Xero holds none, so a
     /// typed value never mixes into another organisation's details. Email is
     /// not held by Xero, so the typed one stays. The bank details are Xero's
-    /// first bank account with a number (payee: the company's name; the
+    /// first bank account with a number in the organisation's base currency
+    /// (<paramref name="baseCurrency"/>), else its first bank account with a
+    /// number in any currency (payee: the company's name; the
     /// number verbatim, sort code included as Xero holds it); when Xero holds
     /// no bank account the typed bank details stay.
     /// </summary>
     /// <param name="local">The identity typed in Settings.</param>
     /// <param name="xero">The company details from Xero.</param>
-    public static OrganisationIdentity Overlay(OrganisationIdentity local, XeroCompanyDetails xero)
+    public static OrganisationIdentity Overlay(OrganisationIdentity local, XeroCompanyDetails xero) => Overlay(local, xero, baseCurrency: null);
+
+    /// <inheritdoc cref="Overlay(OrganisationIdentity, XeroCompanyDetails)"/>
+    /// <param name="local">The identity typed in Settings.</param>
+    /// <param name="xero">The company details from Xero.</param>
+    /// <param name="baseCurrency">The organisation's base currency (ISO 4217); a bank account in it is preferred. <see langword="null"/> when unknown.</param>
+    public static OrganisationIdentity Overlay(OrganisationIdentity local, XeroCompanyDetails xero, string? baseCurrency)
     {
         ArgumentNullException.ThrowIfNull(local);
         ArgumentNullException.ThrowIfNull(xero);
 
         var name = string.IsNullOrWhiteSpace(xero.Name) ? local.LegalName : xero.Name.Trim();
         var lines = xero.AddressLines.Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList();
-        var bank = xero.BankAccounts.FirstOrDefault(b => !string.IsNullOrWhiteSpace(b.BankAccountNumber));
+        var numbered = xero.BankAccounts.Where(b => !string.IsNullOrWhiteSpace(b.BankAccountNumber)).ToList();
+        var bank = (string.IsNullOrWhiteSpace(baseCurrency)
+                ? null
+                : numbered.FirstOrDefault(b => string.Equals(b.CurrencyCode?.Trim(), baseCurrency.Trim(), StringComparison.OrdinalIgnoreCase)))
+            ?? numbered.FirstOrDefault();
 
         var identity = local with
         {
@@ -214,6 +247,9 @@ public sealed class OrganisationIdentitySettings
     }
 
     private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+    /// <summary>The company details from a reading of Xero and its organisation's base currency, swapped together.</summary>
+    private sealed record XeroSource(XeroCompanyDetails Details, string? BaseCurrency);
 
     /// <summary>The plain, JSON-serializable shape this class persists.</summary>
     private sealed record OrganisationIdentityDto(
