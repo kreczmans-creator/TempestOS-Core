@@ -38,8 +38,10 @@ public sealed partial class XeroAccountingApi
     /// natural-key lookup before a first create and before any resend after a
     /// lost response (§6.4), so an order is never created twice. Xero
     /// answers 404 for a number it does not hold: that is an empty list here,
-    /// not a failure. Every status, <c>DELETED</c> included; the caller
-    /// decides what a match means.
+    /// not a failure. Xero answers a single order for a number — a live one
+    /// before a deleted one — so the deleted copies under it are read with
+    /// <see cref="FindDeletedPurchaseOrdersAsync"/>; the caller decides what a
+    /// match means.
     /// </summary>
     /// <param name="purchaseOrderNumber">The number (TempestOS's purchase-order reference).</param>
     /// <param name="cancellationToken">Cancels the call.</param>
@@ -64,6 +66,61 @@ public sealed partial class XeroAccountingApi
             .Where(o => !string.IsNullOrWhiteSpace(o.PurchaseOrderID)
                         && string.Equals(o.PurchaseOrderNumber?.Trim(), number, StringComparison.OrdinalIgnoreCase))];
         return new XeroApiResult<IReadOnlyList<XeroWirePurchaseOrder>>(ConnectorOutcome.Ok, orders, result.HttpStatus, null, []);
+    }
+
+    /// <summary>Xero's page size for <c>GET PurchaseOrders</c> with <c>page=</c> (§6.5).</summary>
+    public const int PurchaseOrdersPageSize = 100;
+
+    /// <summary>The most pages <see cref="FindDeletedPurchaseOrdersAsync"/> reads before it answers that it could not read them all.</summary>
+    public const int MaximumDeletedPurchaseOrderPages = 10;
+
+    /// <summary>
+    /// The <c>DELETED</c> purchase orders Xero holds under
+    /// <paramref name="purchaseOrderNumber"/>
+    /// (<c>GET PurchaseOrders?Status=DELETED&amp;DateFrom=…&amp;DateTo=…&amp;page=n</c>,
+    /// kept to the number here). <c>GET PurchaseOrders/{PurchaseOrderNumber}</c>
+    /// answers a single order, a live one before a deleted one, so a copy
+    /// TempestOS made and someone deleted in Xero is only seen this way — and
+    /// it is evidence the ownership rule counts (<c>XeroPurchasingOwnership</c>).
+    /// Pages until a short page, at most <see cref="MaximumDeletedPurchaseOrderPages"/>;
+    /// <see cref="XeroDeletedPurchaseOrders.Complete"/> says whether every page was read.
+    /// </summary>
+    /// <param name="purchaseOrderNumber">The number.</param>
+    /// <param name="date">The order date the orders were created with, when known: narrows the read to that day.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    public async Task<XeroApiResult<XeroDeletedPurchaseOrders>> FindDeletedPurchaseOrdersAsync(
+        string purchaseOrderNumber, DateOnly? date = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(purchaseOrderNumber);
+
+        var number = purchaseOrderNumber.Trim();
+        var orders = new List<XeroWirePurchaseOrder>();
+        for (var page = 1; page <= MaximumDeletedPurchaseOrderPages; page++)
+        {
+            List<KeyValuePair<string, string?>> query =
+            [
+                new("Status", "DELETED"),
+                new("page", page.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ];
+            if (date is { } day)
+            {
+                query.Add(new("DateFrom", XeroWire.FormatDate(day)));
+                query.Add(new("DateTo", XeroWire.FormatDate(day)));
+            }
+
+            var result = await GetAsync<XeroWirePurchaseOrdersEnvelope>("PurchaseOrders", query, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (result.Outcome != ConnectorOutcome.Ok)
+                return Retype<XeroWirePurchaseOrdersEnvelope, XeroDeletedPurchaseOrders>(result);
+
+            var read = result.Value!.PurchaseOrders ?? [];
+            orders.AddRange(read.Where(o => !string.IsNullOrWhiteSpace(o.PurchaseOrderID)
+                                            && string.Equals(o.Status?.Trim(), "DELETED", StringComparison.OrdinalIgnoreCase)
+                                            && string.Equals(o.PurchaseOrderNumber?.Trim(), number, StringComparison.OrdinalIgnoreCase)));
+            if (read.Count < PurchaseOrdersPageSize)
+                return new XeroApiResult<XeroDeletedPurchaseOrders>(ConnectorOutcome.Ok, new XeroDeletedPurchaseOrders(orders, Complete: true), result.HttpStatus, null, []);
+        }
+
+        return new XeroApiResult<XeroDeletedPurchaseOrders>(ConnectorOutcome.Ok, new XeroDeletedPurchaseOrders(orders, Complete: false), (int)HttpStatusCode.OK, null, []);
     }
 
     /// <summary>
@@ -148,6 +205,11 @@ public sealed partial class XeroAccountingApi
     }
 }
 
+/// <summary>What <see cref="XeroAccountingApi.FindDeletedPurchaseOrdersAsync"/> read.</summary>
+/// <param name="Orders">The deleted orders under the number.</param>
+/// <param name="Complete">Whether every page was read (<see langword="false"/>: more deleted orders than <see cref="XeroAccountingApi.MaximumDeletedPurchaseOrderPages"/> pages hold).</param>
+public sealed record XeroDeletedPurchaseOrders(IReadOnlyList<XeroWirePurchaseOrder> Orders, bool Complete);
+
 /// <summary>Xero's <c>{ "PurchaseOrders": [ … ] }</c> envelope, as read.</summary>
 /// <param name="PurchaseOrders">The purchase orders.</param>
 public sealed record XeroWirePurchaseOrdersEnvelope([property: JsonPropertyName("PurchaseOrders")] IReadOnlyList<XeroWirePurchaseOrder>? PurchaseOrders);
@@ -207,6 +269,7 @@ public sealed record XeroWirePurchaseOrderStatusUpdate(
 /// <param name="Total">The total including tax.</param>
 /// <param name="HasAttachments">Whether a file is attached.</param>
 /// <param name="UpdatedDateUTC">When Xero last changed it (Microsoft JSON date).</param>
+/// <param name="SubTotal">The net total (what the purchasing ownership rule compares with what TempestOS sent).</param>
 public sealed record XeroWirePurchaseOrder(
     [property: JsonPropertyName("PurchaseOrderID")] string? PurchaseOrderID,
     [property: JsonPropertyName("PurchaseOrderNumber")] string? PurchaseOrderNumber = null,
@@ -219,4 +282,5 @@ public sealed record XeroWirePurchaseOrder(
     [property: JsonPropertyName("LineItems")] IReadOnlyList<XeroWireLineItem>? LineItems = null,
     [property: JsonPropertyName("Total")] decimal? Total = null,
     [property: JsonPropertyName("HasAttachments")] bool? HasAttachments = null,
-    [property: JsonPropertyName("UpdatedDateUTC")] string? UpdatedDateUTC = null);
+    [property: JsonPropertyName("UpdatedDateUTC")] string? UpdatedDateUTC = null,
+    [property: JsonPropertyName("SubTotal")] decimal? SubTotal = null);

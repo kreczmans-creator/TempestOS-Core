@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Persistence;
 
 namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
@@ -48,16 +49,18 @@ public sealed class XeroPurchasingCreateLog
     /// <param name="contactId">The Xero <c>ContactID</c> the create carries.</param>
     /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
-    /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any — so a record found later under the number can be told from one someone else keyed with another reference.</param>
+    /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any. Kept for the record only: a bookkeeper may edit it, so the ownership rule never reads it.</param>
+    /// <param name="value">The value-bearing content the create carries (<see cref="XeroPurchasingOwnership.ValueOf(XeroWirePurchaseOrderWrite)"/> or <see cref="XeroPurchasingOwnership.ValueOf(XeroWireBillWrite)"/>): what a record found later under the number and contact must still carry to be called this document's own.</param>
     public async Task RecordSendingAsync(
         string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default,
-        string? reference = null)
+        string? reference = null, string? value = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);
 
-        var sent = new XeroPurchasingSentCreate(number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim());
+        var sent = new XeroPurchasingSentCreate(
+            number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(), string.IsNullOrWhiteSpace(value) ? null : value);
         await UpdateAsync(tenantId, document, list => list.Any(s => s == sent) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
     }
 
@@ -154,9 +157,10 @@ public sealed class XeroPurchasingCreateLog
 
 }
 
-/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number and contact it carried and its <c>Idempotency-Key</c>.</summary>
+/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number, contact and value-bearing content it carried and its <c>Idempotency-Key</c>.</summary>
 /// <param name="Number">The Xero number the create carried.</param>
 /// <param name="ContactId">The Xero <c>ContactID</c> the create carried.</param>
 /// <param name="IdempotencyKey">The create's <c>Idempotency-Key</c>.</param>
 /// <param name="Reference">The <c>Reference</c> the create carried; <see langword="null"/> when none (a bill carries none).</param>
-public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null);
+/// <param name="Value">The value-bearing content the create carried (<see cref="XeroPurchasingOwnership"/>); <see langword="null"/> when unknown, which proves nothing is TempestOS's.</param>
+public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null, string? Value = null);

@@ -237,20 +237,34 @@ public sealed class XeroPurchaseOrderSyncTests
     }
 
     [Fact]
-    public async Task AnOrderInXero_WithTheNumberSupplierAndOurProjectReference_IsLinked_NotDuplicated()
+    public async Task AnOrderInXero_WithTheNumberSupplierAndOurProjectReference_ButNeverSentByTempestOs_IsRefused_AndLeftUntouched()
     {
-        // §6.4 item 4: "found with our reference → link". The simulator's order carries Reference "P0012", the project code.
+        // The ownership rule (XeroPurchasingOwnership): number, contact and our project reference are not proof —
+        // the reference is free text anyone can key. TempestOS sent no create for this order, so the hand order is
+        // never linked, and so never deleted by a cancel; the cancel ends NothingToDo, holding nothing.
         using var kit = await PurchasingSyncTestKit.CreateAsync();
-        await PutByHandAsync(kit.Simulator, "PurchaseOrders", SimulatorTestKit.PurchaseOrder(kit.SupplierContactId, "PO-2026-001"));
+        var handId = await PutByHandAsync(kit.Simulator, "PurchaseOrders", SimulatorTestKit.PurchaseOrder(kit.SupplierContactId, "PO-2026-001"));
+        var handBody = kit.Simulator.Find("PurchaseOrders", handId)!.Body.ToJsonString();
 
         var id = Guid.NewGuid();
         kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id);
         await kit.PlanOrderAsync(id);
 
         var step = Assert.Single(await kit.DrainAsync());
-        Assert.Equal(XeroPushOutcome.Succeeded, step.Result.Outcome);
-        Assert.Single(kit.LiveOrders);
-        Assert.Equal(XeroPurchasingMapper.LinkedByReconciled, (await kit.OrderLinkAsync(id))!.LinkedBy);
+        Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
+        Assert.Contains("PO-2026-001 is already used in Xero", step.Result.Reason, StringComparison.Ordinal);
+        Assert.DoesNotMatch("(?i)(delete|rename|renumber) (that|the extra|the other)", step.Result.Reason); // Never: destroy the bookkeeper's order.
+        Assert.Null(await kit.OrderLinkAsync(id));
+
+        kit.FakeOrders[id] = PurchasingSyncTestKit.Order(id, PurchaseOrderStatus.Cancelled);
+        await kit.PlanOrderAsync(id);
+        Assert.True(await kit.Outbox.RetryAsync(step.Entry.Id));
+        Assert.All(await kit.DrainAsync(), s => Assert.Equal(XeroPushOutcome.NothingToDo, s.Result.Outcome));
+
+        Assert.Empty(await kit.Outbox.ListAsync([XeroOutboxState.Failed]));
+        Assert.Equal(handBody, kit.Simulator.Find("PurchaseOrders", handId)!.Body.ToJsonString());
+        Assert.Equal(handId, Assert.Single(kit.LiveOrders).Id);
+        Assert.Single(kit.WritesTo("PurchaseOrders")); // The hand order's own PUT only.
         kit.AssertNoViolations();
     }
 

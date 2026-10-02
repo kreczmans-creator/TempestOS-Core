@@ -20,11 +20,13 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// <para>
 /// <b>Never two orders.</b> A create is issued only when the order has no
 /// link in the tenant, and only after looking its number up
-/// (<c>GET PurchaseOrders/{PurchaseOrderNumber}</c>): an order with the
-/// number for this supplier is TempestOS's own (a create whose answer was
-/// lost, or one entered by hand) and is linked (<c>"reconciled"</c>); an
-/// order with the number for another contact Fails with the reason. Every
-/// write carries the entry's fixed <c>Idempotency-Key</c>.
+/// (<c>GET PurchaseOrders/{PurchaseOrderNumber}</c>) and applying
+/// <see cref="XeroPurchasingOwnership"/>'s one rule: an order provably this
+/// order's own (a create whose answer was lost: its number, contact and
+/// amounts match a create the log recorded) is linked (<c>"reconciled"</c>);
+/// any other order under the number is left untouched and the push is
+/// Rejected with the reason. Every write carries the entry's fixed
+/// <c>Idempotency-Key</c>.
 /// </para>
 /// <para>
 /// <b>Delete reads first</b>: an order already deleted in Xero is simply
@@ -153,7 +155,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
             return new XeroPushResult(XeroPushOutcome.Succeeded, Link: found);
 
         if (order.Status == PurchaseOrderStatus.Cancelled)
-            return new XeroPushResult(XeroPushOutcome.NothingToDo, $"Purchase order {order.Reference} was cancelled before it reached Xero; nothing is sent.");
+            return new XeroPushResult(XeroPushOutcome.NothingToDo, $"Purchase order {order.Reference} was cancelled, and no purchase order TempestOS sent for it is live in Xero; nothing is sent.");
 
         if (stale)
             return new XeroPushResult(XeroPushOutcome.NothingToDo, "The purchase order changed after this write was queued; the newer write creates the Xero purchase order.");
@@ -169,7 +171,9 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
 
         // Recorded before it goes, so a lost answer (or a crash mid-request)
         // still leaves proof this order's create may be in Xero.
-        await _creates.RecordSendingAsync(tenantId, entry.Document, body.PurchaseOrderNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken, body.Reference).ConfigureAwait(false);
+        await _creates.RecordSendingAsync(
+            tenantId, entry.Document, body.PurchaseOrderNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken,
+            body.Reference, XeroPurchasingOwnership.ValueOf(body)).ConfigureAwait(false);
         var created = await _api.CreatePurchaseOrderAsync(body, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
         await _creates.RecordAnswerAsync(tenantId, entry.Document, entry.IdempotencyKey, created.Outcome, cancellationToken).ConfigureAwait(false);
         if (created.Outcome != ConnectorOutcome.Ok)
@@ -204,7 +208,9 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
             {
                 return new XeroPushResult(
                     XeroPushOutcome.NothingToDo,
-                    order is null ? "The purchase order is not in Xero; there is nothing to delete." : $"Purchase order {order.Reference} never reached Xero; there is nothing to delete.");
+                    order is null
+                        ? "No purchase order TempestOS sent for this order is live in Xero; there is nothing to delete."
+                        : $"No purchase order TempestOS sent for {order.Reference} is live in Xero; there is nothing to delete.");
             }
 
             link = reconciled.Link;
@@ -249,118 +255,114 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
 
     /// <summary>
     /// Before a first create, and before a delete with no link (§6.4 items
-    /// 3–4): looks up the order's number and every number the
-    /// <see cref="XeroPurchasingCreateLog"/> says a create for this order was
-    /// sent under. An order is TempestOS's own and is linked when it is live
-    /// and either carries this supplier's contact and our reference (the
-    /// project code, as the create writes it) — or carries the contact and
-    /// reference the log shows a create for this order was sent with under
-    /// that number (its answer lost; the supplier's Xero contact may have been
-    /// relinked since) and is the only such order (deleted ones included). Any other live order with the number is someone else's — one
-    /// entered by hand, or for another contact: never linked, so never later
-    /// deleted by a cancel. When TempestOS's own is not found the push is
-    /// Rejected with the reason, never a silent duplicate; and with two
-    /// candidates, one keyed by hand under the same number and contact,
-    /// TempestOS cannot tell which is its own and Rejects without touching
-    /// either.
+    /// 3–4): looks Xero up by the order's number for its supplier's contact,
+    /// then by every number and contact the <see cref="XeroPurchasingCreateLog"/>
+    /// says a create for this order was sent with, and applies
+    /// <see cref="XeroPurchasingOwnership"/>'s one rule — the same the bill
+    /// handler applies. Only an order provably this order's own is linked
+    /// (so a cancel deletes it); any other is left untouched and reported
+    /// once: NothingToDo when the order is cancelled, gone or being deleted,
+    /// Rejected (Retry) for a live push, never a second order under the number.
     /// </summary>
+    /// <remarks>
+    /// Xero keeps a live purchase order number unique, so any live order
+    /// under the number that is not this order's own — another contact's,
+    /// another TempestOS order's, or one keyed or changed in Xero — clashes
+    /// with a create.
+    /// </remarks>
     private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileAsync(
         string tenantId, XeroOutboxEntry entry, XeroPurchaseOrderSnapshot? order, string? contactId, bool stale, CancellationToken cancellationToken)
     {
-        // A create for this order really sent under a number to a contact (the
-        // create log, written just before each create) — never outbox attempts:
-        // a push Rejected or Blocked before any create, then retried, sent none.
         var sent = await _creates.ListSentAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
-        var numbers = new List<string>();
-        if (order is not null && contactId is not null)
-            numbers.Add(order.Reference);
-        foreach (var create in sent)
-        {
-            if (!numbers.Contains(create.Number, StringComparer.OrdinalIgnoreCase))
-                numbers.Add(create.Number);
-        }
+        var current = order is not null && contactId is not null ? (Number: order.Reference.Trim(), ContactId: contactId) : default((string Number, string ContactId)?);
+        var pairs = XeroPurchasingOwnership.Pairs(current is { } now ? [now] : [], sent);
+        var sourceGone = order is null || order.Status == PurchaseOrderStatus.Cancelled || entry.Operation == XeroOperation.DeletePurchaseOrder;
 
-        var reference = order is null ? null : XeroPurchasingMapper.PurchaseOrderReference(order);
-        string? foreignNumber = null;
-        foreach (var number in numbers)
+        var byNumber = new Dictionary<string, IReadOnlyList<XeroWirePurchaseOrder>>(StringComparer.OrdinalIgnoreCase);
+        var withDeleted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        IReadOnlySet<string>? linkedElsewhere = null;
+        string? notOursNumber = null;
+        foreach (var (number, pairContactId) in pairs)
         {
-            var found = await _api.FindPurchaseOrdersByNumberAsync(number, cancellationToken).ConfigureAwait(false);
-            if (found.Outcome != ConnectorOutcome.Ok)
-                return (XeroPurchasingMapper.Failed(found), null);
+            List<XeroWirePurchaseOrder> UnderPair(IEnumerable<XeroWirePurchaseOrder> orders) =>
+                [.. orders.Where(o => string.Equals(o.Contact?.ContactID, pairContactId, StringComparison.OrdinalIgnoreCase)
+                                      && !linkedElsewhere!.Contains(o.PurchaseOrderID!))];
 
-            var all = found.Value!.Where(o => o.PurchaseOrderID is not null).ToList();
-            var live = all.Where(o => XeroPurchasingMapper.Word(o.Status) != XeroPurchasingMapper.StatusDeleted).ToList();
-            if (live.Count == 0)
+            if (!byNumber.TryGetValue(number, out var all))
+            {
+                var found = await _api.FindPurchaseOrdersByNumberAsync(number, cancellationToken).ConfigureAwait(false);
+                if (found.Outcome != ConnectorOutcome.Ok)
+                    return (XeroPurchasingMapper.Failed(found), null);
+
+                byNumber[number] = all = [.. found.Value!.Where(o => o.PurchaseOrderID is not null)];
+            }
+
+            if (!all.Any(IsLive))
                 continue;
 
-            var isCurrent = order is not null && string.Equals(number, order.Reference, StringComparison.OrdinalIgnoreCase);
-            var sentUnder = sent.Where(c => string.Equals(c.Number, number, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            // Ours by reference: this supplier's contact and our project reference.
-            var byReference = isCurrent && contactId is not null && Normalise(reference).Length > 0
-                ? live.Where(o => string.Equals(o.Contact?.ContactID, contactId, StringComparison.OrdinalIgnoreCase)
-                                  && string.Equals(Normalise(o.Reference), Normalise(reference), StringComparison.OrdinalIgnoreCase)).ToList()
-                : [];
-
-            // Ours by the log: the contact and reference a create for this order was
-            // sent with under this number (another reference was keyed by someone else).
-            var bySent = all.Where(o => sentUnder.Any(c =>
-                string.Equals(o.Contact?.ContactID, c.ContactId, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(Normalise(o.Reference), Normalise(c.Reference), StringComparison.OrdinalIgnoreCase))).ToList();
-            var bySentLive = bySent.Where(o => XeroPurchasingMapper.Word(o.Status) != XeroPurchasingMapper.StatusDeleted).ToList();
-
-            XeroWirePurchaseOrder? ours = null;
-            var ambiguous = 0;
-            if (byReference.Count == 1)
-                ours = byReference[0];
-            else if (byReference.Count > 1)
-                ambiguous = byReference.Count;
-            else if (bySentLive.Count > 0)
+            linkedElsewhere ??= await LinkedToOtherOrdersAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
+            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
+            var judged = XeroPurchasingOwnership.Judge(UnderPair(all), sentUnder, XeroPurchasingOwnership.ValueOf, IsLive);
+            if (judged.Verdict == XeroOwnershipVerdict.Ours && !withDeleted.Contains(number))
             {
-                if (bySent.Count == 1)
-                    ours = bySentLive[0];
-                else
-                    ambiguous = bySent.Count;
+                // Xero answers one order per number: before calling one ours, read the deleted
+                // copies under it too — the evidence that a live copy may be someone else's.
+                var deleted = await _api.FindDeletedPurchaseOrdersAsync(number, order?.IssuedDate, cancellationToken).ConfigureAwait(false);
+                if (deleted.Outcome != ConnectorOutcome.Ok)
+                    return (XeroPurchasingMapper.Failed(deleted), null);
+
+                withDeleted.Add(number);
+                byNumber[number] = all = [.. all, .. deleted.Value!.Orders.Where(d => !all.Any(o => string.Equals(o.PurchaseOrderID, d.PurchaseOrderID, StringComparison.OrdinalIgnoreCase)))];
+                judged = deleted.Value.Complete
+                    ? XeroPurchasingOwnership.Judge(UnderPair(all), sentUnder, XeroPurchasingOwnership.ValueOf, IsLive)
+                    : new XeroOwnershipJudgement<XeroWirePurchaseOrder>(XeroOwnershipVerdict.Ambiguous, Count: all.Count);
             }
 
-            if (ambiguous > 0)
+            if (judged.Verdict == XeroOwnershipVerdict.Ambiguous)
+                return (XeroPurchasingOwnership.Ambiguous("purchase orders", number, judged.Count, "order", sourceGone), null);
+
+            if (judged.Verdict == XeroOwnershipVerdict.Ours)
             {
-                return (new XeroPushResult(
-                    XeroPushOutcome.Rejected,
-                    $"Xero holds {ambiguous} purchase orders numbered {number} for this supplier: TempestOS sent one (its answer was lost) and the others were entered in Xero, "
-                    + "so it cannot tell which is this order's own and touches none of them. Delete or renumber the extra one in Xero, then Retry."), null);
+                var ours = judged.Ours!;
+
+                // This entry's own create landed with what it sent, to the contact the order still has.
+                var landed = !stale
+                             && entry.Operation == XeroOperation.PushPurchaseOrder
+                             && current is { } pair
+                             && string.Equals(number, pair.Number, StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(pairContactId, pair.ContactId, StringComparison.OrdinalIgnoreCase)
+                             && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+
+                var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
+                await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+                await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
+                return (null, link);
             }
 
-            if (ours is null)
-            {
-                foreignNumber ??= number; // Someone else's: keep looking under the numbers a create was sent with.
-                continue;
-            }
-
-            // Found after this entry's own create was sent under this number to
-            // this contact — and they are still the order's: what it sent landed.
-            var landed = !stale
-                         && entry.Operation == XeroOperation.PushPurchaseOrder
-                         && isCurrent
-                         && string.Equals(ours.Contact?.ContactID, contactId, StringComparison.OrdinalIgnoreCase)
-                         && await _creates.WasSentAsync(tenantId, entry.Document, number, contactId!, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
-
-            var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
-            await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
-            await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
-            return (null, link);
+            // Any live order left under the number is not this order's: keep looking under the other pairs.
+            notOursNumber ??= number;
         }
 
-        if (foreignNumber is null)
+        if (notOursNumber is null)
             return (null, null);
 
-        return (new XeroPushResult(
-            XeroPushOutcome.Rejected,
-            $"Purchase order number {foreignNumber} is already used in Xero by another purchase order (for a different contact, or not carrying this order's project reference {reference ?? "(none)"}); "
-            + "TempestOS never makes a second purchase order with the same number, nor takes over one it did not make. Rename or delete that one in Xero, then Retry."), null);
+        return (XeroPurchasingOwnership.NotOurs(
+            "Purchase order", "order", notOursNumber,
+            "Check with whoever keeps the books which order that is, then Retry.",
+            sourceGone), null);
     }
 
-    private static string Normalise(string? reference) => reference?.Trim() ?? string.Empty;
+    private static bool IsLive(XeroWirePurchaseOrder order) => XeroPurchasingMapper.Word(order.Status) != XeroPurchasingMapper.StatusDeleted;
+
+    /// <summary>The Xero ids of the orders already linked to a TempestOS purchase order other than <paramref name="document"/> in the tenant.</summary>
+    private async Task<IReadOnlySet<string>> LinkedToOtherOrdersAsync(string tenantId, XeroDocumentRef document, CancellationToken cancellationToken)
+    {
+        var links = await _links.ListAsync(tenantId, XeroDocumentKind.PurchaseOrder, cancellationToken).ConfigureAwait(false);
+        return links
+            .Where(l => l.Document != document)
+            .Select(l => l.XeroId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
 
     private async Task<XeroContactResolution> ResolveSupplierAsync(string tenantId, XeroPurchaseOrderSnapshot order, CancellationToken cancellationToken)
     {

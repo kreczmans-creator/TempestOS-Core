@@ -31,7 +31,9 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// expense's own <c>EXP-{id}</c>, and every number and contact the
 /// <see cref="XeroPurchasingCreateLog"/> says a create was sent with, should
 /// the supplier's number or the supplier have changed since) and links a live
-/// bill it finds (<c>"reconciled"</c>) instead of creating another.
+/// bill it finds (<c>"reconciled"</c>) instead of creating another — only
+/// one <see cref="XeroPurchasingOwnership"/>'s rule proves is the expense's
+/// own; any other is left untouched.
 /// </para>
 /// <para>
 /// <b>Read before write.</b> An update or delete reads the bill first: it is
@@ -164,7 +166,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
             if (link is null)
             {
                 if (expense.IsDeleted)
-                    return new XeroPushResult(XeroPushOutcome.NothingToDo, "The expense was deleted before it reached Xero; nothing is sent.");
+                    return new XeroPushResult(XeroPushOutcome.NothingToDo, "The expense was deleted, and no bill TempestOS sent for it is live in Xero; nothing is sent.");
 
                 if (stale)
                     return new XeroPushResult(XeroPushOutcome.NothingToDo, "The expense changed after this write was queued; the newer write creates the Xero bill.");
@@ -175,7 +177,9 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
 
                 // Recorded before it goes, so a lost answer (or a crash mid-request)
                 // still leaves proof this expense's create may be in Xero.
-                await _creates.RecordSendingAsync(tenantId, entry.Document, createBody.InvoiceNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+                await _creates.RecordSendingAsync(
+                    tenantId, entry.Document, createBody.InvoiceNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken,
+                    value: XeroPurchasingOwnership.ValueOf(createBody)).ConfigureAwait(false);
                 var created = await _api.CreateBillAsync(createBody, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
                 await _creates.RecordAnswerAsync(tenantId, entry.Document, entry.IdempotencyKey, created.Outcome, cancellationToken).ConfigureAwait(false);
                 if (created.Outcome != ConnectorOutcome.Ok)
@@ -272,7 +276,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
             if (reconciled.Result is { } answered)
                 return answered;
             if (reconciled.Link is null)
-                return new XeroPushResult(XeroPushOutcome.NothingToDo, "The expense never reached Xero; there is nothing to delete.");
+                return new XeroPushResult(XeroPushOutcome.NothingToDo, "No bill TempestOS sent for this expense is live in Xero; there is nothing to delete.");
 
             link = reconciled.Link;
         }
@@ -310,77 +314,48 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
     /// <summary>
     /// Before a first create, and before a delete with no link (§6.4 item 3):
     /// looks Xero up by bill number + <c>ContactID</c> — the expense's current
-    /// number to its current contact and, when that is the supplier's, its
-    /// <c>EXP-{id}</c> number too (a create sent before the supplier's number
-    /// was entered); then every number and contact the
-    /// <see cref="XeroPurchasingCreateLog"/> says a create for this expense was
-    /// really sent with (one sent before the supplier's number or the supplier
-    /// itself was changed, its answer lost). Every pair is looked at — a bill
-    /// someone else keyed under one pair never hides this expense's own bill
-    /// under another.
+    /// number to its current contact and its <c>EXP-{id}</c> number to that
+    /// contact (a create sent before the supplier's number was entered), then
+    /// every number and contact the <see cref="XeroPurchasingCreateLog"/> says a
+    /// create for this expense was sent with — and applies
+    /// <see cref="XeroPurchasingOwnership"/>'s one rule, the same the purchase
+    /// order handler applies. Every pair is looked at: a bill someone else
+    /// keyed under one never hides this expense's own bill under another.
     /// </summary>
     /// <remarks>
-    /// A bill found is linked instead of created again only when it is this
-    /// expense's own:
-    /// <list type="bullet">
-    /// <item>a bill already linked to another TempestOS expense is never taken
-    /// over — two expenses may carry one supplier invoice number (a receipt
-    /// split across categories), and each gets its own bill;</item>
-    /// <item>a live bill under the expense's own <c>EXP-{id}</c> number is
-    /// TempestOS's (no one else uses that number);</item>
-    /// <item>a bill under the supplier's number is TempestOS's only when the
-    /// <see cref="XeroPurchasingCreateLog"/> shows a create for this expense
-    /// was really sent under that number to that contact (by this entry or an
-    /// earlier one) — always so for a pair read from the log — and it is the
-    /// <em>only</em> bill under that pair not linked elsewhere (deleted or
-    /// voided ones included): with two, one was keyed by hand and TempestOS
-    /// cannot tell which is its own, so the push or delete is Rejected with
-    /// the reason and neither is touched. Outbox attempts are not that proof:
-    /// a push Rejected or Blocked before any create, then retried, amended or
-    /// deleted, never sent one.</item>
-    /// </list>
-    /// A live bill under a pair with no such proof is someone else's —
-    /// typically the bookkeeper's, by hand. It is never linked, overwritten or
-    /// deleted; the lookup carries on through the remaining pairs, and only
-    /// when none holds this expense's own bill is the push Rejected with the
-    /// reason (for a deleted expense, NothingToDo: the expense never reached
-    /// Xero). When its own bill is found it is linked, so a delete deletes it
-    /// and a push rewrites it — or, should the current number be the one the
-    /// other bill uses, is Rejected then, with the bill linked
-    /// (<see cref="ForeignBillUnderAsync"/>).
-    /// A bill linked under an earlier number or contact is linked with no
-    /// pushed content, so the push that follows rewrites it to the current
-    /// number and contact while Xero still holds it as a draft, and a delete
-    /// deletes it.
+    /// Only a bill provably this expense's own is linked (so a delete deletes
+    /// it and a push rewrites it while Xero holds it as a draft — or, should
+    /// the current number be one another bill uses, is Rejected then, with the
+    /// bill linked: <see cref="ForeignBillUnderAsync"/>). A bill linked to
+    /// another TempestOS expense is that expense's (two expenses may carry one
+    /// supplier invoice number) and is neither ours nor in the way. Any other
+    /// live bill is left untouched and reported once: NothingToDo when the
+    /// expense is deleted or gone, Rejected (Retry) for a live push. A bill
+    /// linked under an earlier number or contact is linked with no pushed
+    /// content, so the push that follows rewrites it to the current number
+    /// and contact while Xero still holds it as a draft.
     /// </remarks>
     private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileAsync(
         string tenantId, XeroOutboxEntry entry, Guid expenseId, XeroExpenseSnapshot? expense, string? contactId, bool stale, CancellationToken cancellationToken)
     {
         var byId = $"{XeroPurchasingMapper.ExpenseBillNumberPrefix}{expenseId:N}";
-        var current = expense is null ? null : XeroPurchasingMapper.BillNumber(expense);
-        var lookups = new List<(string Number, string ContactId)>();
-        void Add(string number, string contact)
+        var currentNumber = expense is null ? null : XeroPurchasingMapper.BillNumber(expense);
+        var current = new List<(string Number, string ContactId)>();
+        if (contactId is not null && currentNumber is not null)
         {
-            if (!lookups.Any(l => string.Equals(l.Number, number, StringComparison.OrdinalIgnoreCase)
-                                  && string.Equals(l.ContactId, contact, StringComparison.OrdinalIgnoreCase)))
-                lookups.Add((number, contact));
+            current.Add((currentNumber, contactId));
+            current.Add((byId, contactId));
         }
 
-        if (contactId is not null && current is not null)
-        {
-            Add(current, contactId);
-            Add(byId, contactId);
-        }
+        var sent = await _creates.ListSentAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
+        var pairs = XeroPurchasingOwnership.Pairs(current, sent);
+        var sourceGone = entry.Operation == XeroOperation.DeleteExpenseBill || expense is null || expense.IsDeleted;
 
-        foreach (var sent in await _creates.ListSentAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false))
-            Add(sent.Number, sent.ContactId);
-
-        var deletedExpense = entry.Operation == XeroOperation.DeleteExpenseBill || expense is null || expense.IsDeleted;
         IReadOnlySet<string>? linkedElsewhere = null;
-        string? foreignNumber = null;
-        foreach (var (number, lookupContactId) in lookups)
+        string? notOursNumber = null;
+        foreach (var (number, pairContactId) in pairs)
         {
-            var found = await _api.FindBillsAsync(number, lookupContactId, cancellationToken).ConfigureAwait(false);
+            var found = await _api.FindBillsAsync(number, pairContactId, cancellationToken).ConfigureAwait(false);
             if (found.Outcome != ConnectorOutcome.Ok)
                 return (XeroPurchasingMapper.Failed(found), null);
 
@@ -389,64 +364,43 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
                 continue;
 
             linkedElsewhere ??= await LinkedToOtherExpensesAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
-            var unclaimed = bills.Where(b => !linkedElsewhere.Contains(b.InvoiceID!)).ToList();
-            var live = unclaimed.Where(IsLive).ToList();
-            if (live.Count == 0)
-                continue; // Every live bill under this number is another expense's: this one gets its own.
+            var underPair = bills.Where(b => !linkedElsewhere.Contains(b.InvoiceID!)).ToList();
+            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
+            var judged = XeroPurchasingOwnership.Judge(underPair, sentUnder, XeroPurchasingOwnership.ValueOf, IsLive);
 
-            var isOwnNumber = string.Equals(number, byId, StringComparison.OrdinalIgnoreCase);
-            var sentUnderThisNumber = await _creates.WasSentAsync(tenantId, entry.Document, number, lookupContactId, cancellationToken: cancellationToken).ConfigureAwait(false);
-            if (!isOwnNumber && !sentUnderThisNumber)
+            if (judged.Verdict == XeroOwnershipVerdict.Ambiguous)
+                return (XeroPurchasingOwnership.Ambiguous("bills", number, judged.Count, "expense", sourceGone), null);
+
+            if (judged.Verdict == XeroOwnershipVerdict.Ours)
             {
-                // Someone else's bill: never this expense's. Keep looking — its own
-                // bill may be under a number or contact a create was sent with before.
-                foreignNumber ??= number;
-                continue;
+                var ours = judged.Ours!;
+
+                // This entry's own create landed with what it sent, under the number and contact the expense still has.
+                var landed = !stale
+                             && entry.Operation == XeroOperation.PushExpenseBill
+                             && string.Equals(number, currentNumber, StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(pairContactId, contactId, StringComparison.OrdinalIgnoreCase)
+                             && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+
+                var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
+                await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+                await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
+                return (null, link);
             }
 
-            if (!isOwnNumber && unclaimed.Count > 1)
-            {
-                // A create went out under this pair, and someone keyed another bill
-                // under it too: nothing says which is TempestOS's.
-                return (new XeroPushResult(
-                    XeroPushOutcome.Rejected,
-                    $"Xero holds {unclaimed.Count} bills numbered {number} for this supplier: TempestOS sent one (its answer was lost) and the others were entered in Xero, "
-                    + "so it cannot tell which is the expense's own and touches none of them. "
-                    + (deletedExpense
-                        ? "Delete the expense's bill in Xero by hand."
-                        : "Delete or renumber the extra bill in Xero, then Retry.")), null);
-            }
-
-            // Found after this entry's own create was sent under this number to
-            // this contact — and they are still the expense's: what it sent landed.
-            var ours = live[0];
-            var landed = !stale
-                         && entry.Operation == XeroOperation.PushExpenseBill
-                         && string.Equals(number, current, StringComparison.OrdinalIgnoreCase)
-                         && string.Equals(lookupContactId, contactId, StringComparison.OrdinalIgnoreCase)
-                         && await _creates.WasSentAsync(tenantId, entry.Document, number, lookupContactId, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
-            var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
-            await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
-            await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
-            return (null, link);
+            // NotOurs: someone else's bill, left as it is. NothingLive: every live bill
+            // under the pair is another expense's, and this one gets its own.
+            if (judged.Verdict == XeroOwnershipVerdict.NotOurs)
+                notOursNumber ??= number;
         }
 
-        if (foreignNumber is null)
+        if (notOursNumber is null)
             return (null, null);
 
-        // No bill of this expense's own anywhere: only someone else's.
-        // A deleted expense has nothing left to change: asking for a new number and a Retry makes no sense.
-        if (deletedExpense)
-        {
-            return (new XeroPushResult(
-                XeroPushOutcome.NothingToDo,
-                $"The expense never reached Xero; the bill under {foreignNumber} is not TempestOS's, and is left as it is."), null);
-        }
-
-        return (new XeroPushResult(
-            XeroPushOutcome.Rejected,
-            $"Bill number {foreignNumber} is already used in Xero by another bill for this supplier, which TempestOS did not create; "
-            + "TempestOS never takes over or changes a bill it did not make. Link the expense to it by hand, or change the supplier invoice number on the expense, then Retry."), null);
+        return (XeroPurchasingOwnership.NotOurs(
+            "Bill", "expense", notOursNumber,
+            "Change the supplier invoice number on the expense if it was mistyped, or check with whoever keeps the books which bill that is; then Retry.",
+            sourceGone), null);
     }
 
     /// <summary>

@@ -583,7 +583,7 @@ public sealed class XeroExpenseBillSyncTests
         Assert.All(steps, s =>
         {
             Assert.Equal(XeroPushOutcome.NothingToDo, s.Result.Outcome);
-            Assert.Contains("never reached Xero; the bill under NS-9 is not TempestOS's", s.Result.Reason, StringComparison.Ordinal);
+            Assert.Contains("the bill numbered NS-9 there is not TempestOS's, and is left as it is", s.Result.Reason, StringComparison.Ordinal);
             Assert.DoesNotContain("Retry", s.Result.Reason, StringComparison.Ordinal);
         });
         Assert.Null(await kit.ExpenseLinkAsync(id));
