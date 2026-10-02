@@ -152,7 +152,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         var reconciledNow = false;
         if (link is null)
         {
-            var reconciled = await ReconcileByNumberAsync(tenantId, entry, quote, contact.ContactId!, stale, cancellationToken).ConfigureAwait(false);
+            var reconciled = await ReconcileByNumberAsync(tenantId, entry, quote, contact.ContactId!, cancellationToken).ConfigureAwait(false);
             if (reconciled.Result is { } answered)
                 return answered;
 
@@ -243,7 +243,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
     /// silent duplicate. Deleted quotes are ignored (Xero frees their number).
     /// </summary>
     private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileByNumberAsync(
-        string tenantId, XeroOutboxEntry entry, XeroQuoteSnapshot quote, string contactId, bool stale, CancellationToken cancellationToken)
+        string tenantId, XeroOutboxEntry entry, XeroQuoteSnapshot quote, string contactId, CancellationToken cancellationToken)
     {
         var found = await _api.FindQuotesByNumberAsync(quote.Reference, cancellationToken).ConfigureAwait(false);
         if (found.Outcome != ConnectorOutcome.Ok)
@@ -266,13 +266,19 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
                 + "TempestOS never makes a second quote with the same number. Rename or delete that quote in Xero, then Retry."), null);
         }
 
-        // The same revision found after this entry was sent before: what it
-        // sent landed, so its content is what Xero holds.
-        var landed = !stale
-                     && entry.Attempts > 1
-                     && string.Equals(ours.Reference?.Trim(), quote.RevisionLabel, StringComparison.OrdinalIgnoreCase);
+        // This entry's revision found after the entry was sent before: what
+        // it sent landed, so its content is what Xero holds — even when the
+        // quotation has moved on to a newer revision since (stale): the link
+        // then records the older revision Xero holds, not the current one.
+        // Otherwise (keyed in by hand, or Send to Xero on an older quote) the
+        // content is unknown; the link records the revision Xero's Reference
+        // names, so a copy past DRAFT showing another revision is never given
+        // this revision's PDF (XeroQuoteMapper.IsRevisionNotSent).
+        var landed = entry.Attempts > 1
+                     && string.Equals(XeroQuoteMapper.RevisionToken(ours.Reference), XeroQuoteMapper.RevisionOf(entry.ContentHash), StringComparison.Ordinal);
 
-        var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroQuoteMapper.LinkedByReconciled);
+        var link = NewLink(
+            tenantId, entry.Document, ours, landed ? entry.ContentHash : XeroQuoteMapper.ReconciledHash(ours.Reference), XeroQuoteMapper.LinkedByReconciled);
         await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditLinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
         return (null, link);

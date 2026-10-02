@@ -201,9 +201,15 @@ public static class XeroQuoteMapper
     /// <summary>
     /// The hash of everything a <see cref="XeroOperation.PushQuote"/> carries
     /// from TempestOS — number, revision, title, project, client, dates,
-    /// terms, currency and lines — lower-case hex SHA-256 (safe in an
-    /// <c>Idempotency-Key</c>). An unchanged quotation hashes the same, so it
-    /// is never pushed twice; a new revision hashes differently.
+    /// terms, currency and lines — as <c>{revision}.{sha256}</c>: the
+    /// revision token (<see cref="RevisionToken"/>, <c>R1</c>, <c>R2</c>, …;
+    /// <c>R0</c> when none was ever approved), a dot, and the lower-case hex
+    /// SHA-256 (all safe in an <c>Idempotency-Key</c>). An unchanged
+    /// quotation hashes the same, so it is never pushed twice; a new
+    /// revision hashes differently. The revision prefix lets a link say
+    /// which revision Xero holds (<see cref="IsRevisionNotSent"/>) without
+    /// confusing a renamed client or project on the same revision with a
+    /// revision that was not sent.
     /// </summary>
     /// <param name="quote">The quotation.</param>
     public static string ContentHash(XeroQuoteSnapshot quote)
@@ -231,8 +237,61 @@ public static class XeroQuoteMapper
             }),
         };
 
-        return Sha256Hex(JsonSerializer.Serialize(canonical, HashOptions));
+        return $"{RevisionToken(quote.RevisionLabel)}.{Sha256Hex(JsonSerializer.Serialize(canonical, HashOptions))}";
     }
+
+    /// <summary>
+    /// The revision token of a revision label or of a Xero quote's
+    /// <c>Reference</c>: <c>R1</c>, <c>R2</c>, … (upper-cased); <c>R0</c> for
+    /// none (a quotation never approved as a revision);
+    /// <see cref="UnknownRevision"/> for a reference that names no revision
+    /// (a quote keyed into Xero by hand with its own reference).
+    /// </summary>
+    /// <param name="labelOrReference">The revision label, or Xero's <c>Reference</c>.</param>
+    public static string RevisionToken(string? labelOrReference)
+    {
+        var value = labelOrReference?.Trim();
+        if (string.IsNullOrEmpty(value))
+            return "R0";
+
+        return value.Length > 1
+               && value[0] is 'R' or 'r'
+               && value[1] != '0'
+               && value.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0
+               && value.Length <= 10
+            ? "R" + value[1..]
+            : UnknownRevision;
+    }
+
+    /// <summary>The revision token (<see cref="RevisionToken"/>) of a Xero quote whose <c>Reference</c> names no revision TempestOS knows.</summary>
+    public const string UnknownRevision = "Rx";
+
+    /// <summary>
+    /// The revision a link's <see cref="XeroLink.LastPushedContentHash"/>
+    /// records Xero as holding — the token before the dot of a
+    /// <see cref="ContentHash"/> or <see cref="ReconciledHash"/>; <see langword="null"/>
+    /// when none is recorded.
+    /// </summary>
+    /// <param name="contentHash">The recorded hash.</param>
+    public static string? RevisionOf(string? contentHash)
+    {
+        var dot = contentHash?.IndexOf('.', StringComparison.Ordinal) ?? -1;
+        return dot > 0 ? contentHash![..dot] : null;
+    }
+
+    /// <summary>
+    /// What a link records for a Xero quote found by its number whose content
+    /// TempestOS did not push (keyed in by hand, or <em>Send to Xero</em> on
+    /// an older quotation): the revision its <c>Reference</c> names, and no
+    /// content hash — so it never matches <see cref="ContentHash"/> (a DRAFT
+    /// copy is brought up to date), while <see cref="IsRevisionNotSent"/> can
+    /// still tell a copy past DRAFT that shows another revision.
+    /// A copy with no <c>Reference</c> at all names no revision either
+    /// (<see cref="UnknownRevision"/>): it is not taken for another revision.
+    /// </summary>
+    /// <param name="xeroReference">The Xero quote's <c>Reference</c>.</param>
+    public static string ReconciledHash(string? xeroReference) =>
+        $"{(string.IsNullOrWhiteSpace(xeroReference) ? UnknownRevision : RevisionToken(xeroReference))}.reconciled";
 
     /// <summary>The content hash of a <see cref="XeroOperation.SetQuoteStatus"/> to <paramref name="status"/> — the same for every quote and every attempt, so the outbox never queues the same status change twice.</summary>
     /// <param name="status">The target status.</param>
@@ -409,11 +468,16 @@ public static class XeroQuoteMapper
 
     /// <summary>
     /// Whether Xero is known to hold the linked quote past <c>DRAFT</c> while
-    /// carrying older content than <paramref name="quote"/>'s current
-    /// revision: content was pushed once (<see cref="XeroLink.LastPushedContentHash"/>)
-    /// and differs from <see cref="ContentHash"/>. Xero changes content only
-    /// while <c>DRAFT</c> (Q1), so that revision — and its PDF, which follows
-    /// its content — never reaches Xero.
+    /// carrying another revision than <paramref name="quote"/>'s current one:
+    /// the revision the link records (<see cref="RevisionOf"/> of
+    /// <see cref="XeroLink.LastPushedContentHash"/> — what TempestOS pushed,
+    /// or, for a reconciled link, what Xero's <c>Reference</c> names) differs
+    /// from <see cref="XeroQuoteSnapshot.RevisionLabel"/>. Xero changes content
+    /// only while <c>DRAFT</c> (Q1), so that revision — and its PDF, which
+    /// follows its content — never reaches Xero. It compares revisions, not
+    /// whole content: a client or project renamed on the same revision is not
+    /// a revision that was not sent. A copy whose reference names no revision
+    /// (<see cref="UnknownRevision"/>) is not flagged.
     /// </summary>
     /// <param name="quote">The TempestOS quotation.</param>
     /// <param name="link">Its Xero link.</param>
@@ -425,8 +489,9 @@ public static class XeroQuoteMapper
         var word = link.LastKnownXeroStatus?.Trim().ToUpperInvariant();
         return !string.IsNullOrEmpty(word)
                && word != StatusWord(XeroQuoteWriteStatus.Draft)
-               && link.LastPushedContentHash is not null
-               && !string.Equals(link.LastPushedContentHash, ContentHash(quote), StringComparison.Ordinal);
+               && RevisionOf(link.LastPushedContentHash) is { } held
+               && held != UnknownRevision
+               && !string.Equals(held, RevisionToken(quote.RevisionLabel), StringComparison.Ordinal);
     }
 
     /// <summary>The reason a revision's content (and PDF) did not go to a Xero quote held past <c>DRAFT</c> (Q1).</summary>

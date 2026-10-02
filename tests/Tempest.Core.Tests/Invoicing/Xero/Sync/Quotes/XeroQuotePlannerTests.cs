@@ -241,4 +241,43 @@ public sealed class XeroQuotePlannerTests
         Assert.Equal("Deleted in Xero.", XeroQuoteMapper.DriftNote(r2, link with { LastKnownXeroStatus = "DELETED" }));
         Assert.StartsWith("Invoiced in Xero", XeroQuoteMapper.DriftNote(r2, link with { LastKnownXeroStatus = "INVOICED" }), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TheRevisionNotSentNote_IgnoresAClientOrProjectRenamedOnTheSameRevision()
+    {
+        var id = Guid.NewGuid();
+        var r1 = QuoteSyncTestKit.Quote(id);
+        var link = new XeroLink(
+            XeroLink.CurrentSchemaVersion, QuoteSyncTestKit.TenantId, QuoteSyncTestKit.Ref(id), "q-1", "P0012-Q-001", XeroQuoteMapper.ContentHash(r1), "SENT",
+            null, null, DateTimeOffset.UnixEpoch, null, XeroQuoteMapper.LinkedByCreated);
+
+        // The customer's code, the project's name or the title changed — the same revision, so nothing was "not sent".
+        var renamed = r1 with { ClientOrganisationReference = "ACME-2", ProjectSummary = "P0012 Renamed", Title = "Bracket redesign (v2)" };
+        Assert.NotEqual(XeroQuoteMapper.ContentHash(r1), XeroQuoteMapper.ContentHash(renamed)); // a DRAFT copy is still brought up to date
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(renamed with { Status = QuotationStatus.Sent }, link));
+        Assert.Null(XeroQuoteMapper.DriftNote(renamed with { Status = QuotationStatus.Sent }, link));
+        Assert.True(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id, revision: 2), link));
+    }
+
+    [Fact]
+    public void AReconciledLink_RecordsTheRevisionXeroNames_SoAnotherRevisionIsNotSent()
+    {
+        var id = Guid.NewGuid();
+        var link = new XeroLink(
+            XeroLink.CurrentSchemaVersion, QuoteSyncTestKit.TenantId, QuoteSyncTestKit.Ref(id), "q-1", "P0012-Q-001", XeroQuoteMapper.ReconciledHash(" r1 "), "SENT",
+            null, null, DateTimeOffset.UnixEpoch, null, XeroQuoteMapper.LinkedByReconciled);
+
+        Assert.Equal("R1", XeroQuoteMapper.RevisionOf(link.LastPushedContentHash));
+        Assert.NotEqual(XeroQuoteMapper.ContentHash(QuoteSyncTestKit.Quote(id)), link.LastPushedContentHash);
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id), link));
+        Assert.True(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id, revision: 2), link));
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id, revision: 2), link with { LastKnownXeroStatus = "DRAFT" }));
+
+        // A reference naming no revision, or none at all (keyed in by hand): unknown, not flagged.
+        Assert.Equal(XeroQuoteMapper.UnknownRevision, XeroQuoteMapper.RevisionToken("PO 4471"));
+        Assert.Equal(XeroQuoteMapper.UnknownRevision, XeroQuoteMapper.RevisionToken("R01"));
+        Assert.Equal("R0", XeroQuoteMapper.RevisionToken(null));
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id, revision: 2), link with { LastPushedContentHash = XeroQuoteMapper.ReconciledHash("PO 4471") }));
+        Assert.False(XeroQuoteMapper.IsRevisionNotSent(QuoteSyncTestKit.Quote(id, revision: 2), link with { LastPushedContentHash = XeroQuoteMapper.ReconciledHash(null) }));
+    }
 }
