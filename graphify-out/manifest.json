@@ -17136,9 +17136,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/CustomersSuppliersView.cs": {
-    "mtime": 1790977386.8436315,
-    "seen": 1790977598.8395386,
-    "ast_hash": "e7092cfec1a2486685352afa420c30a6",
+    "mtime": 1790979812.7086825,
+    "seen": 1790980117.6875992,
+    "ast_hash": "38cce5462e637157e3c5a7f662e2eb1e",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/RateCardsView.cs": {
@@ -30300,21 +30300,27 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/XeroContactLinkPrompt.cs": {
-    "mtime": 1790977386.8601408,
-    "seen": 1790977598.8396056,
-    "ast_hash": "cfcfb03529d5fe87c0ecd1556012f4b4",
+    "mtime": 1790979812.7057776,
+    "seen": 1790980117.687689,
+    "ast_hash": "dc9864fd85ac09499ed5cb700d92fb2c",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/ContactLinkPromptTests.cs": {
-    "mtime": 1790977386.8601408,
-    "seen": 1790977598.8410552,
-    "ast_hash": "a2a98182e67868a16d8f4b755e9cf4a4",
+    "mtime": 1790979644.7468357,
+    "seen": 1790980117.6889966,
+    "ast_hash": "971518851231d4804cae027bb7d0e2e0",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/ContactLinkViewTests.cs": {
-    "mtime": 1790977386.8633993,
-    "seen": 1790977598.8410566,
-    "ast_hash": "8e04bae87112c4a08200915008e2eac4",
+    "mtime": 1790979644.7437656,
+    "seen": 1790980117.6889987,
+    "ast_hash": "ddbaa6a442de8cbcbe35074497eab404",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/Xero/ContactLinkGuardTests.cs": {
+    "mtime": 1790979796.3171678,
+    "seen": 1790980117.6889944,
+    "ast_hash": "a8dfbf6d3e6a00d41122e6b2ca953d1f",
     "semantic_hash": ""
   }
 }
