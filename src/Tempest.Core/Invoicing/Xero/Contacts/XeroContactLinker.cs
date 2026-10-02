@@ -366,9 +366,12 @@ public sealed class XeroContactLinker : IXeroContactLinker
     /// creating another; an archived one, or more than one, is refused with
     /// the reason. Only then <c>PUT Contacts</c> (<c>Name</c>,
     /// <c>ContactNumber</c>, VAT and company number, email), with the
-    /// <c>Idempotency-Key</c> of the last attempt when its answer was
-    /// uncertain, else a fresh one; a lost or failed response is followed by one
-    /// more lookup, so a contact Xero did create is linked, not repeated.
+    /// <c>Idempotency-Key</c> and body of the last attempt when its answer was
+    /// uncertain (even if the organisation was edited since), else a fresh
+    /// one; a lost or failed response is followed by one more lookup, so a
+    /// contact Xero did create is linked, not repeated. A look-up that finds
+    /// the number settles an uncertain attempt; a create is settled only
+    /// after its link is saved.
     /// </remarks>
     public async Task<ConnectorResult<XeroLink>> CreateAsync(string organisationReference, CancellationToken cancellationToken = default)
     {
@@ -412,17 +415,27 @@ public sealed class XeroContactLinker : IXeroContactLinker
                 FitOrNull(organisation.RegistrationNumber),
                 string.IsNullOrWhiteSpace(organisation.EmailAddress) ? null : organisation.EmailAddress.Trim());
 
-            var attempt = await BeginAttemptAsync(CreateOperation, tenantId, document.TempestKey, cancellationToken).ConfigureAwait(false);
-            var created = await _api.CreateContactAsync(body, CreateKey(tenantId, document, body, attempt.Occurrence), cancellationToken).ConfigureAwait(false);
-            await EndAttemptAsync(attempt, created.Outcome, cancellationToken).ConfigureAwait(false);
+            // While an earlier attempt's answer is still uncertain, its body
+            // (and so its key) is sent again unchanged, even if the
+            // organisation was edited since: Xero then replays that attempt
+            // rather than making a second contact.
+            var attempt = await BeginAttemptAsync(CreateOperation, tenantId, document.TempestKey, JsonSerializer.Serialize(body, XeroWire.JsonOptions), cancellationToken).ConfigureAwait(false);
+            var sent = ReadCreateBody(attempt);
+            var created = await _api.CreateContactAsync(sent, CreateKey(tenantId, document, attempt.Payload!, attempt.Occurrence), cancellationToken).ConfigureAwait(false);
 
             if (created.Outcome == ConnectorOutcome.Ok)
             {
                 var link = NewLink(tenantId, document, created.Value!, LinkedByCreated);
                 await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+
+                // Settled only once the link is kept: a crash or a failed save
+                // before this replays the same key, not a new contact.
+                await EndAttemptAsync(attempt, created.Outcome, cancellationToken).ConfigureAwait(false);
                 await AuditAsync(AuditLinkCreated, tenantId, organisation, link, null, cancellationToken).ConfigureAwait(false);
                 return ConnectorResult<XeroLink>.Ok(link);
             }
+
+            await EndAttemptAsync(attempt, created.Outcome, cancellationToken).ConfigureAwait(false);
 
             // The answer was lost, or Xero could not be reached: Xero may
             // still have made the contact. Look once more before reporting.
@@ -598,15 +611,23 @@ public sealed class XeroContactLinker : IXeroContactLinker
         if (holders.Count == 0)
             return null;
 
+        // From here Xero's answer for this organisation is definite (a
+        // contact carrying its number exists): an earlier create left
+        // uncertain is settled, so a later create takes a fresh key instead
+        // of replaying a stale cached reply for a contact since re-purposed.
+        var createAttempt = AttemptStoreKey(CreateOperation, tenantId, document.TempestKey);
+
         var active = holders.Where(XeroContactMatcher.IsActive).ToList();
         if (active.Count > 1)
         {
+            await SettleOpenAttemptAsync(createAttempt, cancellationToken).ConfigureAwait(false);
             return ConnectorResult<XeroLink>.Rejected(
                 $"{active.Count} Xero contacts carry ContactNumber '{contactNumber}' ({string.Join(", ", active.Select(c => $"'{c.Name}'"))}); choose the right one and link it.");
         }
 
         if (active.Count == 0)
         {
+            await SettleOpenAttemptAsync(createAttempt, cancellationToken).ConfigureAwait(false);
             var archived = holders[0];
             return ConnectorResult<XeroLink>.Rejected(
                 $"Xero holds the {archived.ContactStatus?.ToLowerInvariant() ?? "inactive"} contact '{archived.Name}' with ContactNumber '{contactNumber}'; restore it in Xero and link it, rather than creating a second contact.");
@@ -614,10 +635,14 @@ public sealed class XeroContactLinker : IXeroContactLinker
 
         var contact = active[0];
         if (await LinkedElsewhereAsync(tenantId, document, contact.ContactID!, cancellationToken).ConfigureAwait(false) is { } other)
+        {
+            await SettleOpenAttemptAsync(createAttempt, cancellationToken).ConfigureAwait(false);
             return ConnectorResult<XeroLink>.Rejected(UsedByAnother(contact, other));
+        }
 
         var link = NewLink(tenantId, document, contact, LinkedByReconciled);
         await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+        await SettleOpenAttemptAsync(createAttempt, cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditLinkReconciled, tenantId, organisation, link, null, cancellationToken).ConfigureAwait(false);
         return ConnectorResult<XeroLink>.Ok(link);
     }
@@ -642,17 +667,29 @@ public sealed class XeroContactLinker : IXeroContactLinker
             return (link, $"ContactNumber not written: another Xero contact already carries '{number}'");
         }
 
-        var attempt = await BeginAttemptAsync(SetContactNumberOperation, tenantId, contact.ContactID!.Trim(), cancellationToken).ConfigureAwait(false);
+        var attempt = await BeginAttemptAsync(SetContactNumberOperation, tenantId, contact.ContactID!.Trim(), payload: null, cancellationToken).ConfigureAwait(false);
         var key = WithOccurrence(Key(SetContactNumberOperation, tenantId, contact.ContactID!, number), attempt.Occurrence);
         var written = await _api.SetContactNumberAsync(contact.ContactID!, number, key, cancellationToken).ConfigureAwait(false);
-        await EndAttemptAsync(attempt, written.Outcome, cancellationToken).ConfigureAwait(false);
-        if (written.Outcome != ConnectorOutcome.Ok)
+        var writtenNumber = written.Outcome == ConnectorOutcome.Ok ? Blank(written.Value!.ContactNumber) ?? number : null;
+
+        // The answer was lost: Xero may have written it all the same. Read
+        // the contact once, so the link records what Xero holds.
+        if (written.Outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable)
         {
+            var reread = await _api.GetContactAsync(contact.ContactID!, cancellationToken).ConfigureAwait(false);
+            if (reread.Outcome == ConnectorOutcome.Ok && string.Equals(reread.Value!.ContactNumber?.Trim(), number, StringComparison.OrdinalIgnoreCase))
+                writtenNumber = reread.Value!.ContactNumber!.Trim();
+        }
+
+        if (writtenNumber is null)
+        {
+            await EndAttemptAsync(attempt, written.Outcome, cancellationToken).ConfigureAwait(false);
             _logger?.LogWarning("Linked {Organisation} to Xero contact {ContactId}, but its ContactNumber was not written: {Reason}", organisation.Reference, contact.ContactID, written.Reason);
             return (link, $"ContactNumber not written: {written.Reason}");
         }
 
-        var numbered = link with { XeroNumber = Blank(written.Value!.ContactNumber) ?? number };
+        await EndAttemptAsync(attempt, ConnectorOutcome.Ok, cancellationToken).ConfigureAwait(false);
+        var numbered = link with { XeroNumber = writtenNumber };
         await _links.SaveAsync(numbered, cancellationToken).ConfigureAwait(false);
         return (numbered, $"ContactNumber set to '{number}'");
     }
@@ -721,8 +758,23 @@ public sealed class XeroContactLinker : IXeroContactLinker
     /// answer (made, or refused) takes the next one, so a refusal the Product
     /// Owner has since fixed in Xero is not replayed from Xero's cache (S7).
     /// </summary>
-    private static string CreateKey(string tenantId, XeroDocumentRef document, XeroWireContactCreate body, int occurrence) =>
-        WithOccurrence(Key(CreateOperation, tenantId, document.TempestKey, JsonSerializer.Serialize(body, XeroWire.JsonOptions)), occurrence);
+    private static string CreateKey(string tenantId, XeroDocumentRef document, string serialisedBody, int occurrence) =>
+        WithOccurrence(Key(CreateOperation, tenantId, document.TempestKey, serialisedBody), occurrence);
+
+    /// <summary>The create body the attempt carries (<see cref="WriteAttempt.Payload"/>): this call's, or the uncertain earlier attempt's.</summary>
+    private static XeroWireContactCreate ReadCreateBody(WriteAttempt attempt)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<XeroWireContactCreate>(attempt.Payload!, XeroWire.JsonOptions) is { Name: { Length: > 0 } } body
+                ? body
+                : throw new PersistenceException($"The Xero contact write attempt '{attempt.StoreKey}' in '{AttemptsCollection}' cannot be read.");
+        }
+        catch (JsonException ex)
+        {
+            throw new PersistenceException($"The Xero contact write attempt '{attempt.StoreKey}' in '{AttemptsCollection}' cannot be read.", ex);
+        }
+    }
 
     private static string Key(string operation, params string[] parts) =>
         $"{XeroIdempotencyKey.Prefix}{nameof(XeroDocumentKind.Contact)}:{operation}:{Hash(parts)}";
@@ -740,11 +792,13 @@ public sealed class XeroContactLinker : IXeroContactLinker
     private static string Hash(params string[] parts) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\u001f', parts))));
 
-    /// <summary>One write's attempt: where its record is kept, and the occurrence its key carries.</summary>
-    private sealed record WriteAttempt(string StoreKey, int Occurrence);
+    /// <summary>One write's attempt: where its record is kept, the occurrence its key carries, and what it sends (<see langword="null"/> when the operation keeps none).</summary>
+    private sealed record WriteAttempt(string StoreKey, int Occurrence, string? Payload);
 
-    /// <summary>The persisted state of a write: the occurrence last used, and whether Xero's answer to it was definite.</summary>
-    private sealed record AttemptRecord(int Occurrence, bool Settled);
+    /// <summary>The persisted state of a write: the occurrence last used, whether Xero's answer to it was definite, and what it sent (a create's body) — sent again unchanged while the answer is uncertain.</summary>
+    private sealed record AttemptRecord(int Occurrence, bool Settled, string? Payload = null);
+
+    private static string AttemptStoreKey(string operation, string tenantId, string subject) => $"{tenantId}/{operation}/{subject}";
 
     /// <summary>
     /// Starts a write (under <see cref="_writeGate"/>): the occurrence of the
@@ -752,21 +806,30 @@ public sealed class XeroContactLinker : IXeroContactLinker
     /// was definite, <c>0</c> for the first. Recorded as unsettled before the
     /// request goes, so a crash mid-request also reuses the key.
     /// </summary>
-    private async Task<WriteAttempt> BeginAttemptAsync(string operation, string tenantId, string subject, CancellationToken cancellationToken)
+    private async Task<WriteAttempt> BeginAttemptAsync(string operation, string tenantId, string subject, string? payload, CancellationToken cancellationToken)
     {
-        var storeKey = $"{tenantId}/{operation}/{subject}";
+        var storeKey = AttemptStoreKey(operation, tenantId, subject);
         var previous = await ReadAttemptAsync(storeKey, cancellationToken).ConfigureAwait(false);
-        var occurrence = previous is null ? 0 : previous.Settled ? previous.Occurrence + 1 : previous.Occurrence;
+        var retrying = previous is { Settled: false };
+        var occurrence = previous is null ? 0 : retrying ? previous.Occurrence : previous.Occurrence + 1;
+        var sent = retrying && previous!.Payload is { } earlier ? earlier : payload;
 
-        await WriteAttemptAsync(storeKey, new AttemptRecord(occurrence, Settled: false), cancellationToken).ConfigureAwait(false);
-        return new WriteAttempt(storeKey, occurrence);
+        await WriteAttemptAsync(storeKey, new AttemptRecord(occurrence, Settled: false, sent), cancellationToken).ConfigureAwait(false);
+        return new WriteAttempt(storeKey, occurrence, sent);
     }
 
     /// <summary>Settles the attempt unless Xero's answer was uncertain (<see cref="ConnectorOutcome.Unknown"/> or <see cref="ConnectorOutcome.Unavailable"/>), when the next try must replay the same key.</summary>
     private Task EndAttemptAsync(WriteAttempt attempt, ConnectorOutcome outcome, CancellationToken cancellationToken) =>
         outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable
             ? Task.CompletedTask
-            : WriteAttemptAsync(attempt.StoreKey, new AttemptRecord(attempt.Occurrence, Settled: true), cancellationToken);
+            : WriteAttemptAsync(attempt.StoreKey, new AttemptRecord(attempt.Occurrence, Settled: true, attempt.Payload), cancellationToken);
+
+    /// <summary>Settles an attempt left uncertain once a look-up has given a definite answer for its subject; nothing to do when there is none or it is settled.</summary>
+    private async Task SettleOpenAttemptAsync(string storeKey, CancellationToken cancellationToken)
+    {
+        if (await ReadAttemptAsync(storeKey, cancellationToken).ConfigureAwait(false) is { Settled: false } open)
+            await WriteAttemptAsync(storeKey, open with { Settled = true }, cancellationToken).ConfigureAwait(false);
+    }
 
     private async Task<AttemptRecord?> ReadAttemptAsync(string storeKey, CancellationToken cancellationToken)
     {
@@ -818,8 +881,8 @@ public sealed class XeroContactLinker : IXeroContactLinker
         // is asked for too: without the two-letter country prefix
         // ("GB123456789" → "123456789"), or with "GB" when none was recorded
         // ("123456789" → "GB123456789") — the forms SameVatNumber ranks alike.
-        var other = HasCountryPrefix(plain) ? plain[2..] : "GB" + plain;
-        if (other.Length is > 0 and <= XeroAccountingApi.MaximumContactNumberLength)
+        var other = HasCountryPrefix(plain) ? plain[2..] : plain.Any(char.IsAsciiDigit) ? "GB" + plain : null;
+        if (other is { Length: > 0 and <= XeroAccountingApi.MaximumContactNumberLength })
             yield return other;
 
         static bool HasCountryPrefix(string vat) => vat.Length > 2 && char.IsAsciiLetter(vat[0]) && char.IsAsciiLetter(vat[1]);
