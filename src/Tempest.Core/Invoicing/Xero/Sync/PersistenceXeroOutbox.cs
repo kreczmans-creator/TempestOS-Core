@@ -32,6 +32,23 @@ public interface IXeroOutboxDrain
     Task<XeroOutboxEntry?> ClaimNextDueAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// `v0.24.0` B2 follow-up (additive, for X6): as <see cref="ClaimNextDueAsync(CancellationToken)"/>,
+    /// but only an entry in one of <paramref name="states"/> (each
+    /// <see cref="XeroOutboxState.Pending"/> or <see cref="XeroOutboxState.Unknown"/>)
+    /// is claimed — so the sync engine recovers every write whose answer may
+    /// have been lost (<see cref="XeroOutboxState.Unknown"/>) before any other
+    /// work, while Xero still holds its <c>Idempotency-Key</c>. Per-document
+    /// order is unchanged: only the head of a document's queue is ever claimed.
+    /// The default implementation ignores the preference and claims as
+    /// <see cref="ClaimNextDueAsync(CancellationToken)"/> does.
+    /// </summary>
+    /// <param name="states">The states to claim from; empty means Pending or Unknown.</param>
+    /// <param name="cancellationToken">Cancels the claim.</param>
+    /// <returns>The claimed entry, or <see langword="null"/> when no entry in <paramref name="states"/> is due.</returns>
+    Task<XeroOutboxEntry?> ClaimNextDueAsync(IReadOnlyCollection<XeroOutboxState> states, CancellationToken cancellationToken = default) =>
+        ClaimNextDueAsync(cancellationToken);
+
+    /// <summary>
     /// Records the outcome of the attempt on a claimed
     /// (<see cref="XeroOutboxState.InFlight"/>) entry: <paramref name="state"/>
     /// is <see cref="XeroOutboxState.Succeeded"/>,
@@ -325,8 +342,14 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     }
 
     /// <inheritdoc />
-    public async Task<XeroOutboxEntry?> ClaimNextDueAsync(CancellationToken cancellationToken = default)
+    public Task<XeroOutboxEntry?> ClaimNextDueAsync(CancellationToken cancellationToken = default) =>
+        ClaimNextDueAsync([], cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<XeroOutboxEntry?> ClaimNextDueAsync(IReadOnlyCollection<XeroOutboxState> states, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(states);
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -345,6 +368,7 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             var next = heads.FirstOrDefault(s =>
                 !s.Locked
                 && s.Entry.State is XeroOutboxState.Pending or XeroOutboxState.Unknown
+                && (states.Count == 0 || states.Contains(s.Entry.State))
                 && (s.Entry.NotBeforeUtc is not { } notBefore || notBefore <= now));
 
             if (next is null)
