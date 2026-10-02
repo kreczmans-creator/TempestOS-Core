@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Tempest.Core.Invoicing.Xero.Api;
 
 namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
@@ -14,25 +16,34 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// <item><b>Ours.</b> A Xero purchase order or bill is TempestOS's own only
 /// when it is linked to the TempestOS document, or when it is the record a
 /// create the <see cref="XeroPurchasingCreateLog"/> recorded for this
-/// document made: that create's body re-sent under its own
-/// <c>Idempotency-Key</c> (Xero replays its first answer, which carries the
-/// record's id), and that id read back. Nothing else proves a record ours —
-/// not its number, contact, amounts, reference or dates, all of which a
-/// bookkeeper may key or edit. A record found only by matching is never
-/// adopted: every TempestOS purchasing create carries a key and is logged
-/// first (the <em>Send to Xero</em> of a document from before v0.24.0 queues
-/// the same keyed create), so there is no keyless create whose record
-/// matching could ever be needed to recover.</item>
+/// document made, read back by its id. That id is recorded in the log as soon
+/// as any answer reveals it — the create's own, or a replay of it — and from
+/// then on the create is only ever read back by that id, never re-sent. While
+/// no id is known, and only while Xero still holds the create's
+/// <c>Idempotency-Key</c> (<see cref="IdempotencyKeyLifetime"/> from when it
+/// was first sent), its body is re-sent under that key (Xero replays its first
+/// answer, which carries the id). Nothing else proves a record ours — not its
+/// number, contact, amounts, reference or dates, all of which a bookkeeper may
+/// key or edit. A record found only by matching is never adopted: every
+/// TempestOS purchasing create carries a key and is logged first (the
+/// <em>Send to Xero</em> of a document from before v0.24.0 queues the same
+/// keyed create), so there is no keyless create whose record matching could
+/// ever be needed to recover.</item>
 /// <item><b>Deleted in Xero.</b> When the record read back by its id is no
-/// longer live (deleted, or a bill voided), it stays TempestOS's — it is
-/// never linked, its create is never sent again (the same key would only
-/// replay it), and nothing else under its number is touched for it. A live
-/// push whose own create it was is Rejected; a cancel or delete ends
-/// NothingToDo.</item>
-/// <item><b>Cannot tell.</b> When the replay is refused (the key expired and
-/// Xero reports the number already used, or any other refusal) or the create
-/// cannot be re-sent, TempestOS cannot tell where that create's record is:
-/// it is Rejected with the reason, and nothing is linked, sent or deleted.</item>
+/// longer live (deleted, or a bill voided), the log keeps a tombstone for it:
+/// it is never linked, its create is never sent again by Retry, a cancel or a
+/// delete, and nothing else under its number is touched for it. A live push
+/// whose own create it was is Rejected; a cancel or delete ends NothingToDo.
+/// Only the person's deliberate <em>Send again</em>
+/// (<see cref="XeroPurchasingSendAgain"/>) releases the tombstone, and the
+/// push then sends the document as a new record under a new key
+/// (<see cref="CreateKey"/>).</item>
+/// <item><b>Cannot tell.</b> When no id is known and the create cannot be
+/// re-sent safely — it was sent longer ago than Xero keeps its key (a re-send
+/// would then be a fresh create, a second record), TempestOS holds no copy of
+/// it, or Xero refuses its replay — TempestOS cannot tell where that create's
+/// record is: it is Rejected with the reason, and nothing is linked, sent or
+/// deleted.</item>
 /// <item><b>Only ours is touched.</b> Only ours is ever updated, deleted or
 /// linked. Any other live record under the number a create would use is in
 /// the way: it is reported once, with a message that never asks anyone to
@@ -42,15 +53,100 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// live push.</item>
 /// </list>
 /// <para>
-/// Residual risk, by design: Xero keeps an <c>Idempotency-Key</c> for a
-/// limited time. A purchase order's replay after that is refused (its number
-/// is unique) and so is CannotTell; a bill's number is not unique in Xero, so
-/// a bill create recovered only after its key expired is made again. Recovery
-/// runs on the next drain, normally minutes after the lost answer.
+/// Residual risk, by design: a create whose answer was lost and which is not
+/// recovered within <see cref="IdempotencyKeyLifetime"/> of being sent (the
+/// drain did not run in time) stays CannotTell — TempestOS never re-sends it,
+/// for a purchase order or a bill, so it never makes a second record, but the
+/// person must check Xero with whoever keeps the books. Once its id is known
+/// it is only ever read back, whatever then happens to the key.
 /// </para>
 /// </remarks>
 public static class XeroPurchasingOwnership
 {
+    /// <summary>
+    /// How long after a create was first sent TempestOS relies on Xero still
+    /// holding its <c>Idempotency-Key</c>: five minutes.
+    /// </summary>
+    /// <remarks>
+    /// Xero documents that an idempotency key is stored for 6 minutes from the
+    /// first call, and that a key repeated after that is processed as a new
+    /// request (Xero Developer, "Idempotent requests",
+    /// https://developer.xero.com/documentation/guides/idempotent-requests/idempotency/,
+    /// as quoted by search on 2026-10-02; the page itself renders client-side and
+    /// was not read verbatim — re-confirm before release). One minute is kept in
+    /// hand for the time between logging a create and Xero receiving it. A
+    /// create older than this with no known id is never re-sent: CannotTell.
+    /// </remarks>
+    public static readonly TimeSpan IdempotencyKeyLifetime = TimeSpan.FromMinutes(5);
+
+    /// <summary>Why a create with no known id is not re-sent once Xero may have forgotten its key (<see cref="XeroRecovery.Unrecoverable"/>).</summary>
+    public const string KeyExpiredProblem =
+        "it was sent longer ago than Xero keeps its Idempotency-Key, so sending it again could make a second record instead of replaying the first answer";
+
+    /// <summary>Why a create TempestOS holds no copy of cannot be recovered.</summary>
+    public const string NoBodyProblem = "TempestOS holds no copy of what it sent";
+
+    /// <summary>How one logged create is recovered (<see cref="RecoveryFor"/>).</summary>
+    public enum RecoveryStep
+    {
+        /// <summary>A tombstone: the record is gone from Xero; nothing is asked of Xero.</summary>
+        Tombstoned,
+
+        /// <summary>Its record's id is known: read it back by that id, never re-send.</summary>
+        ReadById,
+
+        /// <summary>No id known, and Xero still holds its key: re-send its body under that key, then read the answered id back.</summary>
+        Replay,
+
+        /// <summary>No id known, and Xero may have forgotten its key (or when it was sent is unknown): never re-send — cannot tell.</summary>
+        KeyExpired,
+
+        /// <summary>No id known, and no copy of its body: cannot tell.</summary>
+        NoBody,
+    }
+
+    /// <summary>How <paramref name="create"/> is recovered at <paramref name="now"/>: by its id once known; by its key only while no id is known and Xero still holds the key.</summary>
+    /// <param name="create">The logged create.</param>
+    /// <param name="now">The time now.</param>
+    public static RecoveryStep RecoveryFor(XeroPurchasingSentCreate create, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(create);
+        if (create.GoneStatus is not null)
+            return RecoveryStep.Tombstoned;
+        if (!string.IsNullOrWhiteSpace(create.XeroId))
+            return RecoveryStep.ReadById;
+        if (string.IsNullOrWhiteSpace(create.Body))
+            return RecoveryStep.NoBody;
+        return create.SentAtUtc is { } sent && now - sent < IdempotencyKeyLifetime && now >= sent
+            ? RecoveryStep.Replay
+            : RecoveryStep.KeyExpired;
+    }
+
+    /// <summary>
+    /// The <c>Idempotency-Key</c> a create for the entry keyed
+    /// <paramref name="entryKey"/> is sent under: the entry's own key, unless
+    /// the person chose <em>Send again</em> for the record a create under that
+    /// key made (its tombstone released) — then a new key derived from it, one
+    /// per release, so Xero cannot replay the deleted record's answer and the
+    /// document goes as a new record.
+    /// </summary>
+    /// <param name="entryKey">The outbox entry's key.</param>
+    /// <param name="sent">The creates the log recorded for the document.</param>
+    public static string CreateKey(string entryKey, IEnumerable<XeroPurchasingSentCreate> sent)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entryKey);
+        ArgumentNullException.ThrowIfNull(sent);
+        var released = sent.Where(s => s.ReleasedAtUtc is not null).Select(s => s.IdempotencyKey).ToHashSet(StringComparer.Ordinal);
+        var key = entryKey;
+        for (var generation = 1; released.Contains(key); generation++)
+        {
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"{entryKey}|again|{generation}")));
+            key = XeroIdempotencyKey.Prefix + "again:" + Convert.ToHexStringLower(hash);
+        }
+
+        return key;
+    }
+
     /// <summary>The value-bearing content a purchase-order create carries: currency and net total. Xero computes its tax, so tax is not part of it.</summary>
     /// <param name="order">The create's body.</param>
     public static string ValueOf(XeroWirePurchaseOrderWrite order)
@@ -97,7 +193,7 @@ public static class XeroPurchasingOwnership
     /// <list type="number">
     /// <item>A create's record read back live — <see cref="XeroOwnershipVerdict.Ours"/>
     /// (the entry's own create's first, else the latest).</item>
-    /// <item>A create that could not be recovered — <see cref="XeroOwnershipVerdict.CannotTell"/>.</item>
+    /// <item>A create that could not be recovered (no id known, and its key possibly forgotten, its body unknown or its replay refused) — <see cref="XeroOwnershipVerdict.CannotTell"/>.</item>
     /// <item>The entry's own create's record no longer live (or, when the
     /// source is gone, every recovered record no longer live) —
     /// <see cref="XeroOwnershipVerdict.DeletedInXero"/>.</item>
@@ -162,12 +258,12 @@ public static class XeroPurchasingOwnership
     public static IReadOnlyList<XeroPurchasingSentCreate> SentUnder(IEnumerable<XeroPurchasingSentCreate> sent, string number, string contactId) =>
         [.. sent.Where(s => SamePair((s.Number, s.ContactId), (number, contactId)))];
 
-    /// <summary>The creates to recover: each <c>Idempotency-Key</c> once, with the body it was first logged with (the one Xero holds it for).</summary>
+    /// <summary>The creates to recover: each <c>Idempotency-Key</c> once, with the body it was first logged with (the one Xero holds it for); never one whose tombstone the person released with <em>Send again</em>.</summary>
     /// <param name="sent">The creates the log recorded for the document.</param>
     public static IReadOnlyList<XeroPurchasingSentCreate> ToRecover(IEnumerable<XeroPurchasingSentCreate> sent)
     {
         ArgumentNullException.ThrowIfNull(sent);
-        return [.. sent.DistinctBy(s => s.IdempotencyKey, StringComparer.Ordinal)];
+        return [.. sent.Where(s => s.ReleasedAtUtc is null).DistinctBy(s => s.IdempotencyKey, StringComparer.Ordinal)];
     }
 
     /// <summary>
@@ -191,9 +287,9 @@ public static class XeroPurchasingOwnership
 
     /// <summary>
     /// Cannot tell: a create the log recorded for this document could not be
-    /// recovered — Xero refused its replay (its key expired and the number is
-    /// already used, or any other refusal), or TempestOS no longer holds what
-    /// it sent. That create's record may be in Xero under any number, so
+    /// recovered — no id is known and it was sent longer ago than Xero keeps
+    /// its key (<see cref="IdempotencyKeyLifetime"/>), Xero refused its
+    /// replay, or TempestOS no longer holds what it sent. That create's record may be in Xero under any number, so
     /// nothing is linked, sent or deleted, and the entry is Rejected (Retry)
     /// whatever its source's state.
     /// </summary>
@@ -204,7 +300,7 @@ public static class XeroPurchasingOwnership
     /// <param name="sourceGone">The TempestOS document is cancelled, deleted or gone (or the entry is a delete).</param>
     public static XeroPushResult CannotTell(string noun, string document, string number, string? problem, bool sourceGone) => new(
         XeroPushOutcome.Rejected,
-        $"The answer to the {noun.ToLowerInvariant()} TempestOS sent to Xero for this {document} under number {number} was lost, and Xero did not replay it "
+        $"The answer to the {noun.ToLowerInvariant()} TempestOS sent to Xero for this {document} under number {number} was lost, and it cannot be recovered "
         + $"({(string.IsNullOrWhiteSpace(problem) ? "no reason given" : problem.Trim().TrimEnd('.'))}), so TempestOS cannot tell whether that {noun.ToLowerInvariant()} is in Xero. "
         + $"It leaves every {noun.ToLowerInvariant()} in Xero as it is: nothing is sent{(sourceGone ? ", and nothing is deleted" : string.Empty)}. "
         + "Check in Xero with whoever keeps the books, then Retry.");
@@ -296,19 +392,19 @@ public enum XeroOwnershipVerdict
 /// <summary>What recovering one logged create found.</summary>
 public enum XeroRecovery
 {
-    /// <summary>Its replay answered an id, and Xero holds that record live.</summary>
+    /// <summary>Its record, read back by its id (known, or answered by its replay), is live in Xero.</summary>
     Live,
 
-    /// <summary>Its replay answered an id, and Xero holds that record deleted or voided (or no longer at all).</summary>
+    /// <summary>Its record, read back by its id, is deleted or voided in Xero (or no longer there at all), or its tombstone says so.</summary>
     Gone,
 
-    /// <summary>Its replay was refused (or it could not be re-sent): where its record is cannot be told.</summary>
+    /// <summary>No id is known, and its replay was refused or it could not safely be re-sent (key possibly forgotten, body unknown): where its record is cannot be told.</summary>
     Unrecoverable,
 }
 
-/// <summary>One logged create, re-sent under its own <c>Idempotency-Key</c>, and what reading the answered id back found.</summary>
+/// <summary>One logged create and what recovering it (<see cref="XeroPurchasingRecovery"/>) found.</summary>
 /// <typeparam name="T">The wire record.</typeparam>
-/// <param name="Create">The logged create.</param>
+/// <param name="Create">The logged create, with what recovering it learned (its id, its tombstone).</param>
 /// <param name="Recovery">What was found.</param>
 /// <param name="Record">The record read back (or, when Xero no longer holds it at all, as the replay answered it); <see langword="null"/> when unrecoverable.</param>
 /// <param name="Problem">Why it could not be recovered (<see cref="XeroRecovery.Unrecoverable"/> only).</param>

@@ -8,10 +8,12 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// The durable record of every purchasing create that may have reached Xero
 /// (`v0.24.0` X5): written immediately before
 /// <c>CreatePurchaseOrderAsync</c> or <c>CreateBillAsync</c> goes, so the
-/// handlers can recover the record a create made whose answer was lost: by
-/// re-sending that create's body under its own <c>Idempotency-Key</c> (Xero
-/// replays its first answer, the record's id) and reading that id back
-/// (<see cref="XeroPurchasingOwnership"/>) — never by matching a number.
+/// handlers can recover the record a create made whose answer was lost — by
+/// its id, recorded here as soon as any answer reveals it, or, while none is
+/// known and Xero still holds the key, by re-sending that create's body under
+/// its own <c>Idempotency-Key</c> (Xero replays its first answer, the
+/// record's id) — and read that id back (<see cref="XeroPurchasingOwnership"/>),
+/// never by matching a number. A record found gone is kept as a tombstone.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -23,7 +25,9 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// <para>
 /// One record per document in <see cref="Collection"/>, keyed
 /// <c>{tenant}/{kind}/{TempestOS key}</c>, listing each create sent: the
-/// number, contact and body it carried and its <c>Idempotency-Key</c>. A create
+/// number, contact and body it carried, its <c>Idempotency-Key</c>, when it
+/// was first sent, and — once known — the record's id and whether it is gone
+/// from Xero (<see cref="XeroPurchasingSentCreate"/>). A create
 /// Xero refused outright (<see cref="ConnectorOutcome.Rejected"/> or
 /// <see cref="ConnectorOutcome.Reauthorise"/>) made nothing and is struck
 /// off again; one whose answer was lost, or that succeeded, stays.
@@ -54,9 +58,10 @@ public sealed class XeroPurchasingCreateLog
     /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any. Kept for the record only: a bookkeeper may edit it, so the ownership rule never reads it.</param>
     /// <param name="value">The value-bearing content the create carries (<see cref="XeroPurchasingOwnership.ValueOf(XeroWirePurchaseOrderWrite)"/> or <see cref="XeroPurchasingOwnership.ValueOf(XeroWireBillWrite)"/>). Only ever used to word a refusal for another document (<see cref="ListSentForOthersAsync"/>), never to call a record ours.</param>
     /// <param name="body">The create's body exactly as sent (<see cref="XeroPurchasingSentCreate.Body"/>): what recovery re-sends under the same <c>Idempotency-Key</c> so Xero replays its first answer, the record's id.</param>
+    /// <param name="sentAtUtc">When the create is sent (<see cref="XeroPurchasingSentCreate.SentAtUtc"/>): how recovery tells whether Xero still holds its key. A create already logged with the same key and body keeps its first time (Xero's key lifetime runs from the first call). <see langword="null"/> when unknown: its key is then never relied on.</param>
     public async Task RecordSendingAsync(
         string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default,
-        string? reference = null, string? value = null, string? body = null)
+        string? reference = null, string? value = null, string? body = null, DateTimeOffset? sentAtUtc = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
@@ -64,24 +69,117 @@ public sealed class XeroPurchasingCreateLog
 
         var sent = new XeroPurchasingSentCreate(
             number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(), string.IsNullOrWhiteSpace(value) ? null : value,
-            string.IsNullOrWhiteSpace(body) ? null : body);
-        await UpdateAsync(tenantId, document, list => list.Any(s => s == sent) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
+            string.IsNullOrWhiteSpace(body) ? null : body, SentAtUtc: sentAtUtc);
+        await UpdateAsync(tenantId, document, list => list.Any(s => s.SameSend(sent)) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Strikes off the create sent with <paramref name="idempotencyKey"/> when Xero's answer was a definite refusal (nothing was made); keeps it for any other outcome.</summary>
+    /// <summary>
+    /// Records Xero's answer to the create sent with <paramref name="idempotencyKey"/>:
+    /// a definite refusal (nothing was made) strikes it off; an
+    /// <see cref="ConnectorOutcome.Ok"/> answer keeps it with the record's id
+    /// (<paramref name="xeroId"/>), so it is never re-sent again, only read
+    /// back by that id; any other outcome keeps it as it is.
+    /// </summary>
     /// <param name="tenantId">The Xero tenant.</param>
     /// <param name="document">The TempestOS document.</param>
     /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
     /// <param name="outcome">What Xero answered.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
+    /// <param name="xeroId">The record's id when Xero answered <see cref="ConnectorOutcome.Ok"/>.</param>
     public async Task RecordAnswerAsync(
-        string tenantId, XeroDocumentRef document, string idempotencyKey, ConnectorOutcome outcome, CancellationToken cancellationToken = default)
+        string tenantId, XeroDocumentRef document, string idempotencyKey, ConnectorOutcome outcome, CancellationToken cancellationToken = default,
+        string? xeroId = null)
     {
+        if (outcome == ConnectorOutcome.Ok)
+        {
+            if (!string.IsNullOrWhiteSpace(xeroId))
+                await RecordXeroIdAsync(tenantId, document, idempotencyKey, xeroId, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         if (outcome is not (ConnectorOutcome.Rejected or ConnectorOutcome.Reauthorise))
             return;
 
         await UpdateAsync(tenantId, document, list => [.. list.Where(s => !string.Equals(s.IdempotencyKey, idempotencyKey, StringComparison.Ordinal))], cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Records the id of the record the create sent with <paramref name="idempotencyKey"/>
+    /// made, as soon as any answer (the create's own, or a replay of it)
+    /// reveals it. From then on recovery only reads that id back; the body is
+    /// never re-sent. An id already recorded is kept.
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document.</param>
+    /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
+    /// <param name="xeroId">The record's Xero id.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public Task RecordXeroIdAsync(string tenantId, XeroDocumentRef document, string idempotencyKey, string xeroId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(xeroId);
+        return UpdateAsync(
+            tenantId, document,
+            list => list.Any(s => IsKey(s, idempotencyKey) && s.XeroId is null)
+                ? [.. list.Select(s => IsKey(s, idempotencyKey) && s.XeroId is null ? s with { XeroId = xeroId.Trim() } : s)]
+                : list,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Records that the record the create sent with <paramref name="idempotencyKey"/>
+    /// made, read back by its id, is no longer live in Xero (deleted, or a
+    /// bill voided): a tombstone. Recovery then reports it gone without asking
+    /// Xero again, and nothing — Retry, a cancel or a delete — ever re-sends
+    /// that create. Only <see cref="XeroPurchasingSendAgain"/>, the person's
+    /// deliberate <em>Send again</em>, releases it.
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document.</param>
+    /// <param name="idempotencyKey">The create's <c>Idempotency-Key</c>.</param>
+    /// <param name="xeroId">The record's Xero id.</param>
+    /// <param name="status">Its status in Xero (<c>DELETED</c> or <c>VOIDED</c>).</param>
+    /// <param name="number">Its number in Xero, if known.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    public Task RecordGoneAsync(
+        string tenantId, XeroDocumentRef document, string idempotencyKey, string xeroId, string status, string? number, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(xeroId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(status);
+        return UpdateAsync(
+            tenantId, document,
+            list => list.Any(s => IsKey(s, idempotencyKey) && s.GoneStatus is null)
+                ? [.. list.Select(s => IsKey(s, idempotencyKey) && s.GoneStatus is null
+                    ? s with { XeroId = s.XeroId ?? xeroId.Trim(), GoneStatus = status.Trim().ToUpperInvariant(), XeroNumber = string.IsNullOrWhiteSpace(number) ? s.XeroNumber : number.Trim() }
+                    : s)]
+                : list,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// The person's deliberate <em>Send again</em> (<see cref="XeroPurchasingSendAgain"/>):
+    /// releases every tombstone (<see cref="RecordGoneAsync"/>) not yet
+    /// released for <paramref name="document"/>. A released create is no longer
+    /// recovered, and the push that follows sends the document as a new
+    /// record under a new key (<see cref="XeroPurchasingOwnership.CreateKey"/>).
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document.</param>
+    /// <param name="releasedAtUtc">When the person asked.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>How many tombstones were released.</returns>
+    public async Task<int> ReleaseGoneAsync(string tenantId, XeroDocumentRef document, DateTimeOffset releasedAtUtc, CancellationToken cancellationToken = default)
+    {
+        var released = 0;
+        await UpdateAsync(
+            tenantId, document,
+            list =>
+            {
+                released = list.Count(s => s.IsTombstone);
+                return released == 0 ? list : [.. list.Select(s => s.IsTombstone ? s with { ReleasedAtUtc = releasedAtUtc } : s)];
+            },
+            cancellationToken).ConfigureAwait(false);
+        return released;
     }
 
     /// <summary>Whether a create for <paramref name="document"/> under <paramref name="number"/> to <paramref name="contactId"/> may have reached Xero.</summary>
@@ -185,6 +283,8 @@ public sealed class XeroPurchasingCreateLog
         }
     }
 
+    private static bool IsKey(XeroPurchasingSentCreate sent, string idempotencyKey) => string.Equals(sent.IdempotencyKey, idempotencyKey, StringComparison.Ordinal);
+
     private static string Key(string tenantId, XeroDocumentRef document)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
@@ -194,15 +294,36 @@ public sealed class XeroPurchasingCreateLog
 
 }
 
-/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number, contact, value-bearing content and body it carried and its <c>Idempotency-Key</c>.</summary>
+/// <summary>One purchasing create sent to Xero (<see cref="XeroPurchasingCreateLog"/>): the number, contact, value-bearing content and body it carried, its <c>Idempotency-Key</c>, when it was sent, and what is known of the record it made.</summary>
 /// <param name="Number">The Xero number the create carried.</param>
 /// <param name="ContactId">The Xero <c>ContactID</c> the create carried.</param>
 /// <param name="IdempotencyKey">The create's <c>Idempotency-Key</c>.</param>
 /// <param name="Reference">The <c>Reference</c> the create carried; <see langword="null"/> when none (a bill carries none).</param>
 /// <param name="Value">The value-bearing content the create carried (<see cref="XeroPurchasingOwnership"/>); only ever words a refusal, never proves a record ours.</param>
-/// <param name="Body">The create's body exactly as sent, serialised with <see cref="XeroWire.JsonOptions"/> (a <see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>); re-sent under <see cref="IdempotencyKey"/> to recover the record's id. <see langword="null"/> when unknown: that create cannot be recovered, so TempestOS cannot tell.</param>
-public sealed record XeroPurchasingSentCreate(string Number, string ContactId, string IdempotencyKey, string? Reference = null, string? Value = null, string? Body = null)
+/// <param name="Body">The create's body exactly as sent, serialised with <see cref="XeroWire.JsonOptions"/> (a <see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>); re-sent under <see cref="IdempotencyKey"/> to recover the record's id while no id is known and Xero still holds the key. <see langword="null"/> when unknown: that create cannot be recovered, so TempestOS cannot tell.</param>
+/// <param name="SentAtUtc">When the create was first sent; <see langword="null"/> when unknown (its key is then never relied on: <see cref="XeroPurchasingOwnership.IdempotencyKeyLifetime"/>).</param>
+/// <param name="XeroId">The id of the record it made, once any answer (its own, or a replay) revealed it; from then on it is only ever read back by this id, never re-sent.</param>
+/// <param name="GoneStatus">A tombstone: the record, read back by <see cref="XeroId"/>, is no longer live in Xero (<c>DELETED</c>, or a bill <c>VOIDED</c>); <see langword="null"/> while not known to be gone.</param>
+/// <param name="XeroNumber">The record's number in Xero when last read back (a bookkeeper may renumber it); <see langword="null"/> when not read.</param>
+/// <param name="ReleasedAtUtc">When the person chose <em>Send again</em> for this tombstone (<see cref="XeroPurchasingSendAgain"/>); a released create is no longer recovered.</param>
+public sealed record XeroPurchasingSentCreate(
+    string Number, string ContactId, string IdempotencyKey, string? Reference = null, string? Value = null, string? Body = null,
+    DateTimeOffset? SentAtUtc = null, string? XeroId = null, string? GoneStatus = null, string? XeroNumber = null, DateTimeOffset? ReleasedAtUtc = null)
 {
+    /// <summary>A tombstone not yet released: the record is gone from Xero, and the person has not chosen <em>Send again</em>.</summary>
+    public bool IsTombstone => GoneStatus is not null && ReleasedAtUtc is null;
+
+    /// <summary>Whether this is the same send as <paramref name="other"/> (key, number, contact and content), whatever is known since of the record it made.</summary>
+    /// <param name="other">Another logged create.</param>
+    public bool SameSend(XeroPurchasingSentCreate other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return Strip(this) == Strip(other);
+
+        static XeroPurchasingSentCreate Strip(XeroPurchasingSentCreate s) =>
+            s with { SentAtUtc = null, XeroId = null, GoneStatus = null, XeroNumber = null, ReleasedAtUtc = null };
+    }
+
     /// <summary>A create's body as <see cref="Body"/> holds it: serialised with <see cref="XeroWire.JsonOptions"/>, as the typed client sends it.</summary>
     /// <param name="body">The create's body (a <see cref="XeroWirePurchaseOrderWrite"/> or <see cref="XeroWireBillWrite"/>).</param>
     public static string Serialise(object body)

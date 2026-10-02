@@ -18,8 +18,8 @@ internal static partial class XeroServiceRegistration
     /// and the concrete <see cref="XeroPurchasingSyncState"/>, <see cref="XeroPurchasingCreateLog"/>,
     /// <see cref="XeroGeneralExpensesContact"/>, <see cref="XeroPurchaseOrderPlanner"/>,
     /// <see cref="XeroExpenseBillPlanner"/>, <see cref="XeroPurchaseOrderPushHandler"/>,
-    /// <see cref="XeroExpenseBillPushHandler"/>, <see cref="XeroPurchaseOrderAttachmentHandler"/>
-    /// and <see cref="XeroExpenseBillAttachmentHandler"/>. Planners and
+    /// <see cref="XeroExpenseBillPushHandler"/>, <see cref="XeroPurchaseOrderAttachmentHandler"/>,
+    /// <see cref="XeroExpenseBillAttachmentHandler"/> and <see cref="XeroPurchasingSendAgain"/>. Planners and
     /// handlers are registered as their own types, not as
     /// <c>IXeroSyncPlanner</c>/<c>IXeroPushHandler</c>: the container takes one
     /// registration per service type, and X3/X4 have planners and handlers
@@ -43,5 +43,6 @@ internal static partial class XeroServiceRegistration
         services.Singleton<XeroExpenseBillPushHandler>();
         services.Singleton<XeroPurchaseOrderAttachmentHandler>();
         services.Singleton<XeroExpenseBillAttachmentHandler>();
+        services.Singleton<XeroPurchasingSendAgain>();
     }
 }

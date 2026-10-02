@@ -164,6 +164,7 @@ internal sealed class PurchasingSyncTestKit : IDisposable
         BillHandler = new XeroExpenseBillPushHandler(api, Links, Creates, expenses, linker, GeneralContact, taxTypes, accounts, Audit, clock);
         OrderAttachments = new XeroPurchaseOrderAttachmentHandler(api, Links, orders, Files, clock);
         BillAttachments = new XeroExpenseBillAttachmentHandler(api, Links, Files, clock);
+        SendAgain = new XeroPurchasingSendAgain(Creates, Outbox, Links, State, orders, expenses, Audit, clock);
     }
 
     public XeroApiSimulator Simulator { get; }
@@ -233,6 +234,9 @@ internal sealed class PurchasingSyncTestKit : IDisposable
     public XeroPurchaseOrderAttachmentHandler OrderAttachments { get; }
 
     public XeroExpenseBillAttachmentHandler BillAttachments { get; }
+
+    /// <summary>The person's Send again on a record deleted in Xero.</summary>
+    public XeroPurchasingSendAgain SendAgain { get; }
 
     public static async Task<PurchasingSyncTestKit> CreateAsync(
         IXeroPurchaseOrderSource? orders = null, IXeroExpenseSource? expenses = null, XeroPurchasingPlannerOptions? options = null,

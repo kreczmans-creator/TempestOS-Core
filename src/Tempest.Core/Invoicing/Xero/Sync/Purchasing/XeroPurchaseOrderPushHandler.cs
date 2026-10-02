@@ -21,10 +21,12 @@ namespace Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 /// <b>Never two orders.</b> A create is issued only when the order has no
 /// link in the tenant, and only after applying
 /// <see cref="XeroPurchasingOwnership"/>'s one rule: every create the log
-/// recorded for the order (its answer lost) is re-sent under its own
-/// <c>Idempotency-Key</c> and the answered id read back — a live order so
-/// found is linked (<c>"reconciled"</c>), one deleted in Xero is never linked
-/// or resent — and only then is the number looked up
+/// recorded for the order (its answer lost) is read back by the order's id —
+/// recorded as soon as any answer revealed it, or, while none is known and
+/// Xero still holds the key, by re-sending the create under its own
+/// <c>Idempotency-Key</c> (<see cref="XeroPurchasingRecovery"/>) — a live
+/// order so found is linked (<c>"reconciled"</c>), one deleted in Xero is
+/// never linked or resent (until the person's <em>Send again</em>) — and only then is the number looked up
 /// (<c>GET PurchaseOrders/{PurchaseOrderNumber}</c>): any order under it is
 /// left untouched and the push is Rejected with the reason. Every write
 /// carries the entry's fixed <c>Idempotency-Key</c>.
@@ -54,6 +56,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     private readonly XeroAccountCodeMap _accounts;
     private readonly IAuditRecorder? _audit;
     private readonly TimeProvider _time;
+    private readonly XeroPurchasingRecovery.Calls<XeroWirePurchaseOrderWrite, XeroWirePurchaseOrder> _recovery;
 
     /// <summary>Initialises a new instance of the <see cref="XeroPurchaseOrderPushHandler"/> class.</summary>
     /// <param name="api">The typed Xero client (its <see cref="HttpClient"/> holds the safety handler).</param>
@@ -93,6 +96,9 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
         _accounts = accounts;
         _audit = audit;
         _time = timeProvider ?? TimeProvider.System;
+        _recovery = new(
+            (body, key, ct) => _api.CreatePurchaseOrderAsync(body, key, ct), (id, ct) => _api.GetPurchaseOrderAsync(id, ct),
+            o => o.PurchaseOrderID, o => o.PurchaseOrderNumber, o => o.Status, IsLive);
     }
 
     /// <summary>The kind of document this handler sends.</summary>
@@ -171,12 +177,14 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
             return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
 
         // Recorded before it goes, so a lost answer (or a crash mid-request)
-        // still leaves proof this order's create may be in Xero.
+        // still leaves proof this order's create may be in Xero. Its key is the
+        // entry's own, or a new one after the person's Send again.
+        var createKey = reconciled.CreateKey;
         await _creates.RecordSendingAsync(
-            tenantId, entry.Document, body.PurchaseOrderNumber, contact.ContactId!, entry.IdempotencyKey, cancellationToken,
-            body.Reference, XeroPurchasingOwnership.ValueOf(body), XeroPurchasingSentCreate.Serialise(body)).ConfigureAwait(false);
-        var created = await _api.CreatePurchaseOrderAsync(body, entry.IdempotencyKey, cancellationToken).ConfigureAwait(false);
-        await _creates.RecordAnswerAsync(tenantId, entry.Document, entry.IdempotencyKey, created.Outcome, cancellationToken).ConfigureAwait(false);
+            tenantId, entry.Document, body.PurchaseOrderNumber, contact.ContactId!, createKey, cancellationToken,
+            body.Reference, XeroPurchasingOwnership.ValueOf(body), XeroPurchasingSentCreate.Serialise(body), _time.GetUtcNow()).ConfigureAwait(false);
+        var created = await _api.CreatePurchaseOrderAsync(body, createKey, cancellationToken).ConfigureAwait(false);
+        await _creates.RecordAnswerAsync(tenantId, entry.Document, createKey, created.Outcome, cancellationToken, created.Value?.PurchaseOrderID).ConfigureAwait(false);
         if (created.Outcome != ConnectorOutcome.Ok)
             return XeroPurchasingMapper.Failed(created);
 
@@ -259,11 +267,13 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     /// 3–4), applies <see cref="XeroPurchasingOwnership"/>'s one rule — the
     /// same the bill handler applies. First every create the
     /// <see cref="XeroPurchasingCreateLog"/> recorded for this order is
-    /// recovered by identity: its body re-sent under its own
-    /// <c>Idempotency-Key</c> (Xero replays its first answer, the order's id),
-    /// and that id read back. Only a live order recovered so is linked (so a
-    /// cancel deletes it); one no longer live is never linked or resent; a
-    /// replay Xero refuses is cannot-tell. Only then is the order's number
+    /// recovered by identity (<see cref="XeroPurchasingRecovery"/>): read back
+    /// by its id once known; while none is known and Xero still holds its key,
+    /// its body re-sent under its own <c>Idempotency-Key</c> (Xero replays its
+    /// first answer, the order's id); otherwise cannot-tell. Only a live order
+    /// recovered so is linked (so a cancel deletes it); one no longer live is
+    /// a tombstone, never linked or resent; a replay Xero refuses is
+    /// cannot-tell. Only then is the order's number
     /// looked up, for an order in the way of a create — never to call one
     /// ours. Anything else is left untouched and reported once: NothingToDo
     /// when the order is cancelled, gone or being deleted, Rejected (Retry)
@@ -275,21 +285,25 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
     /// another TempestOS order's, or one keyed in Xero — clashes with a
     /// create.
     /// </remarks>
-    private async Task<(XeroPushResult? Result, XeroLink? Link)> ReconcileAsync(
+    private async Task<(XeroPushResult? Result, XeroLink? Link, string CreateKey)> ReconcileAsync(
         string tenantId, XeroOutboxEntry entry, XeroPurchaseOrderSnapshot? order, string? contactId, bool stale, CancellationToken cancellationToken)
     {
         var sent = await _creates.ListSentAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
         var sourceGone = order is null || order.Status == PurchaseOrderStatus.Cancelled || entry.Operation == XeroOperation.DeletePurchaseOrder;
 
-        // Only a push that would send a create (again) has a create of its own to recover.
-        var resendKey = !sourceGone && !stale ? entry.IdempotencyKey : null;
+        // The key this entry's create goes under: its own, or a new one after the person's Send again.
+        var createKey = XeroPurchasingOwnership.CreateKey(entry.IdempotencyKey, sent);
 
+        // Only a push that would send a create (again) has a create of its own to recover.
+        var resendKey = !sourceGone && !stale ? createKey : null;
+
+        var now = _time.GetUtcNow();
         var recovered = new List<XeroRecoveredCreate<XeroWirePurchaseOrder>>();
         foreach (var create in XeroPurchasingOwnership.ToRecover(sent))
         {
-            var (failed, one) = await RecoverAsync(create, cancellationToken).ConfigureAwait(false);
+            var (failed, one) = await XeroPurchasingRecovery.RecoverAsync(_creates, tenantId, entry.Document, create, now, _recovery, cancellationToken).ConfigureAwait(false);
             if (failed is not null)
-                return (failed, null);
+                return (failed, null, createKey);
             recovered.Add(one!);
         }
 
@@ -300,7 +314,7 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
             // Nothing of this order's is live: is anything in the way of a create under its number?
             var found = await _api.FindPurchaseOrdersByNumberAsync(number, cancellationToken).ConfigureAwait(false);
             if (found.Outcome != ConnectorOutcome.Ok)
-                return (XeroPurchasingMapper.Failed(found), null);
+                return (XeroPurchasingMapper.Failed(found), null, createKey);
 
             List<XeroWirePurchaseOrder> inTheWay = [.. found.Value!.Where(o => o.PurchaseOrderID is not null && IsLive(o))];
             if (inTheWay.Count > 0)
@@ -329,60 +343,32 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
                 var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
                 await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
                 await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
-                return (null, link);
+                return (null, link, createKey);
             }
 
             case XeroOwnershipVerdict.CannotTell:
-                return (XeroPurchasingOwnership.CannotTell("Purchase order", "order", judged.From!.Create.Number, judged.From.Problem, sourceGone), null);
+                return (XeroPurchasingOwnership.CannotTell("Purchase order", "order", judged.From!.Create.Number, judged.From.Problem, sourceGone), null, createKey);
 
             case XeroOwnershipVerdict.DeletedInXero:
                 return (XeroPurchasingOwnership.DeletedInXero(
-                    "Purchase order", "order", judged.Ours?.PurchaseOrderNumber?.Trim() is { Length: > 0 } n ? n : judged.From!.Create.Number, judged.Ours?.Status,
-                    "An issued order's lines are fixed, so if it is still wanted, key it in Xero by hand or check with whoever keeps the books.",
-                    sourceGone), null);
+                    "Purchase order", "order",
+                    judged.Ours?.PurchaseOrderNumber?.Trim() is { Length: > 0 } n ? n : judged.From!.Create.XeroNumber ?? judged.From.Create.Number,
+                    judged.Ours?.Status ?? judged.From!.Create.GoneStatus,
+                    XeroPurchasingSendAgain.OrderAdvice,
+                    sourceGone), null, createKey);
 
             case XeroOwnershipVerdict.AnotherDocuments:
-                return (XeroPurchasingOwnership.AnotherDocuments("Purchase order", "order", number!, sourceGone), null);
+                return (XeroPurchasingOwnership.AnotherDocuments("Purchase order", "order", number!, sourceGone), null, createKey);
 
             case XeroOwnershipVerdict.NotOurs:
                 return (XeroPurchasingOwnership.NotOurs(
                     "Purchase order", "order", number!,
                     "Check with whoever keeps the books which order that is, then Retry.",
-                    sourceGone), null);
+                    sourceGone), null, createKey);
 
             default:
-                return (null, null);
+                return (null, null, createKey);
         }
-    }
-
-    /// <summary>
-    /// Recovers one logged create by identity: re-sends its body under its
-    /// own <c>Idempotency-Key</c> — Xero replays its first answer, the
-    /// order's id (or, had the create never reached Xero, makes it now) — and
-    /// reads that id back. A refused replay is <see cref="XeroRecovery.Unrecoverable"/>
-    /// (never struck off the log: the create may still be in Xero).
-    /// </summary>
-    private async Task<(XeroPushResult? Failed, XeroRecoveredCreate<XeroWirePurchaseOrder>? Recovered)> RecoverAsync(
-        XeroPurchasingSentCreate create, CancellationToken cancellationToken)
-    {
-        if (create.BodyAs<XeroWirePurchaseOrderWrite>() is not { } body)
-            return (null, new(create, XeroRecovery.Unrecoverable, Problem: "TempestOS holds no copy of what it sent"));
-
-        var replay = await _api.CreatePurchaseOrderAsync(body, create.IdempotencyKey, cancellationToken).ConfigureAwait(false);
-        if (replay.Outcome == ConnectorOutcome.Rejected)
-            return (null, new(create, XeroRecovery.Unrecoverable, Problem: XeroPurchasingMapper.Problem(replay)));
-        if (replay.Outcome != ConnectorOutcome.Ok)
-            return (XeroPurchasingMapper.Failed(replay), null);
-
-        var read = await _api.GetPurchaseOrderAsync(replay.Value!.PurchaseOrderID!, cancellationToken).ConfigureAwait(false);
-        if (read.Outcome != ConnectorOutcome.Ok)
-        {
-            return read.NotFound
-                ? (null, new(create, XeroRecovery.Gone, replay.Value with { Status = XeroPurchasingMapper.StatusDeleted }))
-                : (XeroPurchasingMapper.Failed(read), null);
-        }
-
-        return (null, new(create, IsLive(read.Value!) ? XeroRecovery.Live : XeroRecovery.Gone, read.Value));
     }
 
     private static bool IsLive(XeroWirePurchaseOrder order) => XeroPurchasingMapper.Word(order.Status) != XeroPurchasingMapper.StatusDeleted;

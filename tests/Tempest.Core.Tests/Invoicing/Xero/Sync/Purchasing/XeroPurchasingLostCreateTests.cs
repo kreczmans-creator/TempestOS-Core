@@ -360,7 +360,7 @@ public sealed class XeroPurchasingLostCreateTests
         var (id, ourOrder) = await LostOrderCreateAsync(kit);
         kit.Simulator.DeleteInXero("PurchaseOrders", ourOrder);
 
-        kit.Clock.Advance(TimeSpan.FromMinutes(5));
+        kit.Clock.Advance(TimeSpan.FromMinutes(2)); // Within Xero's key lifetime (XeroPurchasingOwnership.IdempotencyKeyLifetime).
         var step = Assert.Single(await kit.DrainAsync());
 
         Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
@@ -395,7 +395,7 @@ public sealed class XeroPurchasingLostCreateTests
         var (id, ourBill) = await LostBillCreateAsync(kit, "NS-5");
         kit.Simulator.DeleteInXero("Invoices", ourBill);
 
-        kit.Clock.Advance(TimeSpan.FromMinutes(5));
+        kit.Clock.Advance(TimeSpan.FromMinutes(2)); // Within Xero's key lifetime (XeroPurchasingOwnership.IdempotencyKeyLifetime).
         var step = Assert.Single(await kit.DrainAsync());
 
         Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);
@@ -520,7 +520,7 @@ public sealed class XeroPurchasingLostCreateTests
 
     private static async Task AssertDeletedInXeroRejectedAsync(PurchasingSyncTestKit kit, string resource, string ours, Func<Task<XeroLink?>> link, string act = "deleted")
     {
-        kit.Clock.Advance(TimeSpan.FromMinutes(5));
+        kit.Clock.Advance(TimeSpan.FromMinutes(2)); // Within Xero's key lifetime (XeroPurchasingOwnership.IdempotencyKeyLifetime).
         var step = Assert.Single(await kit.DrainAsync());
 
         Assert.Equal(XeroPushOutcome.Rejected, step.Result.Outcome);

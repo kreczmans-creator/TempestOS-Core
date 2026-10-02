@@ -103,4 +103,40 @@ public sealed class XeroPurchasingCreateLogTests
 
         Assert.Equal([new XeroPurchasingSentCreate("NS-1", "c1", "other", null, "v")], listed);
     }
+
+    [Fact]
+    public async Task AnOkAnswer_RecordsTheRecordsId_AndARepeatOfTheSameSendKeepsItsFirstTime()
+    {
+        var log = new XeroPurchasingCreateLog(new YieldingInMemoryPersistenceStore());
+        var first = new DateTimeOffset(2026, 10, 2, 9, 0, 0, TimeSpan.Zero);
+        await log.RecordSendingAsync("t1", Document, "NS-1", "c1", "k1", body: "{}", sentAtUtc: first);
+        await log.RecordSendingAsync("t1", Document, "NS-1", "c1", "k1", body: "{}", sentAtUtc: first.AddMinutes(3));
+
+        var sent = Assert.Single(await log.ListSentAsync("t1", Document));
+        Assert.Equal(first, sent.SentAtUtc); // Xero's key lifetime runs from the first call.
+        Assert.Null(sent.XeroId);
+
+        await log.RecordAnswerAsync("t1", Document, "k1", ConnectorOutcome.Ok, xeroId: "x-1");
+        await log.RecordXeroIdAsync("t1", Document, "k1", "x-2"); // A known id is kept.
+        Assert.Equal("x-1", Assert.Single(await log.ListSentAsync("t1", Document)).XeroId);
+    }
+
+    [Fact]
+    public async Task ATombstone_IsKept_UntilSendAgainReleasesIt()
+    {
+        var log = new XeroPurchasingCreateLog(new YieldingInMemoryPersistenceStore());
+        await log.RecordSendingAsync("t1", Document, "NS-1", "c1", "k1", body: "{}");
+        Assert.Equal(0, await log.ReleaseGoneAsync("t1", Document, DateTimeOffset.UnixEpoch));
+
+        await log.RecordGoneAsync("t1", Document, "k1", "x-1", "voided", "NS-1A");
+        var gone = Assert.Single(await log.ListSentAsync("t1", Document));
+        Assert.True(gone.IsTombstone);
+        Assert.Equal(("x-1", "VOIDED", "NS-1A"), (gone.XeroId, gone.GoneStatus, gone.XeroNumber));
+
+        Assert.Equal(1, await log.ReleaseGoneAsync("t1", Document, DateTimeOffset.UnixEpoch));
+        var released = Assert.Single(await log.ListSentAsync("t1", Document));
+        Assert.False(released.IsTombstone);
+        Assert.Equal(DateTimeOffset.UnixEpoch, released.ReleasedAtUtc);
+        Assert.Equal(0, await log.ReleaseGoneAsync("t1", Document, DateTimeOffset.UnixEpoch));
+    }
 }

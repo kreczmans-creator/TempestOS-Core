@@ -552,23 +552,35 @@ file, each task owns its resource file. Paths below are relative to
 
 **X5 remark — purchasing ownership (`XeroPurchasingOwnership`, the one
 rule for POs and bills).** A Xero PO or bill is TempestOS's only when linked,
-or when it is the record a logged create made, recovered by identity: after
-any create whose answer was lost, the handler first re-sends that create's
-exact body under its own `Idempotency-Key` (Xero replays its first answer,
-the record's id; the create log keeps the body for this), then reads that id
-back before linking. This refines §6.4 item 3 for X5: the number lookup
-never proves a record ours, only finds one in the way of a create. Read
-back live → link; deleted (or a bill voided) → *DeletedInXero*: never
-linked, never resent, nothing else under the number touched (live push
-Rejected, cancel/delete NothingToDo), however it was edited or renumbered
-first; replay refused (key expired and the number already used, or any
-other refusal) or no recorded body → *CannotTell*: Rejected, nothing
-linked, sent or deleted. Matching by number, contact or amounts never
-adopts a record: every purchasing create is keyed and logged (pre-v0.24
-documents' *Send to Xero* queues the same keyed create). Residual risk for
-design-owner sign-off: a bill create recovered only after Xero has expired
-its key is made again (bill numbers are not unique in Xero); recovery runs
-on the next drain. Out-of-row, additive, test-only:
+or when it is the record a logged create made, recovered by identity and
+read back by its id before linking. The create log records the record's id
+as soon as any answer reveals it (the create's own, or a replay of it); from
+then on that create is only ever read back by its id, never re-sent. While
+no id is known, and only within `IdempotencyKeyLifetime` (5 minutes) of the
+create first being sent, the handler re-sends the create's exact body under
+its own `Idempotency-Key` (Xero replays its first answer, the record's id;
+the log keeps the body and the send time for this). Xero documents keeping a
+key for 6 minutes from the first call, after which a repeat is processed as a
+new request (developer.xero.com, *Idempotent requests*; re-confirm at X8).
+This refines §6.4 item 3 for X5: the number lookup never proves a record
+ours, only finds one in the way of a create. Read back live → link; deleted
+(or a bill voided) → *DeletedInXero*, recorded as a tombstone: never linked,
+never re-sent by Retry, cancel or delete, nothing else under the number
+touched (live push Rejected, cancel/delete NothingToDo), however it was
+edited or renumbered first. The person's deliberate **Send again**
+(`XeroPurchasingSendAgain`, audited `xero.purchasing.send-again`; U3 puts it
+on the badge) releases the tombstone and re-queues the push, which sends the
+document as a new DRAFT under a new derived key (`CreateKey`), never the
+deleted record's key. No id known and the key possibly forgotten, no
+recorded body, or a replay refused → *CannotTell*: Rejected, nothing linked,
+sent or deleted; Send again never releases it. Matching by number, contact
+or amounts never adopts a record: every purchasing create is keyed and
+logged (pre-v0.24 documents' *Send to Xero* queues the same keyed create).
+Residual risk for design-owner sign-off: a create whose answer was lost and
+which the drain does not recover within 5 minutes stays CannotTell (for a PO
+or a bill) until someone checks Xero — TempestOS never re-sends it, so it
+never makes a second record; it no longer re-creates a bill after the key
+expires. Out-of-row, additive, test-only:
 `Simulator/XeroApiSimulator.BackOffice.cs` (`SetDateInXero`,
 `ForgetIdempotencyKeys`).
 
