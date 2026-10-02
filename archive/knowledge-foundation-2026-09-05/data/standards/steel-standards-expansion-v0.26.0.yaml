@@ -1,0 +1,38 @@
+- id: STD-AMS-5862
+  designation: AMS 5862
+  scope: 15-5 PH stainless steel sheet/plate; precipitation-hardening condition requirements
+  linked_grades:
+  - 15-5 PH / UNS S15500
+- id: STD-AMS-5659
+  designation: AMS 5659
+  scope: 15-5 PH stainless steel bars, wire, forgings and rings
+  linked_grades:
+  - 15-5 PH / UNS S15500
+- id: STD-AMS-5864
+  designation: AMS 5864
+  scope: 13-8 Mo precipitation-hardening stainless steel product requirements
+  linked_grades:
+  - 13-8 Mo / UNS S13800
+- id: STD-ASTM-A564
+  designation: ASTM A564/A564M
+  scope: age-hardening stainless steel bars and shapes
+  linked_grades:
+  - 15-5 PH
+  - 17-4 PH
+  - 13-8 Mo
+- id: STD-ASTM-A276
+  designation: ASTM A276/A276M
+  scope: stainless steel bars and shapes
+  linked_grades:
+  - '410'
+  - '420'
+  - '430'
+  - 440C
+- id: STD-ASTM-F899
+  designation: ASTM F899
+  scope: wrought stainless steels for surgical instruments
+  linked_grades:
+  - 440C
+  - '410'
+  - '420'
+  - 17-4 PH

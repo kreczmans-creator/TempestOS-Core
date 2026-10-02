@@ -44,7 +44,9 @@ public class ReferenceReviewPermissionTests
 
     private static async Task SeedAsync(ITempestHost host)
     {
-        var seeder = (ReferenceSeedService)host.Services!.GetService(typeof(ReferenceSeedService))!;
+        // This test exercises a person's own review of an unreleased record, so it
+        // seeds without the host's release-at-seed policy (PO decision 2026-10-01).
+        var seeder = new ReferenceSeedService();
         await seeder.ApplyAsync(Materials(host), MaterialSeed.Instance);
     }
 

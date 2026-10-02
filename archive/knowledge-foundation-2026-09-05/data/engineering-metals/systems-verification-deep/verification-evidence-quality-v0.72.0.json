@@ -1,0 +1,20 @@
+{
+  "version": "0.72.0",
+  "status": "verification-framework",
+  "attributes": [
+    "objective",
+    "traceable",
+    "repeatable",
+    "configuration-controlled",
+    "reviewed",
+    "unambiguous",
+    "reproducible"
+  ],
+  "weak_evidence": [
+    "undocumented demonstration",
+    "uncontrolled screenshots",
+    "untraceable calculations",
+    "results without configuration",
+    "claims without acceptance criteria"
+  ]
+}

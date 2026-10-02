@@ -1,0 +1,13 @@
+Family,Electrical class,Moisture sensitivity,Chemical/environment screening,Evidence
+ABS,generally insulating engineering thermoplastic,low-to-moderate compared with hygroscopic polyamides,variable,Screening only
+PA6,insulating when dry; moisture-sensitive,high,often good-to-moderate,Screening only
+PA66,insulating when dry; moisture-sensitive,high,often good-to-moderate,Screening only
+PA12,insulating; lower moisture sensitivity than PA6/PA66,moderate,often good,Screening only
+POM,insulating engineering thermoplastic,low-to-moderate,often good,Screening only
+PC,insulating engineering thermoplastic,low-to-moderate,variable,Screening only
+PBT,commonly used as electrical insulation,moderate; hydrolysis and conditioning can matter,often good,Screening only
+PPS,high-performance electrical insulating thermoplastic,low,generally strong resistance,Screening only
+PEI,high-performance electrical insulating thermoplastic,low-to-moderate,variable,Screening only
+PPA,engineering insulation; formulation dependent,moderate-to-high,often good,Screening only
+LCP,high-performance electrical insulation,low,generally good,Screening only
+PEEK,high-performance electrical insulating thermoplastic,low,generally excellent resistance,Screening only

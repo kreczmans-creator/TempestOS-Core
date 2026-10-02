@@ -22,16 +22,18 @@ article summarises; nothing below overrides that document.
 ## Branching Strategy
 
 `main` is the only permanent branch, always reflecting the latest
-release. Each minor release gets its own branch,
-`feature/vX.Y.0-<slug>`, cut from `main` at the prior release's tag —
-confirmed against this project's own history, `feature/v0.5.0-developer-experience`
-through `feature/v0.10.0-user-experience`. Every Work Package for that
-release lands as its own commit directly on the branch; the branch
-merges into `main` once, as a single non-fast-forward merge, at release
-close. Branches are never deleted. A hotfix gets its own branch,
-`hotfix/vX.Y.Z-<slug>` — see "Emergency Hotfix Process," below. There is
+release. A release is integrated on a `release/vX.Y.Z` branch (for
+example `release/v0.21.0`), cut from `main`; CI runs on every push to it.
+Work Packages reach it, or `main` directly, as pull requests from
+short-lived working branches, which have no required naming scheme (CI
+runs on their pull request, not on a push to them — see
+`04-continuous-integration.md`). The release branch merges into `main`
+at release close. A hotfix is an ordinary pull request branched from the
+affected release's tag — see "Emergency Hotfix Process," below. There is
 no permanent `develop`/`staging` branch — deliberately not adopted; this
-project has never needed one.
+project has never needed one. (Through `v0.10.0` release branches were
+named `feature/vX.Y.0-<slug>` and a hotfix branch
+`hotfix/vX.Y.Z-<slug>`; those names are historical.)
 
 ## Pull Request Workflow
 
@@ -73,11 +75,27 @@ an annotated tag. Pushing that tag triggers
 Gate run against the tagged commit itself, which then publishes a GitHub
 Release with **two separate assets attached, never one** — `Tempest.Desktop`'s
 own build (TempestOS's shipped application) and, separately,
-`Tempest.App`'s own build (the Internal Engineering Harness, `ADR-0101`,
-`WP 11.3B`) — so it is never ambiguous on the Release page which
+`Tempest.Harness`'s own build (the Internal Engineering Harness, `ADR-0101`,
+amended `WP 17.2B`), plus the Velopack installer and its update feed — so it is never ambiguous on the Release page which
 download *is* TempestOS. A release is not considered shipped until this
 second verification passes, not merely on the strength of an earlier CI
 run or a local script's own printed success message.
+
+**Tag only when the commit is ready; the release waits for CI on that
+commit** (`ADR-0160`, PO decision 2026-10-01). The tag push also starts
+`ci.yml` on the same commit, and `release.yml` publishes nothing until
+that commit's `CI Gate` check has concluded `success`: its first job
+polls the Checks API for up to 75 minutes, in parallel with the
+build/test job. A red, cancelled or missing `CI Gate` fails the release
+run; the tag stays where it is (§7.4), and once the cause is fixed (a CI
+re-run on the tag for a flake, otherwise a new patch version) the failed
+release jobs are re-run. The workflow is split so that only the final
+`publish` job holds a token that can write to the repository: the
+build/test job runs with a read-only, non-persisted token and hands the
+packaged assets, `SHA256SUMS.txt` and the release notes to `publish` as
+an artifact, and `publish` checks every asset against `SHA256SUMS.txt`
+before it creates the Release. `vpk`, which packages the installer, is
+pinned in `.config/dotnet-tools.json` and run as `dotnet vpk`.
 
 A release-readiness review recommending **APPROVED** or **CERTIFIED**
 remains required — the same pattern every release since `v0.6.0` has
@@ -88,6 +106,25 @@ tag (`vX.Y.Z-rc.N`, cut directly on the release branch, the one
 disclosed exception to "tag only from `main`") publishes a pre-release
 build for smoke-testing before the real merge and tag happen — see
 `WP11.1B Engineering Workflow.md` §8.
+
+## Handing a Build Over for Testing
+
+Every build handed to the Product Owner for testing ships with its own
+installer and a versioned desktop shortcut (PO decision 2026-10-01). An
+old shortcut once opened v0.22.0 and its data folder during a v0.23.0
+test, which looked like lost projects.
+
+1. On the test PC, from the branch under test, run
+   `pwsh -NoProfile -File scripts/install-test-build.ps1 -Pull`. It
+   packages the installer (`scripts/package-installer.ps1`), installs it
+   over any earlier version, removes older `TempestOS * (test)` shortcuts
+   and adds `TempestOS <version> (test)` on the desktop, opening the
+   version's own data folder (`C:\TempestOS-rc<minor>-data` by default).
+2. The runbook's first step (A0) is running that script; its last line
+   prints the title-bar build to record.
+3. Test only from that shortcut. The plain `TempestOS` shortcut also opens
+   the newly installed build, but on whatever data folder was chosen at
+   first run.
 
 ## Versioning Policy
 
@@ -151,5 +188,5 @@ since found before its own release branch closed. Full account:
 
 `docs/releases/v0.11.0/WP11.1B Engineering Workflow.md` (the full
 specification); `04-continuous-integration.md`; `Engineering
-Governance.md` §2, §7, §9; `.github/workflows/ci.yml`,
+Governance.md` §2, §7, §9; `ADR-0160`; `.github/workflows/ci.yml`,
 `.github/workflows/release.yml`; `scripts/new-release.ps1`.

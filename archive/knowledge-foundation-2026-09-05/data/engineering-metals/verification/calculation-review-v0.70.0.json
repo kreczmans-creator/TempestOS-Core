@@ -1,0 +1,18 @@
+{
+  "version": "0.70.0",
+  "status": "verification-framework",
+  "checklist": [
+    "requirements traceability",
+    "units",
+    "sign conventions",
+    "free-body diagram",
+    "boundary conditions",
+    "load cases",
+    "material state",
+    "assumptions",
+    "equation applicability",
+    "sensitivity",
+    "independent check",
+    "result acceptance criteria"
+  ]
+}

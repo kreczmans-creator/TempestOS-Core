@@ -71,8 +71,8 @@ build-*.log
 
 # WP 21.5A: scripts/package-installer.ps1's own local output (the
 # self-contained publish folder and the packaged installer/update-feed
-# assets) and, when the `vpk` CLI is not already on PATH, the local dotnet
-# tool install it falls back to - all run artefacts, never source.
+# assets) and `.tools/`, where it installed `vpk` before vpk was pinned in
+# .config/dotnet-tools.json (ADR-0160) - all run artefacts, never source.
 /artifacts/
 /.tools/
 

@@ -1,0 +1,33 @@
+{
+  "version": "0.53.0",
+  "family": "cobalt-base-alloys",
+  "screening": {
+    "CoCrMo": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Stellite 6": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Haynes 188": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "Haynes 25 / L-605": {
+      "cost": "expensive",
+      "availability": "specialist"
+    }
+  },
+  "drivers": [
+    "cobalt and alloying-element content",
+    "product form",
+    "casting/forging/deposition route",
+    "heat treatment",
+    "machining difficulty",
+    "qualification/certification",
+    "supplier base",
+    "purchase volume"
+  ],
+  "rule": "Relative cost/availability classifications are planning data, not quotations."
+}

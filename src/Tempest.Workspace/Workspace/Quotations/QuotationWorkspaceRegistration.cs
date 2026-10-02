@@ -30,6 +30,18 @@ public static class QuotationCommandIds
 
     /// <summary>Declines the selected quotation. Creates nothing.</summary>
     public const string Decline = "quotation.decline";
+
+    /// <summary>Saves the selected draft quotation explicitly — no export, no send (runbook C3).</summary>
+    public const string SaveDraft = "quotation.save-draft";
+
+    /// <summary>Submits the selected draft quotation for review by a second person (runbook C3).</summary>
+    public const string SubmitForReview = "quotation.submit-for-review";
+
+    /// <summary>Approves the selected quotation in review, issuing its next revision (R1, R2, …) (runbook C3).</summary>
+    public const string Approve = "quotation.approve";
+
+    /// <summary>Returns the selected quotation in review to draft, with a comment (runbook C3).</summary>
+    public const string ReturnToDraft = "quotation.return-to-draft";
 }
 
 /// <summary>
@@ -67,9 +79,10 @@ public static class QuotationWorkspaceRegistration
     private static readonly IReadOnlyList<string> ProjectKind = [MechanicalObjectFactoryRegistry.Project];
 
     /// <summary>Registers every Quotations Workspace extension point this Work Package owns.</summary>
+    /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`) the review command's own messages read. <see langword="null"/> keeps the second-person wording.</param>
     public static void Register(
         IWorkspaceManager manager, EngineeringDomainContext domainContext, IQuotationService quotationService,
-        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry)
+        ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(domainContext);
@@ -88,6 +101,7 @@ public static class QuotationWorkspaceRegistration
         commandDispatcher.RegisterHandler<SendQuotationCommand>(new SendQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<AcceptQuotationCommand>(new AcceptQuotationCommandHandler(quotationService));
         commandDispatcher.RegisterHandler<DeclineQuotationCommand>(new DeclineQuotationCommandHandler(quotationService));
+        commandDispatcher.RegisterHandler<QuotationReviewCommand>(new QuotationReviewCommandHandler(quotationService, signOffPolicy));
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.Create, displayName: "Create Quotation", category: "Quotations",
@@ -104,7 +118,7 @@ public static class QuotationWorkspaceRegistration
             Binding = new CommandBinding(
                 CommandContextRequirement.None,
                 (context, values) => new CreateQuotationCommand(context.ProjectId ?? Guid.Empty, WorkspaceCommandBindings.OrNull(values["reference"])),
-                [new CommandParameter("reference", "Reference (blank to generate Q-<year>-<nnn>)", DefaultValue: string.Empty)],
+                [new CommandParameter("reference", "Reference (blank for the project's next number, <customer>-<project>-Q-<nnn>)", DefaultValue: string.Empty)],
                 mutates: true),
         });
 
@@ -184,7 +198,7 @@ public static class QuotationWorkspaceRegistration
 
         commandRegistry.RegisterDescriptor(new CommandDescriptor(
             id: QuotationCommandIds.Send, displayName: "Send Quotation", category: "Quotations",
-            description: "Sends the selected, Draft quotation to its client — refused if it carries no lines.")
+            description: "Sends the selected, approved quotation revision to its client — refused unless it has been approved.")
         {
             Binding = new CommandBinding(
                 CommandContextRequirement.SelectedObject,
@@ -215,6 +229,62 @@ public static class QuotationWorkspaceRegistration
                 (context, _) => new DeclineQuotationCommand(WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind),
                 appliesToKinds: QuotationKind,
                 confirmationMessage: "Decline the selected quotation? This cannot be undone.",
+                mutates: true),
+        });
+
+        RegisterReviewCommands(commandRegistry);
+    }
+
+    /// <summary>Registers the four draft-and-review commands (runbook C3) — each a <see cref="QuotationReviewCommand"/> on the selected quotation.</summary>
+    private static void RegisterReviewCommands(ICommandRegistry commandRegistry)
+    {
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.SaveDraft, displayName: "Save Quotation Draft", category: "Quotations",
+            description: "Saves the selected draft quotation without exporting or sending it.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new QuotationReviewCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, QuotationReviewAct.SaveDraft),
+                appliesToKinds: QuotationKind,
+                mutates: true),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.SubmitForReview, displayName: "Submit Quotation for Review", category: "Quotations",
+            description: "Submits the selected draft quotation for review — it is approved (by a second person when second-person sign-off is on) before it can be sent.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new QuotationReviewCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, QuotationReviewAct.SubmitForReview),
+                appliesToKinds: QuotationKind,
+                mutates: true),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.Approve, displayName: "Approve Quotation", category: "Quotations",
+            description: "Approves the selected quotation in review as its next revision (R1, R2, …) — refused for the person who prepared or submitted it.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, _) => new QuotationReviewCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, QuotationReviewAct.Approve),
+                appliesToKinds: QuotationKind,
+                mutates: true),
+        });
+
+        commandRegistry.RegisterDescriptor(new CommandDescriptor(
+            id: QuotationCommandIds.ReturnToDraft, displayName: "Return Quotation to Draft", category: "Quotations",
+            description: "Returns the selected quotation in review to draft, with the reviewer's comment.")
+        {
+            Binding = new CommandBinding(
+                CommandContextRequirement.SelectedObject,
+                (context, values) => new QuotationReviewCommand(
+                    WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind, QuotationReviewAct.ReturnToDraft,
+                    values["comment"]),
+                [WorkspaceCommandBindings.Required("comment", "Comment for the author")],
+                appliesToKinds: QuotationKind,
                 mutates: true),
         });
     }

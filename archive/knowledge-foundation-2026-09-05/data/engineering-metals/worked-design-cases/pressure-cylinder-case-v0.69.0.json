@@ -1,0 +1,16 @@
+{
+  "version": "0.69.0",
+  "problem": "Screen a cylindrical pressure boundary before code-based design.",
+  "workflow": [
+    "define pressure and temperature envelope",
+    "define internal diameter and candidate thickness",
+    "use thin-wall relationships only for preliminary stress screening",
+    "identify discontinuities and end closures",
+    "select governing pressure code",
+    "assess fatigue/cyclic pressure",
+    "assess corrosion and inspection",
+    "verify material and manufacturing evidence"
+  ],
+  "acceptance": "Final design must be completed against the governing pressure code.",
+  "status": "worked-framework"
+}

@@ -1,0 +1,72 @@
+{
+  "carbon_low_alloy": {
+    "grades": [
+      "S235JR",
+      "S355JR",
+      "C45",
+      "42CrMo4"
+    ],
+    "general_corrosion": "Requires corrosion protection in most atmospheric service; bare carbon/low-alloy steel is susceptible to general corrosion.",
+    "chlorides": "Chloride/moisture environments accelerate corrosion; coatings, material upgrade or controlled environment may be required.",
+    "SCC": "Environment and stress dependent; do not infer immunity from generic grade designation.",
+    "hydrogen": "Hydrogen-assisted cracking can be relevant in high-strength/heat-treated conditions and certain charging/plating environments.",
+    "galvanic": "Can act anodically when coupled to more noble metals in an electrolyte."
+  },
+  "austenitic_stainless": {
+    "grades": [
+      "304",
+      "316L",
+      "310S",
+      "321"
+    ],
+    "general_corrosion": "Good general atmospheric corrosion resistance; performance is environment dependent.",
+    "chlorides": "Pitting/crevice corrosion can govern in chloride environments. 316L generally offers better chloride resistance than 304; this is not an absolute service guarantee.",
+    "SCC": "Chloride stress-corrosion cracking is a known concern, particularly at elevated temperature and tensile stress.",
+    "hydrogen": "Hydrogen effects depend on grade, microstructure, charging condition and stress state; assess where service warrants.",
+    "galvanic": "Galvanic coupling requires electrolyte, area ratio and potential considerations."
+  },
+  "martensitic_stainless": {
+    "grades": [
+      "410",
+      "420",
+      "440C"
+    ],
+    "general_corrosion": "Corrosion resistance is generally below low-carbon austenitic grades and depends strongly on heat treatment and surface condition.",
+    "chlorides": "Pitting/crevice corrosion remains possible; chloride service requires grade- and condition-specific assessment.",
+    "SCC": "Stress/environment interactions can be significant; heat treatment and hardness matter.",
+    "hydrogen": "Higher-strength/harder conditions can be susceptible to hydrogen-assisted cracking under appropriate charging and stress.",
+    "galvanic": "Assess galvanic coupling when paired with more noble alloys."
+  },
+  "precipitation_hardening_stainless": {
+    "grades": [
+      "17-4 PH",
+      "15-5 PH",
+      "13-8 Mo"
+    ],
+    "general_corrosion": "Good corrosion resistance relative to many hardenable steels, but strongly dependent on condition, microstructure and environment.",
+    "chlorides": "Pitting/crevice corrosion and localized attack must be considered in chloride service.",
+    "SCC": "Condition, strength level, environment and residual/applied stress can materially affect SCC performance.",
+    "hydrogen": "High-strength conditions require consideration of hydrogen-assisted cracking where charging is possible.",
+    "galvanic": "Coupling to dissimilar metals should be assessed for electrolyte exposure."
+  },
+  "tool_steel": {
+    "grades": [
+      "H13"
+    ],
+    "general_corrosion": "Not selected primarily for corrosion resistance; protect in corrosive service.",
+    "chlorides": "Chloride/moisture exposure can cause corrosion; surface treatment/protection may be required.",
+    "SCC": "Assess only against the actual service environment and heat-treated condition.",
+    "hydrogen": "Hydrogen effects can be relevant in hardened high-strength tooling/service conditions.",
+    "galvanic": "Assess with dissimilar metallic couples in wet environments."
+  },
+  "ferritic_stainless": {
+    "grades": [
+      "430"
+    ],
+    "general_corrosion": "Moderate general corrosion resistance with strong dependence on surface condition and environment.",
+    "chlorides": "Localized chloride corrosion remains possible and should not be treated as immune.",
+    "SCC": "Generally less susceptible to classic chloride SCC than austenitic stainless steels, but service-specific assessment remains required.",
+    "hydrogen": "Consider charging and stress conditions where high consequence exists.",
+    "galvanic": "Assess dissimilar-metal coupling in electrolyte."
+  }
+}

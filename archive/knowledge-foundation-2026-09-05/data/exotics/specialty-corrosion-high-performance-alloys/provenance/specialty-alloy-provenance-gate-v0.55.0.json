@@ -1,0 +1,35 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "mandatory_identity": [
+    "designation",
+    "specification",
+    "composition",
+    "product form",
+    "condition",
+    "processing route"
+  ],
+  "environment_identity": [
+    "chemical species",
+    "concentration",
+    "pH where relevant",
+    "temperature",
+    "pressure",
+    "oxidising/reducing condition",
+    "chloride/contaminant level",
+    "flow regime"
+  ],
+  "functional_identity": [
+    "transformation temperatures",
+    "training/processing history",
+    "functional cycling"
+  ],
+  "evidence_states": [
+    "unverified",
+    "source-linked",
+    "cross-checked",
+    "engineering-reviewed",
+    "design-approved"
+  ],
+  "promotion_rule": "Family-level corrosion claims cannot become design allowables without environment-specific evidence."
+}

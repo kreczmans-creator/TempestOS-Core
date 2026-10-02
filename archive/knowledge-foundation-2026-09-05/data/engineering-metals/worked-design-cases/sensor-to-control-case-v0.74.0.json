@@ -1,0 +1,15 @@
+{
+  "version": "0.74.0",
+  "status": "worked-framework",
+  "problem": "Build an end-to-end position-control measurement chain.",
+  "workflow": [
+    "define position requirement",
+    "select sensing principle",
+    "define range/resolution/bandwidth",
+    "design conditioning",
+    "select ADC/interface",
+    "define sample timing",
+    "integrate controller",
+    "verify accuracy, latency and fault behaviour"
+  ]
+}

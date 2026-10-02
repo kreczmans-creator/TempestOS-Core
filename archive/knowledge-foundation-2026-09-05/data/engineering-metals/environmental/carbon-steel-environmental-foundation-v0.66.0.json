@@ -1,0 +1,19 @@
+{
+  "version": "0.66.0",
+  "family": "carbon-steel",
+  "environmental_concerns": [
+    "general atmospheric corrosion",
+    "hydrogen-related risk where applicable",
+    "temperature-dependent strength"
+  ],
+  "checks": [
+    "corrosion mechanism",
+    "exposure concentration/time",
+    "temperature",
+    "stress state",
+    "surface treatment/coating",
+    "dissimilar-metal coupling"
+  ],
+  "rule": "Environmental suitability is application-specific and must be verified for the actual alloy/condition and exposure.",
+  "evidence_status": "foundation reference"
+}

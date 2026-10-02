@@ -39,15 +39,20 @@ public class CalculationModuleWorkbenchTests
         [F("Diameter", "20", "mm"), F("UltimateShearStrength", "400", "MPa"), F("ShearPlanes", "2"), F("SafetyFactor", safetyFactor)];
 
     [Fact]
-    public void TheCatalogue_ListsAllSixteenProductCalculations_GroupedByCategory()
+    public void TheCatalogue_ListsAllNineteenProductCalculations_GroupedByCategory()
     {
         var groups = CalculationModuleWorkbench.Catalogue();
 
-        Assert.Equal(16, groups.Sum(g => g.Modules.Count));
+        Assert.Equal(19, groups.Sum(g => g.Modules.Count));
         Assert.All(groups, g => Assert.NotEmpty(g.Modules));
         Assert.Equal(groups.Count, groups.Select(g => g.Category).Distinct(StringComparer.Ordinal).Count());
         Assert.Contains(groups, g => g.Category == "Structural" && g.Modules.Any(m => m.Id == BeamDeflectionCalculationDefinition.Id) && g.Modules.Any(m => m.Id == BoltShearCapacityCalculationDefinition.Id));
         Assert.Contains(groups, g => g.Category == "Fatigue" && g.Modules.Single().Id == FatigueMinerCalculationDefinition.Id);
+        Assert.Contains(groups, g => g.Category == "Tolerancing" && g.Modules.Single().Id == ToleranceStackCalculationDefinition.Id);
+        Assert.Contains(groups, g => g.Category == "Thermal"
+            && g.Modules.Any(m => m.Id == ThermalExpansionStressCalculationDefinition.Id)
+            && g.Modules.Any(m => m.Id == ThermalResistanceChainCalculationDefinition.Id)
+            && g.Modules.Any(m => m.Id == PlaneWallHeatTransferCalculationDefinition.Id));
     }
 
     [Fact]

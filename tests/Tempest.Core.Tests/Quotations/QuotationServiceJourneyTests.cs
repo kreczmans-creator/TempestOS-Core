@@ -77,6 +77,9 @@ public sealed class QuotationServiceJourneyTests
             Assert.Equal(QuotationLineBasis.Hourly, withLines.Lines[1].Basis);
             Assert.Equal(QuotationLineBasis.FixedPrice, withLines.Lines[2].Basis);
 
+            // ---- Runbook C3: reviewed by a second person, approved as R1 ----
+            await QuotationReviewTestSupport.SubmitAndApproveAsync(quotations, QuotationTestHost.Principals(host), quotationId);
+
             // ---- A line added after Send is refused ----
             var sent = await quotations.SendAsync(quotationId);
             Assert.True(sent.Succeeded, sent.Reason);
@@ -87,12 +90,12 @@ public sealed class QuotationServiceJourneyTests
             Assert.False(lineAfterSend.Succeeded);
             Assert.Equal(QuotationRefusal.QuotationNotDraft, lineAfterSend.Refusal);
 
-            // ---- Sending an empty quote is refused ----
+            // ---- Submitting (so ever sending) an empty quote is refused ----
             var emptyCreated = await quotations.CreateAsync(projectId);
             Assert.True(emptyCreated.Succeeded);
-            var emptySend = await quotations.SendAsync(emptyCreated.Quotation!.Id);
-            Assert.False(emptySend.Succeeded);
-            Assert.Equal(QuotationRefusal.NothingToSend, emptySend.Refusal);
+            var emptySubmit = await quotations.SubmitForReviewAsync(emptyCreated.Quotation!.Id);
+            Assert.False(emptySubmit.Succeeded);
+            Assert.Equal(QuotationRefusal.NothingToSend, emptySubmit.Refusal);
 
             // ---- Accept: one Deliverable and one Requirement per line ----
             var accepted = await quotations.AcceptAsync(quotationId);
@@ -146,7 +149,7 @@ public sealed class QuotationServiceJourneyTests
             // ---- Accepting a Declined quotation is refused ----
             var declineCreated = await quotations.CreateAsync(projectId);
             await quotations.AddLineAsync(declineCreated.Quotation!.Id, "Never happened", 1m, new Money(100m, CurrencyCode.Gbp), null);
-            await quotations.SendAsync(declineCreated.Quotation.Id);
+            await QuotationReviewTestSupport.ApproveAndSendAsync(quotations, QuotationTestHost.Principals(host), declineCreated.Quotation.Id);
             var declined = await quotations.DeclineAsync(declineCreated.Quotation.Id);
             Assert.True(declined.Succeeded, declined.Reason);
             Assert.Equal(QuotationStatus.Declined, declined.Quotation!.Status);

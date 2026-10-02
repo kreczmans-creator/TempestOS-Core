@@ -9,6 +9,12 @@ and the dual-backend test fixture are gone; `SqlitePersistenceStore` is
 the platform's only store, exactly as this ADR's own Decision said it
 would be.
 
+**Amended** — a test-only relaxation: `Persistence:Synchronous=Normal` opens
+the store at `synchronous=NORMAL`, set only by the Desktop test suite, and
+every store opened that way logs a Warning; the decision that a person's
+data is written at `synchronous=FULL` stands. Recorded 2026-10-01 (`v0.23.0`);
+see the Amendment section below.
+
 Supersedes `ADR-0041` in part (the storage backend it chose; the
 `IPersistenceStore` shape it drafted stands unchanged) and `ADR-0053` in
 part (its premise that the one persistence abstraction has no query and
@@ -304,6 +310,35 @@ option would end up wrapping anyway.
 **An importer for existing `persistence-data/` trees.** Declined by the
 Product Owner, on the grounds that the existing trees are test data. See
 the Decision.
+
+## Amendment (2026-10-01): a test-only relaxation of `synchronous`
+
+`Persistence:Synchronous` set to `Normal` opens every connection at
+`PRAGMA synchronous = NORMAL` instead of `FULL`; any other value, or none,
+keeps `FULL`. Only the Desktop test suite sets it (`TestPersistenceDurability`,
+a module initialiser, through the environment-variable configuration
+source). Reason: from `v0.23.0` every test host seeds and releases 276
+shipped reference records on a fresh root, about 4,900 commits per
+three-host test against 700 before; at `FULL` each waits on an fsync, and
+on Windows CI runners that made every host start about 14 seconds slower
+and pushed the Desktop shards past their 45-minute job timeout. Under WAL,
+`NORMAL` remains crash consistent and only risks the last commits on
+power loss, which a test run does not need. A real launch never sets the
+key, so a person's data keeps the durability this ADR decided.
+
+*Revised 2026-10-01 (colour review board v0.23.0, M14).* The key stays an
+ordinary configuration key rather than an internal constructor seam,
+because the Desktop test assembly can only reach the store through the
+host's configuration (the `TEMPEST_Persistence__Synchronous` environment
+variable its module initialiser sets). That means production configuration
+can set it too, so the relaxation is made visible instead of being
+invisible by construction: every `SqlitePersistenceStore` opened at
+`NORMAL` logs a Warning naming the key, the root and the durability given
+up, each time it opens. An installation that picked the key up by accident
+says so in its own log. The level the store's own connections actually
+run at is asserted through an internal hook that runs `PRAGMA synchronous`
+on a store connection (`ReadSynchronousPragmaAsync`), not through the
+pragma string the store composes.
 
 ## Related Documents
 

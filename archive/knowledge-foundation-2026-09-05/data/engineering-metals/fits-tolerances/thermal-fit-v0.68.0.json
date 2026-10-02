@@ -1,0 +1,13 @@
+{
+  "version": "0.68.0",
+  "relationship": "Differential thermal growth changes clearance/interference: Δd = (α1-α2)·d0·ΔT for a simplified matched-diameter case.",
+  "checks": [
+    "actual CTE over temperature",
+    "temperature gradients",
+    "elastic/plastic response",
+    "assembly temperature",
+    "contact pressure",
+    "lubrication"
+  ],
+  "status": "design-framework"
+}

@@ -1,0 +1,34 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "status": "DEPTH PASS \u2014 representative nickel-base superalloy foundation established",
+  "representative_grades": [
+    "Alloy 718",
+    "Alloy 625",
+    "Haynes 230",
+    "718Plus",
+    "Waspaloy"
+  ],
+  "complete": [
+    "taxonomy",
+    "grade roles",
+    "mechanical selection",
+    "thermal framework",
+    "creep/rupture framework",
+    "fatigue framework",
+    "oxidation/corrosion framework",
+    "manufacturing",
+    "joining",
+    "standards mapping",
+    "economics",
+    "applications",
+    "provenance"
+  ],
+  "open": [
+    "authoritative quantitative datasets",
+    "exact standard editions",
+    "grade/condition-specific fatigue and creep allowables",
+    "combined creep-fatigue/environment evidence"
+  ],
+  "certification": "not certified"
+}

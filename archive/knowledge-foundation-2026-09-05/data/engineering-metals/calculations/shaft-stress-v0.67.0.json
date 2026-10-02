@@ -1,0 +1,16 @@
+{
+  "version": "0.67.0",
+  "equations": [
+    "τ = T·r/J",
+    "σ = M·y/I"
+  ],
+  "purpose": "Screen torsional and bending stress in a shaft.",
+  "checks": [
+    "combined stress",
+    "stress concentration",
+    "fatigue",
+    "yield margin",
+    "surface condition"
+  ],
+  "warning": "Screening relationship only; application-specific design requires validated material/joint data and appropriate standards."
+}

@@ -1,0 +1,112 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "mapping_targets": [
+    {
+      "designation": "Zr 702",
+      "identifiers": [
+        "UNS R60702"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME"
+      ],
+      "note": "Resolve exact product-form specification and edition."
+    },
+    {
+      "designation": "Zr 705",
+      "identifiers": [
+        "UNS R60705"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME"
+      ],
+      "note": "Resolve exact product-form specification and edition."
+    },
+    {
+      "designation": "Hastelloy C-276",
+      "identifiers": [
+        "UNS N10276"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME"
+      ],
+      "note": "Exact product-form standard required."
+    },
+    {
+      "designation": "Hastelloy C-22",
+      "identifiers": [
+        "UNS N06022"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME"
+      ],
+      "note": "Exact product-form standard required."
+    },
+    {
+      "designation": "Alloy 825",
+      "identifiers": [
+        "UNS N08825"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME"
+      ],
+      "note": "Resolve exact product-form standard and edition."
+    },
+    {
+      "designation": "Alloy 59",
+      "identifiers": [
+        "UNS N06059"
+      ],
+      "bodies": [
+        "ASTM",
+        "ASME",
+        "manufacturer specifications"
+      ],
+      "note": "Resolve exact product-form standard."
+    },
+    {
+      "designation": "MP35N",
+      "identifiers": [
+        "UNS R30035"
+      ],
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "medical specifications"
+      ],
+      "note": "Condition/cold-work/age treatment must be explicit."
+    },
+    {
+      "designation": "Nitinol",
+      "identifiers": [
+        "NiTi"
+      ],
+      "bodies": [
+        "ASTM",
+        "ISO",
+        "medical-device specifications"
+      ],
+      "note": "Exact product/application standard and transformation condition required."
+    }
+  ],
+  "record_fields": [
+    "designation",
+    "UNS_if_applicable",
+    "standard_number",
+    "edition",
+    "product_form",
+    "condition",
+    "composition",
+    "mechanical_requirements",
+    "corrosion_environment",
+    "test_methods",
+    "source",
+    "verification_date"
+  ],
+  "status": "framework; exact standard editions remain open"
+}

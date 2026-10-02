@@ -1,0 +1,13 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "modes": [
+    "unreviewed dependency",
+    "stale drawing",
+    "BOM mismatch",
+    "software/design mismatch",
+    "invalidated analysis",
+    "lost verification traceability",
+    "uncontrolled supplier change"
+  ]
+}

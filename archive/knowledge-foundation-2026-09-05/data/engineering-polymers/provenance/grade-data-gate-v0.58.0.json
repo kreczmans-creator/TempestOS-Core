@@ -1,0 +1,14 @@
+{
+  "version": "0.58.0",
+  "rule": "Every quantitative polymer record must identify exact grade, reinforcement/filler, product form, condition, processing route where relevant, test method, conditioning state and source.",
+  "minimum_release_evidence": [
+    "manufacturer or standards-based material identity",
+    "exact grade designation",
+    "test method",
+    "conditioning state",
+    "temperature and environment",
+    "direction/orientation where relevant",
+    "source provenance"
+  ],
+  "promotion": "Representative-grade records remain screening-level until quantitative evidence satisfies this gate."
+}

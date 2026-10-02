@@ -1,0 +1,159 @@
+- observation_id: OBS-316L-EN4404-C-YIELD-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: yield_strength_Rp0.2
+  value: 240
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form C
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-H-YIELD-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: yield_strength_Rp0.2
+  value: 220
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form H
+  applicability:
+    product_form: hot rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-P-YIELD-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: yield_strength_Rp0.2
+  value: 220
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form P
+  applicability:
+    product_form: quarto plate
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-C-UTS-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: ultimate_tensile_strength
+  value:
+    min: 530
+    max: 680
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form C
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-H-UTS-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: ultimate_tensile_strength
+  value:
+    min: 530
+    max: 680
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form H
+  applicability:
+    product_form: hot rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-P-UTS-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: ultimate_tensile_strength
+  value:
+    min: 520
+    max: 670
+  unit: MPa
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form P
+  applicability:
+    product_form: quarto plate
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-C-ELONG-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: elongation_A
+  value: 0.4
+  unit: '1'
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form C
+  applicability:
+    product_form: cold rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-H-ELONG-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: elongation_A
+  value: 0.4
+  unit: '1'
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form H
+  applicability:
+    product_form: hot rolled coil and sheet
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only
+- observation_id: OBS-316L-EN4404-P-ELONG-OUTOKUMPU
+  material_state_id: MAT-STEEL-316L
+  designation: EN 1.4404 / ASTM UNS S31603
+  property: elongation_A
+  value: 0.45
+  unit: '1'
+  source_id: WEB-OUTOKUMPU-SUPRA-2025
+  source_url: https://www.outokumpu.com/-/media/files/products/supra/outokumpu-supra-range-datasheet.pdf
+  source_locator: Table 5, mechanical properties at 20 °C, EN 10088-2; Supra 316L/4404;
+    product form P
+  applicability:
+    product_form: quarto plate
+    temperature_C: 20
+    standard_basis: EN 10088-2
+  evidence_status: sourced
+  review_status: open
+  design_use: screening_only

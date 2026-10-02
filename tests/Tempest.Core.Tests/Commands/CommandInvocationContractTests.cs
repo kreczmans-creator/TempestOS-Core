@@ -215,7 +215,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
         // (`calculations.rerun`, `calculations.compare-with-previous`), so
         // 105 becomes 108.
-        Assert.Equal(108, built);
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 108 becomes 112.
+        Assert.Equal(112, built);
     }
 
     [Fact]
@@ -290,7 +291,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 20.10B`: `calculations.set-due-date` joins; `WP 21.3A`:
         // `calculations.rerun`/`calculations.compare-with-previous` join —
         // each reaching its own registered handler too, so 105 becomes 108.
-        Assert.Equal(108, executed);
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, each reaching its own registered handler, so 108 becomes 112.
+        Assert.Equal(112, executed);
     }
 
     [Fact]
@@ -435,7 +437,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`calculations.set-due-date`) and `WP 21.3A` (`TD-29`) two more
         // (`calculations.rerun`, `calculations.compare-with-previous`), so
         // 108 becomes 111.
-        Assert.Equal(111 * 4, compared);
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
+        Assert.Equal(115 * 4, compared);
     }
 
     // ==================================================================
@@ -526,6 +529,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `calculations.set-due-date.dueOn` (blank accepted — it clears
         // the due date — but a non-date, non-blank string is still
         // refused, so it too has a rejectable value) - so 89 becomes 91.
+        // Runbook C3: `quotation.return-to-draft.comment` is Required, so a blank is refused — 91 becomes 92.
+        // v0.23.0 board M3: `timesheet.amend.task` is free text (blank keeps the current task) — 92 becomes 91.
         Assert.Equal(91, refused);
     }
 
@@ -556,6 +561,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "quotation.create.reference",
                 "requirements.bulk-set-owner.owner",
                 "requirements.set-owner.owner",
+                "timesheet.amend.task",
                 "verification.edit.newContent",
             ],
             freeText);
@@ -598,7 +604,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // declares one `dueOn` of its own (rule-having, blank accepted —
         // see `EveryValidatedParameter_RefusesABadValue...`'s own comment)
         // — neither joins the free-text list above — so 105 becomes 107.
-        Assert.Equal(107, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // Runbook C3 adds one declared parameter, `quotation.return-to-draft.comment` (Required, so rule-having — not free text) — 107 becomes 108.
+        Assert.Equal(108, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -668,7 +675,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `calculations.create` already required a prompt before gaining
         // its own third parameter, so it does not change this count — so
         // 89 becomes 90.
-        Assert.Equal(90, refused);
+        // Runbook C3: `quotation.return-to-draft` declares a parameter, so it needs a prompt — 90 becomes 91.
+        Assert.Equal(91, refused);
     }
 
     [Fact]
@@ -715,7 +723,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `calculations.rerun` and `calculations.compare-with-previous`,
         // each `CommandContextRequirement.SelectedObject`, no declared
         // parameter, no confirmation — so 16 becomes 18.
-        Assert.Equal(18, ran);
+        // Runbook C3: `quotation.save-draft`, `submit-for-review` and `approve` declare no parameter and no confirmation — 18 becomes 21.
+        Assert.Equal(21, ran);
     }
 
     [Fact]
@@ -817,7 +826,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 20.10B` (T2) adds one more (`calculations.set-due-date`) and
         // `WP 21.3A` (`TD-29`) two more (`calculations.rerun`,
         // `calculations.compare-with-previous`), so 108 becomes 111.
-        Assert.Equal(111, Production.Count);
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
+        Assert.Equal(115, Production.Count);
     }
 
     [Fact]
@@ -858,9 +868,11 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`TD-29`) two more (`calculations.rerun`,
         // `calculations.compare-with-previous`), so 105 becomes 108 and 108
         // becomes 111; 3 is unchanged.
-        Assert.Equal(108, Invocable.Count());
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 108 becomes 112.
+        Assert.Equal(112, Invocable.Count());
         Assert.Equal(3, Unavailable.Count());
-        Assert.Equal(111, Production.Count);
+        // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
+        Assert.Equal(115, Production.Count);
     }
 
     [Fact]

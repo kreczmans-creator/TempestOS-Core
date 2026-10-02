@@ -1,0 +1,51 @@
+[
+  {
+    "id": "AL-GAP-001",
+    "area": "temperature-dependent strength",
+    "status": "open",
+    "priority": "high",
+    "next": "Populate authoritative temperature curves for priority alloys and tempers."
+  },
+  {
+    "id": "AL-GAP-002",
+    "area": "shear/bearing",
+    "status": "schema_ready",
+    "priority": "high",
+    "next": "Populate product-form and orientation-specific values."
+  },
+  {
+    "id": "AL-GAP-003",
+    "area": "fatigue",
+    "status": "schema_ready",
+    "priority": "high",
+    "next": "Populate S-N datasets with cycle count, R-ratio, environment and detail class."
+  },
+  {
+    "id": "AL-GAP-004",
+    "area": "fracture",
+    "status": "schema_ready",
+    "priority": "medium",
+    "next": "Populate K/J toughness and crack-growth datasets with orientation and test conditions."
+  },
+  {
+    "id": "AL-GAP-005",
+    "area": "welded joints",
+    "status": "qualitative",
+    "priority": "high",
+    "next": "Add parent/HAZ/weld-metal property records and fatigue detail classifications."
+  },
+  {
+    "id": "AL-GAP-006",
+    "area": "bonded joints",
+    "status": "qualitative",
+    "priority": "medium",
+    "next": "Add adhesive system, surface preparation, ageing and temperature evidence."
+  },
+  {
+    "id": "AL-GAP-007",
+    "area": "cast/AM defects",
+    "status": "qualitative",
+    "priority": "medium",
+    "next": "Add process-specific defect and fatigue evidence."
+  }
+]

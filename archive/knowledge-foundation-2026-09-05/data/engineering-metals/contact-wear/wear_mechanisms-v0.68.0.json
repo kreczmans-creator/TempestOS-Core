@@ -1,0 +1,24 @@
+{
+  "version": "0.68.0",
+  "mechanisms": [
+    "adhesive wear",
+    "abrasive wear",
+    "fretting wear",
+    "erosive wear",
+    "surface fatigue",
+    "galling"
+  ],
+  "controls": [
+    "hardness",
+    "surface finish",
+    "counterface",
+    "load",
+    "speed",
+    "lubrication",
+    "temperature",
+    "debris",
+    "environment"
+  ],
+  "rule": "Wear performance belongs to the contacting material pair and surface system, not one material in isolation.",
+  "status": "design-framework"
+}

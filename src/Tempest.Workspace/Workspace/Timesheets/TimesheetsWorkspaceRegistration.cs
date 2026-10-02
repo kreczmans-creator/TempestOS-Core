@@ -91,10 +91,13 @@ public static class TimesheetsWorkspaceRegistration
                 CommandContextRequirement.SelectedObject,
                 (context, values) => new AmendTimesheetCommand(
                     WorkspaceCommandBindings.Target(context).ObjectId, WorkspaceCommandBindings.Target(context).Kind,
-                    WorkspaceCommandBindings.ParseDecimal(values["hours"]) ?? 0m, values["task"], bool.Parse(values["billable"])),
+                    WorkspaceCommandBindings.ParseDecimal(values["hours"]) ?? 0m, WorkspaceCommandBindings.OrNull(values["task"]), bool.Parse(values["billable"])),
                 [
                     WorkspaceCommandBindings.Decimal("hours", "Hours"),
-                    WorkspaceCommandBindings.Required("task", "Task"),
+                    // v0.23.0 board M3: blank keeps the current task, so it
+                    // need not be retyped; an entry recorded against a
+                    // deliverable keeps the deliverable's task text.
+                    WorkspaceCommandBindings.Text("task", "Task (blank keeps the current task)"),
                     WorkspaceCommandBindings.Choice("billable", "Billable", ["True", "False"], "True"),
                 ],
                 BoundKinds),

@@ -14,7 +14,7 @@ namespace Tempest.Desktop.Views;
 /// The requirement Owner picker's own <b>Add person…</b> affordance
 /// (`WP 20.10F`, Product Owner finding D8): a small modal that registers a
 /// new <see cref="Person"/> record, and — in the same action, since there is
-/// no reason to make an engineer visit Reference data separately just to
+/// no reason to make an engineer visit Business → Staff separately just to
 /// make their own new colleague pickable — verifies and releases it right
 /// away, mirroring <see cref="Views.LibrariesView"/>'s own established
 /// "Release from Draft verifies first, as one action" idiom
@@ -31,6 +31,10 @@ public sealed class PersonAddPrompt : Border
     private readonly TextBox _displayName = new() { Watermark = "Display name", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly TextBox _role = new() { Watermark = "Role", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly TextBox _email = new() { Watermark = "Email", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
+
+    // Product Owner decision 2026-10-01 §1: a person keeps contact details
+    // only — name, role/grade, e-mail, phone.
+    private readonly TextBox _phone = new() { Watermark = "Phone", MinHeight = DesignTokens.ControlSizeMedium, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(0, DesignTokens.SpaceSm, 0, 0) };
     private readonly Button _addButton = new() { Content = "Add & Release", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly Button _cancelButton = new() { Content = "Cancel", MinHeight = DesignTokens.ControlSizeMedium };
@@ -68,6 +72,7 @@ public sealed class PersonAddPrompt : Border
         body.Children.Add(_displayName);
         body.Children.Add(_role);
         body.Children.Add(_email);
+        body.Children.Add(_phone);
         body.Children.Add(_status);
         body.Children.Add(buttons);
         Child = body;
@@ -77,6 +82,7 @@ public sealed class PersonAddPrompt : Border
         AutomationProperties.SetName(_displayName, "Display name");
         AutomationProperties.SetName(_role, "Role");
         AutomationProperties.SetName(_email, "Email");
+        AutomationProperties.SetName(_phone, "Phone");
         AutomationProperties.SetName(_addButton, "Add & Release");
         AutomationProperties.SetName(_cancelButton, "Cancel");
         ToolTip.SetTip(_addButton, "Add & Release");
@@ -101,6 +107,7 @@ public sealed class PersonAddPrompt : Border
         _displayName.Text = string.Empty;
         _role.Text = string.Empty;
         _email.Text = string.Empty;
+        _phone.Text = string.Empty;
         _status.Text = string.Empty;
         IsVisible = true;
 
@@ -125,6 +132,7 @@ public sealed class PersonAddPrompt : Border
             DisplayName = displayName,
             Role = string.IsNullOrWhiteSpace(_role.Text) ? null : _role.Text.Trim(),
             Email = string.IsNullOrWhiteSpace(_email.Text) ? null : _email.Text.Trim(),
+            Phone = string.IsNullOrWhiteSpace(_phone.Text) ? null : _phone.Text.Trim(),
         };
 
         try

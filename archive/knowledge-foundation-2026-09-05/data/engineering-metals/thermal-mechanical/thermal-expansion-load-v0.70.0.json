@@ -1,0 +1,18 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen thermal strain and restraint-induced load.",
+  "relationships": [
+    "free strain εth = α·ΔT",
+    "fully restrained elastic stress σth ≈ E·α·ΔT"
+  ],
+  "checks": [
+    "degree of restraint",
+    "temperature gradients",
+    "differential CTE",
+    "yielding",
+    "joint slip",
+    "thermal cycling"
+  ],
+  "boundary": "Fully restrained stress is an upper-bound idealisation; real assemblies require stiffness/contact analysis."
+}

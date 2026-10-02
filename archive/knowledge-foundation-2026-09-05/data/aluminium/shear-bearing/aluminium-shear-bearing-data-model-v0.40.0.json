@@ -1,0 +1,27 @@
+{
+  "version": "0.40.0",
+  "scope": "Aluminium shear and bearing properties",
+  "required_record_fields": [
+    "designation",
+    "temper",
+    "product_form",
+    "thickness_mm",
+    "orientation",
+    "shear_yield_MPa",
+    "shear_ultimate_MPa",
+    "bearing_yield_MPa",
+    "bearing_ultimate_MPa",
+    "test_standard",
+    "source",
+    "evidence_status"
+  ],
+  "engineering_rules": [
+    "Shear and bearing strength are not interchangeable with tensile strength.",
+    "Joint geometry, fastener diameter, edge distance, thickness, grain direction and failure mode must be represented.",
+    "For bolted/riveted joints, distinguish net-section tension, bearing, shear-out and fastener failure.",
+    "Do not populate universal conversion factors as design allowables; use authoritative alloy/temper/product-form data where available."
+  ],
+  "status": "schema_established",
+  "quantitative_records": 0,
+  "design_use": "not_for_allowables"
+}

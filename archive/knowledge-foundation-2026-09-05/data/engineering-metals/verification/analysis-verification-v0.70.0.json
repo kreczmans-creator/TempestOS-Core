@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "verification-framework",
+  "purpose": "Distinguish calculation correctness from physical validation.",
+  "layers": [
+    "requirements verification",
+    "hand calculation / analytical check",
+    "model verification",
+    "mesh/convergence study where applicable",
+    "component test",
+    "system test"
+  ],
+  "rule": "Verification demonstrates that specified requirements and analysis methods are satisfied; validation establishes correspondence to the physical system."
+}

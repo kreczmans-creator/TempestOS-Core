@@ -1,0 +1,16 @@
+{
+  "version": "0.67.0",
+  "equations": [
+    "F ≈ T/(K·d) as a torque-preload screening relationship"
+  ],
+  "purpose": "Screen bolted-joint preload.",
+  "checks": [
+    "friction uncertainty",
+    "joint stiffness",
+    "embedment",
+    "fatigue",
+    "proof load",
+    "lubrication/coating"
+  ],
+  "warning": "Screening relationship only; application-specific design requires validated material/joint data and appropriate standards."
+}

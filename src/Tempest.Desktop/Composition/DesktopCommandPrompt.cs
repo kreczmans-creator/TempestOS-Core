@@ -102,7 +102,8 @@ internal sealed class DesktopCommandPrompt
                     LabelFor(parameter),
                     initialValue: parameter.DefaultValue ?? string.Empty,
                     validate: parameter.Check,
-                    allowBlank: true).ConfigureAwait(true);
+                    allowBlank: true,
+                    choices: parameter.AllowedValues).ConfigureAwait(true);
 
             // Declined, at any step. Nothing collected so far is used.
             if (value is null)
@@ -121,7 +122,5 @@ internal sealed class DesktopCommandPrompt
     /// being written out per call site.
     /// </summary>
     private static string LabelFor(CommandParameter parameter) =>
-        parameter.AllowedValues is { Count: > 0 } allowed
-            ? $"{parameter.Label} ({string.Join(", ", allowed)}):"
-            : $"{parameter.Label}:";
+        $"{parameter.Label}:";
 }

@@ -86,7 +86,6 @@ internal sealed record ComposedViews(
     DeliverableCompletionPrompt DeliverableCompletionPrompt,
     TimesheetWeekView TimesheetWeekView,
     InvoicingView InvoicingView,
-    ReportsView ReportsView,
     SettingsView SettingsView,
     NewProjectPrompt NewProjectPrompt,
     ProjectPicker ProjectPicker,
@@ -113,7 +112,9 @@ internal sealed record ComposedViews(
     // this phase already built, rather than standing up a second one.
     Tempest.Workspace.Tasks.ITasksReadModel TasksReadModel,
     Tempest.Workspace.Projects.IProjectStatusReadModel ProjectStatusReadModel,
-    Tempest.Core.Invoicing.IAccountsReadModel AccountsReadModel);
+    Tempest.Core.Invoicing.IAccountsReadModel AccountsReadModel,
+    // Board M11: stopped (in-flight folder work cancelled and awaited) as the window closes.
+    ProjectFolderCoordinator ProjectFolders);
 
 /// <summary>
 /// <see cref="MainWindow"/>'s own methods, threaded into
@@ -133,7 +134,7 @@ internal sealed record MainWindowCallbacks(
     Func<Guid, string, Task> OpenObjectAsync,
     Func<Guid, Guid, CancellationToken, Task> OpenProjectAttachmentAsync,
     Func<Guid, string, Task> OpenEvidenceRecordAsync,
-    Func<string, string, Task<bool>> PromptForNewProjectAsync,
+    Func<string, string, Task<string?>> PromptForNewProjectAsync,
     Func<Task> RenderCurrentModuleAsync,
     Func<Task> EnterEngineeringCalculationAsync,
     Func<Task> EnterCalculationModulesAsync);
@@ -352,7 +353,8 @@ internal sealed partial class MainWindowComposer
             people: peopleDirectory, confirmationDialog: confirmationDialog, switchPrincipal: SwitchPrincipal,
             organisationIdentity: session.OrganisationIdentity,
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
-            prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker);
+            prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
+            signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)));
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
@@ -498,9 +500,25 @@ internal sealed partial class MainWindowComposer
             ct => rateCardPicker.PickAsync(ct),
             () => host.SessionPrincipal?.IdentityId,
             async (organisationId, ct) => (await organisationCatalog.FindAsync(organisationId, ct).ConfigureAwait(false))?.Definition.Name,
-            async (pin, ct) => await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is { } card
-                ? (card.Definition.Code, card.Definition.Name)
-                : null);
+            async (pin, ct) =>
+            {
+                if (await rateCardCatalog.FindAsync(pin.RecordId, ct).ConfigureAwait(false) is not { } card)
+                    return ((string Code, string Name, int Revision)?)null;
+
+                // Runbook B2: show the content revision the pin holds, not
+                // the pin's own internal version stamp.
+                int revision;
+                try
+                {
+                    revision = (await rateCardCatalog.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, ct).ConfigureAwait(false)).ContentRevision;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    revision = card.ContentRevision;
+                }
+
+                return ((string Code, string Name, int Revision)?)(card.Definition.Code, card.Definition.Name, revision);
+            });
 
         // `WP 20.10A` (D12): Open Details, from the Record dialog's own
         // inline "no rate card pinned" note — closes that dialog (already
@@ -558,11 +576,9 @@ internal sealed partial class MainWindowComposer
         };
         projectDetailsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
-        // `WP 19.2B`: the Reports area's own "Export"/document-row "Open"
-        // — opening a file never navigates, exactly as
-        // `OpenProjectAttachmentAsync`'s own remarks already establish for
-        // `ProjectWorkspaceView`'s identical Documents-tab callback.
-        Action<Guid, Guid> openAttachmentRightUp = (ownerId, attachmentId) => _ = callbacks.OpenProjectAttachmentAsync(ownerId, attachmentId, default);
+        // v0.23.0 board N9: the withdrawn Reports view (`WP 19.2B`; see
+        // `EngineeringAreaView`'s remarks) is no longer built here. The
+        // class stays, and is tested, for when reports return.
 
         // `WP 21.2A`, scope item 1/2: one `DocumentExporter` (the same
         // `evidenceFilePicker` every export button in this shell already
@@ -600,10 +616,14 @@ internal sealed partial class MainWindowComposer
         var timesheetWeekView = new TimesheetWeekView(
             composition.DomainContext, timesheetService, workingPatterns, composition.CommandDispatcher, composition.CommandRegistry,
             () => host.SessionPrincipal?.IdentityId, timesheetEntryPrompt, openObjectRightUp,
-            documentExporter, timesheetRenderer, ApplicationVersionText, expenseEntryPrompt)
+            documentExporter, timesheetRenderer, ApplicationVersionText, expenseEntryPrompt,
+            () => host.SessionPrincipal?.DisplayName)
         {
             ParameterPrompt = commandPrompt.Prompt,
             WorkspaceChanges = composition.WorkspaceChanges,
+            // Runbook G2: Settings → Timesheets → Timesheet export folder,
+            // default `D:\11 Business Admin\02 Timesheets` on Windows.
+            ExportFolder = () => Tempest.Desktop.Documents.Timesheets.TimesheetExportFolder.Resolve(session.UserSettings.TimesheetExportFolder, configurationProvider),
         };
         timesheetWeekView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
@@ -640,7 +660,7 @@ internal sealed partial class MainWindowComposer
         // defines its initial deliverables and requirements once accepted,
         // and exports as a PDF through the same SkiaSharp path the issue
         // sheet already established (comment item 9).
-        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker);
+        var newProjectPrompt = new NewProjectPrompt(organisationCatalog, rateCardCatalog, organisationPicker, projectDirectory);
         var projectPicker = new ProjectPicker(projectDirectory);
         var quotationSheetRenderer = new QuotationSheetRenderer();
         // `WP 20.10G` (threaded at merge): both sheet renderers read Settings → Organisation
@@ -660,6 +680,26 @@ internal sealed partial class MainWindowComposer
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         projectQuoteView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // Runbook C3: each quote line's rate is chosen from the project's
+        // own pinned rate card.
+        projectQuoteView.RateCards = rateCardCatalog;
+
+        // Colour review board M4: the review line names people, not SIDs.
+        projectQuoteView.Principals = principals;
+        projectQuoteView.SignOffPolicy = (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy));
+
+        // PO decision 2026-10-01: each project's own Windows Explorer
+        // folder (`<root>\<customer>\<project>\<standard subfolders>`,
+        // root `Projects:FolderRoot`, default `D:\01 Projects` on Windows)
+        // — generated whenever a project becomes current (which every New
+        // Project path ends with), and the quote export's own start folder.
+        var projectFolderLocator = new Tempest.Workspace.Projects.ProjectFolderLocator(
+            new Tempest.Core.Projects.ProjectFolderService(Tempest.Core.Projects.ProjectFolderOptions.FromConfiguration(configurationProvider), composition.Logger),
+            projectDirectory, organisationCatalog);
+        projectQuoteView.ProjectFolders = projectFolderLocator;
+        var projectFolderCoordinator = new ProjectFolderCoordinator(projectFolderLocator, (message, outcome) => actionReporter.ReportAsync(message, outcome));
+        composition.EventBus.Subscribe(projectFolderCoordinator);
 
         // Opens a specific quotation's own project, right up in its Quote
         // tab (`WP 17.9.4`) — specialised from the generic `openObjectRightUp`
@@ -681,6 +721,7 @@ internal sealed partial class MainWindowComposer
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
+        quotesView.ProjectFolders = projectFolderLocator;
         quotesView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         // `WP 21.3B`: the Purchase orders area — every PurchaseOrder across
@@ -694,17 +735,10 @@ internal sealed partial class MainWindowComposer
             projectPicker, inputDialog, purchaseOrderLinePrompt, openObjectRightUp)
         {
             ParameterPrompt = commandPrompt.Prompt,
+            PickSupplierAsync = organisationPicker.PickSupplierAsync,
             WorkspaceChanges = composition.WorkspaceChanges,
         };
         purchaseOrdersView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
-
-        // `WP 19.2B`: the Reports area — issued evidence sheets and
-        // project documents, across every live project, filterable to one.
-        var reportsView = new ReportsView(
-            composition.DomainContext, projectDirectory, host.ProjectDocuments!, openObjectRightUp, openAttachmentRightUp)
-        {
-            WorkspaceChanges = composition.WorkspaceChanges,
-        };
 
         var engineeringCalculation = new EngineeringCalculationView(principals.Describe);
 
@@ -721,7 +755,7 @@ internal sealed partial class MainWindowComposer
         var librariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+            referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
@@ -749,7 +783,7 @@ internal sealed partial class MainWindowComposer
         var referenceDataLibrariesView = new LibrariesView(
             host.Materials!, host.Fasteners!, host.Bearings!, host.Standards!, host.Constants!, processCatalog,
             componentCatalog, rateCardCatalog, personCatalog, host.ReferenceReview!, host.BracketCalculations!,
-            referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+            referenceCitationIndex, openObjectRightUp)
         {
             ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
         };
@@ -822,7 +856,7 @@ internal sealed partial class MainWindowComposer
         engineeringAssetsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
 
         var engineeringAreaView = new EngineeringAreaView(
-            host.ShellNavigator!, tasksReadModel, reportsView, engineeringCalculation, referenceDataLibrariesView,
+            host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
             engineeringAssetsView, calculationModules, callbacks.EnterCalculationModulesAsync)
         {
@@ -832,8 +866,38 @@ internal sealed partial class MainWindowComposer
 
         var subscriptionsView = new SubscriptionsView(accountsReadModel, accountsRefreshService);
 
+        // Product Owner runbook B1 (2026-10-01): people are business
+        // reference data — Business → Staff, moved from Engineering →
+        // Reference data.
+        // v0.23.0 board N9: Staff and Rate cards share the one catalogue set
+        // the Libraries view already built over the same catalogues.
+        var staffView = new StaffView(
+            librariesView.Catalogues,
+            host.ReferenceReview!, referenceCitationIndex, openObjectRightUp)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
+        staffView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
+        // Product Owner decision (2026-10-01): rate cards are business data
+        // — Business → Rate cards, moved from Engineering → Reference data
+        // the same way People moved to Business → Staff.
+        var rateCardsView = new RateCardsView(
+            librariesView.Catalogues,
+            host.ReferenceReview!, referenceCitationIndex, openObjectRightUp, currentPrincipalAccessor)
+        {
+            ReviseRecordPrompt = (label, definitionJson, source, ct) => reviseReferenceRecordEntry.PromptAsync(label, definitionJson, source, ct),
+        };
+        rateCardsView.ActionCompleted += (message, outcome) => _ = actionReporter.ReportAsync(message, outcome);
+
         var businessDashboardView = new BusinessDashboardView(accountsReadModel, composition.DomainContext, openObjectRightUp);
-        var businessAreaView = new BusinessAreaView(quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView)
+        var businessAreaView = new BusinessAreaView(
+            quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
+            new CustomersSuppliersView(
+                organisationCatalog,
+                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))),
+            staffView,
+            rateCardsView)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -844,11 +908,11 @@ internal sealed partial class MainWindowComposer
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
             engineeringCalculation, calculationModules, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
-            timesheetWeekView, invoicingView, reportsView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
+            timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
-            tasksReadModel, projectStatusReadModel, accountsReadModel);
+            tasksReadModel, projectStatusReadModel, accountsReadModel, projectFolderCoordinator);
     }
 
     /// <summary>

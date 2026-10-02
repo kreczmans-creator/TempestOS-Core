@@ -153,9 +153,11 @@ public static class CalculationModuleForm
         {
             var value = property.GetValue(record.Result);
 
-            if (value is EngineeringCheckOutcome checkOutcome && property.Name == "Outcome")
+            // An optional outcome (no criterion was stated) is no outcome:
+            // the run is simply computed, and no "Outcome: —" row is shown.
+            if (property.Name == "Outcome" && (Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType) == typeof(EngineeringCheckOutcome))
             {
-                outcome = checkOutcome;
+                outcome = value as EngineeringCheckOutcome?;
                 continue;
             }
 
@@ -234,6 +236,41 @@ public static class CalculationModuleForm
             => $"{EngineeringNumber.Format(magnitude.GetDouble())} {symbol.GetString()}",
         _ => element.ToString(),
     };
+
+    /// <summary>
+    /// The form's own rule for reading a number input: <paramref name="text"/>
+    /// trimmed, invariant culture, finite; a whole number where the input
+    /// record's property is an <see cref="int"/> ("+2" and "02" read as 2,
+    /// "2.0" does not). Anything that shows a typed number — the reference
+    /// diagram's labels and variants — reads it by this same rule.
+    /// </summary>
+    public static bool TryReadNumber(string? text, bool wholeNumber, out double value)
+    {
+        value = 0;
+        var trimmed = text?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return false;
+
+        if (wholeNumber)
+        {
+            if (!int.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
+                return false;
+
+            value = count;
+            return true;
+        }
+
+        return double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
+    }
+
+    /// <summary>Whether <paramref name="module"/>'s input <paramref name="inputName"/> is a whole number (an <see cref="int"/> on its input record).</summary>
+    public static bool IsWholeNumber(CalculationModuleDescriptor module, string inputName)
+    {
+        ArgumentNullException.ThrowIfNull(module);
+
+        var type = module.InputType.GetProperty(inputName)?.PropertyType;
+        return type is not null && (Nullable.GetUnderlyingType(type) ?? type) == typeof(int);
+    }
 
     /// <summary>A property name as a label: "MaximumBendingStress" reads "Maximum bending stress".</summary>
     public static string Humanise(string propertyName)
@@ -331,24 +368,14 @@ public static class CalculationModuleForm
                     return null;
                 }
 
-                if (underlying == typeof(int))
+                var whole = underlying == typeof(int);
+                if (!TryReadNumber(field.Text, whole, out var number))
                 {
-                    if (!int.TryParse(field.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var count))
-                    {
-                        Problem($"'{field.Text.Trim()}' is not a whole number");
-                        return null;
-                    }
-
-                    return count;
-                }
-
-                if (!double.TryParse(field.Text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
-                {
-                    Problem($"'{field.Text.Trim()}' is not a number");
+                    Problem(whole ? $"'{field.Text.Trim()}' is not a whole number" : $"'{field.Text.Trim()}' is not a number");
                     return null;
                 }
 
-                return number;
+                return whole ? (object)(int)number : number;
 
             case CalculationInputKind.Text:
                 if (string.IsNullOrWhiteSpace(field?.Text))
@@ -450,6 +477,30 @@ public static class CalculationModuleForm
                     }
 
                     arguments[c] = number;
+                }
+                else if (cellType == typeof(string))
+                {
+                    // A row's own name: a tolerance contributor, a thermal stage.
+                    if (parts[c].Length == 0)
+                    {
+                        problem($"row {r + 1}, {cells[c].Name}: nothing was entered");
+                        return null;
+                    }
+
+                    arguments[c] = parts[c];
+                }
+                else if (cellType.IsEnum)
+                {
+                    // By member name only, ignoring case: a number would
+                    // parse to an undefined member and is refused.
+                    if (!Enum.TryParse(cellType, parts[c], ignoreCase: true, out var member) || !Enum.IsDefined(cellType, member!)
+                        || parts[c].Length == 0 || char.IsDigit(parts[c][0]) || parts[c][0] is '-' or '+')
+                    {
+                        problem($"row {r + 1}, {cells[c].Name}: '{parts[c]}' is not one of {string.Join(", ", Enum.GetNames(cellType))}");
+                        return null;
+                    }
+
+                    arguments[c] = member;
                 }
                 else
                 {

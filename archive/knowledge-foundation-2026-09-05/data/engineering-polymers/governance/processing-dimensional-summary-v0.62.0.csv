@@ -1,0 +1,13 @@
+Family,Processing coverage,Reinforcement,Dimensional stability,Evidence
+ABS,"injection moulding, extrusion, thermoforming, FDM/FFF",glass/mineral filled variants available,mould shrinkage and warpage are grade/process/tool dependent,Screening only
+PA6,"injection moulding, extrusion, fibre-filled compounds",glass/mineral/carbon-filled variants common,moisture uptake can materially change dimensions,Screening only
+PA66,"injection moulding, extrusion, reinforced compounds",glass/mineral/carbon-filled variants common,moisture and processing history affect dimensions,Screening only
+PA12,"injection moulding, extrusion, additive manufacturing",glass/mineral/carbon-filled variants available,lower moisture uptake than PA6/66 but dimensional conditioning remains relevant,Screening only
+POM,"injection moulding, extrusion, machining from semi-finished stock",glass/mineral/other reinforced grades available,shrinkage is process and grade dependent,Screening only
+PC,"injection moulding, extrusion, thermoforming, additive manufacturing",glass-filled and speciality grades available,moulding shrinkage/warpage and residual stress can be significant,Screening only
+PBT,"injection moulding, extrusion, reinforced compounds",glass/mineral-filled grades common,filled grades can differ strongly from unfilled material,Screening only
+PPS,injection moulding and extrusion; high-performance compounds,glass/mineral/carbon-filled grades common,filled-grade anisotropy and shrinkage must be considered,Screening only
+PEI,"injection moulding, extrusion, additive manufacturing",glass/carbon/mineral-filled grades available,precision parts require process-specific shrinkage data,Screening only
+PPA,injection moulding and reinforced compounds,glass/carbon/mineral-filled grades common,moisture and orientation can affect dimensions,Screening only
+LCP,"injection moulding, extrusion in selected grades",glass/mineral/mineral-fibre-filled grades common,very strong flow orientation can produce anisotropy,Screening only
+PEEK,"injection moulding, extrusion, compression moulding, additive manufacturing, machining from stock",glass/carbon-filled and tribological grades common,crystallinity and processing history strongly affect dimensions/properties,Screening only

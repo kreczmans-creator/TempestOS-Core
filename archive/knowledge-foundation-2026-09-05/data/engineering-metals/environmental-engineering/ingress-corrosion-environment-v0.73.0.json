@@ -1,0 +1,13 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "checks": [
+    "water ingress path",
+    "sealing strategy",
+    "drainage",
+    "material compatibility",
+    "galvanic couples",
+    "coating/system protection",
+    "inspection and maintenance"
+  ]
+}

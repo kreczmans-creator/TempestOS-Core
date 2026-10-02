@@ -1,0 +1,21 @@
+{
+  "version": "0.68.0",
+  "purpose": "Structure crack-growth and fracture assessment.",
+  "concepts": [
+    "stress-intensity factor K",
+    "range ΔK",
+    "fracture toughness KIC where applicable",
+    "crack-growth rate da/dN",
+    "critical crack size"
+  ],
+  "workflow": [
+    "identify flaw population",
+    "characterise crack geometry",
+    "calculate driving force",
+    "compare against toughness",
+    "evaluate crack growth",
+    "define inspection/retirement criteria"
+  ],
+  "boundary": "Validity requires appropriate geometry, loading mode, material condition and standard method.",
+  "status": "design-framework"
+}

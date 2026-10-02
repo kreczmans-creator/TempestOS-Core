@@ -1,0 +1,16 @@
+{
+  "version": "0.69.0",
+  "problem": "Screen fatigue-critical metallic hardware for corrosive service.",
+  "workflow": [
+    "characterise environment",
+    "identify corrosion mechanism",
+    "identify fatigue spectrum",
+    "assess pits/surface defects as initiation sites",
+    "assess protection system",
+    "review crack-growth evidence if required",
+    "define inspection interval",
+    "verify environmental test evidence"
+  ],
+  "acceptance": "Unprotected laboratory-air fatigue data are insufficient evidence for corrosive service.",
+  "status": "worked-framework"
+}

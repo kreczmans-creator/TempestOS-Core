@@ -1,0 +1,32 @@
+{
+  "version": "0.63.0",
+  "application": "press_fits",
+  "selection_rule": "Define interference from actual material CTE, creep, tolerance and assembly temperature rather than copying metal-fit classes.",
+  "principal_failure_modes": [
+    "assembly cracking",
+    "creep loss of interference",
+    "cold flow",
+    "thermal separation",
+    "excessive insertion force",
+    "dimensional drift"
+  ],
+  "engineering_controls": [
+    "interference",
+    "diameter",
+    "wall thickness",
+    "CTE",
+    "temperature",
+    "time",
+    "surface finish",
+    "assembly speed"
+  ],
+  "candidate_families": [
+    "POM",
+    "PA12",
+    "PEEK",
+    "PEI",
+    "PBT"
+  ],
+  "evidence_status": "screening-level design rule",
+  "design_use": "decision support only; validate application-specific design"
+}

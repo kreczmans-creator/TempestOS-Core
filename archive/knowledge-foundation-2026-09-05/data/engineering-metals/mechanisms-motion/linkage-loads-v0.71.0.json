@@ -1,0 +1,13 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "workflow": [
+    "define positions",
+    "identify external loads",
+    "draw free-body diagrams",
+    "solve joint reactions",
+    "identify worst-case position",
+    "check pins/shafts/bearings",
+    "check stiffness and backlash"
+  ]
+}

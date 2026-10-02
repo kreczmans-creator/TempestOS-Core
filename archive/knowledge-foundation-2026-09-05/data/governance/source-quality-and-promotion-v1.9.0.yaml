@@ -1,0 +1,14 @@
+version: 1.9.0
+source_quality_rules:
+- source: normative_standard
+  strength: highest for standard-specified requirements
+  caveat: Must match product form, dimension and condition.
+- source: manufacturer_grade_datasheet
+  strength: high for supplier-specific product data
+  caveat: Do not generalise supplier-specific values to all material sharing a designation.
+- source: secondary_database
+  strength: supporting/cross-check
+  caveat: Requires provenance and applicability review.
+newly_sourced_observations: 12
+newly_verified_observations: 0
+promotion_rule: sourced observations require review before verified status.

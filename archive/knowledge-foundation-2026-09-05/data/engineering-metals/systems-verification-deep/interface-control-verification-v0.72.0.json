@@ -1,0 +1,21 @@
+{
+  "version": "0.72.0",
+  "status": "verification-framework",
+  "interfaces": [
+    "mechanical",
+    "electrical",
+    "thermal",
+    "data/control",
+    "environmental",
+    "maintenance"
+  ],
+  "checks": [
+    "interface definition",
+    "tolerance",
+    "load compatibility",
+    "connector/coupling compatibility",
+    "operating envelope",
+    "fault state",
+    "configuration"
+  ]
+}

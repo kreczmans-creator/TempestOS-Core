@@ -118,7 +118,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             // populated — proving the name (not the id) renders once a
             // caller supplies them, asynchronously and without blocking.
             await AssertCommercialSectionResolvesNamesAsync(
-                host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", afterCommercial.RateCardPin.RevisionNumber);
+                host, project.Id, organisationId, rateCardId, "Journey Client Ltd", "Journey Rate Card", expectedRateCardRevision: 1); // runbook B2: the released card is content revision 1, whatever its pin's version stamp
 
             // ---- rail → Business → Timesheets (`WP 19.7A`) ----
             await navigator.GoToModuleAsync(ShellArea.Business);
@@ -131,9 +131,14 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
             week.ParameterPrompt = StubAmendDeletePrompt();
 
-            await RecordViaRealDialogAsync(window, week, projectId, monday, 4m, true, grade, "Design work");
-            await RecordViaRealDialogAsync(window, week, projectId, monday, 2m, false, grade, "Admin");
-            await RecordViaRealDialogAsync(window, week, projectId, tuesday, 3m, true, grade, "Review");
+            // Runbook G1: the task is one of the project's own deliverables.
+            var designWork = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Design work");
+            var admin = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Admin");
+            var review = await TimesheetTaskTestSupport.AddDeliverableAsync(host, projectId, "Review");
+
+            await RecordViaRealDialogAsync(window, week, projectId, monday, 4m, true, grade, designWork.Id);
+            await RecordViaRealDialogAsync(window, week, projectId, monday, 2m, false, grade, admin.Id);
+            await RecordViaRealDialogAsync(window, week, projectId, tuesday, 3m, true, grade, review.Id);
 
             var timesheets = (ITimesheetService)host.Services!.GetService(typeof(ITimesheetService));
             IReadOnlyList<TimesheetEntry> entries = [];
@@ -170,21 +175,28 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             // Captured before any mutation — a row's own task description
             // changes under Amend, so the id (never the description) is
             // what identifies an entry from here on.
-            var designWorkEntryId = entries.First(e => e.TaskDescription == "Design work").Id;
-            var adminEntryId = entries.First(e => e.TaskDescription == "Admin").Id;
-            var reviewEntryId = entries.First(e => e.TaskDescription == "Review").Id;
+            var designWorkEntryId = entries.First(e => e.DeliverableId == designWork.Id && e.TaskDescription == designWork.Label).Id;
+            var adminEntryId = entries.First(e => e.DeliverableId == admin.Id && e.TaskDescription == admin.Label).Id;
+            var reviewEntryId = entries.First(e => e.DeliverableId == review.Id && e.TaskDescription == review.Label).Id;
 
             // ---- Amend "Design work" ----
             var amendButton = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Amend Design work");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Amend {designWork.Label}");
             amendButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
+            // v0.23.0 board M3: an entry recorded against a deliverable keeps
+            // the deliverable's task text, so Amend changes the hours and
+            // leaves Task blank (blank keeps the current task).
             await RenderUntilAsync(window, () =>
-                ((TimesheetEntry)domain.Repository.FindAsync(designWorkEntryId).GetAwaiter().GetResult()!).TaskDescription == "Amended design work");
+                domain.Repository.FindAsync(designWorkEntryId).GetAwaiter().GetResult() is TimesheetEntry { Hours: 5m } amended
+                && amended.TaskDescription == designWork.Label);
+            var amendedDesign = (TimesheetEntry)(await domain.Repository.FindAsync(designWorkEntryId))!;
+            Assert.Equal(5m, amendedDesign.Hours);
+            Assert.Equal(designWork.Label, amendedDesign.TaskDescription);
 
             // ---- Delete "Admin" ----
             var deleteButton = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Delete Admin");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Delete {admin.Label}");
             deleteButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             await RenderUntilAsync(window, () => ((TimesheetEntry)domain.Repository.FindAsync(adminEntryId).GetAwaiter().GetResult()!).IsDeleted);
@@ -197,7 +209,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             var statusBar = GetPrivateField<StatusBarView>(window, "_statusBar");
 
             var amendReview = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Amend Review");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Amend {review.Label}");
             amendReview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase)));
@@ -206,7 +218,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
                 t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase));
 
             var deleteReview = week.GetLogicalDescendants().OfType<Button>()
-                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Delete Review");
+                .Single(b => Avalonia.Automation.AutomationProperties.GetName(b) == $"Delete {review.Label}");
             deleteReview.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await RenderUntilAsync(window, () =>
                 statusBar.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("already invoiced", StringComparison.OrdinalIgnoreCase)));
@@ -254,11 +266,12 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             LayOut(window);
 
             var week = window.GetLogicalDescendants().OfType<TimesheetWeekView>().Single();
+            // Amended Design work 5h + Review 3h + Feed test 1h; Admin deleted.
             await RenderUntilAsync(window, () =>
-                week.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("Amended design work", StringComparison.Ordinal)));
+                week.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text != null && t.Text.Contains("9h total", StringComparison.Ordinal)));
 
             var recovered = week.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).ToList();
-            Assert.Contains(recovered, t => t.Contains("Amended design work", StringComparison.Ordinal));
+            Assert.Contains(recovered, t => t.Contains("Design work", StringComparison.Ordinal));
             Assert.DoesNotContain(recovered, t => t.Contains("Admin", StringComparison.Ordinal));
         }
         finally
@@ -440,7 +453,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
             ResolveRateCardAsync: async (pin, ct) =>
             {
                 var record = await rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, ct).ConfigureAwait(true);
-                return (record.Definition.Code, record.Definition.Name);
+                return (record.Definition.Code, record.Definition.Name, record.ContentRevision);
             });
 
         var editor = ObjectEditorView.TryCreate(
@@ -500,7 +513,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
         await host.ReferenceReview!.ReleaseAsync(rateCards, rateCardId, "Released for the journey test.").ConfigureAwait(true);
     }
 
-    /// <summary>A stub prompt for <c>timesheet.amend</c>/<c>timesheet.delete</c>: amend retitles to "Amended design work"; delete just confirms.</summary>
+    /// <summary>A stub prompt for <c>timesheet.amend</c>/<c>timesheet.delete</c>: amend sets 5 hours and keeps the task (blank); delete just confirms.</summary>
     private static Tempest.Core.Commands.CommandParameterPrompt StubAmendDeletePrompt() =>
         (descriptor, parameters, confirmationMessage, cancellationToken) =>
         {
@@ -509,7 +522,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
                 return Task.FromResult<IReadOnlyDictionary<string, string>?>(new Dictionary<string, string>
                 {
                     ["hours"] = "5",
-                    ["task"] = "Amended design work",
+                    ["task"] = string.Empty,
                     ["billable"] = "True",
                 });
             }
@@ -566,7 +579,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
     }
 
     private static async Task RecordViaRealDialogAsync(
-        MainWindow window, TimesheetWeekView week, Guid projectId, DateOnly date, decimal hours, bool billable, string grade, string task)
+        MainWindow window, TimesheetWeekView week, Guid projectId, DateOnly date, decimal hours, bool billable, string grade, Guid deliverableId)
     {
         var recordButton = week.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
         recordButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -591,8 +604,7 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
         var billableCheck = prompt.GetLogicalDescendants().OfType<CheckBox>().First();
         billableCheck.IsChecked = billable;
 
-        var taskBox = prompt.GetLogicalDescendants().OfType<TextBox>().First();
-        taskBox.Text = task;
+        await TimesheetTaskTestSupport.SelectTaskAsync(prompt, deliverableId, condition => RenderUntilAsync(window, condition));
 
         var record = prompt.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Record"));
         record.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -616,16 +628,8 @@ public sealed class TimesheetsAndDeliverablesJourneyTests
         instance.GetType().GetMethod(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
             ?? throw new InvalidOperationException($"Method '{name}' not found on {instance.GetType().Name}.");
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

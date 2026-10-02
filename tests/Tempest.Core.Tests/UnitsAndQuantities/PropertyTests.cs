@@ -78,6 +78,15 @@ public class PropertyTests
     public void ThermalConductivity_EveryUnitPair_RoundTripsWithinRelativeTolerance() => AssertRoundTrips(ThermalConductivityUnits.All);
 
     [Fact]
+    public void ThermalResistance_EveryUnitPair_RoundTripsWithinRelativeTolerance() => AssertRoundTrips(ThermalResistanceUnits.All);
+
+    [Fact]
+    public void HeatTransferCoefficient_EveryUnitPair_RoundTripsWithinRelativeTolerance() => AssertRoundTrips(HeatTransferCoefficientUnits.All);
+
+    [Fact]
+    public void HeatFlux_EveryUnitPair_RoundTripsWithinRelativeTolerance() => AssertRoundTrips(HeatFluxUnits.All);
+
+    [Fact]
     public void ThermalExpansion_EveryUnitPair_RoundTripsWithinRelativeTolerance() => AssertRoundTrips(ThermalExpansionUnits.All);
 
     [Fact]

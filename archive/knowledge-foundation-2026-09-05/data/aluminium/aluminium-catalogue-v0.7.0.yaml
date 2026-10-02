@@ -1,0 +1,361 @@
+- id: MAT-AL-1050A
+  designation: EN AW-1050A
+  family: commercial_purity_aluminium
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: very_cheap
+  availability: very_high
+  typical_uses:
+  - electrical
+  - chemical
+  - sheet
+  - general fabrication
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 99.5
+      unit: kg/m^3
+    youngs_modulus:
+      value: 2700000000000.0
+      unit: Pa
+    yield_strength:
+      value: 69000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 75000000.0
+      unit: Pa
+    elongation:
+      value: 0.15
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.4e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 222
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 2.82e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-5083-H111
+  designation: EN AW-5083-H111
+  family: marine_aluminium
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: medium
+  availability: very_high
+  typical_uses:
+  - marine
+  - welded structures
+  - pressure-resistant fabrications
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 70300000000.0
+      unit: Pa
+    yield_strength:
+      value: 125000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 275000000.0
+      unit: Pa
+    elongation:
+      value: 0.16
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.38e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 117
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.8e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-6061-T6
+  designation: EN AW-6061-T6
+  family: heat_treatable_aluminium
+  standard_references:
+  - ASTM B221
+  - ASTM B209
+  cost_tier: medium
+  availability: high
+  typical_uses:
+  - machined parts
+  - frames
+  - fixtures
+  - aerospace/general engineering
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 68900000000.0
+      unit: Pa
+    yield_strength:
+      value: 276000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 310000000.0
+      unit: Pa
+    elongation:
+      value: 0.12
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 167
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 3.99e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-6082-T6
+  designation: EN AW-6082-T6
+  family: heat_treatable_aluminium
+  standard_references:
+  - EN 573-3
+  - EN 755
+  cost_tier: cheap
+  availability: very_high
+  typical_uses:
+  - machined parts
+  - structures
+  - frames
+  - general engineering
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 69000000000.0
+      unit: Pa
+    yield_strength:
+      value: 250000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 310000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.33e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 160
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 4.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-7075-T6
+  designation: EN AW-7075-T6
+  family: high_strength_aluminium
+  standard_references:
+  - EN 573-3
+  - ASTM B209
+  cost_tier: expensive
+  availability: high
+  typical_uses:
+  - aerospace
+  - high-strength machined components
+  - fixtures
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2810
+      unit: kg/m^3
+    youngs_modulus:
+      value: 71700000000.0
+      unit: Pa
+    yield_strength:
+      value: 503000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 572000000.0
+      unit: Pa
+    elongation:
+      value: 0.11
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.36e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 130
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.2e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-2024-T3
+  designation: EN AW-2024-T3
+  family: aerospace_aluminium
+  standard_references:
+  - EN 573-3
+  - ASTM B209
+  cost_tier: medium_expensive
+  availability: high
+  typical_uses:
+  - aerospace structures
+  - sheet components
+  - machined parts
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2780
+      unit: kg/m^3
+    youngs_modulus:
+      value: 73100000000.0
+      unit: Pa
+    yield_strength:
+      value: 345000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 485000000.0
+      unit: Pa
+    elongation:
+      value: 0.18
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.3199999999999998e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 121
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.1e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-2014-T6
+  designation: EN AW-2014-T6
+  family: high_strength_aluminium
+  standard_references:
+  - EN 573-3
+  cost_tier: medium_expensive
+  availability: medium
+  typical_uses:
+  - machined structural parts
+  - automotive/aerospace components
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2800
+      unit: kg/m^3
+    youngs_modulus:
+      value: 73000000000.0
+      unit: Pa
+    yield_strength:
+      value: 414000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 469000000.0
+      unit: Pa
+    elongation:
+      value: 0.13
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.3e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 154
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 5.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true
+- id: MAT-AL-6082-T651
+  designation: EN AW-6082-T651
+  family: stress_relieved_aluminium
+  standard_references:
+  - EN 573-3
+  - EN 485-2
+  cost_tier: medium
+  availability: high
+  typical_uses:
+  - precision plates
+  - machined components
+  - structures
+  data_status: candidate_reference
+  reference_condition: indicative room-temperature baseline
+  properties:
+    density:
+      value: 2700
+      unit: kg/m^3
+    youngs_modulus:
+      value: 69000000000.0
+      unit: Pa
+    yield_strength:
+      value: 260000000.0
+      unit: Pa
+    ultimate_tensile_strength:
+      value: 310000000.0
+      unit: Pa
+    elongation:
+      value: 0.1
+      unit: '1'
+    coefficient_of_thermal_expansion:
+      value: 2.33e-05
+      unit: 1/K
+    thermal_conductivity:
+      value: 160
+      unit: W/(m*K)
+    electrical_resistivity:
+      value: 4.0e-08
+      unit: ohm*m
+  provenance:
+    source_id: SRC-TO-VERIFY
+    verification_required: true
+  data_governance:
+    authority_state: candidate_reference
+    source_attachment_required: true

@@ -169,6 +169,7 @@ public sealed class EvidenceJourneyTests
         try
         {
             EvidenceTestHost.SignIn(host, EvidenceTestHost.PrincipalId);
+            await Governance.SignOffTestSupport.RequireSecondPersonAsync(host); // ADR-0161: the rule under test is the ON one.
 
             var projectId = await EvidenceTestHost.CreateProjectAsync(host);
             var service = EvidenceTestHost.Service(host);

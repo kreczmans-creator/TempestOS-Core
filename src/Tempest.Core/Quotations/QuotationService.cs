@@ -2,6 +2,7 @@ using System.Globalization;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Governance;
 using Tempest.Core.Projects;
 using Tempest.Core.Requirements;
 using Tempest.Core.Settings;
@@ -99,6 +100,7 @@ public sealed class QuotationService : IQuotationService
     private readonly IRateCardCatalog _rateCards;
     private readonly IRequirementsService _requirements;
     private readonly ISettingsProvider? _settings;
+    private readonly ISignOffPolicy? _signOff;
     private readonly TimeProvider _time;
 
     /// <summary>Initialises a new instance of the <see cref="QuotationService"/> class.</summary>
@@ -109,9 +111,15 @@ public sealed class QuotationService : IQuotationService
     /// <see cref="Core.BusinessGovernance.VatRate.OutOfScope"/> outright,
     /// for a caller (an older test host) with no settings provider composed.
     /// </param>
+    /// <param name="signOffPolicy">
+    /// The global "Second-person sign-off" switch (`ADR-0161`) <see cref="ApproveAsync"/>
+    /// consults. <see langword="null"/> — only a caller constructing this
+    /// service by hand; the host always composes one — keeps the
+    /// separation-of-duty rule on, exactly as it stood before the switch.
+    /// </param>
     public QuotationService(
         EngineeringDomainContext context, IRateCardCatalog rateCards, IRequirementsService requirements, TimeProvider? timeProvider = null,
-        ISettingsProvider? settings = null)
+        ISettingsProvider? settings = null, ISignOffPolicy? signOffPolicy = null)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rateCards);
@@ -122,6 +130,7 @@ public sealed class QuotationService : IQuotationService
         _requirements = requirements;
         _time = timeProvider ?? TimeProvider.System;
         _settings = settings;
+        _signOff = signOffPolicy;
 
         if (_settings is not null)
         {
@@ -154,6 +163,13 @@ public sealed class QuotationService : IQuotationService
         if (await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project project || !IsLive(project))
             return new QuotationResult(QuotationRefusal.ProjectNotFound, $"No project '{projectId}' is registered.", null);
 
+        // Colour review board B1: a quotation's author is the person a
+        // second-person approval must differ from, so one cannot be opened
+        // with nobody to record as its author.
+        var authorId = CurrentPrincipalId();
+        if (authorId is null)
+            return NobodySignedIn(null, "open a quotation");
+
         if (ProjectArchival.IsArchived(project, _time.GetUtcNow()))
         {
             return new QuotationResult(
@@ -163,8 +179,9 @@ public sealed class QuotationService : IQuotationService
         var quoteDate = Today();
         var prefix = kind == QuotationKind.ChangeOrder ? ChangeOrderReferencePrefix : QuotationReferencePrefix;
 
+        var documentType = kind == QuotationKind.ChangeOrder ? ProjectNumbering.ChangeOrder : ProjectNumbering.Quotation;
         var resolvedReference = string.IsNullOrWhiteSpace(reference)
-            ? await NextReferenceAsync(quoteDate.Year, prefix, cancellationToken).ConfigureAwait(false)
+            ? await NextReferenceAsync(project, documentType, quoteDate.Year, prefix, cancellationToken).ConfigureAwait(false)
             : reference.Trim();
 
         var resolvedClient = clientOrganisationId ?? project.ClientOrganisationId;
@@ -177,7 +194,7 @@ public sealed class QuotationService : IQuotationService
             (doc, rev) => new Quotation(
                 doc, rev, _context, identifier: null, displayName,
                 EngineeringObjectMetadata.Empty, resolvedReference, quoteDate, resolvedClient, currency,
-                validityDays: 30, terms: null, lines: [], kind: kind))
+                validityDays: 30, terms: null, lines: [], kind: kind, authorIdentityId: authorId))
             .CreateAsync($"Quotation '{resolvedReference}' opened with project '{projectId}'.", cancellationToken)
             .ConfigureAwait(false);
 
@@ -190,7 +207,7 @@ public sealed class QuotationService : IQuotationService
     /// <inheritdoc />
     public async Task<QuotationResult> AddLineAsync(
         Guid quotationId, string description, decimal? hours, Money? rate, Money? fixedPrice, Guid? carriedDeliverableId = null,
-        VatRate? vatRate = null, CancellationToken cancellationToken = default)
+        VatRate? vatRate = null, string? rateCardServiceCode = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -198,8 +215,11 @@ public sealed class QuotationService : IQuotationService
         if (quote is null)
             return NotFound(quotationId);
 
-        if (quote.Status != QuotationStatus.Draft)
+        if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "added");
+
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
 
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
@@ -210,15 +230,22 @@ public sealed class QuotationService : IQuotationService
                 return carriedRefusal;
         }
 
+        if (await ResolveCardRateAsync(quote, rateCardServiceCode, hours, rate, fixedPrice, cancellationToken).ConfigureAwait(false) is { } cardRefusal)
+            return cardRefusal;
+
+        var cardRate = await CardRateAsync(quote, rateCardServiceCode, cancellationToken).ConfigureAwait(false);
         var resolvedVatRate = await ResolveVatRateAsync(vatRate, cancellationToken).ConfigureAwait(false);
-        var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, rate, fixedPrice, resolvedVatRate);
+        var (line, refusal, reason) = BuildLine(quote, Guid.NewGuid(), description, hours, cardRate ?? rate, fixedPrice, resolvedVatRate);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
 
         if (carriedDeliverableId is { } carried)
             line = line with { DeliverableId = carried };
 
-        await quote.AddLineAsync(line, cancellationToken).ConfigureAwait(false);
+        if (cardRate is not null)
+            line = line with { RateCardServiceCode = rateCardServiceCode!.Trim() };
+
+        await quote.AddLineAsync(line, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -226,7 +253,7 @@ public sealed class QuotationService : IQuotationService
     /// <inheritdoc />
     public async Task<QuotationResult> UpdateLineAsync(
         Guid quotationId, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
-        VatRate? vatRate = null, CancellationToken cancellationToken = default)
+        VatRate? vatRate = null, string? rateCardServiceCode = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
@@ -234,8 +261,11 @@ public sealed class QuotationService : IQuotationService
         if (quote is null)
             return NotFound(quotationId);
 
-        if (quote.Status != QuotationStatus.Draft)
+        if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "changed");
+
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
 
         var existingLine = quote.Lines.FirstOrDefault(l => l.Id == lineId);
         if (existingLine is null)
@@ -248,9 +278,17 @@ public sealed class QuotationService : IQuotationService
         // rate rather than resetting it to the consultant's own default —
         // only a genuinely new line (AddLineAsync) resolves the default.
         var resolvedVatRate = vatRate ?? existingLine.VatRate;
-        var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, rate, fixedPrice, resolvedVatRate);
+
+        if (await ResolveCardRateAsync(quote, rateCardServiceCode, hours, rate, fixedPrice, cancellationToken).ConfigureAwait(false) is { } cardRefusal)
+            return cardRefusal;
+
+        var cardRate = await CardRateAsync(quote, rateCardServiceCode, cancellationToken).ConfigureAwait(false);
+        var (line, refusal, reason) = BuildLine(quote, lineId, description, hours, cardRate ?? rate, fixedPrice, resolvedVatRate);
         if (line is null)
             return new QuotationResult(refusal, reason, quote);
+
+        if (cardRate is not null)
+            line = line with { RateCardServiceCode = rateCardServiceCode!.Trim() };
 
         // A carried deliverable id (`WP 20.10E`) is set once, at
         // AddLineAsync, and is not itself an editable field — carried
@@ -259,7 +297,7 @@ public sealed class QuotationService : IQuotationService
         if (existingLine.DeliverableId is { } carried)
             line = line with { DeliverableId = carried };
 
-        await quote.UpdateLineAsync(line, cancellationToken).ConfigureAwait(false);
+        await quote.UpdateLineAsync(line, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -284,8 +322,11 @@ public sealed class QuotationService : IQuotationService
         if (quote is null)
             return NotFound(quotationId);
 
-        if (quote.Status != QuotationStatus.Draft)
+        if (!LinesEditable(quote))
             return NotDraft(quote, quotationId, "removed");
+
+        if (CurrentPrincipalId() is not { } editorId)
+            return NobodySignedIn(quote, "change a quotation's lines");
 
         var line = quote.Lines.FirstOrDefault(l => l.Id == lineId);
         if (line is null)
@@ -294,7 +335,7 @@ public sealed class QuotationService : IQuotationService
         if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        await quote.RemoveLineAsync(lineId, line.Description, cancellationToken).ConfigureAwait(false);
+        await quote.RemoveLineAsync(lineId, line.Description, editorId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
     }
@@ -308,8 +349,10 @@ public sealed class QuotationService : IQuotationService
 
         if (!QuotationStatusTransitions.IsPermitted(quote.Status, QuotationStatus.Sent))
         {
-            return new QuotationResult(
-                QuotationRefusal.TransitionNotPermitted, $"Quotation '{quotationId}' is {quote.Status}; it must be Draft to send.", quote);
+            var reason = quote.Status is QuotationStatus.Draft or QuotationStatus.InReview
+                ? $"Quotation '{quote.Reference}' is {Describe(quote.Status)}; only an approved revision can be sent — submit it for review and have a second person approve it first."
+                : $"Quotation '{quotationId}' is {quote.Status}; only an approved revision can be sent.";
+            return new QuotationResult(QuotationRefusal.TransitionNotPermitted, reason, quote);
         }
 
         if (quote.Lines.Count == 0)
@@ -390,6 +433,175 @@ public sealed class QuotationService : IQuotationService
     }
 
     /// <inheritdoc />
+    public async Task<QuotationResult> SaveDraftAsync(Guid quotationId, CancellationToken cancellationToken = default)
+    {
+        var quote = await FindQuotationAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (quote is null)
+            return NotFound(quotationId);
+
+        if (quote.Status != QuotationStatus.Draft)
+        {
+            return new QuotationResult(
+                QuotationRefusal.QuotationNotDraft, $"Quotation '{quote.Reference}' is {Describe(quote.Status)}; only a draft can be saved as a draft.", quote);
+        }
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await quote.SaveDraftAsync(_time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+        return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <inheritdoc />
+    public async Task<QuotationResult> SubmitForReviewAsync(Guid quotationId, CancellationToken cancellationToken = default)
+    {
+        var quote = await FindQuotationAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (quote is null)
+            return NotFound(quotationId);
+
+        if (!QuotationStatusTransitions.IsPermitted(quote.Status, QuotationStatus.InReview))
+        {
+            return new QuotationResult(
+                QuotationRefusal.TransitionNotPermitted, $"Quotation '{quote.Reference}' is {Describe(quote.Status)}; only a draft can be submitted for review.", quote);
+        }
+
+        if (quote.Lines.Count == 0)
+            return new QuotationResult(QuotationRefusal.NothingToSend, $"Quotation '{quote.Reference}' has no lines; there is nothing to review.", quote);
+
+        // Colour review board B1: a submission with nobody signed in would
+        // record the store's own "unknown" id, and the submitter could not
+        // then be told apart from the approver.
+        if (CurrentPrincipalId() is not { } submitterId)
+            return NobodySignedIn(quote, "submit a quotation for review");
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await quote.MarkInReviewAsync(submitterId, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+        return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <inheritdoc />
+    public async Task<QuotationResult> ApproveAsync(Guid quotationId, CancellationToken cancellationToken = default)
+    {
+        var quote = await FindQuotationAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (quote is null)
+            return NotFound(quotationId);
+
+        if (!QuotationStatusTransitions.IsPermitted(quote.Status, QuotationStatus.Approved))
+        {
+            return new QuotationResult(
+                QuotationRefusal.TransitionNotPermitted, $"Quotation '{quote.Reference}' is {Describe(quote.Status)}; only a quotation in review can be approved.", quote);
+        }
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        // Evidence's own independent-check rule (`EvidenceService.RecordCheckAsync`),
+        // applied to a quote: the PO asked for "review by second person"
+        // (runbook C3). Since the PO's 2026-10-01 decision it is governed by
+        // the one global "Second-person sign-off" switch (`ADR-0161`), off
+        // by default for a one-person consultancy. Either way somebody must
+        // be signed in: an approval nobody can be held to is not a review.
+        var approverId = CurrentPrincipalId();
+        if (approverId is null)
+        {
+            return new QuotationResult(
+                QuotationRefusal.NoPrincipalSignedIn,
+                "Approving a quote needs somebody signed in; an approval nobody can be held to is not a review.",
+                quote);
+        }
+
+        if (!await IsSecondPersonRequiredAsync(cancellationToken).ConfigureAwait(false))
+        {
+            // Second-person sign-off is off: the same person may author,
+            // submit and approve. The revision still records who submitted
+            // and who approved, and says so when they were not shown to be
+            // different people — the record never claims an independence it
+            // did not have.
+            var offAuthorId = await ResolveAuthorIdAsync(quote, cancellationToken).ConfigureAwait(false);
+            var offSubmittedBy = quote.Review.SubmittedBy;
+            var selfApproval =
+                offAuthorId is null
+                || string.IsNullOrWhiteSpace(offSubmittedBy)
+                || IsUnknownPrincipal(offSubmittedBy)
+                || string.Equals(approverId, offSubmittedBy, StringComparison.Ordinal)
+                || string.Equals(approverId, offAuthorId, StringComparison.Ordinal)
+                || quote.Review.LineEditors.Contains(approverId, StringComparer.Ordinal);
+
+            await quote.MarkApprovedAsync(approverId, _time.GetUtcNow(), selfApproval, cancellationToken).ConfigureAwait(false);
+
+            return new QuotationResult(QuotationRefusal.None, null, quote);
+        }
+
+        // Colour review board B1: the approver must be shown to differ from
+        // the submitter, the author and everyone who changed a line since
+        // the last approval. Where the submitter or the author is not on
+        // record, nobody can be shown to differ, so the approval is refused
+        // rather than assumed.
+        var submittedBy = quote.Review.SubmittedBy;
+        if (string.IsNullOrWhiteSpace(submittedBy) || IsUnknownPrincipal(submittedBy))
+        {
+            return new QuotationResult(
+                QuotationRefusal.AuthorUnknown,
+                $"Quotation '{quote.Reference}' was submitted with nobody signed in, so a second person cannot be shown to differ from the submitter; return it to draft and submit it again signed in.",
+                quote);
+        }
+
+        var authorId = await ResolveAuthorIdAsync(quote, cancellationToken).ConfigureAwait(false);
+        if (authorId is null)
+        {
+            return new QuotationResult(
+                QuotationRefusal.AuthorUnknown,
+                $"Nobody is on record as having opened quotation '{quote.Reference}', so a second person cannot be shown to differ from its author; open a new quotation signed in and approve that instead.",
+                quote);
+        }
+
+        if (string.Equals(approverId, submittedBy, StringComparison.Ordinal)
+            || string.Equals(approverId, authorId, StringComparison.Ordinal)
+            || quote.Review.LineEditors.Contains(approverId, StringComparer.Ordinal))
+        {
+            return new QuotationResult(
+                QuotationRefusal.ReviewerMustDifferFromAuthor,
+                "A quote must be approved by a second person, not the one who prepared, changed or submitted it; switch person first.",
+                quote);
+        }
+
+        await quote.MarkApprovedAsync(approverId, _time.GetUtcNow(), selfApproval: false, cancellationToken).ConfigureAwait(false);
+
+        return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <inheritdoc />
+    public async Task<QuotationResult> ReturnToDraftAsync(Guid quotationId, string comment, CancellationToken cancellationToken = default)
+    {
+        var quote = await FindQuotationAsync(quotationId, cancellationToken).ConfigureAwait(false);
+        if (quote is null)
+            return NotFound(quotationId);
+
+        if (quote.Status != QuotationStatus.InReview)
+        {
+            return new QuotationResult(
+                QuotationRefusal.TransitionNotPermitted, $"Quotation '{quote.Reference}' is {Describe(quote.Status)}; only a quotation in review can be returned to draft.", quote);
+        }
+
+        if (string.IsNullOrWhiteSpace(comment))
+        {
+            return new QuotationResult(
+                QuotationRefusal.CommentRequired, "Say why it is going back: a comment is required to return a quote to draft.", quote);
+        }
+
+        if (await ArchivedAsync(quote, cancellationToken).ConfigureAwait(false) is { } archived)
+            return archived;
+
+        await quote.MarkReturnedToDraftAsync(_context.ResolveCurrentPrincipalId(), comment.Trim(), _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+
+        return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <inheritdoc />
     public async Task<QuotationResult> DeclineAsync(Guid quotationId, CancellationToken cancellationToken = default)
     {
         var quote = await FindQuotationAsync(quotationId, cancellationToken).ConfigureAwait(false);
@@ -410,6 +622,108 @@ public sealed class QuotationService : IQuotationService
         await quote.MarkDeclinedAsync(Today(), cancellationToken).ConfigureAwait(false);
 
         return new QuotationResult(QuotationRefusal.None, null, quote);
+    }
+
+    /// <summary>Whether the global second-person sign-off switch is on (`ADR-0161`) — on, as before the switch existed, when no policy is composed.</summary>
+    private Task<bool> IsSecondPersonRequiredAsync(CancellationToken cancellationToken) =>
+        _signOff?.IsSecondPersonRequiredAsync(cancellationToken) ?? Task.FromResult(true);
+
+    /// <summary>Whether <paramref name="quote"/>'s lines may change — while Draft, or once Approved (the edit then starts a new draft, runbook C3).</summary>
+    private static bool LinesEditable(Quotation quote) => quote.Status is QuotationStatus.Draft or QuotationStatus.Approved;
+
+    /// <summary>A status as a sentence reads it — "in review" rather than "InReview".</summary>
+    private static string Describe(QuotationStatus status) => status switch
+    {
+        QuotationStatus.InReview => "in review",
+        _ => status.ToString(),
+    };
+
+    /// <summary>The signed-in principal's own id, or <see langword="null"/> when nobody (or only the store's own "unknown") is.</summary>
+    private string? CurrentPrincipalId()
+    {
+        var id = _context.CurrentPrincipalAccessor.Current?.Identity.Id;
+        return string.IsNullOrWhiteSpace(id) || IsUnknownPrincipal(id) ? null : id;
+    }
+
+    private static bool IsUnknownPrincipal(string id) =>
+        string.Equals(id, EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Who opened <paramref name="quote"/> — its own <see cref="Quotation.AuthorIdentityId"/>,
+    /// or, for a quotation opened before runbook C3 recorded one, the
+    /// author of its backing document's first revision (the creation
+    /// write, colour review board B1). <see langword="null"/> when neither
+    /// names a real person.
+    /// </summary>
+    private async Task<string?> ResolveAuthorIdAsync(Quotation quote, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(quote.AuthorIdentityId) && !IsUnknownPrincipal(quote.AuthorIdentityId))
+            return quote.AuthorIdentityId;
+
+        var history = await _context.Store.GetRevisionHistoryAsync(quote.Id, cancellationToken).ConfigureAwait(false);
+        var first = history.OrderBy(r => r.RevisionNumber).FirstOrDefault();
+        return first is { AuthorPrincipalId: { } creator } && !string.IsNullOrWhiteSpace(creator) && !IsUnknownPrincipal(creator)
+            ? creator
+            : null;
+    }
+
+    private static QuotationResult NobodySignedIn(Quotation? quote, string act) =>
+        new(QuotationRefusal.NoPrincipalSignedIn,
+            $"Nobody is signed in; sign in (or switch person) to {act} — a second-person review needs to know who did what.",
+            quote);
+
+    /// <summary>
+    /// The guard on a line priced from the project's own pinned rate card
+    /// (runbook C3): a service code takes hours, never a typed rate or a
+    /// fixed price, and must name an hourly entry on the pinned card.
+    /// <see langword="null"/> when there is nothing to refuse.
+    /// </summary>
+    private async Task<QuotationResult?> ResolveCardRateAsync(
+        Quotation quote, string? rateCardServiceCode, decimal? hours, Money? rate, Money? fixedPrice, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(rateCardServiceCode))
+            return null;
+
+        if (fixedPrice is not null)
+            return new QuotationResult(QuotationRefusal.InvalidLine, "A line priced from the rate card is hourly; it cannot also carry a fixed price.", quote);
+
+        if (hours is null)
+            return new QuotationResult(QuotationRefusal.InvalidLine, "A line priced from the rate card needs its hours.", quote);
+
+        var entry = await FindCardEntryAsync(quote, rateCardServiceCode, cancellationToken).ConfigureAwait(false);
+        if (entry is null)
+        {
+            return new QuotationResult(
+                QuotationRefusal.RateCardEntryNotFound,
+                $"'{rateCardServiceCode.Trim()}' is not an hourly rate on this project's pinned rate card — pin a rate card on the project's Details tab, or price the line as fixed.",
+                quote);
+        }
+
+        if (rate is { } given && given != entry.Rate)
+        {
+            return new QuotationResult(
+                QuotationRefusal.InvalidLine, $"The rate card prices '{entry.ServiceName}' at {entry.Rate}; a line taken from it cannot carry {given}.", quote);
+        }
+
+        return null;
+    }
+
+    private async Task<Money?> CardRateAsync(Quotation quote, string? rateCardServiceCode, CancellationToken cancellationToken) =>
+        string.IsNullOrWhiteSpace(rateCardServiceCode)
+            ? null
+            : (await FindCardEntryAsync(quote, rateCardServiceCode, cancellationToken).ConfigureAwait(false))?.Rate;
+
+    private async Task<RateCardEntry?> FindCardEntryAsync(Quotation quote, string serviceCode, CancellationToken cancellationToken)
+    {
+        if (quote.ParentId is not { } projectId
+            || await _context.Repository.FindAsync(projectId, cancellationToken).ConfigureAwait(false) is not Project { RateCardPin: { } pin })
+        {
+            return null;
+        }
+
+        var card = await _rateCards.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, cancellationToken).ConfigureAwait(false);
+        var entry = card.Definition.FindEntry(serviceCode.Trim());
+        return entry is { Basis: PricingBasis.Hourly } && entry.Rate.Currency == quote.Currency ? entry : null;
     }
 
     /// <summary>Builds a validated line, or a refusal naming what is wrong with it — shared by <see cref="AddLineAsync"/> and <see cref="UpdateLineAsync"/>.</summary>
@@ -543,36 +857,45 @@ public sealed class QuotationService : IQuotationService
     }
 
     /// <summary>
-    /// The next <c>&lt;prefix&gt;&lt;year&gt;-&lt;nnn&gt;</c> reference — one
-    /// past the highest existing suffix already used for <paramref name="year"/>
-    /// under that same prefix, among every quotation this store holds (live
-    /// or not: a reference, once used, is never reissued). Shared by both
-    /// prefixes this service generates (<see cref="QuotationReferencePrefix"/>
-    /// for an ordinary quotation, <see cref="ChangeOrderReferencePrefix"/>
-    /// for a change order — `WP 20.10E`): the two vocabularies never
-    /// collide, so one scan of every live-or-not <see cref="Quotation"/>
-    /// serves either.
+    /// The next reference for a quotation (or change order) opened with
+    /// <paramref name="project"/>.
     /// </summary>
-    private async Task<string> NextReferenceAsync(int year, string prefix, CancellationToken cancellationToken)
+    /// <remarks>
+    /// <para>
+    /// <b>Project-centric (Product Owner decision 2026-10-01 §3,
+    /// `ADR-0156`).</b> Where the project's own identifier is a
+    /// <c>CUSTOMER-PROJECTREF</c> one, the reference is
+    /// <c>CUSTOMER-PROJECTREF-Q-NNN</c> (<c>-CO-NNN</c> for a change
+    /// order) — one past the highest suffix already used under that prefix,
+    /// so the sequence is per project per document type and the first
+    /// quote in every project is 001.
+    /// </para>
+    /// <para>
+    /// <b>Fallback — the old scheme, unchanged.</b> Any other project (an
+    /// older <c>P-NNNN</c>, or one created with no customer code) gets the
+    /// next <c>&lt;prefix&gt;&lt;year&gt;-&lt;nnn&gt;</c> reference — one past
+    /// the highest existing suffix already used for <paramref name="year"/>
+    /// under that same prefix (<see cref="QuotationReferencePrefix"/> or
+    /// <see cref="ChangeOrderReferencePrefix"/>, `WP 20.10E`).
+    /// </para>
+    /// <para>
+    /// Either way the scan covers every quotation this store holds, live
+    /// or not: a reference, once used, is never reissued.
+    /// </para>
+    /// </remarks>
+    private async Task<string> NextReferenceAsync(
+        Project project, string documentType, int year, string prefix, CancellationToken cancellationToken)
     {
         // `TD-88`/`WP 21.5B`: `Reference` is a `Quotation`-own field, not on
         // the index row.
         var existingEntries = await _context.Repository.ListByKindAsync(Quotation.CanonicalKind, cancellationToken).ConfigureAwait(false);
         var existing = await _context.Repository.MaterialiseAsync<Quotation>(existingEntries, cancellationToken).ConfigureAwait(false);
-        var fullPrefix = $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        var max = 0;
-        foreach (var candidate in existing)
-        {
-            if (candidate.Reference.StartsWith(fullPrefix, StringComparison.Ordinal)
-                && int.TryParse(candidate.Reference.AsSpan(fullPrefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
-                && n > max)
-            {
-                max = n;
-            }
-        }
+        var fullPrefix = ProjectNumbering.TryGetDocumentPrefix(project.Identifier, documentType, out var projectPrefix)
+            ? projectPrefix
+            : $"{prefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        return $"{fullPrefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
+        return ProjectNumbering.NextNumber(fullPrefix, existing.Select(q => q.Reference));
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);
@@ -587,7 +910,11 @@ public sealed class QuotationService : IQuotationService
         new(QuotationRefusal.QuotationNotFound, $"No quotation '{quotationId}' is registered.", null);
 
     private static QuotationResult NotDraft(Quotation quote, Guid quotationId, string verb) =>
-        new(QuotationRefusal.QuotationNotDraft, $"Quotation '{quotationId}' is {quote.Status}; a line can only be {verb} while Draft.", quote);
+        new(QuotationRefusal.QuotationNotDraft,
+            quote.Status == QuotationStatus.InReview
+                ? $"Quotation '{quote.Reference}' is in review; a line can only be {verb} once the reviewer returns it to draft."
+                : $"Quotation '{quotationId}' is {quote.Status}; a line can only be {verb} while Draft.",
+            quote);
 
     private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 }

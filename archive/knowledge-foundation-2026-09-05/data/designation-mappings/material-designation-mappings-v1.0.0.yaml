@@ -1,0 +1,44 @@
+- id: MAP-42CRMO4-4140
+  from: 42CrMo4
+  to: AISI/SAE 4140
+  relationship: commonly_compared_equivalent
+  confidence: medium
+  warning: Do not treat as automatic certification equivalence; verify chemistry,
+    product standard, condition and certificate.
+- id: MAP-EN8-C45
+  from: EN8
+  to: C45
+  relationship: legacy_designation_comparison
+  confidence: medium
+  warning: Verify product/standard context; do not assume identical mechanical requirements.
+- id: MAP-EN19-42CRMO4
+  from: EN19
+  to: 42CrMo4
+  relationship: legacy_designation_comparison
+  confidence: medium
+  warning: Confirm exact historical designation, chemistry and condition before substitution.
+- id: MAP-EN24-4340
+  from: EN24
+  to: AISI/SAE 4340
+  relationship: legacy_designation_comparison
+  confidence: medium
+  warning: Verify exact specification and heat treatment; designation similarity is
+    insufficient.
+- id: MAP-6082-T6-T651
+  from: EN AW-6082-T6
+  to: EN AW-6082-T651
+  relationship: same_alloy_different_condition
+  confidence: high
+  warning: Temper is a material-state distinction; properties must not be merged.
+- id: MAP-304-UNS
+  from: AISI 304
+  to: UNS S30400
+  relationship: designation_mapping
+  confidence: high
+  warning: Product specification and condition still govern certification and properties.
+- id: MAP-316L-UNS
+  from: AISI 316L
+  to: UNS S31603
+  relationship: designation_mapping
+  confidence: high
+  warning: Product specification and condition still govern certification and properties.

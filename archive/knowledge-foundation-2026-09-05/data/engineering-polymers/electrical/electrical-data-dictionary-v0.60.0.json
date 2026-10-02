@@ -1,0 +1,21 @@
+{
+  "version": "0.60.0",
+  "properties": {
+    "volume_resistivity": "Bulk resistance to current flow; test geometry and conditioning required.",
+    "surface_resistivity": "Surface leakage resistance; contamination and humidity matter.",
+    "dielectric_strength": "Breakdown field under a specified test method and geometry.",
+    "relative_permittivity": "Relative dielectric constant; frequency and temperature dependent.",
+    "dissipation_factor": "Dielectric loss; frequency, temperature and conditioning dependent.",
+    "tracking_resistance": "Resistance to surface tracking under the applicable method.",
+    "arc_resistance": "Resistance to electrical arc exposure under the applicable method."
+  },
+  "mandatory_context": [
+    "exact grade",
+    "formulation",
+    "frequency",
+    "temperature",
+    "conditioning",
+    "test method",
+    "source"
+  ]
+}

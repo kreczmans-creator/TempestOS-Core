@@ -1,0 +1,27 @@
+{
+  "version": "0.68.0",
+  "purpose": "Prevent unsafe material substitution based on nominal strength alone.",
+  "sequence": [
+    "define original grade and condition",
+    "capture functional requirements",
+    "compare mechanical behaviour",
+    "compare thermal behaviour",
+    "compare environment/corrosion",
+    "compare fatigue/fracture",
+    "compare wear/contact",
+    "compare manufacturing route",
+    "compare joining/surface treatment",
+    "compare supply/traceability",
+    "reverify critical requirements"
+  ],
+  "hard_stops": [
+    "different failure mechanism",
+    "unverified corrosion compatibility",
+    "unverified fatigue life",
+    "different heat-treatment condition",
+    "joining qualification lost",
+    "regulatory/customer approval impact"
+  ],
+  "rule": "Substitution is an engineering change, not a catalogue synonym.",
+  "status": "design-framework"
+}

@@ -1,0 +1,33 @@
+{
+  "version": "0.57.0",
+  "family": "PEEK",
+  "examples": [
+    "unfilled PEEK",
+    "glass-filled PEEK",
+    "carbon-filled PEEK"
+  ],
+  "character": "high-performance thermoplastic; high temperature capability, wear resistance and chemical resistance",
+  "common_uses": [
+    "bearings and wear components",
+    "seals",
+    "electrical insulators",
+    "aerospace components",
+    "chemical-processing components"
+  ],
+  "selection_drivers": [
+    "temperature",
+    "chemical exposure",
+    "wear",
+    "dimensional stability",
+    "weight"
+  ],
+  "watchouts": [
+    "cost",
+    "processing temperature",
+    "creep",
+    "moisture effects where relevant",
+    "reinforcement anisotropy"
+  ],
+  "evidence_status": "screening taxonomy",
+  "design_use": "screening_only"
+}

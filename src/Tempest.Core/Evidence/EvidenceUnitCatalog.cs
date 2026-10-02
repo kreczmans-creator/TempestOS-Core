@@ -37,6 +37,8 @@ public static class EvidenceUnitCatalog
         Add(EnergyUnits.All);
         Add(ForceUnits.All);
         Add(FrequencyUnits.All);
+        Add(HeatFluxUnits.All);
+        Add(HeatTransferCoefficientUnits.All);
         Add(LengthUnits.All);
         Add(MassDensityUnits.All);
         Add(MassUnits.All);
@@ -53,6 +55,7 @@ public static class EvidenceUnitCatalog
         Add(TemperatureDeltaUnits.All);
         Add(ThermalConductivityUnits.All);
         Add(ThermalExpansionUnits.All);
+        Add(ThermalResistanceUnits.All);
         Add(TorqueUnits.All);
         Add(TorsionalStiffnessUnits.All);
         Add(VelocityUnits.All);

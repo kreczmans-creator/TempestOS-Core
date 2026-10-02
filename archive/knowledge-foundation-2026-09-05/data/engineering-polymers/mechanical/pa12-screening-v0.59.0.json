@@ -1,0 +1,22 @@
+{
+  "version": "0.59.0",
+  "family": "PA12",
+  "density_g_cm3": 1.02,
+  "elastic_modulus_gpa": "1.2\u20132.0",
+  "tensile_strength_mpa": "35\u201360",
+  "elongation_percent": "5\u201325",
+  "evidence_status": "screening range",
+  "design_use": "not approved",
+  "required_context": [
+    "exact grade",
+    "reinforcement/filler",
+    "product form",
+    "condition",
+    "test method",
+    "test temperature",
+    "conditioning",
+    "orientation where relevant",
+    "authoritative source"
+  ],
+  "warning": "Ranges are family-level engineering screening data, not design allowables."
+}

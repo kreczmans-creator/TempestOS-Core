@@ -1,0 +1,4113 @@
+{
+  "version": "0.32.0",
+  "scope": "Steel Fundamentals Audit",
+  "principle": "A defined fundamental is not considered populated merely because the schema supports it; numerical/design evidence must be traceable to a material state and source.",
+  "families": {
+    "carbon_low_alloy": [
+      "S235JR",
+      "S355JR",
+      "C45",
+      "42CrMo4"
+    ],
+    "austenitic_stainless": [
+      "304",
+      "316L",
+      "310S",
+      "321"
+    ],
+    "martensitic_stainless": [
+      "410",
+      "420",
+      "440C"
+    ],
+    "precipitation_hardening_stainless": [
+      "17-4 PH",
+      "15-5 PH",
+      "13-8 Mo"
+    ],
+    "tool_steel": [
+      "H13"
+    ],
+    "ferritic_stainless": [
+      "430"
+    ]
+  },
+  "fundamental_categories": [
+    "identity_designation",
+    "composition_chemistry",
+    "material_family",
+    "condition_heat_treatment",
+    "product_form",
+    "density",
+    "yield_strength",
+    "ultimate_tensile_strength",
+    "elastic_modulus",
+    "poissons_ratio",
+    "shear_modulus",
+    "hardness",
+    "ductility_elongation",
+    "impact_toughness",
+    "fatigue_strength",
+    "fatigue_crack_growth",
+    "fracture_toughness",
+    "thermal_conductivity",
+    "coefficient_of_thermal_expansion",
+    "specific_heat",
+    "electrical_resistivity_conductivity",
+    "magnetic_behaviour",
+    "corrosion_environmental_behaviour",
+    "manufacturing_process",
+    "weldability_joining",
+    "machinability",
+    "forming_casting_am_processes",
+    "surface_treatment",
+    "common_engineering_uses",
+    "availability",
+    "relative_cost",
+    "material_standards",
+    "test_standards",
+    "provenance",
+    "evidence_quality",
+    "engineering_use_restrictions"
+  ],
+  "coverage_ledger": [
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S235JR",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "S355JR",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "C45",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "carbon_low_alloy",
+      "grade": "42CrMo4",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "304",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "316L",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "310S",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "austenitic_stainless",
+      "grade": "321",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "yield_strength",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "hardness",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "410",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "hardness",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "420",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "hardness",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "martensitic_stainless",
+      "grade": "440C",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "fatigue_strength",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "fracture_toughness",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "17-4 PH",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "fracture_toughness",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "15-5 PH",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "precipitation_hardening_stainless",
+      "grade": "13-8 Mo",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "tool_steel",
+      "grade": "H13",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "identity_designation",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "composition_chemistry",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "material_family",
+      "coverage": "present",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "condition_heat_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "product_form",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "density",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "yield_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "ultimate_tensile_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "elastic_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "poissons_ratio",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "shear_modulus",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "hardness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "ductility_elongation",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "impact_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "fatigue_strength",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "fatigue_crack_growth",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "fracture_toughness",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "thermal_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "coefficient_of_thermal_expansion",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "specific_heat",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "electrical_resistivity_conductivity",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "magnetic_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "corrosion_environmental_behaviour",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "manufacturing_process",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "weldability_joining",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "machinability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "forming_casting_am_processes",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "surface_treatment",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "common_engineering_uses",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "availability",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "relative_cost",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "material_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "test_standards",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "provenance",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "evidence_quality",
+      "coverage": "gap_to_populate",
+      "verified": false
+    },
+    {
+      "family": "ferritic_stainless",
+      "grade": "430",
+      "fundamental": "engineering_use_restrictions",
+      "coverage": "gap_to_populate",
+      "verified": false
+    }
+  ],
+  "verification_policy": {
+    "present": "A directly identifiable record exists in the knowledge package.",
+    "gap_to_populate": "No sufficiently explicit current record was identified for this grade/property pair in this audit.",
+    "verified": "Reserved for independent verification of source/value/context; currently false for this audit.",
+    "approved_for_design": "Not asserted by this knowledge library."
+  }
+}

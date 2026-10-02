@@ -49,7 +49,7 @@ public sealed class ProjectSignOffJourneyTests
             Assert.True(quote.Succeeded, quote.Reason);
             await quotations.AddLineAsync(quote.Quotation!.Id, "Kept deliverable", 5m, new Money(100m, quote.Quotation.Currency), null);
             await quotations.AddLineAsync(quote.Quotation.Id, "Carried deliverable", null, null, new Money(1_000m, quote.Quotation.Currency));
-            Assert.True((await quotations.SendAsync(quote.Quotation.Id)).Succeeded);
+            Assert.True((await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotations, quote.Quotation.Id)).Succeeded);
             var accepted = await quotations.AcceptAsync(quote.Quotation.Id);
             Assert.True(accepted.Succeeded, accepted.Reason);
             Assert.Equal(2, accepted.Quotation!.Lines.Count);
@@ -162,16 +162,8 @@ public sealed class ProjectSignOffJourneyTests
         return (T)field.GetValue(instance)!;
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(15);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 15, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

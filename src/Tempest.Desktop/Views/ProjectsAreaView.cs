@@ -15,7 +15,7 @@ namespace Tempest.Desktop.Views;
 
 /// <summary>
 /// The Projects module (`WP 19.7A`, Product Owner IA sketches items 6):
-/// a tree — Dashboard + Reports, Open, Closed (under 90 days), Archive (90
+/// a tree — Dashboard, Open, Closed (under 90 days), Archive (90
 /// days and over) — with a right pane over whichever node is selected.
 /// Selecting a project leaf opens its workspace exactly as the retired
 /// standalone Projects rail button always did; the three groups reuse the
@@ -44,7 +44,7 @@ public sealed class ProjectsAreaView : UserControl
     private readonly ContentControl _detail = new();
     private readonly CollapsibleColumn _treeColumn;
 
-    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard + Reports" };
+    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard" };
     private readonly TreeViewItem _openNode = new() { Header = "Open", IsExpanded = true };
     private readonly TreeViewItem _closedNode = new() { Header = "Closed (under 90 days)" };
     private readonly TreeViewItem _archiveNode = new() { Header = "Archive (90 days and over)" };
@@ -62,7 +62,7 @@ public sealed class ProjectsAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="ProjectsAreaView"/> class.</summary>
     /// <param name="domainContext">Reads every project's real <c>ClosedOn</c>/<c>Held</c> facts for grouping.</param>
     /// <param name="projectBrowser">The single, already-composed project catalogue — reused, filtered, for each group.</param>
-    /// <param name="dashboard">The "Dashboard + Reports" node's own real content (`WP 19.7B`).</param>
+    /// <param name="dashboard">The "Dashboard" node's own real content (`WP 19.7B`).</param>
     /// <param name="timeProvider">The clock the 90-day Archive rule reads "as of". <see langword="null"/> is <see cref="TimeProvider.System"/>.</param>
     public ProjectsAreaView(EngineeringDomainContext domainContext, ProjectBrowserView projectBrowser, ProjectsDashboardView dashboard, TimeProvider? timeProvider = null)
     {
@@ -85,7 +85,7 @@ public sealed class ProjectsAreaView : UserControl
         _tree.Items.Add(_archiveNode);
 
         AutomationProperties.SetName(_tree, "Projects tree");
-        AutomationProperties.SetName(_dashboardNode, "Dashboard + Reports");
+        AutomationProperties.SetName(_dashboardNode, "Dashboard");
         AutomationProperties.SetName(_openNode, "Open");
         AutomationProperties.SetName(_closedNode, "Closed");
         AutomationProperties.SetName(_archiveNode, "Archive");
@@ -106,7 +106,7 @@ public sealed class ProjectsAreaView : UserControl
 
     /// <summary>
     /// Selects the root node named <paramref name="automationName"/>
-    /// ("Dashboard + Reports", "Open", "Closed" or "Archive") — the same
+    /// ("Dashboard", "Open", "Closed" or "Archive") — the same
     /// name a screen reader announces, and what a journey test drives the
     /// tree by, exactly as <c>ProjectWorkspaceView.SyncSelectedArea</c>
     /// selects its own <c>TabControl</c> programmatically.

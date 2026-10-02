@@ -13,12 +13,13 @@ namespace Tempest.Desktop.Tests;
 
 /// <summary>
 /// `WP 20.10F` acceptance (Product Owner finding D8), through the real
-/// window: a person is added and released in the People library — the
-/// ninth governed library under Engineering → Reference data, the
-/// identical editor pattern (create, edit fields, Verify/Release) every
-/// sibling library already has — and then picked as a requirement's own
-/// Owner from the drop-down that replaces free-typing it, surviving a
-/// relaunch on the same persistence root.
+/// window: a person is added and released under Business → Staff (moved
+/// there from Engineering → Reference data by Product Owner runbook B1,
+/// 2026-10-01 — people are business reference data) with one Add &amp;
+/// Release, stays revision 1 through that release (runbook B2), and is
+/// then picked as a requirement's own Owner from the drop-down that
+/// replaces free-typing it, surviving a relaunch on the same persistence
+/// root.
 /// </summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class PersonLibraryJourneyTests
@@ -55,50 +56,59 @@ public sealed class PersonLibraryJourneyTests
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            await first.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await first.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
             LayOut(window);
 
-            // Engineering → Reference data — the same tree node every
-            // sibling library's own journey test reaches it through
-            // (`LibrariesTabLoadsOnEntryTests`, `ReferenceRecordViewTests`).
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
-            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            // Business → Staff (runbook B1). People is no longer listed
+            // under Engineering → Reference data.
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Staff");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<StaffView>().Any());
             LayOut(window);
 
-            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
+            var staffView = window.GetLogicalDescendants().OfType<StaffView>().Single();
 
             // Add a person, through the real "Add a person" form.
-            var textBoxes = librariesView.GetLogicalDescendants().OfType<TextBox>().ToList();
+            var textBoxes = staffView.GetLogicalDescendants().OfType<TextBox>().ToList();
             textBoxes.First(t => t.Watermark == "Display name").Text = PersonDisplayName;
             textBoxes.First(t => t.Watermark == "Role").Text = PersonRole;
             textBoxes.First(t => t.Watermark == "Email").Text = "journey.person@example.com";
+            textBoxes.First(t => t.Watermark == "Phone").Text = "01234 567890";
 
-            var addButton = librariesView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add Person"));
+            var addButton = staffView.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Add & Release"));
             addButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
-            // Add opens the new record right up (the Product Owner guard,
-            // `po-comments.md` item 5 — the identical discipline
-            // `LibrariesTabLoadsOnEntryTests.AddingAMaterial_OpensItInTheDetailPaneRightUp`
-            // already proves for Materials).
+            // Add & Release adds, verifies and releases in one act, and opens
+            // the new record right up (the Product Owner guard,
+            // `po-comments.md` item 5) — released, and still revision 1:
+            // a release is not a revision of the data (runbook B2).
             await RenderUntilAsync(window, () =>
-                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } d
-                && d.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(PersonDisplayName, StringComparison.Ordinal)));
+                staffView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } d
+                && d.GetLogicalDescendants().OfType<TextBlock>().Any(t =>
+                    (t.Text ?? string.Empty).Contains(PersonDisplayName, StringComparison.Ordinal)
+                    && (t.Text ?? string.Empty).Contains("Released", StringComparison.Ordinal)));
             LayOut(window);
 
-            var detail = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
+            var detail = staffView.GetLogicalDescendants().OfType<ReferenceRecordView>().First();
+            Assert.Contains(
+                detail.GetLogicalDescendants().OfType<TextBlock>(),
+                t => (t.Text ?? string.Empty).Contains(PersonDisplayName, StringComparison.Ordinal) && (t.Text ?? string.Empty).Contains("rev 1  •  Released", StringComparison.Ordinal));
 
-            // Verify, then Release — the same governed acts every other
-            // library's own record already offers, unchanged.
-            var verifyButton = detail.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Verify"));
-            verifyButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => detail.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Checked", StringComparison.Ordinal)));
-            LayOut(window);
+            // The list row is the person's own title and release status only.
+            Assert.Contains(staffView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == PersonLabel);
+            Assert.NotNull(staffView.GetLogicalDescendants().OfType<Button>().SingleOrDefault(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == "Open person-wp-20-10f-journey-person"));
 
-            var releaseButton = detail.GetLogicalDescendants().OfType<Button>().Single(b => Equals(b.Content, "Release"));
-            releaseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => detail.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains("Released", StringComparison.Ordinal)));
+            // Moved, not duplicated: Engineering → Reference data no longer
+            // lists People.
+            await first.ShellNavigator!.GoToModuleAsync(ShellArea.EngineeringDepartment);
+            await window.RenderCurrentModuleAsync();
             LayOut(window);
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Reference data");
+            await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<LibrariesView>().Any());
+            LayOut(window);
+            var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
+            Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("People (", StringComparison.Ordinal));
+            Assert.DoesNotContain(librariesView.GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == PersonLabel);
 
             // A real Requirement, opened right up — in its own project's
             // Structure tab (`PHYSICAL_REVIEW.md` §7c D8), so the project
@@ -211,16 +221,8 @@ public sealed class PersonLibraryJourneyTests
         return (T)grid.Children[1];
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

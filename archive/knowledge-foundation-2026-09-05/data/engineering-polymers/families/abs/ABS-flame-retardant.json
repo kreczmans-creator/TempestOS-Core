@@ -1,0 +1,52 @@
+{
+  "version": "0.58.0",
+  "record_id": "ABS-flame-retardant",
+  "family": "ABS",
+  "designation": "flame-retardant ABS",
+  "material_class": "FR engineering thermoplastic",
+  "representative_grade": true,
+  "product_forms": [
+    "semi-finished stock",
+    "moulding compound"
+  ],
+  "common_uses": [
+    "electrical enclosures",
+    "equipment housings"
+  ],
+  "selection_drivers": [
+    "flammability performance",
+    "processability"
+  ],
+  "watchouts": [
+    "FR package effects",
+    "temperature",
+    "chemical exposure"
+  ],
+  "relative_cost": "medium",
+  "general_availability": "good",
+  "required_quantitative_fields": [
+    "density",
+    "elastic_modulus",
+    "tensile_strength",
+    "yield_or_proof_strength",
+    "elongation",
+    "impact_strength",
+    "hardness",
+    "CTE",
+    "thermal_conductivity",
+    "specific_heat",
+    "Tg_or_Tm",
+    "HDT",
+    "continuous_service_temperature",
+    "electrical_resistivity",
+    "dielectric_strength",
+    "permittivity",
+    "dissipation_factor",
+    "creep",
+    "fatigue"
+  ],
+  "conditioning_required": true,
+  "reinforcement_orientation_required_where_applicable": true,
+  "evidence_status": "screening-level representative record",
+  "design_use": "not approved"
+}

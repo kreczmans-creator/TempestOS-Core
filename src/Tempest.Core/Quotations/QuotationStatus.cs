@@ -4,15 +4,15 @@ namespace Tempest.Core.Quotations;
 /// A <see cref="Quotation"/>'s own lifecycle position — the vocabulary the
 /// Product Owner asked for in as many words (comment item 4: "accepted/
 /// declined"), not the eight canonical states (`ADR-0074`): a quotation is
-/// never "Released" or "Approved", it is sent to a client and answered
-/// (`WP 19.5A`, `ADR-0152`).
+/// never "Released", it is reviewed by a second person, sent to a client
+/// and answered (`WP 19.5A`, `ADR-0152`, runbook C3).
 /// </summary>
 public enum QuotationStatus
 {
-    /// <summary>Built, not yet sent. Lines may still be added, changed or removed.</summary>
+    /// <summary>Built, not yet approved. Lines may still be added, changed or removed; every change is saved as it is made (runbook C3).</summary>
     Draft,
 
-    /// <summary>Sent to the client. Lines are fixed.</summary>
+    /// <summary>Sent to the client. Lines are fixed. Only an <see cref="Approved"/> revision can be sent (runbook C3).</summary>
     Sent,
 
     /// <summary>
@@ -26,6 +26,23 @@ public enum QuotationStatus
 
     /// <summary>The client declined. Terminal, and creates nothing.</summary>
     Declined,
+
+    // Runbook C3 (PO: "save it as a draft and then review by second
+    // person, then export becomes R1"). Appended, never inserted: the
+    // value is persisted by name, and `QuotationNodeProvider.GroupNodeId`
+    // derives a group id from the ordinal, so the four older values keep
+    // theirs.
+
+    /// <summary>Submitted for review by a second person. Lines are fixed until it is approved or returned to draft (runbook C3).</summary>
+    InReview,
+
+    /// <summary>
+    /// Approved by a second person — a numbered revision (<c>R1</c>,
+    /// <c>R2</c>, …, <see cref="Quotation.RevisionNumber"/>) ready to
+    /// export and send. Changing a line starts a new draft; the next
+    /// approval issues the next revision (runbook C3).
+    /// </summary>
+    Approved,
 }
 
 /// <summary>
@@ -39,7 +56,12 @@ internal static class QuotationStatusTransitions
     private static readonly IReadOnlyDictionary<QuotationStatus, IReadOnlySet<QuotationStatus>> Permitted =
         new Dictionary<QuotationStatus, IReadOnlySet<QuotationStatus>>
         {
-            [QuotationStatus.Draft] = new HashSet<QuotationStatus> { QuotationStatus.Sent },
+            // Runbook C3: Draft → In review → Approved (Rn) → Sent. A
+            // reviewer returns to Draft; an edit after approval reopens a
+            // new Draft (the next approval issues Rn+1).
+            [QuotationStatus.Draft] = new HashSet<QuotationStatus> { QuotationStatus.InReview },
+            [QuotationStatus.InReview] = new HashSet<QuotationStatus> { QuotationStatus.Draft, QuotationStatus.Approved },
+            [QuotationStatus.Approved] = new HashSet<QuotationStatus> { QuotationStatus.Sent, QuotationStatus.Draft },
             [QuotationStatus.Sent] = new HashSet<QuotationStatus> { QuotationStatus.Accepted, QuotationStatus.Declined },
 
             // Terminal: no revision of an accepted or declined quotation in
@@ -53,5 +75,5 @@ internal static class QuotationStatusTransitions
 
     /// <summary>Every <see cref="QuotationStatus"/> value, for a test to walk exhaustively.</summary>
     public static IReadOnlyList<QuotationStatus> AllStatuses { get; } =
-        [QuotationStatus.Draft, QuotationStatus.Sent, QuotationStatus.Accepted, QuotationStatus.Declined];
+        [QuotationStatus.Draft, QuotationStatus.InReview, QuotationStatus.Approved, QuotationStatus.Sent, QuotationStatus.Accepted, QuotationStatus.Declined];
 }

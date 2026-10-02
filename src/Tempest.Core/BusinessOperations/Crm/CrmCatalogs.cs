@@ -35,6 +35,27 @@ public interface IOrganisationCatalog : IReferenceDataCatalog<Organisation>
     /// <summary>Every registered organisation matching <paramref name="query"/>, in ascending record-Id order. Never <see langword="null"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="query"/> is <see langword="null"/>.</exception>
     Task<IReadOnlyList<IReferenceRecord<Organisation>>> SearchAsync(OrganisationQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The organisation holding <paramref name="customerCode"/> (compared
+    /// case-insensitively), or <see langword="null"/> if none does
+    /// (Product Owner decision 2026-10-01 §3, `ADR-0156`) — the
+    /// uniqueness check every editor of <see cref="Organisation.CustomerCode"/>
+    /// runs before it writes.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="customerCode"/> is null, empty, or whitespace.</exception>
+    Task<IReferenceRecord<Organisation>?> FindByCustomerCodeAsync(string customerCode, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A five-character customer code derived from <paramref name="name"/>
+    /// that no registered organisation (other than
+    /// <paramref name="excludingRecordId"/>) already holds as its code,
+    /// its record id or its reference (a new organisation is registered
+    /// under its code as both, and an edit frees only the code) —
+    /// <see cref="Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode"/>
+    /// over the library's own current codes.
+    /// </summary>
+    Task<string> SuggestCustomerCodeAsync(string? name, string? excludingRecordId = null, CancellationToken cancellationToken = default);
 }
 
 /// <summary>The concrete <see cref="IOrganisationCatalog"/> implementation.</summary>
@@ -85,6 +106,30 @@ public sealed class OrganisationCatalog : ReferenceDataCatalog<Organisation>, IO
         ArgumentNullException.ThrowIfNull(query);
 
         return FilterAsync(record => Matches(record, query), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReferenceRecord<Organisation>?> FindByCustomerCodeAsync(string customerCode, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(customerCode);
+
+        var wanted = customerCode.Trim();
+        var matches = await FilterAsync(
+            record => string.Equals(record.Definition.CustomerCode?.Trim(), wanted, StringComparison.OrdinalIgnoreCase),
+            cancellationToken).ConfigureAwait(false);
+
+        return matches.Count == 0 ? null : matches[0];
+    }
+
+    /// <inheritdoc />
+    public async Task<string> SuggestCustomerCodeAsync(string? name, string? excludingRecordId = null, CancellationToken cancellationToken = default)
+    {
+        var all = await ListAsync(cancellationToken).ConfigureAwait(false);
+        var taken = all
+            .Where(r => !string.Equals(r.Id, excludingRecordId, StringComparison.Ordinal))
+            .SelectMany(r => new[] { r.Definition.CustomerCode, r.Id, r.Definition.Reference });
+
+        return Tempest.Core.Projects.ProjectNumbering.SuggestCustomerCode(name, taken);
     }
 
     /// <inheritdoc />

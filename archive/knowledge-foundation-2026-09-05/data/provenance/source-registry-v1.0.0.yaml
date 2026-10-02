@@ -1,0 +1,20 @@
+- id: SRC-ISO
+  publisher: International Organization for Standardization
+  authority: primary_standards_source
+  url: https://www.iso.org/
+  verification: web_verified_2026-09-05
+- id: SRC-ASTM
+  publisher: ASTM International
+  authority: primary_standards_source
+  url: https://www.astm.org/
+  verification: publisher_source
+- id: SRC-MATWEB
+  publisher: MatWeb
+  authority: secondary_engineering_reference
+  url: https://www.matweb.com/
+  verification: secondary_reference
+- id: SRC-ASM
+  publisher: ASM International
+  authority: secondary_engineering_reference
+  url: https://www.asminternational.org/
+  verification: secondary_reference

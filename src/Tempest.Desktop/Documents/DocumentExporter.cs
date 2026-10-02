@@ -36,9 +36,10 @@ public sealed class DocumentExporter
     /// (scope item 1's own naming rule) — a cancelled picker is reported,
     /// never thrown.
     /// </summary>
+    /// <param name="startFolder">The folder the save picker opens in (<see cref="SavePickerRequest.StartFolder"/>). <see langword="null"/> leaves the picker's own default.</param>
     public async Task<DocumentExportResult> ExportAsync<TModel>(
         IDocumentRenderer<TModel> renderer, TModel model, string reference, OrganisationIdentity? identity = null,
-        CancellationToken cancellationToken = default)
+        string? startFolder = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(renderer);
         ArgumentNullException.ThrowIfNull(model);
@@ -47,7 +48,7 @@ public sealed class DocumentExporter
         var fileName = $"{SanitiseFileNameSegment(reference)}-{renderer.TemplateName}.pdf";
 
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {reference}", fileName), cancellationToken)
+            .PickSavePathAsync(new SavePickerRequest($"Export {reference}", fileName, startFolder), cancellationToken)
             .ConfigureAwait(true);
 
         if (destination is null)

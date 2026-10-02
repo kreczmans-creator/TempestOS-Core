@@ -1,0 +1,201 @@
+- observation_id: OBS-410-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-410
+  designation: EN 1.4006 / ASTM 410 / UNS S41000
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.7
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 215
+      unit: GPa
+    coefficient_of_thermal_expansion:
+      value: 10.5
+      unit: 1e-6/K
+      range_C:
+      - 20
+      - 100
+    thermal_conductivity:
+      value: 30
+      unit: W/m/K
+    thermal_capacity:
+      value: 460
+      unit: J/kg/K
+    electrical_resistivity:
+      value: 0.6
+      unit: ohm*mm2/m
+  magnetizable: true
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura range datasheet, Physical Properties Table 4; Dura 410/4006
+  source_url: https://www.outokumpu.com/-/media/files/products/dura/outokumpu_dura_datasheet.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-420-PHYSICAL-OUTOKUMPU
+  material_state_id: MAT-STEEL-420
+  designation: EN 1.4021 / ASTM 420 / UNS S42000
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.7
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 215
+      unit: GPa
+    coefficient_of_thermal_expansion:
+      value: 10.5
+      unit: 1e-6/K
+      range_C:
+      - 20
+      - 100
+    thermal_conductivity:
+      value: 30
+      unit: W/m/K
+    thermal_capacity:
+      value: 460
+      unit: J/kg/K
+    electrical_resistivity:
+      value: 0.6
+      unit: ohm*mm2/m
+  magnetizable: true
+  source_id: WEB-OUTOKUMPU-DURA
+  source_locator: Dura range datasheet, Physical Properties Table 4; Dura 420/4021
+  source_url: https://www.outokumpu.com/-/media/files/products/dura/outokumpu_dura_datasheet.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-440C-PHYSICAL-BOHLER
+  material_state_id: MAT-STEEL-440C
+  designation: 440C / 1.4125 / X105CrMo17 / UNS S44004
+  temperature_C: 20
+  properties:
+    density:
+      value: 7.7
+      unit: kg/dm3
+    modulus_of_elasticity:
+      value: 215
+      unit: GPa
+    thermal_conductivity:
+      value: 15
+      unit: W/m/K
+    specific_heat:
+      value: 0.43
+      unit: kJ/kg/K
+    specific_electrical_resistance:
+      value: 0.8
+      unit: ohm*mm2/m
+  source_id: WEB-BOHLER-N695-DATASHEET
+  source_locator: Physical Properties table; 20 °C
+  source_url: https://www.bohler-edelstahl.com/app/uploads/sites/248/productdb/api/n695-engineering_en_gb.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-138MO-H1150-ASM
+  material_state_id: MAT-STEEL-13-8MO
+  designation: PH 13-8 Mo / UNS S13800
+  condition: H1150
+  test_direction: longitudinal
+  test_location: center or intermediate
+  properties:
+    ultimate_tensile_strength:
+      value: 1000
+      unit: MPa
+    yield_strength_0p2:
+      value: 725
+      unit: MPa
+    elongation:
+      value: 20
+      unit: percent
+    modulus_of_elasticity:
+      value: 230
+      unit: GPa
+    density:
+      value: 7.8
+      unit: g/cm3
+  source_id: WEB-ASM-AEROSPACE-METALS-13800-H1150
+  source_locator: Mechanical Properties table; H1150 longitudinal properties
+  source_url: https://www.aerospacemetals.com/wp-content/uploads/2023/08/AISI-Type-S13800-Stainless-Steel-PH-13-8-Mo-longitudinal-properties-condition-H1150.pdf
+  standards:
+  - AMS 5629
+  - AMS 5840
+  - ASME SA705
+  - ASTM A564
+  - ASTM A693
+  - ASTM A705
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-138MO-H1150M-ASM
+  material_state_id: MAT-STEEL-13-8MO
+  designation: PH 13-8 Mo / UNS S13800
+  condition: H1150M
+  test_direction: longitudinal
+  test_location: center or intermediate
+  properties:
+    ultimate_tensile_strength:
+      value: 895
+      unit: MPa
+    yield_strength_0p2:
+      value: 585
+      unit: MPa
+    elongation:
+      value: 22
+      unit: percent
+    modulus_of_elasticity:
+      value: 172
+      unit: GPa
+    density:
+      value: 7.8
+      unit: g/cm3
+  impact:
+    charpy_min_room_temperature:
+      value: 163
+      unit: J
+    charpy_min_minus_73C:
+      value: 119
+      unit: J
+    charpy_min_minus_115C:
+      value: 96
+      unit: J
+    charpy_min_minus_195C:
+      value: 41
+      unit: J
+  source_id: WEB-ASM-AEROSPACE-METALS-13800-H1150M
+  source_locator: Mechanical Properties and Charpy tables; H1150M longitudinal properties
+  source_url: https://www.aerospacemetals.com/wp-content/uploads/2023/08/AISI-Type-S13800-Stainless-Steel-PH-13-8-Mo-longitudinal-properties-condition-H1150M.pdf
+  standards:
+  - AMS 5629
+  - AMS 5840
+  - ASME SA705
+  - ASTM A564
+  - ASTM A693
+  - ASTM A705
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only
+- observation_id: OBS-155PH-H1150M-UPM
+  material_state_id: MAT-STEEL-15-5PH
+  designation: 15-5 PH / UNS S15500
+  condition: H1150-M
+  properties:
+    ultimate_tensile_strength:
+      value: 115000
+      unit: psi
+    yield_strength_0p2:
+      value: 75000
+      unit: psi
+    elongation:
+      value: 14
+      unit: percent
+    reduction_of_area:
+      value: 35
+      unit: percent
+    hardness_brinell:
+      value: 255
+      unit: HB
+  source_id: WEB-UPMET-15-5PH
+  source_locator: Mechanical Properties table; H1150-M
+  source_url: https://www.upmet.com/sites/default/files/datasheets/15-5ph.pdf
+  evidence_status: sourced
+  review_status: reviewed
+  design_use: screening_only

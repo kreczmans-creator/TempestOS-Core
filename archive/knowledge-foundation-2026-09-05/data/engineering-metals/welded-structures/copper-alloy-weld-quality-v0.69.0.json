@@ -1,0 +1,25 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "defects": [
+    "lack of fusion",
+    "lack of penetration",
+    "porosity",
+    "undercut",
+    "cracking",
+    "inclusions",
+    "distortion"
+  ],
+  "controls": [
+    "qualified procedure",
+    "material condition",
+    "heat input",
+    "preheat/interpass control where required",
+    "shielding",
+    "fit-up",
+    "sequence",
+    "post-weld treatment",
+    "NDT"
+  ],
+  "status": "design-framework"
+}

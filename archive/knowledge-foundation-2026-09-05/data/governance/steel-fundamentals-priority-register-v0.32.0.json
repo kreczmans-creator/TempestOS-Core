@@ -1,0 +1,83 @@
+[
+  {
+    "priority": 1,
+    "area": "Mechanical core",
+    "properties": [
+      "yield_strength",
+      "ultimate_tensile_strength",
+      "elastic_modulus",
+      "Poissons_ratio",
+      "hardness",
+      "ductility_elongation"
+    ],
+    "action": "Complete condition/product-form coverage across all 16 priority grades."
+  },
+  {
+    "priority": 2,
+    "area": "Thermal",
+    "properties": [
+      "thermal_conductivity",
+      "coefficient_of_thermal_expansion",
+      "specific_heat"
+    ],
+    "action": "Populate room-temperature fundamentals first, then temperature-dependent data where engineering use warrants it."
+  },
+  {
+    "priority": 3,
+    "area": "Electrical/magnetic",
+    "properties": [
+      "electrical_resistivity_conductivity",
+      "magnetic_behaviour"
+    ],
+    "action": "Populate conductivity/resistivity and temperature coefficients where evidence exists; preserve magnetic state explicitly."
+  },
+  {
+    "priority": 4,
+    "area": "Environment",
+    "properties": [
+      "corrosion_environmental_behaviour"
+    ],
+    "action": "Capture general corrosion plus chloride, SCC and hydrogen sensitivity where grade-relevant."
+  },
+  {
+    "priority": 5,
+    "area": "Fracture/fatigue",
+    "properties": [
+      "fatigue_strength",
+      "fatigue_crack_growth",
+      "fracture_toughness"
+    ],
+    "action": "Continue numerical evidence expansion with full context and test method."
+  },
+  {
+    "priority": 6,
+    "area": "Manufacturing",
+    "properties": [
+      "manufacturing_process",
+      "weldability_joining",
+      "machinability",
+      "forming_casting_am_processes",
+      "surface_treatment"
+    ],
+    "action": "Build process suitability matrix without turning qualitative guidance into universal ratings."
+  },
+  {
+    "priority": 7,
+    "area": "Commercial/selection",
+    "properties": [
+      "common_engineering_uses",
+      "availability",
+      "relative_cost"
+    ],
+    "action": "Populate qualitative selection metadata consistently."
+  },
+  {
+    "priority": 8,
+    "area": "Standards",
+    "properties": [
+      "material_standards",
+      "test_standards"
+    ],
+    "action": "Map each grade to common designation/specification systems and relevant test methods."
+  }
+]

@@ -46,7 +46,7 @@ internal sealed class RequirementOwnerPrioritySection : IEditorSection
     /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own trailing <b>Add person…</b> row carries.</summary>
     private const string AddPersonOwnerTag = "__wp2010f_add_person__";
 
-    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in People)" row carries.</summary>
+    /// <summary>The <see cref="ComboBoxItem.Tag"/> the Owner drop-down's own legacy "(not in Staff)" row carries.</summary>
     private const string LegacyOwnerTag = "__wp2010f_legacy_owner__";
 
     /// <summary>The <see cref="ComboBoxItem.Tag"/> a real, Released-person row of the Owner drop-down carries — the record id together with the display name to store on Save.</summary>
@@ -105,7 +105,7 @@ internal sealed class RequirementOwnerPrioritySection : IEditorSection
     /// (Re)builds the Owner drop-down's own items: every Released, active
     /// person, read fresh every time — never cached; the requirement's own
     /// current free-text <see cref="IRequirement.Owner"/> as a leading
-    /// "(not in People)" row where it matches no Released person; and,
+    /// "(not in Staff)" row where it matches no Released person; and,
     /// where <see cref="EditorSectionContext.OwnerSupport"/> is wired, a
     /// trailing <b>Add person…</b> row. <paramref name="preferPersonId"/>
     /// is selected if a matching Released person is found; otherwise the
@@ -135,11 +135,11 @@ internal sealed class RequirementOwnerPrioritySection : IEditorSection
         }
 
         // An existing requirement whose typed owner matches no person still
-        // shows its own text, suffixed "(not in People)" — the drop-down
+        // shows its own text, suffixed "(not in Staff)" — the drop-down
         // still offers to pick a real person instead.
         if (selected is null && !string.IsNullOrWhiteSpace(_currentOwner.Owner))
         {
-            var legacy = new ComboBoxItem { Content = $"{_currentOwner.Owner} (not in People)", Tag = LegacyOwnerTag };
+            var legacy = new ComboBoxItem { Content = $"{_currentOwner.Owner} (not in Staff)", Tag = LegacyOwnerTag };
             items.Insert(0, legacy);
             selected = legacy;
         }

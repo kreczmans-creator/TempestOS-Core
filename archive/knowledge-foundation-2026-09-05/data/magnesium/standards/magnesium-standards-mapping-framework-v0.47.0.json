@@ -1,0 +1,22 @@
+{
+  "version": "0.47.0",
+  "status": "framework_only",
+  "standard_families_to_map": [
+    "ASTM magnesium and magnesium-alloy specifications",
+    "ISO magnesium and magnesium-alloy standards",
+    "EN magnesium and magnesium-alloy product/material standards",
+    "SAE aerospace magnesium specifications where applicable"
+  ],
+  "mapping_fields": [
+    "standard",
+    "edition",
+    "material_designation",
+    "product_form",
+    "temper",
+    "property_requirement",
+    "test_method",
+    "scope",
+    "source"
+  ],
+  "rule": "Do not infer equivalence between designations merely from similar alloy chemistry."
+}

@@ -1,0 +1,37 @@
+{
+  "version": "0.52.0",
+  "family": "nickel-base-superalloys",
+  "scope": "elevated-temperature design",
+  "mechanisms": [
+    "dislocation creep",
+    "diffusion-assisted deformation",
+    "grain-boundary processes",
+    "precipitate coarsening",
+    "oxidation-assisted damage"
+  ],
+  "required_data": [
+    "temperature",
+    "stress",
+    "time",
+    "strain",
+    "rupture time",
+    "minimum creep rate",
+    "specimen orientation",
+    "product form",
+    "heat treatment"
+  ],
+  "assessment_methods": [
+    "creep strain versus time",
+    "minimum creep rate",
+    "time-to-rupture",
+    "Larson-Miller or other validated parameterisation where justified",
+    "strain-limit design",
+    "stress-rupture allowables"
+  ],
+  "rules": [
+    "Creep is a time-dependent phenomenon; a single high-temperature tensile value is insufficient.",
+    "Stress-rupture data must retain temperature and exposure-time context.",
+    "Heat treatment and grain size are part of the creep-property identity.",
+    "Extrapolation beyond the tested temperature/time envelope requires explicit engineering justification."
+  ]
+}

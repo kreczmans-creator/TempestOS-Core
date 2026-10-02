@@ -1,0 +1,16 @@
+{
+  "version": "0.70.0",
+  "status": "worked-framework",
+  "problem": "Build an analysis-and-test verification case for a structural bracket.",
+  "workflow": [
+    "trace requirements",
+    "define load/temperature envelope",
+    "perform analytical hand checks",
+    "build numerical model",
+    "perform convergence/sensitivity checks",
+    "identify test instrumentation",
+    "compare measured and predicted response",
+    "document residual differences",
+    "close verification evidence"
+  ]
+}

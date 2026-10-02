@@ -46,7 +46,7 @@ public sealed class PurchaseOrderService : IPurchaseOrderService
 
         var today = Today();
         var resolvedReference = string.IsNullOrWhiteSpace(reference)
-            ? await NextReferenceAsync(today.Year, cancellationToken).ConfigureAwait(false)
+            ? await NextReferenceAsync(project, today.Year, cancellationToken).ConfigureAwait(false)
             : reference.Trim();
 
         var currency = await ResolveCurrencyAsync(project, cancellationToken).ConfigureAwait(false);
@@ -308,26 +308,27 @@ public sealed class PurchaseOrderService : IPurchaseOrderService
         return card.Definition.Currency;
     }
 
-    /// <summary>The next <c>PO-&lt;year&gt;-&lt;nnn&gt;</c> reference — one past the highest existing suffix already used for <paramref name="year"/>, among every purchase order this store holds (live or not), the identical discipline <c>QuotationService.NextReferenceAsync</c> uses.</summary>
-    private async Task<string> NextReferenceAsync(int year, CancellationToken cancellationToken)
+    /// <summary>
+    /// The next reference for a purchase order raised against
+    /// <paramref name="project"/>: <c>CUSTOMER-PROJECTREF-PO-NNN</c> where
+    /// the project's own identifier is project-centric (Product Owner
+    /// decision 2026-10-01 §3, `ADR-0156` — a sequence per project,
+    /// starting at 001), otherwise the old <c>PO-&lt;year&gt;-&lt;nnn&gt;</c>
+    /// — one past the highest existing suffix under that prefix, among
+    /// every purchase order this store holds (live or not), the identical
+    /// discipline <c>QuotationService.NextReferenceAsync</c> uses.
+    /// </summary>
+    private async Task<string> NextReferenceAsync(Project project, int year, CancellationToken cancellationToken)
     {
         // `WP 21.5B`: `Reference` is the order's own field, not on the index row.
         var existingEntries = await _context.Repository.ListByKindAsync(PurchaseOrder.CanonicalKind, cancellationToken).ConfigureAwait(false);
         var existing = await _context.Repository.MaterialiseAsync<PurchaseOrder>(existingEntries, cancellationToken).ConfigureAwait(false);
-        var fullPrefix = $"{ReferencePrefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        var max = 0;
-        foreach (var candidate in existing)
-        {
-            if (candidate.Reference.StartsWith(fullPrefix, StringComparison.Ordinal)
-                && int.TryParse(candidate.Reference.AsSpan(fullPrefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
-                && n > max)
-            {
-                max = n;
-            }
-        }
+        var fullPrefix = ProjectNumbering.TryGetDocumentPrefix(project.Identifier, ProjectNumbering.PurchaseOrder, out var projectPrefix)
+            ? projectPrefix
+            : $"{ReferencePrefix}{year.ToString(CultureInfo.InvariantCulture)}-";
 
-        return $"{fullPrefix}{(max + 1).ToString("000", CultureInfo.InvariantCulture)}";
+        return ProjectNumbering.NextNumber(fullPrefix, existing.Select(o => o.Reference));
     }
 
     private DateOnly Today() => DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);

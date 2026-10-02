@@ -80,7 +80,7 @@ public static class ShellAreas
         // is reached from inside one of these five now (see each area
         // view's own remarks for where).
         new(ShellArea.Projects, "Projects", "▤", NavigationAvailability.Implemented,
-            "Dashboard + Reports, and every project grouped Open, Closed (under 90 days) and Archive (90 days and over) — open one to work inside it, or create the next."),
+            "Dashboard, and every project grouped Open, Closed (under 90 days) and Archive (90 days and over) — open one to work inside it, or create the next."),
 
         new(ShellArea.Tasks, "Tasks", "☑", NavigationAvailability.Implemented,
             "Every open task and action across the platform, grouped by when it is due, plus reviews, approvals and finance chasers awaiting attention."),
@@ -93,7 +93,7 @@ public static class ShellAreas
         // location, reached from this tree's own Modules → Mechanical
         // node, from a project's Structure tab, or from open-right-up.
         new(ShellArea.EngineeringDepartment, "Engineering", "⚙", NavigationAvailability.Implemented,
-            "Dashboard + Reports, Tasks (Calculations, Reviews, Approvals), Modules (Mechanical; Electrical and Structural are future) and Reference data — the governed libraries evidence and calculations cite."),
+            "Dashboard, Tasks (Calculations, Reviews, Approvals), Modules (Mechanical; Electrical and Structural are future) and Reference data — the governed libraries evidence and calculations cite."),
 
         // `WP 19.7A` (Product Owner comment item 7, `po-comments.md`):
         // Quotes, Invoices, Timesheets and Subscriptions move under one
@@ -101,7 +101,7 @@ public static class ShellAreas
         // `Quotes`/`Timesheets`/`Invoicing` remarks for each capability's
         // history; none of it changed, only where it is reached from.
         new(ShellArea.Business, "Business", "◈", NavigationAvailability.Implemented,
-            "Dashboard & Reports, Quotes, Invoices, Timesheets and Subscriptions (read from the accounting package, never entered here)."),
+            "Dashboard, Quotes, Invoices, Timesheets and Subscriptions (read from the accounting package, never entered here)."),
 
         new(ShellArea.ProjectWorkspace, "Project", "◧", NavigationAvailability.Implemented,
             "One project's own workspace. Reached by opening a project, not from the rail."),

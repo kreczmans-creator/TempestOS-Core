@@ -1,0 +1,31 @@
+{
+  "version": "0.62.0",
+  "family": "PEI",
+  "processing_routes": [
+    "injection moulding",
+    "extrusion",
+    "additive manufacturing"
+  ],
+  "process_effects": [
+    "melt/processing temperature history",
+    "cooling rate",
+    "tool/mould temperature",
+    "holding/packing conditions",
+    "residual stress",
+    "flow orientation",
+    "post-processing/annealing where applicable"
+  ],
+  "design_controls": [
+    "grade-specific processing window",
+    "part thickness and geometry",
+    "gate/flow layout for moulded parts",
+    "cooling/tool temperature",
+    "conditioning requirements",
+    "post-process thermal treatment where applicable"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved",
+  "manufacturing_screen": "injection moulding, extrusion, additive manufacturing",
+  "dimensional_process_effects": "precision parts require process-specific shrinkage data",
+  "anisotropy_note": "residual stress and orientation affect dimensional/mechanical behaviour"
+}

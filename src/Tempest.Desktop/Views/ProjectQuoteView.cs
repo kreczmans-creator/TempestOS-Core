@@ -6,17 +6,23 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using System.IO;
 using Tempest.Core.BusinessGovernance;
+using IRateCardCatalog = Tempest.Core.BusinessGovernance.Pricing.IRateCardCatalog;
+using PricingBasis = Tempest.Core.BusinessGovernance.Pricing.PricingBasis;
+using RateCard = Tempest.Core.BusinessGovernance.Pricing.RateCard;
+using RateCardEntry = Tempest.Core.BusinessGovernance.Pricing.RateCardEntry;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.Commands;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Events;
 using Tempest.Core.Quotations;
+using Tempest.Core.ReferenceData;
 using Tempest.Core.Requirements;
 using Tempest.Desktop;
 using Tempest.Desktop.Quotations;
 using Tempest.Desktop.Theming;
 using Tempest.Workspace;
 using Tempest.Workspace.Files;
+using Tempest.Workspace.Projects;
 using Tempest.Workspace.Quotations;
 
 namespace Tempest.Desktop.Views;
@@ -91,6 +97,7 @@ public sealed class ProjectQuoteView : UserControl
     private List<Quotation> _quotations = [];
     private Guid? _selectedQuotationId;
     private Guid? _editingLineId;
+    private Func<Task<bool>>? _pendingLineCommit;
     private bool _isArchived;
 
     /// <summary>
@@ -118,6 +125,60 @@ public sealed class ProjectQuoteView : UserControl
     /// run without asking.
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
+
+    /// <summary>
+    /// Where a quote PDF export starts — the project's own Windows
+    /// Explorer folder, or its configured quote subfolder (PO decision
+    /// 2026-10-01; earlier PO comment: "exports direct to the quote
+    /// section there"). <see langword="null"/>, or a locator with nothing
+    /// to offer (not Windows, no D: drive, a refusing file system), leaves
+    /// the export exactly as it was: the picker opens at its own default.
+    /// </summary>
+    public ProjectFolderLocator? ProjectFolders { get; set; }
+
+    /// <summary>
+    /// Turns the submitter's, approver's and returner's stored identity ids
+    /// into names on the review line (colour review board M4).
+    /// <see langword="null"/> (a test that constructs this view directly)
+    /// still never shows a raw SID or GUID — see <c>PersonLabel</c>.
+    /// </summary>
+    public Tempest.Core.Identity.IPrincipalDirectory? Principals { get; set; }
+
+    /// <summary>
+    /// The global "Second-person sign-off" switch (`ADR-0161`, Product Owner
+    /// decision 2026-10-01) — read on every render so the review panel says
+    /// whether the author may approve their own quote. <see langword="null"/>
+    /// (a test that constructs this view directly) shows no sign-off line
+    /// and keeps the second-person wording, the rule's own default before
+    /// the switch existed.
+    /// </summary>
+    public Tempest.Core.Governance.ISignOffPolicy? SignOffPolicy { get; set; }
+
+    /// <summary>The automation name of the review panel's own sign-off line (`ADR-0161`).</summary>
+    public const string SignOffStateName = "Second-person sign-off state";
+
+    /// <summary>The sign-off line's own text while second-person sign-off is off (`ADR-0161`).</summary>
+    public const string SelfApprovalAllowedText = "Self-approval allowed (second-person sign-off is off).";
+
+    /// <summary>The sign-off line's own text while second-person sign-off is on (`ADR-0161`).</summary>
+    public const string SecondPersonRequiredText = "A second person must approve (second-person sign-off is on).";
+
+    /// <summary>Whether the last render found second-person sign-off on — <see langword="true"/> when no policy is composed.</summary>
+    private bool _secondPersonRequired = true;
+
+    /// <summary>The automation name of the line form's own rate dropdown (runbook C3).</summary>
+    public const string RateChoiceName = "Line rate basis";
+
+    /// <summary>The rate dropdown's own Fixed choice — enables the fixed price box (runbook C3).</summary>
+    public const string FixedChoiceLabel = "Fixed";
+
+    /// <summary>
+    /// Where the line form's rate dropdown reads the project's own pinned
+    /// rate card from (runbook C3). <see langword="null"/> (a test that
+    /// constructs this view directly without one) leaves the dropdown
+    /// offering Fixed alone, exactly as an unpinned project does.
+    /// </summary>
+    public IRateCardCatalog? RateCards { get; set; }
 
     /// <summary>The change feed this view reloads its own list from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
@@ -287,6 +348,8 @@ public sealed class ProjectQuoteView : UserControl
         }
 
         var clientName = await ResolveClientNameAsync(quote.ClientOrganisationId).ConfigureAwait(true);
+        _secondPersonRequired = SignOffPolicy is null
+            || await SignOffPolicy.IsSecondPersonRequiredAsync(CancellationToken.None).ConfigureAwait(true);
 
         var identity = new StackPanel { Spacing = DesignTokens.SpaceXs };
         identity.Children.Add(new TextBlock
@@ -294,8 +357,8 @@ public sealed class ProjectQuoteView : UserControl
             // `WP 20.10E`: a change order's own kind is shown alongside its
             // status, exactly as `QuotesView`'s own group rows show it.
             Text = quote.QuotationKind == QuotationKind.ChangeOrder
-                ? $"{quote.Reference} — {quote.Status} · change order"
-                : $"{quote.Reference} — {quote.Status}",
+                ? $"{quote.Reference} {QuotationExport.RevisionText(quote)} — {QuotationExport.StatusText(quote)} · change order"
+                : $"{quote.Reference} {QuotationExport.RevisionText(quote)} — {QuotationExport.StatusText(quote)}",
             FontWeight = DesignTokens.WeightHeading,
             FontSize = DesignTokens.FontSizeBody,
         });
@@ -312,12 +375,39 @@ public sealed class ProjectQuoteView : UserControl
             FontSize = DesignTokens.FontSizeCaption,
             Opacity = 0.85,
         });
+        var reviewState = new TextBlock
+        {
+            Text = DescribeReviewState(quote),
+            FontSize = DesignTokens.FontSizeCaption,
+            Opacity = 0.85,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        };
+        AutomationProperties.SetName(reviewState, "Quote review state");
+        identity.Children.Add(reviewState);
+
+        // `ADR-0161`: where the quote is reviewed, say whether its author may
+        // approve it — the one global switch, read fresh on every render.
+        if (SignOffPolicy is not null && quote.Status is QuotationStatus.Draft or QuotationStatus.InReview or QuotationStatus.Approved)
+        {
+            var signOffState = new TextBlock
+            {
+                Text = _secondPersonRequired ? SecondPersonRequiredText : SelfApprovalAllowedText,
+                FontSize = DesignTokens.FontSizeCaption,
+                Opacity = 0.85,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            };
+            AutomationProperties.SetName(signOffState, SignOffStateName);
+            identity.Children.Add(signOffState);
+        }
         _detailPanel.Children.Add(identity);
 
-        _detailPanel.Children.Add(BuildLinesSection(quote));
+        var rateCard = await LoadRateCardAsync(quote).ConfigureAwait(true);
 
-        if (quote.Status == QuotationStatus.Draft)
-            _detailPanel.Children.Add(BuildLineEntryForm(quote));
+        _detailPanel.Children.Add(BuildLinesSection(quote, rateCard));
+
+        _pendingLineCommit = null;
+        if (LinesEditable(quote))
+            _detailPanel.Children.Add(BuildLineEntryForm(quote, rateCard));
 
         var termsBox = new TextBlock { Text = $"Terms: {quote.Terms ?? "(none)"}", FontSize = DesignTokens.FontSizeBody, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
         _detailPanel.Children.Add(termsBox);
@@ -328,7 +418,7 @@ public sealed class ProjectQuoteView : UserControl
             _detailPanel.Children.Add(await BuildAcceptedResultsSectionAsync(quote).ConfigureAwait(true));
     }
 
-    private Control BuildLinesSection(Quotation quote)
+    private Control BuildLinesSection(Quotation quote, RateCard? rateCard)
     {
         var panel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         panel.Children.Add(new TextBlock { Text = "Lines", FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody });
@@ -342,10 +432,11 @@ public sealed class ProjectQuoteView : UserControl
         {
             var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto"), Margin = new Thickness(0, DesignTokens.SpaceXs) };
 
+            var rateSource = line.RateCardServiceCode is { } code && rateCard?.FindEntry(code) is { } entry ? $" ({entry.ServiceName})" : string.Empty;
             var text = new TextBlock
             {
                 Text = line.Basis == QuotationLineBasis.Hourly
-                    ? $"{line.Description}  •  {line.Hours:0.##} × {MoneyDisplay.Format(line.Rate!.Value)}  =  {MoneyDisplay.Format(line.Amount)}"
+                    ? $"{line.Description}  •  {line.Hours:0.##} × {MoneyDisplay.Format(line.Rate!.Value)}{rateSource}  =  {MoneyDisplay.Format(line.Amount)}"
                     : $"{line.Description}  •  {MoneyDisplay.Format(line.Amount)} (fixed)",
                 FontSize = DesignTokens.FontSizeBody,
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
@@ -354,7 +445,7 @@ public sealed class ProjectQuoteView : UserControl
             Grid.SetColumn(text, 0);
             row.Children.Add(text);
 
-            if (quote.Status == QuotationStatus.Draft)
+            if (LinesEditable(quote))
             {
                 var edit = new Button { Content = "Edit", MinHeight = DesignTokens.MinControlSize };
                 edit.Classes.Add(ChromeStyles.Flat);
@@ -389,19 +480,90 @@ public sealed class ProjectQuoteView : UserControl
         return panel;
     }
 
-    private Control BuildLineEntryForm(Quotation quote)
+    /// <summary>
+    /// The add/edit line form (runbook C3, PO: "if I'm pinning a rate card,
+    /// why am I having to type out the rate on each line? Make the hourly
+    /// rate a drop down from whatever rate card is applied to the project
+    /// or 'fixed' when I can then use the fixed cost box"). The
+    /// <see cref="RateChoiceName"/> dropdown lists the pinned card's own
+    /// hourly entries, then <see cref="FixedChoiceLabel"/>: an hourly entry
+    /// fills the (read-only) rate and takes hours; Fixed enables the fixed
+    /// price box instead. With no card pinned the dropdown offers Fixed
+    /// alone, with a hint to pin one on the Details tab — a typed rate is
+    /// exactly what the PO asked to be rid of.
+    /// </summary>
+    private Control BuildLineEntryForm(Quotation quote, RateCard? rateCard)
     {
-        var descriptionBox = new TextBox { Watermark = "Description", MinHeight = DesignTokens.ControlSizeMedium };
+        var descriptionBox = new TextBox { Watermark = "Description", MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
         AutomationProperties.SetName(descriptionBox, "Line description");
 
-        var hoursBox = new NumericUpDown { Watermark = "Hours", MinHeight = DesignTokens.ControlSizeMedium, FormatString = "0.##" };
+        var rateChoice = new ComboBox { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 220 };
+        AutomationProperties.SetName(rateChoice, RateChoiceName);
+
+        var hoursBox = new NumericUpDown { Watermark = "Hours", MinHeight = DesignTokens.ControlSizeMedium, FormatString = "0.##", Minimum = 0 };
         AutomationProperties.SetName(hoursBox, "Line hours");
 
-        var rateBox = new NumericUpDown { Watermark = $"Rate ({quote.Currency})", MinHeight = DesignTokens.ControlSizeMedium, FormatString = "0.##" };
+        var rateBox = new NumericUpDown
+        {
+            Watermark = $"Rate ({quote.Currency})", MinHeight = DesignTokens.ControlSizeMedium, FormatString = "0.##",
+            IsReadOnly = true, ShowButtonSpinner = false,
+        };
         AutomationProperties.SetName(rateBox, "Line rate");
+        ToolTip.SetTip(rateBox, "Taken from the rate card entry chosen in the dropdown.");
 
         var fixedPriceBox = new NumericUpDown { Watermark = $"Fixed price ({quote.Currency})", MinHeight = DesignTokens.ControlSizeMedium, FormatString = "0.##" };
         AutomationProperties.SetName(fixedPriceBox, "Line fixed price");
+
+        var editingLine = _editingLineId is { } editingId ? quote.Lines.FirstOrDefault(l => l.Id == editingId) : null;
+
+        var options = new List<ComboBoxItem>();
+        foreach (var entry in HourlyEntries(rateCard, quote.Currency))
+        {
+            var label = entry.Grade is { Length: > 0 } grade && !entry.ServiceName.Contains(grade, StringComparison.OrdinalIgnoreCase)
+                ? $"{entry.ServiceName} ({grade}) — {MoneyDisplay.Format(entry.Rate)}/h"
+                : $"{entry.ServiceName} — {MoneyDisplay.Format(entry.Rate)}/h";
+            options.Add(new ComboBoxItem { Content = label, Tag = new RateOption(entry, null) });
+        }
+
+        // An hourly line written before runbook C3, or with a rate no
+        // longer on the pinned card, keeps its own rate as an option of its
+        // own while it is edited — never silently repriced.
+        if (editingLine is { Basis: QuotationLineBasis.Hourly, Rate: { } keptRate }
+            && (editingLine.RateCardServiceCode is null || rateCard?.FindEntry(editingLine.RateCardServiceCode) is null))
+        {
+            options.Add(new ComboBoxItem { Content = $"As entered — {MoneyDisplay.Format(keptRate)}/h", Tag = new RateOption(null, keptRate) });
+        }
+
+        var fixedItem = new ComboBoxItem { Content = FixedChoiceLabel, Tag = new RateOption(null, null) };
+        options.Add(fixedItem);
+        rateChoice.ItemsSource = options;
+
+        void ApplyChoice()
+        {
+            var option = (rateChoice.SelectedItem as ComboBoxItem)?.Tag as RateOption;
+            var rate = option?.Entry?.Rate ?? option?.ManualRate;
+            var isHourly = rate is not null;
+
+            rateBox.Value = rate?.Amount;
+            hoursBox.IsEnabled = isHourly;
+            fixedPriceBox.IsEnabled = !isHourly;
+            if (isHourly)
+                fixedPriceBox.Value = null;
+            else
+                hoursBox.Value = null;
+        }
+
+        rateChoice.SelectionChanged += (_, _) => ApplyChoice();
+
+        var hint = new TextBlock
+        {
+            Text = "No rate card is pinned to this project, so lines are priced fixed. Pin a rate card on the Details tab to price lines by the hour.",
+            FontSize = DesignTokens.FontSizeCaption,
+            Opacity = 0.8,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            IsVisible = rateCard is null,
+        };
+        AutomationProperties.SetName(hint, "Rate card hint");
 
         var lineStatus = new TextBlock { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
@@ -414,34 +576,57 @@ public sealed class ProjectQuoteView : UserControl
         cancelButton.Classes.Add(ChromeStyles.Subtle);
         AutomationProperties.SetName(cancelButton, "Cancel edit");
 
-        if (_editingLineId is { } editingId && quote.Lines.FirstOrDefault(l => l.Id == editingId) is { } editingLine)
+        if (editingLine is not null)
         {
             descriptionBox.Text = editingLine.Description;
+            rateChoice.SelectedItem = editingLine.Basis == QuotationLineBasis.FixedPrice
+                ? fixedItem
+                : options.FirstOrDefault(o => o.Tag is RateOption { Entry: { } e } && string.Equals(e.ServiceCode, editingLine.RateCardServiceCode, StringComparison.OrdinalIgnoreCase))
+                  ?? options.FirstOrDefault(o => o.Tag is RateOption { ManualRate: not null })
+                  ?? fixedItem;
+            ApplyChoice();
             hoursBox.Value = editingLine.Hours;
-            rateBox.Value = editingLine.Rate?.Amount;
             fixedPriceBox.Value = editingLine.FixedPrice?.Amount;
         }
+        else
+        {
+            rateChoice.SelectedItem = options[0];
+            ApplyChoice();
+        }
 
-        saveButton.Click += async (_, _) =>
+        // What Save line does — shared with Save draft, which saves a line
+        // still being typed before stamping the draft saved. `true` when
+        // there was nothing to save, or it saved.
+        async Task<bool> CommitAsync(bool requireLine)
         {
             var description = descriptionBox.Text?.Trim() ?? string.Empty;
             if (description.Length == 0)
             {
+                if (!requireLine)
+                    return true;
+
                 lineStatus.Text = "A description is required.";
-                return;
+                return false;
             }
 
-            var hours = (decimal?)hoursBox.Value;
-            var rate = rateBox.Value is { } r ? new Money(r, quote.Currency) : (Money?)null;
-            var fixedPrice = fixedPriceBox.Value is { } f ? new Money(f, quote.Currency) : (Money?)null;
+            var option = (rateChoice.SelectedItem as ComboBoxItem)?.Tag as RateOption;
+            var hours = option is { Entry: not null } or { ManualRate: not null } ? (decimal?)hoursBox.Value : null;
+            var rate = option?.ManualRate;
+            var serviceCode = option?.Entry?.ServiceCode;
+            var fixedPrice = option is { Entry: null, ManualRate: null } && fixedPriceBox.Value is { } f ? new Money(f, quote.Currency) : (Money?)null;
 
             var succeeded = _editingLineId is { } lineId
-                ? await OnUpdateLineAsync(quote.Id, quote.Kind, lineId, description, hours, rate, fixedPrice).ConfigureAwait(true)
-                : await OnAddLineAsync(quote.Id, quote.Kind, description, hours, rate, fixedPrice).ConfigureAwait(true);
+                ? await OnUpdateLineAsync(quote.Id, quote.Kind, lineId, description, hours, rate, fixedPrice, serviceCode).ConfigureAwait(true)
+                : await OnAddLineAsync(quote.Id, quote.Kind, description, hours, rate, fixedPrice, serviceCode).ConfigureAwait(true);
 
             if (succeeded)
                 _editingLineId = null;
-        };
+
+            return succeeded;
+        }
+
+        _pendingLineCommit = () => CommitAsync(requireLine: false);
+        saveButton.Click += async (_, _) => await CommitAsync(requireLine: true).ConfigureAwait(true);
 
         cancelButton.Click += async (_, _) =>
         {
@@ -449,16 +634,27 @@ public sealed class ProjectQuoteView : UserControl
             await RefreshAsync().ConfigureAwait(true);
         };
 
-        var fieldsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
-        fieldsRow.Children.Add(descriptionBox);
-        fieldsRow.Children.Add(hoursBox);
-        fieldsRow.Children.Add(rateBox);
-        fieldsRow.Children.Add(fixedPriceBox);
-        fieldsRow.Children.Add(saveButton);
-        fieldsRow.Children.Add(cancelButton);
+        var fieldsRow = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var control in new Control[] { descriptionBox, rateChoice, hoursBox, rateBox, fixedPriceBox, saveButton, cancelButton })
+        {
+            control.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceXs);
+            fieldsRow.Children.Add(control);
+        }
 
         var form = new StackPanel { Spacing = DesignTokens.SpaceXs };
+        if (quote.Status == QuotationStatus.Approved)
+        {
+            form.Children.Add(new TextBlock
+            {
+                Text = $"Changing a line starts a new draft; the next approval issues {QuotationReview.LabelFor(quote.RevisionNumber + 1)}.",
+                FontSize = DesignTokens.FontSizeCaption,
+                Opacity = 0.8,
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            });
+        }
+
         form.Children.Add(fieldsRow);
+        form.Children.Add(hint);
         form.Children.Add(lineStatus);
         return form;
     }
@@ -471,43 +667,138 @@ public sealed class ProjectQuoteView : UserControl
 
     private Control BuildActionsRow(Quotation quote)
     {
+        var panel = new StackPanel { Spacing = DesignTokens.SpaceXs };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        panel.Children.Add(actions);
 
-        if (quote.Status == QuotationStatus.Draft)
+        Button AddAction(string content, string automationName, string chrome, Func<Task> onClick, bool archivable = true)
         {
-            var send = new Button { Content = "Send", MinHeight = DesignTokens.MinControlSize };
-            send.Classes.Add(ChromeStyles.Primary);
-            AutomationProperties.SetName(send, $"Send {quote.Reference}");
-            send.Click += async (_, _) => await OnSendAsync(quote.Id).ConfigureAwait(true);
-            ApplyArchivedState(send);
-            actions.Children.Add(send);
+            var button = new Button { Content = content, MinHeight = DesignTokens.MinControlSize };
+            button.Classes.Add(chrome);
+            AutomationProperties.SetName(button, automationName);
+            button.Click += async (_, _) => await onClick().ConfigureAwait(true);
+            if (archivable)
+                ApplyArchivedState(button);
+            actions.Children.Add(button);
+            return button;
         }
 
-        if (quote.Status == QuotationStatus.Sent)
+        switch (quote.Status)
         {
-            var accept = new Button { Content = "Accept", MinHeight = DesignTokens.MinControlSize };
-            accept.Classes.Add(ChromeStyles.Primary);
-            AutomationProperties.SetName(accept, $"Accept {quote.Reference}");
-            accept.Click += async (_, _) => await OnAcceptAsync(quote.Id).ConfigureAwait(true);
-            ApplyArchivedState(accept);
-            actions.Children.Add(accept);
+            case QuotationStatus.Draft:
+                AddAction("Save draft", $"Save draft {quote.Reference}", ChromeStyles.Flat, () => OnSaveDraftAsync(quote.Id));
+                AddAction("Submit for review", $"Submit {quote.Reference} for review", ChromeStyles.Primary, () => OnSubmitForReviewAsync(quote.Id));
+                break;
 
-            var decline = new Button { Content = "Decline", MinHeight = DesignTokens.MinControlSize };
-            decline.Classes.Add(ChromeStyles.Flat);
-            AutomationProperties.SetName(decline, $"Decline {quote.Reference}");
-            decline.Click += async (_, _) => await OnDeclineAsync(quote.Id).ConfigureAwait(true);
-            ApplyArchivedState(decline);
-            actions.Children.Add(decline);
+            case QuotationStatus.InReview:
+                var commentBox = new TextBox
+                {
+                    Watermark = "Comment for the author (needed to return it to draft)",
+                    MinHeight = DesignTokens.ControlSizeMedium,
+                    AcceptsReturn = true,
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                };
+                AutomationProperties.SetName(commentBox, "Review comment");
+                panel.Children.Insert(0, commentBox);
+
+                AddAction("Approve", $"Approve {quote.Reference}", ChromeStyles.Primary, () => OnReviewActAsync(quote.Id, QuotationReviewAct.Approve, null));
+                AddAction("Return to draft", $"Return {quote.Reference} to draft", ChromeStyles.Flat, () => OnReviewActAsync(quote.Id, QuotationReviewAct.ReturnToDraft, commentBox.Text));
+                break;
+
+            case QuotationStatus.Approved:
+                AddAction("Send", $"Send {quote.Reference}", ChromeStyles.Primary, () => OnSendAsync(quote.Id));
+                break;
+
+            case QuotationStatus.Sent:
+                AddAction("Accept", $"Accept {quote.Reference}", ChromeStyles.Primary, () => OnAcceptAsync(quote.Id));
+                AddAction("Decline", $"Decline {quote.Reference}", ChromeStyles.Flat, () => OnDeclineAsync(quote.Id));
+                break;
         }
 
-        var export = new Button { Content = "Export", MinHeight = DesignTokens.MinControlSize };
-        export.Classes.Add(ChromeStyles.Flat);
-        AutomationProperties.SetName(export, $"Export {quote.Reference}");
-        export.Click += async (_, _) => await OnExportAsync(quote.Id).ConfigureAwait(true);
-        actions.Children.Add(export);
+        // Export reads and saves a copy — never disabled by archiving.
+        AddAction("Export", $"Export {quote.Reference}", ChromeStyles.Flat, () => OnExportAsync(quote.Id), archivable: false);
 
-        return actions;
+        return panel;
     }
+
+    /// <summary>
+    /// The person behind <paramref name="identityId"/> as the review line
+    /// shows them — through <see cref="Principals"/> when composed, and
+    /// never a raw Windows SID or GUID (colour review board M4, the
+    /// identical rule <see cref="Tempest.Desktop.Documents.Timesheets.TimesheetPrincipalLabel"/>
+    /// applies to the timesheet's own heading).
+    /// </summary>
+    private string PersonLabel(string? identityId) =>
+        Tempest.Desktop.Documents.Timesheets.TimesheetPrincipalLabel.Resolve(Principals?.Describe(identityId), identityId);
+
+    /// <summary>The line under the quote's own identity saying where it stands in draft-and-review (runbook C3).</summary>
+    private string DescribeReviewState(Quotation quote)
+    {
+        var review = quote.Review;
+        var nextLabel = QuotationReview.LabelFor(quote.RevisionNumber + 1);
+
+        switch (quote.Status)
+        {
+            case QuotationStatus.Draft:
+                var saved = review.DraftSavedAt is { } at
+                    ? $"Draft — saved {at.ToLocalTime():yyyy-MM-dd HH:mm}"
+                    : "Draft — not saved yet";
+                var after = quote.RevisionNumber > 0 ? $" A new draft after {quote.Review.Revisions.LastOrDefault()?.Label ?? QuotationReview.LabelFor(quote.RevisionNumber)}; the next approval issues {nextLabel}." : (_secondPersonRequired ? $" Approval by a second person issues {nextLabel}." : $" Approval issues {nextLabel}.");
+                var returned = review.ReturnComment is { Length: > 0 } comment ? $" Returned by {PersonLabel(review.ReturnedBy)}: \"{comment}\"" : string.Empty;
+                return saved + "." + after + returned;
+
+            case QuotationStatus.InReview:
+                return _secondPersonRequired
+                    ? $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. A second person approves it as {nextLabel}, or returns it to draft with a comment."
+                    : $"In review — submitted by {PersonLabel(review.SubmittedBy)} at {review.SubmittedAt?.ToLocalTime():yyyy-MM-dd HH:mm}. Approve it as {nextLabel}, or return it to draft with a comment.";
+
+            case QuotationStatus.Approved:
+                var approved = review.Revisions.LastOrDefault();
+                return approved is null
+                    ? $"Approved {quote.RevisionLabel} — ready to export and send."
+                    : $"Approved {approved.Label} by {PersonLabel(approved.ApprovedBy)}{SelfApprovedSuffix(approved)} at {approved.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm} — ready to export and send.";
+
+            default:
+                var issued = review.Revisions.LastOrDefault();
+                return issued is null
+                    ? $"Issued as {quote.RevisionLabel}."
+                    : $"Issued as {issued.Label}, approved by {PersonLabel(issued.ApprovedBy)}{SelfApprovedSuffix(issued)} at {issued.ApprovedAt.ToLocalTime():yyyy-MM-dd HH:mm}.";
+        }
+    }
+
+    /// <summary>" (self-approved)" for a revision its own author approved with second-person sign-off off (`ADR-0161`); empty otherwise.</summary>
+    private static string SelfApprovedSuffix(QuotationRevision revision) => revision.SelfApproved ? " (self-approved)" : string.Empty;
+
+    /// <summary>Whether <paramref name="quote"/>'s own lines can be changed here — a draft, or an approved revision (the change then starts a new draft, runbook C3).</summary>
+    private static bool LinesEditable(Quotation quote) => quote.Status is QuotationStatus.Draft or QuotationStatus.Approved;
+
+    /// <summary>The pinned rate card's own hourly entries, in the quote's currency, in card order.</summary>
+    private static IEnumerable<RateCardEntry> HourlyEntries(RateCard? card, CurrencyCode currency) =>
+        card?.Entries.Where(e => e.Basis == PricingBasis.Hourly && e.Rate.Currency == currency) ?? [];
+
+    /// <summary>The project's own pinned rate card revision, or <see langword="null"/> when none is pinned, no catalog is composed (<see cref="RateCards"/>), or the pin no longer resolves.</summary>
+    private async Task<RateCard?> LoadRateCardAsync(Quotation quote)
+    {
+        if (RateCards is not { } catalog
+            || (quote.ParentId ?? _currentProjectId()) is not { } projectId
+            || await _domainContext.Repository.FindAsync(projectId, CancellationToken.None).ConfigureAwait(true) is not Project { RateCardPin: { } pin })
+        {
+            return null;
+        }
+
+        try
+        {
+            var revision = await catalog.GetRevisionAsync(pin.RecordId, pin.RevisionNumber, CancellationToken.None).ConfigureAwait(true);
+            return revision.Definition;
+        }
+        catch (Exception ex) when (ex is ReferenceRecordNotFoundException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>One choice in the rate dropdown: a pinned rate card entry, a line's own kept rate, or (both <see langword="null"/>) Fixed.</summary>
+    private sealed record RateOption(RateCardEntry? Entry, Money? ManualRate);
 
     private async Task<Control> BuildAcceptedResultsSectionAsync(Quotation quote)
     {
@@ -582,9 +873,10 @@ public sealed class ProjectQuoteView : UserControl
         Report(result.Message ?? "Quotation opened.", succeeded: true);
     }
 
-    private async Task<bool> OnAddLineAsync(Guid quotationId, string kind, string description, decimal? hours, Money? rate, Money? fixedPrice)
+    private async Task<bool> OnAddLineAsync(
+        Guid quotationId, string kind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode)
     {
-        var command = new AddQuotationLineCommand(quotationId, kind, description, hours, rate, fixedPrice);
+        var command = new AddQuotationLineCommand(quotationId, kind, description, hours, rate, fixedPrice, rateCardServiceCode);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)
@@ -598,9 +890,10 @@ public sealed class ProjectQuoteView : UserControl
         return true;
     }
 
-    private async Task<bool> OnUpdateLineAsync(Guid quotationId, string kind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice)
+    private async Task<bool> OnUpdateLineAsync(
+        Guid quotationId, string kind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode)
     {
-        var command = new UpdateQuotationLineCommand(quotationId, kind, lineId, description, hours, rate, fixedPrice);
+        var command = new UpdateQuotationLineCommand(quotationId, kind, lineId, description, hours, rate, fixedPrice, rateCardServiceCode);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)
@@ -628,6 +921,45 @@ public sealed class ProjectQuoteView : UserControl
 
         await RefreshAsync().ConfigureAwait(true);
         Report(result.Message ?? "Line removed.", succeeded: true);
+    }
+
+    /// <summary>
+    /// Save draft (runbook C3): saves a line still being typed in the form
+    /// first, then stamps the draft saved — no export, no send.
+    /// </summary>
+    private async Task OnSaveDraftAsync(Guid quotationId)
+    {
+        if (_pendingLineCommit is { } commit && !await commit().ConfigureAwait(true))
+            return;
+
+        await OnReviewActAsync(quotationId, QuotationReviewAct.SaveDraft, null).ConfigureAwait(true);
+    }
+
+    /// <summary>Submit for review (runbook C3): saves a line still being typed first, exactly as <see cref="OnSaveDraftAsync"/> does.</summary>
+    private async Task OnSubmitForReviewAsync(Guid quotationId)
+    {
+        if (_pendingLineCommit is { } commit && !await commit().ConfigureAwait(true))
+            return;
+
+        await OnReviewActAsync(quotationId, QuotationReviewAct.SubmitForReview, null).ConfigureAwait(true);
+    }
+
+    /// <summary>Dispatches one draft-and-review act (runbook C3) — directly, like a line edit: none of them is irreversible.</summary>
+    private async Task OnReviewActAsync(Guid quotationId, QuotationReviewAct act, string? comment)
+    {
+        var quote = _quotations.FirstOrDefault(q => q.Id == quotationId);
+        var command = new QuotationReviewCommand(quotationId, quote?.Kind ?? Quotation.CanonicalKind, act, comment);
+        var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
+
+        if (!result.Succeeded)
+        {
+            Report(result.Message ?? "The quotation could not be updated.", succeeded: false);
+            return;
+        }
+
+        _editingLineId = null;
+        await RefreshAsync().ConfigureAwait(true);
+        Report(result.Message ?? "Done.", succeeded: true);
     }
 
     /// <summary>
@@ -667,7 +999,7 @@ public sealed class ProjectQuoteView : UserControl
             try
             {
                 var bytes = await RenderSheetAsync(sent).ConfigureAwait(true);
-                await sent.AttachContentAsync($"{SanitiseFileNameSegment(sent.Reference)}-quote.pdf", "application/pdf", bytes, CancellationToken.None).ConfigureAwait(true);
+                await sent.AttachContentAsync(QuotationExport.FileName(sent), "application/pdf", bytes, CancellationToken.None).ConfigureAwait(true);
                 message = $"{message} Quote sheet attached.";
             }
             catch (InvalidOperationException)
@@ -739,8 +1071,9 @@ public sealed class ProjectQuoteView : UserControl
         if (_quotations.FirstOrDefault(q => q.Id == quotationId) is not { } quote)
             return;
 
+        var startFolder = await QuoteStartFolderAsync(quote).ConfigureAwait(true);
         var destination = await _filePicker
-            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference}", $"{SanitiseFileNameSegment(quote.Reference)}-quote.pdf"), CancellationToken.None)
+            .PickSavePathAsync(new SavePickerRequest($"Export {quote.Reference} {QuotationExport.RevisionText(quote)}", QuotationExport.FileName(quote), startFolder), CancellationToken.None)
             .ConfigureAwait(true);
 
         if (destination is null)
@@ -758,52 +1091,19 @@ public sealed class ProjectQuoteView : UserControl
         Report($"Exported to '{destination}'.", succeeded: true);
     }
 
+    /// <summary>The project folder (or its quote subfolder) to start the export picker in — <see langword="null"/> whenever there is none, never an exception (see <see cref="ProjectFolders"/>).</summary>
+    private Task<string?> QuoteStartFolderAsync(Quotation quote) =>
+        QuotationSheetModelBuilder.StartFolderAsync(ProjectFolders, quote.ParentId ?? _currentProjectId(), CancellationToken.None);
+
     private async Task<byte[]> RenderSheetAsync(Quotation quote)
     {
-        var (projectCode, projectName) = await ResolveProjectAsync(quote.ParentId).ConfigureAwait(true);
-        var clientName = await ResolveClientNameAsync(quote.ClientOrganisationId).ConfigureAwait(true);
-
-        var lines = quote.Lines.Select(l => new QuotationSheetLineRow(
-            l.Description,
-            l.Basis == QuotationLineBasis.Hourly ? l.Hours?.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : null,
-            l.Basis == QuotationLineBasis.Hourly ? MoneyDisplay.Format(l.Rate!.Value) : null,
-            MoneyDisplay.Format(l.Amount))).ToList();
-
-        var model = new QuotationSheetModel(
-            IssuerName: _issuerName(),
-            ProjectCode: projectCode,
-            ProjectName: projectName,
-            Client: clientName,
-            Reference: quote.Reference,
-            QuoteDate: quote.QuoteDate,
-            ValidityDays: quote.ValidityDays,
-            Currency: quote.Currency.ToString(),
-            Lines: lines,
-            Total: MoneyDisplay.Format(quote.Total),
-            Terms: quote.Terms,
-            Status: quote.Status.ToString(),
-            GeneratedAtUtc: _time.GetUtcNow(),
-            ApplicationVersionText: _applicationVersionText());
-
+        var model = await QuotationSheetModelBuilder.BuildAsync(
+            quote, _domainContext, _organisations, _issuerName(), _applicationVersionText(), _time.GetUtcNow(), CancellationToken.None).ConfigureAwait(true);
         return _sheetRenderer.Render(model).ToArray();
     }
 
-    private async Task<(string Code, string Name)> ResolveProjectAsync(Guid? projectId)
-    {
-        if (projectId is not { } id || await _domainContext.Repository.FindAsync(id, CancellationToken.None).ConfigureAwait(true) is not { } project)
-            return (string.Empty, string.Empty);
-
-        return ((project as IHasBusinessIdentifier)?.Identifier ?? string.Empty, (project as IHasBusinessIdentifier)?.DisplayName ?? string.Empty);
-    }
-
-    private async Task<string> ResolveClientNameAsync(string? clientOrganisationId)
-    {
-        if (string.IsNullOrWhiteSpace(clientOrganisationId))
-            return "(none)";
-
-        var found = await _organisations.FindAsync(clientOrganisationId, CancellationToken.None).ConfigureAwait(true);
-        return found?.Definition.Name ?? clientOrganisationId;
-    }
+    private Task<string> ResolveClientNameAsync(string? clientOrganisationId) =>
+        QuotationSheetModelBuilder.ResolveClientNameAsync(_organisations, clientOrganisationId, CancellationToken.None);
 
     private void OnWorkspaceChanged(WorkspaceChange change)
     {
@@ -830,13 +1130,6 @@ public sealed class ProjectQuoteView : UserControl
     {
         _status.Text = message;
         ActionCompleted?.Invoke(message, ActionOutcome.From(succeeded));
-    }
-
-    private static string SanitiseFileNameSegment(string value)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        var chars = value.Select(c => invalid.Contains(c) ? '-' : c).ToArray();
-        return new string(chars);
     }
 
     /// <summary>Disables <paramref name="control"/>, with the archived tooltip, while the open project is archived (`WP 19.10H`, `TD-179`).</summary>

@@ -1,0 +1,226 @@
+[
+  {
+    "grade": "S235JR",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 51.0,
+    "coefficient_thermal_expansion_um_mK": [
+      11.0,
+      12.0
+    ],
+    "specific_heat_J_kgK": 470,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "S355JR",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 51.0,
+    "coefficient_thermal_expansion_um_mK": [
+      11.0,
+      12.0
+    ],
+    "specific_heat_J_kgK": 470,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "C45",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 49.0,
+    "coefficient_thermal_expansion_um_mK": [
+      11.0,
+      12.0
+    ],
+    "specific_heat_J_kgK": 480,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "42CrMo4",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 42.0,
+    "coefficient_thermal_expansion_um_mK": [
+      11.0,
+      12.5
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "304",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 16.2,
+    "coefficient_thermal_expansion_um_mK": [
+      17.2,
+      18.0
+    ],
+    "specific_heat_J_kgK": 500,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "316L",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 14.6,
+    "coefficient_thermal_expansion_um_mK": [
+      15.5,
+      16.5
+    ],
+    "specific_heat_J_kgK": 500,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "17-4 PH",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 18.0,
+    "coefficient_thermal_expansion_um_mK": [
+      10.8,
+      11.5
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "H13",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 24.0,
+    "coefficient_thermal_expansion_um_mK": [
+      10.5,
+      12.0
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "410",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 24.9,
+    "coefficient_thermal_expansion_um_mK": [
+      9.5,
+      11.0
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "420",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 24.0,
+    "coefficient_thermal_expansion_um_mK": [
+      9.5,
+      11.0
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "15-5 PH",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 17.0,
+    "coefficient_thermal_expansion_um_mK": [
+      10.5,
+      11.5
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "13-8 Mo",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 15.0,
+    "coefficient_thermal_expansion_um_mK": [
+      10.5,
+      11.5
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "310S",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 14.2,
+    "coefficient_thermal_expansion_um_mK": [
+      15.0,
+      16.5
+    ],
+    "specific_heat_J_kgK": 500,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "321",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 16.1,
+    "coefficient_thermal_expansion_um_mK": [
+      16.0,
+      17.5
+    ],
+    "specific_heat_J_kgK": 500,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "430",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 26.1,
+    "coefficient_thermal_expansion_um_mK": [
+      10.0,
+      11.5
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  },
+  {
+    "grade": "440C",
+    "temperature_basis_C": 20,
+    "thermal_conductivity_W_mK": 24.2,
+    "coefficient_thermal_expansion_um_mK": [
+      10.0,
+      11.0
+    ],
+    "specific_heat_J_kgK": 460,
+    "evidence_class": "engineering_reference",
+    "design_use": "screening_only",
+    "temperature_dependence": "required outside reference temperature",
+    "provenance_requirement": "Confirm exact specification, condition, product form and source before design use."
+  }
+]

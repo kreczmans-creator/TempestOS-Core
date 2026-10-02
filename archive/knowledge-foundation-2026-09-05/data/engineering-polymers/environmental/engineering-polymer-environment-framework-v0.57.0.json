@@ -1,0 +1,30 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "dimensions": [
+    "water/humidity",
+    "temperature",
+    "UV",
+    "ozone",
+    "fuels/oils",
+    "solvents",
+    "acids",
+    "alkalis",
+    "salts",
+    "cleaning agents",
+    "vacuum/outgassing",
+    "radiation_where_relevant"
+  ],
+  "failure_modes": [
+    "swelling",
+    "plasticisation",
+    "hydrolysis",
+    "environmental stress cracking",
+    "oxidative degradation",
+    "UV embrittlement",
+    "chemical attack",
+    "loss of strength",
+    "loss of dielectric performance"
+  ],
+  "fundamental_rule": "Chemical compatibility must be assessed against the actual chemical, concentration, temperature, exposure time and stress state."
+}

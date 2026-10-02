@@ -1,0 +1,22 @@
+{
+  "version": "0.74.0",
+  "status": "foundation-framework",
+  "budgets": [
+    "mass",
+    "power",
+    "thermal",
+    "performance",
+    "stiffness",
+    "accuracy",
+    "timing",
+    "capacity"
+  ],
+  "workflow": [
+    "define top-level requirement",
+    "allocate to contributors",
+    "include uncertainty",
+    "track margin",
+    "identify dominant contributors",
+    "verify closure"
+  ]
+}

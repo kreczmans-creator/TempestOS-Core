@@ -464,6 +464,14 @@ public sealed class TempestHost : ITempestHost
         services.Singleton<IAuditRecorder, AuditRecorder>();
         services.Singleton<IAuditQuery, AuditQuery>();
 
+        // `ADR-0161` (Product Owner decision 2026-10-01): the one global
+        // "Second-person sign-off" switch every separation-of-duty rule
+        // consults (quotation approval, evidence's independent check).
+        // Registered once here, over Settings (durable, so it survives a
+        // restart) and Audit (so every change of it is recorded), so it is
+        // the same answer for every module. Off by default.
+        services.Singleton<Tempest.Core.Governance.ISignOffPolicy, Tempest.Core.Governance.SignOffPolicy>();
+
         // ADR-0051: Export/Import reads from whatever service owns the
         // exported data (Settings, Reporting) via that service's own
         // public interface, never IPersistenceStore directly - registered
@@ -617,8 +625,16 @@ public sealed class TempestHost : ITempestHost
         // composition root every real launch goes through
         // (`EngineeringWorkspaceComposer.RehydrateEngineeringObjectsAsync`):
         // a library still holding no record at all is populated from its
-        // shipped seed, Draft only; a library a person has already
-        // touched — populated, edited, or seeded before — is left alone.
+        // shipped seed; a library a person has already put a record of their
+        // own into is left alone.
+        //
+        // PO decision 2026-10-01: shipped reference data must be usable from
+        // day one, so the host's seeder carries the release-at-seed policy.
+        // Every record it registers is verified and released through
+        // ReferenceReviewService as the named seed principal
+        // ('tempest.reference-seed'), with the ordinary permission checks and
+        // audit rows — never a direct write of a validation state.
+        services.Singleton<ReferenceSeedReleasePolicy>();
         services.Singleton<ReferenceSeedService>();
 
         services.Singleton<IStandardCatalog, StandardCatalog>();
@@ -1271,7 +1287,13 @@ public sealed class TempestHost : ITempestHost
             Provider: "Xero",
             AuthorizationEndpoint: new Uri("https://login.xero.com/identity/connect/authorize"),
             TokenEndpoint: new Uri("https://identity.xero.com/connect/token"),
-            Scopes: ["openid", "profile", "email", "accounting.transactions", "accounting.contacts", "offline_access"],
+            // Xero's granular scopes: an app created on or after 2 March
+            // 2026 can never be granted the broad `accounting.transactions`
+            // or `accounting.reports.read`, so asking for them fails the
+            // consent outright. One scope per endpoint `XeroConnector`
+            // calls: Invoices/RepeatingInvoices (invoices), Contacts (read
+            // only), Reports/BankSummary.
+            Scopes: ["openid", "profile", "email", "accounting.invoices", "accounting.contacts.read", "accounting.reports.banksummary.read", "offline_access"],
             TenantResolutionEndpoint: new Uri("https://api.xero.com/connections"));
 
         var authoriser = new OAuthAuthoriser(profile, configuration, secretStore, new SystemBrowserLauncher(), httpClient);

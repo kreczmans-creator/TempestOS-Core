@@ -24,7 +24,8 @@ public sealed record FilePickerRequest(
 /// <summary>What <see cref="IFilePicker.PickSavePathAsync"/> is asking the user to choose a destination for.</summary>
 /// <param name="Title">The picker dialog's own title.</param>
 /// <param name="SuggestedFileName">The file name offered as a starting point.</param>
-public sealed record SavePickerRequest(string Title, string? SuggestedFileName = null);
+/// <param name="StartFolder">The folder the picker opens in — for a quote export, the project's own folder (PO decision 2026-10-01). <see langword="null"/> leaves the picker's own default; a folder that does not exist is ignored.</param>
+public sealed record SavePickerRequest(string Title, string? SuggestedFileName = null, string? StartFolder = null);
 
 /// <summary>
 /// A real file picker, behind an interface (`WP 18.2A`, Execution Plan §3
@@ -43,4 +44,16 @@ public interface IFilePicker
 
     /// <summary>Asks the user to choose a destination path to save to. <see langword="null"/> means the user cancelled.</summary>
     Task<string?> PickSavePathAsync(SavePickerRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asks the user to choose a folder (runbook G2: Settings → Timesheet
+    /// export folder's own Browse…). <see langword="null"/> means the user
+    /// cancelled — and is what an implementation with no folder picker of
+    /// its own answers, so Browse… is then simply inert.
+    /// </summary>
+    /// <param name="title">The picker dialog's own title.</param>
+    /// <param name="startFolder">The folder the picker opens in; one that does not exist is ignored.</param>
+    /// <param name="cancellationToken">Cancels the pick.</param>
+    Task<string?> PickFolderAsync(string title, string? startFolder = null, CancellationToken cancellationToken = default) =>
+        Task.FromResult<string?>(null);
 }

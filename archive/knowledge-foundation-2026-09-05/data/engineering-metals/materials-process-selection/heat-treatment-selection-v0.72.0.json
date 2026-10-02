@@ -1,0 +1,23 @@
+{
+  "version": "0.72.0",
+  "status": "design-framework",
+  "processes": [
+    "annealing",
+    "normalising",
+    "quenching and tempering",
+    "precipitation hardening",
+    "case hardening",
+    "nitriding"
+  ],
+  "selection_factors": [
+    "required hardness",
+    "toughness",
+    "section size",
+    "dimensional stability",
+    "fatigue",
+    "wear",
+    "corrosion",
+    "manufacturing sequence"
+  ],
+  "rule": "Heat treatment is part of the material definition and must not be detached from grade/product form."
+}

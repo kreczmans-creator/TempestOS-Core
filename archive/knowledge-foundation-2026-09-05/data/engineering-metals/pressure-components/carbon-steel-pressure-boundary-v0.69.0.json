@@ -1,0 +1,27 @@
+{
+  "version": "0.69.0",
+  "family": "carbon-steel",
+  "checks": [
+    "membrane stress",
+    "local stress",
+    "instability",
+    "fatigue",
+    "fracture/leak-before-break where applicable",
+    "corrosion allowance",
+    "temperature",
+    "manufacturing defects",
+    "inspection"
+  ],
+  "workflow": [
+    "define pressure/temperature envelope",
+    "identify pressure boundary",
+    "select applicable design code",
+    "determine required thickness",
+    "check local discontinuities",
+    "assess cyclic service",
+    "assess materials/processes",
+    "define inspection and test evidence"
+  ],
+  "rule": "Pressure components require an applicable governing code; generic thin-wall equations are screening tools.",
+  "status": "design-framework"
+}

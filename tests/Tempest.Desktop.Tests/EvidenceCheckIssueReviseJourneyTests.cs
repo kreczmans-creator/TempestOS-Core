@@ -218,6 +218,9 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
 
             var settings = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             await settings.SetValueAsync(Tempest.Core.Evidence.EvidenceService.IndependentCheckSettingKey, bool.TrueString);
+            // ADR-0161: second-person sign-off is off by default (a one-person
+            // consultancy); the refusal this journey proves is the ON rule.
+            await ((Tempest.Core.Governance.ISignOffPolicy)host.Services!.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy))).SetSecondPersonRequiredAsync(true);
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
@@ -335,9 +338,16 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
             var librariesView = window.GetLogicalDescendants().OfType<LibrariesView>().Single();
             LayOut(window);
 
-            var recordRow = librariesView.GetLogicalDescendants().OfType<Grid>()
-                .First(g => g.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
-            var reviseButton = recordRow.GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
+            // Runbook F1: a row is title and status only — Revise lives on
+            // the open record.
+            var openButton = librariesView.GetLogicalDescendants().OfType<Button>()
+                .First(b => Avalonia.Automation.AutomationProperties.GetAutomationId(b) == $"Open {recordId}");
+            openButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await RenderUntilAsync(window, () =>
+                librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().FirstOrDefault() is { } opened
+                && opened.GetLogicalDescendants().OfType<TextBlock>().Any(t => (t.Text ?? string.Empty).Contains(recordId, StringComparison.Ordinal)));
+            var reviseButton = librariesView.GetLogicalDescendants().OfType<ReferenceRecordView>().First()
+                .GetLogicalDescendants().OfType<Button>().First(b => Equals(b.Content, "Revise"));
             reviseButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
             var reviseEntry = GetPrivateField<ReviseReferenceRecordEntry>(window, "_reviseReferenceRecordEntry");
@@ -427,16 +437,8 @@ public sealed class EvidenceCheckIssueReviseJourneyTests
         await RenderUntilAsync(window, () => !checkEntry.IsVisible);
     }
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

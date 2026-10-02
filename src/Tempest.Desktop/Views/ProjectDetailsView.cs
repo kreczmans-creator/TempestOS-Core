@@ -317,7 +317,7 @@ public sealed class ProjectDetailsView : UserControl
             return null;
 
         var resolved = await resolve(pin, CancellationToken.None).ConfigureAwait(true);
-        return resolved is { } card ? $"{card.Code} — {card.Name} (rev {pin.RevisionNumber})" : null;
+        return resolved is { } card ? $"{card.Code} — {card.Name} (rev {card.Revision})" : null;
     }
 
     private async Task OnChangeClientAsync()

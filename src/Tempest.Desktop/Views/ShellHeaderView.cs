@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Desktop.Branding;
@@ -223,6 +224,18 @@ public sealed class ShellHeaderView : UserControl
         Grid.SetColumn(_searchBox, 1);
         AutomationProperties.SetName(_searchBox, "Search or run a command");
         ToolTip.SetTip(_searchBox, "Search every registered command (Ctrl+K)");
+        // PO runbook D9: clicking into the box used to leave an inert
+        // field until Enter ("leaves the bar hanging"). A click now opens
+        // the palette straight away, seeded with anything already typed;
+        // the palette is where results live. Pointer only: the palette
+        // hands focus back to this box when it closes, which must not
+        // reopen it. On release, not press: the box takes focus itself on
+        // press, which would otherwise pull focus back out of the palette.
+        _searchBox.AddHandler(
+            PointerReleasedEvent,
+            (_, _) => SubmitSearch(),
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
         _searchBox.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Enter)

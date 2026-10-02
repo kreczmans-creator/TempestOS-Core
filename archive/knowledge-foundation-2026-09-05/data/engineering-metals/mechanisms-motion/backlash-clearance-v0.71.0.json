@@ -1,0 +1,12 @@
+{
+  "version": "0.71.0",
+  "status": "design-framework",
+  "concepts": [
+    "clearance",
+    "backlash",
+    "lost motion",
+    "stack-up",
+    "thermal growth"
+  ],
+  "rule": "Motion accuracy is a system property affected by tolerance, compliance, friction, thermal state and control strategy."
+}

@@ -1,0 +1,14 @@
+{
+  "version": "0.70.0",
+  "status": "design-framework",
+  "purpose": "Screen elastic column instability.",
+  "relationship": "Pcr = π²EI/(K·L)²",
+  "checks": [
+    "slenderness",
+    "end conditions",
+    "imperfection sensitivity",
+    "local buckling",
+    "material nonlinearity"
+  ],
+  "boundary": "Euler buckling applies to the appropriate slender elastic regime; intermediate and stocky columns require suitable nonlinear/inelastic methods."
+}

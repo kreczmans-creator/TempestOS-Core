@@ -1,0 +1,7 @@
+Domain,Status,Coverage,Evidence boundary
+Controls & feedback,Complete,"Feedback, PID, loop failure modes",Plant/controller specific
+Electronics interfaces,Complete,"Power, signal integrity, power interfaces",Hardware/interface specific
+Safety & reliability,Complete,"Hazard risk, FMEA/Fault Tree, fault tolerance",Product/standard specific
+Environmental engineering,Complete,"Temperature, vibration, shock, ingress/corrosion",Mission-profile specific
+Configuration/change control,Complete,"Configuration items, change impact, baselines",Project configuration specific
+Cross-domain cases,Complete,5 integrated engineering cases,"Framework, not certification"

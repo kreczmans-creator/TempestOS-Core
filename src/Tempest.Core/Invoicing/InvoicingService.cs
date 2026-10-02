@@ -283,12 +283,13 @@ public sealed class InvoicingService : IInvoicingService
         }
 
         var total = Money.Sum(lines.Select(l => l.Amount), currency);
+        var identifier = await NextIdentifierAsync(project, cancellationToken).ConfigureAwait(false);
 
         var created = await new EngineeringObjectFactory<InvoiceRequest>(
             InvoiceRequest.CanonicalKind,
             _context,
             (doc, rev) => new InvoiceRequest(
-                doc, rev, _context, identifier: null, $"Invoice request — {project.DisplayName} — {_time.GetUtcNow():yyyy-MM-dd}",
+                doc, rev, _context, identifier, $"Invoice request — {project.DisplayName} — {_time.GetUtcNow():yyyy-MM-dd}",
                 EngineeringObjectMetadata.Empty, project.ClientOrganisationId!, project.PurchaseOrderReference, currency, lines, total,
                 paymentTerms: paymentTerms))
             .CreateAsync($"Invoice request raised from {raisedFromDescription}.", cancellationToken)
@@ -298,6 +299,26 @@ public sealed class InvoicingService : IInvoicingService
             await hasParent.MoveAsync(projectId, cancellationToken).ConfigureAwait(false);
 
         return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, (InvoiceRequest)created);
+    }
+
+    /// <summary>
+    /// The identifier a new invoice request raised against
+    /// <paramref name="project"/> carries: <c>CUSTOMER-PROJECTREF-INV-NNN</c>
+    /// where the project's own identifier is project-centric (Product Owner
+    /// decision 2026-10-01 §3, `ADR-0156` — one past the highest suffix any
+    /// request, live or not, already used under that prefix, so a sequence
+    /// per project starting at 001), otherwise <see langword="null"/> — the
+    /// request is identified by its own id exactly as before this decision.
+    /// </summary>
+    private async Task<string?> NextIdentifierAsync(Project project, CancellationToken cancellationToken)
+    {
+        if (!ProjectNumbering.TryGetDocumentPrefix(project.Identifier, ProjectNumbering.InvoiceRequest, out var prefix))
+            return null;
+
+        var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var existing = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
+
+        return ProjectNumbering.NextNumber(prefix, existing.Select(r => r.Identifier));
     }
 
     /// <inheritdoc />

@@ -1,0 +1,15 @@
+{
+  "version": "0.73.0",
+  "status": "foundation-framework",
+  "checks": [
+    "continuous current",
+    "peak current",
+    "voltage transients",
+    "thermal dissipation",
+    "fusing/protection",
+    "connector capacity",
+    "motor regeneration",
+    "fault containment"
+  ],
+  "principle": "Electrical power integrity is an interface requirement, not merely an electronics component specification."
+}

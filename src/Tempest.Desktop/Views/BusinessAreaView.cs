@@ -9,16 +9,23 @@ namespace Tempest.Desktop.Views;
 
 /// <summary>
 /// The Business module (`WP 19.7A`, Product Owner comment items 6 and 7,
-/// sheet 9): a tree — Dashboard &amp; Reports, Quotes, Invoices, Purchase
+/// sheet 9): a tree — Dashboard, Quotes, Invoices, Purchase
 /// orders, Timesheets, Subscriptions — with a right pane over whichever
 /// node is selected. Every node embeds an already-built, already-tested
-/// view: Dashboard &amp; Reports is <see cref="BusinessDashboardView"/>
+/// view: Dashboard is <see cref="BusinessDashboardView"/>
 /// (`WP 19.7B`), Quotes is <see cref="QuotesView"/> (`WP 19.5B`), Invoices
 /// is the existing <see cref="InvoicingView"/>, Purchase orders is
 /// <see cref="PurchaseOrdersView"/> (`WP 21.3B`), Timesheets is the
 /// existing <see cref="TimesheetWeekView"/>, Subscriptions is
 /// <see cref="SubscriptionsView"/> over <c>IAccountsReadModel</c>
-/// (`WP 19.8B`).
+/// (`WP 19.8B`). Customers &amp; Suppliers is <see cref="CustomersSuppliersView"/>
+/// (Product Owner decision 2026-10-01 §2): the one organisation list every
+/// client/supplier drop-down reads. Staff is <see cref="StaffView"/>
+/// (Product Owner runbook B1, 2026-10-01): the consultancy's own people,
+/// moved here from Engineering → Reference data. Rate cards is
+/// <see cref="RateCardsView"/> (Product Owner decision 2026-10-01): the
+/// consultancy's own graded rates, likewise moved here from Engineering →
+/// Reference data.
 /// </summary>
 public sealed class BusinessAreaView : UserControl
 {
@@ -28,21 +35,27 @@ public sealed class BusinessAreaView : UserControl
     private readonly TimesheetWeekView _timesheets;
     private readonly SubscriptionsView _subscriptions;
     private readonly BusinessDashboardView _dashboard;
+    private readonly CustomersSuppliersView _customersSuppliers;
+    private readonly StaffView? _staff;
+    private readonly RateCardsView? _rateCards;
 
     private readonly TreeView _tree = new();
     private readonly ContentControl _detail = new();
     private readonly CollapsibleColumn _treeColumn;
 
-    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard & Reports" };
+    private readonly TreeViewItem _dashboardNode = new() { Header = "Dashboard" };
     private readonly TreeViewItem _quotesNode = new() { Header = "Quotes" };
     private readonly TreeViewItem _invoicesNode = new() { Header = "Invoices" };
     private readonly TreeViewItem _purchaseOrdersNode = new() { Header = "Purchase orders" };
     private readonly TreeViewItem _timesheetsNode = new() { Header = "Timesheets" };
     private readonly TreeViewItem _subscriptionsNode = new() { Header = "Subscriptions" };
+    private readonly TreeViewItem _customersSuppliersNode = new() { Header = "Customers & Suppliers" };
+    private readonly TreeViewItem _staffNode = new() { Header = "Staff" };
+    private readonly TreeViewItem _rateCardsNode = new() { Header = "Rate cards" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
 
-    /// <summary>The change feed the Dashboard &amp; Reports node reloads from while shown (`WP 19.7B` — `WP 19.7A` left this property inert, "kept wired now so that Work Package needs no further plumbing here"; this is that plumbing).</summary>
+    /// <summary>The change feed the Dashboard node reloads from while shown (`WP 19.7B` — `WP 19.7A` left this property inert, "kept wired now so that Work Package needs no further plumbing here"; this is that plumbing).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
         get => _workspaceChanges.Feed;
@@ -52,7 +65,8 @@ public sealed class BusinessAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="BusinessAreaView"/> class.</summary>
     public BusinessAreaView(
         QuotesView quotes, InvoicingView invoices, PurchaseOrdersView purchaseOrders, TimesheetWeekView timesheets,
-        SubscriptionsView subscriptions, BusinessDashboardView dashboard)
+        SubscriptionsView subscriptions, BusinessDashboardView dashboard, CustomersSuppliersView customersSuppliers,
+        StaffView? staff = null, RateCardsView? rateCards = null)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         ArgumentNullException.ThrowIfNull(invoices);
@@ -60,6 +74,7 @@ public sealed class BusinessAreaView : UserControl
         ArgumentNullException.ThrowIfNull(timesheets);
         ArgumentNullException.ThrowIfNull(subscriptions);
         ArgumentNullException.ThrowIfNull(dashboard);
+        ArgumentNullException.ThrowIfNull(customersSuppliers);
 
         _quotes = quotes;
         _invoices = invoices;
@@ -67,10 +82,18 @@ public sealed class BusinessAreaView : UserControl
         _timesheets = timesheets;
         _subscriptions = subscriptions;
         _dashboard = dashboard;
+        _customersSuppliers = customersSuppliers;
+        _staff = staff;
+        _rateCards = rateCards;
 
         _workspaceChanges = new WorkspaceChangesSubscription(this, OnWorkspaceChanged);
 
         _tree.Items.Add(_dashboardNode);
+        _tree.Items.Add(_customersSuppliersNode);
+        if (staff is not null)
+            _tree.Items.Add(_staffNode);
+        if (rateCards is not null)
+            _tree.Items.Add(_rateCardsNode);
         _tree.Items.Add(_quotesNode);
         _tree.Items.Add(_invoicesNode);
         _tree.Items.Add(_purchaseOrdersNode);
@@ -79,8 +102,9 @@ public sealed class BusinessAreaView : UserControl
 
         foreach (var (node, name) in new[]
                  {
-                     (_dashboardNode, "Dashboard & Reports"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
+                     (_dashboardNode, "Dashboard"), (_customersSuppliersNode, "Customers & Suppliers"), (_quotesNode, "Quotes"), (_invoicesNode, "Invoices"),
                      (_purchaseOrdersNode, "Purchase orders"), (_timesheetsNode, "Timesheets"), (_subscriptionsNode, "Subscriptions"),
+                     (_staffNode, "Staff"), (_rateCardsNode, "Rate cards"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Business tree");
@@ -101,13 +125,13 @@ public sealed class BusinessAreaView : UserControl
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
-    /// ("Dashboard &amp; Reports", "Quotes", "Invoices", "Purchase
-    /// orders", "Timesheets" or "Subscriptions") — the same name a screen
+    /// ("Dashboard", "Customers &amp; Suppliers", "Staff", "Rate cards", "Quotes",
+    /// "Invoices", "Purchase orders", "Timesheets" or "Subscriptions") — the same name a screen
     /// reader announces, and what a journey test drives the tree by.
     /// </summary>
     public void SelectNode(string automationName)
     {
-        var item = new[] { _dashboardNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
+        var item = new[] { _dashboardNode, _customersSuppliersNode, _staffNode, _rateCardsNode, _quotesNode, _invoicesNode, _purchaseOrdersNode, _timesheetsNode, _subscriptionsNode }
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -160,6 +184,27 @@ public sealed class BusinessAreaView : UserControl
         {
             await _dashboard.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _dashboard;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _customersSuppliersNode))
+        {
+            await _customersSuppliers.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _customersSuppliers;
+            return;
+        }
+
+        if (_staff is not null && ReferenceEquals(selected, _staffNode))
+        {
+            await _staff.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _staff;
+            return;
+        }
+
+        if (_rateCards is not null && ReferenceEquals(selected, _rateCardsNode))
+        {
+            await _rateCards.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _rateCards;
             return;
         }
 

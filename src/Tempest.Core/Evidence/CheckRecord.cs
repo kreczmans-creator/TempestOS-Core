@@ -30,6 +30,12 @@ public enum CheckOutcome
 /// <param name="DateUtc">When the check was recorded.</param>
 /// <param name="Statement">The checker's own statement, verbatim.</param>
 /// <param name="Outcome">What the checker concluded.</param>
+/// <param name="SelfCheck">
+/// <see langword="true"/> when the independence rule was on but the checker
+/// was the evidence's own author — allowed because second-person sign-off
+/// was off (`ADR-0161`, Product Owner decision 2026-10-01). A check recorded
+/// before the switch existed reads back <see langword="false"/>.
+/// </param>
 public sealed record CheckRecord(
     string CheckerName,
     string CheckerOrganisation,
@@ -37,4 +43,5 @@ public sealed record CheckRecord(
     string RecordedByIdentityId,
     DateTimeOffset DateUtc,
     string Statement,
-    CheckOutcome Outcome);
+    CheckOutcome Outcome,
+    bool SelfCheck = false);

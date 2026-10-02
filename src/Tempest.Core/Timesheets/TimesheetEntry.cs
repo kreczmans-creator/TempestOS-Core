@@ -47,13 +47,14 @@ public sealed class TimesheetEntry : EngineeringObjectBase, IRehydratable<Timesh
     private readonly Money _billingRate;
     private readonly Money? _costRate;
     private Guid? _invoicedBy;
+    private readonly Guid? _deliverableId;
 
     /// <summary>Initialises a new instance of the <see cref="TimesheetEntry"/> class.</summary>
     public TimesheetEntry(
         IEngineeringDocument document, IDocumentRevision currentRevision, EngineeringDomainContext context,
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
         string principalIdentityId, Guid projectId, string taskDescription, DateOnly date, decimal hours, bool billable,
-        string grade, Money billingRate, Money? costRate = null, Guid? invoicedBy = null)
+        string grade, Money billingRate, Money? costRate = null, Guid? invoicedBy = null, Guid? deliverableId = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(principalIdentityId);
@@ -70,6 +71,7 @@ public sealed class TimesheetEntry : EngineeringObjectBase, IRehydratable<Timesh
         _billingRate = billingRate;
         _costRate = costRate;
         _invoicedBy = invoicedBy;
+        _deliverableId = deliverableId;
     }
 
     /// <summary>The principal whose time this is.</summary>
@@ -101,6 +103,15 @@ public sealed class TimesheetEntry : EngineeringObjectBase, IRehydratable<Timesh
 
     /// <summary>The invoice request this entry was billed on, set once and never cleared. <see langword="null"/> until then.</summary>
     public Guid? InvoicedBy => _invoicedBy;
+
+    /// <summary>
+    /// The project deliverable this time was booked against, fixed at record
+    /// time (runbook G1, Product Owner: "task should be drop down from
+    /// project deliverables"). <see langword="null"/> for every entry
+    /// recorded before that — a free-text task only — which still reads and
+    /// displays exactly as it always did through <see cref="TaskDescription"/>.
+    /// </summary>
+    public Guid? DeliverableId => _deliverableId;
 
     /// <summary>Amends this entry's own hours, task and billable flag — the only fields <see cref="TimesheetService.AmendAsync"/> may change, and only while <see cref="InvoicedBy"/> is unset.</summary>
     internal Task AmendAsync(decimal hours, string taskDescription, bool billable, CancellationToken cancellationToken = default)
@@ -146,6 +157,7 @@ public sealed class TimesheetEntry : EngineeringObjectBase, IRehydratable<Timesh
         WriteJson(state, nameof(BillingRate), _billingRate);
         WriteJson(state, nameof(CostRate), _costRate);
         state[nameof(InvoicedBy)] = _invoicedBy?.ToString();
+        state[nameof(DeliverableId)] = _deliverableId?.ToString();
     }
 
     /// <inheritdoc />
@@ -185,5 +197,6 @@ public sealed class TimesheetEntry : EngineeringObjectBase, IRehydratable<Timesh
             state.Type(nameof(Grade)) ?? string.Empty,
             state.TypeJson<Money>(nameof(BillingRate)),
             state.TypeJson<Money?>(nameof(CostRate)),
-            state.TypeGuid(nameof(InvoicedBy)));
+            state.TypeGuid(nameof(InvoicedBy)),
+            state.TypeGuid(nameof(DeliverableId)));
 }

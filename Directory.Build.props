@@ -10,6 +10,38 @@
   </PropertyGroup>
 
   <!--
+    NuGet lock files (ADR-0160, PO decision 2026-10-01): every project
+    commits a packages.lock.json recording the exact resolved version and
+    content hash of every direct and transitive package. CI and release.yml
+    restore with `dotnet restore -locked-mode`, and RestoreLockedMode is
+    also on whenever CI=true (GitHub Actions sets it), so an implicit
+    restore - `dotnet publish` in scripts/package-installer.ps1, a nested
+    `dotnet build` in a test - fails rather than resolving anything the
+    lock does not already name. Locally CI is unset: a plain restore keeps
+    working and rewrites a lock that a PackageReference change made stale.
+    After changing a PackageReference, regenerate every lock with
+    `dotnet restore src/TempestOS.slnx -force-evaluate` and commit them
+    (CONTRIBUTING.md).
+
+    RuntimeIdentifiers: a lock file records the runtime identifiers it was
+    restored for, and a locked restore fails (NU1004) when they differ. A
+    RID-specific restore (`dotnet publish -r win-x64` for the installer)
+    passes that RID to every project in Tempest.Desktop's graph, so every
+    project declares the same two RIDs it can be published for - win-x64
+    (the shipped installer) and linux-x64 (the Linux launch path) - and
+    each lock carries their runtime-specific assets (SkiaSharp, HarfBuzz,
+    SQLite natives). A RID-less restore (every CI leg, the Linux smoke
+    job) and `-r win-x64` / `-r linux-x64` then all match the same lock
+    on any host. RuntimeIdentifiers (plural) only widens what restore
+    resolves; it does not make a build RID-specific.
+  -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <!--
     Single authoritative source of the platform's own version: the repository
     root VERSION file (Engineering Governance §7 - the same file
     scripts/New-Release.ps1 already validates against at release time). Read

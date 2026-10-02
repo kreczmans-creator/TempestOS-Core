@@ -1,0 +1,167 @@
+[
+  {
+    "id": "WHA-90W",
+    "designation": "90W",
+    "family": "tungsten heavy alloy",
+    "nominal_tungsten_content_wt_percent": 90,
+    "binder_system": "typically Ni-Fe or Ni-Cu depending on grade",
+    "density_g_cm3": [
+      16.8,
+      17.2
+    ],
+    "elastic_modulus_GPa": [
+      300,
+      330
+    ],
+    "yield_strength_MPa": [
+      600,
+      1000
+    ],
+    "ultimate_tensile_strength_MPa": [
+      700,
+      1100
+    ],
+    "elongation_percent": [
+      5,
+      15
+    ],
+    "hardness": "high; grade and processing dependent",
+    "thermal_conductivity_W_mK": [
+      80,
+      120
+    ],
+    "cte_20_100C_per_K": [
+      6e-06,
+      8e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1e-07,
+      2e-07
+    ],
+    "manufacturing": "Liquid-phase sintering / powder-metallurgy route; machining and finishing are grade dependent.",
+    "machinability": "difficult but generally more machinable than monolithic tungsten",
+    "fracture_behaviour": "Tungsten particles provide stiffness/density while binder phase provides ductility; defects and binder continuity strongly affect fracture.",
+    "cost": "expensive",
+    "availability": "specialist but commercially established",
+    "uses": [
+      "counterweights",
+      "radiation shielding",
+      "inertial components",
+      "balancing weights"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  },
+  {
+    "id": "WHA-93W",
+    "designation": "93W",
+    "family": "tungsten heavy alloy",
+    "nominal_tungsten_content_wt_percent": 93,
+    "binder_system": "typically Ni-Fe or Ni-Cu depending on grade",
+    "density_g_cm3": [
+      17.4,
+      17.8
+    ],
+    "elastic_modulus_GPa": [
+      320,
+      350
+    ],
+    "yield_strength_MPa": [
+      700,
+      1100
+    ],
+    "ultimate_tensile_strength_MPa": [
+      800,
+      1200
+    ],
+    "elongation_percent": [
+      3,
+      12
+    ],
+    "hardness": "high",
+    "thermal_conductivity_W_mK": [
+      70,
+      110
+    ],
+    "cte_20_100C_per_K": [
+      5.5e-06,
+      7.5e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1e-07,
+      2e-07
+    ],
+    "manufacturing": "Powder metallurgy and liquid-phase sintering; subsequent machining commonly required.",
+    "machinability": "difficult",
+    "fracture_behaviour": "Increasing tungsten fraction increases density and stiffness while reducing the relative binder fraction; fracture sensitivity remains strongly microstructure dependent.",
+    "cost": "expensive",
+    "availability": "specialist",
+    "uses": [
+      "radiation shielding",
+      "counterweights",
+      "kinetic/inertial components",
+      "specialist tooling"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  },
+  {
+    "id": "WHA-95W",
+    "designation": "95W",
+    "family": "tungsten heavy alloy",
+    "nominal_tungsten_content_wt_percent": 95,
+    "binder_system": "typically Ni-Fe or Ni-Cu depending on grade",
+    "density_g_cm3": [
+      17.7,
+      18.1
+    ],
+    "elastic_modulus_GPa": [
+      340,
+      370
+    ],
+    "yield_strength_MPa": [
+      750,
+      1200
+    ],
+    "ultimate_tensile_strength_MPa": [
+      850,
+      1300
+    ],
+    "elongation_percent": [
+      2,
+      10
+    ],
+    "hardness": "very high",
+    "thermal_conductivity_W_mK": [
+      65,
+      105
+    ],
+    "cte_20_100C_per_K": [
+      5e-06,
+      7e-06
+    ],
+    "electrical_resistivity_ohm_m": [
+      1e-07,
+      2e-07
+    ],
+    "manufacturing": "Powder metallurgy / liquid-phase sintering with precision machining where required.",
+    "machinability": "difficult",
+    "fracture_behaviour": "High-density composite; lower binder fraction can reduce ductility and increase sensitivity to microstructural defects.",
+    "cost": "very expensive",
+    "availability": "specialist",
+    "uses": [
+      "high-density counterweights",
+      "radiation shielding",
+      "inertial components",
+      "specialist defence/aerospace hardware"
+    ],
+    "evidence_class": "engineering_reference_estimate",
+    "evidence_status": "unverified",
+    "design_use": "screening_only",
+    "provenance_requirement": "Verify against grade-specific specification/manufacturer/primary literature before design use."
+  }
+]

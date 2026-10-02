@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted — `WP 19.5A` (Quotation core), 2026-09-14.
+Accepted — `WP 19.5A` (Quotation core), 2026-09-14. Amended 2026-09-15
+(`WP 20.10E`, change orders) and 2026-10-01 (`v0.23.0`, runbook C3: the
+six-state review lifecycle — see the second Amendment below, which
+supersedes §3's four-state table).
 
 ## Context
 
@@ -62,7 +65,9 @@ identity — a `Quotation`'s lines are edited in place while Draft, unlike
 an `InvoiceRequest`'s, which never change after creation, so a line needs
 an address `UpdateLineAsync`/`RemoveLineAsync` can name.
 
-**3. `QuotationStatus`: `Draft → Sent → Accepted | Declined`** — four
+**3. `QuotationStatus`: `Draft → Sent → Accepted | Declined`** —
+*superseded in `v0.23.0` by the six-state review lifecycle (second
+Amendment below); kept as written for the record.* Four
 values, not `InvoiceRequestStatus`'s nine: a quotation has no connector, no
 "reauthorise", no "unavailable". `Accepted` and `Declined` are both
 terminal — **no revision of an accepted quotation in this release**: a
@@ -299,6 +304,101 @@ on `QuotationLine`, if the record's own shape fought it — was not needed**:
 `QuotationLine.DeliverableId` was already exactly the right shape, already
 nullable, already meant "the deliverable this line is about."
 
+## Amendment (`v0.23.0`, runbook C3, 2026-10-01): review by a second person, and numbered revisions
+
+The Product Owner, runbook C3: *"save the quote without exporting or
+sending, save it as a draft and then review by second person, then export
+becomes R1."* §3's four-state table had no review step and no revision
+number; this amendment replaces it.
+
+**1. Six states.** `QuotationStatus` gains `InReview` and `Approved`,
+appended after `Declined` (the value is persisted by name, and
+`QuotationNodeProvider.GroupNodeId` derives a group id from the ordinal,
+so the four older values keep theirs). The permitted table
+(`QuotationStatusTransitions`, still the sole enforcement point):
+
+| From | To |
+|---|---|
+| `Draft` | `InReview` (submit for review; refused with no lines) |
+| `InReview` | `Approved` (a second person approves), `Draft` (returned, with a required comment) |
+| `Approved` | `Sent`, `Draft` (a line change after approval reopens a new draft) |
+| `Sent` | `Accepted`, `Declined` |
+| `Accepted`, `Declined` | none — terminal, as before |
+
+Only an `Approved` revision can be sent; a `Draft` or `InReview` one is
+refused `TransitionNotPermitted`, naming the review step. Lines are
+editable only in `Draft` and `Approved` (the latter reopening a draft);
+every line change saves the draft (`DraftSavedAt`), and an explicit Save
+draft records the same without changing anything else. `AcceptAsync` and
+`DeclineAsync` (§5) are unchanged.
+
+**2. Separation of duty.** `ApproveAsync` refuses
+`NoPrincipalSignedIn` when nobody is signed in, and
+`ReviewerMustDifferFromAuthor` when the approver is the person who
+submitted the current review (`QuotationReview.SubmittedBy`) or who
+created the quotation (`Quotation.AuthorIdentityId`, recorded at
+`CreateAsync`). This is `EvidenceService.RecordCheckAsync`'s own
+independent-check rule applied to a quote, with no setting to turn it off:
+the Product Owner asked for review by a second person outright. Any
+further exclusion the service applies to close a way round the rule (for
+example, refusing an approval of a review submitted with nobody signed in,
+or by someone who changed the lines since the last approval) is part of
+this same rule, not a new decision.
+
+**3. `Rn` revisions.** Each approval issues the next revision:
+`QuotationReview.RevisionNumber` goes 1, 2, …, and a `QuotationRevision(Number,
+SubmittedBy, ApprovedBy, ApprovedAt)` is appended to
+`QuotationReview.Revisions`. `Quotation.RevisionLabel` (`R1`, `R2`, …) is
+what an export and a send print; it is `null` while the quotation is a
+`Draft` or `InReview`, even after an earlier approval, because its lines
+may differ from the approved revision. Editing an `Approved` quotation
+returns it to `Draft`; the next approval issues `Rn+1`. The review state is
+persisted as one JSON value (`Review`) beside `Status`, so no column or
+table is added.
+
+**4. Legacy mapping.** A quotation persisted before `v0.23.0` carries no
+`Review` state and no `AuthorIdentityId`. On read (`Quotation.ReadReview`):
+a `Draft` one reads as never reviewed (`RevisionNumber` 0); one already
+`Sent`, `Accepted` or `Declined` went to its client as it stood, so it
+reads as its first issued revision, `R1`, with no recorded submitter or
+approver — none was asked for then. Nothing is rewritten in storage until
+the quotation is next changed. A legacy quotation's null author means the
+author clause of §2 cannot match it; the approver must still differ from
+whoever submits it.
+
+**Consequences.** Positive: a quote cannot reach a client without a second
+person's approval, and every issued PDF names the revision the client
+received. Negative: the review is a service rule over one person's
+desktop session, not an authenticated workflow — the separation of duty is
+only as strong as the one session principal it reads (`ADR-0146`,
+`ADR-0116`); `QuotationRevision` records who approved and when,
+not a hash of the approved lines, so an exported `Rn` is matched to stored
+content by revision number and time.
+
+## Amendment (`v0.23.0`, Product Owner decision 2026-10-01): second-person sign-off is switchable, off by default
+
+The Product Owner: *"This software is initially for a single-user
+consultancy, so EVERYTHING needing a second person to verify/approve
+cannot be the case. Add into the settings a switch to flick second-person
+sign-off on/off globally."* The review amendment's §2 said the rule had
+"no setting to turn it off"; that sentence is superseded. `ApproveAsync`
+now consults the one global switch, `ISignOffPolicy` (`ADR-0161`), **off
+by default**:
+
+- **Off:** the author, submitter or a line editor may approve, and an
+  unattributed submission or author is not refused (`AuthorUnknown` does
+  not apply). Somebody must still be signed in (`NoPrincipalSignedIn`).
+  The revision records `QuotationRevision.SelfApproved = true` and its
+  audit row ends "self-approval: second-person sign-off is off" whenever
+  the approver was not shown to be a second person.
+- **On:** §2 as written, with every exclusion the colour review board
+  added (B1: author, submitter, line editors since the last approval,
+  `AuthorUnknown`, legacy first-revision author resolution), unchanged.
+
+Every change of the switch is itself audited (`ADR-0161` §5). The review
+amendment's Consequences sentence "a quote cannot reach a client without a
+second person's approval" now holds only with the switch on.
+
 ## Related Documents
 
 `D-028`; `ADR-0145` (one object, one transaction); `ADR-0150` (the
@@ -306,5 +406,5 @@ project's own commercial core, read here for client and rate card);
 `ADR-0151` (`InvoiceRequest`, the shape repeated again, and the identical
 non-atomic-orchestration disclosure this ADR's §5 mirrors); `ADR-0134`
 (the frozen `CustomerQuotation` this Kind is deliberately not);
-`WorkPackages.md` (`WP 19.5A` row); Product Owner comment item 4
+`ADR-0161` (second-person sign-off switch); `WorkPackages.md` (`WP 19.5A` row); Product Owner comment item 4
 (2026-09-14) and item 9 (the export decision `WP 19.5B` implements).

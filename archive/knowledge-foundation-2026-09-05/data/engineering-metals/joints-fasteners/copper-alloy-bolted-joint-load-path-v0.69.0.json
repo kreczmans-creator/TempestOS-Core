@@ -1,0 +1,24 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "concepts": [
+    "bolt stiffness",
+    "clamped-member stiffness",
+    "preload",
+    "external load fraction",
+    "joint separation",
+    "slip"
+  ],
+  "workflow": [
+    "define load path",
+    "define preload",
+    "estimate stiffness ratio",
+    "calculate bolt load response",
+    "check proof/yield",
+    "check separation/slip",
+    "check fatigue",
+    "verify preload process"
+  ],
+  "rule": "Nominal bolt tensile strength alone does not establish joint adequacy.",
+  "status": "design-framework"
+}

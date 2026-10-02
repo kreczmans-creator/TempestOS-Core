@@ -1,0 +1,16 @@
+{
+  "version": "0.67.0",
+  "application": "fasteners",
+  "checks": [
+    "proof/yield",
+    "preload",
+    "thread stripping",
+    "fatigue",
+    "hydrogen embrittlement risk where applicable",
+    "corrosion",
+    "galling",
+    "coating effects"
+  ],
+  "selection": "Specify material grade, strength class/condition and coating system together.",
+  "evidence_boundary": "Screening guidance; exact alloy, condition, geometry, process and service environment require application-specific verification."
+}

@@ -1,0 +1,51 @@
+{
+  "version": "0.55.0",
+  "family": "specialty-corrosion-high-performance-alloys",
+  "screening": {
+    "Zr 702": {
+      "cost": "very expensive",
+      "availability": "specialist"
+    },
+    "Zr 705": {
+      "cost": "very expensive",
+      "availability": "specialist"
+    },
+    "Hastelloy C-276": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Hastelloy C-22": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "Alloy 825": {
+      "cost": "expensive",
+      "availability": "good specialist"
+    },
+    "Alloy 59": {
+      "cost": "expensive",
+      "availability": "specialist"
+    },
+    "MP35N": {
+      "cost": "very expensive",
+      "availability": "specialist"
+    },
+    "Nitinol": {
+      "cost": "expensive",
+      "availability": "specialist"
+    }
+  },
+  "drivers": [
+    "nickel/cobalt/tantalum/niobium content",
+    "product form",
+    "purity",
+    "processing",
+    "heat treatment",
+    "machinability",
+    "qualification",
+    "medical/aerospace certification",
+    "supplier concentration",
+    "purchase volume"
+  ],
+  "rule": "Relative classifications are planning data, not live quotations."
+}

@@ -1,0 +1,12 @@
+version: 0.30.0
+logical_workstreams: 12
+complete: 10
+substantially_complete: 2
+not_started: 0
+completion_percent: 83
+new_evidence_records: 7
+deepened_grades:
+  - 17-4 PH
+  - 15-5 PH
+verified: 0
+approved_for_design: 0

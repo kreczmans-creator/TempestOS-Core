@@ -27,7 +27,7 @@ check's generic exception handler already names the failing check in
 its `Fail` result; carried forward unchanged into the reduced script).
 None of these nine appear below.
 
-## Live Backlog (10 of 30 cap — see the `WP 19.9.1` note below the table)
+## Live Backlog (11 of 30 cap — see the `WP 19.9.1` note below the table)
 
 `TD-05` — module discovery outside `[ModuleMetadata]` requires a public
 parameterless constructor — is **closed by `WP 20.3B`**. All 32 concrete
@@ -157,6 +157,7 @@ longer appears below.
 
 | ID | Title | Owner |
 |---|---|---|
+| `V1-BLOCKER-01` | **BLOCKER for v1.0.0 — Define the standard project subfolder set (PO decision 2026-10-01).** Project folders are generated under `Projects:FolderRoot` (default `D:\01 Projects`), customer then project found-or-created; the standard subfolder set inside each project folder is TBC, so it ships empty (`ProjectFolderOptions.DefaultStandardSubfolders`, TODO-marked) and the quote export starts in the project folder root (`Projects:QuoteSubfolder` unset) | **Product Owner — firm blocker to v1.0.0** (`docs/releases/v1.0.0/WorkPackages.md`, "v1.0.0 release blockers"); closes when the set is named and set as the default with a test pinning it |
 | `TD-24` | `VerificationContext` has no bound on criteria, evidence or links recorded | unowned — **deferred beyond v1.0** (hardening; no user-visible effect at consultancy scale; the overnight acceptance campaign audit, 2026-09-16) |
 | `TD-25` | `RequirementsService` has no compare-and-swap; concurrent edits can silently clobber | was `WP 18.2B`, which landed in `v0.18.0` without closing it (the service's own remark still says "not resolved here") — **owner stale, re-classified: deferred beyond v1.0** — a single-user, locally-trusted product (`D-021`); a second principal shares the one process and the one write lock, so the clobber needs two machines this product does not have (2026-09-16) |
 | `TD-84` | Re-scoped (`WP 20.3B`, Part 1 §Structure and naming): was a grouping row over `TD-74`/`76`/`79`/`81`; `TD-74` and `TD-81` are closed (`WP 19.2B`), `TD-76` is closed (`WP 19.0A`). Only `TD-79` is still live, and narrower than the row originally scoped it — the calculation surface (Engineering Calculations rail entry, Calculations tab, `Workspace/Calculations/*`) and Reference data now have real surfaces, but the primary Create-a-Calculation path is wired to one bespoke type (`BracketCalculationWorkbench`) rather than a Kind-general one, and Validation/Units/Profiles/Loads/Environments/Compare/Optimization/Sensitivity/Math Tools have no dedicated UI: dedicated UI for the remaining engineering disciplines beyond that one bespoke type | **future capability, not v1.0 debt** — the calculation surface question is answered for v1.0 by `WP 21.7A`/`21.7B`/`21.7C` (eleven catalogue-driven calculators with re-run and compare) and `WP 21.2B` (the Engineering Assets surfaces); dedicated UI for the remaining frozen disciplines (Validation, Units, Profiles, Loads, Environments, Compare, Optimization, Sensitivity, Math Tools) is outside `D-028`'s product and stays a Future Capability Register matter (2026-09-16) |

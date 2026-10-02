@@ -1,0 +1,16 @@
+{
+  "version": "0.63.0",
+  "status": "screening-only",
+  "required_before_design_release": [
+    "exact material grade/formulation",
+    "application-specific geometry and loading",
+    "temperature/environment",
+    "conditioning state",
+    "manufacturing process",
+    "validated material properties",
+    "life/duty-cycle evidence",
+    "applicable standards/test methods",
+    "engineering verification record"
+  ],
+  "prohibition": "Generic family guidance must not be represented as an application design allowable."
+}

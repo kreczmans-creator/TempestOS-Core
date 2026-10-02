@@ -1,0 +1,35 @@
+{
+  "version": "0.60.0",
+  "family": "PBT",
+  "domain": "electrical",
+  "electrical_class": "commonly used as electrical insulation",
+  "volume_resistivity": "typically high",
+  "dielectric_strength": "generally good",
+  "relative_permittivity": "moderate; grade/frequency dependent",
+  "dissipation_factor": "generally suitable for electrical applications",
+  "moisture_sensitivity": "moderate; hydrolysis and conditioning can matter",
+  "key_controls": [
+    "humidity",
+    "temperature",
+    "frequency",
+    "glass reinforcement"
+  ],
+  "required_quantitative_fields": [
+    "volume_resistivity",
+    "surface_resistivity",
+    "dielectric_strength",
+    "relative_permittivity",
+    "dissipation_factor",
+    "arc_resistance_where_relevant",
+    "tracking_resistance_where_relevant"
+  ],
+  "test_context": [
+    "frequency",
+    "temperature",
+    "humidity/conditioning",
+    "specimen/product form",
+    "test method"
+  ],
+  "evidence_status": "screening-level qualitative record",
+  "design_use": "not approved"
+}

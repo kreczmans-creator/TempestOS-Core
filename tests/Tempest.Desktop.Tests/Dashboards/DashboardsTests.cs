@@ -108,7 +108,9 @@ public sealed class DashboardsTests
             var openLateFooting = homeButtons.Single(b =>
                 AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains("Late footing check", StringComparison.Ordinal));
             openLateFooting.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.LateFootingDeliverableId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.LateFootingDeliverableId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
 
             // ---------------------------------------------------------
@@ -116,7 +118,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.Projects);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Dashboard + Reports");
+            window.GetLogicalDescendants().OfType<ProjectsAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<ProjectsDashboardView>().Any());
             LayOut(window);
 
@@ -170,7 +172,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.EngineeringDepartment);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Dashboard + Reports");
+            window.GetLogicalDescendants().OfType<EngineeringAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<EngineeringDashboardView>().Any());
             LayOut(window);
 
@@ -185,7 +187,9 @@ public sealed class DashboardsTests
             var openDueSoon = engineeringDashboard.GetLogicalDescendants().OfType<Button>()
                 .Single(b => AutomationName(b) == "Open Due soon deliverable");
             openDueSoon.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.DueSoonDeliverableId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.DueSoonDeliverableId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
 
             // ---------------------------------------------------------
@@ -193,7 +197,7 @@ public sealed class DashboardsTests
             // ---------------------------------------------------------
             await navigator.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard & Reports");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<BusinessDashboardView>().Any());
             LayOut(window);
 
@@ -225,7 +229,9 @@ public sealed class DashboardsTests
             var openReceivable = businessDashboard.GetLogicalDescendants().OfType<Button>()
                 .Single(b => AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains(fixture.ReceivableClientId, StringComparison.Ordinal));
             openReceivable.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await RenderUntilAsync(window, () => window.LastOpenPhase.StartsWith("opened (", StringComparison.Ordinal));
+            // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
+            await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)
+                && window.LastOpenPhase.Contains(fixture.ReceivableInvoiceId.ToString("N"), StringComparison.OrdinalIgnoreCase));
             Assert.Contains(fixture.ReceivableInvoiceId.ToString("N"), window.LastOpenPhase, StringComparison.OrdinalIgnoreCase);
         }
         finally
@@ -283,7 +289,7 @@ public sealed class DashboardsTests
 
             await host.ShellNavigator!.GoToModuleAsync(ShellArea.Business);
             await window.RenderCurrentModuleAsync();
-            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard & Reports");
+            window.GetLogicalDescendants().OfType<BusinessAreaView>().Single().SelectNode("Dashboard");
             await RenderUntilAsync(window, () => window.GetLogicalDescendants().OfType<BusinessDashboardView>().Any());
             LayOut(window);
 
@@ -361,7 +367,7 @@ public sealed class DashboardsTests
         var freshQuote = await quotations.CreateAsync(projectA.Id);
         Assert.True(freshQuote.Succeeded, freshQuote.Reason);
         await quotations.AddLineAsync(freshQuote.Quotation!.Id, "DASH-A own quote", 4m, new Money(100m, CurrencyCode.Gbp), null).ConfigureAwait(true);
-        await quotations.SendAsync(freshQuote.Quotation.Id).ConfigureAwait(true);
+        await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotations, freshQuote.Quotation.Id).ConfigureAwait(true);
 
         // ---- DASH-B: On hold ----
         var projectB = await projectDirectory.CreateAsync("DASH-B", "Held Bridge");
@@ -374,7 +380,7 @@ public sealed class DashboardsTests
         var blockedQuote = await quotations.CreateAsync(projectC.Id);
         Assert.True(blockedQuote.Succeeded, blockedQuote.Reason);
         await quotations.AddLineAsync(blockedQuote.Quotation!.Id, "Detailed design", 8m, new Money(120m, CurrencyCode.Gbp), null).ConfigureAwait(true);
-        await quotations.SendAsync(blockedQuote.Quotation.Id).ConfigureAwait(true);
+        await Tempest.Desktop.Tests.Quotations.QuotationReviewSupport.ApproveAndSendAsync(host, quotations, blockedQuote.Quotation.Id).ConfigureAwait(true);
         var acceptedQuote = await quotations.AcceptAsync(blockedQuote.Quotation.Id);
         Assert.True(acceptedQuote.Succeeded, acceptedQuote.Reason);
 
@@ -440,16 +446,8 @@ public sealed class DashboardsTests
 
     private static string AutomationName(Control control) => Avalonia.Automation.AutomationProperties.GetName(control) ?? string.Empty;
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(Window window)
     {

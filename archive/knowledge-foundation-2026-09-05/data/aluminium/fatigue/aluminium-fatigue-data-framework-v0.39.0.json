@@ -1,0 +1,17 @@
+{
+  "purpose": "Selection-level fatigue screening only",
+  "principles": [
+    "Aluminium alloys generally do not possess a true endurance limit analogous to the idealised steel S-N plateau; fatigue strength should therefore be represented at a specified cycle count.",
+    "Surface finish, mean stress, stress concentration, corrosion environment, residual stress, joining method and product form materially affect fatigue performance.",
+    "Wrought and cast products should not share a single fatigue allowables record.",
+    "Welded aluminium requires a joint/detail-class approach rather than parent-material fatigue strength."
+  ],
+  "cycle_count_reference_points": [
+    100000,
+    500000,
+    1000000,
+    10000000
+  ],
+  "status": "framework_only",
+  "design_use": "not_for_allowables"
+}

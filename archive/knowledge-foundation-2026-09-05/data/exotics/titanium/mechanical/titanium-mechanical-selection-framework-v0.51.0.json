@@ -1,0 +1,19 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "selection_framework": {
+    "strength": "Record yield and ultimate strength against exact product form, heat treatment and temperature.",
+    "stiffness": "Titanium's modulus is much closer to steels than aluminium; mass reduction therefore does not imply proportional stiffness reduction for equal geometry.",
+    "fatigue": "Surface finish, residual stress, notch geometry, mean stress, microstructure and manufacturing route are critical.",
+    "fracture": "Toughness and crack-growth behaviour must be linked to alloy, product form, orientation and test environment.",
+    "creep": "Relevant for near-alpha and other elevated-temperature grades; time-at-temperature evidence is mandatory where applicable.",
+    "bearing_and_fretting": "Contact conditions can dominate performance; surface treatment and preload must be considered."
+  },
+  "screening_comparison": {
+    "CP_titanium": "lower strength / excellent corrosion / high ductility",
+    "Ti-6Al-4V": "balanced strength, fatigue and corrosion / general-purpose high-performance titanium",
+    "Ti-6Al-4V_ELI": "toughness/ductility-focused variant",
+    "near_alpha": "elevated-temperature-focused selection"
+  },
+  "design_rule": "Do not use a family-level strength number as a design allowable."
+}

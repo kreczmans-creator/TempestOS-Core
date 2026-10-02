@@ -1,0 +1,45 @@
+{
+  "version": "0.64.0",
+  "entity": "EngineeringPolymerGrade",
+  "required_fields": [
+    "id",
+    "family",
+    "supplier",
+    "trade_name",
+    "grade",
+    "reinforcement",
+    "process_form",
+    "colour",
+    "property_records",
+    "environmental_records",
+    "processing_window",
+    "conditioning_state",
+    "provenance"
+  ],
+  "property_record": {
+    "name": "string",
+    "value": "number or range",
+    "unit": "canonical unit",
+    "test_method": "standard + edition where known",
+    "temperature": "required where relevant",
+    "conditioning": "required where relevant",
+    "direction": "required for anisotropic/reinforced data where relevant",
+    "source": "traceable source",
+    "confidence": "screening|verified|qualified"
+  },
+  "provenance": {
+    "source_type": "manufacturer_datasheet|standard|peer_reviewed|test_report|other",
+    "document_id": "string",
+    "revision_or_date": "string",
+    "retrieved_or_verified": "date",
+    "page_or_location": "string",
+    "notes": "string"
+  },
+  "rules": [
+    "No grade-level value without provenance.",
+    "No unitless numerical value.",
+    "Test method context is retained with the value.",
+    "Conditioning and temperature are retained where material-state dependent.",
+    "Reinforcement and orientation are explicit."
+  ]
+}

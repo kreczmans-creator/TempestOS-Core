@@ -1,0 +1,7 @@
+{
+  "version": "0.72.0",
+  "engineering_foundation": "broad mechanical/electromechanical foundation established; remaining foundational gaps are cross-domain rather than basic metals coverage",
+  "current_milestone": "v0.72.0",
+  "next": "Controls/feedback, electronics interfaces, safety/reliability, environmental engineering, configuration/change control and cross-domain systems cases",
+  "data_boundary": "reference/design/verification frameworks are not certified design allowables"
+}

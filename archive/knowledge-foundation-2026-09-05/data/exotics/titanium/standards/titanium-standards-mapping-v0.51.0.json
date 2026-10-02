@@ -1,0 +1,64 @@
+{
+  "version": "0.51.0",
+  "family": "titanium",
+  "mapping_targets": [
+    {
+      "designation": "CP Grade 1-4",
+      "bodies": [
+        "ASTM",
+        "ASME",
+        "ISO",
+        "EN"
+      ],
+      "note": "Exact specification depends on product form and application."
+    },
+    {
+      "designation": "Ti-6Al-4V",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ISO",
+        "EN"
+      ],
+      "note": "Exact product specification and heat treatment required."
+    },
+    {
+      "designation": "Ti-6Al-4V ELI",
+      "bodies": [
+        "ASTM",
+        "AMS",
+        "ISO",
+        "EN"
+      ],
+      "note": "Do not substitute standard Ti-6Al-4V records."
+    },
+    {
+      "designation": "Ti-5Al-2.5Sn",
+      "bodies": [
+        "AMS",
+        "ASTM"
+      ],
+      "note": "Exact product form and condition required."
+    },
+    {
+      "designation": "Ti-6242",
+      "bodies": [
+        "AMS",
+        "ASTM"
+      ],
+      "note": "Exact aerospace/product specification required."
+    }
+  ],
+  "record_contract": [
+    "standard_number",
+    "edition",
+    "designation",
+    "product_form",
+    "condition",
+    "chemical_composition",
+    "mechanical_requirements",
+    "test_methods",
+    "source",
+    "verification_date"
+  ]
+}

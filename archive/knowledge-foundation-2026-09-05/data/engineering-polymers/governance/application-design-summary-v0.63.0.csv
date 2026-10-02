@@ -1,0 +1,9 @@
+Application,Primary design issue,Candidate families,Evidence status
+gears,"Prefer low-friction, wear-resistant, dimensionally stable grades; validate tooth stress, temperature, lubrication and PV/contact conditions.",POM; PA6; PA66; PA12; PEEK; PPS,Screening only
+bearings,"Choose the polymer grade against load, speed, temperature, lubrication and counterface; self-lubricating formulations may be required.",POM; PA12; PEEK; PPS; PTFE-based formulations,Screening only
+bushings,"Evaluate the complete sliding pair rather than polymer alone; account for clearance growth from temperature, moisture and creep.",POM; PA12; PEEK; PPS,Screening only
+seals,"Seal selection is driven by media compatibility, temperature, pressure, compression set/relaxation and dynamic motion.",PA12; PEEK; PPS; PEI; PBT,Screening only
+snap_fits,Use ductile grades with sufficient strain capability and validate repeated assembly cycles; avoid sharp stress raisers.,ABS; PA12; PC; POM; PEI,Screening only
+threaded_bolted_joints,Treat clamp load as time dependent; use inserts or appropriate thread forms where repeated assembly or high clamp retention is required.,PA66; PA6; POM; PC; PEEK; PEI,Screening only
+press_fits,"Define interference from actual material CTE, creep, tolerance and assembly temperature rather than copying metal-fit classes.",POM; PA12; PEEK; PEI; PBT,Screening only
+structural_parts,"Use long-term stiffness/strength and environmental stability, not short-term tensile strength alone, for structural polymer design.",PA6; PA66; PPA; PBT; PC; PEI; PPS; PEEK,Screening only

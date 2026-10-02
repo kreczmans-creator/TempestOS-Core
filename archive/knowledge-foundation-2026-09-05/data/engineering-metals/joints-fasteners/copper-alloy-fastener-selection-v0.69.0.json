@@ -1,0 +1,29 @@
+{
+  "version": "0.69.0",
+  "family": "copper-alloy",
+  "selection_inputs": [
+    "joint function",
+    "preload requirement",
+    "load spectrum",
+    "environment",
+    "temperature",
+    "material compatibility",
+    "assembly method",
+    "inspection"
+  ],
+  "checks": [
+    "proof/yield",
+    "thread stripping",
+    "joint separation",
+    "slip",
+    "bolt fatigue",
+    "bearing",
+    "prying",
+    "preload scatter",
+    "corrosion",
+    "galling",
+    "hydrogen embrittlement where applicable"
+  ],
+  "rule": "Fastener grade, joint material, preload method and environmental protection form one engineered joint system.",
+  "status": "design-framework"
+}

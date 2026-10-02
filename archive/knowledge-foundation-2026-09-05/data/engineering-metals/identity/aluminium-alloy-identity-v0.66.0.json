@@ -1,0 +1,19 @@
+{
+  "version": "0.66.0",
+  "family": "aluminium-alloy",
+  "material_classes": [
+    "wrought heat-treatable",
+    "wrought non-heat-treatable",
+    "cast aluminium alloys"
+  ],
+  "identity_fields": [
+    "base alloy/family",
+    "standard designation",
+    "grade/temper/condition",
+    "product form",
+    "heat treatment",
+    "surface/coating state"
+  ],
+  "rule": "Engineering identity includes grade, condition and product form; family name alone is insufficient.",
+  "evidence_status": "foundation reference"
+}

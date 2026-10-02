@@ -49,12 +49,21 @@ internal static class ThemeReactiveBrush
 
         void Apply()
         {
-            if (Application.Current?.TryGetResource(resourceKey, control.ActualThemeVariant, out var value) == true && value is IBrush)
-                control.SetValue(property, value);
+            if (Resolve(control, resourceKey) is { } brush)
+                control.SetValue(property, brush);
         }
 
         control.AttachedToVisualTree += (_, _) => Apply();
         control.ActualThemeVariantChanged += (_, _) => Apply();
         Apply();
+    }
+
+    /// <summary>The brush <paramref name="resourceKey"/> resolves to for <paramref name="control"/>'s own theme variant now, or <see langword="null"/>.</summary>
+    public static IBrush? Resolve(Control control, string resourceKey)
+    {
+        ArgumentNullException.ThrowIfNull(control);
+        ArgumentNullException.ThrowIfNull(resourceKey);
+
+        return Application.Current?.TryGetResource(resourceKey, control.ActualThemeVariant, out var value) == true ? value as IBrush : null;
     }
 }

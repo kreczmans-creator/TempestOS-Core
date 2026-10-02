@@ -1,0 +1,38 @@
+{
+  "version": "0.54.0",
+  "family": "refractory-metals-alloys",
+  "status": "DEPTH PASS \u2014 refractory-metal foundation established",
+  "representative_systems": [
+    "Molybdenum",
+    "TZM",
+    "Niobium",
+    "Nb-1Zr",
+    "Tantalum",
+    "Ta-10W",
+    "Rhenium",
+    "Mo-Re"
+  ],
+  "complete": [
+    "taxonomy",
+    "material roles",
+    "mechanical selection",
+    "thermal framework",
+    "oxidation/environment framework",
+    "creep framework",
+    "fatigue framework",
+    "manufacturing",
+    "joining",
+    "standards mapping",
+    "economics",
+    "applications",
+    "provenance"
+  ],
+  "open": [
+    "authoritative quantitative datasets",
+    "exact standard editions",
+    "grade/condition-specific allowables",
+    "oxidation/protection qualification",
+    "specialist supply-chain data"
+  ],
+  "certification": "not certified"
+}

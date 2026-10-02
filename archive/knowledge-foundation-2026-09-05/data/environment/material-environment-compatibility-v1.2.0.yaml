@@ -1,0 +1,54 @@
+- material_family: carbon_and_low_alloy_steels
+  environments:
+  - environment: marine_chloride
+    rating: poor_to_moderate
+    notes: Corrosion protection/coating or corrosion-resistant alloy may be required.
+  - environment: fresh_water
+    rating: moderate
+    notes: Corrosion depends strongly on chemistry, oxygenation and protection.
+  - environment: dry_indoor
+    rating: good
+    notes: Surface protection may still be required depending on service life.
+- material_family: stainless_steels
+  environments:
+  - environment: marine_chloride
+    rating: grade_dependent
+    notes: Pitting/crevice corrosion resistance varies substantially by grade and
+      environment.
+  - environment: fresh_water
+    rating: good_to_grade_dependent
+    notes: Verify chloride level, temperature and crevice conditions.
+  - environment: chemical_process
+    rating: grade_dependent
+    notes: Compatibility must be checked against the actual chemical, concentration
+      and temperature.
+- material_family: aluminium_alloys
+  environments:
+  - environment: marine_chloride
+    rating: moderate
+    notes: Protection and galvanic isolation may be required.
+  - environment: fresh_water
+    rating: good_to_moderate
+    notes: Alloy, surface condition and water chemistry matter.
+  - environment: alkaline
+    rating: poor_to_grade_dependent
+    notes: Strong alkalinity can attack aluminium.
+- material_family: magnesium_alloys
+  environments:
+  - environment: marine_chloride
+    rating: poor
+    notes: Requires deliberate corrosion protection and galvanic isolation.
+  - environment: dry_indoor
+    rating: moderate_to_good
+    notes: Surface treatment can materially improve durability.
+- material_family: engineering_polymers
+  environments:
+  - environment: water
+    rating: grade_dependent
+    notes: Absorption can alter dimensions and mechanical properties for some polymers.
+  - environment: oils_and_fuels
+    rating: grade_dependent
+    notes: Chemical compatibility must be verified for the specific polymer and fluid.
+  - environment: UV_outdoor
+    rating: grade_dependent
+    notes: Stabilisation, pigmentation and exposure duration affect durability.

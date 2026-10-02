@@ -1,0 +1,58 @@
+{
+  "version": "0.50.0",
+  "scope": "exotics",
+  "engineering_model": {
+    "temperature": "Temperature-dependent strength, modulus, conductivity, expansion and oxidation must be retained.",
+    "time": "Creep, stress relaxation and microstructural evolution require time-at-temperature.",
+    "environment": "Atmosphere can govern oxidation, corrosion and coating behaviour.",
+    "processing": "Heat treatment, grain structure and manufacturing route can dominate high-temperature performance."
+  },
+  "screening_matrix": [
+    {
+      "family": "titanium",
+      "primary_controls": [
+        "temperature",
+        "alpha-case/oxidation",
+        "creep",
+        "microstructure"
+      ]
+    },
+    {
+      "family": "nickel_superalloy",
+      "primary_controls": [
+        "creep",
+        "rupture",
+        "oxidation",
+        "precipitate stability",
+        "grain structure"
+      ]
+    },
+    {
+      "family": "cobalt_alloy",
+      "primary_controls": [
+        "hot hardness",
+        "wear",
+        "oxidation",
+        "carbide stability"
+      ]
+    },
+    {
+      "family": "refractory",
+      "primary_controls": [
+        "oxidation",
+        "brittleness/ductility transition",
+        "joining",
+        "coatings"
+      ]
+    },
+    {
+      "family": "shape_memory",
+      "primary_controls": [
+        "transformation temperatures",
+        "functional fatigue",
+        "thermal cycling"
+      ]
+    }
+  ],
+  "rule": "No universal maximum service temperature is assigned to a material family."
+}

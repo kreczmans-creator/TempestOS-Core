@@ -53,6 +53,7 @@ public sealed class TimesheetWeekView : UserControl
     private readonly DocumentExporter? _documentExporter;
     private readonly TimesheetDocumentRenderer? _timesheetRenderer;
     private readonly Func<string>? _applicationVersionText;
+    private readonly Func<string?>? _currentPrincipalDisplayName;
 
     private readonly TextBlock _weekLabel = new() { FontFamily = DesignTokens.TitleFont, FontSize = DesignTokens.FontSizeHeading, FontWeight = DesignTokens.WeightHeading };
     private readonly TextBlock _status = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
@@ -82,6 +83,15 @@ public sealed class TimesheetWeekView : UserControl
     /// </summary>
     public CommandParameterPrompt? ParameterPrompt { get; set; }
 
+    /// <summary>
+    /// The folder Export week's own save picker starts in (runbook G2) —
+    /// Settings → Timesheets → Timesheet export folder, resolved through
+    /// <see cref="TimesheetExportFolder.Resolve"/>; created when missing.
+    /// <see langword="null"/> (or a delegate answering <see langword="null"/>)
+    /// leaves the picker's own normal start.
+    /// </summary>
+    public Func<string?>? ExportFolder { get; set; }
+
     /// <summary>The change feed this view reloads its own week from (`WP 18.1A`, `WP 18.9.1`).</summary>
     public IWorkspaceChanges? WorkspaceChanges
     {
@@ -101,12 +111,13 @@ public sealed class TimesheetWeekView : UserControl
     /// other optional collaborator across this platform's Desktop views
     /// already follows.
     /// </param>
+    /// <param name="currentPrincipalDisplayName">The signed-in principal's display name, for the exported document's own heading. <see langword="null"/> falls back to the identity id only when that is itself a readable name — never a raw SID or GUID (<see cref="TimesheetPrincipalLabel"/>).</param>
     public TimesheetWeekView(
         EngineeringDomainContext domainContext, ITimesheetService timesheetService, IWorkingPatternProvider workingPatterns,
         ICommandDispatcher commandDispatcher, ICommandRegistry commandRegistry, Func<string?> currentPrincipalId,
         TimesheetEntryPrompt recordPrompt, Action<Guid, string> openObject,
         DocumentExporter? documentExporter = null, TimesheetDocumentRenderer? timesheetRenderer = null, Func<string>? applicationVersionText = null,
-        ExpenseEntryPrompt? recordExpensePrompt = null)
+        ExpenseEntryPrompt? recordExpensePrompt = null, Func<string?>? currentPrincipalDisplayName = null)
     {
         ArgumentNullException.ThrowIfNull(domainContext);
         ArgumentNullException.ThrowIfNull(timesheetService);
@@ -129,6 +140,7 @@ public sealed class TimesheetWeekView : UserControl
         _timesheetRenderer = timesheetRenderer;
         _applicationVersionText = applicationVersionText;
         _recordExpensePrompt = recordExpensePrompt;
+        _currentPrincipalDisplayName = currentPrincipalDisplayName;
 
         _weekStart = TimesheetWeek.WeekOf(DateOnly.FromDateTime(DateTime.Now));
 
@@ -326,8 +338,7 @@ public sealed class TimesheetWeekView : UserControl
             return;
         }
 
-        var identityId = _currentPrincipalId();
-        var principalName = identityId ?? "(no principal signed in)";
+        var principalName = TimesheetPrincipalLabel.Resolve(_currentPrincipalDisplayName?.Invoke(), _currentPrincipalId());
 
         var rows = _currentRows
             .Select(r => new Tempest.Desktop.Documents.Timesheets.TimesheetDocumentRow(r.Entry.Date, r.ProjectName, r.Entry.TaskDescription, r.Hours, r.Billable))
@@ -345,8 +356,11 @@ public sealed class TimesheetWeekView : UserControl
             ApplicationVersionText: _applicationVersionText());
 
         var reference = $"{principalName}-{_weekStart:yyyy-MM-dd}";
-        var result = await _documentExporter.ExportAsync(_timesheetRenderer, model, reference, cancellationToken: CancellationToken.None).ConfigureAwait(true);
-        Report(result.Message, succeeded: result.Succeeded);
+        var start = TimesheetExportFolder.Prepare(ExportFolder?.Invoke());
+        var result = await _documentExporter
+            .ExportAsync(_timesheetRenderer, model, reference, startFolder: start.Folder, cancellationToken: CancellationToken.None)
+            .ConfigureAwait(true);
+        Report(start.Note is null ? result.Message : $"{start.Note} {result.Message}", succeeded: result.Succeeded);
     }
 
     private async Task OnRecordAsync()
@@ -359,7 +373,7 @@ public sealed class TimesheetWeekView : UserControl
         }
 
         var command = new Tempest.Workspace.Timesheets.RecordTimesheetCommand(
-            input.ProjectId, input.Date, input.Hours, input.Billable, input.Grade, input.Task);
+            input.ProjectId, input.Date, input.Hours, input.Billable, input.Grade, input.Task, input.DeliverableId);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)

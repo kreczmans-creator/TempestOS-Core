@@ -1,0 +1,27 @@
+id,family,designation,density_kg_m3,youngs_modulus_GPa,yield_strength_MPa,uts_MPa,el_over_pct,electrical_resistivity_ohm_m,cost_tier,availability,uses,data_status
+MAT-STEEL-S275JR,steels,"S275JR",7850,210,275,410-560,23,1.5e-07,cheap,very_high,"fabrications; frames; brackets; general structures",candidate_reference
+MAT-STEEL-S355J2,steels,"S355J2",7850,210,355,470-630,22,1.5e-07,cheap,very_high,"welded structures; machine frames; fabrications; baseplates",candidate_reference
+MAT-STEEL-C45,steels,"C45",7850,210,370,570-700,16,1.6e-07,cheap,high,"shafts; pins; axles; machined components; general mechanical parts",candidate_reference
+MAT-STEEL-42CRMO4,steels,"42CrMo4",7850,210,650,850-1000,13,2e-07,medium,high,"shafts; high-load pins; gears; high-strength machined parts",candidate_reference
+MAT-STEEL-4140,steels,"AISI/SAE 4140",7850,205,655,850-1000,15,2.2e-07,medium,high,"shafts; gears; studs; high-strength machinery",candidate_reference
+MAT-SS-304,stainless_steels,"304",8000,193,215,505,70,7.2e-07,medium,very_high,"fabrications; enclosures; food equipment; general corrosion-resistant parts",candidate_reference
+MAT-SS-316L,stainless_steels,"316L",8000,193,170,485,40,7.4e-07,medium_expensive,high,"corrosion-resistant fabrications; chemical equipment; marine-adjacent applications; enclosures",candidate_reference
+MAT-SS-17-4PH,stainless_steels,"17-4 PH",7800,200,450-1170,790-1310,10-17,8e-07,expensive,medium,"high-strength corrosion-resistant components; shafts; aerospace fittings; valves",candidate_reference
+MAT-AL-6061-T6,aluminiums,"6061-T6",2700,68.9,276,310,12,3.99e-08,cheap,very_high,"machined parts; frames; brackets; extrusions; fixtures; electrical hardware",candidate_reference
+MAT-AL-6082-T6,aluminiums,"6082-T6",2700,69,250,310,10,4e-08,cheap,very_high,"machined components; structural extrusions; plates; fabrications",candidate_reference
+MAT-AL-7075-T6,aluminiums,"7075-T6",2810,71.7,503,572,11,5.2e-08,medium_expensive,high,"high-strength machined parts; aerospace structures; gears; shafts; fixtures",candidate_reference
+MAT-AL-2024-T3,aluminiums,"2024-T3",2780,73.1,345,485,18,5.1e-08,medium,high,"aerospace sheet; high-strength panels; machined aerospace components",candidate_reference
+MAT-AL-5083-H111,aluminiums,"5083-H111",2660,70.3,125,275,12,5.8e-08,cheap,high,"welded fabrications; marine structures; pressure vessels where permitted; frames",candidate_reference
+MAT-TI-CP-GR2,titanium,"Titanium Grade 2",4510,105,275,345,20,4.2e-07,expensive,medium,"corrosion-resistant components; chemical equipment; marine components",candidate_reference
+MAT-TI-6AL4V,titanium,"Ti-6Al-4V / Grade 5",4430,114,830,895,10,1.78e-06,expensive,high,"aerospace; high-performance mechanical parts; medical components; lightweight high-strength structures",candidate_reference
+MAT-MG-AZ31B,magnesium,"AZ31B",1770,45,200,260,15,9e-08,medium,medium,"lightweight housings; aerospace/transport structures; machined prototypes",candidate_reference
+MAT-MG-AZ91D,magnesium,"AZ91D",1810,45,160,230,3,1e-07,medium,medium,"die-cast housings; covers; portable equipment; automotive components",candidate_reference
+MAT-W-W1,tungsten,"Commercially pure tungsten",19300,400,550,550-1200,2,5.6e-08,expensive,low,"high-temperature tooling; electrodes; radiation shielding; counterweights; thermal applications",candidate_reference
+MAT-CU-C11000,copper_alloys,"C11000",8890,117,70,220,45,1.72e-08,medium,very_high,"busbars; electrical conductors; heat exchangers; machined electrical parts",candidate_reference
+MAT-PEEK,engineering_polymers,"PEEK unfilled",1320,3.6,100,100,20,10000000000000.0,very_expensive,medium,"high-temperature components; electrical insulation; bearings; seals; aerospace/chemical components",candidate_reference
+MAT-PA6,engineering_polymers,"PA6 unfilled",1140,2.8,70,75,40,[40000000000.0, 10000000000000.0],cheap,very_high,"gears; bushes; rollers; covers; machine guards; general engineering components",candidate_reference
+MAT-PA66-GF30,engineering_polymers,"PA66 GF30",1360,8.5,150,170,3,1000000000000.0,medium,high,"structural housings; brackets; automotive components; electromechanical parts",candidate_reference
+MAT-POM,engineering_polymers,"POM unfilled",1410,3.0,65,65,20,10000000000000.0,cheap,very_high,"gears; low-friction parts; precision machined components; bushes; sliding components",candidate_reference
+MAT-ABS,general_polymers,"ABS",1040,2.2,40,45,10,10000000000000.0,cheap,very_high,"covers; enclosures; consumer products; prototypes; 3D printing",candidate_reference
+MAT-PP,general_polymers,"Polypropylene (PP)",905,1.5,30,35,200,100000000000000.0,very_cheap,very_high,"containers; covers; living hinges; ducting; chemical-resistant parts",candidate_reference
+MAT-PE-HD,general_polymers,"HDPE",950,1.0,25,30,500,1000000000000000.0,very_cheap,very_high,"liners; tanks; ducts; wear strips; chemical handling components",candidate_reference

@@ -1,0 +1,51 @@
+[
+  {
+    "gap_id": "AL-GAP-001",
+    "area": "temper-specific allowables",
+    "status": "open",
+    "priority": "high",
+    "action": "Replace screening ranges with specification-linked values for common product forms and tempers."
+  },
+  {
+    "gap_id": "AL-GAP-002",
+    "area": "fatigue",
+    "status": "framework_only",
+    "priority": "high",
+    "action": "Populate S-N data at defined cycle counts and stress ratios by alloy/product form/detail class."
+  },
+  {
+    "gap_id": "AL-GAP-003",
+    "area": "fracture",
+    "status": "framework_only",
+    "priority": "medium",
+    "action": "Populate fracture toughness and fatigue-crack-growth evidence where damage tolerance is applicable."
+  },
+  {
+    "gap_id": "AL-GAP-004",
+    "area": "bearing/shear",
+    "status": "open",
+    "priority": "medium",
+    "action": "Add product-form and grain-direction dependent shear/bearing properties."
+  },
+  {
+    "gap_id": "AL-GAP-005",
+    "area": "temperature dependence",
+    "status": "open",
+    "priority": "high",
+    "action": "Populate property-versus-temperature datasets for representative alloys."
+  },
+  {
+    "gap_id": "AL-GAP-006",
+    "area": "welded condition",
+    "status": "open",
+    "priority": "high",
+    "action": "Separate parent, HAZ and weld-metal properties and fatigue/detail-class evidence."
+  },
+  {
+    "gap_id": "AL-GAP-007",
+    "area": "cast/AM variability",
+    "status": "open",
+    "priority": "medium",
+    "action": "Capture porosity, build orientation, heat treatment and process qualification effects."
+  }
+]

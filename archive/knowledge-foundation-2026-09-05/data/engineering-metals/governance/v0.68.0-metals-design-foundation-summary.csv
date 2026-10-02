@@ -1,0 +1,10 @@
+Domain,Status,Coverage,Boundary
+Fatigue,Complete,"S-N, ε-N, crack growth, mean stress, surface effects",Grade/application specific
+Fracture,Complete,"K, ΔK, toughness, crack-growth workflow",Geometry/material validity required
+Contact,Complete,"Hertzian screening, bearing/gear/cam/roller context",Applicable model/standard required
+Wear,Complete,"Adhesive, abrasive, fretting, surface fatigue, galling",Material pair and surface state required
+Surface engineering,Complete,"Hardening, coatings, plating, conversion treatments",Process qualification required
+Fits,Complete,Clearance/transition/interference and thermal effects,Actual tolerance/process capability required
+Tolerance stack,Complete,"Worst-case, RSS, Monte Carlo framework",Distribution assumptions must be justified
+Substitution,Complete,Engineering change/equivalence workflow,Reverification required
+Worked cases,Complete,"Shaft, contact, interference fit, substitution","Framework, not certification"

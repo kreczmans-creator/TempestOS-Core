@@ -1,0 +1,33 @@
+{
+  "version": "0.67.0",
+  "family": "alloy-steel",
+  "treatments": [
+    "annealing",
+    "normalising",
+    "quenching and tempering",
+    "carburising",
+    "nitriding",
+    "induction hardening"
+  ],
+  "engineering_effects": [
+    "strength",
+    "hardness",
+    "ductility",
+    "toughness",
+    "fatigue resistance",
+    "dimensional stability",
+    "residual stress",
+    "corrosion behaviour"
+  ],
+  "controls": [
+    "temperature",
+    "time",
+    "heating/cooling rate",
+    "quench medium",
+    "section size",
+    "atmosphere",
+    "subsequent ageing/tempering"
+  ],
+  "rule": "Heat-treatment state is part of material identity and must be controlled and verified.",
+  "evidence_status": "foundation reference"
+}

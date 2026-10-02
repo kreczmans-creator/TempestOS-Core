@@ -1,0 +1,35 @@
+{
+  "version": "0.49.0",
+  "family": "magnesium",
+  "status": "foundation",
+  "properties": [
+    {
+      "name": "electrical_resistivity",
+      "context": "20 C reference where applicable",
+      "rule": "Use grade- and temperature-specific source data for electrical design."
+    },
+    {
+      "name": "temperature_coefficient_of_resistance",
+      "context": "temperature dependent",
+      "rule": "Populate from authoritative source before precision electrical/thermal coupling."
+    },
+    {
+      "name": "thermal_electrical_coupling",
+      "context": "Joule heating",
+      "rule": "Couple resistivity to temperature for electrothermal calculations."
+    }
+  ],
+  "engineering_rules": [
+    "Magnesium is electrically conductive but generally has higher resistivity than copper and aluminium.",
+    "Electrical contact to dissimilar metals must also be considered as a galvanic-corrosion problem.",
+    "Contact resistance depends on surface condition, coatings, contact pressure and environment."
+  ],
+  "required_fields": [
+    "grade",
+    "surface_condition",
+    "temperature_C",
+    "resistivity",
+    "contact_resistance",
+    "source"
+  ]
+}

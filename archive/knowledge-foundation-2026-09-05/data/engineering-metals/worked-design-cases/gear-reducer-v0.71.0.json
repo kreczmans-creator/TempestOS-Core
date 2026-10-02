@@ -1,0 +1,16 @@
+{
+  "version": "0.71.0",
+  "status": "worked-framework",
+  "problem": "Screen a two-stage geared transmission.",
+  "workflow": [
+    "define input speed and power",
+    "allocate ratios",
+    "calculate torque by stage",
+    "select preliminary gear geometry",
+    "check tooth bending",
+    "check contact stress",
+    "check shafts/bearings",
+    "check backlash and thermal growth",
+    "define applicable gear-standard verification"
+  ]
+}

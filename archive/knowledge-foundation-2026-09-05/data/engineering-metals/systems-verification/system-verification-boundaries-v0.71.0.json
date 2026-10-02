@@ -1,0 +1,15 @@
+{
+  "version": "0.71.0",
+  "status": "verification-framework",
+  "checks": [
+    "interfaces",
+    "loads",
+    "power",
+    "thermal environment",
+    "software/control assumptions",
+    "fault conditions",
+    "configuration",
+    "measurement uncertainty"
+  ],
+  "rule": "A component can pass its local requirement while the integrated system fails because interfaces and coupled behaviours were not verified."
+}

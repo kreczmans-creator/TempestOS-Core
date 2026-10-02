@@ -1,0 +1,17 @@
+version: 0.21.0
+completed_workstreams: 10
+substantially_complete_workstreams: 2
+not_started_workstreams: 0
+headline: 10/12 complete (83%); 2/12 substantially complete; 0/12 not started
+new_sourced_observations: 6
+new_verified_observations: 0
+steel_grades_with_source_backed_data:
+- S235JR
+- S355JR
+- 42CrMo4
+- C45
+- '304'
+- 316L
+- 17-4 PH
+- H13
+next: Continue steel evidence closure and then aluminium source verification.

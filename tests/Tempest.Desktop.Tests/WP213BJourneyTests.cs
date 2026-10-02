@@ -213,6 +213,9 @@ public sealed class WP213BJourneyTests
             _ = host.EvidenceService;
             var settingsProvider = (ISettingsProvider)host.Services!.GetService(typeof(ISettingsProvider));
             await settingsProvider.SetValueAsync(EvidenceService.IndependentCheckSettingKey, bool.TrueString);
+            // ADR-0161: second-person sign-off is off by default (a one-person
+            // consultancy); the refusal this journey proves is the ON rule.
+            await ((Tempest.Core.Governance.ISignOffPolicy)host.Services!.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy))).SetSecondPersonRequiredAsync(true);
 
             var window = new MainWindow(host, new StubFilePicker());
             LayOut(window);
@@ -354,16 +357,8 @@ public sealed class WP213BJourneyTests
     private static Border? FindRow(Control root, Guid orderId) =>
         root.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => Equals(b.Tag, orderId));
 
-    private static async Task RenderUntilAsync(MainWindow window, Func<bool> condition)
-    {
-        var deadline = Deadline(20);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-            Dispatcher.UIThread.RunJobs();
-            LayOut(window);
-        }
-    }
+    private static Task RenderUntilAsync(MainWindow window, Func<bool> condition, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? what = null) =>
+        DesktopTestHelpers.WaitUntilAsync(condition, 20, () => LayOut(window), DesktopTestHelpers.OpenPhaseOf(window), what);
 
     private static void LayOut(MainWindow window)
     {

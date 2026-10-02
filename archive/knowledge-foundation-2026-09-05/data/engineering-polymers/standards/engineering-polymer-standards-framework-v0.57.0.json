@@ -1,0 +1,26 @@
+{
+  "version": "0.57.0",
+  "scope": "Engineering polymers",
+  "standard_domains": [
+    "ASTM polymer mechanical testing",
+    "ISO polymer mechanical testing",
+    "UL 94 flammability classification where relevant",
+    "IEC electrical insulation testing where relevant",
+    "ISO/ASTM environmental and conditioning methods where relevant"
+  ],
+  "material_identity_fields": [
+    "resin family",
+    "grade",
+    "reinforcement",
+    "filler",
+    "flame-retardant system",
+    "colour/additives where material identity matters",
+    "conditioning state",
+    "product form",
+    "processing method",
+    "standard",
+    "edition",
+    "source"
+  ],
+  "rule": "A polymer trade name alone is not a sufficient engineering material identity."
+}

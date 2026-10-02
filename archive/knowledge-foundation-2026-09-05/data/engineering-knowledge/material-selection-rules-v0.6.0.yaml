@@ -1,0 +1,30 @@
+- rule_id: SEL-001
+  name: minimum_yield_strength
+  input: yield_strength
+  operator: '>='
+  unit: Pa
+  purpose: Filter candidate materials against a minimum static strength requirement.
+- rule_id: SEL-002
+  name: minimum_ultimate_strength
+  input: ultimate_tensile_strength
+  operator: '>='
+  unit: Pa
+  purpose: Filter candidate materials against an ultimate strength threshold.
+- rule_id: SEL-003
+  name: maximum_density
+  input: density
+  operator: <=
+  unit: kg/m^3
+  purpose: Filter for mass-sensitive designs.
+- rule_id: SEL-004
+  name: maximum_cost_tier
+  input: cost_tier
+  operator: <=
+  unit: ordinal
+  purpose: Screen out commercially unsuitable material classes.
+- rule_id: SEL-005
+  name: minimum_availability
+  input: availability
+  operator: '>='
+  unit: ordinal
+  purpose: Screen out specialist/long-lead materials.
