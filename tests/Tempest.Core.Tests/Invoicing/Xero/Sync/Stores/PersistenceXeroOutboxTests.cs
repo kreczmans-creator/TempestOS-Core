@@ -355,6 +355,167 @@ public sealed class PersistenceXeroOutboxTests
     }
 
     [Fact]
+    public async Task SupersedingACreate_BehindAStatusChange_KeepsTheCreateAhead()
+    {
+        // Defect 1: create, status change, then a changed create. The
+        // replacement must not move behind the status change.
+        await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        var changed = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+
+        Assert.Equal(changed.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+        await Outbox().RecordOutcomeAsync(changed.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(status.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+
+        Assert.Equal(
+            [XeroOperation.PushQuote, XeroOperation.PushQuote, XeroOperation.SetQuoteStatus],
+            (await Outbox().ListForDocumentAsync(Quote(1))).Select(e => e.Operation));
+    }
+
+    [Fact]
+    public async Task SupersedingAFailedCreate_BehindAStatusChange_UnblocksTheDocumentInOrder()
+    {
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        await Outbox().ClaimNextDueAsync();
+        await Outbox().RecordOutcomeAsync(create.Id, XeroOutboxState.Failed, "No contact link.");
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+
+        var fixedCreate = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+
+        Assert.Equal(fixedCreate.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        await Outbox().RecordOutcomeAsync(fixedCreate.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(status.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+    }
+
+    [Fact]
+    public async Task SupersedeInterruptedByACrash_SendsTheOldContentFirst_ThenTheReplacement()
+    {
+        // The replacement shares its predecessor's place; if a crash leaves
+        // both pending at the same instant, the old content still goes first.
+        var old = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var oldJson = _persistence.Raw(PersistenceXeroOutbox.Collection, old.Id.ToString("D"))!;
+        var replacement = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+        _persistence.Seed(PersistenceXeroOutbox.Collection, old.Id.ToString("D"), oldJson);
+
+        Assert.True(replacement.EnqueuedAtUtc > old.EnqueuedAtUtc);
+        Assert.Equal(old.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        await Outbox().RecordOutcomeAsync(old.Id, XeroOutboxState.Succeeded);
+        Assert.Equal(replacement.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+    }
+
+    [Fact]
+    public async Task EntryWithNoSequence_DoesNotMakeTheNextOneOverflow_OrJumpTheQueue()
+    {
+        // Defect 2: a stored entry without `Sequence` must not read as
+        // long.MaxValue, from which the next sequence wraps to long.MinValue.
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = create.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json.Remove("Sequence");
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+
+        var stored = (long)JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, status.Id.ToString("D"))!)!["Sequence"]!;
+        Assert.True(stored > 0, $"Sequence {stored}");
+        Assert.Equal(create.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+    }
+
+    [Fact]
+    public async Task EntryAtTheLargestSequence_DoesNotMakeTheNextOneWrap()
+    {
+        var create = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = create.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["Sequence"] = long.MaxValue;
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        _clock.Advance(TimeSpan.FromSeconds(1));
+
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+
+        Assert.Equal(long.MaxValue, (long)JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, status.Id.ToString("D"))!)!["Sequence"]!);
+        Assert.Equal(create.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+    }
+
+    [Theory]
+    [InlineData("Operation", "PushCreditNote")]
+    [InlineData("State", "Parked")]
+    public async Task NewerVersionEntry_ThisBuildCannotDeserialize_IsListedAsNewer_AndStillHoldsItsDocument(string property, string unknownValue)
+    {
+        // Defect 3: an unknown enum value in a newer entry must not make it
+        // vanish (and stop holding its document's queue).
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = entry.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["SchemaVersion"] = 2;
+        json[property] = unknownValue;
+        var newer = json.ToJsonString();
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, newer);
+
+        var listed = Assert.Single(await Outbox().ListForDocumentAsync(Quote(1)));
+        Assert.Equal(entry.Id, listed.Id);
+        Assert.Equal(2, listed.SchemaVersion);
+        Assert.Equal(2, (await Outbox().FindAsync(entry.Id))!.SchemaVersion);
+        Assert.False(await Outbox().RetryAsync(entry.Id));
+
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+        Assert.Equal(XeroOutboxState.Pending, (await Outbox().FindAsync(status.Id))!.State);
+        Assert.Equal(newer, _persistence.Raw(PersistenceXeroOutbox.Collection, key));
+    }
+
+    [Fact]
+    public async Task CorruptEntryOfThisVersion_IsListedAsFailed_AndHoldsItsDocument_Untouched()
+    {
+        // Defect 4: a corrupt entry must not let later work for its
+        // document run ahead of it.
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        var key = entry.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["State"] = "Parked";
+        json.Remove("IdempotencyKey");
+        var corrupt = json.ToJsonString();
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, corrupt);
+
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+        var other = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(2), "h1");
+
+        Assert.Equal(other.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+        Assert.Null(await Outbox().ClaimNextDueAsync());
+
+        var listed = Assert.Single(await Outbox().ListAsync([XeroOutboxState.Failed]));
+        Assert.Equal(entry.Id, listed.Id);
+        Assert.Equal(Quote(1), listed.Document);
+        Assert.Equal(PersistenceXeroOutbox.UnreadableError, listed.LastError);
+
+        Assert.False(await Outbox().RetryAsync(entry.Id));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Outbox().RecordOutcomeAsync(entry.Id, XeroOutboxState.Succeeded));
+        await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
+        Assert.Equal(1, await Outbox().RecoverInFlightAsync());
+        Assert.Equal(0, await Outbox().ResumeAfterAuthorisationAsync());
+        Assert.Equal(corrupt, _persistence.Raw(PersistenceXeroOutbox.Collection, key));
+        Assert.Equal(XeroOutboxState.Pending, (await Outbox().FindAsync(status.Id))!.State);
+    }
+
+    [Fact]
+    public async Task CorruptEntry_ThatSaysItSucceeded_DoesNotHoldItsDocument()
+    {
+        var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
+        await SucceedNextAsync();
+        var key = entry.Id.ToString("D");
+        var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
+        json["Id"] = Guid.NewGuid().ToString("D");
+        _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+
+        var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
+
+        Assert.Equal(status.Id, (await Outbox().ClaimNextDueAsync())!.Id);
+    }
+
+    [Fact]
     public async Task ConcurrentIdenticalEnqueues_QueueOneEntry()
     {
         var outboxes = Enumerable.Range(0, 4).Select(_ => Outbox()).ToArray();

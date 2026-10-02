@@ -36,7 +36,16 @@ public sealed record XeroInvoiceLinkImportReport(int Imported, int AlreadyLinked
 /// organisation connected when the engine first reads links. A link imported
 /// into the wrong organisation names an invoice Xero does not hold there:
 /// reading it back answers 404 (<i>Deleted in Xero</i>, offer Unlink), and
-/// nothing is ever created from it.
+/// nothing is ever created from it. That includes the Demo Company: a
+/// pre-`v0.24.0` link imported there is still <see cref="ImportedLinkedBy"/>,
+/// and X4 must make sure an Unlink of such a link never leads to the
+/// request being created again in that organisation (D7).
+/// </para>
+/// <para>
+/// <b>Which requests.</b> Exactly those whose <c>Connector</c> is
+/// <c>"Xero"</c> (ordinal, as the connector records its own
+/// <see cref="IInvoicingConnector.Name"/>) and which carry an
+/// <c>ExternalId</c>.
 /// </para>
 /// </remarks>
 public sealed class XeroInvoiceLinkImporter
@@ -127,7 +136,7 @@ public sealed class XeroInvoiceLinkImporter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!string.Equals(candidate.Connector, XeroConnectorName, StringComparison.OrdinalIgnoreCase)
+            if (!string.Equals(candidate.Connector, XeroConnectorName, StringComparison.Ordinal)
                 || string.IsNullOrWhiteSpace(candidate.ExternalId))
             {
                 continue;

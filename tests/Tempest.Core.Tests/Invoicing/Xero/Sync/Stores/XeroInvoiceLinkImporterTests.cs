@@ -37,6 +37,23 @@ public sealed class XeroInvoiceLinkImporterTests
         Links(),
         _clock);
 
+    [Theory]
+    [InlineData("xero")]
+    [InlineData("XERO")]
+    [InlineData("Xero ")]
+    public async Task OnlyTheConnectorNamedExactlyXero_IsImported(string connector)
+    {
+        // Defect 7: the design says Connector == "Xero" (ordinal).
+        var request = Guid.Parse("00000009-0000-4000-8000-000000000009");
+        _requests.Clear();
+        _requests.Add(new(request, connector, "inv-guid-9", null, null, null));
+
+        var report = await Importer().ImportAsync(DemoTenant);
+
+        Assert.Equal(0, report.Imported);
+        Assert.Null(await Links().FindAsync(DemoTenant, XeroDocumentRef.For(XeroDocumentKind.Invoice, request)));
+    }
+
     [Fact]
     public async Task EveryXeroSendWithAnExternalId_IsImported_AsAnImportedLink()
     {
