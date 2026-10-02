@@ -207,7 +207,9 @@ internal static class XeroSimulatorRules
 /// <c>concurrent</c>); injected fault (taken only by an admitted request);
 /// bearer token (401); <c>xero-tenant-id</c> (403); for a write that is not
 /// an exact replay, the D7 and <c>SentToContact</c> detectors (so a write
-/// refused below is still recorded); minute and day limits (429 with
+/// refused below is still recorded — and so is a write with a valid token
+/// and tenant refused 429 <c>concurrent</c> or answered by an injected
+/// fault, which run the same detectors first); minute and day limits (429 with
 /// <c>Retry-After</c>); routing (404/405); scope (403
 /// <c>AuthorizationUnsuccessful</c>); for a write, <c>Idempotency-Key</c>
 /// (replay, or 400 for reuse or length) and then the endpoint's own
@@ -352,6 +354,8 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
         {
             if (_inFlight >= Options.ConcurrentLimit)
             {
+                if (IsAuthorised(context.Request) && TenantMatches(context.Request))
+                    DetectWriteSafety(context);
                 var refused = RateLimited("concurrent", TimeSpan.FromSeconds(1));
                 return Finish(context, refused);
             }
@@ -392,6 +396,11 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
     {
         lock (_sync)
         {
+            // The client sent this write with a valid token and tenant; the
+            // fault is Xero's answer, so the attempt is recorded as on any path.
+            if (IsAuthorised(context.Request) && TenantMatches(context.Request))
+                DetectWriteSafety(context);
+
             switch (fault.Kind)
             {
                 case XeroFaultKind.ServiceUnavailable:
@@ -437,17 +446,7 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
         if (!TenantMatches(context.Request))
             return SimResponse.Problem(HttpStatusCode.Forbidden, "Forbidden", "AuthenticationUnsuccessful: the xero-tenant-id header is missing or names an organisation this token is not connected to.");
 
-        // D7 and D4 (SentToContact) are detectors on every write that reaches
-        // the organisation, whatever Xero then answers (429, 404, 405, 403,
-        // 400) — only an exact Idempotency-Key replay is not re-recorded.
-        if (!context.IsRead && !IsExactReplay(context))
-        {
-            if (!Options.IsDemoCompany)
-                context.Violate(XeroSimulatorRules.LiveOrganisationWrite, $"{context.Method} {context.Path} wrote to '{Options.OrganisationName}', which is not the Demo Company.");
-
-            if (context.Json is not null && ContainsSentToContact(context.Json))
-                context.Violate(XeroSimulatorRules.SentToContact, $"{context.Method} {context.Path} set SentToContact: true.");
-        }
+        DetectWriteSafety(context);
 
         var now = Time.GetUtcNow();
         PruneWindows(now);
@@ -517,6 +516,25 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
             _idempotency[context.IdempotencyKey!] = new CachedResponse(fingerprint, $"{context.Method} {context.Path}", response);
 
         return response;
+    }
+
+    /// <summary>
+    /// D7 and D4 (<c>SentToContact</c>) are detectors on every write that
+    /// carries this organisation's valid token and tenant, whatever Xero then
+    /// answers (an injected 503/429/401 or transport failure, 429
+    /// <c>concurrent</c>, 429, 404, 405, 403, 400) — only an exact
+    /// Idempotency-Key replay is not re-recorded. Called under <see cref="_sync"/>.
+    /// </summary>
+    private void DetectWriteSafety(RequestContext context)
+    {
+        if (context.IsRead || IsExactReplay(context))
+            return;
+
+        if (!Options.IsDemoCompany)
+            context.Violate(XeroSimulatorRules.LiveOrganisationWrite, $"{context.Method} {context.Path} wrote to '{Options.OrganisationName}', which is not the Demo Company.");
+
+        if (context.Json is not null && ContainsSentToContact(context.Json))
+            context.Violate(XeroSimulatorRules.SentToContact, $"{context.Method} {context.Path} set SentToContact: true.");
     }
 
     /// <summary>Whether <paramref name="context"/> repeats a cached write exactly (same Idempotency-Key, same request), so Xero answers from its cache.</summary>

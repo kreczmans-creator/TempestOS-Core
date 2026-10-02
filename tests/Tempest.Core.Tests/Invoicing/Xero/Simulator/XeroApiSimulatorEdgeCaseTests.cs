@@ -297,4 +297,133 @@ public sealed class XeroApiSimulatorEdgeCaseTests
         Assert.Equal(19.99m, updated["TotalTax"]!.GetValue<decimal>());
         Assert.Equal(19.99m, updated["LineItems"]![0]!["TaxAmount"]!.GetValue<decimal>());
     }
+
+    // ------------------------------------------------------------ re-verification (second pass)
+
+    [Fact]
+    public async Task Two_elements_of_one_batch_updating_the_same_invoice_with_its_own_number_do_not_clash()
+    {
+        using var kit = new SimulatorTestKit();
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        var invoiceId = await kit.CreateInvoiceAsync(contactId, "N-1");
+        JsonNode Element(string reference) => new JsonObject { ["InvoiceID"] = invoiceId, ["InvoiceNumber"] = "N-1", ["Reference"] = reference };
+
+        var reply = await kit.PostAsync("Invoices", new JsonObject { ["Invoices"] = new JsonArray { Element("a"), Element("b") } });
+
+        Assert.Equal(HttpStatusCode.OK, reply.Status);
+        Assert.Empty(kit.Simulator.Violations);
+        Assert.Equal("b", Assert.Single(kit.Simulator.All("Invoices")).Body["Reference"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task An_update_and_a_create_in_one_batch_still_clash_on_the_same_number()
+    {
+        using var kit = new SimulatorTestKit();
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        var invoiceId = await kit.CreateInvoiceAsync(contactId, "N-1");
+        var update = new JsonObject { ["InvoiceID"] = invoiceId, ["InvoiceNumber"] = "N-2" };
+        var create = SimulatorTestKit.Invoice(contactId, "N-2")["Invoices"]![0]!.DeepClone();
+
+        var reply = await kit.PostAsync("Invoices", new JsonObject { ["Invoices"] = new JsonArray { update, create } });
+
+        Assert.Equal(HttpStatusCode.BadRequest, reply.Status);
+        Assert.Equal(XeroSimulatorRules.Duplicate, Assert.Single(kit.Simulator.Violations).Rule);
+    }
+
+    public static TheoryData<string> AnsweredFaults() =>
+        [nameof(XeroFaultKind.ServiceUnavailable), nameof(XeroFaultKind.RateLimitedMinute), nameof(XeroFaultKind.RateLimitedDay), nameof(XeroFaultKind.Unauthorised)];
+
+    [Theory]
+    [MemberData(nameof(AnsweredFaults))]
+    public async Task A_live_write_answered_by_an_injected_fault_is_still_a_D7_and_SentToContact_breach(string kind)
+    {
+        using var kit = new SimulatorTestKit(new XeroSimulatorOptions(IsDemoCompany: false));
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        var body = SimulatorTestKit.Invoice(contactId);
+        body["Invoices"]![0]!["SentToContact"] = true;
+        kit.Simulator.Inject(new XeroFault(Enum.Parse<XeroFaultKind>(kind)));
+
+        var reply = await kit.PutAsync("Invoices", body);
+
+        Assert.True((int)reply.Status >= 400);
+        Assert.Empty(kit.Simulator.All("Invoices"));
+        Assert.Equal([XeroSimulatorRules.LiveOrganisationWrite, XeroSimulatorRules.SentToContact], kit.Simulator.Violations.Select(v => v.Rule));
+    }
+
+    [Fact]
+    public async Task A_live_write_lost_to_an_injected_transport_failure_is_still_a_D7_breach()
+    {
+        using var kit = new SimulatorTestKit(new XeroSimulatorOptions(IsDemoCompany: false));
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        kit.Simulator.Inject(new XeroFault(XeroFaultKind.TransportFailure));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => kit.PutAsync("Invoices", SimulatorTestKit.Invoice(contactId)));
+
+        Assert.Equal(XeroSimulatorRules.LiveOrganisationWrite, Assert.Single(kit.Simulator.Violations).Rule);
+    }
+
+    [Fact]
+    public async Task A_read_or_a_badly_authorised_write_answered_by_a_fault_records_no_D7()
+    {
+        using var kit = new SimulatorTestKit(new XeroSimulatorOptions(IsDemoCompany: false));
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        kit.Simulator.Inject(new XeroFault(XeroFaultKind.ServiceUnavailable, Times: 2));
+
+        await kit.GetAsync("Organisation");
+        var request = kit.Request(HttpMethod.Put, "Invoices", SimulatorTestKit.Invoice(contactId));
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "not-the-token");
+        await kit.SendAsync(request);
+
+        Assert.Equal(2, kit.Simulator.Requests.Count);
+        Assert.Empty(kit.Simulator.Violations);
+    }
+
+    [Fact]
+    public async Task A_live_write_refused_429_concurrent_is_still_a_D7_breach()
+    {
+        using var kit = new SimulatorTestKit(new XeroSimulatorOptions(IsDemoCompany: false));
+        var contactId = kit.Simulator.SeedContact("Acme Ltd");
+        using var invoker = new HttpMessageInvoker(kit.Simulator, disposeHandler: false);
+        var held = new List<Task<HttpResponseMessage>>();
+
+        using (kit.Simulator.HoldRequests())
+        {
+            for (var i = 0; i < 5; i++)
+                held.Add(invoker.SendAsync(kit.Request(HttpMethod.Get, XeroApiSimulator.BaseAddress + "Organisation"), CancellationToken.None));
+
+            var sixth = await kit.PutAsync("Invoices", SimulatorTestKit.Invoice(contactId));
+            Assert.Equal((HttpStatusCode)429, sixth.Status);
+            Assert.Equal("concurrent", sixth.Header("X-Rate-Limit-Problem"));
+        }
+
+        foreach (var task in held)
+            (await task).Dispose();
+
+        Assert.Equal(XeroSimulatorRules.LiveOrganisationWrite, Assert.Single(kit.Simulator.Violations).Rule);
+        Assert.Empty(kit.Simulator.All("Invoices"));
+    }
+
+    [Fact]
+    public async Task A_where_literal_with_an_escaped_quote_matches_the_unescaped_name()
+    {
+        using var kit = new SimulatorTestKit();
+        var id = kit.Simulator.SeedContact("a\" AND b");
+        kit.Simulator.SeedContact("a");
+
+        var equal = await kit.GetAsync("Contacts?where=" + Uri.EscapeDataString("Name==\"a\\\" AND b\""));
+        var contains = await kit.GetAsync("Contacts?where=" + Uri.EscapeDataString("Name.Contains(\"\\\" AND\")"));
+
+        Assert.Equal(HttpStatusCode.OK, equal.Status);
+        Assert.Equal(id, Assert.Single(equal.Items("Contacts"))["ContactID"]!.GetValue<string>());
+        Assert.Equal(HttpStatusCode.OK, contains.Status);
+        Assert.Equal(id, Assert.Single(contains.Items("Contacts"))["ContactID"]!.GetValue<string>());
+        Assert.Empty(kit.Simulator.Violations);
+    }
+
+    [Theory]
+    [InlineData("a\\\"b", "a\"b")]
+    [InlineData("a\\\\b", "a\\b")]
+    [InlineData("plain", "plain")]
+    public void Unescape_undoes_quote_and_backslash_escapes(string raw, string expected) =>
+        Assert.Equal(expected, XeroWire.Unescape(raw));
 }

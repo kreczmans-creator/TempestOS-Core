@@ -160,7 +160,7 @@ internal static partial class XeroWire
             if (method.Success)
             {
                 var path = method.Groups["path"].Value;
-                var arg = method.Groups["arg"].Value;
+                var arg = Unescape(method.Groups["arg"].Value);
                 var fn = method.Groups["fn"].Value;
                 predicates.Add(o => TextAt(o, path) is { } text && fn switch
                 {
@@ -190,8 +190,9 @@ internal static partial class XeroWire
     /// Splits a <c>where=</c> clause on <c>&amp;&amp;</c> / <c>AND</c>
     /// outside double-quoted strings, and reports whether an <c>||</c> /
     /// <c>OR</c> appears outside them. Text inside quotes (where <c>\"</c>
-    /// escapes a quote) is never split, so <c>Name=="Barnes AND Noble"</c>
-    /// is one clause.
+    /// escapes a quote and <c>\\</c> a backslash; the literal is unescaped
+    /// when the clause is read) is never split, so
+    /// <c>Name=="Barnes AND Noble"</c> is one clause.
     /// </summary>
     internal static List<string> SplitWhere(string where, out bool hasOr)
     {
@@ -269,9 +270,10 @@ internal static partial class XeroWire
             return true;
         }
 
-        if (raw.Length >= 2 && raw[0] == '"' && raw[^1] == '"')
+        var quoted = QuotedLiteralRegex().Match(raw);
+        if (quoted.Success)
         {
-            literal = raw[1..^1];
+            literal = Unescape(quoted.Groups["v"].Value);
             return true;
         }
 
@@ -287,10 +289,19 @@ internal static partial class XeroWire
         return false;
     }
 
+    /// <summary>Undoes the escapes a quoted <c>where=</c> string may carry: <c>\"</c> is <c>"</c> and <c>\\</c> is <c>\</c>.</summary>
+    internal static string Unescape(string quoted) => EscapeRegex().Replace(quoted, "$1");
+
+    [GeneratedRegex(@"\\([""\\])")]
+    private static partial Regex EscapeRegex();
+
+    [GeneratedRegex(@"^""(?<v>(?:[^""\\]|\\.)*)""$")]
+    private static partial Regex QuotedLiteralRegex();
+
     [GeneratedRegex(@"^/Date\((?<ms>-?\d+)(?<offset>[+-]\d{4})?\)/$")]
     private static partial Regex MsDateRegex();
 
-    [GeneratedRegex(@"^(?<path>[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*)\.(?<fn>Contains|StartsWith|EndsWith)\(""(?<arg>[^""]*)""\)$")]
+    [GeneratedRegex(@"^(?<path>[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*)\.(?<fn>Contains|StartsWith|EndsWith)\(""(?<arg>(?:[^""\\]|\\.)*)""\)$")]
     private static partial Regex MethodClauseRegex();
 
     [GeneratedRegex(@"^(?<path>[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*)\s*(?<op>==|!=)\s*(?<value>.+)$")]

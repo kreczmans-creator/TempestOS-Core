@@ -183,9 +183,13 @@ internal sealed partial class XeroApiSimulator
             }
 
             // Xero applies a batch in order, so an element also clashes with
-            // the unique key an earlier, valid element of the same batch claims.
+            // the unique key an earlier, valid element of the same batch claims
+            // — unless that element updates the same existing document (a
+            // document never clashes with itself).
             if (check.Ok && UniqueKey(kind, element, existing) is { } key
-                && plans.Any(p => p.Check.Ok && string.Equals(UniqueKey(kind, p.Element, p.Existing), key, StringComparison.OrdinalIgnoreCase)))
+                && plans.Any(p => p.Check.Ok
+                    && !(existing is not null && ReferenceEquals(p.Existing, existing))
+                    && string.Equals(UniqueKey(kind, p.Element, p.Existing), key, StringComparison.OrdinalIgnoreCase)))
             {
                 check.Fail(XeroSimulatorRules.Duplicate, kind == ContactsKind
                     ? $"The contact name {key} is already assigned to another contact in this request. The contact name must be unique across all active contacts."
