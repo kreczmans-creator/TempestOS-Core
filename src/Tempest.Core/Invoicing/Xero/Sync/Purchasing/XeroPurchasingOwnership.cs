@@ -71,14 +71,44 @@ public static class XeroPurchasingOwnership
 
     /// <summary>
     /// Applies the rule to the records Xero holds under one number and contact.
+    /// The one place a purchasing record is judged ours or not.
     /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>Nothing live, and a deleted (or voided) record carries what the
+    /// entry's own create (<paramref name="entryKey"/>) sent: that create may
+    /// have landed and been deleted in Xero, and a resend under the same key
+    /// would only replay Xero's answer about the deleted record —
+    /// <see cref="XeroOwnershipVerdict.DeletedInXero"/>.</item>
+    /// <item>Every amount group is weighed: a group with more records than
+    /// creates is ambiguous, but never hides a live record another group
+    /// proves ours. <see cref="XeroOwnershipVerdict.Ambiguous"/> only when no
+    /// group proves one.</item>
+    /// <item>Live records, none ours, one carrying what TempestOS sent for
+    /// another document of the kind under the pair (that document's create
+    /// answer lost, not yet linked) — <see cref="XeroOwnershipVerdict.AnotherDocuments"/>.</item>
+    /// <item>Evidence not read in full (<paramref name="evidenceComplete"/>
+    /// false) never yields <see cref="XeroOwnershipVerdict.Ours"/>,
+    /// <see cref="XeroOwnershipVerdict.DeletedInXero"/> or a resend: it is
+    /// <see cref="XeroOwnershipVerdict.CannotTell"/>.</item>
+    /// </list>
+    /// </remarks>
     /// <typeparam name="T">The wire record.</typeparam>
     /// <param name="underPair">Every record Xero holds under the number for the contact, every status — less any linked to another TempestOS document (never this one's).</param>
     /// <param name="sentUnderPair">The creates the log recorded for this document under the number to the contact.</param>
     /// <param name="valueOf">The record's value-bearing content.</param>
     /// <param name="isLive">Whether Xero still holds the record live (not deleted or voided).</param>
+    /// <param name="entryKey">The <c>Idempotency-Key</c> of the entry being pushed, whose create a resend would repeat; <see langword="null"/> when nothing would be resent.</param>
+    /// <param name="sentForOthersUnderPair">The creates the log recorded for other documents of the kind under the number to the contact.</param>
+    /// <param name="evidenceComplete">Whether every record under the pair was read (deleted ones included).</param>
     public static XeroOwnershipJudgement<T> Judge<T>(
-        IReadOnlyList<T> underPair, IReadOnlyList<XeroPurchasingSentCreate> sentUnderPair, Func<T, string?> valueOf, Func<T, bool> isLive)
+        IReadOnlyList<T> underPair,
+        IReadOnlyList<XeroPurchasingSentCreate> sentUnderPair,
+        Func<T, string?> valueOf,
+        Func<T, bool> isLive,
+        string? entryKey = null,
+        IReadOnlyList<XeroPurchasingSentCreate>? sentForOthersUnderPair = null,
+        bool evidenceComplete = true)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(underPair);
@@ -87,9 +117,26 @@ public static class XeroPurchasingOwnership
         ArgumentNullException.ThrowIfNull(isLive);
 
         if (!underPair.Any(isLive))
-            return new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.NothingLive);
+        {
+            var sentByEntry = sentUnderPair
+                .Where(s => s.Value is not null && string.Equals(s.IdempotencyKey, entryKey, StringComparison.Ordinal))
+                .Select(s => s.Value!)
+                .ToHashSet(StringComparer.Ordinal);
+            if (sentByEntry.Count == 0)
+                return new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.NothingLive);
+
+            // The entry's own create may have landed and been deleted: a resend under its key would replay that answer.
+            var deleted = underPair.FirstOrDefault(r => valueOf(r) is { } v && sentByEntry.Contains(v));
+            if (deleted is not null)
+                return new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.DeletedInXero, deleted);
+
+            return evidenceComplete
+                ? new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.NothingLive)
+                : new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.CannotTell);
+        }
 
         T? ours = null;
+        var ambiguous = 0;
         var sentByValue = sentUnderPair
             .Where(s => s.Value is not null)
             .GroupBy(s => s.Value!, StringComparer.Ordinal)
@@ -102,15 +149,33 @@ public static class XeroPurchasingOwnership
                 continue;
 
             // More records carry what was sent than creates sent it: one was keyed by someone else.
+            // Weigh the other groups still: one of them may prove a live record ours.
             if (carrying.Count > creates)
-                return new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.Ambiguous, Count: carrying.Count);
+            {
+                ambiguous = Math.Max(ambiguous, carrying.Count);
+                continue;
+            }
 
             ours ??= live[0];
         }
 
-        return ours is null
-            ? new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.NotOurs)
-            : new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.Ours, ours);
+        if (ours is not null)
+        {
+            return evidenceComplete
+                ? new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.Ours, ours)
+                : new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.CannotTell);
+        }
+
+        if (ambiguous > 0)
+            return new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.Ambiguous, Count: ambiguous);
+
+        var sentForOthers = (sentForOthersUnderPair ?? [])
+            .Where(s => s.Value is not null)
+            .Select(s => s.Value!)
+            .ToHashSet(StringComparer.Ordinal);
+        return underPair.Any(r => isLive(r) && valueOf(r) is { } v && sentForOthers.Contains(v))
+            ? new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.AnotherDocuments)
+            : new XeroOwnershipJudgement<T>(XeroOwnershipVerdict.NotOurs);
     }
 
     /// <summary>The (number, contact) pairs to look Xero up by: <paramref name="current"/> first (when known), then every pair the log says a create was sent with, each once.</summary>
@@ -194,6 +259,58 @@ public static class XeroPurchasingOwnership
             $"{noun} number {number} is already used in Xero by another {noun.ToLowerInvariant()}, which TempestOS did not send (keyed in Xero, another contact's, or changed there since); "
             + $"TempestOS never changes, links or deletes a record it did not send, so that one is left as it is and nothing is sent. {liveAdvice}");
 
+    /// <summary>
+    /// Rule 3, cannot tell: Xero holds more records under
+    /// <paramref name="number"/> than TempestOS reads, so the evidence is
+    /// incomplete. None is touched, and nothing is sent.
+    /// </summary>
+    /// <param name="records">"purchase orders" or "bills".</param>
+    /// <param name="number">The number.</param>
+    /// <param name="document">"order" or "expense".</param>
+    /// <param name="sourceGone">The TempestOS document is cancelled, deleted or gone (or the entry is a delete).</param>
+    public static XeroPushResult CannotTell(string records, string number, string document, bool sourceGone) => new(
+        sourceGone ? XeroPushOutcome.NothingToDo : XeroPushOutcome.Rejected,
+        $"Xero holds more deleted {records} than TempestOS can read, so it cannot tell whether one numbered {number} is this {document}'s own; "
+        + "it leaves every one of them as it is. "
+        + (sourceGone
+            ? "Nothing is deleted in Xero."
+            : "Nothing is sent; check in Xero with whoever keeps the books, then Retry."));
+
+    /// <summary>
+    /// The entry's own create may have landed and been deleted (or voided) in
+    /// Xero: a record under <paramref name="number"/> that is no longer live
+    /// carries exactly what it sent. Sending it again under the same
+    /// <c>Idempotency-Key</c> would only replay Xero's answer about that
+    /// record, so nothing is sent and nothing is reported as synced.
+    /// </summary>
+    /// <param name="noun">"Purchase order" or "Bill".</param>
+    /// <param name="document">"order" or "expense".</param>
+    /// <param name="number">The number.</param>
+    /// <param name="advice">What the message ends with: how to send it as a new record, if that is possible.</param>
+    public static XeroPushResult DeletedInXero(string noun, string document, string number, string advice) => new(
+        XeroPushOutcome.Rejected,
+        $"{noun} {number}, carrying what TempestOS sent for this {document}, was deleted in Xero (it may be the one TempestOS sent, whose answer was lost). "
+        + $"TempestOS does not send it again, so it is not in Xero; nothing is sent. {advice}");
+
+    /// <summary>
+    /// Rule 3, another TempestOS document's: a live record under
+    /// <paramref name="number"/> carries what TempestOS sent for another
+    /// document of the kind, whose create's answer was lost and which is not
+    /// linked yet. It is left as it is (that document's own push links it).
+    /// </summary>
+    /// <param name="noun">"Purchase order" or "Bill".</param>
+    /// <param name="document">"order" or "expense".</param>
+    /// <param name="number">The number.</param>
+    /// <param name="sourceGone">The TempestOS document is cancelled, deleted or gone (or the entry is a delete).</param>
+    public static XeroPushResult AnotherDocuments(string noun, string document, string number, bool sourceGone) => sourceGone
+        ? new XeroPushResult(
+            XeroPushOutcome.NothingToDo,
+            $"No {noun.ToLowerInvariant()} TempestOS sent for this {document} is live in Xero; the {noun.ToLowerInvariant()} numbered {number} there carries what TempestOS sent for another {document}, and is left as it is. Nothing is deleted in Xero.")
+        : new XeroPushResult(
+            XeroPushOutcome.Rejected,
+            $"{noun} number {number} is in use in Xero by a {noun.ToLowerInvariant()} carrying what TempestOS sent for another {document}, which is still being reconciled (its answer from Xero was lost); "
+            + $"it is left as it is and nothing is sent. Retry once that {document} has synced.");
+
     private static bool SamePair((string Number, string ContactId) a, (string Number, string ContactId) b) =>
         string.Equals(a.Number.Trim(), b.Number.Trim(), StringComparison.OrdinalIgnoreCase)
         && string.Equals(a.ContactId.Trim(), b.ContactId.Trim(), StringComparison.OrdinalIgnoreCase);
@@ -224,6 +341,15 @@ public enum XeroOwnershipVerdict
 
     /// <summary>Live records, none provably TempestOS's: touch none.</summary>
     NotOurs,
+
+    /// <summary>Nothing live, and a deleted or voided record carries what the entry's own create sent: it may be that create's, deleted in Xero. Never resend (the same key would replay the deleted record); touch none.</summary>
+    DeletedInXero,
+
+    /// <summary>Live records, none provably TempestOS's, one carrying what TempestOS sent for another document of the kind (its create's answer lost, not yet linked): touch none.</summary>
+    AnotherDocuments,
+
+    /// <summary>The evidence under the pair could not be read in full: TempestOS cannot tell, so it links, deletes and resends nothing.</summary>
+    CannotTell,
 }
 
 /// <summary>The verdict, the record that is ours, and (when ambiguous) how many records carry what was sent.</summary>

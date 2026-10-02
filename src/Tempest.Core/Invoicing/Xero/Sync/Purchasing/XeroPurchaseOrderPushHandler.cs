@@ -278,10 +278,14 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
         var pairs = XeroPurchasingOwnership.Pairs(current is { } now ? [now] : [], sent);
         var sourceGone = order is null || order.Status == PurchaseOrderStatus.Cancelled || entry.Operation == XeroOperation.DeletePurchaseOrder;
 
+        // Only a push that would send a create (again) asks whether its own create was deleted in Xero.
+        var resendKey = !sourceGone && !stale ? entry.IdempotencyKey : null;
+
         var byNumber = new Dictionary<string, IReadOnlyList<XeroWirePurchaseOrder>>(StringComparer.OrdinalIgnoreCase);
-        var withDeleted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var deletedComplete = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         IReadOnlySet<string>? linkedElsewhere = null;
-        string? notOursNumber = null;
+        IReadOnlyList<XeroPurchasingSentCreate>? sentForOthers = null;
+        (string Number, XeroOwnershipVerdict Verdict)? refusal = null;
         foreach (var (number, pairContactId) in pairs)
         {
             List<XeroWirePurchaseOrder> UnderPair(IEnumerable<XeroWirePurchaseOrder> orders) =>
@@ -297,59 +301,82 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
                 byNumber[number] = all = [.. found.Value!.Where(o => o.PurchaseOrderID is not null)];
             }
 
-            if (!all.Any(IsLive))
+            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
+            var entrySentHere = resendKey is not null && sentUnder.Any(s => string.Equals(s.IdempotencyKey, resendKey, StringComparison.Ordinal));
+            if (!all.Any(IsLive) && !entrySentHere)
                 continue;
 
             linkedElsewhere ??= await LinkedToOtherOrdersAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
-            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
-            var judged = XeroPurchasingOwnership.Judge(UnderPair(all), sentUnder, XeroPurchasingOwnership.ValueOf, IsLive);
-            if (judged.Verdict == XeroOwnershipVerdict.Ours && !withDeleted.Contains(number))
+            sentForOthers ??= await _creates.ListSentForOthersAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
+            var sentForOthersUnder = XeroPurchasingOwnership.SentUnder(sentForOthers, number, pairContactId);
+            XeroOwnershipJudgement<XeroWirePurchaseOrder> JudgeNow(bool complete) => XeroPurchasingOwnership.Judge(
+                UnderPair(all), sentUnder, XeroPurchasingOwnership.ValueOf, IsLive, resendKey, sentForOthersUnder, complete);
+
+            var judged = JudgeNow(deletedComplete.GetValueOrDefault(number, true));
+            if ((judged.Verdict is XeroOwnershipVerdict.Ours || entrySentHere) && !deletedComplete.ContainsKey(number))
             {
-                // Xero answers one order per number: before calling one ours, read the deleted
-                // copies under it too — the evidence that a live copy may be someone else's.
-                var deleted = await _api.FindDeletedPurchaseOrdersAsync(number, order?.IssuedDate, cancellationToken).ConfigureAwait(false);
+                // Xero answers one order per number: before calling one ours, or resending a create
+                // the log holds, read every deleted copy under it too (no date filter — a date is
+                // free text a bookkeeper may edit), the evidence a live copy may be someone else's.
+                var deleted = await _api.FindDeletedPurchaseOrdersAsync(number, cancellationToken).ConfigureAwait(false);
                 if (deleted.Outcome != ConnectorOutcome.Ok)
                     return (XeroPurchasingMapper.Failed(deleted), null);
 
-                withDeleted.Add(number);
-                byNumber[number] = all = [.. all, .. deleted.Value!.Orders.Where(d => !all.Any(o => string.Equals(o.PurchaseOrderID, d.PurchaseOrderID, StringComparison.OrdinalIgnoreCase)))];
-                judged = deleted.Value.Complete
-                    ? XeroPurchasingOwnership.Judge(UnderPair(all), sentUnder, XeroPurchasingOwnership.ValueOf, IsLive)
-                    : new XeroOwnershipJudgement<XeroWirePurchaseOrder>(XeroOwnershipVerdict.Ambiguous, Count: all.Count);
+                deletedComplete[number] = deleted.Value!.Complete;
+                byNumber[number] = all = [.. all, .. deleted.Value.Orders.Where(d => !all.Any(o => string.Equals(o.PurchaseOrderID, d.PurchaseOrderID, StringComparison.OrdinalIgnoreCase)))];
+                judged = JudgeNow(deleted.Value.Complete);
             }
 
-            if (judged.Verdict == XeroOwnershipVerdict.Ambiguous)
-                return (XeroPurchasingOwnership.Ambiguous("purchase orders", number, judged.Count, "order", sourceGone), null);
-
-            if (judged.Verdict == XeroOwnershipVerdict.Ours)
+            // Xero keeps a live order number unique: a live order under it that is another
+            // contact's, or another TempestOS order's, is in the way all the same.
+            var verdict = judged.Verdict == XeroOwnershipVerdict.NothingLive && all.Any(IsLive) ? XeroOwnershipVerdict.NotOurs : judged.Verdict;
+            switch (verdict)
             {
-                var ours = judged.Ours!;
+                case XeroOwnershipVerdict.Ambiguous:
+                    return (XeroPurchasingOwnership.Ambiguous("purchase orders", number, judged.Count, "order", sourceGone), null);
 
-                // This entry's own create landed with what it sent, to the contact the order still has.
-                var landed = !stale
-                             && entry.Operation == XeroOperation.PushPurchaseOrder
-                             && current is { } pair
-                             && string.Equals(number, pair.Number, StringComparison.OrdinalIgnoreCase)
-                             && string.Equals(pairContactId, pair.ContactId, StringComparison.OrdinalIgnoreCase)
-                             && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+                case XeroOwnershipVerdict.CannotTell:
+                    return (XeroPurchasingOwnership.CannotTell("purchase orders", number, "order", sourceGone), null);
 
-                var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
-                await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
-                await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
-                return (null, link);
+                case XeroOwnershipVerdict.Ours:
+                {
+                    var ours = judged.Ours!;
+
+                    // This entry's own create landed with what it sent, to the contact the order still has.
+                    var landed = !stale
+                                 && entry.Operation == XeroOperation.PushPurchaseOrder
+                                 && current is { } pair
+                                 && string.Equals(number, pair.Number, StringComparison.OrdinalIgnoreCase)
+                                 && string.Equals(pairContactId, pair.ContactId, StringComparison.OrdinalIgnoreCase)
+                                 && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+
+                    var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
+                    await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+                    await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
+                    return (null, link);
+                }
+
+                case XeroOwnershipVerdict.NotOurs or XeroOwnershipVerdict.AnotherDocuments or XeroOwnershipVerdict.DeletedInXero:
+                    // Left as it is: keep looking under the other pairs for this order's own.
+                    // A live order in the way is reported before a deleted one.
+                    if (refusal is null || (refusal.Value.Verdict == XeroOwnershipVerdict.DeletedInXero && verdict != XeroOwnershipVerdict.DeletedInXero))
+                        refusal = (number, verdict);
+                    break;
             }
-
-            // Any live order left under the number is not this order's: keep looking under the other pairs.
-            notOursNumber ??= number;
         }
 
-        if (notOursNumber is null)
-            return (null, null);
-
-        return (XeroPurchasingOwnership.NotOurs(
-            "Purchase order", "order", notOursNumber,
-            "Check with whoever keeps the books which order that is, then Retry.",
-            sourceGone), null);
+        return refusal switch
+        {
+            null => (null, null),
+            { Verdict: XeroOwnershipVerdict.DeletedInXero } r => (XeroPurchasingOwnership.DeletedInXero(
+                "Purchase order", "order", r.Number,
+                "An issued order's lines are fixed, so if it is still wanted, key it in Xero by hand or check with whoever keeps the books."), null),
+            { Verdict: XeroOwnershipVerdict.AnotherDocuments } r => (XeroPurchasingOwnership.AnotherDocuments("Purchase order", "order", r.Number, sourceGone), null),
+            { } r => (XeroPurchasingOwnership.NotOurs(
+                "Purchase order", "order", r.Number,
+                "Check with whoever keeps the books which order that is, then Retry.",
+                sourceGone), null),
+        };
     }
 
     private static bool IsLive(XeroWirePurchaseOrder order) => XeroPurchasingMapper.Word(order.Status) != XeroPurchasingMapper.StatusDeleted;

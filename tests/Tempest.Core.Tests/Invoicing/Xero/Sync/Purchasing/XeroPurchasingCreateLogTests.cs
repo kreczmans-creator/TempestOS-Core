@@ -85,4 +85,22 @@ public sealed class XeroPurchasingCreateLogTests
             [new XeroPurchasingSentCreate("PO-1", "c1", "k1", "P0012"), new XeroPurchasingSentCreate("PO-1", "c1", "k2")],
             await log.ListSentAsync("t1", Document));
     }
+
+    [Fact]
+    public async Task CreatesForOtherDocuments_OfTheKindInTheTenant_AreListed_NeverThisOnesOrAnotherKindsOrTenants()
+    {
+        var store = new YieldingInMemoryPersistenceStore();
+        var log = new XeroPurchasingCreateLog(store);
+        var other = new XeroDocumentRef(XeroDocumentKind.ExpenseBill, Guid.NewGuid().ToString("D"));
+        var order = new XeroDocumentRef(XeroDocumentKind.PurchaseOrder, Guid.NewGuid().ToString("D"));
+        await log.RecordSendingAsync("t1", Document, "NS-1", "c1", "own", value: "v");
+        await log.RecordSendingAsync("t1", other, "NS-1", "c1", "other", value: "v");
+        await log.RecordSendingAsync("t1", order, "NS-1", "c1", "order", value: "v");
+        await log.RecordSendingAsync("t2", other, "NS-1", "c1", "other-tenant", value: "v");
+        await store.WriteAsync(XeroPurchasingCreateLog.Collection, $"t1/{XeroDocumentKind.ExpenseBill}/{Guid.NewGuid():D}", "not json");
+
+        var listed = await log.ListSentForOthersAsync("t1", Document);
+
+        Assert.Equal([new XeroPurchasingSentCreate("NS-1", "c1", "other", null, "v")], listed);
+    }
 }

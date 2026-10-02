@@ -225,6 +225,10 @@ internal sealed partial class XeroApiSimulator
         {
             if (context.QueryValue("Status") is { Length: > 0 } status)
                 docs = docs.Where(d => string.Equals(d.Status, status, StringComparison.OrdinalIgnoreCase));
+            if (XeroWire.TryParseDate(context.QueryValue("DateFrom"), out var from))
+                docs = docs.Where(d => XeroWire.TryParseDate(XeroWire.Str(d.Body, "Date"), out var date) && date >= from);
+            if (XeroWire.TryParseDate(context.QueryValue("DateTo"), out var to))
+                docs = docs.Where(d => XeroWire.TryParseDate(XeroWire.Str(d.Body, "Date"), out var date) && date <= to);
         }
         else if (context.QueryValue("searchTerm") is { Length: > 0 } term)
         {

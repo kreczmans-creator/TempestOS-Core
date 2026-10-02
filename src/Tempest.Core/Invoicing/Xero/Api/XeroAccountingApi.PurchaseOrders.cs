@@ -77,8 +77,10 @@ public sealed partial class XeroAccountingApi
     /// <summary>
     /// The <c>DELETED</c> purchase orders Xero holds under
     /// <paramref name="purchaseOrderNumber"/>
-    /// (<c>GET PurchaseOrders?Status=DELETED&amp;DateFrom=…&amp;DateTo=…&amp;page=n</c>,
-    /// kept to the number here). <c>GET PurchaseOrders/{PurchaseOrderNumber}</c>
+    /// (<c>GET PurchaseOrders?Status=DELETED&amp;page=n</c>, kept to the number
+    /// here). No date filter: the order date is free text a bookkeeper may
+    /// edit before deleting, and a copy missed that way would make a live copy
+    /// beside it look like TempestOS's own. <c>GET PurchaseOrders/{PurchaseOrderNumber}</c>
     /// answers a single order, a live one before a deleted one, so a copy
     /// TempestOS made and someone deleted in Xero is only seen this way — and
     /// it is evidence the ownership rule counts (<c>XeroPurchasingOwnership</c>).
@@ -86,10 +88,9 @@ public sealed partial class XeroAccountingApi
     /// <see cref="XeroDeletedPurchaseOrders.Complete"/> says whether every page was read.
     /// </summary>
     /// <param name="purchaseOrderNumber">The number.</param>
-    /// <param name="date">The order date the orders were created with, when known: narrows the read to that day.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     public async Task<XeroApiResult<XeroDeletedPurchaseOrders>> FindDeletedPurchaseOrdersAsync(
-        string purchaseOrderNumber, DateOnly? date = null, CancellationToken cancellationToken = default)
+        string purchaseOrderNumber, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(purchaseOrderNumber);
 
@@ -102,11 +103,6 @@ public sealed partial class XeroAccountingApi
                 new("Status", "DELETED"),
                 new("page", page.ToString(System.Globalization.CultureInfo.InvariantCulture)),
             ];
-            if (date is { } day)
-            {
-                query.Add(new("DateFrom", XeroWire.FormatDate(day)));
-                query.Add(new("DateTo", XeroWire.FormatDate(day)));
-            }
 
             var result = await GetAsync<XeroWirePurchaseOrdersEnvelope>("PurchaseOrders", query, cancellationToken: cancellationToken).ConfigureAwait(false);
             if (result.Outcome != ConnectorOutcome.Ok)

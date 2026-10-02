@@ -60,6 +60,62 @@ public sealed class XeroPurchasingOwnershipTests
     }
 
     [Fact]
+    public void Rule_AnAmbiguousAmountGroup_NeverHidesALiveRecordAnotherGroupProvesOurs()
+    {
+        // v: sent once, ours deleted and a hand copy beside it (ambiguous). w: sent once, ours live.
+        var docs = new[] { new Doc("ours-v", "v", Live: false), new Doc("hand-v", "v", Live: true), new Doc("ours-w", "w", Live: true) };
+        var judged = Judge(docs, Sent("k1", "v"), Sent("k2", "w"));
+        Assert.Equal(XeroOwnershipVerdict.Ours, judged.Verdict);
+        Assert.Equal("ours-w", judged.Ours!.Id);
+
+        // The order the groups are weighed in does not matter.
+        Assert.Equal("ours-w", Judge(docs, Sent("k2", "w"), Sent("k1", "v")).Ours!.Id);
+
+        // No group proves one: ambiguous, as before.
+        Assert.Equal(XeroOwnershipVerdict.Ambiguous, Judge(docs, Sent("k1", "v")).Verdict);
+    }
+
+    [Fact]
+    public void Rule_NothingLive_AndADeletedRecordCarriesWhatTheEntrysOwnCreateSent_IsDeletedInXero_NeverResent()
+    {
+        var deleted = new[] { new Doc("ours", "v", Live: false) };
+        var judged = XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k1");
+        Assert.Equal(XeroOwnershipVerdict.DeletedInXero, judged.Verdict);
+        Assert.Equal("ours", judged.Ours!.Id);
+
+        // Another entry's key (an amended document), or other amounts: nothing of this entry's was deleted.
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k2").Verdict);
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "w")], d => d.Value, d => d.Live, entryKey: "k1").Verdict);
+        Assert.Equal(XeroOwnershipVerdict.NothingLive, XeroPurchasingOwnership.Judge(deleted, [Sent("k1", "v")], d => d.Value, d => d.Live).Verdict);
+    }
+
+    [Fact]
+    public void Rule_EvidenceNotReadInFull_NeverYieldsOursOrAResend()
+    {
+        Assert.Equal(
+            XeroOwnershipVerdict.CannotTell,
+            XeroPurchasingOwnership.Judge([new Doc("ours", "v", Live: true)], [Sent("k1", "v")], d => d.Value, d => d.Live, evidenceComplete: false).Verdict);
+        Assert.Equal(
+            XeroOwnershipVerdict.CannotTell,
+            XeroPurchasingOwnership.Judge(Array.Empty<Doc>(), [Sent("k1", "v")], d => d.Value, d => d.Live, entryKey: "k1", evidenceComplete: false).Verdict);
+        Assert.Equal(
+            XeroOwnershipVerdict.NothingLive,
+            XeroPurchasingOwnership.Judge(Array.Empty<Doc>(), [], d => d.Value, d => d.Live, entryKey: "k1", evidenceComplete: false).Verdict);
+    }
+
+    [Fact]
+    public void Rule_ALiveRecordCarryingWhatAnotherDocumentSent_IsAnotherDocuments_NotCalledKeyedByHand()
+    {
+        var live = new[] { new Doc("a's", "v", Live: true) };
+        Assert.Equal(
+            XeroOwnershipVerdict.AnotherDocuments,
+            XeroPurchasingOwnership.Judge(live, [], d => d.Value, d => d.Live, sentForOthersUnderPair: [Sent("ka", "v")]).Verdict);
+        Assert.Equal(
+            XeroOwnershipVerdict.NotOurs,
+            XeroPurchasingOwnership.Judge(live, [], d => d.Value, d => d.Live, sentForOthersUnderPair: [Sent("ka", "w")]).Verdict);
+    }
+
+    [Fact]
     public void Rule_ComparesValueOnly_NeverTheFreeTextABookkeeperMayEdit()
     {
         var contact = new XeroWireContactRef("c1");

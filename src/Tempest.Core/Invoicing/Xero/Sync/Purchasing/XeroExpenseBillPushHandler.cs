@@ -351,8 +351,12 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
         var pairs = XeroPurchasingOwnership.Pairs(current, sent);
         var sourceGone = entry.Operation == XeroOperation.DeleteExpenseBill || expense is null || expense.IsDeleted;
 
+        // Only a push that would send a create (again) asks whether its own create was deleted in Xero.
+        var resendKey = !sourceGone && !stale ? entry.IdempotencyKey : null;
+
         IReadOnlySet<string>? linkedElsewhere = null;
-        string? notOursNumber = null;
+        IReadOnlyList<XeroPurchasingSentCreate>? sentForOthers = null;
+        (string Number, XeroOwnershipVerdict Verdict)? refusal = null;
         foreach (var (number, pairContactId) in pairs)
         {
             var found = await _api.FindBillsAsync(number, pairContactId, cancellationToken).ConfigureAwait(false);
@@ -360,47 +364,64 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
                 return (XeroPurchasingMapper.Failed(found), null);
 
             var bills = found.Value!.Where(b => b.InvoiceID is not null).ToList();
-            if (!bills.Any(IsLive))
+            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
+            var entrySentHere = resendKey is not null && sentUnder.Any(s => string.Equals(s.IdempotencyKey, resendKey, StringComparison.Ordinal));
+            if (!bills.Any(IsLive) && !entrySentHere)
                 continue;
 
             linkedElsewhere ??= await LinkedToOtherExpensesAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
+            sentForOthers ??= await _creates.ListSentForOthersAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false);
             var underPair = bills.Where(b => !linkedElsewhere.Contains(b.InvoiceID!)).ToList();
-            var sentUnder = XeroPurchasingOwnership.SentUnder(sent, number, pairContactId);
-            var judged = XeroPurchasingOwnership.Judge(underPair, sentUnder, XeroPurchasingOwnership.ValueOf, IsLive);
+            var judged = XeroPurchasingOwnership.Judge(
+                underPair, sentUnder, XeroPurchasingOwnership.ValueOf, IsLive, resendKey, XeroPurchasingOwnership.SentUnder(sentForOthers, number, pairContactId));
 
-            if (judged.Verdict == XeroOwnershipVerdict.Ambiguous)
-                return (XeroPurchasingOwnership.Ambiguous("bills", number, judged.Count, "expense", sourceGone), null);
-
-            if (judged.Verdict == XeroOwnershipVerdict.Ours)
+            switch (judged.Verdict)
             {
-                var ours = judged.Ours!;
+                case XeroOwnershipVerdict.Ambiguous:
+                    return (XeroPurchasingOwnership.Ambiguous("bills", number, judged.Count, "expense", sourceGone), null);
 
-                // This entry's own create landed with what it sent, under the number and contact the expense still has.
-                var landed = !stale
-                             && entry.Operation == XeroOperation.PushExpenseBill
-                             && string.Equals(number, currentNumber, StringComparison.OrdinalIgnoreCase)
-                             && string.Equals(pairContactId, contactId, StringComparison.OrdinalIgnoreCase)
-                             && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+                case XeroOwnershipVerdict.CannotTell:
+                    return (XeroPurchasingOwnership.CannotTell("bills", number, "expense", sourceGone), null);
 
-                var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
-                await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
-                await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
-                return (null, link);
+                case XeroOwnershipVerdict.Ours:
+                {
+                    var ours = judged.Ours!;
+
+                    // This entry's own create landed with what it sent, under the number and contact the expense still has.
+                    var landed = !stale
+                                 && entry.Operation == XeroOperation.PushExpenseBill
+                                 && string.Equals(number, currentNumber, StringComparison.OrdinalIgnoreCase)
+                                 && string.Equals(pairContactId, contactId, StringComparison.OrdinalIgnoreCase)
+                                 && XeroPurchasingOwnership.SentByThisEntry(entry, sentUnder, XeroPurchasingOwnership.ValueOf(ours));
+
+                    var link = NewLink(tenantId, entry.Document, ours, landed ? entry.ContentHash : null, XeroPurchasingMapper.LinkedByReconciled);
+                    await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
+                    await XeroPurchasingAudit.RecordAsync(_audit, XeroPurchasingAudit.LinkReconciled, link, entry, cancellationToken).ConfigureAwait(false);
+                    return (null, link);
+                }
+
+                case XeroOwnershipVerdict.NotOurs or XeroOwnershipVerdict.AnotherDocuments or XeroOwnershipVerdict.DeletedInXero:
+                    // Left as it is: keep looking under the other pairs for this expense's own.
+                    // A live bill in the way is reported before a deleted one. (NothingLive: every
+                    // live bill under the pair is another expense's, and this one gets its own.)
+                    if (refusal is null || (refusal.Value.Verdict == XeroOwnershipVerdict.DeletedInXero && judged.Verdict != XeroOwnershipVerdict.DeletedInXero))
+                        refusal = (number, judged.Verdict);
+                    break;
             }
-
-            // NotOurs: someone else's bill, left as it is. NothingLive: every live bill
-            // under the pair is another expense's, and this one gets its own.
-            if (judged.Verdict == XeroOwnershipVerdict.NotOurs)
-                notOursNumber ??= number;
         }
 
-        if (notOursNumber is null)
-            return (null, null);
-
-        return (XeroPurchasingOwnership.NotOurs(
-            "Bill", "expense", notOursNumber,
-            "Change the supplier invoice number on the expense if it was mistyped, or check with whoever keeps the books which bill that is; then Retry.",
-            sourceGone), null);
+        return refusal switch
+        {
+            null => (null, null),
+            { Verdict: XeroOwnershipVerdict.DeletedInXero } r => (XeroPurchasingOwnership.DeletedInXero(
+                "Bill", "expense", r.Number,
+                "Amend the expense (or check with whoever keeps the books) to send it as a new bill."), null),
+            { Verdict: XeroOwnershipVerdict.AnotherDocuments } r => (XeroPurchasingOwnership.AnotherDocuments("Bill", "expense", r.Number, sourceGone), null),
+            { } r => (XeroPurchasingOwnership.NotOurs(
+                "Bill", "expense", r.Number,
+                "Change the supplier invoice number on the expense if it was mistyped, or check with whoever keeps the books which bill that is; then Retry.",
+                sourceGone), null),
+        };
     }
 
     /// <summary>

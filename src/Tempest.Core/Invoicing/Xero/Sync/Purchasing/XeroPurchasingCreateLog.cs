@@ -109,6 +109,39 @@ public sealed class XeroPurchasingCreateLog
         string tenantId, XeroDocumentRef document, CancellationToken cancellationToken = default) =>
         ReadAsync(Key(tenantId, document), cancellationToken);
 
+    /// <summary>
+    /// Every create logged for a document of <paramref name="document"/>'s kind
+    /// other than <paramref name="document"/> in the tenant: what tells a record
+    /// another TempestOS document's create made (its answer lost, not yet
+    /// linked) from one keyed by hand. Only ever used to word a refusal — never
+    /// to link, change or delete anything — so a record that cannot be read is
+    /// passed over.
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document being pushed.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<IReadOnlyList<XeroPurchasingSentCreate>> ListSentForOthersAsync(
+        string tenantId, XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        var own = Key(tenantId, document);
+        var prefix = $"{tenantId}/{document.Kind}/";
+        var keys = await _store.ListKeysAsync(Collection, cancellationToken).ConfigureAwait(false);
+        var sent = new List<XeroPurchasingSentCreate>();
+        foreach (var key in keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal) && !string.Equals(k, own, StringComparison.Ordinal)))
+        {
+            try
+            {
+                sent.AddRange(await ReadAsync(key, cancellationToken).ConfigureAwait(false));
+            }
+            catch (PersistenceException)
+            {
+                // Unreadable: passed over (this list only words a refusal).
+            }
+        }
+
+        return sent;
+    }
+
     private async Task UpdateAsync(string tenantId, XeroDocumentRef document, Func<IReadOnlyList<XeroPurchasingSentCreate>, IReadOnlyList<XeroPurchasingSentCreate>> change, CancellationToken cancellationToken)
     {
         var key = Key(tenantId, document);
