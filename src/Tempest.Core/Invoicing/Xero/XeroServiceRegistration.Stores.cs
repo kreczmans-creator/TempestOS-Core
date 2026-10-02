@@ -8,6 +8,9 @@ namespace Tempest.Core.Invoicing.Xero;
 // hook; this file's part implements it.
 internal static partial class XeroServiceRegistration
 {
+    /// <summary>B2's <c>RegisterStores</c> hook (declared by B1's <c>XeroServiceRegistration.cs</c>): <see cref="AddXeroStores"/>.</summary>
+    static partial void RegisterStores(IServiceCollection services, XeroServiceContext context) => AddXeroStores(services);
+
     /// <summary>
     /// B2's registrations: <see cref="IXeroLinkStore"/>
     /// (<see cref="PersistenceXeroLinkStore"/>), <see cref="IXeroOutbox"/> and

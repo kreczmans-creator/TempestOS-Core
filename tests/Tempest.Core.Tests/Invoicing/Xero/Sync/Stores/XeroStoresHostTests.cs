@@ -12,6 +12,7 @@ using Tempest.Core.Projects;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.BusinessGovernance;
 using Tempest.Core.Tests.BusinessOperations;
+using Tempest.Core.Tests.Invoicing.Connectors;
 using Tempest.Core.Tests.Plugins;
 using static Tempest.Core.Tests.Invoicing.Xero.Sync.Stores.StoresFixtures;
 
@@ -106,6 +107,29 @@ public sealed class XeroStoresHostTests
         Assert.IsType<PersistenceXeroLinkStore>(provider.GetService(typeof(IXeroLinkStore)));
         Assert.IsType<PersistenceXeroOutbox>(provider.GetService(typeof(IXeroOutbox)));
         Assert.IsType<PersistenceXeroOutbox>(provider.GetService(typeof(IXeroOutboxDrain)));
+    }
+
+    [Fact]
+    public async Task AHostWithTheXeroConnector_ResolvesTheStores_ThroughRegister()
+    {
+        using var temp = new TempDirectory();
+        var (host, manager) = await ConnectorHostFixture.StartAsync(
+            temp.Path,
+            new(InvoicingService.ConnectorConfigurationKey, "Xero"),
+            new("Invoicing:Xero:ClientId", "test-client-id"));
+
+        try
+        {
+            Assert.IsType<PersistenceXeroLinkStore>(host.Services!.GetService(typeof(IXeroLinkStore)));
+            Assert.IsType<PersistenceXeroOutbox>(host.Services.GetService(typeof(IXeroOutbox)));
+            Assert.IsType<PersistenceXeroOutbox>(host.Services.GetService(typeof(IXeroOutboxDrain)));
+            Assert.IsType<XeroInvoiceLinkImporter>(host.Services.GetService(typeof(XeroInvoiceLinkImporter)));
+        }
+        finally
+        {
+            await manager.ShutdownAsync();
+            await host.DisposeAsync();
+        }
     }
 
     private static async Task<Guid> SetUpBillableProjectAsync(ITempestHost host, string suffix)
