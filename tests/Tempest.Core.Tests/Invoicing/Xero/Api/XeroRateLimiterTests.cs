@@ -104,6 +104,31 @@ public sealed class XeroRateLimiterTests
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("Invoices")).StatusCode);
     }
 
+    // Backlog X6-1: the sync engine must tell a 429's pause from the nearly-spent-minute rule's.
+    [Fact]
+    public async Task APause_SaysWhetherA429IsBehindIt()
+    {
+        var (clock, network, limiter, client) = Build();
+        network.Respond = _ => WithHeaders(HttpStatusCode.OK, ("X-MinLimit-Remaining", "1"));
+        await client.GetAsync("Invoices");
+        Assert.NotNull(limiter.PausedUntilUtc);
+        Assert.False(limiter.PauseCameFromTooManyRequests);
+
+        clock.Advance(TimeSpan.FromMinutes(1));
+        network.Respond = _ =>
+        {
+            var answer = RateLimited(TimeSpan.FromSeconds(10), "minute");
+            answer.Headers.TryAddWithoutValidation("X-MinLimit-Remaining", "0");
+            return answer;
+        };
+        await client.GetAsync("Invoices");
+        Assert.True(limiter.PauseCameFromTooManyRequests);
+
+        clock.Advance(TimeSpan.FromSeconds(11));
+        Assert.Null(limiter.PausedUntilUtc);
+        Assert.False(limiter.PauseCameFromTooManyRequests);
+    }
+
     [Fact]
     public async Task A429WithoutRetryAfter_PausesSixtySeconds()
     {

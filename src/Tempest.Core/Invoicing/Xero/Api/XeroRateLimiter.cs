@@ -50,6 +50,7 @@ public sealed class XeroRateLimiter : DelegatingHandler
     private readonly Queue<DateTimeOffset> _calls = new();
     private DateTimeOffset? _pausedUntil;
     private string? _pauseProblem;
+    private bool _pauseFromTooManyRequests;
     private XeroRateLimitReading? _lastReading;
 
     /// <summary>Initialises a new instance of the <see cref="XeroRateLimiter"/> class. Its <see cref="DelegatingHandler.InnerHandler"/> is set by the pipeline's composer.</summary>
@@ -75,6 +76,22 @@ public sealed class XeroRateLimiter : DelegatingHandler
                 var now = _time.GetUtcNow();
                 return _pausedUntil is { } until && until > now ? until : null;
             }
+        }
+    }
+
+    /// <summary>
+    /// Whether the current pause (<see cref="PausedUntilUtc"/>) came, at least
+    /// in part, from a 429 Xero answered — as opposed to only the
+    /// nearly-spent-minute rule — so a caller can tell a rate-limit answer
+    /// apart from another answer read while the minute was nearly spent.
+    /// <see langword="false"/> when not paused.
+    /// </summary>
+    public bool PauseCameFromTooManyRequests
+    {
+        get
+        {
+            lock (_gate)
+                return _pauseFromTooManyRequests && _pausedUntil is { } until && until > _time.GetUtcNow();
         }
     }
 
@@ -159,24 +176,36 @@ public sealed class XeroRateLimiter : DelegatingHandler
                     ?? (response.Headers.RetryAfter?.Date is { } date ? (date > now ? date - now : TimeSpan.Zero) : (TimeSpan?)null);
                 var problem = response.Headers.TryGetValues("X-Rate-Limit-Problem", out var values) ? values.FirstOrDefault() : null;
 
-                Pause(now + (retryAfter is { } delay ? delay + RetryAfterMargin : Window), problem ?? "minute");
+                Pause(now, now + (retryAfter is { } delay ? delay + RetryAfterMargin : Window), problem ?? "minute", fromTooManyRequests: true);
             }
             else if (reading.MinuteRemaining is { } remaining && remaining <= MinuteRemainingFloor)
             {
                 var oldest = _calls.Count > 0 ? _calls.Peek() : now;
-                Pause(oldest + Window, "minute");
+                Pause(now, oldest + Window, "minute", fromTooManyRequests: false);
             }
         }
     }
 
-    /// <summary>Extends the pause to <paramref name="until"/> (never shortens one already longer). Caller holds <see cref="_gate"/>.</summary>
-    private void Pause(DateTimeOffset until, string problem)
+    /// <summary>
+    /// Extends the pause to <paramref name="until"/> (never shortens one
+    /// already longer), noting whether a 429 is behind it: a 429 marks the
+    /// pause in force, and a 429 pause extended by the minute rule stays
+    /// marked. Caller holds <see cref="_gate"/>.
+    /// </summary>
+    private void Pause(DateTimeOffset now, DateTimeOffset until, string problem, bool fromTooManyRequests)
     {
-        if (_pausedUntil is { } current && current >= until)
+        var active = _pausedUntil is { } current && current > now;
+        var fromTooMany = fromTooManyRequests || (active && _pauseFromTooManyRequests);
+
+        if (_pausedUntil is { } longer && longer >= until)
+        {
+            _pauseFromTooManyRequests = fromTooMany;
             return;
+        }
 
         _pausedUntil = until;
         _pauseProblem = problem;
+        _pauseFromTooManyRequests = fromTooMany;
     }
 
     private static int? ReadInt(HttpResponseMessage response, string header) =>

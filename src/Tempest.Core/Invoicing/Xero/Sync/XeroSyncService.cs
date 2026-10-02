@@ -1403,14 +1403,17 @@ public sealed class XeroSyncService : IXeroSyncService
     /// end of the minute, at most 60 s after that answer was read. A pause
     /// that rule alone explains is not a 429: the answer (a 5xx, say) is
     /// backed off as itself, and the limiter still holds every call until its
-    /// pause ends, so the drain stops there anyway (§6.5).
+    /// pause ends, so the drain stops there anyway (§6.5). A pause the limiter
+    /// says a 429 is behind (<see cref="XeroRateLimiter.PauseCameFromTooManyRequests"/>)
+    /// is always a 429's, however short its <c>Retry-After</c>, so it is
+    /// persisted and survives a restart.
     /// </summary>
     private DateTimeOffset? RateLimitedUntil(XeroPushResult result, DateTimeOffset now, LimiterSnapshot before)
     {
         DateTimeOffset? until = result.RetryAfter is { } retryAfter ? now + XeroBackoff.RateLimitPause(retryAfter) : null;
 
         if (_rateLimiter?.PausedUntilUtc is { } limiterUntil
-            && (until is not null || before.PausedUntilUtc is not null || !ExplainedByNearlySpentMinute(limiterUntil, before))
+            && (until is not null || before.PausedUntilUtc is not null || _rateLimiter.PauseCameFromTooManyRequests || !ExplainedByNearlySpentMinute(limiterUntil, before))
             && (until is null || limiterUntil > until))
         {
             until = limiterUntil;
