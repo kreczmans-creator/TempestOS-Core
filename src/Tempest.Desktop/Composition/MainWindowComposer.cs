@@ -927,7 +927,12 @@ internal sealed partial class MainWindowComposer
             quotesView, invoicingView, purchaseOrdersView, timesheetWeekView, subscriptionsView, businessDashboardView,
             new CustomersSuppliersView(
                 organisationCatalog,
-                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog))),
+                (Tempest.Core.BusinessOperations.Crm.IContactCatalog)services.GetService(typeof(Tempest.Core.BusinessOperations.Crm.IContactCatalog)))
+            {
+                // `v0.24.0` U2: the Xero link section, only when Xero is the
+                // connector (TempestHost registers the linker only then).
+                XeroContacts = ResolveXeroContactLinker(services),
+            },
             staffView,
             rateCardsView)
         {
@@ -945,6 +950,19 @@ internal sealed partial class MainWindowComposer
             workspace, manager, principals,
             projectsAreaView, tasksAreaView, engineeringAreaView, businessAreaView, referenceDataLibrariesView,
             tasksReadModel, projectStatusReadModel, accountsReadModel, projectFolderCoordinator);
+    }
+
+    /// <summary>`v0.24.0` U2: the X2 contact linker when Xero is the connector (<c>TempestHost</c> registers it only then); otherwise <see langword="null"/>.</summary>
+    private static Tempest.Core.Invoicing.Xero.Contacts.XeroContactLinker? ResolveXeroContactLinker(Tempest.Core.DependencyInjection.ITempestServiceProvider services)
+    {
+        try
+        {
+            return services.GetService(typeof(Tempest.Core.Invoicing.Xero.Contacts.XeroContactLinker)) as Tempest.Core.Invoicing.Xero.Contacts.XeroContactLinker;
+        }
+        catch (Tempest.Core.DependencyInjection.ServiceNotRegisteredException)
+        {
+            return null;
+        }
     }
 
     /// <summary>
