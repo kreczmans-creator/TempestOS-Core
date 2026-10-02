@@ -64,6 +64,33 @@ public sealed class XeroContactLinkerRound3Tests
         Assert.Null(now.LastReadAtUtc);
     }
 
+    // Backlog X2-3: a read overlapping an unlink and relink to the same contact overwrote the newer link's fields.
+    [Fact]
+    public async Task ReadDetails_WhileTheOrganisationIsRelinkedToTheSameContact_KeepsTheNewerLinksFields()
+    {
+        using var kit = await ContactLinkerTestKit.CreateAsync(new XeroContactLinkerOptions { WriteContactNumberWhenEmpty = false });
+        await kit.AddOrganisationAsync();
+        var id = kit.Simulator.SeedContact("Acme Engineering Ltd");
+        var original = (await kit.Linker.LinkExistingAsync("ACME1", id)).Value!;
+
+        Task<ConnectorResult<XeroContactDetails>> read;
+        using (kit.Simulator.HoldRequests())
+        {
+            read = kit.Linker.ReadDetailsAsync("ACME1");
+            await WaitForInFlightAsync(kit);
+            kit.Clock.Advance(TimeSpan.FromMinutes(1));
+            Assert.True(await kit.Linker.UnlinkAsync("ACME1"));
+            await kit.Links.SaveAsync(original with { LinkedAtUtc = kit.Clock.GetUtcNow(), XeroNumber = "RELINKED", LastReadAtUtc = null });
+        }
+
+        Assert.Equal(ConnectorOutcome.Ok, (await read).Outcome);
+        var now = await kit.Linker.FindLinkAsync("ACME1");
+        Assert.Equal(id, now!.XeroId);
+        Assert.Equal("RELINKED", now.XeroNumber);
+        Assert.Null(now.LastReadAtUtc);
+        kit.AssertNoViolations();
+    }
+
     [Fact]
     public async Task ReadDetails_WithNoRace_StillRefreshesTheLink()
     {
