@@ -6,6 +6,12 @@ Accepted — Product Owner approval (2026-10-01) to bring the lost
 August 2026 Companion app's read-only review queue into `v0.23.0`, so it
 appears on Tempest-Dashboard and therefore on the phone.
 
+**Decision 5 superseded by `ADR-0162` (2026-10-02)**: a day on, the
+Product Owner reversed "not wanted" for the write path, specifically to
+build the architecture once rather than twice as staff are hired. The
+read-only export this ADR defines (Decisions 1–4) is unchanged — only
+"no approve/reject path" no longer holds.
+
 Builds on `ADR-0154` (the Dashboard Export's per-file pattern) and
 `ADR-0155` (project membership).
 
