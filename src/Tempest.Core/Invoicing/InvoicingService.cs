@@ -391,12 +391,12 @@ public sealed class InvoicingService : IInvoicingService
                     request);
             }
 
-            await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+            await request.MoveToSendingAsync(_connector.Name, document.Reference, cancellationToken).ConfigureAwait(false);
             result = await drafts.CreateDraftAsync(document, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            await request.MoveToSendingAsync(_connector.Name, cancellationToken).ConfigureAwait(false);
+            await request.MoveToSendingAsync(_connector.Name, cancellationToken: cancellationToken).ConfigureAwait(false);
 
             var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -503,9 +503,107 @@ public sealed class InvoicingService : IInvoicingService
         if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
+        // `v0.24.0` X4: a Draft or Rejected request a send through the draft
+        // seam was attempted for may already be in the accounting system —
+        // the answer to a create it committed can be lost (a dropped
+        // connection reads as unreachable, so the request went back to
+        // Draft with no link). Before voiding it locally, which frees its
+        // lines, the system is asked for its number, and TempestOS's own
+        // draft found there is deleted; when that cannot be done now the
+        // void is refused, never left to leave an untracked draft behind.
+        if (Drafts is { } seam && MaySitInDrafts(request, seam)
+            && await ClearCutOffSendAsync(request, seam, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        if (request.Status is InvoiceRequestStatus.Voided)
+            return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+
         await request.VoidLocallyAsync(cancellationToken).ConfigureAwait(false);
 
         return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+    }
+
+    /// <summary>Whether <paramref name="request"/>, not linked to anything, had a send through <paramref name="drafts"/>'s connector attempted — so its draft may be there, unlinked, after a lost answer.</summary>
+    private static bool MaySitInDrafts(InvoiceRequest request, IInvoiceDraftSync drafts) =>
+        request.ExternalId is null && string.Equals(request.Connector, drafts.ConnectorName, StringComparison.Ordinal);
+
+    /// <summary>
+    /// `v0.24.0` X4 (defect: lost create answer, then void): looks
+    /// <paramref name="request"/>'s number up through <paramref name="drafts"/>
+    /// and deletes TempestOS's own draft found under it. Answers
+    /// <see langword="null"/> when nothing of TempestOS's is left there and
+    /// the local void may go ahead (or, for a draft already deleted or
+    /// voided there, has been recorded); otherwise the refusal, with the
+    /// request unchanged — or, for an invoice already approved there, now
+    /// tracked as Sent so the approval is read back.
+    /// </summary>
+    private async Task<InvoiceRequestResult?> ClearCutOffSendAsync(InvoiceRequest request, IInvoiceDraftSync drafts, CancellationToken cancellationToken)
+    {
+        var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        var found = await drafts.FindByInvoiceNumberAsync(document, cancellationToken).ConfigureAwait(false);
+
+        switch (found.Outcome)
+        {
+            case ConnectorOutcome.Ok when found.Value is null:
+                return null; // Nothing carries its number there: the void is local only.
+
+            case ConnectorOutcome.Rejected:
+                return null; // Another invoice holds the number (or the look-up is refused outright): nothing there is TempestOS's own.
+
+            case ConnectorOutcome.Ok:
+                break;
+
+            default:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{request.Id}' was not voided: its last send to {drafts.ConnectorName} was cut off, and {drafts.ConnectorName} could not be asked whether it holds the draft ({found.Reason ?? found.Outcome.ToString()}); the request is unchanged — try again.",
+                    request);
+        }
+
+        var own = found.Value!;
+        var change = await drafts.DeleteDraftAsync(document with { ExternalId = own.ExternalId }, cancellationToken).ConfigureAwait(false);
+        if (change.Outcome != ConnectorOutcome.Ok)
+        {
+            return new InvoiceRequestResult(
+                InvoiceRequestRefusal.TransitionNotPermitted,
+                $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName} holds its draft {own.ExternalInvoiceNumber ?? document.InvoiceNumber} from a send whose answer was lost, and it could not be deleted ({change.Reason ?? change.Outcome.ToString()}); the request is unchanged — try again.",
+                request);
+        }
+
+        var answer = change.Value!;
+        switch (answer.Outcome)
+        {
+            case InvoiceDraftChangeOutcome.Applied:
+                await request.RecordStatusReadingAsync(
+                    InvoiceRequestStatus.Voided, answer.ExternalStatus ?? "DELETED", own.ExternalInvoiceNumber, null, null,
+                    $"Voided in TempestOS; the {drafts.ConnectorName} draft a lost send had created was deleted.", cancellationToken).ConfigureAwait(false);
+                return null;
+
+            case InvoiceDraftChangeOutcome.NotDraft when IsGoneThere(answer.ExternalStatus):
+                await request.RecordStatusReadingAsync(
+                    InvoiceRequestStatus.Voided, answer.ExternalStatus!, own.ExternalInvoiceNumber, null, null,
+                    $"Already {answer.ExternalStatus!.ToLowerInvariant()} in {drafts.ConnectorName}.", cancellationToken).ConfigureAwait(false);
+                return null;
+
+            case InvoiceDraftChangeOutcome.NotDraft:
+                // Approved there already: it is a real invoice TempestOS sent.
+                // Track it as Sent (its lines are billed) so reconciliation
+                // reads the approval back; voiding it is done in the system.
+                await request.ReconcileFoundAsync(own.ExternalId, own.ExternalInvoiceNumber, cancellationToken).ConfigureAwait(false);
+                await LinkLinesAsync(request, request.Id, cancellationToken).ConfigureAwait(false);
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"{drafts.ConnectorName} already holds this invoice as {answer.ExternalStatus} (a send whose answer was lost); it is now tracked as Sent — void it in {drafts.ConnectorName}, and TempestOS reads it back.",
+                    request);
+
+            default:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{request.Id}' was not voided: {answer.Reason}",
+                    request);
+        }
     }
 
     /// <summary>
@@ -962,7 +1060,7 @@ public sealed class InvoicingService : IInvoicingService
             request.Total,
             date,
             dueDate,
-            await ReferenceForAsync(request, cancellationToken).ConfigureAwait(false),
+            request.ExternalReference ?? await ReferenceForAsync(request, cancellationToken).ConfigureAwait(false),
             request.ExternalId);
     }
 

@@ -8,6 +8,7 @@ using Tempest.Workspace.Projects;
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.BusinessGovernance.Pricing;
 using Tempest.Core.BusinessOperations.Crm;
+using Tempest.Core.Deliverables;
 using Tempest.Core.EngineeringDomain;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero;
@@ -50,8 +51,12 @@ internal sealed class InvoiceWriteLossHandler : DelegatingHandler
 
     public AnswerLoss Loss { get; set; } = AnswerLoss.Dropped;
 
+    /// <summary>Runs just before each request reaches the simulator — a back-office act racing TempestOS's own call.</summary>
+    public Action<HttpRequestMessage>? BeforeSend { get; set; }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        BeforeSend?.Invoke(request);
         var response = await base.SendAsync(request, cancellationToken);
         if (request.Method == HttpMethod.Put && request.RequestUri!.AbsolutePath.EndsWith("/Invoices", StringComparison.Ordinal) && LoseInvoiceCreates > 0)
         {
@@ -271,6 +276,19 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
         Assert.Equal(InvoiceRequestStatus.Sent, sent.Request!.Status);
         return (sent.Request, contactId);
     }
+
+    /// <summary>Renames the deliverable whose completion <paramref name="request"/> bills — what its Xero <c>Reference</c> is built from.</summary>
+    public async Task RenameDeliverableAsync(InvoiceRequest request, string newName)
+    {
+        var line = Assert.Single(request.Lines, l => l.SourceKind == DeliverableCompletion.CanonicalKind);
+        var completion = Assert.IsType<DeliverableCompletion>(await Domain.Repository.FindAsync(line.SourceId));
+        var deliverable = Assert.IsAssignableFrom<EngineeringObjectBase>(await Domain.Repository.FindAsync(completion.DeliverableId));
+        await deliverable.RenameAsync(newName);
+    }
+
+    /// <summary>The ACCREC invoices the simulator holds that are not deleted or voided.</summary>
+    public IReadOnlyList<XeroSimulatedDocument> LiveSalesInvoices =>
+        [.. SalesInvoices.Where(d => d.Status is not ("DELETED" or "VOIDED"))];
 
     /// <summary>The request as stored now.</summary>
     public async Task<InvoiceRequest> ReloadAsync(Guid requestId) => (InvoiceRequest)(await Domain.Repository.FindAsync(requestId))!;

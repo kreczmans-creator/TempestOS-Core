@@ -59,6 +59,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     private DateTimeOffset? _sentAtUtc;
     private PaymentTerms _paymentTerms;
     private DateOnly? _dueOn;
+    private string? _externalReference;
 
     /// <summary>Initialises a new instance of the <see cref="InvoiceRequest"/> class.</summary>
     public InvoiceRequest(
@@ -70,7 +71,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         string? externalId = null, string? externalInvoiceNumber = null, string? externalStatus = null,
         DateOnly? issuedDate = null, DateOnly? paidDate = null, string? lastError = null,
         string? connector = null, DateTimeOffset? sentAtUtc = null,
-        PaymentTerms paymentTerms = PaymentTerms.UpFront, DateOnly? dueOn = null)
+        PaymentTerms paymentTerms = PaymentTerms.UpFront, DateOnly? dueOn = null, string? externalReference = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(clientOrganisationId);
@@ -92,6 +93,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _sentAtUtc = sentAtUtc;
         _paymentTerms = paymentTerms;
         _dueOn = dueOn;
+        _externalReference = externalReference;
     }
 
     /// <summary>The client this invoice is raised against — an Organisation-catalogue id, never validated as a real record by this class.</summary>
@@ -175,10 +177,26 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
     /// </summary>
     public DateOnly? DueOn => _dueOn;
 
+    /// <summary>
+    /// The reference text this request's first send through a draft seam
+    /// carried (`v0.24.0` X4: Xero's <c>Reference</c>,
+    /// <c>{project code} · {deliverable}</c>) — frozen at that first send,
+    /// so a retry or reconciliation after a lost answer looks for, and
+    /// sends, exactly what Xero may already hold, even if the project or
+    /// deliverable has been renamed since. <see langword="null"/> until
+    /// then, and for every request sent before `v0.24.0`.
+    /// </summary>
+    internal string? ExternalReference => _externalReference;
+
     /// <summary>Moves this request to <see cref="InvoiceRequestStatus.Sending"/> and records which connector the attempt is through. <see cref="InvoicingService.SendAsync"/> checks <see cref="InvoiceRequestStatusTransitions"/> before this ever runs.</summary>
-    internal Task MoveToSendingAsync(string connectorName, CancellationToken cancellationToken = default)
+    /// <param name="connectorName">The connector the attempt is through.</param>
+    /// <param name="externalReference">The reference text the attempt carries (`v0.24.0` X4, a draft seam's send); kept as <see cref="ExternalReference"/> unless one is already frozen. <see langword="null"/> leaves it as it was.</param>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    internal Task MoveToSendingAsync(string connectorName, string? externalReference = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectorName);
+
+        var reference = _externalReference ?? (string.IsNullOrWhiteSpace(externalReference) ? null : externalReference);
 
         return MutateTypeStateAndPersistAsync(
             () => new Dictionary<string, string?>(StringComparer.Ordinal)
@@ -186,12 +204,14 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
                 [nameof(Status)] = InvoiceRequestStatus.Sending.ToString(),
                 [nameof(Connector)] = connectorName,
                 [nameof(LastError)] = null,
+                [nameof(ExternalReference)] = reference,
             },
             () =>
             {
                 _status = InvoiceRequestStatus.Sending;
                 _connector = connectorName;
                 _lastError = null;
+                _externalReference = reference;
             },
             $"Sending via '{connectorName}'.",
             cancellationToken);
@@ -417,6 +437,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         state[nameof(SentAtUtc)] = _sentAtUtc?.ToString("O", CultureInfo.InvariantCulture);
         state[nameof(PaymentTerms)] = _paymentTerms.ToString();
         WriteJson(state, nameof(DueOn), _dueOn);
+        state[nameof(ExternalReference)] = _externalReference;
     }
 
     /// <inheritdoc />
@@ -433,6 +454,7 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
         _sentAtUtc = ParseSentAtUtc(state);
         _paymentTerms = ReadPaymentTerms(state);
         _dueOn = ReadDueOn(state, _sentAtUtc);
+        _externalReference = state.Type(nameof(ExternalReference));
     }
 
     private static InvoiceRequestStatus ReadStatus(EngineeringObjectState state) =>
@@ -480,7 +502,8 @@ public sealed class InvoiceRequest : EngineeringObjectBase, IRehydratable<Invoic
             state.Type(nameof(Connector)),
             sentAtUtc,
             ReadPaymentTerms(state),
-            ReadDueOn(state, sentAtUtc));
+            ReadDueOn(state, sentAtUtc),
+            state.Type(nameof(ExternalReference)));
     }
 }
 

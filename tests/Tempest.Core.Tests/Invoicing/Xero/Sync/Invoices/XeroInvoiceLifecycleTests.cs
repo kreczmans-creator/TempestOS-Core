@@ -1,5 +1,7 @@
 using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Invoicing;
+using Tempest.Core.Invoicing.Xero.Sync;
+using Tempest.Core.Invoicing.Xero.Sync.Invoices;
 
 namespace Tempest.Core.Tests.Invoicing.Xero.Sync.Invoices;
 
@@ -243,5 +245,191 @@ public sealed class XeroInvoiceLifecycleTests
         Assert.Equal(InvoiceRequestStatus.Voided, voided.Request!.Status);
         Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
         kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_DeletesTheXeroDraftFirst_SoRaisingAgainLeavesOneLiveInvoice()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV1");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV1");
+        var completionId = Assert.Single(request.Lines).SourceId;
+        kit.Loss.LoseInvoiceCreates = 1;
+        kit.Loss.Loss = AnswerLoss.Dropped;
+
+        var sent = await kit.Service.SendAsync(request.Id);
+        Assert.Equal(InvoiceRequestStatus.Draft, sent.Request!.Status); // Xero committed it; the answer was lost
+        var lost = Assert.Single(kit.SalesInvoices);
+        var queued = Assert.Single(await kit.Outbox.ListForDocumentAsync(XeroInvoiceDrafts.DocumentFor(request.Id)));
+
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.True(voided.Succeeded, voided.Reason);
+        Assert.Equal(InvoiceRequestStatus.Voided, voided.Request!.Status);
+        Assert.Equal("DELETED", kit.Invoice(lost.Id).Status);
+        Assert.Equal("DELETED", (await kit.LinkAsync(request.Id))!.LastKnownXeroStatus);
+
+        // The queued send has nothing left to do; the freed work is raised and sent again.
+        var pushed = await new XeroInvoicePushHandler(kit.Service, kit.Drafts).PushAsync(InvoiceExportKit.TenantId, queued);
+        Assert.Equal(XeroPushOutcome.NothingToDo, pushed.Outcome);
+
+        var again = await kit.Service.RaiseFromCompletionAsync(completionId);
+        Assert.True(again.Succeeded, again.Reason);
+        Assert.Equal(InvoiceRequestStatus.Sent, (await kit.Service.SendAsync(again.Request!.Id)).Request!.Status);
+
+        var live = Assert.Single(kit.LiveSalesInvoices);
+        Assert.Equal("ACME1-BRIDG1-INV-002", live.Number);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_XeroUnreachable_IsRefused_TheRequestStaysDraft()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV2");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV2");
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+        kit.Simulator.Inject(new Simulator.XeroFault(Simulator.XeroFaultKind.TransportFailure, PathContains: "Invoices"));
+
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.False(voided.Succeeded);
+        Assert.Contains("try again", voided.Reason, StringComparison.Ordinal);
+        Assert.Equal(InvoiceRequestStatus.Draft, (await kit.ReloadAsync(request.Id)).Status);
+        Assert.Equal("DRAFT", kit.Invoice(lost.Id).Status);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Void_ADraftWhoseSendAnswerWasLost_AlreadyApprovedInXero_IsRefused_AndTheInvoiceIsTrackedAsSent()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV3");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV3");
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+        kit.Simulator.ApproveInXero(lost.Id);
+
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.False(voided.Succeeded);
+        Assert.Contains("void it in Xero", voided.Reason, StringComparison.Ordinal);
+        var after = await kit.ReloadAsync(request.Id);
+        Assert.Equal(InvoiceRequestStatus.Sent, after.Status);
+        Assert.Equal(lost.Id, after.ExternalId);
+        Assert.Equal("AUTHORISED", kit.Invoice(lost.Id).Status);
+        Assert.Equal(InvoiceRequestStatus.Accepted, (await kit.Service.ReconcileAsync(request.Id)).Request!.Status);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Void_ADraftWhoseSendNeverReachedXero_IsLocal_AfterOneLookUp()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("LV4");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "LV4");
+        kit.Simulator.Inject(new Simulator.XeroFault(Simulator.XeroFaultKind.TransportFailure, PathContains: "Invoices"));
+        await kit.Service.SendAsync(request.Id);
+        Assert.Empty(kit.SalesInvoices);
+        var mark = kit.Mark;
+
+        var voided = await kit.Service.VoidAsync(request.Id);
+
+        Assert.True(voided.Succeeded, voided.Reason);
+        Assert.Equal(InvoiceRequestStatus.Voided, voided.Request!.Status);
+        Assert.Contains(kit.RequestsSince(mark), r => r.Method == HttpMethod.Get && r.Query.ContainsKey("InvoiceNumbers"));
+        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
+        Assert.Empty(kit.SalesInvoices);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Retry_AfterALostAnswer_FindsItsOwnInvoice_EvenThoughTheDeliverableWasRenamedMeanwhile()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("RN1");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "RN1");
+        kit.Loss.LoseInvoiceCreates = 1;
+        await kit.Service.SendAsync(request.Id);
+        var lost = Assert.Single(kit.SalesInvoices);
+        Assert.Equal("ACME1-BRIDG1 · Deliverable RN1", (string?)lost.Body["Reference"]);
+        var queued = Assert.Single(await kit.Outbox.ListForDocumentAsync(XeroInvoiceDrafts.DocumentFor(request.Id)));
+
+        await kit.RenameDeliverableAsync(request, "Bridge study, renamed");
+        var pushed = await new XeroInvoicePushHandler(kit.Service, kit.Drafts).PushAsync(InvoiceExportKit.TenantId, queued);
+
+        Assert.Equal(XeroPushOutcome.Succeeded, pushed.Outcome);
+        var after = await kit.ReloadAsync(request.Id);
+        Assert.Equal(InvoiceRequestStatus.Sent, after.Status);
+        Assert.Equal(lost.Id, after.ExternalId);
+        Assert.Equal(XeroInvoiceDrafts.LinkedByReconciled, (await kit.LinkAsync(request.Id))!.LinkedBy);
+        Assert.Single(kit.SalesInvoices);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Reconcile_AnUnknownSend_FindsItsOwnInvoice_EvenThoughTheDeliverableWasRenamedMeanwhile()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("RN2");
+        await kit.LinkClientAsync(organisationId);
+        var request = await kit.RaiseAsync(projectId, "RN2");
+        kit.Loss.LoseInvoiceCreates = 1;
+        kit.Loss.Loss = AnswerLoss.EmptyBody;
+        Assert.Equal(InvoiceRequestStatus.Unknown, (await kit.Service.SendAsync(request.Id)).Request!.Status);
+        var lost = Assert.Single(kit.SalesInvoices);
+
+        await kit.RenameDeliverableAsync(request, "Bridge study, renamed");
+        var reconciled = await kit.Service.ReconcileAsync(request.Id);
+
+        Assert.Equal(InvoiceRequestStatus.Sent, reconciled.Request!.Status);
+        Assert.Equal(lost.Id, reconciled.Request.ExternalId);
+        Assert.Single(kit.SalesInvoices);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task Revise_TheContentUpdateStatesDraft_SoAnApprovalRacingItIsRefusedByXero_NotOverwritten()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (request, _) = await kit.SendNewAsync("RC1");
+        var line = Assert.Single(request.Lines);
+
+        var revised = await kit.Service.ReviseLinesAsync(
+            request.Id, [new InvoiceRequestLineRevision(line.SourceId, "Stage 1", 1m, new Money(1000m, CurrencyCode.Gbp), VatRate.Standard)]);
+        Assert.True(revised.Succeeded, revised.Reason);
+        var update = Assert.Single(kit.Simulator.Requests, r => r.Method == HttpMethod.Post && r.Path == $"Invoices/{request.ExternalId}");
+        Assert.Equal("DRAFT", (string?)Assert.Single(update.JsonBody!["Invoices"]!.AsArray())!["Status"]);
+
+        // The Product Owner approves in Xero between TempestOS's status read and its content write.
+        kit.Loss.BeforeSend = message =>
+        {
+            if (message.Method == HttpMethod.Post && message.RequestUri!.AbsolutePath.EndsWith($"/Invoices/{request.ExternalId}", StringComparison.Ordinal))
+                kit.Simulator.ApproveInXero(request.ExternalId!);
+        };
+
+        var raced = await kit.Service.ReviseLinesAsync(
+            request.Id, [new InvoiceRequestLineRevision(line.SourceId, "Stage 2", 1m, new Money(1m, CurrencyCode.Gbp), VatRate.Standard)]);
+
+        Assert.False(raced.Succeeded);
+        var invoice = kit.Invoice(request.ExternalId!);
+        Assert.Equal("AUTHORISED", invoice.Status);
+        Assert.Equal("Stage 1", (string?)Assert.Single(invoice.Body["LineItems"]!.AsArray())!["Description"]);
+        Assert.Equal("Stage 1", Assert.Single((await kit.ReloadAsync(request.Id)).Lines).Description);
+
+        // Xero's own refusal of AUTHORISED → DRAFT is what stopped the write
+        // (the simulator logs it as a contract refusal); nothing else broke a rule.
+        Assert.All(kit.Simulator.Violations, v => Assert.Contains(v.Rule, new[] { Simulator.XeroSimulatorRules.InvoiceTransition, Simulator.XeroSimulatorRules.NotEditable }));
+        Assert.Contains(kit.Simulator.Violations, v => v.Rule == Simulator.XeroSimulatorRules.InvoiceTransition);
+        Assert.DoesNotContain(kit.Simulator.Requests, r => r.Path.EndsWith("/Email", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(kit.SafetyAudit.Rows);
     }
 }

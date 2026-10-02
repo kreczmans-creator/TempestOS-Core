@@ -168,7 +168,9 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     /// to <paramref name="draft"/> (`v0.24.0` X4) — only while Xero still
     /// holds it as <c>DRAFT</c>: it is read first, and any other status is
     /// answered <see cref="InvoiceDraftChangeOutcome.NotDraft"/> with Xero's
-    /// status word, and nothing is written. Never changes its status.
+    /// status word, and nothing is written. The write itself states
+    /// <c>Status: DRAFT</c>, so an approval in Xero between the read and the
+    /// write makes Xero refuse it rather than change an approved invoice.
     /// </summary>
     /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
     /// <param name="draft">The new content.</param>

@@ -44,8 +44,11 @@ public sealed partial class XeroAccountingApi
     /// <summary>
     /// Updates the content of the invoice <paramref name="invoiceId"/>
     /// (<c>POST Invoices/{InvoiceID}</c>). The caller checks first that Xero
-    /// still holds it as <c>DRAFT</c> (X4); the body never changes its status
-    /// (<see cref="XeroWireInvoiceWrite.Status"/> is dropped) — deleting is
+    /// still holds it as <c>DRAFT</c> (X4), and the body states
+    /// <c>Status: DRAFT</c> whatever <paramref name="invoice"/> carries: should
+    /// the Product Owner approve it in Xero between that check and this
+    /// write, Xero refuses the move back to <c>DRAFT</c> rather than changing
+    /// an approved invoice's content. Deleting is
     /// <see cref="DeleteInvoiceDraftAsync"/>.
     /// </summary>
     /// <param name="invoiceId">Xero's <c>InvoiceID</c>.</param>
@@ -62,7 +65,7 @@ public sealed partial class XeroAccountingApi
         if (Validate(invoice) is { } problem)
             return Failure<XeroWireInvoice>(ConnectorOutcome.Rejected, null, problem);
 
-        var update = invoice with { InvoiceID = invoiceId.Trim(), Type = null, Status = null };
+        var update = invoice with { InvoiceID = invoiceId.Trim(), Type = null, Status = XeroInvoiceWriteStatus.Draft };
         var result = await PostJsonAsync<XeroWireInvoicesEnvelope>(
             $"Invoices/{Uri.EscapeDataString(invoiceId.Trim())}", new XeroWireInvoicesWriteEnvelope([update]), idempotencyKey, cancellationToken).ConfigureAwait(false);
         return SingleInvoice(result, "update");
