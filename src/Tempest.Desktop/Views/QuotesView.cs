@@ -389,9 +389,11 @@ public sealed class QuotesView : UserControl
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
 
         // `v0.24.0` U3: an issued quotation keeps the exact bytes saved, so
-        // its Xero copy carries the same PDF (X6's file source reads it back).
+        // its Xero copy carries the same PDF (X6's file source reads it back);
+        // a re-export of the unchanged sheet keeps nothing more.
         var attached = XeroIssuedPdf.IsIssued(quote)
-                       && await XeroIssuedPdf.AttachAsync(quote, QuotationExport.FileName(quote), bytes, CancellationToken.None).ConfigureAwait(true);
+                       && await XeroIssuedPdf.AttachAsync(
+                           quote, QuotationExport.FileName(quote), bytes, at => _sheetRenderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
 
         Report($"Exported to '{destination}'.{(attached ? " Quote sheet kept on the quotation." : string.Empty)}", succeeded: true);
     }

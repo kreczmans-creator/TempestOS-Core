@@ -1109,13 +1109,18 @@ public sealed class ProjectQuoteView : UserControl
             return;
         }
 
-        var bytes = await RenderSheetAsync(quote).ConfigureAwait(true);
+        var model = await BuildSheetModelAsync(quote).ConfigureAwait(true);
+        var bytes = _sheetRenderer.Render(model).ToArray();
         await File.WriteAllBytesAsync(destination, bytes, CancellationToken.None).ConfigureAwait(true);
 
         // `v0.24.0` U3: an issued quotation keeps the exact bytes saved, so
-        // its Xero copy carries the same PDF (X6's file source reads it back).
+        // its Xero copy carries the same PDF (X6's file source reads it back);
+        // a re-export of the unchanged sheet keeps nothing more.
         if (XeroIssuedPdf.IsIssued(quote))
-            await XeroIssuedPdf.AttachAsync(quote, QuotationExport.FileName(quote), bytes, CancellationToken.None).ConfigureAwait(true);
+        {
+            await XeroIssuedPdf.AttachAsync(
+                quote, QuotationExport.FileName(quote), bytes, at => _sheetRenderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
+        }
 
         // Reading and saving a copy changes nothing in the domain — never
         // `ActionOutcome.Changed`, mirroring `ObjectEditorView.OnExportAttachmentAsync`'s
@@ -1127,12 +1132,12 @@ public sealed class ProjectQuoteView : UserControl
     private Task<string?> QuoteStartFolderAsync(Quotation quote) =>
         QuotationSheetModelBuilder.StartFolderAsync(ProjectFolders, quote.ParentId ?? _currentProjectId(), CancellationToken.None);
 
-    private async Task<byte[]> RenderSheetAsync(Quotation quote)
-    {
-        var model = await QuotationSheetModelBuilder.BuildAsync(
-            quote, _domainContext, _organisations, _issuerName(), _applicationVersionText(), _time.GetUtcNow(), CancellationToken.None).ConfigureAwait(true);
-        return _sheetRenderer.Render(model).ToArray();
-    }
+    private async Task<byte[]> RenderSheetAsync(Quotation quote) =>
+        _sheetRenderer.Render(await BuildSheetModelAsync(quote).ConfigureAwait(true)).ToArray();
+
+    private Task<QuotationSheetModel> BuildSheetModelAsync(Quotation quote) =>
+        QuotationSheetModelBuilder.BuildAsync(
+            quote, _domainContext, _organisations, _issuerName(), _applicationVersionText(), _time.GetUtcNow(), CancellationToken.None);
 
     private Task<string> ResolveClientNameAsync(string? clientOrganisationId) =>
         QuotationSheetModelBuilder.ResolveClientNameAsync(_organisations, clientOrganisationId, CancellationToken.None);

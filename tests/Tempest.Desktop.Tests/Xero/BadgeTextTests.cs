@@ -119,6 +119,44 @@ public sealed class BadgeTextTests
     }
 
     [Fact]
+    public void CannotTell_ForABill_IsItsOwnBadge_FromX5sOwnReason()
+    {
+        var reason = XeroPurchasingOwnership.CannotTell("Bill", "expense", "SUP-778", null, sourceGone: true).Reason;
+
+        Assert.Equal(XeroBadgeText.CannotTell, XeroBadgeText.Describe(XeroDocumentKind.ExpenseBill, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid())).Text);
+    }
+
+    [Theory]
+    [InlineData(XeroDocumentKind.PurchaseOrder)]
+    [InlineData(XeroDocumentKind.ExpenseBill)]
+    [InlineData(XeroDocumentKind.Invoice)]
+    public void AFailedReasonThatMerelyMentionsTheWords_IsNeverReadAsCannotTellOrDeleted(XeroDocumentKind kind)
+    {
+        // Verifier round 1 (defect 6): the badge state comes from typed facts
+        // and X5's own producer, never from searching a reason's text.
+        var cannotTellWords = XeroBadgeText.Describe(kind, Status(XeroSyncBadge.Failed, "Xero refused: the tax engine cannot tell which rate applies.", retry: Guid.NewGuid()));
+        Assert.Equal(XeroBadgeText.Failed, cannotTellWords.Text);
+
+        var deletedWords = XeroBadgeText.Describe(kind, Status(XeroSyncBadge.Failed, "Deleted in Xero, or never there: Xero answered 404 for this contact.", retry: Guid.NewGuid()));
+        Assert.Equal(XeroBadgeText.Failed, deletedWords.Text);
+
+        var voidedWithDeletedWords = XeroBadgeText.Describe(kind, Status(XeroSyncBadge.Voided, "Deleted in Xero (as a note).", "VOIDED"));
+        Assert.Equal(XeroBadgeText.Voided, voidedWithDeletedWords.Text);
+    }
+
+    [Fact]
+    public void APurchasingPushRefusedBecauseItsRecordWasDeletedInXero_ReadsDeleted_FromX6sSendAgain()
+    {
+        // X5's DeletedInXero refusal leaves a tombstone, which is exactly when X6 offers Send again.
+        var reason = XeroPurchasingOwnership.DeletedInXero("Bill", "expense", "EXP-1", "DELETED", "Send it again to make a new draft.", sourceGone: false).Reason;
+
+        var shown = XeroBadgeText.Describe(XeroDocumentKind.ExpenseBill, Status(XeroSyncBadge.Failed, reason, canSendAgain: true, retry: Guid.NewGuid()));
+
+        Assert.Equal(XeroBadgeText.Deleted, shown.Text);
+        Assert.Equal(XeroBadgeTone.Attention, shown.Tone);
+    }
+
+    [Fact]
     public void EveryBadgeX6Defines_HasWords()
     {
         foreach (var kind in Enum.GetValues<XeroDocumentKind>())

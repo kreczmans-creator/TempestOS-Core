@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Tempest.Core.DependencyInjection;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 using Tempest.Core.Invoicing.Xero.Sync.Quotes;
@@ -66,6 +67,18 @@ public interface IXeroBadgeSource
     /// <summary>Whether <em>Send to Xero</em> exists for records of <paramref name="kind"/> (X3 quotes; X5 purchase orders and expenses). X4 exposes none for invoices: an invoice goes to Xero through its own <em>Send</em>.</summary>
     /// <param name="kind">The kind of record.</param>
     bool CanSendToXero(XeroDocumentKind kind);
+
+    /// <summary>
+    /// Whether <paramref name="document"/>, reading <em>Not sent</em>, needs
+    /// the person's explicit <em>Send to Xero</em> (Q8) — as its kind's
+    /// planner decides: raised before Xero sync began and not opted in. A
+    /// record that will sync on its own, or one the planner refuses (an
+    /// expense recorded from a purchase order, Q6), does not. Local state
+    /// only, never a network call.
+    /// </summary>
+    /// <param name="document">The record.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<bool> NeedsSendToXeroAsync(XeroDocumentRef document, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -79,14 +92,19 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
     private readonly XeroQuotePlanner? _quotes;
     private readonly XeroPurchaseOrderPlanner? _orders;
     private readonly XeroExpenseBillPlanner? _expenses;
+    private readonly IXeroQuoteSource? _quoteSource;
+    private readonly IXeroPurchaseOrderSource? _orderSource;
 
     /// <summary>Initialises a new instance of the <see cref="XeroSyncServiceBadgeSource"/> class.</summary>
     /// <param name="engine">X6's engine: badges, Retry and Send again.</param>
     /// <param name="quotes">X3's planner, for a quotation's <em>Send to Xero</em>; <see langword="null"/> offers none.</param>
     /// <param name="orders">X5's purchase-order planner, for <em>Send to Xero</em>; <see langword="null"/> offers none.</param>
     /// <param name="expenses">X5's expense-bill planner, for <em>Send to Xero</em>; <see langword="null"/> offers none.</param>
+    /// <param name="quoteSource">X3's quotation reader, so <see cref="NeedsSendToXeroAsync"/> asks the planner whether a quotation is synced automatically (<see cref="XeroQuotePlanner.IsAutomaticAsync"/>); <see langword="null"/> falls back to whether the planner would plan anything.</param>
+    /// <param name="orderSource">X5's purchase-order reader, so a cancelled order is never offered <em>Send to Xero</em>; <see langword="null"/> relies on the planner alone.</param>
     public XeroSyncServiceBadgeSource(
-        XeroSyncService engine, XeroQuotePlanner? quotes = null, XeroPurchaseOrderPlanner? orders = null, XeroExpenseBillPlanner? expenses = null)
+        XeroSyncService engine, XeroQuotePlanner? quotes = null, XeroPurchaseOrderPlanner? orders = null, XeroExpenseBillPlanner? expenses = null,
+        IXeroQuoteSource? quoteSource = null, IXeroPurchaseOrderSource? orderSource = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
 
@@ -94,6 +112,8 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
         _quotes = quotes;
         _orders = orders;
         _expenses = expenses;
+        _quoteSource = quoteSource;
+        _orderSource = orderSource;
         _engine.CycleCompleted += _ => Changed?.Invoke();
     }
 
@@ -112,7 +132,8 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
             return null;
 
         return new XeroSyncServiceBadgeSource(
-            engine, TryResolve<XeroQuotePlanner>(services), TryResolve<XeroPurchaseOrderPlanner>(services), TryResolve<XeroExpenseBillPlanner>(services));
+            engine, TryResolve<XeroQuotePlanner>(services), TryResolve<XeroPurchaseOrderPlanner>(services), TryResolve<XeroExpenseBillPlanner>(services),
+            TryResolve<IXeroQuoteSource>(services), TryResolve<IXeroPurchaseOrderSource>(services));
     }
 
     /// <inheritdoc />
@@ -172,6 +193,53 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
         XeroDocumentKind.ExpenseBill => _expenses is not null,
         _ => false,
     };
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Asks each kind's own planner (Q8), with no link — a record reading
+    /// <em>Not sent</em> has none: a quotation needs it unless it was issued
+    /// after automatic sync began (<see cref="XeroQuotePlanner.IsAutomaticAsync"/>);
+    /// a purchase order or expense needs it only while its planner plans
+    /// nothing for it (not automatic, not opted in) — never for a cancelled
+    /// order, nor for an expense the planner deliberately does not push
+    /// (<see cref="XeroExpenseBillPlanner.DescribeNotPushedAsync"/>, Q6).
+    /// A planner that cannot answer offers nothing.
+    /// </remarks>
+    public async Task<bool> NeedsSendToXeroAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        if (!Guid.TryParse(document.TempestKey, out var id))
+            return false;
+
+        switch (document.Kind)
+        {
+            case XeroDocumentKind.Quote when _quotes is not null:
+                if (_quoteSource is not null)
+                {
+                    return await _quoteSource.FindAsync(id, cancellationToken).ConfigureAwait(false) is { IsIssued: true } quote
+                           && !await _quotes.IsAutomaticAsync(quote, cancellationToken).ConfigureAwait(false);
+                }
+
+                return (await _quotes.PlanAsync(id, null, cancellationToken).ConfigureAwait(false)).Count == 0;
+
+            case XeroDocumentKind.PurchaseOrder when _orders is not null:
+                if (_orderSource is not null
+                    && await _orderSource.FindAsync(id, cancellationToken).ConfigureAwait(false) is not { WasIssued: true, Status: not Tempest.Core.PurchaseOrders.PurchaseOrderStatus.Cancelled })
+                {
+                    return false;
+                }
+
+                return (await _orders.PlanAsync(id, null, cancellationToken).ConfigureAwait(false)).Count == 0;
+
+            case XeroDocumentKind.ExpenseBill when _expenses is not null:
+                return await _expenses.DescribeNotPushedAsync(id, cancellationToken).ConfigureAwait(false) is null
+                       && (await _expenses.PlanAsync(id, null, cancellationToken).ConfigureAwait(false)).Count == 0;
+
+            default:
+                return false;
+        }
+    }
 
     private static (bool, string?) From(XeroQuoteSendRequest request) => (request.Queued, request.Reason);
 
@@ -281,7 +349,12 @@ public static class XeroBadgeText
 
         var reason = string.IsNullOrWhiteSpace(status.Status.Reason) ? null : status.Status.Reason.Trim();
         var xeroStatus = status.Status.XeroStatus?.Trim().ToUpperInvariant();
-        var deletedNote = reason is not null && reason.StartsWith("Deleted in Xero", StringComparison.OrdinalIgnoreCase);
+
+        // Deleted in Xero is read from typed facts, never the reason's words:
+        // Xero's own status word as last read (DELETED), or X5's tombstone —
+        // a purchase order or bill TempestOS made, deleted there — which is
+        // exactly when X6 offers Send again.
+        var deletedInXero = xeroStatus == XeroConnectorDeletedStatus || status.CanSendAgain;
 
         XeroBadgePresentation Make(string text, XeroBadgeTone tone) =>
             new(text, reason is not null && string.Equals(reason.TrimEnd('.'), text, StringComparison.OrdinalIgnoreCase) ? null : reason, tone);
@@ -320,12 +393,12 @@ public static class XeroBadgeText
                 return Make(Paid, XeroBadgeTone.Good);
 
             case XeroSyncBadge.Voided:
-                return deletedNote || xeroStatus == "DELETED" ? Make(Deleted, XeroBadgeTone.Neutral) : Make(Voided, XeroBadgeTone.Neutral);
+                return deletedInXero ? Make(Deleted, XeroBadgeTone.Neutral) : Make(Voided, XeroBadgeTone.Neutral);
 
             case XeroSyncBadge.Failed:
-                if (reason is not null && reason.Contains("cannot tell", StringComparison.OrdinalIgnoreCase))
+                if (IsCannotTell(kind, reason))
                     return Make(CannotTell, XeroBadgeTone.Attention);
-                if (deletedNote || (xeroStatus == "DELETED" && kind == XeroDocumentKind.Quote))
+                if (deletedInXero)
                     return Make(Deleted, XeroBadgeTone.Attention);
                 return Make(Failed, XeroBadgeTone.Attention);
 
@@ -335,6 +408,46 @@ public static class XeroBadgeText
             default:
                 return Make(status.Label, XeroBadgeTone.Neutral);
         }
+    }
+
+    /// <summary>Xero's status word for a record deleted there (<see cref="Tempest.Core.Invoicing.Xero.XeroConnector.DeletedStatus"/>).</summary>
+    private const string XeroConnectorDeletedStatus = Tempest.Core.Invoicing.Xero.XeroConnector.DeletedStatus;
+
+    /// <summary>
+    /// Whether <paramref name="reason"/> is X5's own <em>CannotTell</em>
+    /// refusal for a purchase order or bill
+    /// (<see cref="XeroPurchasingOwnership.CannotTell"/>). X6's status carries
+    /// no typed verdict, so the refusal is recognised by the opening X5's own
+    /// producer writes — derived from that producer at run time, never copied
+    /// here, so X5 rewording it cannot silently break the badge — and never by
+    /// searching for words such as "cannot tell" that any other reason (Xero's
+    /// own validation text, say) may contain.
+    /// </summary>
+    private static bool IsCannotTell(XeroDocumentKind kind, string? reason)
+    {
+        if (reason is null)
+            return false;
+
+        var prefix = kind switch
+        {
+            XeroDocumentKind.PurchaseOrder => CannotTellOrderPrefix.Value,
+            XeroDocumentKind.ExpenseBill => CannotTellBillPrefix.Value,
+            _ => null,
+        };
+        return prefix is not null && reason.StartsWith(prefix, StringComparison.Ordinal);
+    }
+
+    private static readonly Lazy<string?> CannotTellOrderPrefix = new(() => CannotTellPrefix("Purchase order", "order"));
+
+    private static readonly Lazy<string?> CannotTellBillPrefix = new(() => CannotTellPrefix("Bill", "expense"));
+
+    /// <summary>The words X5's <em>CannotTell</em> reason opens with, up to the record's number.</summary>
+    private static string? CannotTellPrefix(string noun, string document)
+    {
+        const string marker = "\u0001";
+        var reason = XeroPurchasingOwnership.CannotTell(noun, document, marker, problem: null, sourceGone: false).Reason ?? string.Empty;
+        var at = reason.IndexOf(marker, StringComparison.Ordinal);
+        return at > 0 ? reason[..at] : null;
     }
 }
 
@@ -365,7 +478,7 @@ public sealed class XeroSyncBadgeControl : Border
     /// <param name="source">Where the badge is read from and its actions go.</param>
     /// <param name="document">The record.</param>
     /// <param name="reference">The record's own number or name, for the automation names (<c>"Xero status for Q-001"</c>).</param>
-    /// <param name="offerSendToXero">Whether this record could be sent to Xero on demand (Q8): it is issued (a quote approved or sent, a purchase order issued) or recorded (an expense). <em>Send to Xero</em> is then offered while the badge reads <em>Not sent</em>.</param>
+    /// <param name="offerSendToXero">Whether this record could be sent to Xero on demand (Q8): it is issued (a quote approved or sent, a purchase order issued) or recorded (an expense). <em>Send to Xero</em> is then offered while the badge reads <em>Not sent</em> and the source says the record needs it (<see cref="IXeroBadgeSource.NeedsSendToXeroAsync"/>).</param>
     public XeroSyncBadgeControl(IXeroBadgeSource source, XeroDocumentRef document, string reference, bool offerSendToXero = false)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -455,9 +568,16 @@ public sealed class XeroSyncBadgeControl : Border
     {
         var version = Interlocked.Increment(ref _loadVersion);
         XeroDocumentSyncStatus status;
+        var offerSendToXero = false;
         try
         {
             status = await _source.GetStatusAsync(Document, cancellationToken).ConfigureAwait(true);
+
+            // Send to Xero (Q8) only where the record's planner says it needs
+            // the person's opt-in — never for one that will sync on its own,
+            // nor one the planner refuses (Q6).
+            if (_offerSendToXero && status is { Status.Badge: XeroSyncBadge.NotSent, CanSendAgain: false })
+                offerSendToXero = await NeedsSendToXeroAsync(cancellationToken).ConfigureAwait(true);
         }
         catch (OperationCanceledException)
         {
@@ -476,10 +596,28 @@ public sealed class XeroSyncBadgeControl : Border
         if (version != Volatile.Read(ref _loadVersion))
             return;
 
-        Show(status, XeroBadgeText.Describe(Document.Kind, status));
+        Show(status, XeroBadgeText.Describe(Document.Kind, status), offerSendToXero);
     }
 
-    private void Show(XeroDocumentSyncStatus? status, XeroBadgePresentation presentation)
+    private async Task<bool> NeedsSendToXeroAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _source.NeedsSendToXeroAsync(Document, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031 // Advisory: a planner that cannot answer offers no Send to Xero, and the badge still shows.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            return false;
+        }
+    }
+
+    private void Show(XeroDocumentSyncStatus? status, XeroBadgePresentation presentation, bool offerSendToXero = false)
     {
         Status = status;
         Presentation = presentation;
@@ -493,7 +631,7 @@ public sealed class XeroSyncBadgeControl : Border
 
         _retry.IsVisible = status?.CanRetry == true;
         _sendAgain.IsVisible = status?.CanSendAgain == true;
-        _sendToXero.IsVisible = _offerSendToXero && status is { Status.Badge: XeroSyncBadge.NotSent, CanSendAgain: false };
+        _sendToXero.IsVisible = offerSendToXero && status is { Status.Badge: XeroSyncBadge.NotSent, CanSendAgain: false };
         SetButtonsEnabled(!_busy);
     }
 
@@ -579,18 +717,44 @@ public static class XeroIssuedPdf
     }
 
     /// <summary>
+    /// Whether an invoice request in <paramref name="status"/> was sent to
+    /// the accounting system, so its exported document is the one its Xero
+    /// draft should carry: <see cref="InvoiceRequestStatus.Sent"/>,
+    /// <see cref="InvoiceRequestStatus.Accepted"/>, or
+    /// <see cref="InvoiceRequestStatus.Unknown"/> (sent, its answer lost — it
+    /// may well be in Xero). Never a draft, a request still
+    /// <see cref="InvoiceRequestStatus.Sending"/>, one waiting to
+    /// <see cref="InvoiceRequestStatus.Reauthorise"/> (it never reached Xero),
+    /// a rejected or a voided one.
+    /// </summary>
+    /// <param name="status">The request's status.</param>
+    public static bool IsSent(InvoiceRequestStatus status) =>
+        status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted or InvoiceRequestStatus.Unknown;
+
+    /// <summary>
     /// Attaches <paramref name="bytes"/> to <paramref name="record"/> under
-    /// <paramref name="fileName"/> — unless the newest PDF already attached is
-    /// byte-for-byte the same (an unchanged re-export adds nothing). Never
-    /// throws for an attach the platform refuses (no content store, too large,
-    /// an archived project): the export itself already succeeded.
+    /// <paramref name="fileName"/> — unless the newest PDF already attached
+    /// says the same: byte-for-byte the same, or, given
+    /// <paramref name="renderAt"/>, the same document rendered at the moment
+    /// that PDF says it was generated. Every render stamps the time it was
+    /// made (the footer's "Generated … UTC" and the PDF's creation date), so
+    /// two exports of an unchanged record never match byte-for-byte; asking
+    /// the renderer for this export's document at the kept PDF's own time
+    /// and finding the kept bytes proves the content unchanged, so an
+    /// unchanged re-export adds nothing and queues no second upload to Xero.
+    /// Never throws for an attach the platform refuses (no content store, too
+    /// large, an archived project, the content store failing to write): the
+    /// export itself already succeeded.
     /// </summary>
     /// <param name="record">The issued record.</param>
     /// <param name="fileName">The attachment's name (the exported file's own name).</param>
     /// <param name="bytes">The exact bytes saved.</param>
+    /// <param name="renderAt">Renders this export's document as if generated at the given moment — the same model and renderer, only <c>GeneratedAtUtc</c> changed; <see langword="null"/> compares bytes alone.</param>
     /// <param name="cancellationToken">Cancels the attach.</param>
     /// <returns>Whether the PDF is now on the record (newly attached, or already there).</returns>
-    public static async Task<bool> AttachAsync(IHasAttachments record, string fileName, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
+    public static async Task<bool> AttachAsync(
+        IHasAttachments record, string fileName, ReadOnlyMemory<byte> bytes, Func<DateTimeOffset, ReadOnlyMemory<byte>>? renderAt,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(record);
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
@@ -604,7 +768,7 @@ public static class XeroIssuedPdf
             if (newestPdf is not null)
             {
                 var existing = await record.ReadAttachmentContentAsync(newestPdf.Id, cancellationToken).ConfigureAwait(true);
-                if (existing.IsAvailable && existing.Bytes.AsSpan().SequenceEqual(bytes.Span))
+                if (existing.IsAvailable && SameDocument(existing.Bytes, bytes.Span, renderAt))
                     return true;
             }
 
@@ -621,6 +785,78 @@ public static class XeroIssuedPdf
             // Too large, or a domain rule refused the change (an archived project, say).
             return false;
         }
+        catch (IOException)
+        {
+            // The content store could not write (a full disk, say): the exported file is saved; only the kept copy is missing.
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // The content store's folder refused the write.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// The moment a PDF this application rendered says it was generated —
+    /// its document information <c>/CreationDate</c>, which every renderer
+    /// sets from its model's <c>GeneratedAtUtc</c> — to the second, read as
+    /// UTC (the renderers pass a UTC time, so the written fields are UTC
+    /// whatever offset suffix follows them). <see langword="null"/> when it
+    /// carries none this can read.
+    /// </summary>
+    /// <param name="pdf">The PDF's bytes.</param>
+    public static DateTimeOffset? GeneratedAtOf(ReadOnlySpan<byte> pdf)
+    {
+        var at = pdf.IndexOf("/CreationDate"u8);
+        if (at < 0)
+            return null;
+
+        var rest = pdf[(at + "/CreationDate"u8.Length)..];
+        var open = rest.IndexOf("(D:"u8);
+        if (open is < 0 or > 4)
+            return null;
+
+        rest = rest[(open + 3)..];
+        if (rest.Length < 14)
+            return null;
+
+        Span<int> parts = stackalloc int[6];
+        ReadOnlySpan<int> widths = [4, 2, 2, 2, 2, 2];
+        var offset = 0;
+        for (var i = 0; i < widths.Length; i++)
+        {
+            var value = 0;
+            for (var j = 0; j < widths[i]; j++)
+            {
+                var c = rest[offset++];
+                if (c is < (byte)'0' or > (byte)'9')
+                    return null;
+                value = (value * 10) + (c - '0');
+            }
+
+            parts[i] = value;
+        }
+
+        try
+        {
+            return new DateTimeOffset(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], TimeSpan.Zero);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return null;
+        }
+    }
+
+    private static bool SameDocument(ReadOnlySpan<byte> kept, ReadOnlySpan<byte> exported, Func<DateTimeOffset, ReadOnlyMemory<byte>>? renderAt)
+    {
+        if (kept.SequenceEqual(exported))
+            return true;
+
+        if (renderAt is null || GeneratedAtOf(kept) is not { } keptAt)
+            return false;
+
+        return kept.SequenceEqual(renderAt(keptAt).Span);
     }
 }
 
@@ -652,11 +888,19 @@ public sealed class CapturingDocumentRenderer<TModel> : IDocumentRenderer<TModel
     /// <summary>The bytes of the last <see cref="Render"/>; <see langword="null"/> before any.</summary>
     public ReadOnlyMemory<byte>? LastRender { get; private set; }
 
+    /// <summary>The identity the last <see cref="Render"/> was asked for (<see langword="null"/>: the renderer's own).</summary>
+    public OrganisationIdentity? LastIdentity { get; private set; }
+
     /// <inheritdoc />
     public ReadOnlyMemory<byte> Render(TModel model, OrganisationIdentity? identity = null)
     {
         var bytes = _inner.Render(model, identity);
         LastRender = bytes;
+        LastIdentity = identity;
         return bytes;
     }
+
+    /// <summary>Renders <paramref name="model"/> with the wrapped renderer and the last render's identity, without recording it — for <see cref="XeroIssuedPdf.AttachAsync"/>'s re-render at a kept PDF's own time.</summary>
+    /// <param name="model">The model.</param>
+    public ReadOnlyMemory<byte> RenderAgain(TModel model) => _inner.Render(model, LastIdentity);
 }

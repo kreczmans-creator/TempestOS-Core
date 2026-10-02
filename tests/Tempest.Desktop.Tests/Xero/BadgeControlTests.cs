@@ -184,6 +184,52 @@ public sealed class BadgeControlTests
     }
 
     [AvaloniaFact]
+    public async Task SendToXero_IsOfferedOnlyWhereThePlannerSaysAnOptInIsNeeded()
+    {
+        // Verifier round 1 (defect 9): an expense recorded after automatic
+        // sync began syncs on its own, and one recorded from a purchase order
+        // (Q6) is refused by the planner — neither is offered Send to Xero;
+        // only one recorded before sync began is.
+        var kit = await BadgeTestKit.CreateAsync();
+        var syncBegan = kit.Clock.GetUtcNow().AddDays(-1);
+        var expenses = new FakeExpenseSource();
+        var state = new XeroPurchasingSyncState(kit.Store, kit.Secrets, timeProvider: kit.Clock, options: new XeroPurchasingPlannerOptions { AutomaticFromUtc = syncBegan });
+        var planner = new XeroExpenseBillPlanner(expenses, kit.Links, kit.Outbox, state);
+        var source = new XeroSyncServiceBadgeSource(kit.Engine, expenses: planner);
+
+        var older = expenses.Add(syncBegan.AddDays(-30));
+        var newer = expenses.Add(syncBegan.AddHours(1));
+        var fromOrder = expenses.Add(syncBegan.AddDays(-30), sourcePurchaseOrderId: Guid.NewGuid());
+
+        var olderBadge = await ShowAsync(source, XeroExpenseBillPlanner.Ref(older.Id), "Older taxi", offerSendToXero: true);
+        Assert.Equal("Xero: Not sent", olderBadge.Text);
+        Assert.True(olderBadge.OffersSendToXero);
+
+        var newerBadge = await ShowAsync(source, XeroExpenseBillPlanner.Ref(newer.Id), "Newer taxi", offerSendToXero: true);
+        Assert.Equal("Xero: Not sent", newerBadge.Text);
+        Assert.False(newerBadge.OffersSendToXero);
+
+        var fromOrderBadge = await ShowAsync(source, XeroExpenseBillPlanner.Ref(fromOrder.Id), "Taxi from PO", offerSendToXero: true);
+        Assert.Equal("Xero: Not sent", fromOrderBadge.Text);
+        Assert.False(fromOrderBadge.OffersSendToXero);
+
+        // Once opted in, the older one is queued: nothing more to offer.
+        Assert.True((await source.SendToXeroAsync(XeroExpenseBillPlanner.Ref(older.Id))).Succeeded);
+        await olderBadge.LoadAsync();
+        Assert.False(olderBadge.OffersSendToXero);
+    }
+
+    [AvaloniaFact]
+    public async Task SendToXero_IsNotOffered_WhenTheSourceSaysTheRecordSyncsOnItsOwn()
+    {
+        var fake = new FakeXeroBadgeSource();
+        fake.SyncOnTheirOwn.Add(Order);
+
+        Assert.False((await ShowAsync(fake, Order, "PO-1", offerSendToXero: true)).OffersSendToXero);
+        Assert.True((await ShowAsync(fake, Quote, "Q-1", offerSendToXero: true)).OffersSendToXero);
+    }
+
+    [AvaloniaFact]
     public async Task SendToXero_And_SendAgain_GoToTheSource_AndReloadTheBadge()
     {
         var fake = new FakeXeroBadgeSource();
@@ -411,4 +457,31 @@ internal sealed class FakeXeroBadgeSource : IXeroBadgeSource
     }
 
     public bool CanSendToXero(XeroDocumentKind kind) => SendToXeroKinds.Contains(kind);
+
+    /// <summary>Records the planner would sync on their own (or refuses): no <em>Send to Xero</em> for them.</summary>
+    public HashSet<XeroDocumentRef> SyncOnTheirOwn { get; } = [];
+
+    public Task<bool> NeedsSendToXeroAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        Task.FromResult(!SyncOnTheirOwn.Contains(document));
+}
+
+/// <summary>An in-memory <see cref="IXeroExpenseSource"/> for the planner-backed badge tests.</summary>
+internal sealed class FakeExpenseSource : IXeroExpenseSource
+{
+    public Dictionary<Guid, XeroExpenseSnapshot> Expenses { get; } = [];
+
+    public Task<XeroExpenseSnapshot?> FindAsync(Guid expenseId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Expenses.TryGetValue(expenseId, out var expense) ? expense : null);
+
+    public Task<IReadOnlyList<Guid>> ListIdsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([.. Expenses.Keys]);
+
+    public XeroExpenseSnapshot Add(DateTimeOffset recordedAtUtc, Guid? sourcePurchaseOrderId = null)
+    {
+        var expense = new XeroExpenseSnapshot(
+            Guid.NewGuid(), "P-1", new DateOnly(2026, 10, 1), "Taxi", Tempest.Core.Expenses.ExpenseCategory.Travel, 20m, 4m, "GBP",
+            null, null, null, sourcePurchaseOrderId, IsDeleted: false, RecordedAtUtc: recordedAtUtc);
+        Expenses[expense.Id] = expense;
+        return expense;
+    }
 }

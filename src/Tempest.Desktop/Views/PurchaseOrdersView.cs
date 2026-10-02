@@ -408,7 +408,8 @@ public sealed class PurchaseOrdersView : UserControl
 
         var model = await BuildDocumentModelAsync(order, issued).ConfigureAwait(true);
         var bytes = renderer.Render(model);
-        return await XeroIssuedPdf.AttachAsync(order, $"{SanitiseFileNameSegment(order.Reference)}-{renderer.TemplateName}.pdf", bytes, CancellationToken.None).ConfigureAwait(true);
+        return await XeroIssuedPdf.AttachAsync(
+            order, $"{SanitiseFileNameSegment(order.Reference)}-{renderer.TemplateName}.pdf", bytes, at => renderer.Render(model with { GeneratedAtUtc = at }), CancellationToken.None).ConfigureAwait(true);
     }
 
     private async Task<PurchaseOrderDocumentModel> BuildDocumentModelAsync(PurchaseOrder order, DateOnly issued)

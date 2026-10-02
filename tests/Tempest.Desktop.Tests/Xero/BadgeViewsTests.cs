@@ -78,6 +78,37 @@ public sealed class BadgeViewsTests
     }
 
     [AvaloniaFact]
+    public async Task QuotesList_ReExportOnAMovingClock_KeepsOneSheet_SoXeroGetsOneUpload()
+    {
+        // Verifier round 1 (defect 1): every render stamps its own time, so
+        // with a real clock no two exports are byte-identical; an unchanged
+        // issued quotation must still keep one sheet, not one per export.
+        await using var fixture = await Fixture.StartAsync();
+        var (quoteId, reference) = await fixture.ApprovedQuoteAsync();
+        var clock = new MovingClock(new DateTimeOffset(2026, 10, 2, 9, 0, 0, 250, TimeSpan.Zero));
+        var filePicker = new StubFilePicker();
+        var view = new QuotesView(
+            fixture.Domain, fixture.Resolve<ICommandDispatcher>(), () => fixture.ProjectId, fixture.Resolve<IOrganisationCatalog>(),
+            fixture.Host.ProjectDirectory!, new ProjectPicker(fixture.Host.ProjectDirectory!), filePicker, new QuotationSheetRenderer(),
+            () => "Issuer", () => "TempestOS test", (_, _) => { }, clock)
+        {
+            XeroBadges = new FakeXeroBadgeSource(),
+        };
+        fixture.Show(view);
+        await view.RefreshAsync();
+
+        var first = await fixture.ExportAsync(view, filePicker, $"Export {reference}");
+        clock.Now = clock.Now.AddMinutes(3).AddSeconds(1.5);
+        var second = await fixture.ExportAsync(view, filePicker, $"Export {reference}");
+
+        Assert.NotEqual(first, second); // the saved files differ (their generated time moved) ...
+        var kept = Assert.Single(await PdfAttachmentsAsync(fixture.Domain, quoteId)); // ... yet one sheet is kept
+        var file = await fixture.WaitForFileAsync(XeroDocumentRef.For(XeroDocumentKind.Quote, quoteId));
+        Assert.Equal(first, file.Content.ToArray()); // the first export's exact bytes, still the one Xero gets
+        Assert.Equal($"{reference}-R1-quote.pdf", kept.FileName);
+    }
+
+    [AvaloniaFact]
     public async Task QuotesList_ExportOfADraft_KeepsNothing_SoXeroNeverGetsADraftSheet()
     {
         await using var fixture = await Fixture.StartAsync();
@@ -193,6 +224,87 @@ public sealed class BadgeViewsTests
     }
 
     [AvaloniaFact]
+    public async Task Invoicing_ReExportOfASentInvoiceOnTheRealClock_KeepsOnePdf()
+    {
+        // Verifier round 1 (defect 1): Invoicing stamps each render with the
+        // real clock; a second export a second later keeps nothing more.
+        await using var fixture = await Fixture.StartAsync();
+        await fixture.WithClientAsync();
+        var expense = await fixture.Resolve<IExpenseService>().RecordAsync(
+            fixture.ProjectId, new DateOnly(2026, 9, 30), "Rail fare", ExpenseCategory.Travel, new Money(40m, CurrencyCode.Gbp), new Money(8m, CurrencyCode.Gbp), billable: true);
+        var invoicing = fixture.Resolve<IInvoicingService>();
+        var raised = await invoicing.RaiseFromExpenseAsync(expense.Expense!.Id);
+        Assert.True(raised.Succeeded, raised.Reason);
+        Assert.True((await invoicing.SendAsync(raised.Request!.Id)).Succeeded);
+        var filePicker = new StubFilePicker();
+        var view = new InvoicingView(
+            fixture.Domain, fixture.Resolve<ICommandRegistry>(), () => fixture.ProjectId, (_, _) => { },
+            fixture.Resolve<IOrganisationCatalog>(), new DocumentExporter(filePicker), new InvoiceDocumentRenderer(), () => "Issuer", () => "TempestOS test")
+        {
+            XeroBadges = new FakeXeroBadgeSource(),
+        };
+        fixture.Show(view);
+        await view.RefreshAsync();
+
+        var first = await fixture.ExportAsync(view, filePicker, $"Export invoice {raised.Request.DisplayName}");
+        await Task.Delay(TimeSpan.FromSeconds(1.2));
+        var second = await fixture.ExportAsync(view, filePicker, $"Export invoice {raised.Request.DisplayName}");
+
+        Assert.NotEqual(first, second);
+        Assert.Single(await PdfAttachmentsAsync(fixture.Domain, raised.Request.Id));
+    }
+
+    [AvaloniaFact]
+    public async Task Invoicing_ListsEveryOtherExpensesBill_WithItsBadgeAndRetry()
+    {
+        // Verifier round 1 (defect 3): every recorded expense becomes a Xero
+        // bill, so a non-billable or already-invoiced expense's badge (and its
+        // Retry) is reachable too — not only billable ones awaiting an invoice.
+        await using var fixture = await Fixture.StartAsync();
+        await fixture.WithClientAsync();
+        var expenses = fixture.Resolve<IExpenseService>();
+        var invoicing = fixture.Resolve<IInvoicingService>();
+        var notBillable = await expenses.RecordAsync(fixture.ProjectId, new DateOnly(2026, 9, 29), "Office parking", ExpenseCategory.Travel, new Money(6m, CurrencyCode.Gbp), new Money(1.2m, CurrencyCode.Gbp), billable: false);
+        var invoiced = await expenses.RecordAsync(fixture.ProjectId, new DateOnly(2026, 9, 30), "Rail fare", ExpenseCategory.Travel, new Money(40m, CurrencyCode.Gbp), new Money(8m, CurrencyCode.Gbp), billable: true);
+        Assert.True((await invoicing.RaiseFromExpenseAsync(invoiced.Expense!.Id)).Succeeded);
+        var available = await expenses.RecordAsync(fixture.ProjectId, new DateOnly(2026, 10, 1), "Hotel", ExpenseCategory.Subsistence, new Money(90m, CurrencyCode.Gbp), new Money(18m, CurrencyCode.Gbp), billable: true);
+
+        var fake = new FakeXeroBadgeSource();
+        var failedEntry = Guid.NewGuid();
+        fake.Set(XeroDocumentRef.For(XeroDocumentKind.ExpenseBill, notBillable.Expense!.Id), new XeroSyncStatus(XeroSyncBadge.Failed, "Xero refused: Account code 400 is archived.", RetryableEntryId: failedEntry));
+        var view = new InvoicingView(
+            fixture.Domain, fixture.Resolve<ICommandRegistry>(), () => fixture.ProjectId, (_, _) => { },
+            fixture.Resolve<IOrganisationCatalog>(), new DocumentExporter(new StubFilePicker()), new InvoiceDocumentRenderer(), () => "Issuer", () => "TempestOS test")
+        {
+            XeroBadges = fake,
+        };
+        fixture.Show(view);
+        await view.RefreshAsync();
+
+        var group = view.GetLogicalDescendants().OfType<Expander>().Single(e => AutomationProperties.GetName(e) == InvoicingView.ExpenseBillsGroupName);
+        var inGroup = group.GetLogicalDescendants().OfType<XeroSyncBadgeControl>().ToList();
+        Assert.Equal(["Office parking", "Rail fare"], inGroup.Select(b => b.Reference).Order(StringComparer.Ordinal));
+
+        var failed = inGroup.Single(b => b.Reference == "Office parking");
+        Assert.Equal("Xero: Failed", failed.Text);
+        Assert.True(failed.OffersRetry);
+        failed.GetLogicalDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == "Retry Xero for Office parking")
+            .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await BadgeControlTests.WaitUntilAsync(() => fake.Retried.Contains(failedEntry));
+
+        // The billable expense still awaiting an invoice keeps its badge under Available to invoice, not twice.
+        Assert.Single(view.GetLogicalDescendants().OfType<XeroSyncBadgeControl>(), b => b.Document == XeroDocumentRef.For(XeroDocumentKind.ExpenseBill, available.Expense!.Id));
+
+        // With no Xero, no such group.
+        var plain = new InvoicingView(
+            fixture.Domain, fixture.Resolve<ICommandRegistry>(), () => fixture.ProjectId, (_, _) => { },
+            fixture.Resolve<IOrganisationCatalog>(), new DocumentExporter(new StubFilePicker()), new InvoiceDocumentRenderer(), () => "Issuer", () => "TempestOS test");
+        fixture.Show(plain);
+        await plain.RefreshAsync();
+        Assert.DoesNotContain(plain.GetLogicalDescendants().OfType<Expander>(), e => AutomationProperties.GetName(e) == InvoicingView.ExpenseBillsGroupName);
+    }
+
+    [AvaloniaFact]
     public async Task Invoicing_ExportOfADraftRequest_KeepsNothing()
     {
         await using var fixture = await Fixture.StartAsync();
@@ -304,6 +416,78 @@ public sealed class BadgeViewsTests
     }
 
     [AvaloniaFact]
+    public async Task ExpensePrompt_TakesAnOptionalReceipt_AndKeepsItOnTheExpense_ForItsXeroBill()
+    {
+        // Verifier round 1 (defect 2): design §11 U3 gives the prompt the
+        // receipt — a PDF, JPEG or PNG attached once the expense is recorded,
+        // which X6's file source then hands to the bill's upload.
+        await using var fixture = await Fixture.StartAsync();
+        var expenses = fixture.Resolve<IExpenseService>();
+        var folder = Directory.CreateTempSubdirectory("xero-receipt-");
+        try
+        {
+            var png = Path.Combine(folder.FullName, "taxi-receipt.png");
+            var pngBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3 };
+            await File.WriteAllBytesAsync(png, pngBytes);
+            var text = Path.Combine(folder.FullName, "notes.txt");
+            await File.WriteAllTextAsync(text, "not a receipt");
+
+            var picker = new StubFilePicker();
+            var prompt = new ExpenseEntryPrompt(fixture.Domain) { FilePicker = picker };
+            fixture.Show(prompt);
+
+            var pending = prompt.PromptAsync(fixture.ProjectId);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(Find<Button>(prompt, "Receipt…").IsEnabled);
+            Assert.Equal(ExpenseEntryPrompt.NoReceiptText, Find<TextBlock>(prompt, "Receipt").Text);
+            Find<TextBox>(prompt, "Description").Text = "Taxi";
+            Find<NumericUpDown>(prompt, "Net amount").Value = 20m;
+
+            // Not a receipt type: refused, nothing chosen.
+            picker.EnqueuePick(text);
+            Find<Button>(prompt, "Receipt…").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await BadgeControlTests.WaitUntilAsync(() => picker.PickRequests.Count == 1);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(ExpenseEntryPrompt.NoReceiptText, Find<TextBlock>(prompt, "Receipt").Text);
+            Assert.Equal(["pdf", "jpg", "jpeg", "png"], picker.PickRequests[0].Extensions);
+            Assert.False(picker.PickRequests[0].AllowMultiple);
+
+            picker.EnqueuePick(png);
+            Find<Button>(prompt, "Receipt…").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await BadgeControlTests.WaitUntilAsync(() => Find<TextBlock>(prompt, "Receipt").Text == "Receipt: taxi-receipt.png");
+            Find<Button>(prompt, "Record").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            var input = await pending;
+            Assert.NotNull(input);
+            Assert.NotNull(input!.Receipt);
+            Assert.True(input.HasPurchasingDetails);
+            Assert.Equal("image/png", input.Receipt!.ContentType);
+
+            var recorded = await expenses.RecordAsync(input.ProjectId, input.Date, input.Description, input.Category, input.NetAmount, input.VatAmount, input.Billable);
+            Assert.Null(await prompt.ApplyPurchasingDetailsAsync(recorded.Expense!.Id, input));
+
+            var file = await fixture.WaitForFileAsync(XeroDocumentRef.For(XeroDocumentKind.ExpenseBill, recorded.Expense.Id));
+            Assert.Equal("taxi-receipt.png", file.FileName);
+            Assert.Equal("image/png", file.ContentType);
+            Assert.Equal(pngBytes, file.Content.ToArray());
+
+            // A new prompt starts with no receipt; with no picker the button is unavailable.
+            var bare = new ExpenseEntryPrompt(fixture.Domain);
+            fixture.Show(bare);
+            var again = bare.PromptAsync(fixture.ProjectId);
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(Find<Button>(bare, "Receipt…").IsEnabled);
+            Find<TextBox>(bare, "Description").Text = "Parking";
+            Find<Button>(bare, "Record").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Null((await again)!.Receipt);
+        }
+        finally
+        {
+            folder.Delete(recursive: true);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task ExpensePrompt_WithNoSupplierPicker_LeavesSupplierUnavailable_AndRecordsNone()
     {
         await using var fixture = await Fixture.StartAsync();
@@ -319,6 +503,13 @@ public sealed class BadgeViewsTests
         var input = await pending;
         Assert.NotNull(input);
         Assert.False(input!.HasPurchasingDetails);
+    }
+
+    private sealed class MovingClock(DateTimeOffset start) : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = start;
+
+        public override DateTimeOffset GetUtcNow() => Now;
     }
 
     private static T Find<T>(Control root, string automationName) where T : Control =>

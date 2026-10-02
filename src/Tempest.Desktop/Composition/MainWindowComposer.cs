@@ -544,6 +544,8 @@ internal sealed partial class MainWindowComposer
             PickSupplierAsync = organisationPicker.PickSupplierAsync,
             Organisations = organisationCatalog,
             ExpenseService = expenseService,
+            // `v0.24.0` U3: the optional receipt its Xero bill carries.
+            FilePicker = evidenceFilePicker,
         };
 
         // `v0.24.0` U3: the Xero badge source — null unless Xero is the
