@@ -896,8 +896,20 @@ public sealed class XeroSyncService : IXeroSyncService
     /// <param name="entryId">The Failed entry (<see cref="XeroSyncStatus.RetryableEntryId"/>).</param>
     /// <param name="cancellationToken">Cancels the retry.</param>
     /// <returns>Whether the entry was Failed and is now queued again.</returns>
+    /// <remarks>
+    /// Refused for a write whose record the person unlinked from Xero and has
+    /// not sent again (<see cref="XeroDocumentLinkActions.Collection"/>):
+    /// nothing goes for it, by any path, until they choose <em>Send again</em>
+    /// (design §6.7, `ADR-0162`).
+    /// </remarks>
     public async Task<bool> RetryAsync(Guid entryId, CancellationToken cancellationToken = default)
     {
+        if (await _drain.FindAsync(entryId, cancellationToken).ConfigureAwait(false) is { } candidate
+            && await IsUnlinkedByPersonAsync(candidate.Document, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
         if (!await _parts.Outbox.RetryAsync(entryId, cancellationToken).ConfigureAwait(false))
             return false;
 
@@ -910,6 +922,12 @@ public sealed class XeroSyncService : IXeroSyncService
         Signal();
         return true;
     }
+
+    /// <summary>Whether the person unlinked <paramref name="document"/> from Xero in the connected organisation and has not chosen Send again (marked, and not linked).</summary>
+    private async Task<bool> IsUnlinkedByPersonAsync(XeroDocumentRef document, CancellationToken cancellationToken) =>
+        await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } tenantId
+        && await _store.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false) is not null
+        && await _parts.Links.FindAsync(tenantId, document, cancellationToken).ConfigureAwait(false) is null;
 
     /// <summary>
     /// The person's <em>Send again</em> on a purchase order or expense whose

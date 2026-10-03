@@ -313,4 +313,134 @@ public sealed class XeroDocumentLinkActionsTests
         Assert.DoesNotContain("UTC", status.Status.Reason, StringComparison.Ordinal);
         kit.AssertNoViolations();
     }
+
+    [Fact]
+    public async Task RetryAll_AfterAnUnlink_SendsNothing_UntilSendAgain()
+    {
+        // Verifier F3 round 2, defect 1 (probe A): R2's push failed against the
+        // deleted copy; after the unlink, Settings "Retry all" put it back to
+        // Pending and it created a new Xero quote with no Send again chosen.
+        using var kit = await EngineTestKit.CreateAsync();
+        var quoteId = kit.ExportQuote();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveQuotes);
+        var document = EngineTestKit.QuoteRef(quoteId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Quotes", first.Id);
+        kit.Quotes[quoteId] = EngineTestKit.Quote(quoteId) with { RevisionNumber = 2, IssuedAtUtc = kit.Clock.GetUtcNow() };
+        kit.Files.Store(document, "P0012-Q-001 R2 sheet", "quote.pdf");
+        kit.Saved(Tempest.Core.Quotations.Quotation.CanonicalKind, quoteId);
+        await kit.SettleAsync();
+        Assert.Contains(await kit.Outbox.ListForDocumentAsync(document), e => e.State == XeroOutboxState.Failed);
+
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+        Assert.DoesNotContain(
+            await kit.Outbox.ListForDocumentAsync(document),
+            e => e.State is XeroOutboxState.Pending or XeroOutboxState.Failed or XeroOutboxState.Unknown or XeroOutboxState.WaitingForAuthorisation);
+
+        // Retry all, as Settings does it.
+        foreach (var failed in await kit.Outbox.ListAsync([XeroOutboxState.Failed]))
+            await kit.Engine.RetryAsync(failed.Id);
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveQuotes);
+        Assert.True(await actions.WasUnlinkedAsync(document));
+        Assert.Empty(kit.AuditRows(XeroDocumentLinkActions.AuditSendAgain));
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.LiveQuotes);
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AWriteStillPendingAtUnlink_IsNotSent_UntilSendAgain()
+    {
+        // Verifier F3 round 2, defect 1 (probe B): a push queued before the
+        // unlink (before the read, or waiting after a 503) went out afterwards
+        // and created a new Xero quote with no Send again chosen.
+        using var kit = await EngineTestKit.CreateAsync();
+        var quoteId = kit.ExportQuote();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveQuotes);
+        var document = EngineTestKit.QuoteRef(quoteId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Quotes", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        kit.Quotes[quoteId] = EngineTestKit.Quote(quoteId) with { RevisionNumber = 2, IssuedAtUtc = kit.Clock.GetUtcNow() };
+        var pending = await kit.Outbox.EnqueueAsync(
+            XeroOperation.PushQuote, document, Tempest.Core.Invoicing.Xero.Sync.Quotes.XeroQuoteMapper.ContentHash(kit.Quotes[quoteId]));
+        Assert.Equal(XeroOutboxState.Pending, pending.State);
+
+        var mark = kit.Simulator.Requests.Count;
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+        Assert.Equal(XeroOutboxState.Superseded, (await kit.Outbox.FindAsync(pending.Id))!.State);
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveQuotes);
+        Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        Assert.True(await actions.WasUnlinkedAsync(document));
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        Assert.Single(kit.LiveQuotes);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AWriteReachingTheDrainAfterAnUnlink_IsRefused_AndRetryIsRefused_UntilSendAgain()
+    {
+        // Verifier F3 round 2, defect 1: a push that reaches the drain after
+        // the unlink (in flight at the time) must not create a Xero quote, and
+        // Retry on it must not queue it again, until the person chooses Send again.
+        using var kit = await EngineTestKit.CreateAsync();
+        var quoteId = kit.ExportQuote();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveQuotes);
+        var document = EngineTestKit.QuoteRef(quoteId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Quotes", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+
+        kit.Quotes[quoteId] = EngineTestKit.Quote(quoteId) with { RevisionNumber = 2, IssuedAtUtc = kit.Clock.GetUtcNow() };
+        var late = await kit.Outbox.EnqueueAsync(
+            XeroOperation.PushQuote, document, Tempest.Core.Invoicing.Xero.Sync.Quotes.XeroQuoteMapper.ContentHash(kit.Quotes[quoteId]));
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveQuotes);
+        var refused = (await kit.Outbox.FindAsync(late.Id))!;
+        Assert.Equal(XeroOutboxState.Failed, refused.State);
+        Assert.Equal(Tempest.Core.Invoicing.Xero.Sync.Quotes.XeroQuotePushHandler.UnlinkedRefusal, refused.LastError);
+
+        var retriesBefore = kit.AuditRows(XeroSyncService.AuditRetried).Count;
+        Assert.False(await kit.Engine.RetryAsync(late.Id));
+        Assert.Equal(XeroOutboxState.Failed, (await kit.Outbox.FindAsync(late.Id))!.State);
+        Assert.Equal(retriesBefore, kit.AuditRows(XeroSyncService.AuditRetried).Count);
+        await kit.SettleAsync();
+        Assert.Empty(kit.LiveQuotes);
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.LiveQuotes);
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task SendAgain_OnAContact_GivesTheContactWording_NotTheInvoiceOne()
+    {
+        // Verifier F3 round 2, defect 2.
+        using var kit = await EngineTestKit.CreateAsync();
+        var actions = Actions(kit);
+        var refused = await actions.SendAgainAsync(new XeroDocumentRef(XeroDocumentKind.Contact, "ACME1"));
+        Assert.False(refused.Done);
+        Assert.Equal(XeroDocumentLinkActions.ContactRefusal, refused.Message);
+        Assert.Equal(refused.Message, (await actions.UnlinkAsync(new XeroDocumentRef(XeroDocumentKind.Contact, "ACME1"))).Message);
+        Assert.DoesNotContain("invoice", refused.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

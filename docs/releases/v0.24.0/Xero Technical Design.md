@@ -346,7 +346,10 @@ a defect if seen.
 purchase order or bill whose Xero copy was deleted (or voided) there —
 never an invoice, whose link is re-imported from its request; nothing is
 then sent for that record, by any planner, until the person chooses
-*Send again*, audited `xero.link.send-again` (`XeroDocumentLinkActions`,
+*Send again*, audited `xero.link.send-again`: the unlink sets aside the
+record's queued, failed and unknown writes, *Retry* (and Settings *Retry
+all*) refuses its writes, and the quote push handler refuses a create for
+it (`XeroDocumentLinkActions`,
 review-board fix M5). Detail: document, operation, Xero id and
 number, idempotency key, attempt, HTTP status, reason. Never a token.
 

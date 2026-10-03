@@ -99,6 +99,9 @@ public sealed class XeroDocumentLinkActions
         + "If it is there, choose \"" + LinkByNumberActionName + "\" and enter its Xero number. "
         + "If it is not, leave it: TempestOS never sends it again by itself, so it can never be in Xero twice.";
 
+    /// <summary>Why a customer or supplier is refused by <see cref="UnlinkAsync"/> and <see cref="SendAgainAsync"/>.</summary>
+    public const string ContactRefusal = "A customer or supplier is unlinked under Customers & suppliers, not here.";
+
     private const string Deleted = "DELETED";
     private const string Voided = "VOIDED";
     private const string LinkedByPerson = "linked";
@@ -187,7 +190,7 @@ public sealed class XeroDocumentLinkActions
         ArgumentNullException.ThrowIfNull(document);
 
         if (document.Kind == XeroDocumentKind.Contact)
-            return new XeroLinkActionResult(false, "A customer or supplier is unlinked under Customers & suppliers, not here.");
+            return new XeroLinkActionResult(false, ContactRefusal);
 
         if (document.Kind == XeroDocumentKind.Invoice)
             return new XeroLinkActionResult(false, "An invoice stays linked to its Xero copy; nothing was unlinked. To bill this work again, raise a new invoice request.");
@@ -239,11 +242,19 @@ public sealed class XeroDocumentLinkActions
             }
         }
 
-        await _parts.Links.UnlinkAsync(tenantId, document, cancellationToken).ConfigureAwait(false);
+        // The mark is written before the link is removed, so there is never a
+        // moment when the record is unlinked but not marked: the planner, the
+        // push handler and Retry all read it.
         var now = _time.GetUtcNow();
         await _store.WriteAsync(
             Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document),
             JsonSerializer.Serialize(new UnlinkedRecord(link.XeroId, link.XeroNumber, goneStatus, now)), cancellationToken).ConfigureAwait(false);
+        await _parts.Links.UnlinkAsync(tenantId, document, cancellationToken).ConfigureAwait(false);
+
+        // Writes already queued (or failed) for the record are set aside, so
+        // neither the drain nor Retry all sends them; Send again re-plans.
+        if (_parts.Outbox is PersistenceXeroOutbox outbox)
+            await outbox.SetAsideOpenAsync(document, cancellationToken).ConfigureAwait(false);
 
         await AuditAsync(AuditUnlinked, document, link.XeroId, link.XeroNumber, new Dictionary<string, string>
         {
@@ -268,7 +279,10 @@ public sealed class XeroDocumentLinkActions
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        if (document.Kind is XeroDocumentKind.Contact or XeroDocumentKind.Invoice)
+        if (document.Kind == XeroDocumentKind.Contact)
+            return new XeroLinkActionResult(false, ContactRefusal);
+
+        if (document.Kind == XeroDocumentKind.Invoice)
             return new XeroLinkActionResult(false, "An invoice is not sent again: raise a new invoice request to bill the work again.");
 
         if (await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is not { } tenantId)
@@ -285,10 +299,12 @@ public sealed class XeroDocumentLinkActions
         if (_parts.Outbox is PersistenceXeroOutbox outbox)
             await outbox.ForgetSentAsync(document, cancellationToken).ConfigureAwait(false);
 
+        // The mark is cleared first: Retry refuses an unlinked record's writes.
+        await _store.DeleteAsync(Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false);
+
         foreach (var failed in (await _parts.Outbox.ListForDocumentAsync(document, cancellationToken).ConfigureAwait(false)).Where(e => e.State == XeroOutboxState.Failed))
             await _engine.RetryAsync(failed.Id, cancellationToken).ConfigureAwait(false);
 
-        await _store.DeleteAsync(Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditSendAgain, document, null, null, null, cancellationToken).ConfigureAwait(false);
 
         await _engine.PlanDocumentAsync(document, cancellationToken).ConfigureAwait(false);
