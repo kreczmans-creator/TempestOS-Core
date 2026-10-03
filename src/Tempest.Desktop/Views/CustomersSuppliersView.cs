@@ -148,6 +148,16 @@ public sealed class CustomersSuppliersView : UserControl
     /// </summary>
     private int _pendingLoads;
 
+    /// <summary>
+    /// The order <see cref="LoadAsync"/> look-ups started in, and the latest
+    /// one whose record was put on the form. A found record whose look-up
+    /// started before the one already on the form is stale and never shown:
+    /// the form always holds the latest organisation opened (the list's).
+    /// </summary>
+    private int _loadSequence;
+
+    private int _appliedLoad;
+
     private IReadOnlyList<IReferenceRecord<Organisation>> _all = [];
     private string? _editingRecordId;
     private string? _editingContactId;
@@ -443,6 +453,7 @@ public sealed class CustomersSuppliersView : UserControl
 
         IReferenceRecord<Organisation>? record;
         Exception? fault = null;
+        var load = ++_loadSequence;
         _pendingLoads++;
         try
         {
@@ -481,6 +492,17 @@ public sealed class CustomersSuppliersView : UserControl
             return;
         }
 
+        // A look-up started later has already put its organisation on the
+        // form: this answer is stale. The form keeps the later one; if this
+        // was the last look-up to end, it renders that one's Xero section.
+        if (load < _appliedLoad)
+        {
+            if (_pendingLoads == 0 && _editingRecordId is not null)
+                await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
+            return;
+        }
+
+        _appliedLoad = load;
         var o = record.Definition;
 
         // The organisation shown may have changed during the look-up (a
