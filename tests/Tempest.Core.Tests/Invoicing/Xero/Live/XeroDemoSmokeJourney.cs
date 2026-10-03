@@ -133,7 +133,7 @@ internal sealed class XeroDemoSmokeJourney
         {
             if (_connected && !_report.RefusedToWrite)
             {
-                await CleanUpAsync(cancellationToken);
+                await CleanUpAsync(CancellationToken.None);
                 CheckJournal();
             }
         }
@@ -205,7 +205,7 @@ internal sealed class XeroDemoSmokeJourney
         {
             if (_connected && !_report.RefusedToWrite)
             {
-                await CleanUpAsync(cancellationToken);
+                await CleanUpAsync(CancellationToken.None);
                 CheckJournal();
             }
         }
