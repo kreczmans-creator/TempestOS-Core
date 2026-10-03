@@ -29,6 +29,15 @@
      10. Checks nothing that reached Xero approved, emailed or wrote outside
          the allow-list, then deletes the drafts (not with -Keep). The
          accepted quote is left; delete it in Xero if you want.
+     11. Runs the same journey again through TempestOS's production path
+         (about 49 more calls, so the run may pause up to a minute for
+         Xero's limit): the contact linker, the quote, purchase
+         order and expense-bill planners, mappers and handlers, the
+         invoicing service and the sync engine with its read-back - no
+         hand-built request. Its numbers are SMOKE-PQ-<stamp>,
+         SMOKE-<code>-INV-001, SMOKE-PPO-<stamp> and SMOKE-PEXP-<stamp>; it
+         voids, cancels and deletes its drafts the way the app does (not
+         with -Keep). Its report is the -production file beside -Report.
     With -KeyWindow it also runs the idempotency-key probe: about seven more
     minutes of waiting, to confirm Xero keeps a key longer than the 5
     minutes TempestOS assumes.
@@ -42,10 +51,9 @@
     The TempestOS data folder whose secrets hold the Xero tokens - the one
     the app you connected Xero from uses. Defaults to
     C:\TempestOS-rc<minor>-data, as scripts/install-test-build.ps1 does,
-    with <minor> read from the repository's VERSION file. Until VERSION is
-    bumped to 0.24.0 at release that default is the rc23 folder, so for the
-    v0.24.0 test build pass -DataFolder C:\TempestOS-rc24-data explicitly
-    (the runbook and the setup guide always do).
+    with <minor> read from the repository's VERSION file: VERSION reads
+    0.24.0, so the default is C:\TempestOS-rc24-data. The runbook and the
+    setup guide still pass -DataFolder C:\TempestOS-rc24-data explicitly.
 
 .PARAMETER Connect
     Sign in first: a browser opens; choose the Demo Company. The new tokens

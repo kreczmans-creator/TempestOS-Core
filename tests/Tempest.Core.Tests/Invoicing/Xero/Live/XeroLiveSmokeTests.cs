@@ -42,6 +42,30 @@ public sealed class XeroLiveSmokeTests(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// The same journey through TempestOS's production path (review board
+    /// m20): the X2 linker, the X3/X5 planners, mappers and handlers, the X4
+    /// invoicing service and the X6 engine, over the same pipeline — no
+    /// hand-built request body. Refuses to write unless Xero reports
+    /// <c>IsDemoCompany</c>; skipped without the Demo Company credentials.
+    /// </summary>
+    [XeroLiveFact]
+    public async Task DemoCompany_ProductionPath_WritesOnlyDraftsAndCopies()
+    {
+        var settings = XeroLiveSettings.FromEnvironment();
+        using var connection = await ConnectAsync(settings);
+
+        await using var journey = new XeroProductionSmokeJourney(
+            connection,
+            new XeroDemoSmokeOptions(settings.Keep, (delay, cancellationToken) => Task.Delay(delay, cancellationToken), TimeProvider.System, settings.UsesSuppliedToken));
+        var report = await journey.RunAsync();
+
+        Publish(report, settings, suffix: "-production");
+
+        Assert.False(report.RefusedToWrite, "The connected organisation is not the Xero Demo Company: nothing was written. Connect the Demo Company and run again.");
+        Assert.True(report.Passed, "Production-path steps failed:" + Environment.NewLine + string.Join(Environment.NewLine, report.Failures.Select(f => $"{f.Id} {f.Title}: {f.Detail}")));
+    }
+
+    /// <summary>
     /// Open item F1 (X5 key lifetime): a create repeated under the same
     /// <c>Idempotency-Key</c> 5½ minutes later is still replayed. Waits about
     /// seven minutes, so it also needs <see cref="XeroLiveSettings.KeyWindowVariable"/>.

@@ -163,10 +163,10 @@ public sealed class XeroContactLinkerRound3Tests
         kit.AssertNoViolations();
     }
 
+    /// <summary>Waits for the simulator's signal that the held read reached it (review board n9: no fixed poll); the timeout only stops a broken test hanging.</summary>
     private static async Task WaitForInFlightAsync(ContactLinkerTestKit kit)
     {
-        for (var i = 0; i < 500 && kit.Simulator.InFlight == 0; i++)
-            await Task.Delay(10);
+        await kit.Simulator.WhenInFlightAsync().WaitAsync(TimeSpan.FromSeconds(30));
         Assert.Equal(1, kit.Simulator.InFlight);
     }
 }

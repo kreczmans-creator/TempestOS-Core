@@ -6,8 +6,9 @@ namespace Tempest.Core.Tests.Invoicing.Xero.Live;
 /// X8's documents sit where design §11 says X8 owns them (`v0.24.0`
 /// Technical Design, the X8 row): the runbook is
 /// <c>docs/releases/v0.24.0/PO Test Runbook.md</c>, every document names it
-/// there, and the Xero steps live in it rather than in
-/// <c>PHYSICAL_REVIEW.md</c>, which is outside X8's row.
+/// there, and the Xero steps live in it. <c>PHYSICAL_REVIEW.md</c> §7m (added
+/// by the review board's fix m9, which the Release Notes cite) is a short
+/// walk that points at the runbook's steps rather than repeating them.
 /// </summary>
 public sealed class XeroAcceptanceDocumentTests
 {
@@ -48,12 +49,22 @@ public sealed class XeroAcceptanceDocumentTests
     }
 
     [Fact]
-    public void TheXeroSteps_LiveInTheRunbook_NotInPhysicalReview()
+    public void TheXeroSteps_LiveInTheRunbook_AndPhysicalReview7m_PointsAtThem()
     {
         var review = File.ReadAllText(Path.Combine(Root, "PHYSICAL_REVIEW.md"));
         var runbook = File.ReadAllText(Path.Combine(Root, RunbookPath));
+        var notes = File.ReadAllText(Path.Combine(Root, "docs", "releases", "v0.24.0", "Release Notes.md"));
 
-        Assert.DoesNotContain("### 7m. Xero", review, StringComparison.Ordinal);
+        // The Release Notes cite §7m, so it exists; it names the runbook and
+        // its rows cite runbook steps instead of copying their tables.
+        Assert.Contains("PHYSICAL_REVIEW.md` §7m", notes, StringComparison.Ordinal);
+        var start = review.IndexOf("### 7m. ", StringComparison.Ordinal);
+        Assert.True(start >= 0, "PHYSICAL_REVIEW.md should have a §7m for v0.24.0's Xero walk.");
+        var end = review.IndexOf("\n## 8.", start, StringComparison.Ordinal);
+        var walk = review[start..end];
+        Assert.Contains(RunbookPath, walk, StringComparison.Ordinal);
+        Assert.Contains("(runbook X", walk, StringComparison.Ordinal);
+        Assert.DoesNotContain("| XQ1 |", walk, StringComparison.Ordinal);
         Assert.DoesNotContain("| XR-1 |", review, StringComparison.Ordinal);
         foreach (var section in new[] { "## XA.", "## XS.", "## XC.", "## XQ.", "## XI.", "## XP.", "## XE.", "## XR.", "## XO.", "## XG.", "## XF.", "## XL." })
             Assert.Contains(section, runbook, StringComparison.Ordinal);
