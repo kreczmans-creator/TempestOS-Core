@@ -36,6 +36,19 @@ public sealed class XeroInvoicePlanner : IXeroSyncPlanner
         _files = files;
     }
 
+    /// <summary>
+    /// `v0.24.0` review M8: run first thing at engine start-up — every
+    /// request TempestOS stopped in the middle of sending to Xero (left
+    /// <see cref="InvoiceRequestStatus.Sending"/>) becomes
+    /// <see cref="InvoiceRequestStatus.Unknown"/>, which this planner then
+    /// plans as <see cref="XeroOperation.PushInvoiceDraft"/>: the handler
+    /// looks it up (proving the draft its own) before anything is resent.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the recovery.</param>
+    /// <returns>How many requests were moved.</returns>
+    public Task<int> RecoverInterruptedSendsAsync(CancellationToken cancellationToken = default) =>
+        _invoicing is InvoicingService service ? service.RecoverInterruptedSendsAsync(cancellationToken) : Task.FromResult(0);
+
     /// <inheritdoc />
     public XeroDocumentKind Kind => XeroDocumentKind.Invoice;
 

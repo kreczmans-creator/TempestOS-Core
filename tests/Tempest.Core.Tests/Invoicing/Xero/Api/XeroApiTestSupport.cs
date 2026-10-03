@@ -109,8 +109,9 @@ internal static class XeroTestAuthoriser
     public const string AccessToken = "seeded-access-token";
     public const string TenantId = "tenant-1";
 
+    /// <param name="tokenEndpoint">`v0.24.0` F2 (additive): what answers the token endpoint; <see langword="null"/> for one that fails the test loudly.</param>
     public static async Task<(OAuthAuthoriser Authoriser, InMemorySecretStore SecretStore)> CreateAsync(
-        string? tenantId = TenantId, bool authorised = true, IReadOnlyList<string>? grantedScopes = null)
+        string? tenantId = TenantId, bool authorised = true, IReadOnlyList<string>? grantedScopes = null, HttpMessageHandler? tokenEndpoint = null)
     {
         var secretStore = new InMemorySecretStore();
 
@@ -131,7 +132,7 @@ internal static class XeroTestAuthoriser
             .Build();
 
         // The token client never answers: a test that needed a refresh would fail loudly, not reach a network.
-        var tokenClient = new HttpClient(new TerminalHandler { Throw = new InvalidOperationException("No token endpoint in this test.") });
+        var tokenClient = new HttpClient(tokenEndpoint ?? new TerminalHandler { Throw = new InvalidOperationException("No token endpoint in this test.") });
 
         return (new OAuthAuthoriser(XeroServiceRegistration.OAuthProfile, configuration, secretStore, new FakeBrowserLauncher(), tokenClient), secretStore);
     }

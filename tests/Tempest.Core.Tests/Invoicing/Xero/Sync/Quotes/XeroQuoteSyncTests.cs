@@ -152,8 +152,10 @@ public sealed class XeroQuoteSyncTests
         Assert.Equal("ACCEPTED", kit.OnlyQuote.Status);
         Assert.Equal("ACCEPTED", (await kit.LinkAsync(id))!.LastKnownXeroStatus);
 
-        // Every status change carried no lines (status-only, §4.1), and nothing more is planned.
-        var statusWrites = kit.QuoteWrites.Where(r => r.JsonBody?["Quotes"]?[0]?["Status"] is not null && r.Method == HttpMethod.Post).ToList();
+        // Every status change carried no lines (status-only, §4.1), and nothing more is planned. A content
+        // update states DRAFT (`v0.24.0` review m1), so it is not a status change.
+        var statusWrites = kit.QuoteWrites.Where(r => r.Method == HttpMethod.Post
+            && r.JsonBody?["Quotes"]?[0]?["Status"]?.GetValue<string>() is { } status && status != "DRAFT").ToList();
         Assert.Equal(2, statusWrites.Count);
         Assert.All(statusWrites, r => Assert.Null(r.JsonBody!["Quotes"]![0]!["LineItems"]));
         Assert.Empty(await kit.PlanAsync(id));

@@ -100,7 +100,12 @@ public sealed partial class XeroAccountingApi
     /// Replaces the content of an existing draft bill (<c>POST Invoices/{InvoiceID}</c>)
     /// — the expense was amended. Xero holds the content editable only while
     /// the bill is a draft (§4.4), so the caller reads it first; the body
-    /// never carries a status (the bill stays <c>DRAFT</c>).
+    /// states <c>Status: DRAFT</c> whatever <paramref name="bill"/> carries
+    /// (`v0.24.0` review m1, as invoices do): a bill the Product Owner
+    /// approved in Xero between that read and this write is refused by Xero
+    /// (no move from <c>AUTHORISED</c> back to <c>DRAFT</c>) rather than
+    /// having its content changed. As for invoices, one only submitted for
+    /// approval in that window goes back to <c>DRAFT</c> — never forward.
     /// </summary>
     /// <param name="invoiceId">Xero's <c>InvoiceID</c> for the bill.</param>
     /// <param name="bill">The new content.</param>
@@ -116,7 +121,7 @@ public sealed partial class XeroAccountingApi
             return Failure<XeroWireBill>(ConnectorOutcome.Rejected, null, problem);
 
         var id = invoiceId.Trim();
-        var body = new XeroWireBillsWriteEnvelope<XeroWireBillWrite>([bill with { InvoiceID = id, Type = XeroWire.InvoiceTypeBill, Status = null }]);
+        var body = new XeroWireBillsWriteEnvelope<XeroWireBillWrite>([bill with { InvoiceID = id, Type = XeroWire.InvoiceTypeBill, Status = XeroInvoiceWriteStatus.Draft }]);
         var result = await PostJsonAsync<XeroWireBillsEnvelope>($"Invoices/{Uri.EscapeDataString(id)}", body, idempotencyKey, cancellationToken).ConfigureAwait(false);
         return SingleBill(result, "update");
     }

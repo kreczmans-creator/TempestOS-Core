@@ -152,6 +152,10 @@ internal sealed class XeroPurchasingUploader
             ? entry.Argument.Trim()
             : await defaultName(cancellationToken).ConfigureAwait(false) ?? XeroPurchasingMapper.ReceiptFileName(file.FileName);
 
+        // M6: a file that cannot be attached never holds the record's queue.
+        if (XeroAttachmentRefusal.TooLarge(file) is { } tooLarge)
+            return await XeroAttachmentRefusal.FinishAsync(_links, link, tooLarge, cancellationToken).ConfigureAwait(false);
+
         // Replace by name once a file of that name was uploaded (Xero has no attachment delete, §3).
         var replace = string.Equals(link.AttachmentFileName, name, StringComparison.OrdinalIgnoreCase);
         var uploaded = await _api.UploadAttachmentAsync(
@@ -159,12 +163,15 @@ internal sealed class XeroPurchasingUploader
 
         if (uploaded.Outcome != ConnectorOutcome.Ok)
         {
-            return uploaded.NotFound
-                ? new XeroPushResult(XeroPushOutcome.Rejected, $"The Xero {what} {link.XeroNumber ?? link.XeroId} was deleted in Xero; its file was not attached.", Link: link)
+            if (uploaded.NotFound)
+                return new XeroPushResult(XeroPushOutcome.Rejected, $"The Xero {what} {link.XeroNumber ?? link.XeroId} was deleted in Xero; its file was not attached.", Link: link);
+
+            return XeroAttachmentRefusal.IsFileRefusal(uploaded.Outcome, uploaded.NotFound, uploaded.Reason)
+                ? await XeroAttachmentRefusal.FinishAsync(_links, link, XeroPurchasingMapper.Problem(uploaded), cancellationToken).ConfigureAwait(false)
                 : XeroPurchasingMapper.Failed(uploaded);
         }
 
-        link = link with { AttachmentFileName = name, AttachmentContentHash = file.Sha256, LastReadAtUtc = _time.GetUtcNow() };
+        link = link with { AttachmentFileName = name, AttachmentContentHash = file.Sha256, LastReadAtUtc = _time.GetUtcNow(), AttachmentNote = null };
         await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
         return new XeroPushResult(XeroPushOutcome.Succeeded, Link: link);
     }

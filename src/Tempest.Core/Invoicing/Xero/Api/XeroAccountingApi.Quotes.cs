@@ -86,7 +86,11 @@ public sealed partial class XeroAccountingApi
     /// Replaces the content of an existing quote (<c>POST Quotes/{QuoteID}</c>)
     /// — a new revision Rn. Xero allows a content edit only while it holds
     /// the quote as <c>DRAFT</c> (§4.1), so the caller reads it first; the
-    /// body never carries a status (the quote stays <c>DRAFT</c>).
+    /// body states <c>Status: DRAFT</c> whatever <paramref name="quote"/>
+    /// carries (`v0.24.0` review m1), so a quote the Product Owner sent (or
+    /// marked accepted or declined) in Xero between that read and this write
+    /// is refused by Xero — Xero has no move back to <c>DRAFT</c> — rather
+    /// than having its content or status changed by TempestOS.
     /// </summary>
     /// <param name="quoteId">Xero's <c>QuoteID</c>.</param>
     /// <param name="quote">The new content.</param>
@@ -102,7 +106,7 @@ public sealed partial class XeroAccountingApi
             return Failure<XeroWireQuote>(ConnectorOutcome.Rejected, null, problem);
 
         var id = quoteId.Trim();
-        var body = new XeroWireQuotesWriteEnvelope<XeroWireQuoteWrite>([quote with { QuoteID = id, Status = null }]);
+        var body = new XeroWireQuotesWriteEnvelope<XeroWireQuoteWrite>([quote with { QuoteID = id, Status = XeroQuoteWriteStatus.Draft }]);
         var result = await PostJsonAsync<XeroWireQuotesEnvelope>($"Quotes/{Uri.EscapeDataString(id)}", body, idempotencyKey, cancellationToken).ConfigureAwait(false);
         return SingleQuote(result, "update");
     }

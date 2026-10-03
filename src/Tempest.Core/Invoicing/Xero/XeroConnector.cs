@@ -127,6 +127,25 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     }
 
     /// <summary>
+    /// `v0.24.0` F2 follow-up: whether a write could leave this machine now —
+    /// a current access token (renewed if due) and a connected organisation —
+    /// without sending anything to Xero. Lets a caller that logs a create
+    /// before sending it skip the log when the call could never have gone
+    /// (the sign-in service unreachable, or a re-authorisation needed).
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the check.</param>
+    internal async Task<ConnectorResult<bool>> EnsureAccessAsync(CancellationToken cancellationToken = default)
+    {
+        var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (access.Outcome != AccessTokenOutcome.Ok)
+            return MapAccessFailure<bool>(access);
+
+        return string.IsNullOrEmpty(access.TenantId)
+            ? ConnectorResult<bool>.Reauthorise("No Xero organisation is connected; re-authorise to select one.")
+            : ConnectorResult<bool>.Ok(true);
+    }
+
+    /// <summary>
     /// The sales invoices Xero holds under <paramref name="invoiceNumber"/>
     /// (<c>GET Invoices?InvoiceNumbers=</c>, `v0.24.0` X4, design §6.4) —
     /// deleted ones and bills left out, since neither holds a sales number.
@@ -481,6 +500,10 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         {
             AccessTokenOutcome.NotAuthorised => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised),
             AccessTokenOutcome.NotConfigured => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised, access.Reason),
+
+            // `v0.24.0` review M2: the grant stands; only the sign-in service
+            // was unreachable to renew the access token. Not "re-authorise".
+            AccessTokenOutcome.Unavailable => new ConnectorAuthorisationState(ConnectorAuthorisation.Authorised, access.Reason),
             _ => new ConnectorAuthorisationState(ConnectorAuthorisation.Expired, access.Reason),
         };
     }
@@ -742,6 +765,7 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     {
         AccessTokenOutcome.NotAuthorised => ConnectorResult<T>.Reauthorise("Xero has never been authorised."),
         AccessTokenOutcome.NotConfigured => ConnectorResult<T>.Reauthorise("not configured"),
+        AccessTokenOutcome.Unavailable => ConnectorResult<T>.Unavailable(access.Reason ?? "The sign-in service could not be reached."),
         _ => ConnectorResult<T>.Reauthorise(access.Reason),
     };
 

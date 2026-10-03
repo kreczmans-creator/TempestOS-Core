@@ -17,6 +17,7 @@ using Tempest.Core.Invoicing.Xero.Contacts;
 using Tempest.Core.Invoicing.Xero.Settings;
 using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Invoicing.Xero.Sync.Invoices;
+using Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.BusinessGovernance;
 using Tempest.Core.Tests.BusinessOperations;
@@ -169,7 +170,8 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
 
     public EngineeringDomainContext Domain => InvoicingTestHost.Domain(Host);
 
-    public static async Task<InvoiceExportKit> CreateAsync()
+    /// <param name="tokenEndpoint">`v0.24.0` F2 follow-up (additive): what answers the token endpoint; <see langword="null"/> for one that fails the test loudly.</param>
+    public static async Task<InvoiceExportKit> CreateAsync(HttpMessageHandler? tokenEndpoint = null)
     {
         var temp = new TempDirectory();
         var (host, manager) = await InvoicingTestHost.StartAsync(temp.Path);
@@ -185,7 +187,7 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
         var safety = new XeroWriteSafetyHandler(() => handlerReader, _ => Task.FromResult(false), () => safetyAudit, timeProvider: clock) { InnerHandler = rateLimiter };
         var client = new HttpClient(safety) { BaseAddress = XeroApiSimulator.BaseAddress };
 
-        var (authoriser, secretStore) = await XeroTestAuthoriser.CreateAsync(TenantId);
+        var (authoriser, secretStore) = await XeroTestAuthoriser.CreateAsync(TenantId, tokenEndpoint: tokenEndpoint);
         var api = new XeroAccountingApi(client, authoriser, clock);
         var connector = new XeroConnector(client, authoriser);
         var reader = new XeroSettingsReader(api, new FileXeroSettingsCache(Path.Combine(temp.Path, "accounts")), secretStore, null, clock);
@@ -204,7 +206,8 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
 
     /// <summary>A drafts seam over the kit's stores — a fresh one is TempestOS restarted.</summary>
     public XeroInvoiceDrafts NewDrafts() => new(
-        Connector, Linker, new XeroTaxTypeResolver(Reader, Settings), new XeroAccountCodeMap(Reader, Settings), Links, Outbox, Files, Settings, Audit, Clock);
+        Connector, Linker, new XeroTaxTypeResolver(Reader, Settings), new XeroAccountCodeMap(Reader, Settings), Links, Outbox, Files, Settings, Audit, Clock,
+        new XeroPurchasingCreateLog(Store)); // `v0.24.0` review m16: the durable create log is the proof an invoice is TempestOS's own
 
     /// <summary>An invoicing service bound to the Xero connector; <paramref name="drafts"/> <see langword="null"/> is a build with no X4 seam.</summary>
     public InvoicingService NewService(IInvoiceDraftSync? drafts) => new(

@@ -23,7 +23,8 @@ namespace Tempest.Core.Invoicing.Xero.Api;
 /// and carries <c>Authorization: Bearer</c>, <c>xero-tenant-id</c> and
 /// <c>Accept: application/json</c>. Every <c>PUT</c>/<c>POST</c> also
 /// carries an <c>Idempotency-Key</c> (≤ 128 characters, §7.2) and
-/// <c>?summarizeErrors=true</c> (§3).
+/// <c>?summarizeErrors=true</c> (§3). Every call on a document with line
+/// items carries <c>?unitdp=4</c> (<see cref="UnitAmountDecimalPlaces"/>).
 /// </para>
 /// <para>
 /// <b>Below this client</b> the <see cref="HttpClient"/>'s own pipeline holds
@@ -49,6 +50,19 @@ public sealed partial class XeroAccountingApi
 {
     /// <summary>The longest <c>Idempotency-Key</c> Xero accepts; a longer one is answered 400 by Xero, so it is refused here before sending.</summary>
     public const int MaximumIdempotencyKeyLength = 128;
+
+    /// <summary>
+    /// The decimal places TempestOS's unit amounts carry in Xero (`v0.24.0`
+    /// review M7). Every call on a document that holds line items
+    /// (<c>Invoices</c>, <c>Quotes</c>, <c>PurchaseOrders</c>, <c>CreditNotes</c>)
+    /// sends <c>?unitdp=4</c>: without it Xero rounds a unit amount to two
+    /// places on the way in and shows two on the way out, so
+    /// <c>1000 × £0.125</c> would be £125.00 in TempestOS and £130.00 in Xero.
+    /// </summary>
+    public const int UnitAmountDecimalPlaces = 4;
+
+    /// <summary>How the reason of a request refused by <see cref="XeroWriteSafetyHandler"/> begins (then the rule, then Xero-shaped messages).</summary>
+    public const string BlockedReasonPrefix = "TempestOS blocked the request";
 
     private readonly HttpClient _httpClient;
     private readonly OAuthAuthoriser _authoriser;
@@ -149,6 +163,14 @@ public sealed partial class XeroAccountingApi
         }
 
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (access.Outcome == AccessTokenOutcome.Unavailable)
+        {
+            // `v0.24.0` review M2: an expired token that could not be renewed
+            // because the sign-in service is unreachable is an outage, not a
+            // refused grant — the write stays queued.
+            return Failure<T>(ConnectorOutcome.Unavailable, null, access.Reason ?? "Xero's sign-in service could not be reached.");
+        }
+
         if (access.Outcome != AccessTokenOutcome.Ok)
         {
             return Failure<T>(ConnectorOutcome.Reauthorise, null, access.Outcome switch
@@ -161,6 +183,9 @@ public sealed partial class XeroAccountingApi
 
         if (string.IsNullOrEmpty(access.TenantId))
             return Failure<T>(ConnectorOutcome.Reauthorise, null, "No Xero organisation is connected; re-authorise to select one.");
+
+        if (CarriesUnitAmounts(path))
+            query = [.. query ?? [], new("unitdp", UnitAmountDecimalPlaces.ToString(CultureInfo.InvariantCulture))];
 
         using var request = new HttpRequestMessage(method, BuildRelativeUri(path, query)) { Content = ownedContent };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access.AccessToken);
@@ -188,6 +213,15 @@ public sealed partial class XeroAccountingApi
         {
             return Failure<T>(ConnectorOutcome.Unavailable, null, ConnectorHttpOutcome.DescribeTransportFailure(ex));
         }
+    }
+
+    /// <summary>Whether a call on <paramref name="path"/> reads or writes a document's line items, so carries <c>unitdp</c> (<see cref="UnitAmountDecimalPlaces"/>): the document resources, not their attachments.</summary>
+    /// <param name="path">The path relative to the API root.</param>
+    internal static bool CarriesUnitAmounts(string path)
+    {
+        var resource = path.Split('/', '?')[0];
+        return resource is "Invoices" or "Quotes" or "PurchaseOrders" or "CreditNotes"
+               && !path.Contains("/Attachments", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Builds the relative URI for <paramref name="path"/> and <paramref name="query"/>, escaping each query name and value.</summary>
@@ -233,7 +267,7 @@ public sealed partial class XeroAccountingApi
                 var errors = ReadValidationErrors(body);
                 var blockedRule = response.Headers.TryGetValues(XeroWriteSafetyHandler.BlockedHeader, out var rules) ? rules.FirstOrDefault() : null;
                 var summary = errors.Count > 0 ? string.Join("; ", errors) : ReadErrorMessage(body) ?? "Xero rejected the request.";
-                var reason = blockedRule is null ? summary : $"TempestOS blocked the request ({blockedRule}): {summary}";
+                var reason = blockedRule is null ? summary : $"{BlockedReasonPrefix} ({blockedRule}): {summary}";
                 return Failure<T>(ConnectorOutcome.Rejected, status, reason, errors);
             }
 

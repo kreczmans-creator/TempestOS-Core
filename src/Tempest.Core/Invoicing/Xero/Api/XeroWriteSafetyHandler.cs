@@ -29,6 +29,7 @@ namespace Tempest.Core.Invoicing.Xero.Api;
 /// <item><see cref="RuleWriteAllowList"/> — any non-GET other than <c>PUT</c>/<c>POST</c> to <c>Contacts[/id]</c>, <c>Quotes[/id]</c>, <c>Invoices[/id]</c>, <c>PurchaseOrders[/id]</c> or <c>{Quotes,Invoices,PurchaseOrders}/{id}/Attachments/{file}</c> under the API root; any such write whose body is not readable JSON (an XML or form body could carry a status this handler cannot see); and any body with an object holding the same key twice, compared case-insensitively (this handler would read the first, Xero's serialiser the last).</item>
 /// <item><see cref="RuleSentToContact"/> — any body with a <c>SentToContact</c> that is not JSON <c>false</c> or <c>null</c> (D4): <c>true</c>, <c>"true"</c>, <c>1</c> and anything else Xero's serialiser might read as true.</item>
 /// <item><see cref="RuleInvoiceStatus"/> — an <c>Invoices</c> write whose <c>Status</c> is anything but <c>DRAFT</c>, or <c>DELETED</c> on an existing invoice (D3). The documents checked are the root object itself and every element of its envelope (<c>{ "Invoices": [ … ] }</c>, or an envelope sent as a single object), or every element of a bare array; an envelope or element that is not an object is blocked, since its status cannot be checked.</item>
+/// <item><see cref="RuleContactFields"/> — a <c>Contacts</c> write carrying any key but <see cref="AllowedContactKeys"/> (the envelope's own <c>Contacts</c> aside), or a non-text value under one: TempestOS creates a contact from its name, numbers and email and otherwise writes only its <c>ContactNumber</c> (Q7), so never a <c>ContactStatus</c>, bank details, addresses or payment terms (`v0.24.0` review n1).</item>
 /// <item><see cref="RulePurchaseOrderStatus"/> — a <c>PurchaseOrders</c> write whose <c>Status</c> is anything but <c>DRAFT</c>/<c>DELETED</c> (D3, Q2).</item>
 /// <item><see cref="RuleQuoteStatus"/> — a <c>Quotes</c> write whose <c>Status</c> is outside <c>DRAFT, SENT, ACCEPTED, DECLINED</c>.</item>
 /// <item><see cref="RuleLiveOrganisation"/> — any non-GET while the cached organisation is not Xero's Demo Company and <see cref="AllowLiveOrganisationSettingKey"/> is off (D7). An unknown organisation (no reading, or a reading of another tenant) is read first; still unknown blocks — and a failed reading is not retried for that tenant for <see cref="UnknownOrganisationRetryAfter"/>, so blocked writes do not spend Xero's call budget re-reading it.</item>
@@ -87,6 +88,9 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     /// <summary>A quote written with a status outside TempestOS's own walk.</summary>
     public const string RuleQuoteStatus = "quote-status";
 
+    /// <summary>A contact write carrying a key outside <see cref="AllowedContactKeys"/> (`v0.24.0` review n1).</summary>
+    public const string RuleContactFields = "contact-fields";
+
     /// <summary>A write to anything but the allowed documents and their attachments.</summary>
     public const string RuleWriteAllowList = "write-allow-list";
 
@@ -104,6 +108,17 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     private static readonly HashSet<string> WritableDocuments = new(StringComparer.OrdinalIgnoreCase) { "Contacts", "Quotes", "Invoices", "PurchaseOrders" };
     private static readonly HashSet<string> AttachableDocuments = new(StringComparer.OrdinalIgnoreCase) { "Quotes", "Invoices", "PurchaseOrders" };
     private static readonly HashSet<string> AllowedQuoteStatuses = new(StringComparer.Ordinal) { "DRAFT", "SENT", "ACCEPTED", "DECLINED" };
+    /// <summary>
+    /// The only keys a <c>Contacts</c> write may carry (`v0.24.0` review n1):
+    /// what a create sends (<c>Name</c>, <c>ContactNumber</c>, <c>TaxNumber</c>,
+    /// <c>CompanyNumber</c>, <c>EmailAddress</c>) and what the Q7 update
+    /// sends (<c>ContactID</c>, <c>ContactNumber</c>). Compared case-insensitively.
+    /// </summary>
+    public static IReadOnlySet<string> AllowedContactKeys { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "ContactID", "Name", "ContactNumber", "TaxNumber", "CompanyNumber", "EmailAddress",
+    };
+
     private static readonly HashSet<string> AllowedPurchaseOrderStatuses = new(StringComparer.Ordinal) { "DRAFT", "DELETED" };
 
     private readonly Func<IXeroSettingsReader?> _settingsReader;
@@ -276,6 +291,9 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
                 if (CheckStatuses(segments, body.RootElement) is { } statusBlock)
                     return statusBlock;
+
+                if (string.Equals(segments[0], "Contacts", StringComparison.OrdinalIgnoreCase) && CheckContactFields(body.RootElement) is { } contactBlock)
+                    return contactBlock;
             }
         }
 
@@ -433,6 +451,33 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
             {
                 if (!AllowedQuoteStatuses.Contains(status))
                     return (RuleQuoteStatus, $"TempestOS moves a Xero quote only along DRAFT, SENT, ACCEPTED, DECLINED; never {status}.");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Checks every contact a <c>Contacts</c> write carries against <see cref="AllowedContactKeys"/> (n1).</summary>
+    private static (string Rule, string Reason)? CheckContactFields(JsonElement root)
+    {
+        var documents = Documents("Contacts", root);
+        if (documents is null)
+            return (RuleContactFields, "A Contacts write carried a contact that is not an object, so its fields cannot be checked.");
+
+        for (var i = 0; i < documents.Count; i++)
+        {
+            var isRootObject = i == 0 && root.ValueKind == JsonValueKind.Object;
+            foreach (var property in documents[i].EnumerateObject())
+            {
+                // The envelope itself: { "Contacts": [ ... ] } — its elements are checked in turn.
+                if (isRootObject && string.Equals(property.Name, "Contacts", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (!AllowedContactKeys.Contains(property.Name))
+                    return (RuleContactFields, $"TempestOS never writes a contact's {property.Name}; it sends only {string.Join(", ", AllowedContactKeys)}.");
+
+                if (property.Value.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+                    return (RuleContactFields, $"A contact's {property.Name} must be text.");
             }
         }
 

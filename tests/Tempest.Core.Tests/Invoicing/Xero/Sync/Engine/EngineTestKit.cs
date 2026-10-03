@@ -279,7 +279,9 @@ internal sealed class EngineTestKit : IDisposable
 
     public string GeneralContactId { get; private set; } = string.Empty;
 
-    public static async Task<EngineTestKit> CreateAsync(XeroSyncOptions? options = null)
+    /// <param name="options">The engine's options.</param>
+    /// <param name="tokenEndpoint">`v0.24.0` F2 (additive): what answers the OAuth token endpoint; <see langword="null"/> for one that fails the test loudly.</param>
+    public static async Task<EngineTestKit> CreateAsync(XeroSyncOptions? options = null, HttpMessageHandler? tokenEndpoint = null)
     {
         var temp = new TempDirectory();
         var clock = new XeroSimulatorClock();
@@ -293,7 +295,7 @@ internal sealed class EngineTestKit : IDisposable
             InnerHandler = rateLimiter,
         };
         var client = new HttpClient(safety) { BaseAddress = XeroApiSimulator.BaseAddress };
-        var (authoriser, secrets) = await XeroTestAuthoriser.CreateAsync(TenantId);
+        var (authoriser, secrets) = await XeroTestAuthoriser.CreateAsync(TenantId, tokenEndpoint: tokenEndpoint);
         var api = new XeroAccountingApi(client, authoriser, clock);
         reader = new XeroSettingsReader(api, new FileXeroSettingsCache(Path.Combine(temp.Path, "accounts")), secrets, null, clock);
 

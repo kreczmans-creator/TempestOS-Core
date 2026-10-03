@@ -399,9 +399,16 @@ public static class XeroQuoteMapper
                 return null;
             }
 
+            // M7/m19: the line reads the same in Xero as in TempestOS.
+            if (XeroLineRules.FitUnitAmount(line.Quantity, line.UnitAmount, out var unitProblem) is not { } unitAmount)
+            {
+                blockedReason = $"Quotation {quote.Reference} line '{XeroLineRules.FitDescription(line.Description)}': {unitProblem}.";
+                return null;
+            }
+
             lines.Add(new XeroWireLineItem(
-                string.IsNullOrWhiteSpace(line.Description) ? "(no description)" : line.Description,
-                line.Quantity, line.UnitAmount, salesAccount.Code, tax.Code));
+                XeroLineRules.FitDescription(line.Description),
+                line.Quantity, unitAmount, salesAccount.Code, tax.Code));
         }
 
         blockedReason = null;
@@ -563,7 +570,8 @@ public static class XeroQuoteMapper
 
         foreach (var line in lines)
         {
-            builder.Append("|L|").Append(Number(line.Quantity)).Append('|').Append(Number(line.UnitAmount)).Append('|').Append(Text(line.TaxType).ToUpperInvariant());
+            // Unit amounts compare at the places Xero keeps (?unitdp=4, M7).
+            builder.Append("|L|").Append(Number(line.Quantity)).Append('|').Append(Number(Math.Round(line.UnitAmount, XeroAccountingApi.UnitAmountDecimalPlaces, MidpointRounding.AwayFromZero))).Append('|').Append(Text(line.TaxType).ToUpperInvariant());
             if (withText)
                 builder.Append('|').Append(Text(line.Description)).Append('|').Append(Text(line.AccountCode).ToUpperInvariant());
         }

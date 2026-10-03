@@ -127,19 +127,8 @@ public static class XeroPurchasingMapper
     /// </summary>
     /// <param name="netAmount">The net amount.</param>
     /// <param name="vatAmount">The VAT amount.</param>
-    public static VatRate InferVatRate(decimal netAmount, decimal vatAmount)
-    {
-        if (vatAmount <= 0m)
-            return VatRate.OutOfScope;
-
-        if (netAmount <= 0m)
-            return VatRate.Standard;
-
-        var ratio = vatAmount / netAmount;
-        return Math.Abs(ratio - VatRate.Reduced.Percentage()) < Math.Abs(ratio - VatRate.Standard.Percentage())
-            ? VatRate.Reduced
-            : VatRate.Standard;
-    }
+    /// <remarks>The one shared rule, <see cref="ExpenseVatInference.Infer"/> (`v0.24.0` review n4): the recharge invoice line reads the same rate.</remarks>
+    public static VatRate InferVatRate(decimal netAmount, decimal vatAmount) => ExpenseVatInference.Infer(netAmount, vatAmount);
 
     /// <summary>
     /// The file name an issued purchase order's PDF carries in Xero: the
@@ -214,9 +203,16 @@ public static class XeroPurchasingMapper
                 return null;
             }
 
+            // M7/m19: the line reads the same in Xero as in TempestOS.
+            if (XeroLineRules.FitUnitAmount(line.Quantity, line.UnitPrice, out var unitProblem) is not { } unitAmount)
+            {
+                blockedReason = $"Purchase order {order.Reference} line '{XeroLineRules.FitDescription(line.Description)}': {unitProblem}.";
+                return null;
+            }
+
             lines.Add(new XeroWireLineItem(
-                string.IsNullOrWhiteSpace(line.Description) ? "(no description)" : line.Description,
-                line.Quantity, line.UnitPrice, account.Code, tax.Code));
+                XeroLineRules.FitDescription(line.Description),
+                line.Quantity, unitAmount, account.Code, tax.Code));
         }
 
         blockedReason = null;
@@ -272,6 +268,12 @@ public static class XeroPurchasingMapper
             return null;
         }
 
+        if (XeroLineRules.FitUnitAmount(1m, expense.NetAmount, out var unitProblem) is not { } netAmount)
+        {
+            blockedReason = $"The expense's net amount: {unitProblem}.";
+            return null;
+        }
+
         var description = string.IsNullOrWhiteSpace(expense.Description) ? "(no description)" : expense.Description.Trim();
         if (!string.IsNullOrWhiteSpace(expense.ProjectCode))
             description = $"{expense.ProjectCode} · {description}";
@@ -286,8 +288,8 @@ public static class XeroPurchasingMapper
             LineItems:
             [
                 new XeroWireLineItem(
-                    Truncate(description, XeroAccountingApi.MaximumBillLineDescriptionLength)!,
-                    1m, expense.NetAmount, account.Code, taxType.Code, TaxAmount: expense.VatAmount),
+                    XeroLineRules.FitDescription(description),
+                    1m, netAmount, account.Code, taxType.Code, TaxAmount: expense.VatAmount),
             ]);
     }
 
