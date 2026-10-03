@@ -4,6 +4,7 @@ using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Invoicing.Xero.Settings;
 using Tempest.Core.Invoicing.Xero.Sync.Invoices;
+using Tempest.Desktop.Documents;
 using Tempest.Desktop.Views;
 using static Tempest.Desktop.Tests.Xero.SettingsXeroSectionTests;
 
@@ -83,6 +84,28 @@ public sealed class SettingsXeroCleanupTests
         Assert.Contains((XeroSettingsSection.SwitchesNotSavedStatus, ActionOutcome.Failed), told);
         Assert.Equal("True", await fixture.Settings.GetValueAsync(XeroInvoiceDrafts.IncludeOnlineSettingKey));
         Assert.Equal("True", await fixture.Settings.GetValueAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey));
+    }
+
+    // Backlog U1 minor: a credit card in the base currency, with a number, is never printed as the bank details.
+    [Fact]
+    public void DocumentsNeverPrint_ACreditCardAsTheBankDetails()
+    {
+        var demo = XeroTestReadings.Demo();
+        var reading = demo with
+        {
+            Organisation = demo.Organisation with
+            {
+                BankAccounts = [new XeroBankAccount("Company card", "4111 1111", "GBP", "CREDITCARD"), new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP", "BANK")],
+            },
+        };
+        var identity = new OrganisationIdentitySettings(new SettingsXeroIdentityTests.InMemorySettings());
+
+        identity.UseXeroReading(reading);
+
+        Assert.Equal("12-34-56 12345678", identity.ToIdentity().BankAccountNumber);
+        var cardOnly = new XeroCompanyDetails("Acme Ltd", null, null, [], null, null, [new XeroBankAccount("Company card", "4111 1111", "GBP", "CREDITCARD")], XeroTestReadings.ReadAt);
+        var local = OrganisationIdentity.TempestDefaults with { BankAccountNumber = "999" };
+        Assert.Equal("999", OrganisationIdentitySettings.Overlay(local, cardOnly, "GBP").BankAccountNumber);
     }
 
     /// <summary>A reader whose cache cannot be read, so <see cref="XeroSettingsSection.RefreshAsync"/> stops part-way.</summary>

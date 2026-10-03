@@ -189,7 +189,7 @@ public sealed class OrganisationIdentitySettings
 
         var name = string.IsNullOrWhiteSpace(xero.Name) ? local.LegalName : xero.Name.Trim();
         var lines = xero.AddressLines.Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => l.Trim()).ToList();
-        var numbered = xero.BankAccounts.Where(b => !string.IsNullOrWhiteSpace(b.BankAccountNumber)).ToList();
+        var numbered = xero.BankAccounts.Where(b => b.IsPayableTo && !string.IsNullOrWhiteSpace(b.BankAccountNumber)).ToList();
         var bank = (string.IsNullOrWhiteSpace(baseCurrency)
                 ? null
                 : numbered.FirstOrDefault(b => string.Equals(b.CurrencyCode?.Trim(), baseCurrency.Trim(), StringComparison.OrdinalIgnoreCase)))

@@ -22,8 +22,10 @@ internal sealed record SimulatedTaxRate(string TaxType, string Name, decimal Eff
 /// <param name="TaxType">The account's default tax type.</param>
 /// <param name="BankAccountNumber">For a bank account, its number.</param>
 /// <param name="UpdatedUtc">When it last changed (<c>If-Modified-Since</c> on <c>GET Accounts</c>).</param>
+/// <param name="BankAccountType">For a bank account, Xero's <c>BankAccountType</c>; <see langword="null"/> reads as <c>BANK</c>.</param>
 internal sealed record SimulatedAccount(
-    string AccountId, string Code, string Name, string Type, string Class, string Status, string? TaxType, string? BankAccountNumber, DateTimeOffset UpdatedUtc);
+    string AccountId, string Code, string Name, string Type, string Class, string Status, string? TaxType, string? BankAccountNumber, DateTimeOffset UpdatedUtc,
+    string? BankAccountType = null);
 
 /// <summary>
 /// The UK Demo Company as the simulator seeds it (design §10.1): the nine
@@ -184,7 +186,7 @@ internal static class SimulatorSeed
         if (account.BankAccountNumber is not null)
         {
             json["BankAccountNumber"] = account.BankAccountNumber;
-            json["BankAccountType"] = "BANK";
+            json["BankAccountType"] = account.BankAccountType ?? "BANK";
             json["CurrencyCode"] = "GBP";
         }
 

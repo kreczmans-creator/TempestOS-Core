@@ -329,7 +329,7 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
         foreach (var account in merged.Where(a => IsWord(a.Type, "BANK") && IsWord(a.Status, "ACTIVE")))
         {
             if (freshById.TryGetValue(account.AccountId, out var wire))
-                result.Add(new XeroBankAccount(account.Name, Blank(wire.BankAccountNumber), Blank(wire.CurrencyCode)));
+                result.Add(new XeroBankAccount(account.Name, Blank(wire.BankAccountNumber), Blank(wire.CurrencyCode), Blank(wire.BankAccountType)));
             else
                 result.Add(previous?.FirstOrDefault(b => string.Equals(b.Name, account.Name, StringComparison.Ordinal)) ?? new XeroBankAccount(account.Name, null, null));
         }
@@ -390,7 +390,7 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
 /// <param name="AddressLines">The address, one printable line each (street lines, town, region and postcode, country); empty when none.</param>
 /// <param name="Phone">The phone number; <see langword="null"/> when none.</param>
 /// <param name="Website">The website; <see langword="null"/> when none.</param>
-/// <param name="BankAccounts">The active bank accounts, for payment details.</param>
+/// <param name="BankAccounts">The active bank accounts a customer can pay into, for payment details (<see cref="XeroBankAccount.IsPayableTo"/>: never a credit card or PayPal account).</param>
 /// <param name="ReadAtUtc">When Xero was read.</param>
 public sealed record XeroCompanyDetails(
     string Name,
@@ -429,7 +429,7 @@ public sealed record XeroCompanyDetails(
             lines,
             organisation.Phone,
             organisation.Website,
-            organisation.BankAccounts,
+            [.. organisation.BankAccounts.Where(b => b.IsPayableTo)],
             reading.ReadAtUtc);
     }
 

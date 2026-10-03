@@ -54,7 +54,7 @@ public sealed class XeroSettingsReaderTests
         Assert.Equal("MA12 3BC", address.PostalCode);
 
         var bank = Assert.Single(organisation.BankAccounts);
-        Assert.Equal(new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP"), bank);
+        Assert.Equal(new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP", "BANK"), bank);
 
         Assert.Equal(SimulatorSeed.UkDemoTaxRates().Count, reading.TaxRates.Count);
         var output2 = Assert.Single(reading.TaxRates, r => r.TaxType == "OUTPUT2");
@@ -394,6 +394,25 @@ public sealed class XeroSettingsReaderTests
         Assert.Equal("https://www.example.co.uk", details.Website);
         Assert.Equal("12-34-56 12345678", Assert.Single(details.BankAccounts).BankAccountNumber);
         Assert.Equal("from Xero, read at 2 Oct 2026 09:00", details.SourceNote(TimeZoneInfo.Utc));
+        Assert.Empty(rig.Simulator.Violations);
+    }
+
+    // Backlog U1 minor: X1 keeps each bank account's type, so a credit card is never printed as payment details.
+    [Fact]
+    public async Task ACreditCardAccount_IsReadWithItsType_AndNeverPrintedAsBankDetails()
+    {
+        await using var rig = await SettingsRig.CreateAsync();
+        rig.Simulator.AddBankAccountInXero("091", "Company Credit Card", "4111 1111", "CREDITCARD");
+
+        var reading = (await rig.NewReader().RefreshAsync()).Value!;
+
+        Assert.Contains(new XeroBankAccount("Company Credit Card", "4111 1111", "GBP", "CREDITCARD"), reading.Organisation.BankAccounts);
+        var printed = Assert.Single(XeroCompanyDetails.From(reading).BankAccounts);
+        Assert.Equal("12-34-56 12345678", printed.BankAccountNumber);
+
+        // A reading cached before the type was kept still prints its accounts.
+        var older = reading with { Organisation = reading.Organisation with { BankAccounts = [new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP")] } };
+        Assert.Single(XeroCompanyDetails.From(older).BankAccounts);
         Assert.Empty(rig.Simulator.Violations);
     }
 }

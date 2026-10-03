@@ -43,6 +43,30 @@ public sealed class FileXeroSettingsCacheTests
         Assert.Equal([cache.FilePath], Directory.GetFiles(Path.Combine(temp.Path, "accounts")));
     }
 
+    // Backlog U1 minor: the bank account's type is kept, and a file written before it was reads with the type unknown.
+    [Fact]
+    public async Task ABankAccountsType_RoundTrips_AndAFileWithoutItStillReads()
+    {
+        using var temp = new TempDirectory();
+        var cache = new FileXeroSettingsCache(temp.Path);
+        var card = Sample with
+        {
+            Organisation = Sample.Organisation with { BankAccounts = [new XeroBankAccount("Card", "4111", "GBP", "CREDITCARD")] },
+        };
+
+        await cache.SaveAsync(card);
+        Assert.Equal("CREDITCARD", Assert.Single((await cache.ReadAsync())!.Organisation.BankAccounts).BankAccountType);
+
+        var json = JsonNode.Parse(await File.ReadAllTextAsync(cache.FilePath))!;
+        var bank = json["Organisation"]!["BankAccounts"]![0]!.AsObject();
+        Assert.True(bank.Remove("BankAccountType"));
+        await File.WriteAllTextAsync(cache.FilePath, json.ToJsonString());
+
+        var older = Assert.Single((await cache.ReadAsync())!.Organisation.BankAccounts);
+        Assert.Null(older.BankAccountType);
+        Assert.True(older.IsPayableTo);
+    }
+
     [Fact]
     public async Task TheConfiguredPersistenceRoot_DecidesWhereTheFileLives_BesideLastReading()
     {
