@@ -80,7 +80,7 @@ public sealed class XeroLiveSmokeTests(ITestOutputHelper output)
         connection.Authoriser,
         connection.SettingsReader,
         () => connection.Journal.Requests,
-        new XeroDemoSmokeOptions(settings.Keep, (delay, cancellationToken) => Task.Delay(delay, cancellationToken), TimeProvider.System));
+        new XeroDemoSmokeOptions(settings.Keep, (delay, cancellationToken) => Task.Delay(delay, cancellationToken), TimeProvider.System, settings.UsesSuppliedToken));
 
     private void Publish(XeroDemoSmokeReport report, XeroLiveSettings settings, string suffix)
     {

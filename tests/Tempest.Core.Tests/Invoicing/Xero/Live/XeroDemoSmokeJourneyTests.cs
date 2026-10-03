@@ -147,6 +147,20 @@ public sealed class XeroDemoSmokeJourneyTests
     }
 
     [Fact]
+    public async Task Journey_WithASuppliedTokenThatSaysNoScopes_ReportsTheScopeStepNotChecked_AndStillPasses()
+    {
+        using var kit = await SmokeKit.CreateAsync(recordGrant: false);
+
+        var report = await kit.Journey(suppliedToken: true).RunAsync();
+
+        var scopes = report.Steps.Single(s => s.Id == "S02");
+        Assert.True(scopes.Passed);
+        Assert.StartsWith("not checked (supplied token)", scopes.Detail, StringComparison.Ordinal);
+        Assert.True(report.Passed, Failures(report));
+        Assert.Empty(kit.Simulator.Violations);
+    }
+
+    [Fact]
     public async Task Journey_WhenNotConnected_StopsAtTheFirstStep_WithNoRequest()
     {
         using var kit = await SmokeKit.CreateAsync(authorised: false);
@@ -279,7 +293,7 @@ public sealed class XeroDemoSmokeJourneyTests
             return new SmokeKit(simulator, clock, XeroLiveConnection.CreateOver(authoriser, secretStore, simulator, XeroApiSimulator.BaseAddress, clock));
         }
 
-        public XeroDemoSmokeJourney Journey(bool keep = false, Action<TimeSpan>? delay = null) => new(
+        public XeroDemoSmokeJourney Journey(bool keep = false, Action<TimeSpan>? delay = null, bool suppliedToken = false) => new(
             Connection.Api,
             Connection.Authoriser,
             Connection.SettingsReader,
@@ -289,7 +303,7 @@ public sealed class XeroDemoSmokeJourneyTests
                 Clock.Advance(by);
                 delay?.Invoke(by);
                 return Task.CompletedTask;
-            }, Clock));
+            }, Clock, suppliedToken));
 
         public void Dispose()
         {

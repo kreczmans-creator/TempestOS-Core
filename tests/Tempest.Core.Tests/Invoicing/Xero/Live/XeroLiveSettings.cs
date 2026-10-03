@@ -16,7 +16,10 @@ namespace Tempest.Core.Tests.Invoicing.Xero.Live;
 /// secret store of the operator's choosing (a CI secret, a password
 /// manager) supplies <see cref="AccessTokenVariable"/> and
 /// <see cref="TenantIdVariable"/> directly; that token is used as it is and
-/// never refreshed.
+/// never refreshed, until the <c>exp</c> claim of the JWT (or, for an opaque
+/// token, 25 minutes from the start of the run: supply a freshly issued one).
+/// Its granted scopes come from the JWT's <c>scope</c> claim or
+/// <see cref="ScopesVariable"/>.
 /// </para>
 /// <para>
 /// No value read here is ever written to a log, a report or the test output.
@@ -36,6 +39,14 @@ public sealed record XeroLiveSettings(Func<string, string?> Read)
 
     /// <summary>The Xero tenant id (the Demo Company's) that goes with <see cref="AccessTokenVariable"/>.</summary>
     public const string TenantIdVariable = "TEMPEST_XERO_TENANT_ID";
+
+    /// <summary>
+    /// The scopes the supplied token was granted (space-separated), for an
+    /// opaque <see cref="AccessTokenVariable"/>. Xero's access tokens are JWTs
+    /// whose <c>scope</c> claim says this already, and that claim wins; this
+    /// is the fallback. Neither gives S02 "not checked (supplied token)".
+    /// </summary>
+    public const string ScopesVariable = "TEMPEST_XERO_SCOPES";
 
     /// <summary>The Xero app's client id, when it is not already in TempestOS's secret store (needed to refresh or to connect).</summary>
     public const string ClientIdVariable = "TEMPEST_XERO_CLIENT_ID";
@@ -73,8 +84,55 @@ public sealed record XeroLiveSettings(Func<string, string?> Read)
     /// <summary>The data folder, or <see langword="null"/> for the app's default.</summary>
     public string? DataFolder => Trimmed(DataFolderVariable);
 
+    /// <summary>The scopes given in <see cref="ScopesVariable"/> (split on spaces or commas), or <see langword="null"/> when unset.</summary>
+    public IReadOnlyList<string>? SuppliedScopes =>
+        Trimmed(ScopesVariable) is { } scopes
+            ? scopes.Split([' ', ',', '\t'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : null;
+
     /// <summary>The report path, or <see langword="null"/> for the default.</summary>
     public string? ReportPath => Trimmed(ReportVariable);
+
+    /// <summary>
+    /// When a supplied access token stops being usable: the <c>exp</c> claim
+    /// of a JWT (Xero's access tokens are, valid 30 minutes), else
+    /// <paramref name="now"/> plus 25 minutes. The payload is decoded, never
+    /// validated or logged.
+    /// </summary>
+    /// <param name="accessToken">The supplied token.</param>
+    /// <param name="now">The start of the run.</param>
+    public static DateTimeOffset SuppliedTokenExpiry(string accessToken, DateTimeOffset now)
+    {
+        var parts = accessToken.Split('.');
+        if (parts.Length == 3 && parts[1].Length > 0)
+        {
+            try
+            {
+                var payload = parts[1].Replace('-', '+').Replace('_', '/');
+                payload = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
+                using var document = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(payload));
+                if (document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                    && document.RootElement.TryGetProperty("exp", out var exp)
+                    && exp.ValueKind == System.Text.Json.JsonValueKind.Number
+                    && exp.TryGetInt64(out var seconds))
+                    return DateTimeOffset.FromUnixTimeSeconds(seconds);
+            }
+            catch (FormatException)
+            {
+                // Not base64url: treat as opaque.
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Not JSON: treat as opaque.
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // An absurd exp: treat as opaque.
+            }
+        }
+
+        return now.AddMinutes(25);
+    }
 
     /// <summary>Whether <paramref name="value"/> switches something on (<c>1</c> or <c>true</c>).</summary>
     /// <param name="value">The variable's value.</param>

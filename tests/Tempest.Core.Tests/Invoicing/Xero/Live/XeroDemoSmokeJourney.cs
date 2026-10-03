@@ -15,7 +15,8 @@ namespace Tempest.Core.Tests.Invoicing.Xero.Live;
 /// <param name="Keep">Keep the drafts in Xero instead of deleting them at the end.</param>
 /// <param name="Delay">How the run waits (a 429's <c>Retry-After</c>, the key-retention probe): <see cref="Task.Delay(TimeSpan, CancellationToken)"/> live, the simulator's clock in CI.</param>
 /// <param name="Time">The clock that stamps the run's numbers.</param>
-public sealed record XeroDemoSmokeOptions(bool Keep, Func<TimeSpan, CancellationToken, Task> Delay, TimeProvider Time)
+/// <param name="SuppliedToken">The token was supplied directly (<see cref="XeroLiveSettings.AccessTokenVariable"/>): with no granted-scope record, S02 is "not checked" rather than failed.</param>
+public sealed record XeroDemoSmokeOptions(bool Keep, Func<TimeSpan, CancellationToken, Task> Delay, TimeProvider Time, bool SuppliedToken = false)
 {
     /// <summary>
     /// How long after a create the key-retention probe repeats it with the
@@ -222,10 +223,21 @@ internal sealed class XeroDemoSmokeJourney
 
         var granted = await _authoriser.ReadGrantedScopesAsync(cancellationToken);
         var missing = granted is null ? [.. XeroScopes.Required] : XeroScopes.Required.Where(s => !granted.Contains(s, StringComparer.Ordinal)).ToList();
-        Step("S02", "Granted scopes include every scope TempestOS requires", missing.Count == 0,
-            granted is null
-                ? "no granted-scope record (tokens from before v0.24.0): re-authorise in Settings"
-                : missing.Count == 0 ? $"granted: {string.Join(' ', granted)}" : $"missing: {string.Join(' ', missing)} - re-authorise in Settings");
+        if (granted is null && _options.SuppliedToken)
+        {
+            // An opaque supplied token with no TEMPEST_XERO_SCOPES: nothing
+            // says what it was granted, so S02 cannot judge it. Every later
+            // read and write still proves the scopes it uses.
+            Step("S02", "Granted scopes include every scope TempestOS requires", true,
+                "not checked (supplied token): it carries no scope claim and no -Scopes were given; the steps below exercise each scope");
+        }
+        else
+        {
+            Step("S02", "Granted scopes include every scope TempestOS requires", missing.Count == 0,
+                granted is null
+                    ? "no granted-scope record (tokens from before v0.24.0): re-authorise in Settings"
+                    : missing.Count == 0 ? $"granted: {string.Join(' ', granted)}" : $"missing: {string.Join(' ', missing)} - re-authorise in Settings");
+        }
 
         var refresh = await _settings.RefreshAsync(cancellationToken);
         var reading = refresh.Outcome == ConnectorOutcome.Ok ? refresh.Value : null;

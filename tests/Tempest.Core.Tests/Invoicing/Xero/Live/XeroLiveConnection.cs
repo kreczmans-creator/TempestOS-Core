@@ -116,12 +116,20 @@ internal sealed class XeroLiveConnection : IDisposable
         if (settings.UsesSuppliedToken)
         {
             var supplied = new InMemorySecretStore();
-            await supplied.SetAsync("Invoicing:Xero:AccessToken", settings.Trimmed(XeroLiveSettings.AccessTokenVariable)!);
+            var token = settings.Trimmed(XeroLiveSettings.AccessTokenVariable)!;
+            await supplied.SetAsync("Invoicing:Xero:AccessToken", token);
             // A refresh token must exist for the authoriser to use the access
             // token at all; this one is never sent (the token is used until it
             // expires, then the run reports Reauthorise).
             await supplied.SetAsync("Invoicing:Xero:RefreshToken", "supplied-access-token-is-not-refreshed");
-            await supplied.SetAsync("Invoicing:Xero:ExpiresAtUtc", DateTimeOffset.UtcNow.AddMinutes(25).ToString("O", CultureInfo.InvariantCulture));
+            await supplied.SetAsync(
+                "Invoicing:Xero:ExpiresAtUtc",
+                XeroLiveSettings.SuppliedTokenExpiry(token, DateTimeOffset.UtcNow).ToString("O", CultureInfo.InvariantCulture));
+            // The granted-scope record S02 checks: the JWT's own scope claim,
+            // else what the operator said; neither leaves it unrecorded and
+            // S02 reports "not checked (supplied token)".
+            if ((OAuthAuthoriser.ReadScopeClaim(token) ?? settings.SuppliedScopes) is { Count: > 0 } scopes)
+                await supplied.SetAsync("Invoicing:Xero:" + OAuthAuthoriser.GrantedScopesKeySuffix, string.Join(' ', scopes));
             if (settings.Trimmed(XeroLiveSettings.TenantIdVariable) is { } tenant)
                 await supplied.SetAsync("Invoicing:Xero:TenantId", tenant);
             secretStore = supplied;

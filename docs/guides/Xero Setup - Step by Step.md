@@ -196,6 +196,14 @@ It ends with **RESULT: PASSED** and a report listing a Xero link for
 every record it made. Add `-KeyWindow` to also confirm how long Xero
 keeps an idempotency key (about seven more minutes).
 
+To run it with a token from a secret store instead of the stored one, pass
+`-AccessToken <token> -TenantId <Demo Company tenant id>`. That token is
+never refreshed: it is used until the expiry written in it (Xero's last
+30 minutes; 25 minutes for a token that carries none), so use a freshly
+issued one. Its scopes are read from the token itself; for a token that
+does not carry them, add `-Scopes "<granted scopes>"`, or the scope check
+is reported *not checked (supplied token)*.
+
 ---
 
 ## If something goes wrong

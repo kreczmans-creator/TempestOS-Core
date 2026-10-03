@@ -75,6 +75,39 @@ public sealed class XeroLiveFactAttributeTests
         Assert.False(settings.Enabled);
     }
 
+    [Fact]
+    public void SuppliedScopes_SplitOnSpacesOrCommas_AndAreNullWhenUnset()
+    {
+        Assert.Null(Settings().SuppliedScopes);
+        Assert.Equal(
+            ["offline_access", "accounting.contacts", "accounting.transactions"],
+            Settings((XeroLiveSettings.ScopesVariable, " offline_access accounting.contacts,accounting.transactions ")).SuppliedScopes);
+    }
+
+    [Fact]
+    public void SuppliedTokenExpiry_IsTheJwtExpClaim()
+    {
+        var now = new DateTimeOffset(2026, 10, 3, 9, 0, 0, TimeSpan.Zero);
+        var exp = now.AddMinutes(30).ToUnixTimeSeconds();
+        var token = "eyJhbGciOiJub25lIn0." + Base64Url($"{{\"exp\":{exp},\"scope\":[\"accounting.contacts\"]}}") + ".sig";
+
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(exp), XeroLiveSettings.SuppliedTokenExpiry(token, now));
+    }
+
+    [Theory]
+    [InlineData("opaque-token")]
+    [InlineData("a.!!not-base64!!.c")]
+    [InlineData("a.e30.c")]
+    public void SuppliedTokenExpiry_ForAnOpaqueOrClaimlessToken_Is25MinutesFromNow(string token)
+    {
+        var now = new DateTimeOffset(2026, 10, 3, 9, 0, 0, TimeSpan.Zero);
+
+        Assert.Equal(now.AddMinutes(25), XeroLiveSettings.SuppliedTokenExpiry(token, now));
+    }
+
+    private static string Base64Url(string json) =>
+        Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
     private static XeroLiveSettings Settings(params (string Name, string Value)[] values)
     {
         var map = values.ToDictionary(v => v.Name, v => v.Value, StringComparer.Ordinal);

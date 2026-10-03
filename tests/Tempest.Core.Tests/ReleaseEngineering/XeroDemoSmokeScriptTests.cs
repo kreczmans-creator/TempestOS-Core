@@ -63,6 +63,7 @@ public sealed class XeroDemoSmokeScriptTests
     [InlineData(XeroLiveSettings.ClientSecretVariable)]
     [InlineData(XeroLiveSettings.AccessTokenVariable)]
     [InlineData(XeroLiveSettings.TenantIdVariable)]
+    [InlineData(XeroLiveSettings.ScopesVariable)]
     public void Script_SetsEveryVariableTheLiveTestsRead(string variable)
     {
         var content = File.ReadAllText(ScriptPath, Encoding.ASCII);

@@ -57,7 +57,14 @@
 
 .PARAMETER AccessToken
     Use this access token instead of the stored ones (for example from a
-    secret store). Needs -TenantId. It is never refreshed.
+    secret store). Needs -TenantId. It is never refreshed: it is used until
+    the expiry in the token itself (Xero's tokens last 30 minutes), or for
+    25 minutes when the token is opaque - supply a freshly issued one.
+
+.PARAMETER Scopes
+    With an opaque -AccessToken only: the scopes it was granted, separated
+    by spaces. Xero's tokens carry their own scope claim, which wins.
+    Without either, the scope check is reported "not checked".
 
 .PARAMETER TenantId
     The Demo Company's Xero tenant id, with -AccessToken.
@@ -86,6 +93,7 @@ param(
     [string] $ClientSecret,
     [string] $AccessToken,
     [string] $TenantId,
+    [string] $Scopes,
     [switch] $Keep,
     [switch] $KeyWindow,
     [string] $Report
@@ -125,6 +133,7 @@ $variables = @{
     "TEMPEST_XERO_CLIENT_SECRET" = $ClientSecret
     "TEMPEST_XERO_ACCESS_TOKEN"  = $AccessToken
     "TEMPEST_XERO_TENANT_ID"     = $TenantId
+    "TEMPEST_XERO_SCOPES"        = $Scopes
 }
 
 Write-Host "=================================================================="
