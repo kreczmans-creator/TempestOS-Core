@@ -21,7 +21,9 @@ internal static partial class XeroServiceRegistration
     /// <see cref="XeroReadBack"/>; <see cref="XeroSyncParts"/> (every
     /// planner and handler, by its concrete type); and one
     /// <see cref="XeroSyncService"/>, also answering <see cref="IXeroSyncService"/>
-    /// through a forwarding singleton over the same instance.
+    /// through a forwarding singleton over the same instance; and the person's
+    /// link actions over it, <see cref="XeroDocumentLinkActions"/> (`v0.24.0`
+    /// review-board fixes M5, m15).
     /// </summary>
     /// <remarks>
     /// The background loop, <see cref="XeroSyncHostedService"/>, is
@@ -43,5 +45,6 @@ internal static partial class XeroServiceRegistration
         services.Singleton<XeroSyncParts>();
         services.Singleton<XeroSyncService>();
         services.Singleton<IXeroSyncService, XeroSyncServiceForwarder>();
+        services.Singleton<XeroDocumentLinkActions>();
     }
 }

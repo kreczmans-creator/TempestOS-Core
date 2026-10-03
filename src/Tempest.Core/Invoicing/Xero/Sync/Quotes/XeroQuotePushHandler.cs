@@ -557,7 +557,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         return new XeroPushResult(XeroPushOutcome.Rejected, DeletedNote(number), Link: gone);
     }
 
-    private static string DeletedNote(string number) => $"Quote {number} was deleted in Xero; unlink it to send the quotation again.";
+    private static string DeletedNote(string number) => $"Quote {number} was deleted in Xero. To send the quotation again, choose {XeroDocumentLinkActions.UnlinkActionName} on its Xero badge, then Send again.";
 
     /// <summary>
     /// For a linked quote Xero holds past <c>DRAFT</c>: records in the link

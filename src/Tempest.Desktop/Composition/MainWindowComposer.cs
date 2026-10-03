@@ -560,6 +560,16 @@ internal sealed partial class MainWindowComposer
         // configured connector (its engine is then registered).
         var xeroBadges = Views.XeroSyncServiceBadgeSource.TryCreate(services);
 
+        // `v0.24.0` review-board fixes M5/m14/m15: deliberate Xero actions
+        // (Unlink from Xero, link by Xero number, a send that may bill twice)
+        // ask through the shell's own dialogs — never without asking.
+        if (xeroBadges is not null)
+        {
+            xeroBadges.Prompts = new Views.XeroBadgePrompts(
+                (title, message, confirmText) => confirmationDialog.ConfirmAsync(title, message, confirmText),
+                (title, label) => inputDialog.PromptAsync(title, label));
+        }
+
         // Fire-and-forget at the view boundary, but never silently: an open
         // that throws is reported like any other failed action, so "it
         // created but nothing opened" has a reason on screen. Declared here

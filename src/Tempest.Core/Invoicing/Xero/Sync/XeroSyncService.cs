@@ -338,6 +338,16 @@ public sealed record XeroDocumentSyncStatus(XeroSyncStatus Status, string Label,
     /// badge never matches the reason's words.
     /// </summary>
     public bool CannotTell { get; init; }
+
+    /// <summary>
+    /// `v0.24.0` review-board fix n5 (additive): whether the record's Failed
+    /// write is waiting on a missing precondition in TempestOS — most often its
+    /// customer or supplier not yet linked to a Xero contact — rather than
+    /// refused. It is tried again by itself once the precondition is met, so
+    /// the badge shows it as waiting, not as a failure. Typed, so the badge
+    /// never decides this from the reason's words.
+    /// </summary>
+    public bool Blocked { get; init; }
 }
 
 /// <summary>What one wake of the engine did (<see cref="XeroSyncService.RunCycleAsync"/>).</summary>
@@ -1083,8 +1093,8 @@ public sealed class XeroSyncService : IXeroSyncService
         {
             var retryable = failed.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion && Enum.IsDefined(failed.Operation)
                             && !string.Equals(failed.LastError, PersistenceXeroOutbox.UnreadableError, StringComparison.Ordinal);
-            var cannotTell = (await ReadTrackAsync(failed.Id, cancellationToken).ConfigureAwait(false)).CannotTell;
-            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null) with { CannotTell = cannotTell };
+            var track = await ReadTrackAsync(failed.Id, cancellationToken).ConfigureAwait(false);
+            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null) with { CannotTell = track.CannotTell, Blocked = track.Blocked };
         }
 
         if (open.Count > 0)
@@ -1099,7 +1109,7 @@ public sealed class XeroSyncService : IXeroSyncService
                 _ when waitingElsewhere => "Xero needs re-authorising before anything more is sent; this write waits in the queue.",
                 _ when head.SchemaVersion > XeroOutboxEntry.CurrentSchemaVersion => $"Queued by a newer TempestOS ({PersistenceXeroLinkStore.NewerVersionNote}); this build does not send it.",
                 _ when head.NotBeforeUtc is { } notBefore && notBefore > now =>
-                    $"Xero could not be reached{(string.IsNullOrWhiteSpace(head.LastError) ? string.Empty : $" ({head.LastError!.Trim().TrimEnd('.')})")}; trying again at {notBefore.ToString("HH:mm:ss", CultureInfo.InvariantCulture)} UTC.",
+                    $"Xero could not be reached{(string.IsNullOrWhiteSpace(head.LastError) ? string.Empty : $" ({head.LastError!.Trim().TrimEnd('.')})")}; trying again at {TimeZoneInfo.ConvertTime(notBefore, _time.LocalTimeZone).ToString("HH:mm:ss", CultureInfo.InvariantCulture)}.",
                 _ => null,
             };
             return Make(XeroSyncBadge.Queued, reason);

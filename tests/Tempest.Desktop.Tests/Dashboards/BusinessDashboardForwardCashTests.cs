@@ -66,12 +66,12 @@ public sealed class BusinessDashboardForwardCashTests
             Assert.Equal(6 * 8, cells.Count);
 
             // October (from the 2nd): 10,000 + 1,200 - 99 = 11,101.
-            Assert.Contains("Opening cash, Oct 2026 (from 2): £10,000.00 — Xero bank balances, read at 2026-10-02 08:00 UTC", cells);
-            Assert.Contains("Invoices due (Xero), Oct 2026 (from 2): £1,200.00 — Xero invoices raised in TempestOS, status as read back, read at 2026-10-02 08:00 UTC", cells);
-            Assert.Contains("Repeating bills (Xero), Oct 2026 (from 2): £99.00 — Xero repeating bills, read at 2026-10-02 08:00 UTC", cells);
+            Assert.Contains("Opening cash, Oct 2026 (from 2): £10,000.00 — Xero bank balances, read at 2026-10-02 08:00", cells);
+            Assert.Contains("Invoices due (Xero), Oct 2026 (from 2): £1,200.00 — Xero invoices raised in TempestOS, status as read back, read at 2026-10-02 08:00", cells);
+            Assert.Contains("Repeating bills (Xero), Oct 2026 (from 2): £99.00 — Xero repeating bills, read at 2026-10-02 08:00", cells);
             Assert.Contains("Closing cash, Oct 2026 (from 2): £11,101.00 — Worked out from the figures above", cells);
             // November: 11,101 - 600 - 99 = 10,402.
-            Assert.Contains("Bills due (Xero), Nov 2026: £600.00 — Xero bills, read at 2026-10-02 08:00 UTC", cells);
+            Assert.Contains("Bills due (Xero), Nov 2026: £600.00 — Xero bills, read at 2026-10-02 08:00", cells);
             Assert.Contains("Closing cash, Nov 2026: £10,402.00 — Worked out from the figures above", cells);
             // December: + 3,000 expected (TempestOS) - 99 = 13,303.
             Assert.Contains("Expected milestone invoices (TempestOS), Dec 2026: £3,000.00 — TempestOS — accepted quotes not yet invoiced", cells);
@@ -81,7 +81,7 @@ public sealed class BusinessDashboardForwardCashTests
 
             var text = Text(view);
             Assert.Contains(BusinessDashboardView.ForwardCashPanelName, text, StringComparison.Ordinal);
-            Assert.Contains("Bank balances, bills and repeating bills: Xero, read at 2026-10-02 08:00 UTC.", text, StringComparison.Ordinal);
+            Assert.Contains("Bank balances, bills and repeating bills: Xero, read at 2026-10-02 08:00.", text, StringComparison.Ordinal);
             Assert.Contains("gross, including VAT", text, StringComparison.Ordinal);
             Assert.Contains("Quotes not yet accepted are not counted", text, StringComparison.Ordinal);
             Assert.Contains("Undated — accepted, not invoiced, no planned or target date: £800.00", text, StringComparison.Ordinal);
@@ -142,8 +142,8 @@ public sealed class BusinessDashboardForwardCashTests
             var view = await ShowAsync(host, ForwardCashProjection.Build(inputs), []);
 
             var text = Text(view);
-            Assert.Contains("Bank balances, bills and repeating bills: Xero, read at 2026-10-02 08:00 UTC.", text, StringComparison.Ordinal);
-            Assert.Contains("The latest refresh failed at 2026-10-02 09:00 UTC (Could not read bills: the network is unreachable.); showing the last reading.", text, StringComparison.Ordinal);
+            Assert.Contains("Bank balances, bills and repeating bills: Xero, read at 2026-10-02 08:00.", text, StringComparison.Ordinal);
+            Assert.Contains("The latest refresh failed at 2026-10-02 09:00 (Could not read bills: the network is unreachable.); showing the last reading.", text, StringComparison.Ordinal);
             Assert.Contains("Closing cash, Oct 2026 (from 2): £11,101.00 — Worked out from the figures above", CellNames(view));
         }
         finally
@@ -188,7 +188,8 @@ public sealed class BusinessDashboardForwardCashTests
     private static async Task<BusinessDashboardView> ShowAsync(WorkspaceHost host, ForwardCashPicture picture, List<(Guid, string)> opened)
     {
         var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));
-        var view = new BusinessDashboardView(new FixedReadModel(picture), domain, (id, kind) => opened.Add((id, kind)));
+        // n6: local time on screen; pinned to UTC here so the expected words do not depend on the machine.
+        var view = new BusinessDashboardView(new FixedReadModel(picture), domain, (id, kind) => opened.Add((id, kind))) { TimeZone = TimeZoneInfo.Utc };
         var window = new Window { Width = 1900, Height = 1200, Content = view };
         window.Show();
         await view.RefreshAsync();

@@ -264,7 +264,7 @@ public sealed class XeroContactLinkPrompt : Border
         return result.Outcome switch
         {
             ConnectorOutcome.Rejected => $"Could not {action}: {reason ?? "Xero refused it."}",
-            ConnectorOutcome.Reauthorise => $"Could not {action}: Xero needs to be re-authorised (Settings → Invoicing → Re-authorise).{(reason is null ? string.Empty : " " + reason)}",
+            ConnectorOutcome.Reauthorise => $"Could not {action}: Xero needs to be re-authorised (Settings → Xero → Re-authorise).{(reason is null ? string.Empty : " " + reason)}",
             ConnectorOutcome.Unavailable => $"Could not {action}: Xero could not be reached{(reason is null ? "." : $" ({reason}).")} Nothing was changed; try again when it is back.",
             ConnectorOutcome.Unknown => $"Could not {action}: Xero's answer was lost{(reason is null ? "." : $" ({reason}).")} Try again — TempestOS checks Xero first, so it never makes a second contact.",
             _ => $"Could not {action}.",

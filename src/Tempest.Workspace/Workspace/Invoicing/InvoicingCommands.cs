@@ -200,3 +200,132 @@ public sealed class VoidInvoiceCommandHandler : ICommandHandler<VoidInvoiceComma
             : CommandResult.Failure(result.Reason ?? "The request could not be voided.");
     }
 }
+
+/// <summary>
+/// Edits one line of the selected <see cref="InvoiceRequest"/>
+/// (<see cref="IInvoicingService.ReviseLinesAsync"/>, `v0.24.0` review-board
+/// fix M4): a Draft or Rejected request locally; a Sent one only while the
+/// accounting system (Xero) still holds its invoice as a draft, which is
+/// updated to match. A blank value keeps the line's current one.
+/// </summary>
+public sealed class ReviseInvoiceLinesCommand : IWorkspaceCommand
+{
+    /// <summary>Initialises a new instance of the <see cref="ReviseInvoiceLinesCommand"/> class.</summary>
+    /// <param name="targetObjectId">The invoice request.</param>
+    /// <param name="targetKind">Its Kind.</param>
+    /// <param name="lineNumber">The line to edit, counting from 1 in the request's own order.</param>
+    /// <param name="description">The new description; blank keeps the current one.</param>
+    /// <param name="quantity">The new quantity (invariant culture); blank keeps the current one.</param>
+    /// <param name="unitRate">The new unit rate in the request's own currency (invariant culture); blank keeps the current one.</param>
+    /// <param name="vatRate">The new VAT rate (a <see cref="Tempest.Core.BusinessGovernance.VatRate"/> name); blank keeps the current one.</param>
+    public ReviseInvoiceLinesCommand(
+        Guid targetObjectId, string targetKind, string lineNumber, string? description = null, string? quantity = null, string? unitRate = null, string? vatRate = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
+        ArgumentException.ThrowIfNullOrWhiteSpace(lineNumber);
+
+        TargetObjectId = targetObjectId;
+        TargetKind = targetKind;
+        LineNumber = lineNumber.Trim();
+        Description = description;
+        Quantity = quantity;
+        UnitRate = unitRate;
+        VatRate = vatRate;
+    }
+
+    /// <inheritdoc />
+    public Guid TargetObjectId { get; }
+
+    /// <inheritdoc />
+    public string TargetKind { get; }
+
+    /// <summary>The line to edit, counting from 1.</summary>
+    public string LineNumber { get; }
+
+    /// <summary>The new description; blank keeps the current one.</summary>
+    public string? Description { get; }
+
+    /// <summary>The new quantity; blank keeps the current one.</summary>
+    public string? Quantity { get; }
+
+    /// <summary>The new unit rate; blank keeps the current one.</summary>
+    public string? UnitRate { get; }
+
+    /// <summary>The new VAT rate's name; blank keeps the current one.</summary>
+    public string? VatRate { get; }
+}
+
+/// <summary>Handles <see cref="ReviseInvoiceLinesCommand"/>.</summary>
+public sealed class ReviseInvoiceLinesCommandHandler : ICommandHandler<ReviseInvoiceLinesCommand>
+{
+    private readonly IInvoicingService _service;
+    private readonly Func<Guid, CancellationToken, Task<InvoiceRequest?>> _findRequest;
+
+    /// <summary>Initialises a new instance of the <see cref="ReviseInvoiceLinesCommandHandler"/> class.</summary>
+    /// <param name="service">The invoicing service.</param>
+    /// <param name="findRequest">Reads the request, for the line's current values.</param>
+    public ReviseInvoiceLinesCommandHandler(IInvoicingService service, Func<Guid, CancellationToken, Task<InvoiceRequest?>> findRequest)
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(findRequest);
+        _service = service;
+        _findRequest = findRequest;
+    }
+
+    /// <summary>Validates a line number: a whole number of 1 or more.</summary>
+    /// <param name="value">The value entered.</param>
+    public static string? CheckLineNumber(string value) =>
+        int.TryParse(value?.Trim(), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var n) && n >= 1
+            ? null
+            : "Enter the line's number, counting from 1.";
+
+    /// <summary>Validates an optional decimal: blank, or a number of 0 or more.</summary>
+    /// <param name="value">The value entered.</param>
+    public static string? CheckOptionalAmount(string value) =>
+        string.IsNullOrWhiteSpace(value)
+        || (decimal.TryParse(value.Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d) && d >= 0m)
+            ? null
+            : "Enter a number (for example 2.5), or leave it blank to keep the current one.";
+
+    /// <summary>Validates an optional VAT rate: blank, or one of <see cref="Tempest.Core.BusinessGovernance.VatRate"/>'s names.</summary>
+    /// <param name="value">The value entered.</param>
+    public static string? CheckOptionalVatRate(string value) =>
+        string.IsNullOrWhiteSpace(value) || Enum.TryParse<Tempest.Core.BusinessGovernance.VatRate>(value.Trim(), ignoreCase: true, out _)
+            ? null
+            : $"Enter one of: {string.Join(", ", Enum.GetNames<Tempest.Core.BusinessGovernance.VatRate>())}; or leave it blank to keep the current one.";
+
+    /// <inheritdoc />
+    public async Task<CommandResult> HandleAsync(ReviseInvoiceLinesCommand command, CancellationToken cancellationToken)
+    {
+        if (CheckLineNumber(command.LineNumber) is { } badLine)
+            return CommandResult.Failure(badLine);
+
+        if (await _findRequest(command.TargetObjectId, cancellationToken).ConfigureAwait(false) is not { } request)
+            return CommandResult.Failure("The invoice request could not be found.");
+
+        var index = int.Parse(command.LineNumber, System.Globalization.CultureInfo.InvariantCulture) - 1;
+        if (index >= request.Lines.Count)
+            return CommandResult.Failure($"The request has {request.Lines.Count} line(s); there is no line {command.LineNumber}.");
+
+        foreach (var problem in new[] { CheckOptionalAmount(command.Quantity ?? string.Empty), CheckOptionalAmount(command.UnitRate ?? string.Empty), CheckOptionalVatRate(command.VatRate ?? string.Empty) })
+        {
+            if (problem is not null)
+                return CommandResult.Failure(problem);
+        }
+
+        var line = request.Lines[index];
+        var revision = new InvoiceRequestLineRevision(
+            line.SourceId,
+            string.IsNullOrWhiteSpace(command.Description) ? line.Description : command.Description.Trim(),
+            string.IsNullOrWhiteSpace(command.Quantity) ? line.Quantity : decimal.Parse(command.Quantity.Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture),
+            string.IsNullOrWhiteSpace(command.UnitRate)
+                ? line.UnitRate
+                : new Tempest.Core.BusinessGovernance.Money(decimal.Parse(command.UnitRate.Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture), request.Currency),
+            string.IsNullOrWhiteSpace(command.VatRate) ? line.VatRate : Enum.Parse<Tempest.Core.BusinessGovernance.VatRate>(command.VatRate.Trim(), ignoreCase: true));
+
+        var result = await _service.ReviseLinesAsync(command.TargetObjectId, [revision], cancellationToken).ConfigureAwait(false);
+        return result.Succeeded
+            ? CommandResult.Success($"Line {command.LineNumber} revised — total now {result.Request!.Total}.", command.TargetObjectId, command.TargetKind)
+            : CommandResult.Failure(result.Reason ?? "The lines could not be revised.");
+    }
+}

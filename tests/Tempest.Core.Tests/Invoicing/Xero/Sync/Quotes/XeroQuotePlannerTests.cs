@@ -229,7 +229,7 @@ public sealed class XeroQuotePlannerTests
         Assert.True(XeroQuoteMapper.IsRevisionNotSent(r2, link));
         Assert.Equal(
             "Xero holds quote P0012-Q-001 as SENT, and Xero changes a quote's content only while it is DRAFT, so revision R2 was not sent "
-            + "(Q1: the Xero copy follows a new revision only until the quote is sent). Change it in Xero by hand, or unlink it and issue a new quotation.",
+            + "(Q1: the Xero copy follows a new revision only until the quote is sent). Change it in Xero by hand, or issue a new quotation.",
             XeroQuoteMapper.DriftNote(r2, link));
 
         // The same content, still DRAFT, never pushed (a reconciled link) or off the walk: the plain drift notes.

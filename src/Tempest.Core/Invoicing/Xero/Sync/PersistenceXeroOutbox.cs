@@ -441,6 +441,45 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     public async Task<XeroOutboxEntry?> FindAsync(Guid entryId, CancellationToken cancellationToken = default) =>
         (await LoadAsync(entryId, cancellationToken).ConfigureAwait(false))?.Entry;
 
+    /// <summary>
+    /// `v0.24.0` review-board fix M5 (additive, for <see cref="XeroDocumentLinkActions.SendAgainAsync"/>):
+    /// the person unlinked <paramref name="document"/> because its Xero copy was
+    /// deleted there, and now sends it again — so the writes that reached the
+    /// deleted record no longer count as sent. Every
+    /// <see cref="XeroOutboxState.Succeeded"/> entry for the document becomes
+    /// <see cref="XeroOutboxState.Superseded"/> (still terminal, its key kept);
+    /// the same content enqueued again is then a new entry under a new key
+    /// (its occurrence counts the old ones), never de-duplicated against the
+    /// deleted record's writes. Open entries are untouched.
+    /// </summary>
+    /// <param name="document">The record sent again.</param>
+    /// <param name="cancellationToken">Cancels the writes.</param>
+    /// <returns>How many entries no longer count as sent.</returns>
+    public async Task<int> ForgetSentAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var forgotten = 0;
+            foreach (var stored in await LoadAllAsync(cancellationToken).ConfigureAwait(false))
+            {
+                if (stored.Locked || stored.Entry.Document != document || stored.Entry.State != XeroOutboxState.Succeeded)
+                    continue;
+
+                await WriteAsync(stored with { Entry = stored.Entry with { State = XeroOutboxState.Superseded } }, cancellationToken).ConfigureAwait(false);
+                forgotten++;
+            }
+
+            return forgotten;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     private async Task<int> MoveAllAsync(XeroOutboxState from, XeroOutboxState to, CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);

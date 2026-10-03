@@ -220,7 +220,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
         {
             return new XeroPushResult(
                 XeroPushOutcome.Rejected,
-                $"Bill {link.XeroNumber ?? link.XeroId} was {status.ToLowerInvariant()} in Xero; TempestOS does not bill the expense again. Unlink it to send the expense as a new bill.",
+                $"Bill {link.XeroNumber ?? link.XeroId} was {status.ToLowerInvariant()} in Xero; TempestOS does not bill the expense again. To send the expense as a new bill, choose {XeroDocumentLinkActions.UnlinkActionName} on its Xero badge, then Send again.",
                 Link: link);
         }
 
@@ -513,7 +513,7 @@ public sealed class XeroExpenseBillPushHandler : IXeroPushHandler
             return XeroPurchasingMapper.Failed(read);
 
         var gone = await RecordStatusAsync(link, XeroPurchasingMapper.StatusDeleted, null, cancellationToken).ConfigureAwait(false);
-        return new XeroPushResult(XeroPushOutcome.Rejected, $"Bill {link.XeroNumber ?? link.XeroId} was deleted in Xero; unlink it to send the expense again.", Link: gone);
+        return new XeroPushResult(XeroPushOutcome.Rejected, $"Bill {link.XeroNumber ?? link.XeroId} was deleted in Xero. To send the expense again, choose {XeroDocumentLinkActions.UnlinkActionName} on its Xero badge, then Send again.", Link: gone);
     }
 
     private async Task<XeroLink> RecordStatusAsync(XeroLink link, string? status, string? number, CancellationToken cancellationToken)

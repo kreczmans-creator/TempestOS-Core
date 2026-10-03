@@ -79,7 +79,65 @@ public interface IXeroBadgeSource
     /// <param name="document">The record.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     Task<bool> NeedsSendToXeroAsync(XeroDocumentRef document, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How the badge asks the person before a deliberate action (Unlink from
+    /// Xero, link by Xero number) and the Invoicing area before a send that
+    /// might bill twice (`v0.24.0` review-board fixes M5, m14, m15).
+    /// <see langword="null"/> (the default) offers none of those actions: they
+    /// never run without asking.
+    /// </summary>
+    XeroBadgePrompts? Prompts => null;
+
+    /// <summary>Whether <em>Check Xero now</em> is offered (review-board fix M3).</summary>
+    bool CanCheckNow => false;
+
+    /// <summary>
+    /// <em>Check Xero now</em>: sends what is queued and reads statuses back from
+    /// Xero now, rather than on the 15-minute timer, so a change made in Xero
+    /// shows on demand (review-board fix M3).
+    /// </summary>
+    /// <param name="document">The record whose badge was used.</param>
+    /// <param name="cancellationToken">Cancels the check.</param>
+    Task<XeroBadgeActionResult> CheckNowAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new XeroBadgeActionResult(false, "Checking Xero now is not offered here."));
+
+    /// <summary>Whether <em>Unlink from Xero</em> is offered for <paramref name="document"/>: linked, and its Xero copy last read as deleted or voided (review-board fix M5). Local state only.</summary>
+    /// <param name="document">The record.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    Task<bool> CanUnlinkAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+    /// <summary><em>Unlink from Xero</em> (<see cref="XeroDocumentLinkActions.UnlinkAsync"/>): audited; nothing is sent.</summary>
+    /// <param name="document">The record.</param>
+    /// <param name="cancellationToken">Cancels the action.</param>
+    Task<XeroBadgeActionResult> UnlinkAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new XeroBadgeActionResult(false, "Unlinking is not offered here."));
+
+    /// <summary>Whether a <em>Can't tell</em> purchase order or bill can be looked up and linked by its Xero number (review-board fix m15).</summary>
+    bool CanLinkByNumber => false;
+
+    /// <summary>Looks <paramref name="number"/> up in Xero for <paramref name="document"/> — read only (<see cref="XeroDocumentLinkActions.FindByNumberAsync"/>).</summary>
+    /// <param name="document">The purchase order or bill.</param>
+    /// <param name="number">The number the person found it under in Xero.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    Task<XeroNumberLookup> FindByNumberAsync(XeroDocumentRef document, string number, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new XeroNumberLookup(null, "Linking by Xero number is not offered here."));
+
+    /// <summary>Links the record the person confirmed (<see cref="XeroDocumentLinkActions.LinkByNumberAsync"/>), audited.</summary>
+    /// <param name="match">What the lookup found, as confirmed.</param>
+    /// <param name="cancellationToken">Cancels the action.</param>
+    Task<XeroBadgeActionResult> LinkByNumberAsync(XeroNumberMatch match, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new XeroBadgeActionResult(false, "Linking by Xero number is not offered here."));
 }
+
+/// <summary>
+/// How Xero's deliberate actions ask the person (`v0.24.0` review-board fixes
+/// M5, m14, m15): a yes/no confirmation and a one-line text answer. The shell
+/// supplies its own dialogs; tests supply fakes.
+/// </summary>
+/// <param name="Confirm">Asks a yes/no question: title, message and the confirm button's words; <see langword="true"/> to go ahead.</param>
+/// <param name="Ask">Asks for one line of text: title and label; <see langword="null"/> when the person cancelled.</param>
+public sealed record XeroBadgePrompts(Func<string, string, string, Task<bool>> Confirm, Func<string, string, Task<string?>> Ask);
 
 /// <summary>
 /// The <see cref="IXeroBadgeSource"/> over X6's <see cref="XeroSyncService"/>
@@ -94,6 +152,7 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
     private readonly XeroExpenseBillPlanner? _expenses;
     private readonly IXeroQuoteSource? _quoteSource;
     private readonly IXeroPurchaseOrderSource? _orderSource;
+    private readonly XeroDocumentLinkActions? _links;
 
     /// <summary>Initialises a new instance of the <see cref="XeroSyncServiceBadgeSource"/> class.</summary>
     /// <param name="engine">X6's engine: badges, Retry and Send again.</param>
@@ -102,9 +161,10 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
     /// <param name="expenses">X5's expense-bill planner, for <em>Send to Xero</em>; <see langword="null"/> offers none.</param>
     /// <param name="quoteSource">X3's quotation reader, so <see cref="NeedsSendToXeroAsync"/> asks the planner whether a quotation is synced automatically (<see cref="XeroQuotePlanner.IsAutomaticAsync"/>); <see langword="null"/> falls back to whether the planner would plan anything.</param>
     /// <param name="orderSource">X5's purchase-order reader, so a cancelled order is never offered <em>Send to Xero</em>; <see langword="null"/> relies on the planner alone.</param>
+    /// <param name="links">The person's link actions (Unlink from Xero, Send again after an unlink, link by Xero number); <see langword="null"/> offers none of them.</param>
     public XeroSyncServiceBadgeSource(
         XeroSyncService engine, XeroQuotePlanner? quotes = null, XeroPurchaseOrderPlanner? orders = null, XeroExpenseBillPlanner? expenses = null,
-        IXeroQuoteSource? quoteSource = null, IXeroPurchaseOrderSource? orderSource = null)
+        IXeroQuoteSource? quoteSource = null, IXeroPurchaseOrderSource? orderSource = null, XeroDocumentLinkActions? links = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
 
@@ -114,11 +174,21 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
         _expenses = expenses;
         _quoteSource = quoteSource;
         _orderSource = orderSource;
+        _links = links;
         _engine.CycleCompleted += _ => Changed?.Invoke();
     }
 
     /// <inheritdoc />
     public event Action? Changed;
+
+    /// <summary>How deliberate actions ask the person; set by the shell (its confirmation and input dialogs). <see langword="null"/> offers none of them.</summary>
+    public XeroBadgePrompts? Prompts { get; set; }
+
+    /// <inheritdoc />
+    public bool CanCheckNow => true;
+
+    /// <inheritdoc />
+    public bool CanLinkByNumber => _links is { CanLookUpInXero: true };
 
     /// <summary>
     /// The source over the Xero services the host registered, or
@@ -133,12 +203,85 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
 
         return new XeroSyncServiceBadgeSource(
             engine, TryResolve<XeroQuotePlanner>(services), TryResolve<XeroPurchaseOrderPlanner>(services), TryResolve<XeroExpenseBillPlanner>(services),
-            TryResolve<IXeroQuoteSource>(services), TryResolve<IXeroPurchaseOrderSource>(services));
+            TryResolve<IXeroQuoteSource>(services), TryResolve<IXeroPurchaseOrderSource>(services), TryResolve<XeroDocumentLinkActions>(services));
     }
 
     /// <inheritdoc />
-    public Task<XeroDocumentSyncStatus> GetStatusAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
-        _engine.GetDocumentStatusAsync(document, cancellationToken);
+    /// <remarks>
+    /// A record the person unlinked from Xero (its copy was deleted there)
+    /// offers <em>Send again</em> — except an invoice, which is billed again
+    /// by raising a new request.
+    /// </remarks>
+    public async Task<XeroDocumentSyncStatus> GetStatusAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        var status = await _engine.GetDocumentStatusAsync(document, cancellationToken).ConfigureAwait(false);
+        if (_links is null || status.Status.Badge != XeroSyncBadge.NotSent || !await _links.WasUnlinkedAsync(document, cancellationToken).ConfigureAwait(false))
+            return status;
+
+        return document.Kind == XeroDocumentKind.Invoice
+            ? status with { Status = status.Status with { Reason = UnlinkedInvoiceNote } }
+            : status with { Status = status.Status with { Reason = UnlinkedNote }, CanSendAgain = true };
+    }
+
+    /// <summary>The note on a record unlinked from Xero by the person.</summary>
+    public const string UnlinkedNote = "Unlinked from Xero (its Xero copy was deleted there). Choose Send again to send it to Xero as a new draft.";
+
+    /// <summary>The note on an invoice unlinked from Xero by the person.</summary>
+    public const string UnlinkedInvoiceNote = "Unlinked from Xero (its Xero copy was deleted there). Raise a new invoice request to bill this work again.";
+
+    /// <inheritdoc />
+    public async Task<XeroBadgeActionResult> CheckNowAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        var drain = await _engine.DrainAsync(cancellationToken).ConfigureAwait(false);
+        var readBack = await _engine.ReadBackNowAsync(cancellationToken).ConfigureAwait(false);
+        Changed?.Invoke();
+
+        if (readBack is null)
+        {
+            return new XeroBadgeActionResult(
+                false,
+                drain.PausedForAuthorisation
+                    ? "Xero could not be checked: it needs re-authorising (Settings → Xero → Re-authorise)."
+                    : "Xero could not be checked now: no organisation is connected, or Xero is waiting for authorisation or asked TempestOS to slow down. Try again shortly.");
+        }
+
+        return new XeroBadgeActionResult(
+            true,
+            string.Create(System.Globalization.CultureInfo.InvariantCulture, $"Checked Xero: {readBack.Read} record(s) read back, {readBack.Changed.Count} changed")
+            + (drain.Attempted > 0 ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"; {drain.Succeeded} of {drain.Attempted} queued write(s) sent.") : "."));
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> CanUnlinkAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        _links is not null && await _links.CanUnlinkAsync(document, cancellationToken).ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<XeroBadgeActionResult> UnlinkAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
+    {
+        if (_links is null)
+            return new XeroBadgeActionResult(false, "Unlinking is not offered here.");
+
+        var result = await _links.UnlinkAsync(document, cancellationToken).ConfigureAwait(false);
+        Changed?.Invoke();
+        return new XeroBadgeActionResult(result.Done, result.Message);
+    }
+
+    /// <inheritdoc />
+    public Task<XeroNumberLookup> FindByNumberAsync(XeroDocumentRef document, string number, CancellationToken cancellationToken = default) =>
+        _links is null
+            ? Task.FromResult(new XeroNumberLookup(null, "Linking by Xero number is not offered here."))
+            : _links.FindByNumberAsync(document, number, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<XeroBadgeActionResult> LinkByNumberAsync(XeroNumberMatch match, CancellationToken cancellationToken = default)
+    {
+        if (_links is null)
+            return new XeroBadgeActionResult(false, "Linking by Xero number is not offered here.");
+
+        var result = await _links.LinkByNumberAsync(match, cancellationToken).ConfigureAwait(false);
+        Changed?.Invoke();
+        return new XeroBadgeActionResult(result.Done, result.Message);
+    }
 
     /// <inheritdoc />
     public async Task<XeroBadgeActionResult> RetryAsync(Guid entryId, CancellationToken cancellationToken = default)
@@ -153,6 +296,15 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
     /// <inheritdoc />
     public async Task<XeroBadgeActionResult> SendAgainAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
     {
+        // A record the person unlinked is sent again through the link actions
+        // (a new draft, a new key); anything else is X5's own Send again.
+        if (_links is not null && await _links.WasUnlinkedAsync(document, cancellationToken).ConfigureAwait(false))
+        {
+            var again = await _links.SendAgainAsync(document, cancellationToken).ConfigureAwait(false);
+            Changed?.Invoke();
+            return new XeroBadgeActionResult(again.Done, again.Message);
+        }
+
         var result = await _engine.SendAgainAsync(document, cancellationToken).ConfigureAwait(false);
         Changed?.Invoke();
         return result.Queued
@@ -340,6 +492,28 @@ public static class XeroBadgeText
     /// <summary>Xero needs (re-)authorising before anything more is sent.</summary>
     public const string WaitingForAuthorisation = "Waiting for authorisation";
 
+    /// <summary>A write waiting on something missing in TempestOS (review-board fix n5) — sent by itself once it is put right.</summary>
+    public const string Waiting = "Waiting";
+
+    /// <summary>The start of the words for a write waiting for its customer or supplier to be linked to a Xero contact (review-board fix n5): <c>"Waiting: link Acme Ltd"</c>.</summary>
+    public const string WaitingForContactPrefix = "Waiting: link ";
+
+    /// <summary>
+    /// The customer or supplier a Blocked write waits for, as the X2 linker
+    /// names it (<c>'{reference}' is not linked to a Xero contact yet</c>);
+    /// <see langword="null"/> when the reason is something else.
+    /// </summary>
+    /// <param name="reason">The Blocked write's reason.</param>
+    public static string? ContactAwaitingLink(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            return null;
+
+        var match = System.Text.RegularExpressions.Regex.Match(
+            reason, "'(?<name>[^']+)' is not linked to a Xero contact", System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        return match.Success ? match.Groups["name"].Value.Trim() : null;
+    }
+
     /// <summary>The badge's words for <paramref name="status"/> on a record of <paramref name="kind"/>.</summary>
     /// <param name="kind">The kind of record.</param>
     /// <param name="status">X6's badge for it.</param>
@@ -398,6 +572,16 @@ public static class XeroBadgeText
             case XeroSyncBadge.Failed:
                 if (status.CannotTell)
                     return Make(CannotTell, XeroBadgeTone.Attention);
+                if (status.Blocked)
+                {
+                    // n5: waiting on something in TempestOS (most often a
+                    // contact link), sent by itself once it is put right — not
+                    // a red failure.
+                    return ContactAwaitingLink(reason) is { } contact
+                        ? Make(WaitingForContactPrefix + contact, XeroBadgeTone.Pending)
+                        : Make(Waiting, XeroBadgeTone.Pending);
+                }
+
                 if (deletedInXero)
                     return Make(Deleted, XeroBadgeTone.Attention);
                 return Make(Failed, XeroBadgeTone.Attention);
@@ -420,7 +604,11 @@ public static class XeroBadgeText
 /// (<see cref="XeroBadgeText"/>), its reason or note, and the actions it
 /// offers — <b>Retry</b> on a failed write, <b>Send again</b> on a purchase
 /// order or bill deleted in Xero (X5), and <b>Send to Xero</b> on a record
-/// raised before Xero sync began (Q8). Reads local state only, asynchronously
+/// raised before Xero sync began (Q8); and (`v0.24.0` review-board fixes)
+/// <b>Check Xero now</b> (M3), <b>Unlink from Xero</b> on a record whose Xero
+/// copy was deleted there (M5), and, on a <em>Can't tell</em> purchase order or
+/// bill, the bookkeeper guidance and <b>I found it in Xero — link by Xero
+/// number</b> instead of Retry (m15) — each deliberate action confirmed first. Reads local state only, asynchronously
 /// (<see cref="LoadAsync"/>), and reloads itself whenever its source says
 /// something changed while it is on screen.
 /// </summary>
@@ -432,6 +620,11 @@ public sealed class XeroSyncBadgeControl : Border
     private readonly Button _retry = new() { Content = "Retry", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _sendAgain = new() { Content = "Send again", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _sendToXero = new() { Content = "Send to Xero", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _checkNow = new() { Content = CheckNowText, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _unlink = new() { Content = XeroDocumentLinkActions.UnlinkActionName, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _linkByNumber = new() { Content = XeroDocumentLinkActions.LinkByNumberActionName, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _guidance = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.85, TextWrapping = Avalonia.Media.TextWrapping.Wrap, IsVisible = false };
+    private readonly TextBlock _checkedAt = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.7, IsVisible = false };
     private readonly Border _badgeBorder;
     private readonly bool _offerSendToXero;
     private int _loadVersion;
@@ -460,18 +653,33 @@ public sealed class XeroSyncBadgeControl : Border
         AutomationProperties.SetName(_retry, $"Retry Xero for {reference}");
         AutomationProperties.SetName(_sendAgain, $"Send {reference} to Xero again");
         AutomationProperties.SetName(_sendToXero, $"Send {reference} to Xero");
+        AutomationProperties.SetName(_checkNow, $"Check Xero now for {reference}");
+        AutomationProperties.SetName(_unlink, $"Unlink {reference} from Xero");
+        AutomationProperties.SetName(_linkByNumber, $"Link {reference} by Xero number");
+        AutomationProperties.SetName(_guidance, $"Xero guidance for {reference}");
+        AutomationProperties.SetName(_checkedAt, $"Xero checked at for {reference}");
+        ToolTip.SetTip(_checkNow, "Send what is queued and read statuses back from Xero now, not on the 15-minute timer");
+        ToolTip.SetTip(_unlink, "Its Xero copy was deleted there: forget that copy (audited). Nothing is sent; Send again afterwards sends it as a new draft");
+        ToolTip.SetTip(_linkByNumber, "You found it in Xero: enter its Xero number, check what TempestOS found, and link it (audited)");
         ToolTip.SetTip(_retry, "Queue the failed write for Xero again");
         ToolTip.SetTip(_sendAgain, "Send it to Xero again as a new draft (the deleted one stays deleted)");
         ToolTip.SetTip(_sendToXero, "Raised before Xero sync began: send it to Xero now");
         _retry.Classes.Add(ChromeStyles.Flat);
         _sendAgain.Classes.Add(ChromeStyles.Flat);
         _sendToXero.Classes.Add(ChromeStyles.Flat);
+        _checkNow.Classes.Add(ChromeStyles.Flat);
+        _unlink.Classes.Add(ChromeStyles.Flat);
+        _linkByNumber.Classes.Add(ChromeStyles.Flat);
+        _guidance.Text = XeroDocumentLinkActions.BookkeeperGuidance;
 
         _retry.Click += async (_, _) => await RunAsync(ct => Status?.Status.RetryableEntryId is { } id
             ? _source.RetryAsync(id, ct)
             : Task.FromResult(new XeroBadgeActionResult(false, "Nothing to retry."))).ConfigureAwait(true);
         _sendAgain.Click += async (_, _) => await RunAsync(ct => _source.SendAgainAsync(Document, ct)).ConfigureAwait(true);
         _sendToXero.Click += async (_, _) => await RunAsync(ct => _source.SendToXeroAsync(Document, ct)).ConfigureAwait(true);
+        _checkNow.Click += async (_, _) => await RunAsync(ct => _source.CheckNowAsync(Document, ct)).ConfigureAwait(true);
+        _unlink.Click += async (_, _) => await RunAsync(UnlinkAsync).ConfigureAwait(true);
+        _linkByNumber.Click += async (_, _) => await RunAsync(LinkByNumberAsync).ConfigureAwait(true);
 
         _badgeBorder = new Border
         {
@@ -488,15 +696,26 @@ public sealed class XeroSyncBadgeControl : Border
         row.Children.Add(_retry);
         row.Children.Add(_sendAgain);
         row.Children.Add(_sendToXero);
+        row.Children.Add(_linkByNumber);
+        row.Children.Add(_unlink);
+        row.Children.Add(_checkNow);
 
         var body = new StackPanel { Spacing = DesignTokens.SpaceXs };
         body.Children.Add(row);
         body.Children.Add(_detail);
+        body.Children.Add(_guidance);
+        body.Children.Add(_checkedAt);
         Child = body;
 
         AttachedToVisualTree += (_, _) => _source.Changed += OnSourceChanged;
         DetachedFromVisualTree += (_, _) => _source.Changed -= OnSourceChanged;
     }
+
+    /// <summary>The words on the <em>Check Xero now</em> button (review-board fix M3).</summary>
+    public const string CheckNowText = "Check Xero now";
+
+    /// <summary>The time zone "checked with Xero at" is shown in (review-board fix n6); the machine's own unless a test pins one.</summary>
+    public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Local;
 
     /// <summary>Raised after an action completes, with what to show — forwarded by each view to its own <c>ActionCompleted</c>.</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -525,6 +744,21 @@ public sealed class XeroSyncBadgeControl : Border
     /// <summary>Whether <em>Send to Xero</em> is offered.</summary>
     public bool OffersSendToXero => _sendToXero.IsVisible;
 
+    /// <summary>Whether <em>Check Xero now</em> is offered.</summary>
+    public bool OffersCheckNow => _checkNow.IsVisible;
+
+    /// <summary>Whether <em>Unlink from Xero</em> is offered.</summary>
+    public bool OffersUnlink => _unlink.IsVisible;
+
+    /// <summary>Whether <em>I found it in Xero — link by Xero number</em> is offered.</summary>
+    public bool OffersLinkByNumber => _linkByNumber.IsVisible;
+
+    /// <summary>The bookkeeper guidance shown on a <em>Can't tell</em> badge; <see langword="null"/> when none is shown.</summary>
+    public string? Guidance => _guidance.IsVisible ? _guidance.Text : null;
+
+    /// <summary>When the badge's facts were last confirmed with Xero, in local time (<c>"Checked with Xero 02 Oct 2026 10:00"</c>); <see langword="null"/> when never.</summary>
+    public string? CheckedAtText => _checkedAt.IsVisible ? _checkedAt.Text : null;
+
     /// <summary>Reads the badge (local state only) and shows it. Never throws for a failed read: the badge says it could not be read.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
@@ -532,9 +766,15 @@ public sealed class XeroSyncBadgeControl : Border
         var version = Interlocked.Increment(ref _loadVersion);
         XeroDocumentSyncStatus status;
         var offerSendToXero = false;
+        var offerUnlink = false;
         try
         {
             status = await _source.GetStatusAsync(Document, cancellationToken).ConfigureAwait(true);
+
+            // M5: Unlink from Xero only for a record whose Xero copy was last
+            // read as deleted or voided — and only where the person can be asked.
+            if (_source.Prompts is not null)
+                offerUnlink = await _source.CanUnlinkAsync(Document, cancellationToken).ConfigureAwait(true);
 
             // Send to Xero (Q8) only where the record's planner says it needs
             // the person's opt-in — never for one that will sync on its own,
@@ -559,7 +799,7 @@ public sealed class XeroSyncBadgeControl : Border
         if (version != Volatile.Read(ref _loadVersion))
             return;
 
-        Show(status, XeroBadgeText.Describe(Document.Kind, status), offerSendToXero);
+        Show(status, XeroBadgeText.Describe(Document.Kind, status), offerSendToXero, offerUnlink);
     }
 
     private async Task<bool> NeedsSendToXeroAsync(CancellationToken cancellationToken)
@@ -580,7 +820,7 @@ public sealed class XeroSyncBadgeControl : Border
         }
     }
 
-    private void Show(XeroDocumentSyncStatus? status, XeroBadgePresentation presentation, bool offerSendToXero = false)
+    private void Show(XeroDocumentSyncStatus? status, XeroBadgePresentation presentation, bool offerSendToXero = false, bool offerUnlink = false)
     {
         Status = status;
         Presentation = presentation;
@@ -592,10 +832,67 @@ public sealed class XeroSyncBadgeControl : Border
         _detail.IsVisible = presentation.Detail is not null;
         ApplyTone(presentation.Tone);
 
-        _retry.IsVisible = status?.CanRetry == true;
+        // m15: a Can't tell write is never retried (Retry would do nothing);
+        // the person checks Xero instead, and links what they find.
+        var cannotTell = status?.CannotTell == true;
+        _retry.IsVisible = status?.CanRetry == true && !cannotTell;
         _sendAgain.IsVisible = status?.CanSendAgain == true;
         _sendToXero.IsVisible = offerSendToXero && status is { Status.Badge: XeroSyncBadge.NotSent, CanSendAgain: false };
+        _linkByNumber.IsVisible = cannotTell && _source.CanLinkByNumber && _source.Prompts is not null;
+        _guidance.IsVisible = cannotTell;
+        _unlink.IsVisible = offerUnlink;
+        _checkNow.IsVisible = _source.CanCheckNow && status is not null && status.Status.Badge != XeroSyncBadge.NotSent;
+
+        // n6: when Xero last confirmed the facts, in local time.
+        if (status?.Status.AsOfUtc is { } asOf)
+        {
+            _checkedAt.Text = $"Checked with Xero {TimeZoneInfo.ConvertTime(asOf, TimeZone).ToString("dd MMM yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)}";
+            _checkedAt.IsVisible = true;
+        }
+        else
+        {
+            _checkedAt.IsVisible = false;
+        }
+
         SetButtonsEnabled(!_busy);
+    }
+
+    private async Task<XeroBadgeActionResult> UnlinkAsync(CancellationToken cancellationToken)
+    {
+        if (_source.Prompts is not { } prompts)
+            return new XeroBadgeActionResult(false, "Nothing can ask you to confirm the unlink here.");
+
+        var confirmed = await prompts.Confirm(
+            "Unlink from Xero?",
+            $"Xero shows that its copy of {Reference} was deleted (or voided) there. Unlinking makes TempestOS forget that copy; "
+            + "it sends nothing now. Choose Send again afterwards to send it to Xero as a new draft. This is recorded in the audit log.",
+            "Unlink").ConfigureAwait(true);
+        return confirmed
+            ? await _source.UnlinkAsync(Document, cancellationToken).ConfigureAwait(true)
+            : new XeroBadgeActionResult(false, "Nothing was unlinked.");
+    }
+
+    private async Task<XeroBadgeActionResult> LinkByNumberAsync(CancellationToken cancellationToken)
+    {
+        if (_source.Prompts is not { } prompts)
+            return new XeroBadgeActionResult(false, "Nothing can ask you for the Xero number here.");
+
+        var number = await prompts.Ask("Link by Xero number", $"The number Xero shows for {Reference}").ConfigureAwait(true);
+        if (string.IsNullOrWhiteSpace(number))
+            return new XeroBadgeActionResult(false, "Nothing was linked.");
+
+        var lookup = await _source.FindByNumberAsync(Document, number.Trim(), cancellationToken).ConfigureAwait(true);
+        if (lookup.Match is not { } match)
+            return new XeroBadgeActionResult(false, lookup.Reason ?? "Nothing was found in Xero; nothing was linked.");
+
+        var confirmed = await prompts.Confirm(
+            "Link to this Xero record?",
+            $"Xero holds {match.Describe()}. Link {Reference} to it? TempestOS then treats it as this record's copy in Xero and never creates another. "
+            + "This is recorded in the audit log.",
+            "Link").ConfigureAwait(true);
+        return confirmed
+            ? await _source.LinkByNumberAsync(match, cancellationToken).ConfigureAwait(true)
+            : new XeroBadgeActionResult(false, "Nothing was linked.");
     }
 
     private void ApplyTone(XeroBadgeTone tone)
@@ -643,6 +940,9 @@ public sealed class XeroSyncBadgeControl : Border
         _retry.IsEnabled = enabled;
         _sendAgain.IsEnabled = enabled;
         _sendToXero.IsEnabled = enabled;
+        _checkNow.IsEnabled = enabled;
+        _unlink.IsEnabled = enabled;
+        _linkByNumber.IsEnabled = enabled;
     }
 
     private void OnSourceChanged() => Dispatcher.UIThread.Post(async () => await LoadAsync().ConfigureAwait(true));

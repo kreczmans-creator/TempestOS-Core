@@ -659,7 +659,7 @@ public static class XeroQuoteMapper
     public static string RevisionNotSentNote(string number, string xeroStatus, string? revisionLabel) =>
         $"Xero holds quote {number} as {xeroStatus}, and Xero changes a quote's content only while it is DRAFT, "
         + $"so revision {revisionLabel ?? "(unnumbered)"} was not sent (Q1: the Xero copy follows a new revision only until the quote is sent). "
-        + "Change it in Xero by hand, or unlink it and issue a new quotation.";
+        + "Change it in Xero by hand, or issue a new quotation.";
 
     private static string? Truncate(string? value, int max) =>
         value is null ? null : value.Length <= max ? value : value[..max];
