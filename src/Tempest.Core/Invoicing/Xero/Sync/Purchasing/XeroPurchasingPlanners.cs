@@ -105,6 +105,11 @@ public sealed class XeroPurchaseOrderPlanner : IXeroSyncPlanner
 
         if (link is null)
         {
+            // Unlinked by the person (its Xero copy was deleted there): nothing
+            // goes again until they choose Send again, which clears the mark.
+            if (await _state.IsUnlinkedByPersonAsync(document, cancellationToken).ConfigureAwait(false))
+                return [];
+
             // Day granularity, inclusive — deliberately unlike an expense's
             // instant comparison: a TempestOS order carries only the date it
             // was issued (no time), so an order issued on the day automatic
@@ -271,6 +276,11 @@ public sealed class XeroExpenseBillPlanner : IXeroSyncPlanner
 
         if (link is null)
         {
+            // Unlinked by the person (its Xero copy was deleted there): nothing
+            // goes again until they choose Send again, which clears the mark.
+            if (await _state.IsUnlinkedByPersonAsync(document, cancellationToken).ConfigureAwait(false))
+                return [];
+
             var automatic = expense.RecordedAtUtc is { } recorded
                             && recorded >= await _state.AutomaticFromAsync(cancellationToken).ConfigureAwait(false);
             if (!automatic && !await _state.IsOptedInAsync(document, cancellationToken).ConfigureAwait(false))

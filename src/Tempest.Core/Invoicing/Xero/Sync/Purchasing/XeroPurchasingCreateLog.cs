@@ -219,6 +219,17 @@ public sealed class XeroPurchasingCreateLog
     }
 
     /// <summary>
+    /// Whether the person unlinked <paramref name="document"/> from Xero
+    /// (<see cref="XeroDocumentLinkActions.Collection"/>) and has not chosen
+    /// Send again: no create goes for it until they do (design §6.7).
+    /// </summary>
+    /// <param name="tenantId">The Xero tenant.</param>
+    /// <param name="document">The TempestOS document.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<bool> IsUnlinkedByPersonAsync(string tenantId, XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        await _store.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false) is not null;
+
+    /// <summary>
     /// Every create for <paramref name="document"/> that may have reached Xero,
     /// in the order sent: the numbers and contacts to look Xero up by when the
     /// document's own number or contact has changed since (a bill found under

@@ -50,8 +50,33 @@ public sealed class XeroSettingsSectionServices
     /// <summary>The X6 engine: its <see cref="XeroSyncService.RetryAsync"/> (audited, wakes the engine), <see cref="XeroSyncService.NotifyAuthorisedAsync"/> after a re-authorisation, and its <see cref="XeroSyncService.CycleCompleted"/> (a daily settings refresh reaches documents). Optional.</summary>
     public XeroSyncService? SyncService { get; init; }
 
-    /// <summary>The Product Owner's <em>Retry</em> on one Failed entry. <see langword="null"/> uses <see cref="SyncService"/>, else <see cref="Outbox"/>.</summary>
+    /// <summary>
+    /// The Product Owner's <em>Retry</em> on one Failed entry. <see langword="null"/>
+    /// uses <see cref="SyncService"/>'s <see cref="XeroSyncService.RetryAsync"/>
+    /// (which refuses a record the person unlinked); with neither, no
+    /// <em>Retry all</em> is offered — the outbox's own retry is never used
+    /// directly, as it would skip that guard.
+    /// </summary>
     public Func<Guid, CancellationToken, Task<bool>>? Retry { get; init; }
+
+    /// <summary>
+    /// Whether the person unlinked a record from Xero and has not chosen
+    /// <em>Send again</em> (<see cref="XeroDocumentLinkActions.WasUnlinkedAsync"/>):
+    /// its Failed writes are not counted as failed nor retried by <em>Retry all</em>,
+    /// but shown as waiting for Send again. <see langword="null"/> treats every
+    /// record as linked.
+    /// </summary>
+    public Func<XeroDocumentRef, CancellationToken, Task<bool>>? IsUnlinked { get; init; }
+
+    /// <summary>
+    /// <em>Sync now</em> (`v0.24.0` review-board fix M3): the engine's own
+    /// Refresh — every record planned, the queue drained and every status read
+    /// back from Xero now, not on the 15-minute timer. <see langword="null"/>
+    /// uses <see cref="SyncService"/>'s <see cref="XeroSyncService.RefreshAsync"/>
+    /// when there is one; with neither, <em>Refresh from Xero</em> reads the
+    /// organisation settings alone and no <em>Sync now</em> is offered.
+    /// </summary>
+    public Func<CancellationToken, Task<XeroSyncCycleReport>>? SyncNow { get; init; }
 
     /// <summary>Run after a successful re-authorisation (the engine resumes). <see langword="null"/> uses <see cref="SyncService"/> when there is one.</summary>
     public Func<CancellationToken, Task>? AfterAuthorised { get; init; }
@@ -93,6 +118,7 @@ public sealed class XeroSettingsSectionServices
             SecretStore = TryResolve<ISecretStore>(services),
             Outbox = TryResolve<IXeroOutbox>(services),
             SyncService = TryResolve<XeroSyncService>(services),
+            IsUnlinked = TryResolve<XeroDocumentLinkActions>(services) is { } links ? links.WasUnlinkedAsync : null,
             Organisations = TryResolve<IOrganisationCatalog>(services),
             Audit = TryResolve<IAuditRecorder>(services),
             Identity = identity,
@@ -141,8 +167,14 @@ public sealed class XeroSettingsSectionServices
 /// </remarks>
 public sealed class XeroSettingsSection : UserControl
 {
-    /// <summary>The audit action recorded when <em>Allow live organisation</em> changes (D7), with <c>Subject</c>, <c>OldValue</c> and <c>NewValue</c> ("On"/"Off").</summary>
-    public const string AllowLiveOrganisationChangedAction = "xero.settings.allow-live-organisation.changed";
+    /// <summary>
+    /// The audit action recorded when <em>Allow live organisation</em> changes
+    /// (D7), with <c>Subject</c>, <c>OldValue</c> and <c>NewValue</c>
+    /// ("On"/"Off") — the one name the design (§6.7), the runbook (XG7) and the
+    /// setup guide use (`v0.24.0` review-board fix m2). Turning the switch off
+    /// writes the same action with <c>NewValue</c> "Off".
+    /// </summary>
+    public const string AllowLiveOrganisationChangedAction = "xero.live-organisation.allowed";
 
     /// <summary>The status after <em>Re-authorise</em> signed in to another organisation: its pickers were reloaded, so choices not yet saved were reset.</summary>
     public const string ReauthorisedIntoAnotherOrganisationStatus =
@@ -167,6 +199,9 @@ public sealed class XeroSettingsSection : UserControl
     /// <summary>The automation name of the <em>Refresh from Xero</em> button.</summary>
     public const string RefreshName = "Refresh from Xero";
 
+    /// <summary>The automation name of the <em>Sync now</em> button (review-board fix M3).</summary>
+    public const string SyncNowName = "Sync now with Xero";
+
     /// <summary>The automation name of the <em>Re-authorise</em> button.</summary>
     public const string ReauthoriseName = "Re-authorise Xero";
 
@@ -189,6 +224,7 @@ public sealed class XeroSettingsSection : UserControl
     private readonly XeroSettingsSectionServices _services;
     private readonly Func<Guid, CancellationToken, Task<bool>>? _retry;
     private readonly Func<CancellationToken, Task>? _afterAuthorised;
+    private readonly Func<CancellationToken, Task<XeroSyncCycleReport>>? _syncNow;
 
     private readonly TextBlock _connectionStatus = Body();
     private readonly TextBlock _scopesStatus = Caption();
@@ -209,6 +245,7 @@ public sealed class XeroSettingsSection : UserControl
     private readonly CheckBox _includeOnline = new() { Content = "Show attached invoice PDFs to the client on Xero's online invoice (off: kept internal)" };
     private readonly TextBlock _syncSummary = Body();
     private readonly Button _retryAllButton = new() { Content = "Retry all", MinHeight = DesignTokens.ControlSizeMedium };
+    private readonly Button _syncNowButton = new() { Content = "Sync now", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _status = Caption();
 
     private XeroSettingsReading? _reading;
@@ -219,6 +256,7 @@ public sealed class XeroSettingsSection : UserControl
     private bool _loaded;
     private bool _definitionsEnsured;
     private int _failedCount;
+    private int _unlinkedCount;
 
     /// <summary>Raised after <em>Refresh from Xero</em>, <em>Re-authorise</em> or <em>Retry all</em> completes — the Desktop's own <c>ActionCompleted</c> convention.</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -236,12 +274,12 @@ public sealed class XeroSettingsSection : UserControl
 
         _settings = settings;
         _services = services;
-        _retry = services.Retry
-            ?? (services.SyncService is { } sync ? sync.RetryAsync
-                : services.Outbox is { } outbox ? outbox.RetryAsync
-                : null);
+        // Never the outbox's own retry: only the engine's refuses a record the
+        // person unlinked (verifier F3 round 3, defect 3).
+        _retry = services.Retry ?? (services.SyncService is { } sync ? sync.RetryAsync : null);
         _afterAuthorised = services.AfterAuthorised
             ?? (services.SyncService is { } engine ? async ct => await engine.NotifyAuthorisedAsync(ct).ConfigureAwait(false) : null);
+        _syncNow = services.SyncNow ?? (services.SyncService is { } sync2 ? sync2.RefreshAsync : null);
 
         AutomationProperties.SetName(_connectionStatus, "Xero connection");
         AutomationProperties.SetName(_scopesStatus, "Xero scopes");
@@ -260,6 +298,9 @@ public sealed class XeroSettingsSection : UserControl
         AutomationProperties.SetName(_includeOnline, IncludeOnlineName);
         AutomationProperties.SetName(_syncSummary, "Xero sync summary");
         AutomationProperties.SetName(_retryAllButton, RetryAllName);
+        AutomationProperties.SetName(_syncNowButton, SyncNowName);
+        ToolTip.SetTip(_syncNowButton, "Send what is queued and read every status back from Xero now, rather than on the 15-minute timer.");
+        ToolTip.SetTip(_refreshButton, "Read the organisation, tax rates and accounts from Xero — and sync now: send what is queued and read every status back.");
         AutomationProperties.SetName(_status, "Xero status");
         ToolTip.SetTip(_allowLiveOrganisation, "Off (the default): TempestOS writes only to Xero's Demo Company. On: also to the organisation it is connected to. Audited.");
         ToolTip.SetTip(_includeOnline, "Q5: off by default — a PDF attached to a Xero invoice is kept internal to Xero.");
@@ -283,6 +324,8 @@ public sealed class XeroSettingsSection : UserControl
 
         _reauthoriseButton.Classes.Add(ChromeStyles.Subtle);
         _retryAllButton.Classes.Add(ChromeStyles.Subtle);
+        _syncNowButton.Classes.Add(ChromeStyles.Subtle);
+        _syncNowButton.Click += async (_, _) => await SyncNowAsync().ConfigureAwait(true);
         _reauthoriseButton.Click += async (_, _) => await ReauthoriseAsync().ConfigureAwait(true);
         _refreshButton.Click += async (_, _) => await RefreshFromXeroAsync().ConfigureAwait(true);
         _retryAllButton.Click += async (_, _) => await RetryAllAsync().ConfigureAwait(true);
@@ -332,7 +375,11 @@ public sealed class XeroSettingsSection : UserControl
     /// <em>Refresh from Xero</em>: reads the organisation, tax rates and
     /// accounts (three calls, X1), caches them, and shows them; documents use
     /// the new company details from now on. When Xero cannot be read the last
-    /// reading stays, and the status says why.
+    /// reading stays, and the status says why. With the sync engine present it
+    /// is also <em>Sync now</em> (review-board fix M3): the engine's Refresh
+    /// runs first — the queue drained and every status read back from Xero, so
+    /// a change made in Xero shows now — and its own settings read is the one
+    /// shown (the three calls are not made twice).
     /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task RefreshFromXeroAsync(CancellationToken cancellationToken = default)
@@ -345,12 +392,16 @@ public sealed class XeroSettingsSection : UserControl
         _status.Text = "Reading Xero…";
         try
         {
-            var result = await reader.RefreshAsync(cancellationToken).ConfigureAwait(true);
+            var (synced, syncProblem) = await RunSyncAsync(cancellationToken).ConfigureAwait(true);
+            var result = synced is { SettingsRefreshed: true } && await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true) is { } cached
+                ? ConnectorResult<XeroSettingsReading>.Ok(cached)
+                : await reader.RefreshAsync(cancellationToken).ConfigureAwait(true);
+            var syncNote = SyncNote(synced, syncProblem);
             if (result.Outcome == ConnectorOutcome.Ok && result.Value is { } fresh)
             {
                 await ShowReadingAsync(fresh, cancellationToken).ConfigureAwait(true);
                 DescribeLiveOrganisation();
-                _status.Text = $"Read {fresh.Organisation.Name} from Xero.";
+                _status.Text = $"Read {fresh.Organisation.Name} from Xero.{syncNote}";
                 ActionCompleted?.Invoke(_status.Text, ActionOutcome.Changed);
             }
             else
@@ -358,16 +409,95 @@ public sealed class XeroSettingsSection : UserControl
                 var last = _reading is { } held
                     ? $"Showing the last reading ({XeroCompanyDetails.From(held).SourceNote(_services.TimeZone)})."
                     : "Xero has not been read yet.";
-                _status.Text = $"Could not read Xero ({DescribeOutcome(result.Outcome)}{(result.Reason is { Length: > 0 } reason ? $": {reason}" : string.Empty)}). {last}";
+                _status.Text = $"Could not read Xero ({DescribeOutcome(result.Outcome)}{(result.Reason is { Length: > 0 } reason ? $": {reason}" : string.Empty)}). {last}{syncNote}";
                 ActionCompleted?.Invoke(_status.Text, ActionOutcome.Failed);
             }
 
             await RefreshConnectionAsync(cancellationToken).ConfigureAwait(true);
+            if (synced is not null)
+                await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
         }
         finally
         {
             _refreshButton.IsEnabled = true;
         }
+    }
+
+    /// <summary>
+    /// <em>Sync now</em> (review-board fix M3): the engine's Refresh — every
+    /// record planned, the queue drained, every status read back from Xero and
+    /// the organisation settings read — now, not on the timer; then the sync
+    /// summary and the reading are re-read. Does nothing without the engine.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the sync.</param>
+    public async Task SyncNowAsync(CancellationToken cancellationToken = default)
+    {
+        if (_syncNow is null)
+            return;
+
+        _syncNowButton.IsEnabled = false;
+        _status.Text = "Syncing with Xero…";
+        try
+        {
+            var (synced, problem) = await RunSyncAsync(cancellationToken).ConfigureAwait(true);
+            if (synced is { SettingsRefreshed: true } && _services.Reader is { } reader && await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true) is { } cached)
+            {
+                await ShowReadingAsync(cached, cancellationToken).ConfigureAwait(true);
+                DescribeLiveOrganisation();
+            }
+
+            await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
+            _status.Text = SyncNote(synced, problem).Trim();
+            ActionCompleted?.Invoke(_status.Text, synced is { ReadBack: not null } ? ActionOutcome.Changed : ActionOutcome.Failed);
+        }
+        finally
+        {
+            _syncNowButton.IsEnabled = true;
+        }
+    }
+
+    private async Task<(XeroSyncCycleReport? Report, string? Problem)> RunSyncAsync(CancellationToken cancellationToken)
+    {
+        if (_syncNow is null)
+            return (null, null);
+
+        try
+        {
+            return (await _syncNow(cancellationToken).ConfigureAwait(true), null);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031 // A failed sync is reported in the status, never thrown out of a click handler.
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            return (null, ex.GetBaseException().Message);
+        }
+    }
+
+    /// <summary>The words for what a <em>Sync now</em> did: writes sent and statuses read back, or why it could not read Xero.</summary>
+    /// <param name="report">The engine's report; <see langword="null"/> when it did not run.</param>
+    /// <param name="problem">Why it failed, when it threw.</param>
+    internal static string SyncNote(XeroSyncCycleReport? report, string? problem)
+    {
+        if (problem is not null)
+            return $" Sync with Xero did not run: {problem.TrimEnd().TrimEnd('.')}.";
+
+        if (report is null)
+            return string.Empty;
+
+        if (report.ReadBack is not { } readBack)
+        {
+            return report.Drain.PausedForAuthorisation
+                ? " Sync now: Xero needs re-authorising before anything more is sent or read."
+                : " Sync now: statuses could not be read back from Xero now (not connected, waiting for authorisation, or asked to slow down).";
+        }
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $" Synced with Xero now: {report.Drain.Succeeded} write(s) sent, {readBack.Read} status(es) read back, {readBack.Changed.Count} changed.");
     }
 
     /// <summary>
@@ -456,7 +586,7 @@ public sealed class XeroSettingsSection : UserControl
             ? await XeroWriteSafetyHandler.IsLiveOrganisationAllowedForAsync(_settings, reading.TenantId, cancellationToken).ConfigureAwait(true)
             : await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
 
-    /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken when the engine is present), then the summary re-read.</summary>
+    /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken), then the summary re-read. A record the person unlinked from Xero is left for its Send again.</summary>
     /// <param name="cancellationToken">Cancels the retries.</param>
     public async Task RetryAllAsync(CancellationToken cancellationToken = default)
     {
@@ -466,7 +596,7 @@ public sealed class XeroSettingsSection : UserControl
         _retryAllButton.IsEnabled = false;
         try
         {
-            var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+            var (failed, _) = await ListFailedAsync(outbox, cancellationToken).ConfigureAwait(true);
             var retried = 0;
             foreach (var entry in failed)
             {
@@ -476,7 +606,7 @@ public sealed class XeroSettingsSection : UserControl
 
             await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
             _status.Text = retried == 0
-                ? "Nothing to retry."
+                ? _unlinkedCount == 0 ? "Nothing to retry." : $"Nothing to retry. {UnlinkedNote(_unlinkedCount)}"
                 : string.Create(CultureInfo.InvariantCulture, $"Queued {retried} failed write(s) to Xero again.");
             ActionCompleted?.Invoke(_status.Text, retried == 0 ? ActionOutcome.NoChange : ActionOutcome.Changed);
         }
@@ -645,6 +775,8 @@ public sealed class XeroSettingsSection : UserControl
             _syncSummary.VerticalAlignment = VerticalAlignment.Center;
             if (_retry is not null)
                 syncRow.Children.Add(_retryAllButton);
+            if (_syncNow is not null)
+                syncRow.Children.Add(_syncNowButton);
             stack.Children.Add(syncRow);
         }
 
@@ -840,15 +972,52 @@ public sealed class XeroSettingsSection : UserControl
             return;
 
         var queued = await outbox.ListAsync([XeroOutboxState.Pending, XeroOutboxState.InFlight, XeroOutboxState.Unknown], cancellationToken).ConfigureAwait(true);
-        var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+        var (failed, unlinked) = await ListFailedAsync(outbox, cancellationToken).ConfigureAwait(true);
         var waiting = await outbox.ListAsync([XeroOutboxState.WaitingForAuthorisation], cancellationToken).ConfigureAwait(true);
 
         _failedCount = failed.Count;
+        _unlinkedCount = unlinked;
         _syncSummary.Text = string.Create(
             CultureInfo.InvariantCulture,
-            $"Sync: {queued.Count} queued · {failed.Count} failed · {waiting.Count} waiting for authorisation.");
+            $"Sync: {queued.Count} queued · {failed.Count} failed · {waiting.Count} waiting for authorisation.")
+            + (unlinked == 0 ? string.Empty : " " + UnlinkedNote(unlinked));
         _retryAllButton.IsEnabled = failed.Count > 0;
     }
+
+    /// <summary>
+    /// The Failed entries <em>Retry all</em> can retry, and how many more
+    /// belong to records the person unlinked from Xero — those wait for that
+    /// record's Send again, which the engine's Retry refuses to bypass
+    /// (verifier F3 round 3, defect 4).
+    /// </summary>
+    private async Task<(IReadOnlyList<XeroOutboxEntry> Retryable, int Unlinked)> ListFailedAsync(IXeroOutbox outbox, CancellationToken cancellationToken)
+    {
+        var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+        if (_services.IsUnlinked is not { } isUnlinked || failed.Count == 0)
+            return (failed, 0);
+
+        var unlinkedDocuments = new Dictionary<XeroDocumentRef, bool>();
+        var retryable = new List<XeroOutboxEntry>();
+        var unlinked = 0;
+        foreach (var entry in failed)
+        {
+            if (!unlinkedDocuments.TryGetValue(entry.Document, out var isUnlinkedDocument))
+            {
+                isUnlinkedDocument = await isUnlinked(entry.Document, cancellationToken).ConfigureAwait(true);
+                unlinkedDocuments[entry.Document] = isUnlinkedDocument;
+            }
+
+            if (isUnlinkedDocument)
+                unlinked++;
+            else
+                retryable.Add(entry);
+        }
+
+        return (retryable, unlinked);
+    }
+
+    private static string UnlinkedNote(int count) =>
+        string.Create(CultureInfo.InvariantCulture, $"{count} write(s) for records unlinked from Xero wait for Send again on their Xero badge.");
 
     private void DescribeLiveOrganisation()
     {

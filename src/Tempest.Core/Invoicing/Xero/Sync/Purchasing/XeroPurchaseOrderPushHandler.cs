@@ -167,6 +167,12 @@ public sealed class XeroPurchaseOrderPushHandler : IXeroPushHandler
         if (stale)
             return new XeroPushResult(XeroPushOutcome.NothingToDo, "The purchase order changed after this write was queued; the newer write creates the Xero purchase order.");
 
+        // Unlinked by the person (its Xero copy was deleted there): no new
+        // Xero purchase order until they choose Send again (design §6.7) —
+        // even for a write already queued, or in flight, when they unlinked.
+        if (await _creates.IsUnlinkedByPersonAsync(tenantId, entry.Document, cancellationToken).ConfigureAwait(false))
+            return new XeroPushResult(XeroPushOutcome.Rejected, XeroDocumentLinkActions.UnlinkedRefusal);
+
         var account = await _accounts.ResolveExpenseAsync(XeroPurchasingMapper.PurchaseOrderLineCategory, cancellationToken).ConfigureAwait(false);
         var taxTypes = new Dictionary<VatRate, XeroCodeResolution>();
         foreach (var rate in order.Lines.Select(l => l.VatRate).Distinct())

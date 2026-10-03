@@ -104,17 +104,24 @@ public sealed class XeroReadBack
         };
     }
 
-    /// <summary>Reads back up to <paramref name="budget"/> live linked records in <paramref name="tenantId"/>, oldest reading first.</summary>
+    /// <summary>
+    /// Reads back up to <paramref name="budget"/> live linked records in
+    /// <paramref name="tenantId"/>, oldest reading first — <paramref name="first"/>,
+    /// when given and live, before any other (a badge's <em>Check Xero now</em>
+    /// reads the record it was clicked on, however many others are due).
+    /// </summary>
     /// <param name="tenantId">The connected Xero organisation.</param>
     /// <param name="budget">The most records to read this pass.</param>
+    /// <param name="first">The record to read first; <see langword="null"/> for none.</param>
     /// <param name="cancellationToken">Cancels the pass.</param>
-    public async Task<XeroReadBackReport> ReadAsync(string tenantId, int budget, CancellationToken cancellationToken = default)
+    public async Task<XeroReadBackReport> ReadAsync(string tenantId, int budget, XeroDocumentRef? first = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
 
         var due = (await _links.ListAsync(tenantId, cancellationToken: cancellationToken).ConfigureAwait(false))
             .Where(IsLive)
-            .OrderBy(l => l.LastReadAtUtc ?? DateTimeOffset.MinValue)
+            .OrderBy(l => first is not null && l.Document == first ? 0 : 1)
+            .ThenBy(l => l.LastReadAtUtc ?? DateTimeOffset.MinValue)
             .ThenBy(l => l.LinkedAtUtc)
             .Take(Math.Max(0, budget))
             .ToList();

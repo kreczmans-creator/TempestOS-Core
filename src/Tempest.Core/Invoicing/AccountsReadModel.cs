@@ -608,6 +608,20 @@ public sealed record ForwardCashSource(ForwardCashSourceKind Kind, string Label,
     public string Describe() => ReadAt is { } readAt
         ? $"{Label}, read at {readAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC"
         : Label;
+
+    /// <summary>
+    /// `v0.24.0` review-board fix n6 (additive): the source in words with the
+    /// read time in <paramref name="timeZone"/> — the person's own local time
+    /// on screen: "Xero bank balances, read at 2026-10-02 10:00".
+    /// </summary>
+    /// <param name="timeZone">The time zone to show the read time in.</param>
+    public string Describe(TimeZoneInfo timeZone)
+    {
+        ArgumentNullException.ThrowIfNull(timeZone);
+        return ReadAt is { } readAt
+            ? $"{Label}, read at {TimeZoneInfo.ConvertTime(readAt, timeZone).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}"
+            : Label;
+    }
 }
 
 /// <summary>

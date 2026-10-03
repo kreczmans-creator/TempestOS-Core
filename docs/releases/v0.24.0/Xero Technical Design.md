@@ -372,9 +372,18 @@ a defect if seen.
 `IAuditRecorder` actions: `xero.outbox.enqueued`, `xero.push.succeeded`,
 `xero.push.failed`, `xero.push.blocked-by-rule`, `xero.link.created`,
 `xero.link.linked`, `xero.link.reconciled`, `xero.link.unlinked`,
-`xero.settings.read`, `xero.reauthorisation.required`,
+`xero.link.send-again`, `xero.settings.read`, `xero.reauthorisation.required`,
 `xero.live-organisation.allowed`, `xero.live-organisation.revoked` (F1),
-`xero.organisation.changed` (F1). Detail: document, operation, Xero id and
+`xero.organisation.changed` (F1).
+`xero.link.unlinked` is also written when the person unlinks a quote,
+purchase order or bill whose Xero copy was deleted (or voided) there —
+never an invoice, whose link is re-imported from its request; nothing is
+then sent for that record, by any planner, until the person chooses
+*Send again*, audited `xero.link.send-again`: the unlink sets aside the
+record's queued, failed and unknown writes, *Retry* (and Settings *Retry
+all*) refuses its writes, and the quote push handler refuses a create for
+it (`XeroDocumentLinkActions`,
+review-board fix M5). Detail: document, operation, Xero id and
 number, idempotency key, attempt, HTTP status, reason. Never a token.
 
 ### 6.8 Offline

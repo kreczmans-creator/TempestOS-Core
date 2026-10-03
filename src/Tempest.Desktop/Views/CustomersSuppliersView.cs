@@ -890,7 +890,7 @@ public sealed class CustomersSuppliersView : UserControl
 
             if (tenantId is null)
             {
-                _xeroState.Text = "Xero is not connected. Connect it in Settings → Invoicing to link this organisation to a Xero contact.";
+                _xeroState.Text = "Xero is not connected. Connect it in Settings → Xero → Re-authorise to link this organisation to a Xero contact.";
                 return;
             }
 

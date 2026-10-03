@@ -87,6 +87,9 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
     /// <summary>How many sends <see cref="SentCollection"/> keeps per quotation (the oldest are dropped).</summary>
     public const int MaximumSentRecords = 32;
 
+    /// <summary>Why a create is refused for a quotation the person unlinked from Xero (<see cref="XeroDocumentLinkActions.Collection"/>) and has not sent again.</summary>
+    public const string UnlinkedRefusal = XeroDocumentLinkActions.UnlinkedRefusal;
+
     private readonly XeroAccountingApi _api;
     private readonly IXeroLinkStore _links;
     private readonly IXeroQuoteSource _quotes;
@@ -206,6 +209,11 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
             {
                 if (stale)
                     return new XeroPushResult(XeroPushOutcome.NothingToDo, "The quotation changed after this write was queued; the newer write creates the Xero quote.");
+
+                // Unlinked by the person (its Xero copy was deleted there): no
+                // new Xero quote until they choose Send again (design §6.7).
+                if (await _sent.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, entry.Document), cancellationToken).ConfigureAwait(false) is not null)
+                    return new XeroPushResult(XeroPushOutcome.Rejected, UnlinkedRefusal);
 
                 if (body is null)
                     return new XeroPushResult(XeroPushOutcome.Blocked, blocked);
@@ -557,7 +565,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
         return new XeroPushResult(XeroPushOutcome.Rejected, DeletedNote(number), Link: gone);
     }
 
-    private static string DeletedNote(string number) => $"Quote {number} was deleted in Xero; unlink it to send the quotation again.";
+    private static string DeletedNote(string number) => $"Quote {number} was deleted in Xero. To send the quotation again, choose {XeroDocumentLinkActions.UnlinkActionName} on its Xero badge, then Send again.";
 
     /// <summary>
     /// For a linked quote Xero holds past <c>DRAFT</c>: records in the link

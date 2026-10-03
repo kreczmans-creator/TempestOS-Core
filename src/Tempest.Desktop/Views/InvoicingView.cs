@@ -208,16 +208,16 @@ public sealed class InvoicingView : UserControl
             var liveChildEntries = childEntries.Where(entry => !entry.IsDeleted).ToList();
 
             foreach (var request in await _domainContext.Repository.MaterialiseAsync<InvoiceRequest>(liveChildEntries).ConfigureAwait(true))
-                requestRows.Add(new RequestRow(request, projectName));
+                requestRows.Add(new RequestRow(request, projectName, project.Id));
 
             // `WP 21.3B`: a billable, unbilled expense is "available to
             // invoice" exactly as an unbilled completion is — read over the
             // identical live child entries (`WP 21.5B`'s index idiom).
             foreach (var expense in await _domainContext.Repository.MaterialiseAsync<ProjectExpense>(liveChildEntries).ConfigureAwait(true))
             {
-                allExpenses.Add(new ExpenseRow(expense, projectName));
+                allExpenses.Add(new ExpenseRow(expense, projectName, project.Id));
                 if (expense.Billable && expense.InvoicedBy is null)
-                    expenseCandidates.Add(new ExpenseRow(expense, projectName));
+                    expenseCandidates.Add(new ExpenseRow(expense, projectName, project.Id));
             }
 
             var unbilled = (await _domainContext.Repository.MaterialiseAsync<DeliverableCompletion>(liveChildEntries).ConfigureAwait(true))
@@ -234,7 +234,7 @@ public sealed class InvoicingView : UserControl
             foreach (var completion in unbilled)
             {
                 deliverablesById.TryGetValue(completion.DeliverableId, out var deliverable);
-                completionCandidates.Add(new CompletionRow(completion, projectName, deliverable));
+                completionCandidates.Add(new CompletionRow(completion, projectName, deliverable, project.Id));
             }
         }
 
@@ -536,7 +536,7 @@ public sealed class InvoicingView : UserControl
         var send = new Button { Content = "Send", MinHeight = DesignTokens.MinControlSize };
         send.Classes.Add(ChromeStyles.Primary);
         AutomationProperties.SetName(send, $"Send {request.DisplayName}");
-        send.Click += async (_, _) => await OnSendAsync(request.Id).ConfigureAwait(true);
+        send.Click += async (_, _) => await OnSendAsync(request.Id, request.ParentId).ConfigureAwait(true);
         return send;
     }
 
@@ -625,7 +625,7 @@ public sealed class InvoicingView : UserControl
         var raise = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
         raise.Classes.Add(ChromeStyles.Flat);
         AutomationProperties.SetName(raise, $"Raise invoice for {deliverableName}");
-        raise.Click += async (_, _) => await OnRaiseAsync(completion.Id, DeliverableCompletion.CanonicalKind).ConfigureAwait(true);
+        raise.Click += async (_, _) => await OnRaiseAsync(completion.Id, DeliverableCompletion.CanonicalKind, candidate.ProjectId).ConfigureAwait(true);
         actions.Children.Add(raise);
 
         rows.Children.Add(actions);
@@ -659,7 +659,7 @@ public sealed class InvoicingView : UserControl
         var raise = new Button { Content = "Raise invoice", MinHeight = DesignTokens.MinControlSize };
         raise.Classes.Add(ChromeStyles.Flat);
         AutomationProperties.SetName(raise, $"Raise invoice for {expense.Description}");
-        raise.Click += async (_, _) => await OnRaiseAsync(expense.Id, ProjectExpense.CanonicalKind).ConfigureAwait(true);
+        raise.Click += async (_, _) => await OnRaiseAsync(expense.Id, ProjectExpense.CanonicalKind, candidate.ProjectId).ConfigureAwait(true);
         actions.Children.Add(raise);
 
         rows.Children.Add(actions);
@@ -682,9 +682,140 @@ public sealed class InvoicingView : UserControl
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted)
             actions.Children.Add(ReconcileButton(request));
         rows.Children.Add(actions);
+        AddXeroDraftActions(rows, actions, request);
         AddXeroBadge(rows, XeroDocumentKind.Invoice, request.Id, request.DisplayName, offerSendToXero: false);
 
         return RowBorder(rows, request.Id);
+    }
+
+    /// <summary>
+    /// `v0.24.0` review-board fix M4: with Xero as the connector, a Sent
+    /// request's invoice is a draft in Xero until it is approved there, so its
+    /// row offers <b>Edit lines</b> (the draft is updated to match; refused with
+    /// the reason once Xero has approved it) and <b>Void</b> (its Xero draft is
+    /// deleted). Both dispatch the registered commands.
+    /// </summary>
+    private void AddXeroDraftActions(StackPanel rows, StackPanel actions, InvoiceRequest request)
+    {
+        if (XeroBadges is null || request.Status != InvoiceRequestStatus.Sent)
+            return;
+
+        var editor = BuildLineEditor(request);
+        var edit = new Button { Content = "Edit lines", MinHeight = DesignTokens.MinControlSize };
+        edit.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(edit, $"Edit lines of {request.DisplayName}");
+        ToolTip.SetTip(edit, "Change the lines while Xero still holds the invoice as a draft; the Xero draft is updated to match. Nothing is approved or emailed.");
+        edit.Click += (_, _) => editor.IsVisible = !editor.IsVisible;
+        actions.Children.Add(edit);
+        actions.Children.Add(VoidButton(request));
+        rows.Children.Add(editor);
+    }
+
+    /// <summary>The automation name of a line field in the Edit lines panel: <c>"Line 1 quantity for INV-001"</c>.</summary>
+    /// <param name="lineNumber">The line, counting from 1.</param>
+    /// <param name="field">"description", "quantity", "unit rate" or "VAT rate".</param>
+    /// <param name="requestName">The request's display name.</param>
+    internal static string LineFieldName(int lineNumber, string field, string requestName) =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"Line {lineNumber} {field} for {requestName}");
+
+    private StackPanel BuildLineEditor(InvoiceRequest request)
+    {
+        var panel = new StackPanel { Spacing = DesignTokens.SpaceXs, IsVisible = false };
+        AutomationProperties.SetName(panel, $"Edit lines panel for {request.DisplayName}");
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Edit lines — saved to the Xero draft too, while Xero still holds it as a draft. Nothing is approved or emailed.",
+            FontSize = DesignTokens.FontSizeCaption,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+        });
+
+        var fields = new List<(InvoiceRequestLine Line, TextBox Description, TextBox Quantity, TextBox UnitRate, ComboBox Vat)>();
+        for (var i = 0; i < request.Lines.Count; i++)
+        {
+            var line = request.Lines[i];
+            var number = i + 1;
+            var description = new TextBox { Text = line.Description, MinWidth = 240 };
+            var quantity = new TextBox { Text = line.Quantity.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture), MinWidth = 70 };
+            var unitRate = new TextBox { Text = line.UnitRate.Amount.ToString("0.00##", System.Globalization.CultureInfo.InvariantCulture), MinWidth = 90 };
+            var vat = new ComboBox { MinWidth = 120 };
+            foreach (var rate in Enum.GetValues<VatRate>())
+                vat.Items.Add(new ComboBoxItem { Content = rate.DisplayName(), Tag = rate });
+            vat.SelectedIndex = Array.IndexOf(Enum.GetValues<VatRate>(), line.VatRate);
+
+            AutomationProperties.SetName(description, LineFieldName(number, "description", request.DisplayName));
+            AutomationProperties.SetName(quantity, LineFieldName(number, "quantity", request.DisplayName));
+            AutomationProperties.SetName(unitRate, LineFieldName(number, "unit rate", request.DisplayName));
+            AutomationProperties.SetName(vat, LineFieldName(number, "VAT rate", request.DisplayName));
+
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+            row.Children.Add(new TextBlock { Text = $"{number}.", VerticalAlignment = VerticalAlignment.Center });
+            row.Children.Add(description);
+            row.Children.Add(quantity);
+            row.Children.Add(unitRate);
+            row.Children.Add(vat);
+            panel.Children.Add(row);
+            fields.Add((line, description, quantity, unitRate, vat));
+        }
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm };
+        var save = new Button { Content = "Save lines", MinHeight = DesignTokens.MinControlSize };
+        save.Classes.Add(ChromeStyles.Primary);
+        AutomationProperties.SetName(save, $"Save lines of {request.DisplayName}");
+        var cancel = new Button { Content = "Cancel", MinHeight = DesignTokens.MinControlSize };
+        cancel.Classes.Add(ChromeStyles.Flat);
+        AutomationProperties.SetName(cancel, $"Cancel editing lines of {request.DisplayName}");
+        cancel.Click += (_, _) => panel.IsVisible = false;
+        save.Click += async (_, _) => await OnSaveLinesAsync(request, fields.Select(f => (f.Line, f.Description.Text, f.Quantity.Text, f.UnitRate.Text, (f.Vat.SelectedItem as ComboBoxItem)?.Tag as VatRate?)).ToList()).ConfigureAwait(true);
+        buttons.Children.Add(save);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        return panel;
+    }
+
+    /// <summary>
+    /// Saves the edited lines through the registered <c>invoicing.reviseLines</c>
+    /// command, one changed line at a time (the panel's own Save is the
+    /// confirmation), then reloads; the first refusal stops it and is shown.
+    /// </summary>
+    private async Task OnSaveLinesAsync(InvoiceRequest request, IReadOnlyList<(InvoiceRequestLine Line, string? Description, string? Quantity, string? UnitRate, VatRate? Vat)> edited)
+    {
+        var context = new CommandContext([new CommandContextObject(request.Id, InvoiceRequest.CanonicalKind)]);
+        var changed = 0;
+        string? last = null;
+        for (var i = 0; i < edited.Count; i++)
+        {
+            var (line, description, quantity, unitRate, vat) = edited[i];
+            var values = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Line"] = (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["Description"] = Changed(description, line.Description),
+                ["Quantity"] = Changed(quantity, line.Quantity.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)),
+                ["UnitRate"] = Changed(unitRate, line.UnitRate.Amount.ToString("0.00##", System.Globalization.CultureInfo.InvariantCulture)),
+                ["VatRate"] = vat is { } rate && rate != line.VatRate ? rate.ToString() : string.Empty,
+            };
+            if (values.Where(v => v.Key != "Line").All(v => v.Value.Length == 0))
+                continue;
+
+            var invocation = await _commandRegistry.InvokeAsync(
+                InvoicingCommandIds.ReviseLines, context,
+                (_, _, _, _) => Task.FromResult<IReadOnlyDictionary<string, string>?>(values), CancellationToken.None).ConfigureAwait(true);
+            if (invocation.Outcome != CommandOutcome.Executed || invocation.Result is not { Succeeded: true } result)
+            {
+                var reason = invocation.Result?.Message ?? invocation.Reason ?? "The lines could not be revised.";
+                await RefreshAsync().ConfigureAwait(true);
+                Report(await NameRequestAsync(reason, request.Id).ConfigureAwait(true), succeeded: false);
+                return;
+            }
+
+            changed++;
+            last = result.Message;
+        }
+
+        await RefreshAsync().ConfigureAwait(true);
+        Report(changed == 0 ? "No line was changed." : last ?? "Lines revised.", succeeded: changed > 0);
+
+        static string Changed(string? entered, string current) =>
+            entered is null || string.Equals(entered.Trim(), current, StringComparison.Ordinal) ? string.Empty : entered.Trim();
     }
 
     /// <summary>Outstanding / Overdue: as Sent, plus days outstanding, or which attention Reauthorise/Unknown needs; Review, Reconcile now, Authorise (Settings) where Reauthorise.</summary>
@@ -707,12 +838,15 @@ public sealed class InvoicingView : UserControl
 
         if (request.Status is InvoiceRequestStatus.Sent or InvoiceRequestStatus.Accepted or InvoiceRequestStatus.Unknown)
             actions.Children.Add(ReconcileButton(request));
+        AddXeroDraftActions(rows, actions, request);
 
         if (request.Status == InvoiceRequestStatus.Reauthorise)
         {
             actions.Children.Add(new TextBlock
             {
-                Text = "Re-authorise in Settings > Invoicing to continue.",
+                Text = XeroBadges is not null
+                    ? "Re-authorise in Settings → Xero to continue."
+                    : "Re-authorise in Settings → Connector authorisation to continue.",
                 FontSize = DesignTokens.FontSizeCaption,
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity = 0.85,
@@ -766,13 +900,16 @@ public sealed class InvoicingView : UserControl
     // Actions
     // ================================================================
 
-    private async Task OnSendAsync(Guid requestId)
+    private async Task OnSendAsync(Guid requestId, Guid? projectId = null)
     {
         if (ParameterPrompt is null)
         {
             Report("Nothing can confirm the send here — Send is unavailable.", succeeded: false);
             return;
         }
+
+        if (projectId is { } project && !await ConfirmNotInvoicedInXeroAsync(project, "sending this invoice").ConfigureAwait(true))
+            return;
 
         var context = new CommandContext([new CommandContextObject(requestId, InvoiceRequest.CanonicalKind)]);
         var invocation = await _commandRegistry.InvokeAsync(InvoicingCommandIds.Send, context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
@@ -788,7 +925,7 @@ public sealed class InvoicingView : UserControl
 
         if (!result.Succeeded)
         {
-            Report(result.Message ?? "Send failed.", succeeded: false);
+            Report(await NameRequestAsync(result.Message ?? "Send failed.", requestId).ConfigureAwait(true), succeeded: false);
             return;
         }
 
@@ -825,7 +962,7 @@ public sealed class InvoicingView : UserControl
 
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
-        Report(result.Message ?? (result.Succeeded ? "Reconciled." : "Reconcile failed."), succeeded: result.Succeeded);
+        Report(await NameRequestAsync(result.Message ?? (result.Succeeded ? "Reconciled." : "Reconcile failed."), requestId).ConfigureAwait(true), succeeded: result.Succeeded);
     }
 
     private async Task OnVoidAsync(Guid requestId)
@@ -850,7 +987,7 @@ public sealed class InvoicingView : UserControl
 
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
-        Report(result.Message ?? (result.Succeeded ? "Voided." : "Void failed."), succeeded: result.Succeeded);
+        Report(await NameRequestAsync(result.Message ?? (result.Succeeded ? "Voided." : "Void failed."), requestId).ConfigureAwait(true), succeeded: result.Succeeded);
     }
 
     /// <summary>
@@ -865,13 +1002,16 @@ public sealed class InvoicingView : UserControl
     /// refusal (already invoiced, no client, no rate-card pin, nothing to
     /// bill) is shown, never swallowed.
     /// </summary>
-    private async Task OnRaiseAsync(Guid sourceId, string sourceKind)
+    private async Task OnRaiseAsync(Guid sourceId, string sourceKind, Guid? projectId = null)
     {
         if (ParameterPrompt is null)
         {
             Report("Nothing can confirm raising an invoice here — Raise invoice is unavailable.", succeeded: false);
             return;
         }
+
+        if (projectId is { } project && !await ConfirmNotInvoicedInXeroAsync(project, "raising an invoice request").ConfigureAwait(true))
+            return;
 
         var context = new CommandContext([new CommandContextObject(sourceId, sourceKind)]);
         var invocation = await _commandRegistry.InvokeAsync(InvoicingCommandIds.Raise, context, ParameterPrompt, CancellationToken.None).ConfigureAwait(true);
@@ -938,7 +1078,13 @@ public sealed class InvoicingView : UserControl
             Total: MoneyDisplay.Format(request.Total),
             Status: request.Status.ToString(),
             GeneratedAtUtc: DateTimeOffset.UtcNow,
-            ApplicationVersionText: _applicationVersionText());
+            ApplicationVersionText: _applicationVersionText())
+        {
+            // `v0.24.0` review-board fix m17: the number the invoice carries in
+            // TempestOS and Xero alike, and the date it was sent.
+            InvoiceNumber = InvoicingService.InvoiceNumberFor(request),
+            SentDate = request.SentAtUtc is { } sentAt ? DateOnly.FromDateTime(sentAt.ToLocalTime().DateTime) : null,
+        };
 
         // `v0.24.0` U3: the exporter's own naming and folder, unchanged; the
         // renderer is wrapped only to keep the exact bytes it saved, so a sent
@@ -1004,23 +1150,103 @@ public sealed class InvoicingView : UserControl
     /// parallel work may also touch) so this area's own wording is this
     /// area's own to keep correct.
     /// </summary>
-    private static string DescribeSendOutcome(InvoiceRequest request) => request.Status switch
+    private string DescribeSendOutcome(InvoiceRequest request) => XeroBadges is not null
+        ? request.Status switch
+        {
+            // `v0.24.0` review-board fix m13: with Xero, a send makes a draft
+            // there (D3) and emails nothing (D4); an unreachable Xero queues it.
+            InvoiceRequestStatus.Sent =>
+                $"Sent {request.DisplayName} to Xero as draft invoice {request.ExternalInvoiceNumber ?? InvoicingService.InvoiceNumberFor(request)} — review and approve it in Xero; nothing was emailed.",
+            InvoiceRequestStatus.Rejected => $"Rejected: {request.LastError}",
+            InvoiceRequestStatus.Reauthorise => XeroReauthoriseText,
+            InvoiceRequestStatus.Draft => XeroQueuedText,
+            InvoiceRequestStatus.Unknown => "The response was lost; reconciling.",
+            _ => $"Send attempted — status now {request.Status}.",
+        }
+        : request.Status switch
+        {
+            InvoiceRequestStatus.Sent => $"Sent — external invoice number '{request.ExternalInvoiceNumber ?? request.ExternalId}'.",
+            InvoiceRequestStatus.Rejected => $"Rejected: {request.LastError}",
+            InvoiceRequestStatus.Reauthorise => "The connector needs re-authorising — see Settings → Connector authorisation to reauthorise.",
+            InvoiceRequestStatus.Draft => "The connector is unavailable; the request stays Draft — try again later.",
+            InvoiceRequestStatus.Unknown => "The response was lost; reconciling.",
+            _ => $"Send attempted — status now {request.Status}.",
+        };
+
+    /// <summary>What a Send says when Xero could not be reached (review-board fix m13): the send was queued, not lost.</summary>
+    internal const string XeroQueuedText =
+        "Xero could not be reached: the send is queued, and will send when Xero is reachable — as a draft invoice in Xero; nothing is emailed.";
+
+    /// <summary>What a Send says when Xero needs re-authorising (review-board fix m12: the real Settings section).</summary>
+    internal const string XeroReauthoriseText = "Xero needs re-authorising — see Settings → Xero → Re-authorise; nothing was sent.";
+
+    /// <summary>Replaces the raw request id a refusal names with the request's own name (review-board fix m13).</summary>
+    private async Task<string> NameRequestAsync(string message, Guid requestId)
     {
-        InvoiceRequestStatus.Sent => $"Sent — external invoice number '{request.ExternalInvoiceNumber ?? request.ExternalId}'.",
-        InvoiceRequestStatus.Rejected => $"Rejected: {request.LastError}",
-        InvoiceRequestStatus.Reauthorise => "The connector needs re-authorising — see Settings > Invoicing to reauthorise.",
-        InvoiceRequestStatus.Draft => "The connector is unavailable; the request stays Draft — try again later.",
-        InvoiceRequestStatus.Unknown => "The response was lost; reconciling.",
-        _ => $"Send attempted — status now {request.Status}.",
-    };
+        if (!message.Contains(requestId.ToString(), StringComparison.OrdinalIgnoreCase))
+            return message;
+
+        return await _domainContext.Repository.FindAsync(requestId).ConfigureAwait(true) is InvoiceRequest request
+            ? message.Replace(requestId.ToString(), request.DisplayName, StringComparison.OrdinalIgnoreCase)
+            : message;
+    }
+
+    /// <summary>
+    /// `v0.24.0` review-board fix m14: before raising or sending an invoice for
+    /// a project, warns when Xero shows one of its quotes as <c>INVOICED</c> —
+    /// someone raised that invoice in Xero, so billing the same work here would
+    /// bill the client twice. Read from the quotes' Xero badges (local state,
+    /// no network). Goes ahead only when the person confirms; with nothing to
+    /// ask them, it does not go ahead.
+    /// </summary>
+    /// <returns>Whether to go ahead.</returns>
+    private async Task<bool> ConfirmNotInvoicedInXeroAsync(Guid projectId, string act)
+    {
+        if (XeroBadges is not { } xero)
+            return true;
+
+        var invoiced = await QuotesInvoicedInXeroAsync(xero, projectId).ConfigureAwait(true);
+        if (invoiced.Count == 0)
+            return true;
+
+        var quotes = string.Join(", ", invoiced);
+        var message = $"Xero shows quote {quotes} for this project as INVOICED: an invoice for it was raised in Xero. "
+                      + $"Before {act}, check it does not bill the same work — the client would be billed twice.";
+        if (xero.Prompts is not { } prompts)
+        {
+            Report($"{message} Nothing was done: there is nothing here to confirm it with.", succeeded: false);
+            return false;
+        }
+
+        if (await prompts.Confirm("Already invoiced in Xero?", message + " Go ahead anyway?", "Go ahead").ConfigureAwait(true))
+            return true;
+
+        Report($"Not done: Xero shows quote {quotes} as already invoiced.", succeeded: false);
+        return false;
+    }
+
+    private async Task<List<string>> QuotesInvoicedInXeroAsync(IXeroBadgeSource xero, Guid projectId)
+    {
+        var invoiced = new List<string>();
+        var entries = await _domainContext.Repository.ListChildrenAsync(projectId).ConfigureAwait(true);
+        var quotations = await _domainContext.Repository.MaterialiseAsync<Tempest.Core.Quotations.Quotation>([.. entries.Where(e => !e.IsDeleted)]).ConfigureAwait(true);
+        foreach (var quotation in quotations)
+        {
+            var status = await xero.GetStatusAsync(XeroDocumentRef.For(XeroDocumentKind.Quote, quotation.Id)).ConfigureAwait(true);
+            if (string.Equals(status.Status.XeroStatus?.Trim(), "INVOICED", StringComparison.OrdinalIgnoreCase))
+                invoiced.Add(status.Status.XeroNumber ?? quotation.Identifier ?? quotation.DisplayName);
+        }
+
+        return invoiced;
+    }
 
     private static string DisplayNameOf(IEngineeringObject o) => (o as IHasBusinessIdentifier)?.DisplayName ?? o.Id.ToString();
 
     private static bool IsLive(IEngineeringObject o) => o is not IDeletable { IsDeleted: true };
 
-    private sealed record RequestRow(InvoiceRequest Request, string ProjectName);
+    private sealed record RequestRow(InvoiceRequest Request, string ProjectName, Guid ProjectId);
 
-    private sealed record CompletionRow(DeliverableCompletion Completion, string ProjectName, Deliverable? Deliverable);
+    private sealed record CompletionRow(DeliverableCompletion Completion, string ProjectName, Deliverable? Deliverable, Guid ProjectId);
 
-    private sealed record ExpenseRow(ProjectExpense Expense, string ProjectName);
+    private sealed record ExpenseRow(ProjectExpense Expense, string ProjectName, Guid ProjectId);
 }

@@ -354,6 +354,16 @@ public sealed record XeroDocumentSyncStatus(XeroSyncStatus Status, string Label,
     /// badge never matches the reason's words.
     /// </summary>
     public bool CannotTell { get; init; }
+
+    /// <summary>
+    /// `v0.24.0` review-board fix n5 (additive): whether the record's Failed
+    /// write is waiting on a missing precondition in TempestOS — most often its
+    /// customer or supplier not yet linked to a Xero contact — rather than
+    /// refused. It is tried again by itself once the precondition is met, so
+    /// the badge shows it as waiting, not as a failure. Typed, so the badge
+    /// never decides this from the reason's words.
+    /// </summary>
+    public bool Blocked { get; init; }
 }
 
 /// <summary>What one wake of the engine did (<see cref="XeroSyncService.RunCycleAsync"/>).</summary>
@@ -726,7 +736,17 @@ public sealed class XeroSyncService : IXeroSyncService
 
     /// <summary>Reads statuses back now (<see cref="ReadBackAsync"/>), re-planning every record found changed, and says what it did; <see langword="null"/> when nothing could be read (no read-back, no organisation connected, or paused).</summary>
     /// <param name="cancellationToken">Cancels the pass.</param>
-    public async Task<XeroReadBackReport?> ReadBackNowAsync(CancellationToken cancellationToken = default)
+    public Task<XeroReadBackReport?> ReadBackNowAsync(CancellationToken cancellationToken = default) =>
+        ReadBackNowAsync(null, cancellationToken);
+
+    /// <summary>
+    /// Reads statuses back now, as <see cref="ReadBackNowAsync(CancellationToken)"/>,
+    /// reading <paramref name="first"/> before any other record (a badge's
+    /// <em>Check Xero now</em>), so it is read whatever the pass's budget.
+    /// </summary>
+    /// <param name="first">The record to read first; <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">Cancels the pass.</param>
+    public async Task<XeroReadBackReport?> ReadBackNowAsync(XeroDocumentRef? first, CancellationToken cancellationToken = default)
     {
         if (_readBack is null)
             return null;
@@ -742,7 +762,7 @@ public sealed class XeroSyncService : IXeroSyncService
             // Stamped before the pass, so a pass that throws is not retried
             // on every wake of the loop but on the next interval.
             _lastReadBackUtc = _time.GetUtcNow();
-            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, cancellationToken).ConfigureAwait(false);
+            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, first, cancellationToken).ConfigureAwait(false);
             await NoteRateLimiterPauseAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -939,8 +959,20 @@ public sealed class XeroSyncService : IXeroSyncService
     /// <param name="entryId">The Failed entry (<see cref="XeroSyncStatus.RetryableEntryId"/>).</param>
     /// <param name="cancellationToken">Cancels the retry.</param>
     /// <returns>Whether the entry was Failed and is now queued again.</returns>
+    /// <remarks>
+    /// Refused for a write whose record the person unlinked from Xero and has
+    /// not sent again (<see cref="XeroDocumentLinkActions.Collection"/>):
+    /// nothing goes for it, by any path, until they choose <em>Send again</em>
+    /// (design §6.7, `ADR-0162`).
+    /// </remarks>
     public async Task<bool> RetryAsync(Guid entryId, CancellationToken cancellationToken = default)
     {
+        if (await _drain.FindAsync(entryId, cancellationToken).ConfigureAwait(false) is { } candidate
+            && await IsUnlinkedByPersonAsync(candidate.Document, cancellationToken).ConfigureAwait(false))
+        {
+            return false;
+        }
+
         if (!await _parts.Outbox.RetryAsync(entryId, cancellationToken).ConfigureAwait(false))
             return false;
 
@@ -953,6 +985,15 @@ public sealed class XeroSyncService : IXeroSyncService
         Signal();
         return true;
     }
+
+    /// <summary>Why <see cref="SendAgainAsync"/> queues nothing for a record the person unlinked: its Send again is <see cref="XeroDocumentLinkActions.SendAgainAsync"/>.</summary>
+    public const string UnlinkedSendAgainRefusal = "This record was unlinked from Xero by the person; choose Send again on its Xero badge to send it as a new draft. Nothing was queued.";
+
+    /// <summary>Whether the person unlinked <paramref name="document"/> from Xero in the connected organisation and has not chosen Send again (marked, and not linked).</summary>
+    private async Task<bool> IsUnlinkedByPersonAsync(XeroDocumentRef document, CancellationToken cancellationToken) =>
+        await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } tenantId
+        && await _store.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false) is not null
+        && await _parts.Links.FindAsync(tenantId, document, cancellationToken).ConfigureAwait(false) is null;
 
     /// <summary>
     /// The person's <em>Send again</em> on a purchase order or expense whose
@@ -968,6 +1009,12 @@ public sealed class XeroSyncService : IXeroSyncService
 
         if (_parts.SendAgain is not { } sendAgain || !Guid.TryParse(document.TempestKey, out var id))
             return new XeroPurchasingSendRequest(false, [], "Send again is offered for purchase orders and expenses only.");
+
+        // A record the person unlinked is sent again by XeroDocumentLinkActions
+        // (it clears the mark and forgets the deleted record's writes); this
+        // path would queue a write its push handler refuses.
+        if (await IsUnlinkedByPersonAsync(document, cancellationToken).ConfigureAwait(false))
+            return new XeroPurchasingSendRequest(false, [], UnlinkedSendAgainRefusal);
 
         var result = document.Kind switch
         {
@@ -1153,8 +1200,8 @@ public sealed class XeroSyncService : IXeroSyncService
         {
             var retryable = failed.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion && Enum.IsDefined(failed.Operation)
                             && !string.Equals(failed.LastError, PersistenceXeroOutbox.UnreadableError, StringComparison.Ordinal);
-            var cannotTell = (await ReadTrackAsync(failed.Id, cancellationToken).ConfigureAwait(false)).CannotTell;
-            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null) with { CannotTell = cannotTell };
+            var track = await ReadTrackAsync(failed.Id, cancellationToken).ConfigureAwait(false);
+            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null) with { CannotTell = track.CannotTell, Blocked = track.Blocked };
         }
 
         if (open.Count > 0)
@@ -1169,7 +1216,7 @@ public sealed class XeroSyncService : IXeroSyncService
                 _ when waitingElsewhere => "Xero needs re-authorising before anything more is sent; this write waits in the queue.",
                 _ when head.SchemaVersion > XeroOutboxEntry.CurrentSchemaVersion => $"Queued by a newer TempestOS ({PersistenceXeroLinkStore.NewerVersionNote}); this build does not send it.",
                 _ when head.NotBeforeUtc is { } notBefore && notBefore > now =>
-                    $"Xero could not be reached{(string.IsNullOrWhiteSpace(head.LastError) ? string.Empty : $" ({head.LastError!.Trim().TrimEnd('.')})")}; trying again at {notBefore.ToString("HH:mm:ss", CultureInfo.InvariantCulture)} UTC.",
+                    $"Xero could not be reached{(string.IsNullOrWhiteSpace(head.LastError) ? string.Empty : $" ({head.LastError!.Trim().TrimEnd('.')})")}; trying again at {TimeZoneInfo.ConvertTime(notBefore, _time.LocalTimeZone).ToString("HH:mm:ss", CultureInfo.InvariantCulture)}.",
                 _ => null,
             };
             return Make(XeroSyncBadge.Queued, reason);

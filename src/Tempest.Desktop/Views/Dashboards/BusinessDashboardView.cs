@@ -63,6 +63,9 @@ public sealed class BusinessDashboardView : UserControl
     private readonly ContentControl _forwardCashTableHost = new();
     private readonly StackPanel _forwardCashDetail = new() { Spacing = DesignTokens.SpaceXs };
 
+    /// <summary>The time zone every time on the dashboard is shown in (`v0.24.0` review-board fix n6): the machine's own unless a test pins one.</summary>
+    public TimeZoneInfo TimeZone { get; set; } = TimeZoneInfo.Local;
+
     /// <summary>Initialises a new instance of the <see cref="BusinessDashboardView"/> class.</summary>
     public BusinessDashboardView(IAccountsReadModel accountsReadModel, EngineeringDomainContext domainContext, Action<Guid, string> openObjectRightUp)
     {
@@ -276,10 +279,10 @@ public sealed class BusinessDashboardView : UserControl
         }
         else
         {
-            status.Add($"Bank balances, bills and repeating bills: {picture.AccountsConnector}, read at {Utc(picture.AccountsReadAt!.Value)}.");
+            status.Add($"Bank balances, bills and repeating bills: {picture.AccountsConnector}, read at {Local(picture.AccountsReadAt!.Value)}.");
             if (picture.RefreshFailureReason is { } failure)
             {
-                var when = picture.RefreshFailedAtUtc is { } failedAt ? $" at {Utc(failedAt)}" : string.Empty;
+                var when = picture.RefreshFailedAtUtc is { } failedAt ? $" at {Local(failedAt)}" : string.Empty;
                 status.Add($"The latest refresh failed{when} ({failure}); showing the last reading.");
             }
         }
@@ -319,7 +322,7 @@ public sealed class BusinessDashboardView : UserControl
         }
     }
 
-    private static Grid ForwardCashTable(ForwardCashPicture picture)
+    private Grid ForwardCashTable(ForwardCashPicture picture)
     {
         var rows = new (string Label, Func<ForwardCashMonth, ForwardCashFigure> Figure, bool Total)[]
         {
@@ -356,7 +359,7 @@ public sealed class BusinessDashboardView : UserControl
                 var month = picture.Months[c];
                 var figure = select(month);
                 var value = figure.Amount is { } amount ? MoneyDisplay.Format(amount) : "unavailable";
-                var source = figure.IsAvailable ? figure.Source.Describe() : $"{figure.Source.Describe()} — {figure.UnavailableReason}";
+                var source = figure.IsAvailable ? figure.Source.Describe(TimeZone) : $"{figure.Source.Describe(TimeZone)} — {figure.UnavailableReason}";
 
                 var cell = new TextBlock
                 {
@@ -387,7 +390,7 @@ public sealed class BusinessDashboardView : UserControl
     {
         var date = item.Date is { } d ? d.ToString("d", CultureInfo.CurrentCulture) : "undated";
         var note = item.Note is { Length: > 0 } ? $" — {item.Note}" : string.Empty;
-        var text = $"{date}  —  {KindLabel(item.Kind)}: {item.Description}: {MoneyDisplay.Format(item.Gross)}  ({item.Source.Describe()}){note}";
+        var text = $"{date}  —  {KindLabel(item.Kind)}: {item.Description}: {MoneyDisplay.Format(item.Gross)}  ({item.Source.Describe(TimeZone)}){note}";
 
         return item.ObjectId is { } id && item.ObjectKind is { } kind ? Row(text, id, kind) : Muted(text);
     }
@@ -406,7 +409,8 @@ public sealed class BusinessDashboardView : UserControl
             ? month.MonthStart.ToString("MMM yyyy", CultureInfo.InvariantCulture)
             : $"{month.MonthStart.ToString("MMM yyyy", CultureInfo.InvariantCulture)} (from {month.From.Day.ToString(CultureInfo.InvariantCulture)})";
 
-    private static string Utc(DateTimeOffset value) => $"{value.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC";
+    /// <summary>`v0.24.0` review-board fix n6: every time on the dashboard in the person's own local time (<see cref="TimeZone"/>).</summary>
+    private string Local(DateTimeOffset value) => TimeZoneInfo.ConvertTime(value, TimeZone).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
     private Control Row(string text, Guid objectId, string kind)
     {

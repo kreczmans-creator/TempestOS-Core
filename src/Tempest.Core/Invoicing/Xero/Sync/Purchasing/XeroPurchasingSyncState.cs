@@ -220,6 +220,19 @@ public sealed class XeroPurchasingSyncState
     private Task WriteTimeAsync(string key, DateTimeOffset at, CancellationToken cancellationToken) =>
         _store.WriteAsync(StateCollection, key, at.ToString("O", CultureInfo.InvariantCulture), cancellationToken);
 
+
+    /// <summary>
+    /// Whether the person unlinked <paramref name="document"/> from Xero in the
+    /// connected organisation (<see cref="XeroDocumentLinkActions.Collection"/>)
+    /// and has not chosen Send again: nothing is planned for it until they do
+    /// (design §6.7). <see langword="false"/> while no organisation is connected.
+    /// </summary>
+    /// <param name="document">The record.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<bool> IsUnlinkedByPersonAsync(XeroDocumentRef document, CancellationToken cancellationToken = default) =>
+        await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } tenantId
+        && await _store.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false) is not null;
+
     /// <summary>Records the Product Owner's <em>Send to Xero</em> on <paramref name="document"/> (audited), for the organisation connected now (F1, M1).</summary>
     /// <param name="document">The record.</param>
     /// <param name="number">The record's own number, for the audit row.</param>
