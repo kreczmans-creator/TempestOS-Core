@@ -111,6 +111,11 @@ schema-versioned stores; an invoice request sent to Xero before
   only against the Demo Company.
 - Quotes invoiced directly in Xero are flagged, because raising the same
   work from TempestOS would bill it twice.
+- A quote, purchase order or bill deleted in Xero stays out of Xero: the
+  person may unlink it (audited `xero.link.unlinked`), and it is sent again,
+  as a new draft, only when they choose *Send again* (audited
+  `xero.link.send-again`). An invoice is never unlinked; a new invoice
+  request bills the work again.
 
 ## Related
 

@@ -209,31 +209,35 @@ public sealed class XeroSyncServiceBadgeSource : IXeroBadgeSource
     /// <inheritdoc />
     /// <remarks>
     /// A record the person unlinked from Xero (its copy was deleted there)
-    /// offers <em>Send again</em> — except an invoice, which is billed again
-    /// by raising a new request.
+    /// offers <em>Send again</em> with <see cref="UnlinkedNote"/> — also when
+    /// a write failed against the deleted copy before the unlink, whose
+    /// reason ("…Unlink, then Send again") no longer applies. An invoice is
+    /// never unlinked (a new invoice request bills the work again).
     /// </remarks>
     public async Task<XeroDocumentSyncStatus> GetStatusAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
     {
         var status = await _engine.GetDocumentStatusAsync(document, cancellationToken).ConfigureAwait(false);
-        if (_links is null || status.Status.Badge != XeroSyncBadge.NotSent || !await _links.WasUnlinkedAsync(document, cancellationToken).ConfigureAwait(false))
+        var failedAgainstDeletedCopy = status.Status.Badge == XeroSyncBadge.Failed && !status.Blocked && !status.CannotTell;
+        if (_links is null
+            || (status.Status.Badge != XeroSyncBadge.NotSent && !failedAgainstDeletedCopy)
+            || !await _links.WasUnlinkedAsync(document, cancellationToken).ConfigureAwait(false))
+        {
             return status;
+        }
 
-        return document.Kind == XeroDocumentKind.Invoice
-            ? status with { Status = status.Status with { Reason = UnlinkedInvoiceNote } }
-            : status with { Status = status.Status with { Reason = UnlinkedNote }, CanSendAgain = true };
+        // Retry is not offered: it would send the failed write with no Send
+        // again chosen (Send again retries it itself, audited).
+        return status with { Status = status.Status with { Reason = UnlinkedNote }, CanSendAgain = true, CanRetry = false };
     }
 
     /// <summary>The note on a record unlinked from Xero by the person.</summary>
     public const string UnlinkedNote = "Unlinked from Xero (its Xero copy was deleted there). Choose Send again to send it to Xero as a new draft.";
 
-    /// <summary>The note on an invoice unlinked from Xero by the person.</summary>
-    public const string UnlinkedInvoiceNote = "Unlinked from Xero (its Xero copy was deleted there). Raise a new invoice request to bill this work again.";
-
     /// <inheritdoc />
     public async Task<XeroBadgeActionResult> CheckNowAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
     {
         var drain = await _engine.DrainAsync(cancellationToken).ConfigureAwait(false);
-        var readBack = await _engine.ReadBackNowAsync(cancellationToken).ConfigureAwait(false);
+        var readBack = await _engine.ReadBackNowAsync(document, cancellationToken).ConfigureAwait(false);
         Changed?.Invoke();
 
         if (readBack is null)

@@ -467,7 +467,7 @@ public sealed class XeroSettingsSection : UserControl
     internal static string SyncNote(XeroSyncCycleReport? report, string? problem)
     {
         if (problem is not null)
-            return $" Sync with Xero did not run: {problem}.";
+            return $" Sync with Xero did not run: {problem.TrimEnd().TrimEnd('.')}.";
 
         if (report is null)
             return string.Empty;

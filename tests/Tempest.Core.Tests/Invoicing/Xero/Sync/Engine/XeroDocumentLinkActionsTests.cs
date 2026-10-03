@@ -67,6 +67,69 @@ public sealed class XeroDocumentLinkActionsTests
     }
 
     [Fact]
+    public async Task AnUnlinkedQuote_ANewRevisionWithANewPdf_IsNotSent_UntilSendAgain()
+    {
+        // Verifier F3 defect 1: the quote planner ignored the unlinked marker,
+        // so a new approved revision (new PDF, automatic) created a new Xero
+        // quote with no Send again chosen.
+        using var kit = await EngineTestKit.CreateAsync();
+        var quoteId = kit.ExportQuote();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveQuotes);
+        var document = EngineTestKit.QuoteRef(quoteId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Quotes", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+        await kit.SettleAsync();
+
+        var mark = kit.Simulator.Requests.Count;
+        kit.Quotes[quoteId] = EngineTestKit.Quote(quoteId) with { RevisionNumber = 2, IssuedAtUtc = kit.Clock.GetUtcNow() };
+        kit.Files.Store(document, "P0012-Q-001 R2 sheet", "quote.pdf");
+        kit.Saved(Tempest.Core.Quotations.Quotation.CanonicalKind, quoteId);
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveQuotes);
+        Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        Assert.Empty(await kit.QuotePlanner.PlanAsync(quoteId, null));
+        Assert.True(await actions.WasUnlinkedAsync(document));
+        Assert.Empty(kit.AuditRows(XeroDocumentLinkActions.AuditSendAgain));
+
+        // Send again lifts it: R2 goes as one new draft.
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.LiveQuotes);
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AnInvoiceDeletedInXero_IsNeverOfferedUnlink_AndStaysLinked()
+    {
+        // Verifier F3 defect 2: an invoice's link is re-imported from the
+        // request's ExternalId at the next start, so an unlink would come back
+        // reading DELETED with an orphaned marker. An invoice is never unlinked.
+        using var kit = await EngineTestKit.CreateAsync();
+        var document = XeroDocumentRef.For(XeroDocumentKind.Invoice, Guid.NewGuid());
+        await kit.Links.SaveAsync(new XeroLink(
+            XeroLink.CurrentSchemaVersion, EngineTestKit.TenantId, document, Guid.NewGuid().ToString(), "INV-0042", null, "DELETED",
+            null, null, kit.Clock.GetUtcNow(), kit.Clock.GetUtcNow(), "imported"));
+        var actions = Actions(kit);
+
+        Assert.False(await actions.CanUnlinkAsync(document));
+        var mark = kit.Simulator.Requests.Count;
+        var refused = await actions.UnlinkAsync(document);
+        Assert.False(refused.Done);
+        Assert.Contains("raise a new invoice request", refused.Message, StringComparison.Ordinal);
+        Assert.NotNull(await kit.LinkAsync(document));
+        Assert.False(await actions.WasUnlinkedAsync(document));
+        Assert.Null(await kit.Store.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(EngineTestKit.TenantId, document)));
+        Assert.Empty(kit.AuditRows(XeroDocumentLinkActions.AuditUnlinked));
+        Assert.Equal(mark, kit.Simulator.Requests.Count); // not even a read
+    }
+
+    [Fact]
     public async Task Unlink_AsksXeroFirst_AndKeepsTheLinkOfACopyStillLiveThere()
     {
         using var kit = await EngineTestKit.CreateAsync();

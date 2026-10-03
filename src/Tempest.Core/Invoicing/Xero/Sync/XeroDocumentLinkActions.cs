@@ -42,8 +42,11 @@ public sealed record XeroNumberMatch(
 public sealed record XeroNumberLookup(XeroNumberMatch? Match, string? Reason);
 
 /// <summary>
-/// The person's deliberate link actions on a quote, invoice, purchase order or
-/// bill (`v0.24.0` review-board fixes M5 and m15, `ADR-0162`; design §5):
+/// The person's deliberate link actions on a quote, purchase order or bill
+/// (`v0.24.0` review-board fixes M5 and m15, `ADR-0162`; design §5). An
+/// invoice is never unlinked: its link is re-imported from the request's own
+/// <c>ExternalId</c> at start-up, and a deleted or voided invoice is billed
+/// again by raising a new invoice request.
 /// <list type="bullet">
 /// <item><b>Unlink from Xero</b> — for a record whose Xero copy was deleted
 /// (or voided) there. Xero is asked first, so a record restored there is never
@@ -135,7 +138,7 @@ public sealed class XeroDocumentLinkActions
 
     /// <summary>
     /// Whether <em>Unlink from Xero</em> is offered for <paramref name="document"/>:
-    /// it is a quote, invoice, purchase order or bill, linked in the connected
+    /// it is a quote, purchase order or bill (never an invoice), linked in the connected
     /// organisation, and Xero last read it as deleted or voided. Local state
     /// only, never a network call.
     /// </summary>
@@ -145,7 +148,8 @@ public sealed class XeroDocumentLinkActions
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        if (document.Kind == XeroDocumentKind.Contact || await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is not { } tenantId)
+        if (document.Kind is XeroDocumentKind.Contact or XeroDocumentKind.Invoice
+            || await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is not { } tenantId)
             return false;
 
         return await _parts.Links.FindAsync(tenantId, document, cancellationToken).ConfigureAwait(false) is { } link
@@ -176,7 +180,7 @@ public sealed class XeroDocumentLinkActions
     /// purchase order's or bill's create is recorded as gone, so it is never
     /// recovered or re-sent by itself. Nothing is sent to Xero.
     /// </summary>
-    /// <param name="document">The quote, invoice, purchase order or bill.</param>
+    /// <param name="document">The quote, purchase order or bill (an invoice is refused).</param>
     /// <param name="cancellationToken">Cancels the action.</param>
     public async Task<XeroLinkActionResult> UnlinkAsync(XeroDocumentRef document, CancellationToken cancellationToken = default)
     {
@@ -184,6 +188,9 @@ public sealed class XeroDocumentLinkActions
 
         if (document.Kind == XeroDocumentKind.Contact)
             return new XeroLinkActionResult(false, "A customer or supplier is unlinked under Customers & suppliers, not here.");
+
+        if (document.Kind == XeroDocumentKind.Invoice)
+            return new XeroLinkActionResult(false, "An invoice stays linked to its Xero copy; nothing was unlinked. To bill this work again, raise a new invoice request.");
 
         if (await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is not { } tenantId)
             return new XeroLinkActionResult(false, "No Xero organisation is connected; nothing was unlinked.");
@@ -246,11 +253,7 @@ public sealed class XeroDocumentLinkActions
         }, cancellationToken).ConfigureAwait(false);
 
         _engine.Signal();
-        return new XeroLinkActionResult(
-            true,
-            document.Kind == XeroDocumentKind.Invoice
-                ? $"Unlinked {name} from Xero. To bill this work again, raise a new invoice request."
-                : $"Unlinked {name} from Xero. Nothing was sent; choose Send again to send it to Xero as a new draft.");
+        return new XeroLinkActionResult(true, $"Unlinked {name} from Xero. Nothing was sent; choose Send again to send it to Xero as a new draft.");
     }
 
     /// <summary>

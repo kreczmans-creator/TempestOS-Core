@@ -92,6 +92,30 @@ public sealed class SettingsXeroSyncNowTests
     }
 
     [Avalonia.Headless.XUnit.AvaloniaFact]
+    public async Task SyncNow_WhenTheEngineThrows_SaysWhy_EndingInOneFullStop()
+    {
+        // Verifier F3 defect 5: an exception message ends with "." and the note added another.
+        var reader = new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() };
+        var syncs = 0;
+        await using var fixture = await SectionFixture.StartAsync(reader, outbox: new FakeXeroOutbox(), services: s => new XeroSettingsSectionServices
+        {
+            Reader = s.Reader, Identity = s.Identity, Outbox = s.Outbox, Organisations = s.Organisations, Audit = s.Audit, TimeZone = s.TimeZone,
+            SyncNow = _ =>
+            {
+                syncs++;
+                return Task.FromException<XeroSyncCycleReport>(new InvalidOperationException("The disk is full."));
+            },
+        });
+
+        Click(fixture.Section, XeroSettingsSection.SyncNowName);
+        await UntilAsync(() => syncs == 1 && Button(fixture.Section, XeroSettingsSection.SyncNowName).IsEnabled);
+
+        var text = Text(fixture.Section, "Xero status");
+        Assert.Contains("Sync with Xero did not run: The disk is full.", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("..", text, StringComparison.Ordinal);
+    }
+
+    [Avalonia.Headless.XUnit.AvaloniaFact]
     public async Task WithoutTheEngine_NoSyncNowIsOffered_AndRefreshReadsTheSettingsAlone()
     {
         var reader = new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() };

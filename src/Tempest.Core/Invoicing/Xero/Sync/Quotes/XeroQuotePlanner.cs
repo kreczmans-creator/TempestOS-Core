@@ -197,6 +197,11 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
 
         if (link is null)
         {
+            // Unlinked by the person (its Xero copy was deleted there): nothing
+            // goes again until they choose Send again, which clears the mark.
+            if (await IsUnlinkedByPersonAsync(document, cancellationToken).ConfigureAwait(false))
+                return [];
+
             var optedIn = await IsOptedInAsync(objectId, cancellationToken).ConfigureAwait(false);
             if (!optedIn && !await IsAutomaticAsync(quote, cancellationToken).ConfigureAwait(false))
                 return [];
@@ -373,6 +378,11 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
             _stateGate.Release();
         }
     }
+
+    /// <summary>Whether the person unlinked this quote from Xero (<see cref="XeroDocumentLinkActions.Collection"/>) in the connected organisation and has not chosen Send again.</summary>
+    private async Task<bool> IsUnlinkedByPersonAsync(XeroDocumentRef document, CancellationToken cancellationToken) =>
+        await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } tenantId
+        && await _state.ReadAsync(XeroDocumentLinkActions.Collection, PersistenceXeroLinkStore.KeyFor(tenantId, document), cancellationToken).ConfigureAwait(false) is not null;
 
     private async Task<bool> IsOptedInAsync(Guid quotationId, CancellationToken cancellationToken) =>
         await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false) is not null;

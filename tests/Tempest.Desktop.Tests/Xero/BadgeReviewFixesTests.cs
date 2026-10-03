@@ -212,6 +212,31 @@ public sealed class BadgeReviewFixesTests
         Assert.False(badge.OffersUnlink);
     }
 
+    [AvaloniaFact]
+    public async Task OverTheRealEngine_APushThatFailedAgainstTheDeletedCopy_AfterUnlink_OffersSendAgain_NotRetry()
+    {
+        // Verifier F3 defect 3: the badge stayed Failed with "…Unlink, then
+        // Send again", offering only Retry — which sent with no Send again chosen.
+        var kit = await BadgeTestKit.CreateAsync();
+        await kit.LinkAsync(Quote, "QU-0042", "DELETED");
+        await kit.EntryAsync(
+            Quote, XeroOperation.PushQuote, XeroOutboxState.Failed,
+            "Quote QU-0042 was deleted in Xero. To send the quotation again, choose Unlink from Xero on its Xero badge, then Send again.");
+        var actions = new XeroDocumentLinkActions(new XeroSyncParts(kit.Links, kit.Outbox, kit.Secrets), kit.Engine, kit.Store, api: null, timeProvider: kit.Clock);
+        var source = new XeroSyncServiceBadgeSource(kit.Engine, links: actions)
+        {
+            Prompts = new XeroBadgePrompts((_, _, _) => Task.FromResult(true), (_, _) => Task.FromResult<string?>(null)),
+        };
+        Assert.True((await actions.UnlinkAsync(Quote)).Done);
+
+        var badge = await ShowAsync(source, Quote, "Q-42");
+        Assert.Equal("Xero: Deleted in Xero", badge.Text);
+        Assert.Equal(XeroSyncServiceBadgeSource.UnlinkedNote, badge.Presentation!.Detail);
+        Assert.True(badge.OffersSendAgain);
+        Assert.False(badge.OffersRetry);
+        Assert.False(badge.OffersUnlink);
+    }
+
     private static Button FindButton(Control root, string automationName) =>
         root.GetLogicalDescendants().OfType<Button>().Single(b => AutomationProperties.GetName(b) == automationName);
 

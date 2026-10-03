@@ -677,7 +677,17 @@ public sealed class XeroSyncService : IXeroSyncService
 
     /// <summary>Reads statuses back now (<see cref="ReadBackAsync"/>), re-planning every record found changed, and says what it did; <see langword="null"/> when nothing could be read (no read-back, no organisation connected, or paused).</summary>
     /// <param name="cancellationToken">Cancels the pass.</param>
-    public async Task<XeroReadBackReport?> ReadBackNowAsync(CancellationToken cancellationToken = default)
+    public Task<XeroReadBackReport?> ReadBackNowAsync(CancellationToken cancellationToken = default) =>
+        ReadBackNowAsync(null, cancellationToken);
+
+    /// <summary>
+    /// Reads statuses back now, as <see cref="ReadBackNowAsync(CancellationToken)"/>,
+    /// reading <paramref name="first"/> before any other record (a badge's
+    /// <em>Check Xero now</em>), so it is read whatever the pass's budget.
+    /// </summary>
+    /// <param name="first">The record to read first; <see langword="null"/> for none.</param>
+    /// <param name="cancellationToken">Cancels the pass.</param>
+    public async Task<XeroReadBackReport?> ReadBackNowAsync(XeroDocumentRef? first, CancellationToken cancellationToken = default)
     {
         if (_readBack is null)
             return null;
@@ -693,7 +703,7 @@ public sealed class XeroSyncService : IXeroSyncService
             // Stamped before the pass, so a pass that throws is not retried
             // on every wake of the loop but on the next interval.
             _lastReadBackUtc = _time.GetUtcNow();
-            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, cancellationToken).ConfigureAwait(false);
+            report = await _readBack.ReadAsync(tenantId, _options.ReadBackBudget, first, cancellationToken).ConfigureAwait(false);
             await NoteRateLimiterPauseAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
