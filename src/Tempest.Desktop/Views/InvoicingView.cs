@@ -962,7 +962,7 @@ public sealed class InvoicingView : UserControl
 
         if (result.Succeeded)
             await RefreshAsync().ConfigureAwait(true);
-        Report(result.Message ?? (result.Succeeded ? "Reconciled." : "Reconcile failed."), succeeded: result.Succeeded);
+        Report(await NameRequestAsync(result.Message ?? (result.Succeeded ? "Reconciled." : "Reconcile failed."), requestId).ConfigureAwait(true), succeeded: result.Succeeded);
     }
 
     private async Task OnVoidAsync(Guid requestId)
