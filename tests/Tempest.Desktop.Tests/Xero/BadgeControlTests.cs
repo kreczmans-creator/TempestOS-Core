@@ -161,11 +161,13 @@ public sealed class BadgeControlTests
     [AvaloniaFact]
     public async Task CannotTell_IsShown_ForAPurchaseOrderWhoseCreateWasLost()
     {
-        var kit = await BadgeTestKit.CreateAsync();
+        // X6 reports the verdict typed (XeroDocumentSyncStatus.CannotTell, end to end in
+        // Core's XeroSyncRecoveryTests); the control shows it from that, never from the words.
+        var fake = new FakeXeroBadgeSource();
         var reason = XeroPurchasingOwnership.CannotTell("Purchase order", "order", "PO-1", "key expired", sourceGone: false).Reason;
-        await kit.EntryAsync(Order, XeroOperation.PushPurchaseOrder, XeroOutboxState.Failed, reason);
+        fake.Set(Order, new XeroSyncStatus(XeroSyncBadge.Failed, reason, RetryableEntryId: Guid.NewGuid()), cannotTell: true);
 
-        var badge = await ShowAsync(kit.Source, Order, "PO-1");
+        var badge = await ShowAsync(fake, Order, "PO-1");
         Assert.Equal("Xero: Can't tell", badge.Text);
         Assert.Contains("check Xero for PO-1", badge.Presentation!.Detail, StringComparison.Ordinal);
     }
@@ -424,8 +426,8 @@ internal sealed class FakeXeroBadgeSource : IXeroBadgeSource
 
     public HashSet<XeroDocumentKind> SendToXeroKinds { get; } = [XeroDocumentKind.Quote, XeroDocumentKind.PurchaseOrder, XeroDocumentKind.ExpenseBill];
 
-    public void Set(XeroDocumentRef document, XeroSyncStatus status, bool canSendAgain = false) =>
-        _statuses[document] = new XeroDocumentSyncStatus(status, XeroSyncService.LabelFor(status.Badge), status.RetryableEntryId is not null, canSendAgain);
+    public void Set(XeroDocumentRef document, XeroSyncStatus status, bool canSendAgain = false, bool cannotTell = false) =>
+        _statuses[document] = new XeroDocumentSyncStatus(status, XeroSyncService.LabelFor(status.Badge), status.RetryableEntryId is not null, canSendAgain) { CannotTell = cannotTell };
 
     public void RaiseChanged() => Changed?.Invoke();
 

@@ -84,6 +84,7 @@ public sealed class XeroSyncRecoveryTests
         var status = await kit.Engine.GetDocumentStatusAsync(EngineTestKit.OrderRef(orderId));
         Assert.Equal(XeroSyncBadge.Failed, status.Status.Badge);
         Assert.Contains("cannot tell", status.Status.Reason, StringComparison.OrdinalIgnoreCase);
+        Assert.True(status.CannotTell); // Backlog U3: typed, for the badge.
         Assert.False(status.CanSendAgain);
 
         // A Retry still sends nothing: the create is never re-sent blindly.
@@ -91,6 +92,7 @@ public sealed class XeroSyncRecoveryTests
         await kit.SettleAsync();
         Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get && r.Path.StartsWith("PurchaseOrders", StringComparison.Ordinal));
         Assert.Single(kit.LiveOrders);
+        Assert.True((await kit.Engine.GetDocumentStatusAsync(EngineTestKit.OrderRef(orderId))).CannotTell);
         kit.AssertNoViolations();
     }
 
@@ -179,6 +181,7 @@ public sealed class XeroSyncRecoveryTests
         Assert.Equal(XeroSyncBadge.Failed, status.Status.Badge);
         Assert.True(status.CanRetry);
         Assert.True(status.CanSendAgain);
+        Assert.False(status.CannotTell); // Deleted in Xero is not "can't tell".
         Assert.Empty(kit.LiveOrders);
 
         var again = await kit.Engine.SendAgainAsync(EngineTestKit.OrderRef(orderId));

@@ -329,7 +329,16 @@ public sealed class XeroSyncParts
 /// <param name="Label">The badge's words: <em>Not sent</em>, <em>Queued</em>, <em>In Xero (draft)</em>, <em>In Xero</em>, <em>Awaiting payment</em>, <em>Paid</em>, <em>Voided</em>, <em>Failed</em> or <em>Waiting for authorisation</em>.</param>
 /// <param name="CanRetry">Whether <em>Retry</em> is offered (<see cref="XeroSyncService.RetryAsync"/> on <see cref="XeroSyncStatus.RetryableEntryId"/>).</param>
 /// <param name="CanSendAgain">Whether <em>Send again</em> is offered (<see cref="XeroSyncService.SendAgainAsync"/>): a purchase order or bill TempestOS made in Xero was deleted (or voided) there.</param>
-public sealed record XeroDocumentSyncStatus(XeroSyncStatus Status, string Label, bool CanRetry, bool CanSendAgain);
+public sealed record XeroDocumentSyncStatus(XeroSyncStatus Status, string Label, bool CanRetry, bool CanSendAgain)
+{
+    /// <summary>
+    /// Whether the record's Failed write is X5's <em>CannotTell</em> verdict
+    /// (<see cref="XeroPushResult.CannotTell"/>): its create's answer was lost
+    /// and cannot be recovered, so someone must check Xero. Typed, so the
+    /// badge never matches the reason's words.
+    /// </summary>
+    public bool CannotTell { get; init; }
+}
 
 /// <summary>What one wake of the engine did (<see cref="XeroSyncService.RunCycleAsync"/>).</summary>
 /// <param name="Planned">Outbox entries the cycle's planning queued (new ones only).</param>
@@ -1074,7 +1083,8 @@ public sealed class XeroSyncService : IXeroSyncService
         {
             var retryable = failed.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion && Enum.IsDefined(failed.Operation)
                             && !string.Equals(failed.LastError, PersistenceXeroOutbox.UnreadableError, StringComparison.Ordinal);
-            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null);
+            var cannotTell = (await ReadTrackAsync(failed.Id, cancellationToken).ConfigureAwait(false)).CannotTell;
+            return Make(XeroSyncBadge.Failed, failed.LastError ?? "Xero refused this write.", retryable ? failed.Id : null) with { CannotTell = cannotTell };
         }
 
         if (open.Count > 0)
@@ -1305,7 +1315,7 @@ public sealed class XeroSyncService : IXeroSyncService
                 var reason = result.Reason ?? (blocked ? "Blocked: a precondition in TempestOS is missing." : "Xero refused this write.");
                 await _drain.RecordOutcomeAsync(entry.Id, XeroOutboxState.Failed, reason, cancellationToken: cancellationToken).ConfigureAwait(false);
                 var repeat = track.Blocked && blocked && string.Equals(entry.LastError, reason, StringComparison.Ordinal);
-                await WriteTrackAsync(entry.Id, new EntryTrack(Blocked: blocked), cancellationToken).ConfigureAwait(false);
+                await WriteTrackAsync(entry.Id, new EntryTrack(Blocked: blocked, CannotTell: result.CannotTell), cancellationToken).ConfigureAwait(false);
                 if (!repeat)
                 {
                     detail["blocked"] = blocked ? "true" : "false";
@@ -1684,7 +1694,8 @@ public sealed class XeroSyncService : IXeroSyncService
     /// <param name="RecoveryAttempts">Recovery attempts so far (the short schedule).</param>
     /// <param name="UnknownAnswers">Inconclusive answers so far.</param>
     /// <param name="Blocked">Whether it is Failed because a precondition was missing (retried automatically).</param>
-    internal sealed record EntryTrack(DateTimeOffset? RecoveringSinceUtc = null, int RecoveryAttempts = 0, int UnknownAnswers = 0, bool Blocked = false);
+    /// <param name="CannotTell">Whether it is Failed on X5's <em>CannotTell</em> verdict (<see cref="XeroPushResult.CannotTell"/>).</param>
+    internal sealed record EntryTrack(DateTimeOffset? RecoveringSinceUtc = null, int RecoveryAttempts = 0, int UnknownAnswers = 0, bool Blocked = false, bool CannotTell = false);
 
     private async Task<EntryTrack> ReadTrackAsync(Guid entryId, CancellationToken cancellationToken)
     {
