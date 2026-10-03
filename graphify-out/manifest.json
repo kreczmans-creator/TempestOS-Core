@@ -10752,9 +10752,9 @@
     "semantic_hash": "59c6e3098e0cd6997d23185f5e4a56db"
   },
   "tests/Tempest.Core.Tests/Commands/CommandInvocationContractTests.cs": {
-    "mtime": 1790990696.4085498,
-    "seen": 1790998923.8395298,
-    "ast_hash": "faaf0d3d77fe7a484871c214bd05d541",
+    "mtime": 1791002112.6299846,
+    "seen": 1791003302.334037,
+    "ast_hash": "c080f3dcc69b7a60f79486477c32e750",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Commands/CommandRegistryTests.cs": {
@@ -12810,9 +12810,9 @@
     "semantic_hash": "f9f7fc0af22486a54d48f91687a4fbc0"
   },
   "tests/Tempest.Core.Tests/Workspace/CommandDescriptorBindingTests.cs": {
-    "mtime": 1790990696.4488404,
-    "seen": 1790998923.8401191,
-    "ast_hash": "fbe37af4ff8052fc968a5cabdb25d273",
+    "mtime": 1791002458.300177,
+    "seen": 1791003302.334726,
+    "ast_hash": "61440122082cc08dc4cc98bfdfbe9498",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Workspace/CreateEvidenceFromFilesCommandTests.cs": {
@@ -16836,9 +16836,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroExpenseBillPushHandler.cs": {
-    "mtime": 1790993275.7406373,
-    "seen": 1790998923.8381634,
-    "ast_hash": "fb865469b8dfebc57fe4d72b797669c9",
+    "mtime": 1791001994.9647784,
+    "seen": 1791003302.3322155,
+    "ast_hash": "683ebe6d3b98871b2a95398ddfbf3e02",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroGeneralExpensesContact.cs": {
@@ -16848,9 +16848,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchaseOrderPushHandler.cs": {
-    "mtime": 1790990696.3058028,
-    "seen": 1790998923.8381665,
-    "ast_hash": "dc7e4e866877414a2bdf81397bf193d4",
+    "mtime": 1791001994.9651008,
+    "seen": 1791003302.3322198,
+    "ast_hash": "e915a2d8a01f8cd65301a84170536448",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingAttachmentHandlers.cs": {
@@ -16860,9 +16860,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingCreateLog.cs": {
-    "mtime": 1790990696.3058028,
-    "seen": 1790998923.8381698,
-    "ast_hash": "73801f3f0e2fe562d86bc4577eeefc35",
+    "mtime": 1791001828.2106786,
+    "seen": 1791003302.3322244,
+    "ast_hash": "504d763dc2a4ad3d9ccd7288eb4e3389",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingMapper.cs": {
@@ -16872,9 +16872,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingPlanners.cs": {
-    "mtime": 1790990696.3058028,
-    "seen": 1790998923.838175,
-    "ast_hash": "8d8cc5902194dfb3a497465626b22aa5",
+    "mtime": 1791001983.1132267,
+    "seen": 1791003302.33223,
+    "ast_hash": "ddb5093bb17db5aeb2ecd4e6b3c1ce4f",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingSources.cs": {
@@ -16884,9 +16884,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Purchasing/XeroPurchasingSyncState.cs": {
-    "mtime": 1790990696.3058028,
-    "seen": 1790998923.838182,
-    "ast_hash": "0732ef2d4f27c11fa760c093c27c7255",
+    "mtime": 1791001828.2109923,
+    "seen": 1791003302.3322377,
+    "ast_hash": "61aef1a70e33d164527fd1bccc520326",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/XeroDocumentFile.cs": {
@@ -30132,9 +30132,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/Quotes/XeroQuotePushHandler.cs": {
-    "mtime": 1790999591.227747,
-    "seen": 1790999955.5231125,
-    "ast_hash": "7a6399135983ac5f71931389c68f2fae",
+    "mtime": 1791001828.2102034,
+    "seen": 1791003302.332244,
+    "ast_hash": "447bf6e3ab330c8fce31b5b200f41eaa",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/XeroBackoff.cs": {
@@ -30162,9 +30162,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/XeroSyncService.cs": {
-    "mtime": 1790999591.2278464,
-    "seen": 1790999955.5231495,
-    "ast_hash": "5f95b7246c9cfa393504c4a14f16f952",
+    "mtime": 1791002035.0006747,
+    "seen": 1791003302.332266,
+    "ast_hash": "58f94129e9ae18fc5af7503df103b026",
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/XeroServiceRegistration.Invoices.cs": {
@@ -30300,9 +30300,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/XeroSettingsSection.cs": {
-    "mtime": 1790998602.0372813,
-    "seen": 1790998923.8389082,
-    "ast_hash": "d02bb436a5048d2c137f5289c792780e",
+    "mtime": 1791002293.3249266,
+    "seen": 1791003302.3333735,
+    "ast_hash": "52c5e830bdd5b8ece6adb588369e6d6f",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroIdentityTests.cs": {
@@ -30312,9 +30312,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroSectionTests.cs": {
-    "mtime": 1790990696.4775243,
-    "seen": 1790998923.8405237,
-    "ast_hash": "9b958613011caa2f7e93cd39ceb7d619",
+    "mtime": 1791002212.5219007,
+    "seen": 1791003302.335218,
+    "ast_hash": "fc5c48b269226e374aec9731b6f7673c",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroVerifierFixTests.cs": {
@@ -30396,9 +30396,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Core/Invoicing/Xero/Sync/XeroDocumentLinkActions.cs": {
-    "mtime": 1790999591.2278252,
-    "seen": 1790999955.5231273,
-    "ast_hash": "f0acaa3082b36c3fd65e4dc63dcef8f8",
+    "mtime": 1791001828.2096138,
+    "seen": 1791003302.332254,
+    "ast_hash": "349fc551c86c74901a7a197ca4bbb450",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/AccountsForwardCashProjectionTests.cs": {
@@ -30486,9 +30486,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Sync/Engine/XeroDocumentLinkActionsTests.cs": {
-    "mtime": 1790999486.5554633,
-    "seen": 1790999955.5261557,
-    "ast_hash": "c58bc3552e1fde5342db6abc6bb7c623",
+    "mtime": 1791002035.0012102,
+    "seen": 1791003302.3342714,
+    "ast_hash": "e2a65c634b1652a68f28461eda3e538f",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Xero/Sync/Engine/XeroReadBackFirstTests.cs": {
@@ -30528,9 +30528,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/MainWindowXeroCompositionTests.cs": {
-    "mtime": 1790993946.0835462,
-    "seen": 1790998923.8405192,
-    "ast_hash": "c32eaa1df1df5869090fd9e6cc69c729",
+    "mtime": 1791002308.85258,
+    "seen": 1791003302.3352137,
+    "ast_hash": "41e6dd68d4d84a9ce684951d2480c631",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroCleanupTests.cs": {
@@ -30540,9 +30540,9 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/Xero/SettingsXeroSyncNowTests.cs": {
-    "mtime": 1790998349.5779772,
-    "seen": 1790998923.8405252,
-    "ast_hash": "a1d99e2bf797bac13be3b4898c636a02",
+    "mtime": 1791002212.522441,
+    "seen": 1791003302.3352203,
+    "ast_hash": "d6ecbb8580792b8fb75deac884a10f9e",
     "semantic_hash": ""
   },
   "docs/releases/v0.24.0/PO Test Runbook.md": {
