@@ -151,8 +151,11 @@ public sealed class CustomersSuppliersView : UserControl
     /// <summary>
     /// The order <see cref="LoadAsync"/> look-ups started in, and the latest
     /// one whose record was put on the form. A found record whose look-up
-    /// started before the one already on the form is stale and never shown:
-    /// the form always holds the latest organisation opened (the list's).
+    /// started before the one already on the form is stale and never shown,
+    /// and a look-up superseded while it is still awaiting (its code
+    /// suggestion, contacts or Xero section) writes nothing more; New
+    /// supersedes every look-up too. The form always holds the latest
+    /// organisation opened (the list's), or the blank New form.
     /// </summary>
     private int _loadSequence;
 
@@ -513,18 +516,16 @@ public sealed class CustomersSuppliersView : UserControl
             SetXeroBusy(true);
         }
 
+        // Every field is filled from this record before the first await: a
+        // later look-up (or New) applied during an await below supersedes this
+        // one, and this one then writes nothing more — the form never mixes
+        // one organisation's details under another's heading.
         _editingRecordId = recordId;
         _formHeading.Text = $"Edit {o.Name}";
         _saveButton.Content = "Save organisation";
 
         _name.Text = o.Name;
         SetCode(o.CustomerCode);
-
-        // An organisation recorded before customer codes existed is offered
-        // one, suggested from its name, the moment it is opened.
-        _codeEditedByHand = !string.IsNullOrWhiteSpace(o.CustomerCode);
-        if (!_codeEditedByHand)
-            await SuggestCodeAsync().ConfigureAwait(true);
         _type.SelectedItem = _type.Items.OfType<ComboBoxItem>().First(i => Equals(i.Tag, o.TradingType));
         _addressLine1.Text = o.Address?.Line1;
         _addressLine2.Text = o.Address?.Line2;
@@ -539,13 +540,29 @@ public sealed class CustomersSuppliersView : UserControl
         _status.Text = string.Empty;
 
         _contactsSection.IsVisible = true;
+        _contactList.ItemsSource = null;
         BeginNewContact();
+
+        // An organisation recorded before customer codes existed is offered
+        // one, suggested from its name, the moment it is opened.
+        _codeEditedByHand = !string.IsNullOrWhiteSpace(o.CustomerCode);
+        if (!_codeEditedByHand)
+            await SuggestCodeAsync().ConfigureAwait(true);
+        if (load != _appliedLoad)
+            return;
+
         await ReloadContactsAsync(o.Reference).ConfigureAwait(true);
+        if (load != _appliedLoad)
+            return;
+
         await RefreshXeroAsync(readDetails: true).ConfigureAwait(true);
     }
 
     private void BeginNew()
     {
+        // A look-up still pending (or part-applied) is superseded: it never
+        // fills this blank form.
+        _appliedLoad = ++_loadSequence;
         _editingRecordId = null;
         _formHeading.Text = "New organisation";
         foreach (var box in new[] { _name, _addressLine1, _addressLine2, _town, _postcode, _country, _companyNumber, _vatNumber, _phone, _email, _website })
@@ -585,8 +602,11 @@ public sealed class CustomersSuppliersView : UserControl
             return;
         }
 
+        // A suggestion for an organisation no longer on the form (another was
+        // opened, or New pressed, meanwhile) is dropped.
+        var load = _appliedLoad;
         var suggestion = await _organisations.SuggestCustomerCodeAsync(_name.Text, _editingRecordId).ConfigureAwait(true);
-        if (!_codeEditedByHand)
+        if (!_codeEditedByHand && load == _appliedLoad)
             SetCode(suggestion);
     }
 
@@ -670,7 +690,12 @@ public sealed class CustomersSuppliersView : UserControl
 
     private async Task ReloadContactsAsync(string organisationReference)
     {
+        // Contacts of an organisation no longer on the form are dropped.
+        var load = _appliedLoad;
         var contacts = await _contacts.FindForOrganisationAsync(organisationReference).ConfigureAwait(true);
+        if (load != _appliedLoad)
+            return;
+
         _contactList.ItemsSource = contacts
             .Select(c => new ListBoxItem { Content = DescribeContact(c.Definition), Tag = c.Id })
             .ToList();
