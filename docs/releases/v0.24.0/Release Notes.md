@@ -2,9 +2,13 @@
 
 **Status: draft.** Awaiting the Product Owner's run of
 `docs/releases/v0.24.0/PO Test Runbook.md` against the Xero Demo
-Company and the live smoke test (`scripts/xero-demo-smoke.ps1`). The
-forward cash picture (task X7) merges separately; its runbook section XF
-is a placeholder until then. Decision record: `ADR-0162` (Accepted).
+Company and the live smoke test (`scripts/xero-demo-smoke.ps1`), which
+has not been run against the real Demo Company yet (its open items below
+are still to be filled). The forward cash picture (task X7) is in this
+build; runbook section XF walks it. Statements marked *(needs …)* describe
+behaviour delivered by a review-board fix merged separately; the
+integrator confirms each before release. Decision record: `ADR-0162`
+(Accepted).
 Design: `Xero Integration Plan.md` (D1–D7), `Xero Technical Design.md`,
 `Xero Build Decisions.md` (Q1–Q10 defaults).
 
@@ -71,9 +75,24 @@ approved, posted or emailed by TempestOS.
   Queued, In Xero (draft), In Xero, Awaiting payment, Paid, Voided,
   Deleted in Xero, Failed (with the reason), Can't tell or Waiting for
   authorisation, with **Retry**, **Send again** (a purchase order or bill
-  deleted in Xero) and **Send to Xero** (a record raised before v0.24.0,
-  Q8). Every write goes through one durable outbox: it survives a restart,
-  waits while offline, honours Xero's rate limits and is never made twice.
+  deleted in Xero) and **Send to Xero** (a quote, purchase order or expense
+  raised before Xero sync began, Q8). Every write of a quote, invoice
+  draft, purchase order, bill or attachment goes through one durable
+  outbox: it survives a restart, waits while offline, honours Xero's rate
+  limits and is never made twice. Creating a contact and the Q7 contact
+  number are written directly when you confirm them in **Link to Xero…**,
+  looked up by the customer code first so they are never made twice
+  (`ADR-0162` §4).
+- **Forward cash picture (X7).** Business → Dashboard gains **Forward
+  cash — next 6 months**: for each calendar month, opening cash, money in
+  (invoices TempestOS raised in Xero and not yet paid, plus accepted
+  quotes' work not yet invoiced, dated by its milestone), money out
+  (approved bills and repeating bills from Xero) and closing cash. Every
+  figure names its source (*Xero …, read at …*; *TempestOS*; *worked
+  out*), amounts are gross including VAT, accepted work already invoiced
+  in Xero is counted once, and with no accounts reading Xero's figures
+  read *unavailable* with the reason, never zero. Offline it shows the
+  last reading and says the refresh failed.
 - **The safety rules are in code (ADR-0162).** One handler below every
   Xero call refuses any request that would approve an invoice, bill or
   purchase order, email anyone, set *sent to contact*, write outside
@@ -84,13 +103,20 @@ approved, posted or emailed by TempestOS.
   live tests (`Category=XeroLive`) against the Demo Company with the stored
   tokens: connect, read, contact, quote → sent → accepted, invoice draft,
   purchase order draft, bill draft with receipt, repeated creates, and the
-  open items below. They refuse to write unless Xero reports
-  `IsDemoCompany`, and are skipped (not failed) in CI. The same journey
-  runs against the in-process Xero simulator on every CI run.
+  open items below. A second journey does the same through TempestOS's
+  own production path (contact linker, quote, purchase order and bill
+  planners, mappers and handlers, the invoicing service and the sync
+  engine with its read-back), so the code the app runs meets the real
+  Xero, not only hand-built requests. They refuse to write unless Xero
+  reports `IsDemoCompany`, and are skipped (not failed) in CI and without
+  the Demo Company's credentials. Both journeys run against the in-process
+  Xero simulator on every CI run.
 - **Documentation.** `docs/guides/Xero Setup - Step by Step.md` (new
   scopes, Demo Company first, Re-authorise, the live switch, the smoke
-  script); `docs/releases/v0.24.0/PO Test Runbook.md`;
-  `PHYSICAL_REVIEW.md` §7m.
+  script); `docs/releases/v0.24.0/PO Test Runbook.md` (the steps);
+  `PHYSICAL_REVIEW.md` §7m (a short Xero walk pointing at the runbook).
+- **Version.** `VERSION` reads `0.24.0`: the test build installs into
+  `C:\TempestOS-rc24-data` and its title bar reads `TempestOS 0.24.0 (…)`.
 
 ## Product Owner decisions (D1–D7, 2026-10-02)
 
@@ -118,7 +144,7 @@ change. Please confirm or change each one.
 | Q5 | Attached PDFs are **not** shown on Xero's online invoice (Settings switch to change) | |
 | Q6 | An expense recorded from a received purchase order's lines is not billed separately (use Xero's *Copy to bill*) | |
 | Q7 | Linking an existing contact writes TempestOS's customer code into its contact number only when that is empty | |
-| Q8 | Nothing raised before v0.24.0 is pushed automatically: quotes and purchase orders are sent on demand (**Send to Xero**); invoices already in Xero are imported as links, and an unsent invoice goes through **Send** as usual | |
+| Q8 | Nothing raised before Xero sync began is pushed automatically: quotes, purchase orders and expenses are sent on demand (**Send to Xero**); invoices have no **Send to Xero** — one already in Xero from before v0.24.0 is imported as a link, and an unsent invoice goes through **Send** as usual | |
 | Q9 | `openid profile email` dropped (confirmed by the smoke test, open item F3) | |
 | Q10 | Account codes chosen in Settings from Xero's chart; defaults are the UK Demo Company's (200 Sales; 400-series expenses) | |
 
@@ -143,39 +169,35 @@ report's *Open items* table here.
   makes a second record. Someone must check Xero. The engine recovers lost
   creates first on every drain, so this needs TempestOS to be closed or
   offline for most of those 5 minutes straight after the create. Open item
-  F1 confirms the window on the real Xero. A *Can't tell* badge still
-  shows **Retry**, which changes nothing.
-- **A 429 on the invoice path can be treated as an ordinary failure.**
-  When Xero answers *too many requests* to an invoice send with a
-  `Retry-After` under a minute while the minute's allowance is nearly
-  spent, the engine backs it off as a server error rather than pausing
-  every write. The client-side rate limiter still holds all calls until
-  the minute ends, so nothing is sent early; but that pause is not saved,
-  so a restart inside it can send one call early, which Xero answers 429
-  again. No record is duplicated or lost.
-- **Expense supplier saved just after the expense.** The optional
-  supplier and supplier invoice number are saved a moment after the
-  expense is recorded. In that window the bill can go out against
-  *General expenses* as `EXP-…`; the next sync updates the draft to the
-  supplier and number.
-- **Pickers after Re-authorise.** Re-authorising reloads the tax-type and
-  account pickers from Settings; choices not yet saved are lost silently.
-- **Card accounts as bank details.** A credit-card account Xero lists as
-  a bank account, in the base currency and with a number, can be printed
-  as the bank details on a PDF.
+  F1 confirms the window on the real Xero. A *Can't tell* badge offers no
+  **Retry** *(needs m15)*.
 - **Loopback port.** This build still listens on `49301` for the Xero
   sign-in (`TD-183`, the move to `48131`, has not merged); register the
   port the browser shows.
-- **Forward cash picture (X7) merges separately**; runbook section XF is
-  a placeholder until then.
-- Smaller items for the final cleanup pass are listed in the build
-  backlog (contact-link look-up ordering, settings-cache edge cases).
+- **Going live.** Do not turn on *Allow live organisation* (runbook XG7)
+  until the integrator confirms review-board items M1, M2 and M7 are
+  merged: before them, switching from the Demo Company can copy Demo test
+  records into the live books, an expired token offline reads as
+  *Re-authorise*, and Xero rounds a unit price with more than two decimal
+  places, so its totals can differ from TempestOS's.
+
+Fixed in the build's clean-up pass (C1) and no longer limitations: an
+expense's supplier and invoice number are saved in its first revision
+(`b7c8530a`); Re-authorise keeps unsaved picker choices unless the
+organisation changed (`ff0b9b64`); a credit-card account is never printed
+as bank details (`958d7002`); a 429 on the invoice path pauses every write
+and survives a restart (`5a706608`); the contact-link look-up and the
+settings-cache edge cases (C1 U2, X1-1 to X1-6).
 
 ## ADR
 
 - `ADR-0162` — *Xero Holds Drafts and Copies; TempestOS Never Approves or
   Sends; Every Push Goes Through One Durable, Idempotent Outbox* —
-  **Accepted** (was Proposed at design time). It extends `ADR-0151`.
+  **Accepted** (was Proposed at design time). It extends `ADR-0151` and
+  amends its §9 (`XeroConnector`): invoices now name the contact by
+  `ContactID` and are reconciled by invoice number. It records that
+  contact create and the Q7 contact-number write are made directly, not
+  through the outbox, and why.
 
 ## Upgrading from v0.23.0
 
@@ -183,8 +205,8 @@ report's *Open items* table here.
 2. Settings → **Xero** reads **Re-authorise needed**: click
    **Re-authorise** and pick the **Demo Company**.
 3. Existing Xero invoices keep reconciling (they are imported as links on
-   first read). Quotes and purchase orders raised earlier are sent only
-   when you click **Send to Xero**.
+   first read). Quotes, purchase orders and expenses raised earlier are
+   sent only when you click **Send to Xero**.
 
 ## Gate
 

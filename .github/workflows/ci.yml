@@ -171,8 +171,10 @@ jobs:
         # segment (its sub-folder name for a nested class — `Layout`,
         # `Dashboards`, `Evidence`, `Quotations` — or the class's own leaf
         # name otherwise): `desktop-1` is A-D, `desktop-2` is E-P,
-        # `desktop-3` is Q-Z. Counts at v0.23.0 (test cases in a
-        # local run's .trx, theory rows included): 361 / 284 / 300 of 945 —
+        # `desktop-3` is Q-Z. Counts at v0.24.0 (test cases listed by
+        # `dotnet test --list-tests`, theory rows included): 379 / 284 /
+        # 431 of 1094 (v0.23.0: 361 / 284 / 300 of 945; v0.24.0's Xero
+        # tests live under `Xero`, so they all landed in desktop-3) —
         # every future class this alphabet range can ever describe still
         # lands in exactly one shard with no filter list to maintain
         # (`CiShardCoverageTests` reads these filters and fails if a test
@@ -314,7 +316,7 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 1 (A-D): 361 of 945 Desktop test cases at v0.23.0 —
+      # Desktop shard 1 (A-D): 379 of 1094 Desktop test cases at v0.24.0 —
       # see the matrix's own `shard` remark above for the split's full
       # rationale and each boundary letter.
       - name: Test Desktop shard 1 (A-D) (Release)
@@ -356,8 +358,8 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 2 (E-P): 284 of 945 Desktop test cases at
-      # v0.23.0, including
+      # Desktop shard 2 (E-P): 284 of 1094 Desktop test cases at
+      # v0.24.0, including
       # every `Category=LayoutWalk` test (`Layout.LayoutWalkTests`,
       # `Layout.ShellCollapseLayoutWalkTests` — both under the `Layout`
       # sub-namespace, so both fall in the `L` letter).
@@ -419,7 +421,7 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 3 (Q-Z): 300 of 945 Desktop test cases at v0.23.0.
+      # Desktop shard 3 (Q-Z): 431 of 1094 Desktop test cases at v0.24.0.
       - name: Test Desktop shard 3 (Q-Z) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-3'
         timeout-minutes: 25
