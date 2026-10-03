@@ -226,8 +226,21 @@ public sealed class DashboardsTests
             var cashFlowPoints = businessDashboard.GetLogicalDescendants().OfType<Avalonia.Controls.Shapes.Ellipse>().Count();
             Assert.Equal(12, cashFlowPoints);
 
+            // `v0.24.0` X7: the forward cash panel reads the same reading
+            // (opening cash = the 5,000 bank balance, its source named) and
+            // lists the same sent invoice among the figures behind October.
+            var forwardCells = businessDashboard.GetLogicalDescendants().OfType<Grid>()
+                .Where(g => AutomationName(g) == "Forward cash table")
+                .SelectMany(g => g.Children.OfType<TextBlock>())
+                .Select(AutomationName)
+                .ToList();
+            Assert.Contains(forwardCells, c => c.StartsWith("Opening cash, ", StringComparison.Ordinal) && c.Contains(": £5,000.00 — Fake bank balances, read at ", StringComparison.Ordinal));
+            Assert.Contains("Not counted: Hourly lines on accepted quotes", businessText, StringComparison.Ordinal);
+
+            // The receivable list's own row (not the forward cash panel's "Invoice due" row for the same request).
             var openReceivable = businessDashboard.GetLogicalDescendants().OfType<Button>()
-                .Single(b => AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains(fixture.ReceivableClientId, StringComparison.Ordinal));
+                .Single(b => AutomationName(b).StartsWith("Open ", StringComparison.Ordinal) && AutomationName(b).Contains(fixture.ReceivableClientId, StringComparison.Ordinal)
+                    && !AutomationName(b).Contains("Invoice due", StringComparison.Ordinal));
             openReceivable.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             // The phase setter prefixes a timestamp, so "opened (" is matched anywhere (v0.23.0 CI board G-01).
             await RenderUntilAsync(window, () => window.LastOpenPhase.Contains("opened (", StringComparison.Ordinal)

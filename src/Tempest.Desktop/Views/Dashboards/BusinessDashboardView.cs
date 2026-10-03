@@ -17,7 +17,9 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// The Business dashboard (`WP 19.7B`, Product Owner comment item 6,
 /// sheet 5): four tiles, accounts receivable and payable, quotes open
 /// value with a chase list, and a 12-week cash-flow chart — the tree's own
-/// "Dashboard" node in <see cref="BusinessAreaView"/>.
+/// "Dashboard" node in <see cref="BusinessAreaView"/>. Since `v0.24.0` X7
+/// also the forward cash picture: six calendar months of opening cash,
+/// money in, money out and closing cash, every figure stating its source.
 /// </summary>
 /// <remarks>
 /// One read per source, on entry and on <see cref="Tempest.Core.Events.IWorkspaceChanges"/>
@@ -32,6 +34,16 @@ namespace Tempest.Desktop.Views.Dashboards;
 /// the quotes panel stays real regardless, since it never depends on the
 /// accounting package (Product Owner comment item 8: only bills,
 /// subscriptions and cash come from there).
+/// <para>
+/// <b>Forward cash (`v0.24.0` X7)</b> reads <see cref="IForwardCashReadModel"/>
+/// from the same read model instance (no new constructor argument): the
+/// accounting package's actuals as last read — bank balances, bills,
+/// repeating bills — and the invoices TempestOS raised there, combined with
+/// accepted quotes not yet invoiced (TempestOS). Each figure's source is in
+/// its tooltip and automation name; a figure with no source reading reads
+/// "unavailable" with the reason, never zero. Quotes not yet accepted never
+/// count.
+/// </para>
 /// </remarks>
 public sealed class BusinessDashboardView : UserControl
 {
@@ -47,6 +59,9 @@ public sealed class BusinessDashboardView : UserControl
     private readonly StackPanel _quotesChaseList = new() { Spacing = DesignTokens.SpaceXs };
     private readonly ContentControl _cashFlowHost = new();
     private readonly TextBlock _cashFlowStatus = new() { FontSize = DesignTokens.FontSizeCaption };
+    private readonly TextBlock _forwardCashStatus = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = Avalonia.Media.TextWrapping.Wrap };
+    private readonly ContentControl _forwardCashTableHost = new();
+    private readonly StackPanel _forwardCashDetail = new() { Spacing = DesignTokens.SpaceXs };
 
     /// <summary>Initialises a new instance of the <see cref="BusinessDashboardView"/> class.</summary>
     public BusinessDashboardView(IAccountsReadModel accountsReadModel, EngineeringDomainContext domainContext, Action<Guid, string> openObjectRightUp)
@@ -61,6 +76,7 @@ public sealed class BusinessDashboardView : UserControl
 
         ThemeReactiveBrush.Bind(_accountsStatus, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
         ThemeReactiveBrush.Bind(_cashFlowStatus, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
+        ThemeReactiveBrush.Bind(_forwardCashStatus, TextBlock.ForegroundProperty, BrandPalette.MutedTextBrushKey);
 
         var page = new StackPanel { Margin = DesignTokens.PagePadding, Spacing = DesignTokens.SpaceXl };
         page.Children.Add(PageHeading.Label("BUSINESS"));
@@ -77,16 +93,29 @@ public sealed class BusinessDashboardView : UserControl
         cashFlowBody.Children.Add(_cashFlowHost);
         page.Children.Add(Section("Cash flow — next 12 weeks", cashFlowBody));
 
+        var forwardCashBody = new StackPanel { Spacing = DesignTokens.SpaceSm };
+        forwardCashBody.Children.Add(_forwardCashStatus);
+        forwardCashBody.Children.Add(new ScrollViewer { Content = _forwardCashTableHost, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled });
+        forwardCashBody.Children.Add(_forwardCashDetail);
+        AutomationProperties.SetName(forwardCashBody, ForwardCashPanelName);
+        page.Children.Add(Section(ForwardCashPanelName, forwardCashBody));
+
         AutomationProperties.SetName(this, "Business dashboard");
         Content = new ScrollViewer { Content = page };
     }
+
+    /// <summary>The forward cash panel's heading and automation name (`v0.24.0` X7).</summary>
+    public const string ForwardCashPanelName = "Forward cash — next 6 months";
 
     /// <summary>Re-reads every source and rebuilds every region.</summary>
     public async Task RefreshAsync()
     {
         var accountsTask = _accountsReadModel.ReadAsync();
         var quotationsTask = ReadQuotationsAsync();
-        await Task.WhenAll(accountsTask, quotationsTask).ConfigureAwait(true);
+        var forwardCashTask = _accountsReadModel is IForwardCashReadModel forwardCash
+            ? ReadForwardCashAsync(forwardCash)
+            : Task.FromResult<ForwardCashPicture?>(null);
+        await Task.WhenAll(accountsTask, quotationsTask, forwardCashTask).ConfigureAwait(true);
 
         var accounts = accountsTask.Result;
         var quotations = quotationsTask.Result;
@@ -96,6 +125,7 @@ public sealed class BusinessDashboardView : UserControl
         RenderPayable(accounts);
         RenderQuotes(quotations);
         RenderCashFlow(accounts);
+        RenderForwardCash(forwardCashTask.Result);
     }
 
     private void RenderTiles(AccountsSnapshot accounts)
@@ -224,6 +254,159 @@ public sealed class BusinessDashboardView : UserControl
 
         _cashFlowHost.Content = DashboardChart.Line(points);
     }
+
+    private static async Task<ForwardCashPicture?> ReadForwardCashAsync(IForwardCashReadModel readModel) =>
+        await readModel.ReadForwardCashAsync().ConfigureAwait(true);
+
+    private void RenderForwardCash(ForwardCashPicture? picture)
+    {
+        _forwardCashDetail.Children.Clear();
+
+        if (picture is null)
+        {
+            _forwardCashStatus.Text = "Forward cash unavailable — this accounts read model does not provide it.";
+            _forwardCashTableHost.Content = null;
+            return;
+        }
+
+        var status = new List<string>();
+        if (picture.AccountsUnavailableReason is { } reason)
+        {
+            status.Add($"Bank balances, bills and repeating bills: unavailable — {reason}");
+        }
+        else
+        {
+            status.Add($"Bank balances, bills and repeating bills: {picture.AccountsConnector}, read at {Utc(picture.AccountsReadAt!.Value)}.");
+            if (picture.RefreshFailureReason is { } failure)
+            {
+                var when = picture.RefreshFailedAtUtc is { } failedAt ? $" at {Utc(failedAt)}" : string.Empty;
+                status.Add($"The latest refresh failed{when} ({failure}); showing the last reading.");
+            }
+        }
+
+        status.Add("Money in: invoices raised in TempestOS, as last read back from the accounting package, and accepted quotes not yet invoiced (TempestOS). Quotes not yet accepted are not counted.");
+        status.Add(picture.VatBasis);
+        _forwardCashStatus.Text = string.Join(Environment.NewLine, status);
+
+        _forwardCashTableHost.Content = ForwardCashTable(picture);
+
+        foreach (var month in picture.Months.Where(m => m.Items.Count > 0))
+        {
+            _forwardCashDetail.Children.Add(Muted($"{MonthLabel(month)} — behind the figures:"));
+            foreach (var item in month.Items)
+                _forwardCashDetail.Children.Add(ForwardCashItemRow(item));
+        }
+
+        if (picture.Undated.Count > 0)
+        {
+            _forwardCashDetail.Children.Add(Muted(
+                $"Undated — accepted, not invoiced, no planned or target date: {MoneyDisplay.Format(picture.UndatedTotal)} (TempestOS; in no month above)."));
+            foreach (var item in picture.Undated)
+                _forwardCashDetail.Children.Add(ForwardCashItemRow(item));
+        }
+
+        if (picture.Later.Count > 0)
+        {
+            _forwardCashDetail.Children.Add(Muted($"After {MonthLabel(picture.Months[^1])} (in no month above):"));
+            foreach (var item in picture.Later)
+                _forwardCashDetail.Children.Add(ForwardCashItemRow(item));
+        }
+
+        foreach (var exclusion in picture.Exclusions)
+        {
+            var total = exclusion.Total is { } amount ? $", {MoneyDisplay.Format(amount)}" : string.Empty;
+            _forwardCashDetail.Children.Add(Muted($"Not counted: {exclusion.Reason} ({exclusion.Count} item(s){total})."));
+        }
+    }
+
+    private static Grid ForwardCashTable(ForwardCashPicture picture)
+    {
+        var rows = new (string Label, Func<ForwardCashMonth, ForwardCashFigure> Figure, bool Total)[]
+        {
+            ("Opening cash", m => m.OpeningCash, true),
+            ("Invoices due (Xero)", m => m.InvoicesDue, false),
+            ("Expected milestone invoices (TempestOS)", m => m.ExpectedMilestones, false),
+            ("Money in", m => m.MoneyIn, true),
+            ("Bills due (Xero)", m => m.BillsDue, false),
+            ("Repeating bills (Xero)", m => m.RepeatingBills, false),
+            ("Money out", m => m.MoneyOut, true),
+            ("Closing cash", m => m.ClosingCash, true),
+        };
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto," + string.Join(',', picture.Months.Select(_ => "Auto"))) };
+        for (var r = 0; r <= rows.Length; r++)
+            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+        AutomationProperties.SetName(grid, "Forward cash table");
+
+        AddCell(grid, 0, 0, new TextBlock { Text = string.Empty });
+        for (var c = 0; c < picture.Months.Count; c++)
+        {
+            var header = new TextBlock { Text = MonthLabel(picture.Months[c]), FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeCaption, HorizontalAlignment = HorizontalAlignment.Right };
+            AddCell(grid, 0, c + 1, header);
+        }
+
+        for (var r = 0; r < rows.Length; r++)
+        {
+            var (label, select, total) = rows[r];
+            var rowLabel = new TextBlock { Text = label, FontSize = DesignTokens.FontSizeBody, FontWeight = total ? DesignTokens.WeightHeading : Avalonia.Media.FontWeight.Normal };
+            AddCell(grid, r + 1, 0, rowLabel);
+
+            for (var c = 0; c < picture.Months.Count; c++)
+            {
+                var month = picture.Months[c];
+                var figure = select(month);
+                var value = figure.Amount is { } amount ? MoneyDisplay.Format(amount) : "unavailable";
+                var source = figure.IsAvailable ? figure.Source.Describe() : $"{figure.Source.Describe()} — {figure.UnavailableReason}";
+
+                var cell = new TextBlock
+                {
+                    Text = value,
+                    FontSize = DesignTokens.FontSizeBody,
+                    FontWeight = total ? DesignTokens.WeightHeading : Avalonia.Media.FontWeight.Normal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Opacity = figure.IsAvailable ? 1.0 : 0.7,
+                };
+                ToolTip.SetTip(cell, source);
+                AutomationProperties.SetName(cell, $"{label}, {MonthLabel(month)}: {value} — {source}");
+                AddCell(grid, r + 1, c + 1, cell);
+            }
+        }
+
+        return grid;
+    }
+
+    private static void AddCell(Grid grid, int row, int column, Control content)
+    {
+        content.Margin = new Thickness(column == 0 ? 0 : DesignTokens.SpaceLg, DesignTokens.SpaceXs, 0, DesignTokens.SpaceXs);
+        Grid.SetRow(content, row);
+        Grid.SetColumn(content, column);
+        grid.Children.Add(content);
+    }
+
+    private Control ForwardCashItemRow(ForwardCashItem item)
+    {
+        var date = item.Date is { } d ? d.ToString("d", CultureInfo.CurrentCulture) : "undated";
+        var note = item.Note is { Length: > 0 } ? $" — {item.Note}" : string.Empty;
+        var text = $"{date}  —  {KindLabel(item.Kind)}: {item.Description}: {MoneyDisplay.Format(item.Gross)}  ({item.Source.Describe()}){note}";
+
+        return item.ObjectId is { } id && item.ObjectKind is { } kind ? Row(text, id, kind) : Muted(text);
+    }
+
+    private static string KindLabel(ForwardCashItemKind kind) => kind switch
+    {
+        ForwardCashItemKind.InvoiceDue => "Invoice due",
+        ForwardCashItemKind.ExpectedMilestone => "Expected milestone invoice",
+        ForwardCashItemKind.BillDue => "Bill due",
+        ForwardCashItemKind.RepeatingBill => "Repeating bill",
+        _ => kind.ToString(),
+    };
+
+    private static string MonthLabel(ForwardCashMonth month) =>
+        month.From == month.MonthStart
+            ? month.MonthStart.ToString("MMM yyyy", CultureInfo.InvariantCulture)
+            : $"{month.MonthStart.ToString("MMM yyyy", CultureInfo.InvariantCulture)} (from {month.From.Day.ToString(CultureInfo.InvariantCulture)})";
+
+    private static string Utc(DateTimeOffset value) => $"{value.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)} UTC";
 
     private Control Row(string text, Guid objectId, string kind)
     {
