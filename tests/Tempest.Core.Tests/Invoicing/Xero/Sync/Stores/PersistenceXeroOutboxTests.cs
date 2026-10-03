@@ -311,6 +311,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json["AddedLaterInVersionOne"] = "kept";
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.Equal(entry, await Outbox().FindAsync(entry.Id));
 
@@ -331,6 +332,7 @@ public sealed class PersistenceXeroOutboxTests
         json["State"] = "Failed";
         var newer = json.ToJsonString();
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, newer);
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.Equal(2, (await Outbox().ListForDocumentAsync(Quote(1))).Single().SchemaVersion);
         Assert.False(await Outbox().RetryAsync(entry.Id));
@@ -347,7 +349,9 @@ public sealed class PersistenceXeroOutboxTests
     {
         var garbageKey = Guid.NewGuid().ToString("D");
         _persistence.Seed(PersistenceXeroOutbox.Collection, garbageKey, "{ not json");
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
         _persistence.Seed(PersistenceXeroOutbox.Collection, "not-a-guid", "{}");
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
         var entry = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h1");
 
         Assert.Equal([entry.Id], (await Outbox().ListAsync(AllStates)).Select(e => e.Id));
@@ -397,6 +401,7 @@ public sealed class PersistenceXeroOutboxTests
         var oldJson = _persistence.Raw(PersistenceXeroOutbox.Collection, old.Id.ToString("D"))!;
         var replacement = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(1), "h2");
         _persistence.Seed(PersistenceXeroOutbox.Collection, old.Id.ToString("D"), oldJson);
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.True(replacement.EnqueuedAtUtc > old.EnqueuedAtUtc);
         Assert.Equal(old.Id, (await Outbox().ClaimNextDueAsync())!.Id);
@@ -414,6 +419,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json.Remove("Sequence");
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
 
@@ -448,6 +454,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json.Remove("Sequence");
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.Equal([create.Id, status.Id], (await Outbox().ListForDocumentAsync(Quote(1))).Select(e => e.Id));
         Assert.Equal(create.Id, (await Outbox().ClaimNextDueAsync())!.Id);
@@ -471,6 +478,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json.Remove("Sequence");
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.Equal(replacement.Id, (await Outbox().ClaimNextDueAsync())!.Id);
         Assert.Null(await Outbox().ClaimNextDueAsync());
@@ -491,6 +499,7 @@ public sealed class PersistenceXeroOutboxTests
         json.Remove("Sequence");
         json["State"] = "Failed";
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         Assert.True(await Outbox().RetryAsync(status.Id));
         Assert.False(JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject().ContainsKey("Sequence"));
@@ -515,6 +524,7 @@ public sealed class PersistenceXeroOutboxTests
         json["Document"]!["Kind"] = "CreditNote";
         var newer = json.ToJsonString();
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, newer);
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var listed = Assert.Single(await Outbox().ListAsync(AllStates));
         Assert.Equal(entry.Id, listed.Id);
@@ -542,6 +552,7 @@ public sealed class PersistenceXeroOutboxTests
         json["SchemaVersion"] = 2;
         json["Operation"] = "PushCreditNote";
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var listed = Assert.Single(await Outbox().ListForDocumentAsync(Quote(1)));
         Assert.Equal(PersistenceXeroOutbox.UnknownOperation, listed.Operation);
@@ -563,6 +574,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json["Sequence"] = long.MaxValue;
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
         _clock.Advance(TimeSpan.FromSeconds(1));
 
         var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
@@ -586,6 +598,7 @@ public sealed class PersistenceXeroOutboxTests
         json[property] = unknownValue;
         var newer = json.ToJsonString();
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, newer);
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var listed = Assert.Single(await Outbox().ListForDocumentAsync(Quote(1)));
         Assert.Equal(entry.Id, listed.Id);
@@ -611,6 +624,7 @@ public sealed class PersistenceXeroOutboxTests
         json.Remove("IdempotencyKey");
         var corrupt = json.ToJsonString();
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, corrupt);
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
         var other = await Outbox().EnqueueAsync(XeroOperation.PushQuote, Quote(2), "h1");
@@ -641,6 +655,7 @@ public sealed class PersistenceXeroOutboxTests
         var json = JsonNode.Parse(_persistence.Raw(PersistenceXeroOutbox.Collection, key)!)!.AsObject();
         json["Id"] = Guid.NewGuid().ToString("D");
         _persistence.Seed(PersistenceXeroOutbox.Collection, key, json.ToJsonString());
+        PersistenceXeroOutbox.ForgetIndex(_persistence); // written straight into the store: read it again
 
         var status = await Outbox().EnqueueAsync(XeroOperation.SetQuoteStatus, Quote(1), "s1", "SENT");
 

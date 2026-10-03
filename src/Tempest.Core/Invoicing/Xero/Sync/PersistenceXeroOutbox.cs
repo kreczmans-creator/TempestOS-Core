@@ -1,7 +1,10 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Tempest.Core.Identity;
+using Tempest.Core.Invoicing.Xero.Contacts;
 using Tempest.Core.Persistence;
+using Tempest.Core.Secrets;
 
 namespace Tempest.Core.Invoicing.Xero.Sync;
 
@@ -74,6 +77,58 @@ public interface IXeroOutboxDrain
 
     /// <summary>The entry with <paramref name="entryId"/>, or <see langword="null"/>.</summary>
     Task<XeroOutboxEntry?> FindAsync(Guid entryId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// `v0.24.0` F1 (additive, M1): as
+    /// <see cref="ClaimNextDueAsync(IReadOnlyCollection{XeroOutboxState}, CancellationToken)"/>,
+    /// and the claimed entry records <paramref name="tenantId"/> — the
+    /// organisation it is being sent to — as its
+    /// <see cref="XeroOutboxEntry.TenantId"/>, so once it succeeds it names
+    /// the organisation it succeeded in. The default implementation claims
+    /// without recording it.
+    /// </summary>
+    /// <param name="states">The states to claim from; empty means Pending or Unknown.</param>
+    /// <param name="tenantId">The connected organisation the entry is sent to.</param>
+    /// <param name="cancellationToken">Cancels the claim.</param>
+    /// <returns>The claimed entry, or <see langword="null"/> when no entry in <paramref name="states"/> is due.</returns>
+    Task<XeroOutboxEntry?> ClaimNextDueForTenantAsync(IReadOnlyCollection<XeroOutboxState> states, string tenantId, CancellationToken cancellationToken = default) =>
+        ClaimNextDueAsync(states, cancellationToken);
+
+    /// <summary>
+    /// `v0.24.0` F1 (additive, M1): TempestOS is now connected to
+    /// <paramref name="tenantId"/>, a different organisation from before.
+    /// Every open entry — <see cref="XeroOutboxState.Pending"/>,
+    /// <see cref="XeroOutboxState.Failed"/>, <see cref="XeroOutboxState.Unknown"/>
+    /// or <see cref="XeroOutboxState.WaitingForAuthorisation"/> — that was not
+    /// last sent to <paramref name="tenantId"/> was queued under the previous
+    /// organisation's rules (its automatic-sync start, its opt-ins) and is
+    /// <see cref="XeroOutboxState.Superseded"/> with <paramref name="reason"/>,
+    /// never sent here; the engine then plans every record again against this
+    /// organisation. An entry written by a newer TempestOS, or one that cannot
+    /// be read, is left as it is. The default implementation changes nothing.
+    /// </summary>
+    /// <param name="tenantId">The organisation connected now.</param>
+    /// <param name="reason">The <see cref="XeroOutboxEntry.LastError"/> each superseded entry keeps.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns>The ids of the entries superseded.</returns>
+    Task<IReadOnlyList<Guid>> SupersedeOpenForOtherOrganisationsAsync(string tenantId, string reason, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Guid>>([]);
+
+    /// <summary>
+    /// `v0.24.0` F1 (additive, M9): removes finished entries
+    /// (<see cref="XeroOutboxState.Succeeded"/>, <see cref="XeroOutboxState.Superseded"/>)
+    /// last touched more than <paramref name="retention"/> ago, keeping what
+    /// de-duplication and recovery need: per document, operation and argument,
+    /// the newest finished entry and the newest entry that succeeded in each
+    /// organisation; how many entries of each content a removed entry stood
+    /// for is carried on the kept entry, so a later write's idempotency key is
+    /// never one an earlier write used. Open entries are never removed. The
+    /// default implementation removes nothing.
+    /// </summary>
+    /// <param name="retention">How long a finished entry is kept at least.</param>
+    /// <param name="cancellationToken">Cancels the work.</param>
+    /// <returns>How many entries were removed.</returns>
+    Task<int> PruneAsync(TimeSpan retention, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }
 
 /// <summary>
@@ -107,8 +162,12 @@ public interface IXeroOutboxDrain
 /// <b>Dedupe and supersede.</b> Entries are grouped by document, operation
 /// and argument (a quote's <c>SetQuoteStatus</c> to <c>SENT</c> and to
 /// <c>ACCEPTED</c> are separate writes, both sent, in order). Enqueueing
-/// the same content as the newest open-or-succeeded entry of its group
-/// returns that entry (not queued twice). Otherwise the new entry
+/// the same content as the newest entry of its group that is open, or that
+/// succeeded in the organisation connected now, returns that entry (not
+/// queued twice) — an entry that succeeded in another organisation (the
+/// Demo Company, say) does not count (F1, M1). Built without a secret store
+/// (no way to tell the connected organisation), every succeeded entry counts,
+/// as before F1. Otherwise the new entry
 /// supersedes every entry of the group not yet sent —
 /// <see cref="XeroOutboxState.Pending"/>,
 /// <see cref="XeroOutboxState.Failed"/> and
@@ -122,7 +181,32 @@ public interface IXeroOutboxDrain
 /// <para>
 /// <b>Tenant.</b> An entry names a TempestOS record and an operation, never
 /// a Xero id: it is sent to whichever organisation is connected when it is
-/// drained, and its handler resolves the link in that tenant.
+/// drained, and its handler resolves the link in that tenant. Claimed through
+/// <see cref="ClaimNextDueForTenantAsync"/> it records that organisation
+/// (<see cref="XeroOutboxEntry.TenantId"/>), so a succeeded entry names where
+/// it succeeded. When a different organisation is connected, the engine
+/// supersedes every open entry not last sent there
+/// (<see cref="SupersedeOpenForOtherOrganisationsAsync"/>) and plans again.
+/// </para>
+/// <para>
+/// <b>Index (F1, M9).</b> Every entry is read from the store once per
+/// process, on first use, into an in-memory index shared by every instance
+/// over the same <see cref="IPersistenceStore"/> (as the write gate is):
+/// entries by id, by document (in queue order) and the open set. Enqueue,
+/// claim, a document's list (the badge) and a list of open states then touch
+/// only the entries concerned, never the whole collection. Every write goes
+/// through the store first, then the index, under the one gate. The outbox is
+/// the only writer of <see cref="Collection"/>; a change written to the store
+/// by anything else is seen after a restart.
+/// </para>
+/// <para>
+/// <b>Pruning (F1, M9).</b> <see cref="PruneAsync"/> removes finished entries
+/// older than the retention, keeping per group the newest finished entry and
+/// the newest succeeded entry per organisation (de-duplication, the badge's
+/// "sent to another organisation" note, and X5's "was a create queued"), and
+/// carrying the removed entries' per-content counts on the kept newest entry
+/// (an additive <c>PrunedOccurrences</c> JSON property), so occurrence
+/// numbers — and with them idempotency keys — are never reused.
 /// </para>
 /// <para>
 /// <b>Schema versioning.</b> Entries are written at
@@ -156,7 +240,13 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     /// <summary>The <see cref="XeroOutboxEntry.EnqueuedBy"/> of an entry queued with no signed-in principal.</summary>
     public const string SystemPrincipal = "system";
 
+    /// <summary>The default for <see cref="PruneAsync"/>'s retention: finished entries are kept at least this long (F1, M9).</summary>
+    public static readonly TimeSpan DefaultRetention = TimeSpan.FromDays(30);
+
     private const string SequenceProperty = "Sequence";
+
+    /// <summary>The additive JSON property, on a kept finished entry, counting per content hash the entries of its group <see cref="PruneAsync"/> removed.</summary>
+    internal const string PrunedOccurrencesProperty = "PrunedOccurrences";
 
     /// <summary>The <see cref="XeroOutboxEntry.LastError"/> of a corrupt entry's placeholder.</summary>
     internal const string UnreadableError =
@@ -189,29 +279,59 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         XeroOutboxState.Unknown, XeroOutboxState.WaitingForAuthorisation,
     ];
 
+    private static readonly ConditionalWeakTable<IPersistenceStore, StrongBox<OutboxIndex?>> Indexes = new();
+
     private readonly IPersistenceStore _store;
     private readonly ICurrentPrincipalAccessor? _principals;
+    private readonly ISecretStore? _secrets;
     private readonly TimeProvider _time;
     private readonly SemaphoreSlim _gate;
+    private readonly StrongBox<OutboxIndex?> _index;
 
     /// <summary>Initialises a new instance of the <see cref="PersistenceXeroOutbox"/> class.</summary>
     /// <param name="store">The platform's persistence store.</param>
     /// <param name="principals">Who is signed in, for <see cref="XeroOutboxEntry.EnqueuedBy"/>; <see langword="null"/> records <see cref="SystemPrincipal"/>.</param>
-    public PersistenceXeroOutbox(IPersistenceStore store, ICurrentPrincipalAccessor? principals = null)
-        : this(store, principals, TimeProvider.System)
+    /// <param name="secrets">`v0.24.0` F1 (additive): where the connected Xero organisation's tenant id is kept (read only), so a write is de-duplicated only against entries that succeeded in that organisation; <see langword="null"/> counts every succeeded entry, as before F1.</param>
+    public PersistenceXeroOutbox(IPersistenceStore store, ICurrentPrincipalAccessor? principals = null, ISecretStore? secrets = null)
+        : this(store, principals, TimeProvider.System, secrets)
     {
     }
 
     /// <summary>Test seam (`ADR-0121`): a pinned clock.</summary>
-    internal PersistenceXeroOutbox(IPersistenceStore store, ICurrentPrincipalAccessor? principals, TimeProvider timeProvider)
+    internal PersistenceXeroOutbox(IPersistenceStore store, ICurrentPrincipalAccessor? principals, TimeProvider timeProvider, ISecretStore? secrets = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         _store = store;
         _principals = principals;
+        _secrets = secrets;
         _time = timeProvider;
         _gate = XeroStoreSupport.GateFor(store, Collection);
+        _index = Indexes.GetValue(store, _ => new StrongBox<OutboxIndex?>());
+    }
+
+    /// <summary>
+    /// Test seam: forgets the in-memory index over <paramref name="store"/>,
+    /// so the next call reads every entry from the store again — for a test
+    /// that writes an entry's JSON straight into the store, as a newer
+    /// TempestOS or a corruption would between runs.
+    /// </summary>
+    /// <param name="store">The backing store.</param>
+    internal static void ForgetIndex(IPersistenceStore store)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+
+        var gate = XeroStoreSupport.GateFor(store, Collection);
+        gate.Wait();
+        try
+        {
+            Indexes.GetValue(store, _ => new StrongBox<OutboxIndex?>()).Value = null;
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     /// <inheritdoc />
@@ -229,16 +349,21 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         if (!Enum.IsDefined(document.Kind))
             throw new ArgumentOutOfRangeException(nameof(document), document.Kind, "Not a kind of TempestOS record.");
 
+        var tenantId = await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false);
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var all = await LoadAllAsync(cancellationToken).ConfigureAwait(false);
-            var group = all
-                .Where(s => !s.Locked && s.Entry.Document == document && s.Entry.Operation == operation
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            var group = index.EntriesFor(document)
+                .Where(s => !s.Locked && s.Entry.Operation == operation
                             && string.Equals(s.Entry.Argument, argument, StringComparison.Ordinal))
                 .ToList();
 
-            if (group.LastOrDefault(s => s.Entry.State != XeroOutboxState.Superseded) is { } latest
+            // F1 (M1): an open entry, or one that succeeded in the
+            // organisation connected now — never one that succeeded in
+            // another organisation (the Demo Company's copy is not this one's).
+            if (group.LastOrDefault(s => IsOpen(s.Entry.State) || (s.Entry.State == XeroOutboxState.Succeeded && SucceededHere(s.Entry, tenantId))) is { } latest
                 && string.Equals(latest.Entry.ContentHash, contentHash, StringComparison.Ordinal))
             {
                 return latest.Entry;
@@ -260,12 +385,15 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             var now = _time.GetUtcNow();
             // Only this build's own readable entries count: a locked entry's
             // time (a newer TempestOS's, or a corrupt one's) is not trusted.
-            if (all.Where(s => !s.Locked).Select(s => s.Entry.EnqueuedAtUtc).DefaultIfEmpty(DateTimeOffset.MinValue).Max() is var latestStored
-                && now <= latestStored && latestStored < DateTimeOffset.MaxValue)
+            var latestStored = index.LatestUnlockedEnqueuedAtUtc;
+            if (now <= latestStored && latestStored < DateTimeOffset.MaxValue)
                 now = latestStored.AddTicks(1);
 
-            var sequence = replaced.Count > 0 ? replaced.Min(s => s.Sequence) : NextSequence(all);
-            var occurrence = group.Count(s => string.Equals(s.Entry.ContentHash, contentHash, StringComparison.Ordinal));
+            var sequence = replaced.Count > 0 ? replaced.Min(s => s.Sequence) : index.NextSequence();
+
+            // Removed (pruned) entries still count, through the kept entry that carries their number.
+            var occurrence = group.Count(s => string.Equals(s.Entry.ContentHash, contentHash, StringComparison.Ordinal))
+                             + group.Sum(s => PrunedCount(s, contentHash));
             var entry = new XeroOutboxEntry(
                 SchemaVersion: XeroOutboxEntry.CurrentSchemaVersion,
                 Id: Guid.CreateVersion7(now),
@@ -285,12 +413,12 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             // The new entry is written before the ones it supersedes: a crash
             // between the two leaves both pending (one redundant push), never
             // neither (a lost write).
-            await WriteAsync(new StoredEntry(entry, sequence, Newer: false, Original: null), cancellationToken).ConfigureAwait(false);
+            await WriteAsync(index, new StoredEntry(entry, sequence, Newer: false, Original: null), cancellationToken).ConfigureAwait(false);
 
             foreach (var old in replaced)
             {
                 await WriteAsync(
-                    old with { Entry = old.Entry with { State = XeroOutboxState.Superseded, NotBeforeUtc = null } },
+                    index, old with { Entry = old.Entry with { State = XeroOutboxState.Superseded, NotBeforeUtc = null } },
                     cancellationToken).ConfigureAwait(false);
             }
 
@@ -307,8 +435,16 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        var all = await LoadAllAsync(cancellationToken).ConfigureAwait(false);
-        return all.Where(s => s.Entry.Document == document).Select(s => s.Entry).ToList();
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            return [.. index.EntriesFor(document).Select(s => s.Entry)];
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <inheritdoc />
@@ -316,8 +452,21 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     {
         ArgumentNullException.ThrowIfNull(states);
 
-        var all = await LoadAllAsync(cancellationToken).ConfigureAwait(false);
-        return all.Where(s => states.Count == 0 || states.Contains(s.Entry.State)).Select(s => s.Entry).ToList();
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+
+            // Open states only (the badge, the drain, Retry all): the open set, never every entry.
+            var source = states.Count > 0 && states.All(IsOpen) ? index.OpenEntries() : index.All();
+            var list = source.Where(s => states.Count == 0 || states.Contains(s.Entry.State)).ToList();
+            list.Sort(QueueOrder);
+            return [.. list.Select(s => s.Entry)];
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <inheritdoc />
@@ -326,13 +475,14 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (await LoadAsync(entryId, cancellationToken).ConfigureAwait(false) is not { Locked: false } stored
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            if (index.Find(entryId) is not { Locked: false } stored
                 || stored.Entry.State != XeroOutboxState.Failed)
             {
                 return false;
             }
 
-            await WriteAsync(stored with { Entry = stored.Entry with { State = XeroOutboxState.Pending, NotBeforeUtc = null } }, cancellationToken).ConfigureAwait(false);
+            await WriteAsync(index, stored with { Entry = stored.Entry with { State = XeroOutboxState.Pending, NotBeforeUtc = null } }, cancellationToken).ConfigureAwait(false);
             return true;
         }
         finally
@@ -346,7 +496,17 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         ClaimNextDueAsync([], cancellationToken);
 
     /// <inheritdoc />
-    public async Task<XeroOutboxEntry?> ClaimNextDueAsync(IReadOnlyCollection<XeroOutboxState> states, CancellationToken cancellationToken = default)
+    public Task<XeroOutboxEntry?> ClaimNextDueAsync(IReadOnlyCollection<XeroOutboxState> states, CancellationToken cancellationToken = default) =>
+        ClaimCoreAsync(states, tenantId: null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<XeroOutboxEntry?> ClaimNextDueForTenantAsync(IReadOnlyCollection<XeroOutboxState> states, string tenantId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        return ClaimCoreAsync(states, tenantId, cancellationToken);
+    }
+
+    private async Task<XeroOutboxEntry?> ClaimCoreAsync(IReadOnlyCollection<XeroOutboxState> states, string? tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(states);
 
@@ -354,22 +514,24 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         try
         {
             var now = _time.GetUtcNow();
-            var all = await LoadAllAsync(cancellationToken).ConfigureAwait(false);
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
 
             // The head of each document's queue: its oldest entry that is
             // neither done nor replaced. Anything behind a head waits.
             // An entry written by a newer TempestOS, or one that cannot be
             // read, is never claimed, so it holds its document's queue.
-            var heads = all
-                .Where(s => s.Entry.State is not (XeroOutboxState.Succeeded or XeroOutboxState.Superseded))
-                .GroupBy(s => s.Entry.Document)
-                .Select(g => g.First());
-
-            var next = heads.FirstOrDefault(s =>
-                !s.Locked
-                && s.Entry.State is XeroOutboxState.Pending or XeroOutboxState.Unknown
-                && (states.Count == 0 || states.Contains(s.Entry.State))
-                && (s.Entry.NotBeforeUtc is not { } notBefore || notBefore <= now));
+            StoredEntry? next = null;
+            foreach (var head in index.Heads())
+            {
+                if (!head.Locked
+                    && head.Entry.State is XeroOutboxState.Pending or XeroOutboxState.Unknown
+                    && (states.Count == 0 || states.Contains(head.Entry.State))
+                    && (head.Entry.NotBeforeUtc is not { } notBefore || notBefore <= now)
+                    && (next is null || QueueOrder(head, next) < 0))
+                {
+                    next = head;
+                }
+            }
 
             if (next is null)
                 return null;
@@ -379,9 +541,10 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
                 State = XeroOutboxState.InFlight,
                 Attempts = next.Entry.Attempts + 1,
                 LastAttemptAtUtc = now,
+                TenantId = tenantId ?? next.Entry.TenantId,
             };
 
-            await WriteAsync(next with { Entry = claimed }, cancellationToken).ConfigureAwait(false);
+            await WriteAsync(index, next with { Entry = claimed }, cancellationToken).ConfigureAwait(false);
             return claimed;
         }
         finally
@@ -401,7 +564,8 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (await LoadAsync(entryId, cancellationToken).ConfigureAwait(false) is not { } stored)
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            if (index.Find(entryId) is not { } stored)
                 return null;
 
             if (stored.Newer)
@@ -420,7 +584,7 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
                 NotBeforeUtc = state is XeroOutboxState.Pending or XeroOutboxState.Unknown ? notBeforeUtc : null,
             };
 
-            await WriteAsync(stored with { Entry = updated }, cancellationToken).ConfigureAwait(false);
+            await WriteAsync(index, stored with { Entry = updated }, cancellationToken).ConfigureAwait(false);
             return updated;
         }
         finally
@@ -438,31 +602,187 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         MoveAllAsync(XeroOutboxState.WaitingForAuthorisation, XeroOutboxState.Pending, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<XeroOutboxEntry?> FindAsync(Guid entryId, CancellationToken cancellationToken = default) =>
-        (await LoadAsync(entryId, cancellationToken).ConfigureAwait(false))?.Entry;
+    public async Task<XeroOutboxEntry?> FindAsync(Guid entryId, CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return (await IndexAsync(cancellationToken).ConfigureAwait(false)).Find(entryId)?.Entry;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Guid>> SupersedeOpenForOtherOrganisationsAsync(string tenantId, string reason, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            var superseded = new List<Guid>();
+            var open = index.OpenEntries().ToList();
+            open.Sort(QueueOrder);
+
+            foreach (var stored in open)
+            {
+                if (stored.Locked
+                    || stored.Entry.State is not (XeroOutboxState.Pending or XeroOutboxState.Failed or XeroOutboxState.Unknown or XeroOutboxState.WaitingForAuthorisation)
+                    || string.Equals(stored.Entry.TenantId, tenantId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                await WriteAsync(
+                    index, stored with { Entry = stored.Entry with { State = XeroOutboxState.Superseded, NotBeforeUtc = null, LastError = reason } },
+                    cancellationToken).ConfigureAwait(false);
+                superseded.Add(stored.Entry.Id);
+            }
+
+            return superseded;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<int> PruneAsync(TimeSpan retention, CancellationToken cancellationToken = default)
+    {
+        if (retention < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(retention), retention, "The retention cannot be negative.");
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            var cutoff = _time.GetUtcNow() - retention;
+            var removed = 0;
+
+            var groups = index.All()
+                .Where(s => !s.Locked)
+                .GroupBy(s => (s.Entry.Document, s.Entry.Operation, s.Entry.Argument))
+                .ToList();
+
+            foreach (var group in groups)
+            {
+                var finished = group.Where(s => !IsOpen(s.Entry.State)).ToList();
+                if (finished.Count <= 1)
+                    continue;
+
+                finished.Sort(QueueOrder);
+                var newest = finished[^1];
+                var keep = new HashSet<Guid> { newest.Entry.Id };
+                foreach (var perTenant in finished.Where(s => s.Entry.State == XeroOutboxState.Succeeded).GroupBy(s => s.Entry.TenantId ?? string.Empty))
+                    keep.Add(perTenant.Last().Entry.Id);
+
+                var prunable = finished
+                    .Where(s => !keep.Contains(s.Entry.Id) && (s.Entry.LastAttemptAtUtc ?? s.Entry.EnqueuedAtUtc) < cutoff)
+                    .ToList();
+                if (prunable.Count == 0)
+                    continue;
+
+                // The kept newest entry carries how many entries of each
+                // content the group held, so occurrence numbers (and so
+                // idempotency keys) are never reused. Written before the
+                // removals: a crash between leaves a count too high (a fresh
+                // key), never too low (a reused one).
+                var counts = PrunedCounts(newest);
+                foreach (var gone in prunable)
+                {
+                    counts[gone.Entry.ContentHash] = counts.GetValueOrDefault(gone.Entry.ContentHash) + 1;
+                    foreach (var (hash, count) in PrunedCounts(gone))
+                        counts[hash] = counts.GetValueOrDefault(hash) + count;
+                }
+
+                var countsNode = new JsonObject();
+                foreach (var (hash, count) in counts.OrderBy(c => c.Key, StringComparer.Ordinal))
+                    countsNode[hash] = count;
+
+                await WriteAsync(index, newest, cancellationToken, node => node[PrunedOccurrencesProperty] = countsNode).ConfigureAwait(false);
+
+                foreach (var gone in prunable)
+                {
+                    await _store.DeleteAsync(Collection, gone.Entry.Id.ToString("D"), cancellationToken).ConfigureAwait(false);
+                    index.Remove(gone.Entry.Id);
+                    removed++;
+                }
+            }
+
+            return removed;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     private async Task<int> MoveAllAsync(XeroOutboxState from, XeroOutboxState to, CancellationToken cancellationToken)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var moved = 0;
+            var index = await IndexAsync(cancellationToken).ConfigureAwait(false);
+            var moving = index.OpenEntries().Where(s => !s.Locked && s.Entry.State == from).ToList();
+            moving.Sort(QueueOrder);
 
-            foreach (var stored in await LoadAllAsync(cancellationToken).ConfigureAwait(false))
-            {
-                if (stored.Locked || stored.Entry.State != from)
-                    continue;
+            foreach (var stored in moving)
+                await WriteAsync(index, stored with { Entry = stored.Entry with { State = to, NotBeforeUtc = null } }, cancellationToken).ConfigureAwait(false);
 
-                await WriteAsync(stored with { Entry = stored.Entry with { State = to, NotBeforeUtc = null } }, cancellationToken).ConfigureAwait(false);
-                moved++;
-            }
-
-            return moved;
+            return moving.Count;
         }
         finally
         {
             _gate.Release();
         }
+    }
+
+    /// <summary>The connected organisation's tenant id; <see langword="null"/> when none is connected or no secret store was given.</summary>
+    private async Task<string?> ReadTenantIdAsync(CancellationToken cancellationToken)
+    {
+        if (_secrets is null)
+            return null;
+
+        var tenantId = await _secrets.GetAsync(XeroContactLinker.TenantIdSecretKey, cancellationToken).ConfigureAwait(false);
+        return string.IsNullOrWhiteSpace(tenantId) ? null : tenantId.Trim();
+    }
+
+    /// <summary>Whether a succeeded <paramref name="entry"/> counts as sent to the organisation connected now (<paramref name="tenantId"/>).</summary>
+    private bool SucceededHere(XeroOutboxEntry entry, string? tenantId) =>
+        _secrets is null
+        || (tenantId is not null && string.Equals(entry.TenantId, tenantId, StringComparison.Ordinal));
+
+    private static bool IsOpen(XeroOutboxState state) => state is not (XeroOutboxState.Succeeded or XeroOutboxState.Superseded);
+
+    /// <summary>Queue order: the stored sequence, then the time queued, then the id.</summary>
+    private static int QueueOrder(StoredEntry a, StoredEntry b)
+    {
+        var bySequence = a.Sequence.CompareTo(b.Sequence);
+        if (bySequence != 0)
+            return bySequence;
+
+        var byTime = a.Entry.EnqueuedAtUtc.CompareTo(b.Entry.EnqueuedAtUtc);
+        return byTime != 0 ? byTime : a.Entry.Id.CompareTo(b.Entry.Id);
+    }
+
+    /// <summary>The index over this store, read from the store on first use (the caller holds <see cref="_gate"/>).</summary>
+    private async Task<OutboxIndex> IndexAsync(CancellationToken cancellationToken)
+    {
+        if (_index.Value is { } loaded)
+            return loaded;
+
+        var index = new OutboxIndex();
+        foreach (var stored in await LoadAllAsync(cancellationToken).ConfigureAwait(false))
+            index.Put(stored);
+
+        _index.Value = index;
+        return index;
     }
 
     private async Task<List<StoredEntry>> LoadAllAsync(CancellationToken cancellationToken)
@@ -475,7 +795,8 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             if (!Guid.TryParseExact(key, "D", out var id))
                 continue;
 
-            if (await LoadAsync(id, cancellationToken).ConfigureAwait(false) is { } stored)
+            var json = await _store.ReadAsync(Collection, key, cancellationToken).ConfigureAwait(false);
+            if (json is not null && Parse(json, id) is { } stored)
                 entries.Add(stored);
         }
 
@@ -499,23 +820,8 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             largestSoFar = Math.Max(largestSoFar, entries[i].Sequence);
         }
 
-        entries.Sort(static (a, b) =>
-        {
-            var bySequence = a.Sequence.CompareTo(b.Sequence);
-            if (bySequence != 0)
-                return bySequence;
-
-            var byTime = a.Entry.EnqueuedAtUtc.CompareTo(b.Entry.EnqueuedAtUtc);
-            return byTime != 0 ? byTime : a.Entry.Id.CompareTo(b.Entry.Id);
-        });
-
+        entries.Sort(QueueOrder);
         return entries;
-    }
-
-    private async Task<StoredEntry?> LoadAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var json = await _store.ReadAsync(Collection, id.ToString("D"), cancellationToken).ConfigureAwait(false);
-        return json is null ? null : Parse(json, id);
     }
 
     /// <summary>
@@ -609,7 +915,10 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
             NotBeforeUtc: ReadTime(node, "NotBeforeUtc"),
             LastAttemptAtUtc: ReadTime(node, "LastAttemptAtUtc"),
             LastError: newer || finished ? ReadString(node, "LastError") : UnreadableError,
-            EnqueuedBy: ReadString(node, "EnqueuedBy") ?? UnknownPrincipal);
+            EnqueuedBy: ReadString(node, "EnqueuedBy") ?? UnknownPrincipal)
+        {
+            TenantId = ReadString(node, "TenantId"),
+        };
 
         return new StoredEntry(entry, sequence, newer, node, Unreadable: !newer, HasSequence: hasSequence);
     }
@@ -618,11 +927,27 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     private static long? ReadSequence(JsonObject node) =>
         node.TryGetPropertyValue(SequenceProperty, out var value) && value is JsonValue v && v.TryGetValue<long>(out var s) ? s : null;
 
-    /// <summary>The sequence after every stored one; never wraps (at <see cref="long.MaxValue"/> it stays there and the tie-breaks order the rest).</summary>
-    private static long NextSequence(List<StoredEntry> all)
+    /// <summary>How many removed entries with <paramref name="contentHash"/> <paramref name="stored"/> stands for.</summary>
+    private static int PrunedCount(StoredEntry stored, string contentHash) =>
+        stored.Original?[PrunedOccurrencesProperty] is JsonObject counts
+        && counts[contentHash] is JsonValue value && value.TryGetValue<int>(out var count) && count > 0
+            ? count
+            : 0;
+
+    /// <summary>Every per-content count of removed entries <paramref name="stored"/> carries.</summary>
+    private static Dictionary<string, int> PrunedCounts(StoredEntry stored)
     {
-        var max = all.Count == 0 ? 0 : Math.Max(0, all.Max(s => s.Sequence));
-        return max == long.MaxValue ? long.MaxValue : max + 1;
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        if (stored.Original?[PrunedOccurrencesProperty] is JsonObject node)
+        {
+            foreach (var (hash, value) in node)
+            {
+                if (value is JsonValue v && v.TryGetValue<int>(out var count) && count > 0)
+                    counts[hash] = count;
+            }
+        }
+
+        return counts;
     }
 
     private static string? ReadString(JsonObject node, string name) =>
@@ -644,8 +969,14 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         && !string.IsNullOrWhiteSpace(entry.ContentHash)
         && entry.EnqueuedBy is not null;
 
-    /// <summary>Writes <paramref name="stored"/> at the current schema version, keeping any property this build does not know from what was read.</summary>
-    private Task WriteAsync(StoredEntry stored, CancellationToken cancellationToken)
+    /// <summary>
+    /// Writes <paramref name="stored"/> at the current schema version, keeping
+    /// any property this build does not know from what was read, then records
+    /// it in <paramref name="index"/> (store first: the index never holds what
+    /// the store does not). <paramref name="change"/>, when given, adjusts the
+    /// JSON before it is written.
+    /// </summary>
+    private async Task WriteAsync(OutboxIndex index, StoredEntry stored, CancellationToken cancellationToken, Action<JsonObject>? change = null)
     {
         var node = XeroStoreSupport.ToJson(stored.Entry with { SchemaVersion = XeroOutboxEntry.CurrentSchemaVersion }, stored.Original);
         // An entry stored without a Sequence keeps none: its place is worked
@@ -656,7 +987,10 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
         else
             node.Remove(SequenceProperty);
 
-        return _store.WriteAsync(Collection, stored.Entry.Id.ToString("D"), node.ToJsonString(), cancellationToken);
+        change?.Invoke(node);
+
+        await _store.WriteAsync(Collection, stored.Entry.Id.ToString("D"), node.ToJsonString(), cancellationToken).ConfigureAwait(false);
+        index.Put(stored with { Entry = stored.Entry with { SchemaVersion = XeroOutboxEntry.CurrentSchemaVersion }, Original = node });
     }
 
     /// <summary>One entry as stored: the entry, its queue position, whether a newer TempestOS wrote it, the JSON it was read from (<see langword="null"/> for a new entry), whether it is a corrupt entry's placeholder, and whether its queue position was stored (rather than worked out from its time).</summary>
@@ -664,5 +998,101 @@ public sealed class PersistenceXeroOutbox : IXeroOutbox, IXeroOutboxDrain
     {
         /// <summary>Never claimed, retried, superseded or rewritten by this build: a newer TempestOS's entry, or one that cannot be read.</summary>
         public bool Locked => Newer || Unreadable;
+    }
+
+    /// <summary>
+    /// The in-memory index over one store's entries (F1, M9): by id, by
+    /// document in queue order, and the open set — so no operation reads or
+    /// scans every entry. Changed only under the store's write gate.
+    /// </summary>
+    private sealed class OutboxIndex
+    {
+        private readonly Dictionary<Guid, StoredEntry> _byId = [];
+        private readonly Dictionary<XeroDocumentRef, List<StoredEntry>> _byDocument = [];
+        private readonly HashSet<Guid> _open = [];
+        private long _largestSequence;
+
+        /// <summary>The latest <see cref="XeroOutboxEntry.EnqueuedAtUtc"/> of any readable entry of this build's version or earlier (never moves back, also when entries are removed).</summary>
+        public DateTimeOffset LatestUnlockedEnqueuedAtUtc { get; private set; } = DateTimeOffset.MinValue;
+
+        /// <summary>The sequence after every stored one; never wraps (at <see cref="long.MaxValue"/> it stays there and the tie-breaks order the rest).</summary>
+        public long NextSequence() => _largestSequence == long.MaxValue ? long.MaxValue : _largestSequence + 1;
+
+        public StoredEntry? Find(Guid id) => _byId.GetValueOrDefault(id);
+
+        /// <summary>The document's entries, oldest first.</summary>
+        public IReadOnlyList<StoredEntry> EntriesFor(XeroDocumentRef document) =>
+            _byDocument.TryGetValue(document, out var list) ? list : [];
+
+        public IEnumerable<StoredEntry> All() => _byId.Values;
+
+        public IEnumerable<StoredEntry> OpenEntries() => _open.Select(id => _byId[id]);
+
+        /// <summary>The head of each document's queue that has open work: its oldest entry that is neither done nor replaced.</summary>
+        public IEnumerable<StoredEntry> Heads()
+        {
+            var documents = new HashSet<XeroDocumentRef>();
+            foreach (var id in _open)
+            {
+                var document = _byId[id].Entry.Document;
+                if (!documents.Add(document))
+                    continue;
+
+                foreach (var entry in _byDocument[document])
+                {
+                    if (IsOpen(entry.Entry.State))
+                    {
+                        yield return entry;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public void Put(StoredEntry stored)
+        {
+            var id = stored.Entry.Id;
+            if (_byId.TryGetValue(id, out var previous))
+                RemoveFromDocument(previous);
+
+            _byId[id] = stored;
+
+            if (!_byDocument.TryGetValue(stored.Entry.Document, out var list))
+            {
+                list = [];
+                _byDocument[stored.Entry.Document] = list;
+            }
+
+            var at = list.BinarySearch(stored, Comparer<StoredEntry>.Create(QueueOrder));
+            list.Insert(at < 0 ? ~at : at, stored);
+
+            if (IsOpen(stored.Entry.State))
+                _open.Add(id);
+            else
+                _open.Remove(id);
+
+            _largestSequence = Math.Max(_largestSequence, Math.Max(0, stored.Sequence));
+            if (!stored.Locked && stored.Entry.EnqueuedAtUtc > LatestUnlockedEnqueuedAtUtc)
+                LatestUnlockedEnqueuedAtUtc = stored.Entry.EnqueuedAtUtc;
+        }
+
+        public void Remove(Guid id)
+        {
+            if (!_byId.Remove(id, out var previous))
+                return;
+
+            RemoveFromDocument(previous);
+            _open.Remove(id);
+        }
+
+        private void RemoveFromDocument(StoredEntry previous)
+        {
+            if (!_byDocument.TryGetValue(previous.Entry.Document, out var list))
+                return;
+
+            list.RemoveAll(s => s.Entry.Id == previous.Entry.Id);
+            if (list.Count == 0)
+                _byDocument.Remove(previous.Entry.Document);
+        }
     }
 }
