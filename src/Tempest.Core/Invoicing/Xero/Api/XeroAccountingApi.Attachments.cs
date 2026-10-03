@@ -78,9 +78,24 @@ public sealed partial class XeroAccountingApi
             : Retype<XeroWireAttachmentsEnvelope, IReadOnlyList<XeroWireAttachment>>(result);
     }
 
-    /// <summary>The attachment path for <paramref name="fileName"/> on a document, each segment escaped.</summary>
+    /// <summary>The attachment path for <paramref name="fileName"/> on a document, each segment escaped (the file name as <see cref="XeroFileName"/> gives it).</summary>
     internal static string AttachmentsPath(XeroAttachableResource resource, string documentId, string fileName) =>
-        $"{ResourceSegment(resource)}/{Uri.EscapeDataString(documentId)}/Attachments/{Uri.EscapeDataString(fileName)}";
+        $"{ResourceSegment(resource)}/{Uri.EscapeDataString(documentId)}/Attachments/{Uri.EscapeDataString(XeroFileName(fileName))}";
+
+    /// <summary>
+    /// The name <paramref name="fileName"/> is attached under in Xero. A name
+    /// holding a literal escape sequence (a receipt named <c>Invoice%20A.pdf</c>)
+    /// would, once escaped for the path, read as escaped twice, which
+    /// <see cref="XeroWriteSafetyHandler"/> refuses (B1); such a name is sent
+    /// with each <c>'%'</c> as <c>'_'</c> (<c>Invoice_20A.pdf</c>). Every
+    /// other name, a lone <c>'%'</c> included (<c>50% off.jpg</c>), is sent
+    /// as it is. Deterministic, so a replacing upload (<c>POST</c>, Xero's
+    /// update-by-file-name) reaches the same attachment.
+    /// </summary>
+    internal static string XeroFileName(string fileName) =>
+        fileName.Contains('%', StringComparison.Ordinal) && Uri.UnescapeDataString(fileName) != fileName
+            ? fileName.Replace('%', '_')
+            : fileName;
 
     private static string ResourceSegment(XeroAttachableResource resource) => resource switch
     {

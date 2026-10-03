@@ -167,7 +167,9 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
             return (RuleWriteAllowList, "A Xero write's path must not hide a '/' or '\\' inside an escaped segment.");
 
         // A segment that still holds an escape after unescaping was escaped twice (abc%252FEmail): one more decode further on could
-        // reveal a separator. A lone '%' that escapes nothing (a receipt named "50% off.jpg") is left alone.
+        // reveal a separator. A lone '%' that escapes nothing (a receipt named "50% off.jpg") is left alone. A file name holding a
+        // literal escape ("Invoice%20A.pdf") would also read as escaped twice: XeroAccountingApi.XeroFileName sends it as
+        // "Invoice_20A.pdf", so only a hand-built path is refused here.
         if (segments.Any(segment => segment.Contains('%', StringComparison.Ordinal) && Uri.UnescapeDataString(segment) != segment))
             return (RuleWriteAllowList, "A Xero write's path must not be escaped twice: a segment still holds an escape after unescaping.");
 

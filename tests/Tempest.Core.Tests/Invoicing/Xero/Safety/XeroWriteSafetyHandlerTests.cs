@@ -359,6 +359,26 @@ public sealed class XeroWriteSafetyHandlerTests
         AssertPassed(rig, response);
     }
 
+    // C1 verifier defect 3: a file name holding a literal escape ("Invoice%20A.pdf") is attached under a name the
+    // double-escape check accepts, not refused; a lone '%' is kept as it is.
+    [Theory]
+    [InlineData("Invoice%20A.pdf", "Invoice_20A.pdf")]
+    [InlineData("Receipt%252F.jpg", "Receipt_252F.jpg")]
+    [InlineData("50% off.jpg", "50% off.jpg")]
+    [InlineData("INV 7.pdf", "INV 7.pdf")]
+    public async Task AnAttachmentWhoseFileNameHoldsAnEscape_PassesUnderItsXeroFileName(string fileName, string sentAs)
+    {
+        var rig = Rig.Demo();
+        using var content = new ByteArrayContent([0x25, 0x50, 0x44, 0x46]);
+        content.Headers.ContentType = new("application/pdf");
+        using var request = rig.Request(HttpMethod.Put, XeroAccountingApi.AttachmentsPath(XeroAttachableResource.Invoices, "inv-1", fileName), content);
+
+        var response = await rig.Client.SendAsync(request);
+
+        AssertPassed(rig, response);
+        Assert.Equal(sentAs, Uri.UnescapeDataString(Assert.Single(rig.Network.Received).Request.RequestUri!.Segments[^1]));
+    }
+
     [Fact]
     public async Task AnXmlBodyToAnAllowedDocument_IsBlocked_ItsStatusCannotBeChecked()
     {
