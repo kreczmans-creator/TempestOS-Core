@@ -247,7 +247,16 @@ public sealed class SettingsXeroSectionTests
         outbox.Add(XeroOutboxState.Failed);
         outbox.Add(XeroOutboxState.WaitingForAuthorisation);
         outbox.Add(XeroOutboxState.Succeeded);
-        await using var fixture = await SectionFixture.StartAsync(new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() }, outbox: outbox);
+        // Retry is the engine's in the application; the outbox's own retry is
+        // never a fallback (verifier F3 round 3, defect 3), so it is injected here.
+        await using var fixture = await SectionFixture.StartAsync(
+            new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() },
+            outbox: outbox,
+            services: s => new XeroSettingsSectionServices
+            {
+                Reader = s.Reader, Identity = s.Identity, Outbox = s.Outbox, Organisations = s.Organisations, Audit = s.Audit, TimeZone = s.TimeZone,
+                Retry = outbox.RetryAsync,
+            });
 
         Assert.Equal("Sync: 2 queued · 2 failed · 1 waiting for authorisation.", Text(fixture.Section, "Xero sync summary"));
         Assert.True(Button(fixture.Section, XeroSettingsSection.RetryAllName).IsEnabled);

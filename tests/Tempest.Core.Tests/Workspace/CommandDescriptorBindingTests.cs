@@ -280,9 +280,11 @@ public sealed class CommandDescriptorBindingTests : IAsyncLifetime
                 // Over that: 111 becomes 123 and 108 becomes 120; 3 is unchanged.
         // Runbook C3 adds four quotation review descriptors, none
         // unavailable: 123 becomes 127 and 120 becomes 124.
-        Assert.Equal(127, ProductionDescriptors.Count);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"),
+        // not unavailable: 127 becomes 128 and 124 becomes 125.
+        Assert.Equal(128, ProductionDescriptors.Count);
         Assert.Equal(3, unavailable.Count);
-        Assert.Equal(124, bindable.Count);
+        Assert.Equal(125, bindable.Count);
         Assert.Equal(ProductionDescriptors.Count, unavailable.Count + bindable.Count);
 
         var notBound = bindable.Where(d => d.Binding is not { IsInvocable: true }).Select(d => d.Id).ToList();

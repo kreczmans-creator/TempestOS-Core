@@ -432,6 +432,171 @@ public sealed class XeroDocumentLinkActionsTests
     }
 
     [Fact]
+    public async Task AnUnlinkedPurchaseOrder_EditedAfterTheUnlink_IsNotPlannedOrSent_UntilSendAgain()
+    {
+        // Verifier F3 round 3, defect 1: the purchase order planner must read
+        // the unlink mark, or an edit (a new content hash) queues a new create.
+        using var kit = await EngineTestKit.CreateAsync();
+        var orderId = kit.IssueOrder();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveOrders);
+        var document = EngineTestKit.OrderRef(orderId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("PurchaseOrders", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+        var mark = kit.Simulator.Requests.Count;
+
+        kit.Orders[orderId] = kit.Orders[orderId] with { ExpectedDelivery = new DateOnly(2027, 1, 5) };
+        kit.Saved(Tempest.Core.PurchaseOrders.PurchaseOrder.CanonicalKind, orderId);
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveOrders);
+        Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        Assert.DoesNotContain(
+            await kit.Outbox.ListForDocumentAsync(document),
+            e => e.State is XeroOutboxState.Pending or XeroOutboxState.InFlight or XeroOutboxState.Unknown or XeroOutboxState.Failed);
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.LiveOrders);
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task APurchaseOrderWriteReachingTheDrainAfterAnUnlink_IsRefused_UntilSendAgain()
+    {
+        // Verifier F3 round 3, defect 1: the push handler refuses a create
+        // queued (or in flight) when the person unlinked the order.
+        using var kit = await EngineTestKit.CreateAsync();
+        var orderId = kit.IssueOrder();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveOrders);
+        var document = EngineTestKit.OrderRef(orderId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("PurchaseOrders", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+
+        kit.Orders[orderId] = kit.Orders[orderId] with { ExpectedDelivery = new DateOnly(2027, 1, 5) };
+        var late = await kit.Outbox.EnqueueAsync(
+            XeroOperation.PushPurchaseOrder, document, Tempest.Core.Invoicing.Xero.Sync.Purchasing.XeroPurchasingMapper.ContentHash(kit.Orders[orderId]));
+        await kit.SettleAsync();
+
+        Assert.Empty(kit.LiveOrders);
+        var refused = (await kit.Outbox.FindAsync(late.Id))!;
+        Assert.Equal(XeroOutboxState.Failed, refused.State);
+        Assert.Equal(XeroDocumentLinkActions.UnlinkedRefusal, refused.LastError);
+        Assert.False(await kit.Engine.RetryAsync(late.Id));
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.LiveOrders);
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task AnUnlinkedBill_EditedAfterTheUnlink_IsNotPlannedOrSent_UntilSendAgain()
+    {
+        // Verifier F3 round 3, defect 1: the bill planner must read the unlink mark.
+        using var kit = await EngineTestKit.CreateAsync();
+        var expenseId = kit.RecordExpense();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.Bills);
+        var document = EngineTestKit.ExpenseRef(expenseId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Invoices", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+        var mark = kit.Simulator.Requests.Count;
+
+        kit.Expenses[expenseId] = kit.Expenses[expenseId] with { NetAmount = 150m, VatAmount = 30m };
+        kit.Saved(Tempest.Core.Expenses.ProjectExpense.CanonicalKind, expenseId);
+        await kit.SettleAsync();
+
+        Assert.DoesNotContain(kit.Bills, b => b.Status is not ("DELETED" or "VOIDED"));
+        Assert.DoesNotContain(kit.Simulator.Requests.Skip(mark), r => r.Method != HttpMethod.Get);
+        Assert.DoesNotContain(
+            await kit.Outbox.ListForDocumentAsync(document),
+            e => e.State is XeroOutboxState.Pending or XeroOutboxState.InFlight or XeroOutboxState.Unknown or XeroOutboxState.Failed);
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.Bills, b => b.Status is not ("DELETED" or "VOIDED"));
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task ABillWriteReachingTheDrainAfterAnUnlink_IsRefused_UntilSendAgain()
+    {
+        // Verifier F3 round 3, defect 1: the bill push handler refuses a create
+        // queued (or in flight) when the person unlinked the expense.
+        using var kit = await EngineTestKit.CreateAsync();
+        var expenseId = kit.RecordExpense();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.Bills);
+        var document = EngineTestKit.ExpenseRef(expenseId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("Invoices", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+
+        kit.Expenses[expenseId] = kit.Expenses[expenseId] with { NetAmount = 150m, VatAmount = 30m };
+        var late = await kit.Outbox.EnqueueAsync(
+            XeroOperation.PushExpenseBill, document, Tempest.Core.Invoicing.Xero.Sync.Purchasing.XeroPurchasingMapper.ContentHash(kit.Expenses[expenseId]));
+        await kit.SettleAsync();
+
+        Assert.DoesNotContain(kit.Bills, b => b.Status is not ("DELETED" or "VOIDED"));
+        var refused = (await kit.Outbox.FindAsync(late.Id))!;
+        Assert.Equal(XeroOutboxState.Failed, refused.State);
+        Assert.Equal(XeroDocumentLinkActions.UnlinkedRefusal, refused.LastError);
+        Assert.False(await kit.Engine.RetryAsync(late.Id));
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        var second = Assert.Single(kit.Bills, b => b.Status is not ("DELETED" or "VOIDED"));
+        Assert.NotEqual(first.Id, second.Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
+    public async Task TheEnginesOwnSendAgain_OnAnUnlinkedRecord_QueuesNothing_AndSaysWhy()
+    {
+        // Verifier F3 round 3, defect 1 (follow-on): X5's Send again would
+        // queue a create the push handler now refuses while the unlink mark
+        // stands, and report it as queued; it refuses instead, and the link
+        // actions' Send again still sends one new draft.
+        using var kit = await EngineTestKit.CreateAsync();
+        var orderId = kit.IssueOrder();
+        await kit.SettleAsync();
+        var first = Assert.Single(kit.LiveOrders);
+        var document = EngineTestKit.OrderRef(orderId);
+        var actions = Actions(kit);
+
+        kit.Simulator.DeleteInXero("PurchaseOrders", first.Id);
+        await kit.Engine.ReadBackNowAsync();
+        Assert.True((await actions.UnlinkAsync(document)).Done);
+
+        var refused = await kit.Engine.SendAgainAsync(document);
+        Assert.False(refused.Queued);
+        Assert.Equal(XeroSyncService.UnlinkedSendAgainRefusal, refused.Reason);
+        await kit.SettleAsync();
+        Assert.Empty(kit.LiveOrders);
+
+        Assert.True((await actions.SendAgainAsync(document)).Done);
+        await kit.SettleAsync();
+        Assert.NotEqual(first.Id, Assert.Single(kit.LiveOrders).Id);
+        kit.AssertNoViolations();
+    }
+
+    [Fact]
     public async Task SendAgain_OnAContact_GivesTheContactWording_NotTheInvoiceOne()
     {
         // Verifier F3 round 2, defect 2.

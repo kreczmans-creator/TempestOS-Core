@@ -216,7 +216,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`calculations.rerun`, `calculations.compare-with-previous`), so
         // 105 becomes 108.
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 108 becomes 112.
-        Assert.Equal(112, built);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable, so 112 becomes 113.
+        Assert.Equal(113, built);
     }
 
     [Fact]
@@ -292,7 +293,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `calculations.rerun`/`calculations.compare-with-previous` join —
         // each reaching its own registered handler too, so 105 becomes 108.
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, each reaching its own registered handler, so 108 becomes 112.
-        Assert.Equal(112, executed);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable and reaching its own registered handler, so 112 becomes 113.
+        Assert.Equal(113, executed);
     }
 
     [Fact]
@@ -438,7 +440,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // (`calculations.rerun`, `calculations.compare-with-previous`), so
         // 108 becomes 111.
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
-        Assert.Equal(115 * 4, compared);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable, so 115 becomes 116.
+        Assert.Equal(116 * 4, compared);
     }
 
     // ==================================================================
@@ -531,7 +534,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // refused, so it too has a rejectable value) - so 89 becomes 91.
         // Runbook C3: `quotation.return-to-draft.comment` is Required, so a blank is refused — 91 becomes 92.
         // v0.23.0 board M3: `timesheet.amend.task` is free text (blank keeps the current task) — 92 becomes 91.
-        Assert.Equal(91, refused);
+        // v0.24.0 F3: `invoicing.reviseLines` adds four rule-having parameters (`Line`, `Quantity`, `UnitRate`, `VatRate`, each refusing a bad value; `Description` is free text) — 91 becomes 95.
+        Assert.Equal(95, refused);
     }
 
     [Fact]
@@ -549,6 +553,7 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
                 "calculations.edit.newContent",
                 "documents.edit.newContent",
                 "evidence.set-subject.subjectId",
+                "invoicing.reviseLines.Description",
                 "manufacturing.edit.newContent",
                 "mechanical.edit.newContent",
                 "mechanical.set-bom-line.findNumber",
@@ -605,7 +610,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // see `EveryValidatedParameter_RefusesABadValue...`'s own comment)
         // — neither joins the free-text list above — so 105 becomes 107.
         // Runbook C3 adds one declared parameter, `quotation.return-to-draft.comment` (Required, so rule-having — not free text) — 107 becomes 108.
-        Assert.Equal(108, Invocable.Sum(d => d.Binding!.Parameters.Count));
+        // v0.24.0 F3: `invoicing.reviseLines` declares five parameters (`Line`, `Description`, `Quantity`, `UnitRate`, `VatRate`) — 108 becomes 113.
+        Assert.Equal(113, Invocable.Sum(d => d.Binding!.Parameters.Count));
     }
 
     [Fact]
@@ -676,7 +682,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // its own third parameter, so it does not change this count — so
         // 89 becomes 90.
         // Runbook C3: `quotation.return-to-draft` declares a parameter, so it needs a prompt — 90 becomes 91.
-        Assert.Equal(91, refused);
+        // v0.24.0 F3: `invoicing.reviseLines` declares parameters, so it needs a prompt — 91 becomes 92.
+        Assert.Equal(92, refused);
     }
 
     [Fact]
@@ -762,7 +769,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // confirmation is the only way each needs a person) and
         // "quotation.remove-line" (one parameter, a confirmation besides)
         // — so 21 becomes 25.
-        Assert.Equal(25, confirmed);
+        // v0.24.0 F3: `invoicing.reviseLines` declares a confirmation message — 25 becomes 26.
+        Assert.Equal(26, confirmed);
     }
 
     [Fact]
@@ -827,7 +835,8 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `WP 21.3A` (`TD-29`) two more (`calculations.rerun`,
         // `calculations.compare-with-previous`), so 108 becomes 111.
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
-        Assert.Equal(115, Production.Count);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable, so 115 becomes 116.
+        Assert.Equal(116, Production.Count);
     }
 
     [Fact]
@@ -869,10 +878,12 @@ public sealed class CommandInvocationContractTests : IAsyncLifetime
         // `calculations.compare-with-previous`), so 105 becomes 108 and 108
         // becomes 111; 3 is unchanged.
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 108 becomes 112.
-        Assert.Equal(112, Invocable.Count());
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable, so 112 becomes 113.
+        Assert.Equal(113, Invocable.Count());
         Assert.Equal(3, Unavailable.Count());
         // Runbook C3 adds four quotation descriptors (`quotation.save-draft`, `submit-for-review`, `approve`, `return-to-draft`), all invocable, so 111 becomes 115.
-        Assert.Equal(115, Production.Count);
+        // v0.24.0 F3 adds `invoicing.reviseLines` ("Edit Invoice Lines"), invocable, so 115 becomes 116.
+        Assert.Equal(116, Production.Count);
     }
 
     [Fact]

@@ -74,6 +74,9 @@ public sealed class XeroDocumentLinkActions
     /// <summary>The persistence collection remembering each record the person unlinked, keyed as the link was (<see cref="PersistenceXeroLinkStore.KeyFor"/>).</summary>
     public const string Collection = "Xero.UnlinkedDocuments";
 
+    /// <summary>Why a create is refused for a record the person unlinked from Xero (<see cref="Collection"/>) and has not sent again (design §6.7).</summary>
+    public const string UnlinkedRefusal = "Unlinked from Xero by the person (its Xero copy was deleted there); nothing is sent until they choose Send again.";
+
     /// <summary>The audit action written when the person unlinks a record from Xero (design §6.7).</summary>
     public const string AuditUnlinked = XeroContactLinker.AuditLinkUnlinked;
 

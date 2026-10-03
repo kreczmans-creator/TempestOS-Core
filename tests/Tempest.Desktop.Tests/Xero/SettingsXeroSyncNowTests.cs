@@ -130,6 +130,56 @@ public sealed class SettingsXeroSyncNowTests
     }
 
     [Avalonia.Headless.XUnit.AvaloniaFact]
+    public async Task WithoutTheEngine_RetryAll_IsNotOffered_AndNeverRetriesThroughTheOutboxDirectly()
+    {
+        // Verifier F3 round 3, defect 3: the outbox's own retry skips the
+        // engine's guard on a record the person unlinked, so it is never a fallback.
+        var outbox = new FakeXeroOutbox();
+        outbox.Add(XeroOutboxState.Failed);
+        await using var fixture = await SectionFixture.StartAsync(new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() }, outbox: outbox);
+
+        Assert.Equal("Sync: 0 queued · 1 failed · 0 waiting for authorisation.", Text(fixture.Section, "Xero sync summary"));
+        Assert.DoesNotContain(
+            Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(fixture.Section).OfType<Avalonia.Controls.Button>(),
+            b => Avalonia.Automation.AutomationProperties.GetName(b) == XeroSettingsSection.RetryAllName);
+
+        await fixture.Section.RetryAllAsync();
+        Assert.Empty(outbox.Retried);
+        Assert.Single(await outbox.ListAsync([XeroOutboxState.Failed]));
+    }
+
+    [Avalonia.Headless.XUnit.AvaloniaFact]
+    public async Task RetryAll_LeavesAnUnlinkedRecordsWrite_OutOfTheFailedCount_AndSaysItWaitsForSendAgain()
+    {
+        // Verifier F3 round 3, defect 4: the only Failed entry is an unlinked
+        // quote's write the push handler refused — it is not "failed" for Retry
+        // all, and the section says it waits for Send again, not just "Nothing to retry."
+        var outbox = new FakeXeroOutbox();
+        outbox.Add(XeroOutboxState.Failed);
+        var unlinked = (await outbox.ListAsync([XeroOutboxState.Failed]))[0].Document;
+        var retried = new List<Guid>();
+        await using var fixture = await SectionFixture.StartAsync(new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() }, outbox: outbox, services: s => new XeroSettingsSectionServices
+        {
+            Reader = s.Reader, Identity = s.Identity, Outbox = s.Outbox, Organisations = s.Organisations, Audit = s.Audit, TimeZone = s.TimeZone,
+            // As the engine's Retry does: refused for a record the person unlinked.
+            Retry = (id, _) =>
+            {
+                retried.Add(id);
+                return Task.FromResult(false);
+            },
+            IsUnlinked = (document, _) => Task.FromResult(document == unlinked),
+        });
+
+        var waits = "1 write(s) for records unlinked from Xero wait for Send again on their Xero badge.";
+        Assert.Equal($"Sync: 0 queued · 0 failed · 0 waiting for authorisation. {waits}", Text(fixture.Section, "Xero sync summary"));
+        Assert.False(Button(fixture.Section, XeroSettingsSection.RetryAllName).IsEnabled);
+
+        await fixture.Section.RetryAllAsync();
+        Assert.Empty(retried); // not even offered to the engine
+        Assert.Equal($"Nothing to retry. {waits}", Text(fixture.Section, "Xero status"));
+    }
+
+    [Avalonia.Headless.XUnit.AvaloniaFact]
     public async Task TheLiveSwitch_IsAuditedUnderTheDocumentedName()
     {
         var reader = new FakeXeroSettingsReader { Cached = XeroTestReadings.Live() };

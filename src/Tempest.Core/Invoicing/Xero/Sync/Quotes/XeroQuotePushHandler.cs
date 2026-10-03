@@ -88,7 +88,7 @@ public sealed class XeroQuotePushHandler : IXeroPushHandler
     public const int MaximumSentRecords = 32;
 
     /// <summary>Why a create is refused for a quotation the person unlinked from Xero (<see cref="XeroDocumentLinkActions.Collection"/>) and has not sent again.</summary>
-    public const string UnlinkedRefusal = "Unlinked from Xero by the person (its Xero copy was deleted there); nothing is sent until they choose Send again.";
+    public const string UnlinkedRefusal = XeroDocumentLinkActions.UnlinkedRefusal;
 
     private readonly XeroAccountingApi _api;
     private readonly IXeroLinkStore _links;

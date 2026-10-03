@@ -50,8 +50,23 @@ public sealed class XeroSettingsSectionServices
     /// <summary>The X6 engine: its <see cref="XeroSyncService.RetryAsync"/> (audited, wakes the engine), <see cref="XeroSyncService.NotifyAuthorisedAsync"/> after a re-authorisation, and its <see cref="XeroSyncService.CycleCompleted"/> (a daily settings refresh reaches documents). Optional.</summary>
     public XeroSyncService? SyncService { get; init; }
 
-    /// <summary>The Product Owner's <em>Retry</em> on one Failed entry. <see langword="null"/> uses <see cref="SyncService"/>, else <see cref="Outbox"/>.</summary>
+    /// <summary>
+    /// The Product Owner's <em>Retry</em> on one Failed entry. <see langword="null"/>
+    /// uses <see cref="SyncService"/>'s <see cref="XeroSyncService.RetryAsync"/>
+    /// (which refuses a record the person unlinked); with neither, no
+    /// <em>Retry all</em> is offered — the outbox's own retry is never used
+    /// directly, as it would skip that guard.
+    /// </summary>
     public Func<Guid, CancellationToken, Task<bool>>? Retry { get; init; }
+
+    /// <summary>
+    /// Whether the person unlinked a record from Xero and has not chosen
+    /// <em>Send again</em> (<see cref="XeroDocumentLinkActions.WasUnlinkedAsync"/>):
+    /// its Failed writes are not counted as failed nor retried by <em>Retry all</em>,
+    /// but shown as waiting for Send again. <see langword="null"/> treats every
+    /// record as linked.
+    /// </summary>
+    public Func<XeroDocumentRef, CancellationToken, Task<bool>>? IsUnlinked { get; init; }
 
     /// <summary>
     /// <em>Sync now</em> (`v0.24.0` review-board fix M3): the engine's own
@@ -103,6 +118,7 @@ public sealed class XeroSettingsSectionServices
             SecretStore = TryResolve<ISecretStore>(services),
             Outbox = TryResolve<IXeroOutbox>(services),
             SyncService = TryResolve<XeroSyncService>(services),
+            IsUnlinked = TryResolve<XeroDocumentLinkActions>(services) is { } links ? links.WasUnlinkedAsync : null,
             Organisations = TryResolve<IOrganisationCatalog>(services),
             Audit = TryResolve<IAuditRecorder>(services),
             Identity = identity,
@@ -240,6 +256,7 @@ public sealed class XeroSettingsSection : UserControl
     private bool _loaded;
     private bool _definitionsEnsured;
     private int _failedCount;
+    private int _unlinkedCount;
 
     /// <summary>Raised after <em>Refresh from Xero</em>, <em>Re-authorise</em> or <em>Retry all</em> completes — the Desktop's own <c>ActionCompleted</c> convention.</summary>
     public event Action<string, ActionOutcome>? ActionCompleted;
@@ -257,10 +274,9 @@ public sealed class XeroSettingsSection : UserControl
 
         _settings = settings;
         _services = services;
-        _retry = services.Retry
-            ?? (services.SyncService is { } sync ? sync.RetryAsync
-                : services.Outbox is { } outbox ? outbox.RetryAsync
-                : null);
+        // Never the outbox's own retry: only the engine's refuses a record the
+        // person unlinked (verifier F3 round 3, defect 3).
+        _retry = services.Retry ?? (services.SyncService is { } sync ? sync.RetryAsync : null);
         _afterAuthorised = services.AfterAuthorised
             ?? (services.SyncService is { } engine ? async ct => await engine.NotifyAuthorisedAsync(ct).ConfigureAwait(false) : null);
         _syncNow = services.SyncNow ?? (services.SyncService is { } sync2 ? sync2.RefreshAsync : null);
@@ -558,7 +574,7 @@ public sealed class XeroSettingsSection : UserControl
         }
     }
 
-    /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken when the engine is present), then the summary re-read.</summary>
+    /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken), then the summary re-read. A record the person unlinked from Xero is left for its Send again.</summary>
     /// <param name="cancellationToken">Cancels the retries.</param>
     public async Task RetryAllAsync(CancellationToken cancellationToken = default)
     {
@@ -568,7 +584,7 @@ public sealed class XeroSettingsSection : UserControl
         _retryAllButton.IsEnabled = false;
         try
         {
-            var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+            var (failed, _) = await ListFailedAsync(outbox, cancellationToken).ConfigureAwait(true);
             var retried = 0;
             foreach (var entry in failed)
             {
@@ -578,7 +594,7 @@ public sealed class XeroSettingsSection : UserControl
 
             await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
             _status.Text = retried == 0
-                ? "Nothing to retry."
+                ? _unlinkedCount == 0 ? "Nothing to retry." : $"Nothing to retry. {UnlinkedNote(_unlinkedCount)}"
                 : string.Create(CultureInfo.InvariantCulture, $"Queued {retried} failed write(s) to Xero again.");
             ActionCompleted?.Invoke(_status.Text, retried == 0 ? ActionOutcome.NoChange : ActionOutcome.Changed);
         }
@@ -944,15 +960,52 @@ public sealed class XeroSettingsSection : UserControl
             return;
 
         var queued = await outbox.ListAsync([XeroOutboxState.Pending, XeroOutboxState.InFlight, XeroOutboxState.Unknown], cancellationToken).ConfigureAwait(true);
-        var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+        var (failed, unlinked) = await ListFailedAsync(outbox, cancellationToken).ConfigureAwait(true);
         var waiting = await outbox.ListAsync([XeroOutboxState.WaitingForAuthorisation], cancellationToken).ConfigureAwait(true);
 
         _failedCount = failed.Count;
+        _unlinkedCount = unlinked;
         _syncSummary.Text = string.Create(
             CultureInfo.InvariantCulture,
-            $"Sync: {queued.Count} queued · {failed.Count} failed · {waiting.Count} waiting for authorisation.");
+            $"Sync: {queued.Count} queued · {failed.Count} failed · {waiting.Count} waiting for authorisation.")
+            + (unlinked == 0 ? string.Empty : " " + UnlinkedNote(unlinked));
         _retryAllButton.IsEnabled = failed.Count > 0;
     }
+
+    /// <summary>
+    /// The Failed entries <em>Retry all</em> can retry, and how many more
+    /// belong to records the person unlinked from Xero — those wait for that
+    /// record's Send again, which the engine's Retry refuses to bypass
+    /// (verifier F3 round 3, defect 4).
+    /// </summary>
+    private async Task<(IReadOnlyList<XeroOutboxEntry> Retryable, int Unlinked)> ListFailedAsync(IXeroOutbox outbox, CancellationToken cancellationToken)
+    {
+        var failed = await outbox.ListAsync([XeroOutboxState.Failed], cancellationToken).ConfigureAwait(true);
+        if (_services.IsUnlinked is not { } isUnlinked || failed.Count == 0)
+            return (failed, 0);
+
+        var unlinkedDocuments = new Dictionary<XeroDocumentRef, bool>();
+        var retryable = new List<XeroOutboxEntry>();
+        var unlinked = 0;
+        foreach (var entry in failed)
+        {
+            if (!unlinkedDocuments.TryGetValue(entry.Document, out var isUnlinkedDocument))
+            {
+                isUnlinkedDocument = await isUnlinked(entry.Document, cancellationToken).ConfigureAwait(true);
+                unlinkedDocuments[entry.Document] = isUnlinkedDocument;
+            }
+
+            if (isUnlinkedDocument)
+                unlinked++;
+            else
+                retryable.Add(entry);
+        }
+
+        return (retryable, unlinked);
+    }
+
+    private static string UnlinkedNote(int count) =>
+        string.Create(CultureInfo.InvariantCulture, $"{count} write(s) for records unlinked from Xero wait for Send again on their Xero badge.");
 
     private void DescribeLiveOrganisation()
     {

@@ -923,6 +923,9 @@ public sealed class XeroSyncService : IXeroSyncService
         return true;
     }
 
+    /// <summary>Why <see cref="SendAgainAsync"/> queues nothing for a record the person unlinked: its Send again is <see cref="XeroDocumentLinkActions.SendAgainAsync"/>.</summary>
+    public const string UnlinkedSendAgainRefusal = "This record was unlinked from Xero by the person; choose Send again on its Xero badge to send it as a new draft. Nothing was queued.";
+
     /// <summary>Whether the person unlinked <paramref name="document"/> from Xero in the connected organisation and has not chosen Send again (marked, and not linked).</summary>
     private async Task<bool> IsUnlinkedByPersonAsync(XeroDocumentRef document, CancellationToken cancellationToken) =>
         await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } tenantId
@@ -943,6 +946,12 @@ public sealed class XeroSyncService : IXeroSyncService
 
         if (_parts.SendAgain is not { } sendAgain || !Guid.TryParse(document.TempestKey, out var id))
             return new XeroPurchasingSendRequest(false, [], "Send again is offered for purchase orders and expenses only.");
+
+        // A record the person unlinked is sent again by XeroDocumentLinkActions
+        // (it clears the mark and forgets the deleted record's writes); this
+        // path would queue a write its push handler refuses.
+        if (await IsUnlinkedByPersonAsync(document, cancellationToken).ConfigureAwait(false))
+            return new XeroPurchasingSendRequest(false, [], UnlinkedSendAgainRefusal);
 
         var result = document.Kind switch
         {

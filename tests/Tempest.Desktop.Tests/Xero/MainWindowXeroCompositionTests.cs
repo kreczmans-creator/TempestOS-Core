@@ -46,6 +46,15 @@ public sealed class MainWindowXeroCompositionTests
             var xeroSettings = GetPrivateField<XeroSettingsSection?>(settingsView, "_xeroSettings");
             Assert.NotNull(xeroSettings);
 
+            // Verifier F3 round 3, defects 3 and 4: Retry all goes through the
+            // engine (never the outbox directly), and an unlinked record's writes
+            // are told apart from failed ones.
+            var xeroServices = XeroSettingsSectionServices.FromServices(host.Services);
+            Assert.NotNull(xeroServices);
+            Assert.NotNull(xeroServices.SyncService);
+            Assert.NotNull(xeroServices.IsUnlinked);
+            Assert.False(await xeroServices.IsUnlinked(XeroDocumentRef.For(XeroDocumentKind.Quote, Guid.NewGuid()), CancellationToken.None));
+
             // KeepDocumentIdentityCurrent: documents print Xero's company details from start-up.
             var session = GetPrivateField<DesktopSessionState>(window, "_session");
             await UntilAsync(() => session.OrganisationIdentity.XeroCompanyDetails is not null);
