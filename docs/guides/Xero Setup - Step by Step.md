@@ -210,7 +210,8 @@ To run it with a token from a secret store instead of the stored one, pass
 `-AccessToken <token> -TenantId <Demo Company tenant id>`. That token is
 never refreshed: it is used until 2 minutes before the expiry written in
 it (Xero's last 30 minutes), or for 23 minutes when it carries none, so
-use a freshly issued one, with at least 12 minutes left for `-KeyWindow`.
+use a freshly issued one, with at least 14 minutes left for `-KeyWindow`
+(both journeys and the probe can run on it, in any order).
 `-ClientId` and `-ClientSecret` are ignored with it: nothing is ever sent
 to Xero's token endpoint for a supplied token. If it has run out, the first
 step says *supplied token expired: supply a fresh one*. Its scopes are read

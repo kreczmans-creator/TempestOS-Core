@@ -88,15 +88,40 @@ public sealed class XeroLiveSmokeTests(ITestOutputHelper output)
     private async Task<XeroLiveConnection> ConnectAsync(XeroLiveSettings settings)
     {
         var connection = await XeroLiveConnection.CreateLiveAsync(settings);
-
-        if (settings.Connect && !settings.UsesSuppliedToken)
-        {
-            output.WriteLine("Connecting: a browser window opens; sign in and choose the Demo Company.");
-            var connected = await connection.Authoriser.AuthoriseAsync();
-            output.WriteLine(connected.Outcome == OAuthOutcome.Ok ? "Connected." : $"Connect did not complete: {connected.Outcome} {connected.Reason}");
-        }
-
+        await SignInOnceIfAskedAsync(settings, XeroLiveSignInGate.PerRun, connection.Authoriser.AuthoriseAsync, output.WriteLine);
         return connection;
+    }
+
+    /// <summary>
+    /// The <c>-Connect</c> browser sign-in, at most once per test run however
+    /// many live tests connect (verifier round 1, defect 1): the first test
+    /// to connect signs in and stores the tokens in the data folder's secrets;
+    /// every later test's connection reads them from there. A sign-in that did
+    /// not complete is not repeated either: a second consent page the
+    /// operator is not expecting would only wait out the sign-in timeout.
+    /// </summary>
+    /// <param name="settings">What the operator asked for.</param>
+    /// <param name="gate">The once-per-run gate (<see cref="XeroLiveSignInGate.PerRun"/> outside tests).</param>
+    /// <param name="authorise">The browser sign-in.</param>
+    /// <param name="log">The test output.</param>
+    /// <returns><see langword="true"/> when this call signed in.</returns>
+    internal static Task<bool> SignInOnceIfAskedAsync(
+        XeroLiveSettings settings, XeroLiveSignInGate gate, Func<CancellationToken, Task<OAuthResult>> authorise, Action<string> log)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(gate);
+        ArgumentNullException.ThrowIfNull(authorise);
+        ArgumentNullException.ThrowIfNull(log);
+
+        if (!settings.Connect || settings.UsesSuppliedToken)
+            return Task.FromResult(false);
+
+        return gate.RunOnceAsync(async () =>
+        {
+            log("Connecting: a browser window opens; sign in and choose the Demo Company.");
+            var connected = await authorise(CancellationToken.None);
+            log(connected.Outcome == OAuthOutcome.Ok ? "Connected." : $"Connect did not complete: {connected.Outcome} {connected.Reason}");
+        });
     }
 
     private static XeroDemoSmokeJourney NewJourney(XeroLiveConnection connection, XeroLiveSettings settings) => new(
@@ -116,5 +141,44 @@ public sealed class XeroLiveSmokeTests(ITestOutputHelper output)
 
         File.WriteAllText(path, report.ToMarkdown());
         output.WriteLine($"Report: {path}");
+    }
+}
+
+/// <summary>
+/// Runs an action at most once, however many callers (and however
+/// concurrently): the live smoke tests' <c>-Connect</c> sign-in, which must
+/// open the browser once per run, not once per test (verifier round 1,
+/// defect 1). Later callers wait for the first to finish, so none connects
+/// before the tokens are stored.
+/// </summary>
+internal sealed class XeroLiveSignInGate
+{
+    private readonly SemaphoreSlim _lock = new(1, 1);
+    private bool _ran;
+
+    /// <summary>The gate shared by every live test in this test run.</summary>
+    public static XeroLiveSignInGate PerRun { get; } = new();
+
+    /// <summary>Runs <paramref name="action"/> unless it has run (or been tried) already.</summary>
+    /// <param name="action">The once-only action.</param>
+    /// <returns><see langword="true"/> when this call ran it.</returns>
+    public async Task<bool> RunOnceAsync(Func<Task> action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        await _lock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (_ran)
+                return false;
+
+            _ran = true;
+            await action().ConfigureAwait(false);
+            return true;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 }

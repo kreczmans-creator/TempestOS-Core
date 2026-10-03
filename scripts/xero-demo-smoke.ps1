@@ -74,7 +74,8 @@
     secret store). Needs -TenantId. It is never refreshed: it is used until
     2 minutes before the expiry in the token itself (Xero's tokens last 30
     minutes), or for 23 minutes when the token is opaque - supply a freshly
-    issued one (and one with at least 12 minutes left for -KeyWindow).
+    issued one (and one with at least 14 minutes left for -KeyWindow, as
+    both journeys and the probe may run on it, in any order).
 
 .PARAMETER Scopes
     With an opaque -AccessToken only: the scopes it was granted, separated
