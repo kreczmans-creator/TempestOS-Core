@@ -58,6 +58,10 @@ public sealed class InvoicingService : IInvoicingService
     private readonly TimeProvider _time;
     private readonly IInvoiceDraftSync? _drafts;
 
+    // `v0.24.0` review M8: the requests this instance is sending right now,
+    // so recovering interrupted sends never touches a live one.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, byte> _sendsInProgress = new();
+
     /// <summary>Initialises a new instance of the <see cref="InvoicingService"/> class.</summary>
     /// <param name="expenses">
     /// Where a billable, unbilled <c>ProjectExpense</c> is read from so it
@@ -391,8 +395,20 @@ public sealed class InvoicingService : IInvoicingService
                     request);
             }
 
-            await request.MoveToSendingAsync(_connector.Name, document.Reference, cancellationToken).ConfigureAwait(false);
-            result = await drafts.CreateDraftAsync(document, cancellationToken).ConfigureAwait(false);
+            _sendsInProgress[request.Id] = 0;
+            try
+            {
+                await request.MoveToSendingAsync(_connector.Name, document.Reference, cancellationToken).ConfigureAwait(false);
+                result = await drafts.CreateDraftAsync(document, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Cut off mid-send (cancelled, or a crash in the seam): the
+                // request stays Sending, and is recovered — looked up first,
+                // never re-sent blindly — by RecoverInterruptedSendsAsync.
+                _sendsInProgress.TryRemove(request.Id, out _);
+                throw;
+            }
         }
         else
         {
@@ -440,7 +456,48 @@ public sealed class InvoicingService : IInvoicingService
                 break;
         }
 
+        _sendsInProgress.TryRemove(request.Id, out _);
         return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
+    }
+
+    /// <summary>
+    /// `v0.24.0` review M8: at start-up, every request left
+    /// <see cref="InvoiceRequestStatus.Sending"/> through the draft seam's
+    /// connector — TempestOS stopped while its create was in flight, so the
+    /// draft may or may not exist there — becomes
+    /// <see cref="InvoiceRequestStatus.Unknown"/>. From there it takes the
+    /// same lost-create recovery as any other: looked up (and proven its own)
+    /// before anything is sent again; never re-sent blindly, never stuck. A
+    /// request this instance is sending right now is left alone.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the recovery.</param>
+    /// <returns>How many requests were moved.</returns>
+    internal async Task<int> RecoverInterruptedSendsAsync(CancellationToken cancellationToken = default)
+    {
+        if (Drafts is not { } drafts)
+            return 0;
+
+        var entries = await _context.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, cancellationToken).ConfigureAwait(false);
+        var requests = await _context.Repository.MaterialiseAsync<InvoiceRequest>(entries, cancellationToken).ConfigureAwait(false);
+
+        var moved = 0;
+        foreach (var request in requests)
+        {
+            if (!IsLive(request)
+                || request.Status != InvoiceRequestStatus.Sending
+                || !string.Equals(request.Connector, drafts.ConnectorName, StringComparison.Ordinal)
+                || _sendsInProgress.ContainsKey(request.Id))
+            {
+                continue;
+            }
+
+            await request.MarkUnknownAsync(
+                $"TempestOS stopped while sending this invoice to {drafts.ConnectorName}; it is looked up there before anything is sent again.",
+                cancellationToken).ConfigureAwait(false);
+            moved++;
+        }
+
+        return moved;
     }
 
     /// <inheritdoc />
@@ -456,7 +513,11 @@ public sealed class InvoicingService : IInvoicingService
         switch (request.Status)
         {
             case InvoiceRequestStatus.Unknown:
-                await ReconcileUnknownAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                // m16: a definite answer that the number is held by an invoice
+                // TempestOS cannot prove its own is carried back as the reason.
+                var refusal = await ReconcileUnknownAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                if (refusal is not null)
+                    return new InvoiceRequestResult(InvoiceRequestRefusal.None, refusal, request);
                 break;
 
             case InvoiceRequestStatus.Sent:
@@ -565,6 +626,15 @@ public sealed class InvoicingService : IInvoicingService
 
             case InvoiceNumberHolder.OwnReferenceOtherContact when IsGoneThere(finding.ExternalStatus):
                 return null; // Every invoice with its reference there, under the other contact, is voided or deleted: nothing live is left.
+
+            case InvoiceNumberHolder.OwnUnproven when IsGoneThere(finding.ExternalStatus):
+                return null; // Every such invoice there is voided or deleted: nothing live is left.
+
+            case InvoiceNumberHolder.OwnUnproven:
+                return new InvoiceRequestResult(
+                    InvoiceRequestRefusal.TransitionNotPermitted,
+                    $"Invoice request '{request.Id}' was not voided: {drafts.ConnectorName} holds {document.InvoiceNumber} with this invoice's reference under the client's contact, but TempestOS cannot prove it created it, so it does not delete it; check {drafts.ConnectorName}: delete or void it there, then void again. The request is unchanged.",
+                    request);
 
             case InvoiceNumberHolder.OwnReferenceOtherContact:
                 return new InvoiceRequestResult(
@@ -840,7 +910,8 @@ public sealed class InvoicingService : IInvoicingService
         return true;
     }
 
-    private async Task ReconcileUnknownAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
+    /// <returns>A definite refusal from the draft seam (the number is held by an invoice that is not provably this request's), which leaves the request Unknown; otherwise <see langword="null"/>.</returns>
+    private async Task<string?> ReconcileUnknownAsync(InvoiceRequest request, Guid requestId, CancellationToken cancellationToken)
     {
         // `v0.24.0` X4 (design §6.4 item 5): by the request's own invoice
         // number first; only when nothing carries it, by the reference a
@@ -850,21 +921,24 @@ public sealed class InvoicingService : IInvoicingService
             var document = await ToDraftDocumentAsync(request, request.SentAtUtc ?? _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
             var byNumber = await drafts.FindByInvoiceNumberAsync(document, cancellationToken).ConfigureAwait(false);
 
+            if (byNumber.Outcome == ConnectorOutcome.Rejected)
+                return byNumber.Reason; // The number is held by an invoice not provably this request's: nothing safe to conclude, and the reason says why.
+
             if (byNumber.Outcome != ConnectorOutcome.Ok)
-                return; // Unreachable, or the number is held by another invoice: nothing safe to conclude; the reason is left for the next attempt.
+                return null; // Unreachable: the reason is left for the next attempt.
 
             if (byNumber.Value is { } numbered)
             {
                 await request.ReconcileFoundAsync(numbered.ExternalId, numbered.ExternalInvoiceNumber, cancellationToken).ConfigureAwait(false);
                 await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
-                return;
+                return null;
             }
         }
 
         var found = await _connector.FindByReferenceAsync(requestId.ToString(), cancellationToken).ConfigureAwait(false);
 
         if (found.Outcome != ConnectorOutcome.Ok)
-            return; // Connector still unreachable or the call itself was refused; nothing to report — the poller tries again next tick.
+            return null; // Connector still unreachable or the call itself was refused; nothing to report — the poller tries again next tick.
 
         if (found.Value is { } invoice)
         {
@@ -875,6 +949,8 @@ public sealed class InvoicingService : IInvoicingService
         {
             await request.RevertToDraftAsync("Not found by reference on reconciliation.", cancellationToken).ConfigureAwait(false);
         }
+
+        return null;
     }
 
     private async Task ReconcileSentOrAcceptedAsync(InvoiceRequest request, CancellationToken cancellationToken)
@@ -932,35 +1008,16 @@ public sealed class InvoicingService : IInvoicingService
     }
 
     /// <summary>
-    /// Infers the closest declared <see cref="VatRate"/> from an expense's
-    /// own directly-entered <paramref name="net"/>/<paramref name="vat"/>
-    /// amounts (`WP 21.3B`) — <see cref="ProjectExpense"/> carries the
-    /// figures a receipt actually states, never a rate; <see cref="InvoiceRequestLine.VatAmount"/>
-    /// is always <see cref="VatRate"/>-derived, so this line's own rate is
-    /// the closest of the standard (20%), reduced (5%) or zero/exempt/out-
-    /// of-scope (0%) percentages to what the receipt actually recorded.
-    /// <b>Disclosed, not hidden:</b> an expense whose own VAT is not a
-    /// clean 20%, 5% or 0% split of its net (an unusual supplier VAT
-    /// treatment) rounds to the nearest of the three on the raised
-    /// request — the exact entered figures remain readable on the expense
-    /// itself, unchanged, for what the consultant later matches in Xero.
+    /// The <see cref="VatRate"/> an expense's own directly-entered
+    /// <paramref name="net"/>/<paramref name="vat"/> amounts show (`WP 21.3B`)
+    /// — <see cref="ProjectExpense"/> carries the figures a receipt states,
+    /// never a rate. `v0.24.0` review n4: the one rule its Xero bill also
+    /// uses (<see cref="ExpenseVatInference.Infer"/>), so the recharge line
+    /// and the bill never disagree. <b>Disclosed, not hidden:</b> an odd
+    /// ratio rounds to the nearer of 5% and 20%; the exact entered figures
+    /// stay readable on the expense itself.
     /// </summary>
-    private static VatRate InferVatRate(Money net, Money vat)
-    {
-        if (net.Amount <= 0m || vat.Amount <= 0m)
-            return VatRate.OutOfScope;
-
-        var effective = vat.Amount / net.Amount;
-
-        (VatRate Rate, decimal Percentage)[] candidates =
-        [
-            (VatRate.Standard, VatRate.Standard.Percentage()),
-            (VatRate.Reduced, VatRate.Reduced.Percentage()),
-            (VatRate.OutOfScope, VatRate.OutOfScope.Percentage()),
-        ];
-
-        return candidates.OrderBy(c => Math.Abs(c.Percentage - effective)).First().Rate;
-    }
+    private static VatRate InferVatRate(Money net, Money vat) => ExpenseVatInference.Infer(net.Amount, vat.Amount);
 
     private async Task<DeliverableCompletion?> FindCompletionAsync(Guid completionId, CancellationToken cancellationToken)
     {
@@ -1066,7 +1123,9 @@ public sealed class InvoicingService : IInvoicingService
     internal async Task<InvoiceDraftDocument> ToDraftDocumentAsync(InvoiceRequest request, DateTimeOffset sentAt, CancellationToken cancellationToken)
     {
         var organisation = await _organisations.FindAsync(request.ClientOrganisationId, cancellationToken).ConfigureAwait(false);
-        var date = DateOnly.FromDateTime(sentAt.UtcDateTime);
+        // `v0.24.0` review m18: the invoice is dated in the workspace's own
+        // time zone — a send at 00:30 BST is that day's, not the day before.
+        var date = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(sentAt, _time.LocalTimeZone).DateTime);
         var dueDate = request.DueOn ?? date.AddDays(request.PaymentTerms.Days());
 
         return new InvoiceDraftDocument(
@@ -1232,6 +1291,16 @@ public enum InvoiceNumberHolder
 
     /// <summary>Another invoice — not carrying the request's reference — holds the number.</summary>
     AnotherInvoice,
+
+    /// <summary>
+    /// `v0.24.0` review m16 (additive): an invoice carries the number with
+    /// the request's reference under the client's contact, but TempestOS
+    /// cannot prove it created it — no link, and no create of its own whose
+    /// answer (or replayed answer) names it. Never adopted, changed or
+    /// deleted, and never created over: the Product Owner decides in the
+    /// accounting system.
+    /// </summary>
+    OwnUnproven,
 }
 
 /// <summary>What <see cref="IInvoiceDraftSync.FindNumberHolderAsync"/> found under a request's number.</summary>

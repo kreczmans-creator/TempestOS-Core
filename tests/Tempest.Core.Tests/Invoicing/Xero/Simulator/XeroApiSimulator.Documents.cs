@@ -206,6 +206,7 @@ internal sealed partial class XeroApiSimulator
         }
 
         var summarize = !string.Equals(context.QueryValue("summarizeErrors"), "false", StringComparison.OrdinalIgnoreCase);
+        var unitDp = UnitDecimalPlaces(context);
         if (summarize)
         {
             var failed = plans.Where(p => !p.Check.Ok).ToList();
@@ -216,7 +217,7 @@ internal sealed partial class XeroApiSimulator
                     new JsonArray([.. failed.Select(p => (JsonNode)ErrorElement(p.Element, p.Check))]));
             }
 
-            var saved = plans.Select(p => Apply(kind, p.Element, p.Existing).Body.DeepClone()).ToList();
+            var saved = plans.Select(p => Present(Apply(kind, p.Element, p.Existing, unitDp).Body.DeepClone(), unitDp)).ToList();
             return SimResponse.Ok(Envelope(kind.Resource, saved));
         }
 
@@ -229,7 +230,7 @@ internal sealed partial class XeroApiSimulator
                 continue;
             }
 
-            var body = Apply(kind, element, existing).Body.DeepClone().AsObject();
+            var body = Present(Apply(kind, element, existing, unitDp).Body.DeepClone(), unitDp).AsObject();
             body["StatusAttributeString"] = "OK";
             results.Add(body);
         }
@@ -562,6 +563,8 @@ internal sealed partial class XeroApiSimulator
 
             if (string.IsNullOrWhiteSpace(XeroWire.Str(line, "Description")))
                 check.Fail(XeroSimulatorRules.RequiredField, $"{at}: Description is required.");
+            else if (XeroWire.Str(line, "Description") is { Length: > MaximumLineDescriptionLength } longDescription)
+                check.Fail(XeroSimulatorRules.FieldLength, $"{at}: Description is {longDescription.Length} characters; Xero allows {MaximumLineDescriptionLength}.");
 
             foreach (var numeric in new[] { "Quantity", "UnitAmount", "TaxAmount", "LineAmount", "DiscountRate" })
             {
@@ -670,7 +673,32 @@ internal sealed partial class XeroApiSimulator
     }
 
     /// <summary>Applies a validated element: creates the document when <paramref name="existing"/> is <see langword="null"/>, otherwise updates it.</summary>
-    private StoredDocument Apply(DocumentKind kind, JsonObject element, StoredDocument? existing)
+    /// <summary>
+    /// The decimal places a call's unit amounts carry, as Xero reads them:
+    /// <c>?unitdp=4</c> keeps four; without it Xero rounds a unit amount
+    /// sent to two places on the way in (and shows two on the way out), so
+    /// <c>1000 × 0.125</c> is stored as <c>1000 × 0.13 = 130.00</c>
+    /// (`v0.24.0` review M7).
+    /// </summary>
+    private static int UnitDecimalPlaces(RequestContext context) =>
+        string.Equals(context.QueryValue("unitdp"), "4", StringComparison.Ordinal) ? 4 : 2;
+
+    /// <summary>A document body as a call with <paramref name="unitDp"/> sees it: unit amounts rounded to two places when the call did not ask for four.</summary>
+    private static JsonNode Present(JsonNode body, int unitDp)
+    {
+        if (unitDp >= 4 || body is not JsonObject obj || obj["LineItems"] is not JsonArray lines)
+            return body;
+
+        foreach (var line in lines.OfType<JsonObject>())
+        {
+            if (XeroWire.TryNumber(line["UnitAmount"], out var unit))
+                line["UnitAmount"] = Math.Round(unit, 2, MidpointRounding.AwayFromZero);
+        }
+
+        return body;
+    }
+
+    private StoredDocument Apply(DocumentKind kind, JsonObject element, StoredDocument? existing, int unitDp = 4)
     {
         var doc = existing ?? NewDocument(kind);
         var body = doc.Body;
@@ -711,7 +739,7 @@ internal sealed partial class XeroApiSimulator
 
         if (element.TryGetPropertyValue("LineItems", out var linesNode) && linesNode is JsonArray lines)
         {
-            body["LineItems"] = NormaliseLines(lines);
+            body["LineItems"] = NormaliseLines(lines, unitDp);
             doc.ComputedTaxLines.Clear();
         }
 
@@ -793,7 +821,7 @@ internal sealed partial class XeroApiSimulator
         return Apply(ContactsKind, element, null);
     }
 
-    private JsonArray NormaliseLines(JsonArray lines)
+    private JsonArray NormaliseLines(JsonArray lines, int unitDp)
     {
         var result = new JsonArray();
         foreach (var node in lines)
@@ -802,7 +830,7 @@ internal sealed partial class XeroApiSimulator
             if (XeroWire.Str(line, "LineItemID") is null)
                 line["LineItemID"] = NextId("line");
             line["Quantity"] = XeroWire.TryNumber(line["Quantity"], out var quantity) ? quantity : 1m;
-            line["UnitAmount"] = XeroWire.TryNumber(line["UnitAmount"], out var unit) ? unit : 0m;
+            line["UnitAmount"] = XeroWire.TryNumber(line["UnitAmount"], out var unit) ? Math.Round(unit, unitDp, MidpointRounding.AwayFromZero) : 0m;
             if (line["TaxAmount"] is not null && XeroWire.TryNumber(line["TaxAmount"], out var taxAmount))
                 line["TaxAmount"] = taxAmount;
             line["TaxType"] ??= "NONE";

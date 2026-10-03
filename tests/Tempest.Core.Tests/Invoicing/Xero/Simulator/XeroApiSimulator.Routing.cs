@@ -26,6 +26,9 @@ internal sealed partial class XeroApiSimulator
     /// <summary>Xero's per-document attachment limit (design §3: up to 10).</summary>
     public const int MaximumAttachmentsPerDocument = 10;
 
+    /// <summary>Xero's limit on a line item's <c>Description</c> (4,000 characters; `v0.24.0` review m19).</summary>
+    public const int MaximumLineDescriptionLength = 4000;
+
     private long _responseCounter;
 
     private sealed record RouteMatch(IReadOnlyList<string> ReadScopes, IReadOnlyList<string> WriteScopes, Func<RequestContext, SimResponse>? Handler, bool AnswersJson = true);
@@ -253,7 +256,8 @@ internal sealed partial class XeroApiSimulator
             bodies = [.. bodies.Skip((page - 1) * pageSize).Take(pageSize)];
         }
 
-        return SimResponse.Ok(Envelope(kind.Resource, bodies.Select(b => b.DeepClone()), pagination));
+        var unitDp = UnitDecimalPlaces(context);
+        return SimResponse.Ok(Envelope(kind.Resource, bodies.Select(b => Present(b.DeepClone(), unitDp)), pagination));
 
         static HashSet<string>? Csv(string? value) => string.IsNullOrWhiteSpace(value)
             ? null
@@ -263,7 +267,7 @@ internal sealed partial class XeroApiSimulator
     private SimResponse GetDocument(DocumentKind kind, RequestContext context, string key)
     {
         var doc = FindByKey(kind, key);
-        return doc is null ? SimResponse.NotFound() : SimResponse.Ok(Envelope(kind.Resource, [doc.Body.DeepClone()]));
+        return doc is null ? SimResponse.NotFound() : SimResponse.Ok(Envelope(kind.Resource, [Present(doc.Body.DeepClone(), UnitDecimalPlaces(context))]));
     }
 
     private SimResponse ListAttachments(DocumentKind kind, RequestContext context, string key)

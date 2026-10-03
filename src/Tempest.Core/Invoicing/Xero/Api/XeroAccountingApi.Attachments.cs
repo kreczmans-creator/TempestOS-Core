@@ -89,13 +89,25 @@ public sealed partial class XeroAccountingApi
     /// <see cref="XeroWriteSafetyHandler"/> refuses (B1); such a name is sent
     /// with each <c>'%'</c> as <c>'_'</c> (<c>Invoice_20A.pdf</c>). Every
     /// other name, a lone <c>'%'</c> included (<c>50% off.jpg</c>), is sent
-    /// as it is. Deterministic, so a replacing upload (<c>POST</c>, Xero's
-    /// update-by-file-name) reaches the same attachment.
+    /// as it is. A <c>'/'</c> or <c>'\'</c> (an invoice PDF named after a
+    /// number such as <c>INV/2026/7</c>), which the handler refuses inside an
+    /// escaped segment, is sent as <c>'-'</c> (`v0.24.0` review n3), as are
+    /// control characters. Deterministic, so a replacing upload (<c>POST</c>,
+    /// Xero's update-by-file-name) reaches the same attachment.
     /// </summary>
-    internal static string XeroFileName(string fileName) =>
-        fileName.Contains('%', StringComparison.Ordinal) && Uri.UnescapeDataString(fileName) != fileName
+    internal static string XeroFileName(string fileName)
+    {
+        ArgumentNullException.ThrowIfNull(fileName);
+
+        var name = fileName.Contains('%', StringComparison.Ordinal) && Uri.UnescapeDataString(fileName) != fileName
             ? fileName.Replace('%', '_')
             : fileName;
+
+        if (name.Any(c => c is '/' or '\\' || char.IsControl(c)))
+            name = string.Concat(name.Select(c => c is '/' or '\\' || char.IsControl(c) ? '-' : c));
+
+        return name;
+    }
 
     private static string ResourceSegment(XeroAttachableResource resource) => resource switch
     {

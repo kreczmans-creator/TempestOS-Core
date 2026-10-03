@@ -481,6 +481,10 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
         {
             AccessTokenOutcome.NotAuthorised => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised),
             AccessTokenOutcome.NotConfigured => new ConnectorAuthorisationState(ConnectorAuthorisation.NotAuthorised, access.Reason),
+
+            // `v0.24.0` review M2: the grant stands; only the sign-in service
+            // was unreachable to renew the access token. Not "re-authorise".
+            AccessTokenOutcome.Unavailable => new ConnectorAuthorisationState(ConnectorAuthorisation.Authorised, access.Reason),
             _ => new ConnectorAuthorisationState(ConnectorAuthorisation.Expired, access.Reason),
         };
     }
@@ -742,6 +746,7 @@ public sealed class XeroConnector : IInvoicingConnector, IAccountsConnector, IAu
     {
         AccessTokenOutcome.NotAuthorised => ConnectorResult<T>.Reauthorise("Xero has never been authorised."),
         AccessTokenOutcome.NotConfigured => ConnectorResult<T>.Reauthorise("not configured"),
+        AccessTokenOutcome.Unavailable => ConnectorResult<T>.Unavailable(access.Reason ?? "The sign-in service could not be reached."),
         _ => ConnectorResult<T>.Reauthorise(access.Reason),
     };
 

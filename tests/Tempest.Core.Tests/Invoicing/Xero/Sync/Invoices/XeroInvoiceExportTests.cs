@@ -114,7 +114,11 @@ public sealed class XeroInvoiceExportTests
         Assert.Equal(InvoiceRequestStatus.Sent, after.Status);
         Assert.Equal(invoice.Id, after.ExternalId);
         Assert.Equal(XeroInvoiceDrafts.LinkedByReconciled, (await kit.LinkAsync(request.Id))!.LinkedBy);
-        Assert.Single(kit.Simulator.Requests, r => r.Method == HttpMethod.Put && r.Path == "Invoices");
+
+        // `v0.24.0` review m16: the only further PUT is the lost create replayed under its own key (Xero answers it
+        // from its cache, naming the invoice) — the proof it is TempestOS's own; never a second create.
+        var creates = kit.Simulator.Requests.Where(r => r.Method == HttpMethod.Put && r.Path == "Invoices").ToList();
+        Assert.Single(creates.Select(r => r.IdempotencyKey).Distinct());
         kit.AssertSafe();
     }
 
@@ -169,7 +173,10 @@ public sealed class XeroInvoiceExportTests
         var invoice = Assert.Single(kit.SalesInvoices);
         Assert.Equal(invoice.Id, reconciled.Request.ExternalId);
         Assert.Contains(kit.RequestsSince(mark), r => r.Method == HttpMethod.Get && r.Query.TryGetValue("InvoiceNumbers", out var n) && n == "ACME1-BRIDG1-INV-001");
-        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method == HttpMethod.Put);
+
+        // `v0.24.0` review m16: any PUT is the lost create replayed under its own key (the proof), never a new create.
+        var originalKey = kit.Simulator.Requests.First(r => r.Method == HttpMethod.Put && r.Path == "Invoices").IdempotencyKey;
+        Assert.All(kit.RequestsSince(mark).Where(r => r.Method == HttpMethod.Put), r => Assert.Equal(originalKey, r.IdempotencyKey));
         kit.AssertSafe();
     }
 

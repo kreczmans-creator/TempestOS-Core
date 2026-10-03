@@ -33,7 +33,7 @@ public sealed class XeroAccountingApiTests
         Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
         var request = Assert.Single(network.Received).Request;
         Assert.Equal(HttpMethod.Get, request.Method);
-        Assert.Equal("https://api.xero.com/api.xro/2.0/Invoices?IDs=a%2Cb&page=2", request.RequestUri!.AbsoluteUri);
+        Assert.Equal("https://api.xero.com/api.xro/2.0/Invoices?IDs=a%2Cb&page=2&unitdp=4", request.RequestUri!.AbsoluteUri);
         Assert.Equal($"Bearer {XeroTestAuthoriser.AccessToken}", request.Headers.Authorization!.ToString());
         Assert.Equal(XeroTestAuthoriser.TenantId, request.Headers.GetValues("xero-tenant-id").Single());
         Assert.Contains(request.Headers.Accept, accept => accept.MediaType == "application/json");
@@ -51,7 +51,7 @@ public sealed class XeroAccountingApiTests
         Assert.Equal(ConnectorOutcome.Ok, result.Outcome);
         var (request, body) = Assert.Single(network.Received);
         Assert.Equal(HttpMethod.Put, request.Method);
-        Assert.Equal("https://api.xero.com/api.xro/2.0/Invoices?summarizeErrors=true", request.RequestUri!.AbsoluteUri);
+        Assert.Equal("https://api.xero.com/api.xro/2.0/Invoices?summarizeErrors=true&unitdp=4", request.RequestUri!.AbsoluteUri);
         Assert.Equal("tos:invoice:1:create:abc", request.Headers.GetValues("Idempotency-Key").Single());
         Assert.Equal("""{"Invoices":[{"Type":"ACCREC","Status":"DRAFT"}]}""", body);
     }

@@ -59,6 +59,14 @@ public sealed record XeroDocumentRef(XeroDocumentKind Kind, string TempestKey)
 /// <param name="LinkedAtUtc">When the link was first written.</param>
 /// <param name="LastReadAtUtc">When Xero's status was last read back; <see langword="null"/> if never.</param>
 /// <param name="LinkedBy">How the link came to exist: <c>"created"</c> (TempestOS created the Xero record), <c>"linked"</c> (the Product Owner confirmed an existing Xero contact), <c>"reconciled"</c> (found by number or reference after a lost response) or <c>"imported"</c> (carried over from an <c>InvoiceRequest.ExternalId</c> written before `v0.24.0`).</param>
+/// <param name="AttachmentNote">
+/// `v0.24.0` review M6 (additive; absent in older links): why the newest
+/// file for this record was <em>not</em> attached in Xero — too large, or
+/// refused by Xero — set by the attachment handler that finished the upload
+/// without holding the record's queue (<see cref="XeroAttachmentRefusal"/>);
+/// <see langword="null"/> when the newest file is attached (or none was refused).
+/// The badge shows it beside the record's own state.
+/// </param>
 public sealed record XeroLink(
     int SchemaVersion,
     string TenantId,
@@ -71,7 +79,8 @@ public sealed record XeroLink(
     string? AttachmentContentHash,
     DateTimeOffset LinkedAtUtc,
     DateTimeOffset? LastReadAtUtc,
-    string LinkedBy)
+    string LinkedBy,
+    string? AttachmentNote = null)
 {
     /// <summary>The schema version this build writes.</summary>
     public const int CurrentSchemaVersion = 1;

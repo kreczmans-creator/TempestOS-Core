@@ -359,7 +359,9 @@ public static class XeroPurchasingOwnership
         string.Equals(a.Number.Trim(), b.Number.Trim(), StringComparison.OrdinalIgnoreCase)
         && string.Equals(a.ContactId.Trim(), b.ContactId.Trim(), StringComparison.OrdinalIgnoreCase);
 
-    private static decimal LineNet(XeroWireLineItem line) => line.LineAmount ?? Round(line.Quantity * line.UnitAmount);
+    // M7: a line's amount exactly as Xero computes it (the unit amount at the places Xero keeps).
+    private static decimal LineNet(XeroWireLineItem line) =>
+        line.LineAmount ?? XeroLineRules.LineAmount(line.Quantity, Math.Round(line.UnitAmount, XeroAccountingApi.UnitAmountDecimalPlaces, MidpointRounding.AwayFromZero));
 
     private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.AwayFromZero);
 

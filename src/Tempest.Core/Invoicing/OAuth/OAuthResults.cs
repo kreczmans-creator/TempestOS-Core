@@ -42,13 +42,23 @@ public enum AccessTokenOutcome
 
     /// <summary>The stored refresh token was refused; nothing further is sent until the operator re-authorises.</summary>
     Reauthorise,
+
+    /// <summary>
+    /// The stored access token has expired and the token endpoint could not
+    /// be reached (offline, timed out, a 5xx or 429, or an answer that was
+    /// not an OAuth refusal) to refresh it. The grant itself is untouched:
+    /// the caller treats this like any other transport failure — queue and
+    /// try again later — never as a reason to re-authorise (`v0.24.0`
+    /// review M2).
+    /// </summary>
+    Unavailable,
 }
 
 /// <summary>What <see cref="OAuthAuthoriser.EnsureAccessTokenAsync"/> answers.</summary>
 /// <param name="Outcome">What happened.</param>
 /// <param name="AccessToken">A current, usable access token, when <see cref="Outcome"/> is <see cref="AccessTokenOutcome.Ok"/>. <see langword="null"/> otherwise.</param>
 /// <param name="TenantId">The provider's own tenant/company id (Xero's <c>tenantId</c>, QuickBooks Online's <c>realmId</c>), when one is stored. <see langword="null"/> for a provider that needs none, or when <see cref="Outcome"/> is not <see cref="AccessTokenOutcome.Ok"/>.</param>
-/// <param name="Reason">Why, for <see cref="AccessTokenOutcome.NotConfigured"/> or <see cref="AccessTokenOutcome.Reauthorise"/>. <see langword="null"/> otherwise.</param>
+/// <param name="Reason">Why, for <see cref="AccessTokenOutcome.NotConfigured"/>, <see cref="AccessTokenOutcome.Reauthorise"/> or <see cref="AccessTokenOutcome.Unavailable"/>. <see langword="null"/> otherwise.</param>
 public sealed record AccessTokenResult(AccessTokenOutcome Outcome, string? AccessToken = null, string? TenantId = null, string? Reason = null)
 {
     /// <summary>A current, usable access token.</summary>
@@ -62,6 +72,9 @@ public sealed record AccessTokenResult(AccessTokenOutcome Outcome, string? Acces
 
     /// <summary>The stored refresh token was refused.</summary>
     public static AccessTokenResult Reauthorise(string? reason) => new(AccessTokenOutcome.Reauthorise, Reason: reason);
+
+    /// <summary>The token endpoint could not be reached to refresh an expired access token; try again later.</summary>
+    public static AccessTokenResult Unavailable(string? reason) => new(AccessTokenOutcome.Unavailable, Reason: reason);
 
     /// <summary>
     /// Redacted deliberately (`WP 21.5F` Offensive Security Audit, OSA-04):

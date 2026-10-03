@@ -82,7 +82,13 @@ public sealed class XeroInvoicePushHandler : IXeroPushHandler
             if (request.Status == InvoiceRequestStatus.Sent)
                 return new XeroPushResult(XeroPushOutcome.Succeeded);
             if (request.Status == InvoiceRequestStatus.Unknown)
-                return new XeroPushResult(XeroPushOutcome.Unknown, request.LastError ?? "Xero could not confirm whether it holds this invoice yet.");
+            {
+                // m16: Xero answered — the number is held by an invoice TempestOS cannot prove its own. A decision for the
+                // Product Owner (Failed, with the reason), not a lost answer to keep looking up.
+                return reconciled.Reason is { } refusal
+                    ? new XeroPushResult(XeroPushOutcome.Rejected, refusal)
+                    : new XeroPushResult(XeroPushOutcome.Unknown, request.LastError ?? "Xero could not confirm whether it holds this invoice yet.");
+            }
         }
 
         if (request.Status is not InvoiceRequestStatus.Draft)

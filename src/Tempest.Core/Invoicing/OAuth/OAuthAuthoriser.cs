@@ -220,9 +220,18 @@ public sealed class OAuthAuthoriser
         if (credentials is null)
             return AccessTokenResult.NotConfigured();
 
-        var refreshed = await RefreshAsync(credentials.Value, refreshToken, cancellationToken).ConfigureAwait(false);
-        if (refreshed is null)
-            return AccessTokenResult.Reauthorise("The stored refresh token was refused; sign in again to re-authorise.");
+        var call = await RefreshAsync(credentials.Value, refreshToken, cancellationToken).ConfigureAwait(false);
+        if (call.Token is not { } refreshed)
+        {
+            // `v0.24.0` review M2: only a definite OAuth refusal from the
+            // token endpoint means the grant is gone. Being offline (or a
+            // 5xx, a 429, a captive portal's page) leaves the grant intact —
+            // the work waits in the queue rather than asking the operator
+            // to sign in again.
+            return call.Refused
+                ? AccessTokenResult.Reauthorise($"The stored refresh token was refused ({call.Detail}); sign in again to re-authorise.")
+                : AccessTokenResult.Unavailable($"The sign-in service could not be reached to renew the access token ({call.Detail}); queued work is sent once it can.");
+        }
 
         await StoreTokensAsync(refreshed, tenantId, cancellationToken).ConfigureAwait(false);
 
@@ -365,10 +374,10 @@ public sealed class OAuthAuthoriser
         if (!string.IsNullOrEmpty(credentials.ClientSecret))
             form["client_secret"] = credentials.ClientSecret;
 
-        return await PostForTokenAsync(form, cancellationToken).ConfigureAwait(false);
+        return (await PostForTokenAsync(form, cancellationToken).ConfigureAwait(false)).Token;
     }
 
-    private async Task<OAuthTokenResponse?> RefreshAsync(
+    private async Task<TokenCall> RefreshAsync(
         (string ClientId, string? ClientSecret) credentials, string refreshToken, CancellationToken cancellationToken)
     {
         var form = new Dictionary<string, string>
@@ -384,7 +393,13 @@ public sealed class OAuthAuthoriser
         return await PostForTokenAsync(form, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<OAuthTokenResponse?> PostForTokenAsync(Dictionary<string, string> form, CancellationToken cancellationToken)
+    /// <summary>What one call to the token endpoint answered.</summary>
+    /// <param name="Token">The tokens, when the call succeeded.</param>
+    /// <param name="Refused">Whether the endpoint answered with an OAuth error (RFC 6749 §5.2: a 400 or 401 whose body names an <c>error</c> code such as <c>invalid_grant</c>) — a definite refusal, not an outage.</param>
+    /// <param name="Detail">A short, token-free description of the failure.</param>
+    private readonly record struct TokenCall(OAuthTokenResponse? Token, bool Refused, string Detail);
+
+    private async Task<TokenCall> PostForTokenAsync(Dictionary<string, string> form, CancellationToken cancellationToken)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, _profile.TokenEndpoint) { Content = new FormUrlEncodedContent(form) };
 
@@ -392,15 +407,55 @@ public sealed class OAuthAuthoriser
         {
             using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                return null;
+            {
+                var status = (int)response.StatusCode;
+                if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+                {
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    if (ReadOAuthErrorCode(body) is { } error)
+                        return new TokenCall(null, Refused: true, error);
+                }
 
-            return await response.Content.ReadFromJsonAsync<OAuthTokenResponse>(JsonOptions, cancellationToken).ConfigureAwait(false);
+                return new TokenCall(null, Refused: false, $"HTTP {status}");
+            }
+
+            var token = await response.Content.ReadFromJsonAsync<OAuthTokenResponse>(JsonOptions, cancellationToken).ConfigureAwait(false);
+            return token is null || string.IsNullOrEmpty(token.AccessToken)
+                ? new TokenCall(null, Refused: false, "an empty answer")
+                : new TokenCall(token, Refused: false, "ok");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or OperationCanceledException)
+        catch (OperationCanceledException)
+        {
+            return new TokenCall(null, Refused: false, "timed out");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
+        {
+            return new TokenCall(null, Refused: false, ex is HttpRequestException ? "no connection" : "an unreadable answer");
+        }
+    }
+
+    /// <summary>The RFC 6749 §5.2 <c>error</c> code of a token endpoint's error body, or <see langword="null"/> when the body is not an OAuth error (for example a proxy's or captive portal's page).</summary>
+    internal static string? ReadOAuthErrorCode(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                   && document.RootElement.TryGetProperty("error", out var error)
+                   && error.ValueKind == JsonValueKind.String
+                   && error.GetString() is { Length: > 0 and <= 64 } code
+                   && code.All(c => char.IsAsciiLetterOrDigit(c) || c == '_')
+                ? code
+                : null;
+        }
+        catch (JsonException)
         {
             return null;
         }

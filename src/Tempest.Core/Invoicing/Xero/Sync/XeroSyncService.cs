@@ -209,7 +209,8 @@ public sealed class XeroSyncParts
         {
             _planners.Add(new XeroPlannerSlot(
                 invoicePlanner, (id, ct) => PlanGenericAsync(invoicePlanner, id, ct),
-                domain is null ? NoIds : async ct => [.. (await domain.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, ct).ConfigureAwait(false)).Select(e => e.Id)]));
+                domain is null ? NoIds : async ct => [.. (await domain.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, ct).ConfigureAwait(false)).Select(e => e.Id)],
+                async ct => await invoicePlanner.RecoverInterruptedSendsAsync(ct).ConfigureAwait(false))); // `v0.24.0` review M8
         }
 
         Func<CancellationToken, Task>? primePurchasing = purchasingState is null ? null : async ct => await purchasingState.AutomaticFromAsync(ct).ConfigureAwait(false);
@@ -1108,6 +1109,11 @@ public sealed class XeroSyncService : IXeroSyncService
         if (link is not null)
         {
             var (badge, note) = await LinkedBadgeAsync(document, link, cancellationToken).ConfigureAwait(false);
+
+            // `v0.24.0` review M6: a file that could not be attached is said beside the record's own state.
+            if (!string.IsNullOrWhiteSpace(link.AttachmentNote))
+                note = string.IsNullOrWhiteSpace(note) ? link.AttachmentNote : $"{note.TrimEnd()} {link.AttachmentNote}";
+
             return Make(badge, note);
         }
 

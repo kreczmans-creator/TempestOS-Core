@@ -169,7 +169,8 @@ public sealed class XeroExpenseBillSyncTests
 
         var update = kit.WritesTo("Invoices").Last();
         Assert.Equal(HttpMethod.Post, update.Method);
-        Assert.Null(update.JsonBody!["Invoices"]![0]!["Status"]);
+        // `v0.24.0` review m1: a content update pins DRAFT, so a bill approved in Xero meanwhile is refused, never changed.
+        Assert.Equal("DRAFT", update.JsonBody!["Invoices"]![0]!["Status"]!.GetValue<string>());
         Assert.Equal("GWR-88812", (await kit.ExpenseLinkAsync(id))!.XeroNumber);
         Assert.Empty(await kit.PlanExpenseAsync(id));
         kit.AssertNoViolations();

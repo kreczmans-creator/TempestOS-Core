@@ -725,6 +725,10 @@ public sealed class XeroQuoteAttachmentHandler : IXeroPushHandler
         if (string.IsNullOrWhiteSpace(name))
             name = XeroQuoteMapper.AttachmentFileName(current?.Reference ?? link.XeroNumber ?? quotationId.ToString("D"));
 
+        // M6: a file that cannot be attached never holds the quote's queue.
+        if (XeroAttachmentRefusal.TooLarge(file) is { } tooLarge)
+            return await XeroAttachmentRefusal.FinishAsync(_links, link, tooLarge, cancellationToken).ConfigureAwait(false);
+
         // Replace by name once a file of that name was uploaded (no attachment delete in Xero, §3).
         var replace = string.Equals(link.AttachmentFileName, name, StringComparison.OrdinalIgnoreCase);
         var uploaded = await _api.UploadAttachmentAsync(
@@ -735,10 +739,16 @@ public sealed class XeroQuoteAttachmentHandler : IXeroPushHandler
             if (uploaded.NotFound)
                 return new XeroPushResult(XeroPushOutcome.Rejected, $"Quote {link.XeroNumber ?? link.XeroId} was deleted in Xero; its PDF was not attached.", Link: link);
 
+            if (XeroAttachmentRefusal.IsFileRefusal(uploaded.Outcome, uploaded.NotFound, uploaded.Reason))
+            {
+                var why = uploaded.ValidationErrors is { Count: > 0 } errors ? string.Join("; ", errors) : uploaded.Reason;
+                return await XeroAttachmentRefusal.FinishAsync(_links, link, why, cancellationToken).ConfigureAwait(false);
+            }
+
             return XeroQuotePushHandler.Failed(uploaded);
         }
 
-        link = link with { AttachmentFileName = name, AttachmentContentHash = file.Sha256, LastReadAtUtc = _time.GetUtcNow() };
+        link = link with { AttachmentFileName = name, AttachmentContentHash = file.Sha256, LastReadAtUtc = _time.GetUtcNow(), AttachmentNote = null };
         await _links.SaveAsync(link, cancellationToken).ConfigureAwait(false);
         return new XeroPushResult(XeroPushOutcome.Succeeded, Link: link);
     }

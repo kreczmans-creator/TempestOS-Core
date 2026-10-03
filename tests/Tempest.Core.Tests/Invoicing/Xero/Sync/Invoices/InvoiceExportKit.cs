@@ -17,6 +17,7 @@ using Tempest.Core.Invoicing.Xero.Contacts;
 using Tempest.Core.Invoicing.Xero.Settings;
 using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Invoicing.Xero.Sync.Invoices;
+using Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 using Tempest.Core.Runtime;
 using Tempest.Core.Tests.BusinessGovernance;
 using Tempest.Core.Tests.BusinessOperations;
@@ -204,7 +205,8 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
 
     /// <summary>A drafts seam over the kit's stores — a fresh one is TempestOS restarted.</summary>
     public XeroInvoiceDrafts NewDrafts() => new(
-        Connector, Linker, new XeroTaxTypeResolver(Reader, Settings), new XeroAccountCodeMap(Reader, Settings), Links, Outbox, Files, Settings, Audit, Clock);
+        Connector, Linker, new XeroTaxTypeResolver(Reader, Settings), new XeroAccountCodeMap(Reader, Settings), Links, Outbox, Files, Settings, Audit, Clock,
+        new XeroPurchasingCreateLog(Store)); // `v0.24.0` review m16: the durable create log is the proof an invoice is TempestOS's own
 
     /// <summary>An invoicing service bound to the Xero connector; <paramref name="drafts"/> <see langword="null"/> is a build with no X4 seam.</summary>
     public InvoicingService NewService(IInvoiceDraftSync? drafts) => new(

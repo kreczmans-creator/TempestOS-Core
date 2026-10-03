@@ -374,7 +374,12 @@ public sealed class XeroInvoiceLifecycleTests
         Assert.Contains("with this invoice's reference under another contact; check Xero", voided.Reason, StringComparison.Ordinal);
         Assert.Equal(InvoiceRequestStatus.Draft, (await kit.ReloadAsync(request.Id)).Status);
         Assert.Equal("DRAFT", kit.Invoice(lost.Id).Status);
-        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
+
+        // `v0.24.0` review m16: the only write is the lost create replayed under its own key (the proof it is
+        // TempestOS's own) — nothing is changed or deleted.
+        var originalKey = kit.Simulator.Requests.First(r => r.Method == HttpMethod.Put && r.Path == "Invoices").IdempotencyKey;
+        Assert.All(kit.RequestsSince(mark).Where(r => r.Method != HttpMethod.Get), r => Assert.Equal(originalKey, r.IdempotencyKey));
+        Assert.Single(kit.SalesInvoices);
         Assert.Null(await kit.LinkAsync(request.Id)); // never linked under a contact the client no longer has
 
         // Its lines stay held: the same work cannot be raised a second time.

@@ -1,7 +1,9 @@
 using Tempest.Core.Audit;
 using Tempest.Core.BusinessGovernance;
+using Tempest.Core.Invoicing.Xero.Api;
 using Tempest.Core.Invoicing.Xero.Contacts;
 using Tempest.Core.Invoicing.Xero.Settings;
+using Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 using Tempest.Core.Settings;
 
 namespace Tempest.Core.Invoicing.Xero.Sync.Invoices;
@@ -72,6 +74,7 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
     private readonly ISettingsProvider? _settings;
     private readonly IAuditRecorder? _audit;
     private readonly TimeProvider _time;
+    private readonly XeroPurchasingCreateLog? _creates;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
     private int _definitionEnsured;
 
@@ -86,6 +89,13 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
     /// <param name="settings">Where Q5's <see cref="IncludeOnlineSettingKey"/> is read from; <see langword="null"/> reads the default (off).</param>
     /// <param name="audit">Records link and push audit rows; <see langword="null"/> records nothing.</param>
     /// <param name="timeProvider">The clock links are stamped with; <see langword="null"/> for the system clock.</param>
+    /// <param name="creates">
+    /// `v0.24.0` review m16: the durable log of every create sent (the shared
+    /// X5 create log, keyed by document kind), the proof an invoice found in
+    /// Xero is TempestOS's own: its id came back to a logged create, or a
+    /// logged create's key replays to it. <see langword="null"/> logs nothing,
+    /// so nothing found by its number alone is ever adopted.
+    /// </param>
     public XeroInvoiceDrafts(
         XeroConnector connector,
         XeroContactLinker contacts,
@@ -96,7 +106,8 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         IXeroDocumentFileSource? files = null,
         ISettingsProvider? settings = null,
         IAuditRecorder? audit = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        XeroPurchasingCreateLog? creates = null)
     {
         ArgumentNullException.ThrowIfNull(connector);
         ArgumentNullException.ThrowIfNull(contacts);
@@ -114,6 +125,7 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         _settings = settings;
         _audit = audit;
         _time = timeProvider ?? TimeProvider.System;
+        _creates = creates;
     }
 
     /// <inheritdoc />
@@ -201,7 +213,21 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
             }
 
             var key = XeroIdempotencyKey.Create(reference, XeroOperation.PushInvoiceDraft, XeroInvoiceContent.BodyHash(draft));
+
+            // m16: logged before it goes, so a lost answer is recovered by
+            // this key and body (Xero replays its first answer), never by a
+            // number match alone.
+            if (_creates is not null)
+            {
+                await _creates.RecordSendingAsync(
+                    tenantId, reference, draft.InvoiceNumber, draft.ContactId, key, cancellationToken,
+                    reference: draft.Reference, body: XeroPurchasingSentCreate.Serialise(draft), sentAtUtc: _time.GetUtcNow()).ConfigureAwait(false);
+            }
+
             var created = await _connector.CreateDraftInvoiceAsync(draft, key, cancellationToken).ConfigureAwait(false);
+            if (_creates is not null)
+                await _creates.RecordAnswerAsync(tenantId, reference, key, created.Outcome, cancellationToken, created.Value?.ExternalId).ConfigureAwait(false);
+
             if (created.Outcome != ConnectorOutcome.Ok)
                 return created;
 
@@ -426,15 +452,24 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         if (string.Equals(file.Sha256, link.AttachmentContentHash, StringComparison.OrdinalIgnoreCase))
             return new XeroPushResult(XeroPushOutcome.NothingToDo, Link: link);
 
+        // M6: a file that cannot be attached never holds the invoice's queue.
+        if (XeroAttachmentRefusal.TooLarge(file) is { } tooLarge)
+            return await XeroAttachmentRefusal.FinishAsync(_links, link, tooLarge, cancellationToken).ConfigureAwait(false);
+
         var replace = string.Equals(file.FileName, link.AttachmentFileName, StringComparison.OrdinalIgnoreCase);
         var key = XeroIdempotencyKey.Create(reference, XeroOperation.UploadAttachment, file.Sha256, argument: file.FileName);
         var includeOnline = await ReadIncludeOnlineAsync(cancellationToken).ConfigureAwait(false);
 
         var uploaded = await _connector.AttachInvoiceFileAsync(link.XeroId, file, replace, includeOnline, key, cancellationToken).ConfigureAwait(false);
         if (uploaded.Outcome != ConnectorOutcome.Ok)
-            return ToPushResult(uploaded.Outcome, uploaded.Reason);
+        {
+            var gone = uploaded.Reason?.Contains("404", StringComparison.Ordinal) ?? false;
+            return XeroAttachmentRefusal.IsFileRefusal(uploaded.Outcome, gone, uploaded.Reason)
+                ? await XeroAttachmentRefusal.FinishAsync(_links, link, uploaded.Reason, cancellationToken).ConfigureAwait(false)
+                : ToPushResult(uploaded.Outcome, uploaded.Reason);
+        }
 
-        var updated = link with { AttachmentFileName = file.FileName, AttachmentContentHash = file.Sha256 };
+        var updated = link with { AttachmentFileName = file.FileName, AttachmentContentHash = file.Sha256, AttachmentNote = null };
         await _links.SaveAsync(updated, cancellationToken).ConfigureAwait(false);
         await AuditAsync(AuditPushSucceeded, updated, XeroOperation.UploadAttachment, key, cancellationToken).ConfigureAwait(false);
         return new XeroPushResult(XeroPushOutcome.Succeeded, Link: updated);
@@ -477,6 +512,7 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
             InvoiceNumberHolder.Own => ConnectorResult<CreatedInvoice?>.Ok(finding.Invoice),
             InvoiceNumberHolder.OwnReferenceOtherContact => ConnectorResult<CreatedInvoice?>.Rejected(
                 $"Xero holds {document.InvoiceNumber} with this invoice's reference under another contact ({finding.ExternalStatus}); TempestOS will not create a second — check Xero."),
+            InvoiceNumberHolder.OwnUnproven => ConnectorResult<CreatedInvoice?>.Rejected(UnprovenReason(document, finding.ExternalStatus)),
             _ => ConnectorResult<CreatedInvoice?>.Rejected(
                 $"{document.InvoiceNumber} is already used in Xero by another invoice ({finding.ExternalStatus}); TempestOS will not create a second — check Xero."),
         };
@@ -499,13 +535,32 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         if (found.Value!.Count == 0)
             return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.Nobody));
 
+        // m16: TempestOS's own only when proven — a create it logged whose id
+        // Xero gave back, or whose key Xero replays to one of these — never
+        // by number, reference and contact alone.
+        var proof = await ProveOwnAsync(tenantId, document, found.Value, cancellationToken).ConfigureAwait(false);
+        if (proof.Failure is { } failure)
+            return Retype<CreatedInvoice, InvoiceNumberFinding>(failure);
+
         var withReference = found.Value
             .Where(i => string.Equals(i.Reference?.Trim(), document.Reference.Trim(), StringComparison.Ordinal))
             .ToList();
-        var own = withReference.FirstOrDefault(i => contactId is null || string.Equals(i.ContactId, contactId, StringComparison.OrdinalIgnoreCase));
+
+        // Proven, but under a contact the client is no longer linked to (re-linked since): TempestOS's own work, never linked there.
+        if (proof.Own is { } provenElsewhere && contactId is not null && !string.Equals(provenElsewhere.ContactId, contactId, StringComparison.OrdinalIgnoreCase))
+            return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.OwnReferenceOtherContact, null, provenElsewhere.Status));
+
+        var own = proof.Own;
 
         if (own is null)
         {
+            var matching = withReference.Where(i => contactId is null || string.Equals(i.ContactId, contactId, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (matching.Count > 0)
+            {
+                return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(
+                    InvoiceNumberHolder.OwnUnproven, null, (matching.FirstOrDefault(i => !IsGone(i.Status)) ?? matching[0]).Status));
+            }
+
             return withReference.Count > 0
                 // The status of one still live there when any is, so a caller can tell "every one voided or deleted" apart.
                 ? ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(
@@ -521,6 +576,62 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
         var invoice = new CreatedInvoice(own.InvoiceId, own.InvoiceNumber ?? document.InvoiceNumber, own.Reference ?? document.Reference);
         return ConnectorResult<InvoiceNumberFinding>.Ok(new InvoiceNumberFinding(InvoiceNumberHolder.Own, invoice, own.Status));
     }
+
+    /// <summary>
+    /// m16: which of <paramref name="found"/> (the invoices Xero holds under
+    /// the request's number) TempestOS provably created — by the id Xero
+    /// answered a logged create with, or, for a logged create whose answer
+    /// was lost, by re-sending its body under its own key while Xero still
+    /// holds that key (<see cref="XeroPurchasingOwnership.IdempotencyKeyLifetime"/>):
+    /// Xero replays its first answer, and the id it names is read back among
+    /// <paramref name="found"/>. A call Xero did not answer is returned as
+    /// <c>Failure</c>; nothing proven is <c>Own</c> <see langword="null"/>.
+    /// </summary>
+    private async Task<(XeroInvoiceReading? Own, ConnectorResult<CreatedInvoice>? Failure)> ProveOwnAsync(
+        string tenantId, InvoiceDraftDocument document, IReadOnlyList<XeroInvoiceReading> found, CancellationToken cancellationToken)
+    {
+        if (_creates is null)
+            return (null, null);
+
+        var reference = DocumentFor(document.RequestId);
+        var sent = await _creates.ListSentAsync(tenantId, reference, cancellationToken).ConfigureAwait(false);
+        XeroInvoiceReading? Among(string? id) =>
+            id is null ? null : found.FirstOrDefault(i => string.Equals(i.InvoiceId, id.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        foreach (var create in sent.Reverse())
+        {
+            if (Among(create.XeroId) is { } known)
+                return (known, null);
+        }
+
+        var now = _time.GetUtcNow();
+        foreach (var create in sent.Reverse())
+        {
+            if (create.XeroId is not null || XeroPurchasingOwnership.RecoveryFor(create, now) != XeroPurchasingOwnership.RecoveryStep.Replay)
+                continue;
+
+            if (create.BodyAs<XeroSalesInvoiceDraft>() is not { } body)
+                continue;
+
+            var replay = await _connector.CreateDraftInvoiceAsync(body, create.IdempotencyKey, cancellationToken).ConfigureAwait(false);
+            if (replay.Outcome is ConnectorOutcome.Unavailable or ConnectorOutcome.Unknown or ConnectorOutcome.Reauthorise)
+                return (null, replay);
+            if (replay.Outcome != ConnectorOutcome.Ok)
+                continue; // Refused: Xero no longer holds the key (the number is taken) — proves nothing.
+
+            await _creates.RecordXeroIdAsync(tenantId, reference, create.IdempotencyKey, replay.Value!.ExternalId, cancellationToken).ConfigureAwait(false);
+            if (Among(replay.Value.ExternalId) is { } replayed)
+                return (replayed, null);
+        }
+
+        return (null, null);
+    }
+
+    /// <summary>m16: why an invoice found under the request's number, reference and contact is not adopted, updated or deleted.</summary>
+    private static string UnprovenReason(InvoiceDraftDocument document, string? status) =>
+        $"Xero holds {document.InvoiceNumber} with this invoice's reference under the client's contact ({status}), but TempestOS cannot prove it created it "
+        + "(no link, and no create of its own that Xero answered with it); TempestOS will neither adopt, change nor delete it, nor create a second — check Xero: "
+        + "delete it there if it is a copy, then Retry.";
 
     /// <summary>Whether Xero's <paramref name="status"/> is one an invoice never comes back from (<c>VOIDED</c>, <c>DELETED</c>).</summary>
     private static bool IsGone(string? status) =>
@@ -586,7 +697,11 @@ public sealed class XeroInvoiceDrafts : IInvoiceDraftSync
             if (taxType.IsBlocked)
                 return (null, $"line '{line.Description}': {taxType.BlockedReason}");
 
-            lines.Add(new XeroSalesInvoiceDraftLine(line.Description, line.Quantity, line.UnitRate.Amount, taxType.Code!, account.Code!));
+            // M7/m19: the line reads the same in Xero as in TempestOS.
+            if (XeroLineRules.FitUnitAmount(line.Quantity, line.UnitRate.Amount, out var unitProblem) is not { } unitAmount)
+                return (null, $"line '{XeroLineRules.FitDescription(line.Description)}': {unitProblem}.");
+
+            lines.Add(new XeroSalesInvoiceDraftLine(XeroLineRules.FitDescription(line.Description), line.Quantity, unitAmount, taxType.Code!, account.Code!));
         }
 
         return (new XeroSalesInvoiceDraft(
