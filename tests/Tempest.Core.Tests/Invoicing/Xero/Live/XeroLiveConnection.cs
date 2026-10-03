@@ -74,9 +74,11 @@ internal sealed class XeroLiveConnection : IDisposable
 
     private XeroLiveConnection(
         XeroAccountingApi api, OAuthAuthoriser authoriser, XeroSettingsReader settingsReader, XeroRequestJournal journal,
-        RecordingAuditRecorder audit, HttpClient apiClient, HttpClient tokenClient, string cacheFolder)
+        RecordingAuditRecorder audit, HttpClient apiClient, HttpClient tokenClient, string cacheFolder, ISecretStore secretStore, XeroRateLimiter rateLimiter)
     {
         Api = api;
+        SecretStore = secretStore;
+        RateLimiter = rateLimiter;
         Authoriser = authoriser;
         SettingsReader = settingsReader;
         Journal = journal;
@@ -100,6 +102,15 @@ internal sealed class XeroLiveConnection : IDisposable
 
     /// <summary>The audit rows written by the safety handler and the settings reader.</summary>
     public RecordingAuditRecorder Audit { get; }
+
+    /// <summary>The authoriser's secret store (the Xero tokens and tenant id) — what the production components read the connected organisation from.</summary>
+    public ISecretStore SecretStore { get; }
+
+    /// <summary>The client-side rate limiter in the pipeline (the X6 engine pauses on it).</summary>
+    public XeroRateLimiter RateLimiter { get; }
+
+    /// <summary>The HTTP client whose pipeline holds the safety handler — what the production <see cref="XeroConnector"/> sends invoices through.</summary>
+    public HttpClient ApiClient => _apiClient;
 
     /// <summary>
     /// The pipeline over the real network, with credentials chosen by
@@ -202,7 +213,7 @@ internal sealed class XeroLiveConnection : IDisposable
         Directory.CreateDirectory(cacheFolder);
         reader = new XeroSettingsReader(api, new FileXeroSettingsCache(cacheFolder), secretStore, audit, time);
 
-        return new XeroLiveConnection(api, authoriser, reader, journal, audit, apiClient, tokenClient, cacheFolder);
+        return new XeroLiveConnection(api, authoriser, reader, journal, audit, apiClient, tokenClient, cacheFolder, secretStore, rateLimiter);
     }
 
     private static IConfigurationProvider BuildConfiguration(XeroLiveSettings settings)

@@ -88,7 +88,7 @@ public sealed class XeroDemoSmokeScriptTests
         var content = File.ReadAllText(ScriptPath, Encoding.ASCII);
         var help = content[content.IndexOf(".PARAMETER DataFolder", StringComparison.Ordinal)..content.IndexOf(".PARAMETER Connect", StringComparison.Ordinal)];
 
-        // VERSION reads 0.23.0 until the release bump, so the default is the rc23 folder until then.
+        // The default follows VERSION (0.24.0: the rc24 folder); the runbook still names it explicitly.
         Assert.Contains("VERSION", help, StringComparison.Ordinal);
         Assert.Contains("-DataFolder C:\\TempestOS-rc24-data", help, StringComparison.Ordinal);
     }

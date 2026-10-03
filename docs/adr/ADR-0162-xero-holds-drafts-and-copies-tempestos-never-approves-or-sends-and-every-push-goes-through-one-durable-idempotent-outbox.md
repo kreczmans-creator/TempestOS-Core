@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted — 2026-10-02, at the end of work package X8. Product Owner
+Accepted — 2026-10-02, at the end of work package X8 (the live Demo
+Company smoke test has not been run yet; see below). Amended 2026-10-03
+after the `v0.24.0` review board: §4 records the two contact writes made
+directly, and why (m10). Product Owner
 decisions D1–D7 of 2026-10-02 (`docs/releases/v0.24.0/Xero Integration Plan.md`);
 proposed before the build, and every rule below is now built and guarded
 by tests (the safety handler's own tests, the in-process Xero simulator's
@@ -72,7 +75,8 @@ TempestOS records and Xero records are scoped to one organisation, so the
 Demo Company's ids are never used against the live one.
 
 **4. One durable, idempotent outbox.** Every write to Xero except the
-existing invoice send is a queued entry in a persisted outbox, planned
+existing invoice send and the two contact writes below is a queued entry
+in a persisted outbox, planned
 from each record's desired state after every committed change (and at
 start-up), drained one request at a time, honouring 429 `Retry-After` and
 backoff, pausing for re-authorisation, and audited. A record is created
@@ -83,6 +87,27 @@ reconciled by looking the record up by its number before anything is
 resent. The invoice send keeps `ADR-0151`'s own state machine and
 reconcile-before-retry, now matching on the invoice number, and re-queues
 through the outbox when Xero is unreachable.
+
+*Amendment (2026-10-03, review board m10) — the two contact writes made
+directly.* Creating a Xero contact (**Create in Xero** in the contact link
+prompt) and the Q7 write of the customer code into an empty
+`ContactNumber` when an existing contact is linked are sent at once by
+`XeroContactLinker`, not queued. Why: both are the person's own act in an
+open prompt that needs Xero's answer to finish — the new contact's
+`ContactID` to save the link, or the linked contact as Xero now holds it —
+and every queued document write waits on that link, so queueing them would
+leave the prompt with nothing to show and the documents blocked behind a
+write the person cannot see. Neither weakens the rules above. The create
+is idempotent without the outbox: it looks the contact up by its
+`ContactNumber` (the customer code) first and links one it finds, sends a
+fixed `Idempotency-Key`, keeps an attempt whose answer was lost and
+re-sends that same body under that same key, and looks up again after any uncertain answer, so a contact is
+made at most once. The Q7 write sets only `ContactNumber`, only when it is
+empty and no other contact carries that number, and its failure never
+undoes the link. Both pass through the same `XeroWriteSafetyHandler`
+(contacts are on its write allow-list; the Demo Company rule applies) and
+are audited. Offline they fail with the reason in the prompt and nothing
+is linked; the person tries again.
 
 **5. Minimal granular scopes.** TempestOS requests `accounting.invoices`,
 `accounting.contacts`, `accounting.settings.read`,
@@ -116,6 +141,11 @@ schema-versioned stores; an invoice request sent to Xero before
   as a new draft, only when they choose *Send again* (audited
   `xero.link.send-again`). An invoice is never unlinked; a new invoice
   request bills the work again.
+- `ADR-0151` §9 is amended (see the amendment note there): the Xero
+  invoice names its contact by `ContactID` (no longer `{"Name": …}`, which
+  let Xero create a contact silently — review item M21), carries
+  TempestOS's own invoice number, and is reconciled by that number; the
+  `Reference` is now the project and deliverable text.
 
 ## Related
 

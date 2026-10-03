@@ -260,6 +260,7 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
     private readonly HashSet<string> _grantedScopes;
     private int _inFlight;
     private TaskCompletionSource? _hold;
+    private readonly List<(int Count, TaskCompletionSource Signal)> _inFlightWaiters = [];
 
     /// <summary>Creates a simulator for one tenant.</summary>
     /// <param name="options">The tenant's set-up; <see langword="null"/> for the defaults.</param>
@@ -306,6 +307,27 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
         {
             lock (_sync)
                 return _inFlight;
+        }
+    }
+
+    /// <summary>
+    /// Completes as soon as at least <paramref name="count"/> requests are in
+    /// flight (admitted, and held by <see cref="HoldRequests"/> or still being
+    /// processed) — a signal, so a test waits for a request to reach Xero
+    /// without polling <see cref="InFlight"/> on a timer.
+    /// </summary>
+    /// <param name="count">How many requests in flight to wait for.</param>
+    public Task WhenInFlightAsync(int count = 1)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+        lock (_sync)
+        {
+            if (_inFlight >= count)
+                return Task.CompletedTask;
+
+            var signal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _inFlightWaiters.Add((count, signal));
+            return signal.Task;
         }
     }
 
@@ -361,6 +383,15 @@ internal sealed partial class XeroApiSimulator : HttpMessageHandler
             }
 
             _inFlight++;
+            for (var i = _inFlightWaiters.Count - 1; i >= 0; i--)
+            {
+                if (_inFlightWaiters[i].Count <= _inFlight)
+                {
+                    _inFlightWaiters[i].Signal.TrySetResult();
+                    _inFlightWaiters.RemoveAt(i);
+                }
+            }
+
             hold = _hold;
             fault = TakeFault(context.Path);
         }

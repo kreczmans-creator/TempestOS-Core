@@ -345,7 +345,7 @@ rebuild then takes about 15 seconds after restore.
 
 ---
 
-## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7l add about two and a half hours in total, each timed in its own heading)
+## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7m add nearly three hours in total, each timed in its own heading)
 
 Every step below uses behaviour that exists today. Where something is
 deliberately not implemented, the step says so rather than asking for it.
@@ -719,6 +719,26 @@ Every claim names the file it comes from.
 | N8 | Rail → **Home** with at least two open projects and one signed off | **Continue** lists the most recently created open projects, newest first, never a signed-off one; each entry opens its project, and each **Recent** entry opens its object in Engineering (`HomeDashboardView.cs`). | Continue lists the oldest projects first or a closed one; an entry is plain text or opens nothing. |
 | N9 | With the Dashboard Export configured, refresh it; open `reviews.json` | A fifth file, `reviews.json` (schema v1), lists every live item awaiting review, oldest first, with its project, age and submitter; there is no approve action anywhere in it (`ReviewQueueExportAdapter.cs`, `ADR-0157`). | An item in review is missing; the file carries a write action. |
 | N10 | On a fresh data root: Settings → **Sign-off**; then a quote of your own → **Submit for review** → **Approve**; then tick *Second-person sign-off* → **Save**, untick it → **Save**; restart and reopen Settings | The switch reads *Second-person sign-off — require a different person to approve quotes and check evidence. Off for a one-person consultancy.* and is **off**. The Quote tab reads *Self-approval allowed (second-person sign-off is off).*; your own approval succeeds and reads *Approved R1 by … (self-approved)*. After a restart the switch keeps its last saved position. The audit trail has one `governance.second-person-sign-off.changed` row per change, naming you, Off → On and On → Off (`SettingsView.cs`, `SignOffPolicy`, `ADR-0161`). | The switch is on by default; your own approval is refused while it is off, or is not marked self-approved; the switch forgets its position on restart; a change has no audit row. |
+
+### 7m. What `v0.24.0` added: Xero (about 20 minutes, on Xero's Demo Company)
+
+The full Xero acceptance walk is the Product Owner's runbook,
+`docs/releases/v0.24.0/PO Test Runbook.md` (sections XA–XL, about two
+hours); its steps are not repeated here. These rows are the short walk a
+physical review does, each naming the runbook steps that hold the detail.
+Connect the **Demo Company (UK)** first (`docs/guides/Xero Setup - Step
+by Step.md` Parts 1–3; runbook XA1–XA3), never your live organisation.
+
+| # | Step | Expected result | Counts as a failure if |
+|---|---|---|---|
+| Y1 | Settings → **Xero** → **Refresh from Xero** (runbook XS1–XS3) | *Connected to Xero.*, *Missing: none*, *Demo Company: yes — Xero's Demo Company; TempestOS may write drafts to it.*, and the company details *from Xero, read at …*, which quote and invoice PDFs now print (`XeroSettingsSection.cs`, `ADR-0162` D6). | A scope is missing after consent; the PDF still prints the details typed under *Organisation identity*. |
+| Y2 | Customers & Suppliers → a customer → **Link to Xero…** → pick a candidate (runbook XC1–XC3) | Candidates strongest first with the reason; nothing linked until you confirm; then *Linked '…' to its Xero contact.* (`XeroContactLinkPrompt.cs`, `XeroContactLinker.cs`). | Anything is linked without confirming; a duplicate contact appears in Xero. |
+| Y3 | A quote for that customer: approve → **Export** → **Send** → **Accept** (runbook XQ1–XQ5) | The badge goes **Queued** → **In Xero (draft)** → **Sent in Xero** → **Accepted in Xero**; in Xero the same number, lines and PDF, and no email sent (`XeroQuotePlanner.cs`, `XeroSyncBadge.cs`). | Xero's quote is approved or emailed by TempestOS; the number differs. |
+| Y4 | Invoices → raise and **Send** an invoice for that work (runbook XI1–XI4, XI11) | Badge **Draft in Xero — review and send from Xero**; in Xero a **Draft** with the same number, the PDF attached and not shown online; there is no approve or email button anywhere in TempestOS (D3, D4). | The invoice is anything but Draft in Xero; an email is sent. |
+| Y5 | Issue a purchase order; record an expense with a supplier and a receipt (runbook XP1–XP2, XE1–XE3) | Each reaches Xero as a **Draft** (purchase order with its PDF; bill numbered by the supplier's invoice number, receipt attached, the recorded VAT kept). | Either is approved in Xero by TempestOS; the VAT is recomputed. |
+| Y6 | Wi-Fi off; export a quote; restart; Wi-Fi on (runbook XO1–XO3) | **Queued** survives the restart and goes out once by itself; Xero holds one copy. | A record is lost or duplicated. |
+| Y7 | Business → **Dashboard** → **Forward cash — next 6 months** (runbook XF1–XF5) | Six months of opening cash, money in, money out and closing cash, each figure naming its source (*Xero …, read at …* or *TempestOS*); the accepted quote's work appears once, and leaves *Expected milestone invoices* when its invoice is in Xero (`BusinessDashboardView.cs`, `AccountsReadModel.cs`). | A figure reads 0 where it has no source; the same work is counted twice. |
+| Y8 | (Developer PC) `pwsh -NoProfile -File scripts/xero-demo-smoke.ps1 -DataFolder C:\TempestOS-rc24-data` (runbook XA4) | **RESULT: PASSED**, with both reports (the hand-built journey S01–S20 and the production path P01–P10). Connected to a live organisation it answers **REFUSED - not the Demo Company; nothing was written**. | Any write to an organisation that is not the Demo Company. |
 
 ---
 

@@ -159,8 +159,11 @@ any organisation but writes only to the Demo Company; every write to
 another organisation is refused before it leaves your PC, and its badge
 reads **Failed** with the reason.
 
-Turn it on only when the runbook's Demo Company sections have passed and
-the smoke test (Part 7) is green:
+Turn it on only when the runbook's Demo Company sections have passed, the
+smoke test (Part 7) is green, **and the project chat confirms review-board
+items M1, M2 and M7 are in your build**. Before M1, switching from the
+Demo Company to your own organisation can copy records you made while
+testing into your live books.
 
 43. Settings → **Xero** → **Re-authorise**, and this time pick **your own
     organisation** on Xero's consent page.
@@ -172,35 +175,43 @@ the smoke test (Part 7) is green:
     books.*), then **Save**.
 46. Expect **"Allowed: TempestOS writes drafts to <your organisation>,
     your live organisation."** The change is recorded in the audit trail
-    (`xero.live-organisation.allowed`). Unticking it and saving stops
+    (one row per change, naming you and old → new; the action's name is
+    confirmed with review-board item m2). Unticking it and saving stops
     writes again at once.
 
 Links between TempestOS records and Xero records belong to one
 organisation: nothing linked in the Demo Company is ever used against
 your live organisation. Customers and suppliers are linked again (from
 **Customers & Suppliers → Link to Xero…**) the first time a document for
-them goes to the live organisation.
+them goes to the live organisation. Records you issued or sent while
+testing against the Demo Company are not copied to the live organisation
+by themselves: each goes there only when you click its **Send to Xero**
+(this needs review-board item M1).
 
 ## Part 7 — Demo Company smoke test (optional, a developer PC with the repository)
 
 `scripts/xero-demo-smoke.ps1` checks the whole Xero round trip against
-the Demo Company in about a minute, using the tokens TempestOS stored in
-Part 3. It writes **only** if Xero says the organisation is the Demo
-Company, and deletes its drafts afterwards (`-Keep` keeps them).
+the Demo Company in about two minutes, using the tokens TempestOS stored
+in Part 3: once with requests the test builds itself, and once through
+TempestOS's own code (the contact linker, the quote, purchase order and
+bill planners, the invoicing service and the sync engine). It writes
+**only** if Xero says the organisation is the Demo Company, and deletes
+its drafts afterwards (`-Keep` keeps them).
 
 ```powershell
 pwsh -NoProfile -File scripts/xero-demo-smoke.ps1 -DataFolder C:\TempestOS-rc24-data
 ```
 
-It ends with **RESULT: PASSED** and a report listing a Xero link for
-every record it made. Add `-KeyWindow` to also confirm how long Xero
+It ends with **RESULT: PASSED** and two reports (the second ends
+`-production.md`) listing a Xero link for every record it made. Add `-KeyWindow` to also confirm how long Xero
 keeps an idempotency key (about seven more minutes).
 
 To run it with a token from a secret store instead of the stored one, pass
 `-AccessToken <token> -TenantId <Demo Company tenant id>`. That token is
 never refreshed: it is used until 2 minutes before the expiry written in
-it (Xero's last 30 minutes; 25 minutes for a token that carries none), so
-use a freshly issued one, with more than 10 minutes left for `-KeyWindow`.
+it (Xero's last 30 minutes), or for 23 minutes when it carries none, so
+use a freshly issued one, with at least 14 minutes left for `-KeyWindow`
+(both journeys and the probe can run on it, in any order).
 `-ClientId` and `-ClientSecret` are ignored with it: nothing is ever sent
 to Xero's token endpoint for a supplied token. If it has run out, the first
 step says *supplied token expired: supply a fresh one*. Its scopes are read
@@ -216,13 +227,13 @@ reported *not checked (supplied token)*.
 |---|---|---|
 | Browser: *"Invalid redirect_uri"* / *unauthorized_client* | Step 6 differs by a character, or the build uses the other port | Compare the address bar's `redirect_uri=` with step 6; fix the app's Redirect URI in Xero to match it exactly, Save, retry step 24 |
 | Browser: *invalid_scope* | The build still asks for the old `accounting.transactions` scope | You are on a build older than this guide; update TempestOS |
-| TempestOS: *port in use* | Another program holds the port | Restart Windows and retry step 24; if it persists, tell the project chat |
-| TempestOS: *timed out* or *consent denied* | You took more than 5 minutes, or clicked Cancel | Repeat from step 24 |
-| After restart, status reads *not configured* | The id/secret did not save | Repeat Part 2 |
+| TempestOS: *Authorisation failed. Port 49301 is already in use; free it or configure a different port under 'Invoicing:OAuth:LoopbackPort'.* | Another program holds the port | Restart Windows and retry step 24; if it persists, tell the project chat |
+| TempestOS: *No sign-in completed within 5 minutes. Try Authorise again.* or *Authorisation failed. The provider reported: access_denied.* | You took more than 5 minutes, or clicked Cancel on Xero's consent page | Repeat from step 24 |
+| After restart, status reads *Not authorised. not configured* | The id/secret did not save | Repeat Part 2 |
 | *Accounts reading: unavailable: …* | Signed in, but a read failed | Copy the full line into the project chat |
 | Xero section: **Re-authorise needed.** with *Missing:* listed | The connection predates v0.24.0, or a scope was refused at consent | Do steps 41–42 |
 | A badge reads **Failed** — *TempestOS blocked the request (D7.live-organisation)* | You are connected to a live organisation and *Allow live organisation* is off | Expected until Part 6. Re-authorise with the Demo Company, or (after the run-through) do Part 6, then **Retry** |
-| A badge reads **Failed** — *… has no Xero contact link* | The customer or supplier is not linked yet | Customers & Suppliers → the organisation → **Link to Xero…**, then **Retry** |
+| A badge reads **Failed** — *'<organisation>' is not linked to a Xero contact yet; link or create it under Customers & suppliers.* | The customer or supplier is not linked yet | Customers & Suppliers → the organisation → **Link to Xero…**, then **Retry** (the push also goes out by itself within a minute of the link) |
 | A badge reads **Waiting for authorisation** | The token expired or was revoked | Settings → Xero → **Re-authorise** |
 | Smoke script: **REFUSED - not the Demo Company** | The stored connection is your live organisation | Re-authorise with the Demo Company (Part 3) and run it again |
 

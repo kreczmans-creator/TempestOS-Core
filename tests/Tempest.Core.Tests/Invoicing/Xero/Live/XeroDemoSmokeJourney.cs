@@ -518,8 +518,23 @@ internal sealed class XeroDemoSmokeJourney
     /// <summary>S20: nothing that left the machine approved, emailed or wrote outside the allow-list (D3, D4, §7.1).</summary>
     private void CheckJournal()
     {
+        var problems = JournalProblems(_outgoing());
+        Step("S20", "Nothing that reached Xero approved, emailed or wrote outside the allow-list (D3, D4)", problems.Count == 0,
+            problems.Count == 0 ? $"{_outgoing().Count} request(s) checked" : string.Join("; ", problems));
+    }
+
+    /// <summary>
+    /// Every request in <paramref name="requests"/> that TempestOS must never
+    /// make: an email endpoint, a write carrying an approving or paying status
+    /// or <c>SentToContact</c>, or a write outside contacts, quotes, invoices
+    /// and purchase orders (D3, D4, §7.1). Shared by the production-path
+    /// journey (<see cref="XeroProductionSmokeJourney"/>).
+    /// </summary>
+    /// <param name="requests">What reached Xero.</param>
+    internal static IReadOnlyList<string> JournalProblems(IEnumerable<XeroOutgoingRequest> requests)
+    {
         var problems = new List<string>();
-        foreach (var request in _outgoing())
+        foreach (var request in requests)
         {
             var path = request.PathAndQuery;
             if (path.Contains("/Email", StringComparison.OrdinalIgnoreCase))
@@ -542,8 +557,7 @@ internal sealed class XeroDemoSmokeJourney
                 problems.Add($"{request.Method} {path}: outside the write allow-list");
         }
 
-        Step("S20", "Nothing that reached Xero approved, emailed or wrote outside the allow-list (D3, D4)", problems.Count == 0,
-            problems.Count == 0 ? $"{_outgoing().Count} request(s) checked" : string.Join("; ", problems));
+        return problems;
     }
 
     // ---------------------------------------------------------------- helpers
