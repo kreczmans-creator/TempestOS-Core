@@ -66,6 +66,14 @@ public sealed record XeroSyncOptions
     /// </summary>
     public TimeSpan TransientStopPause { get; init; } = XeroBackoff.RecoveryBaseDelay;
 
+    /// <summary>
+    /// `v0.24.0` F1 (M9): how long finished outbox entries are kept before the
+    /// engine prunes them (<see cref="IXeroOutboxDrain.PruneAsync"/>, at
+    /// start-up and with every full scan) — keeping what de-duplication and
+    /// recovery need. Default 30 days.
+    /// </summary>
+    public TimeSpan OutboxRetention { get; init; } = PersistenceXeroOutbox.DefaultRetention;
+
     /// <summary>The jitter source: a number in <c>[0, 1)</c> per backoff (<see cref="XeroBackoff"/>); <see langword="null"/> for <see cref="Random.Shared"/>.</summary>
     public Func<double>? Jitter { get; init; }
 
@@ -412,6 +420,25 @@ public sealed record XeroSyncCycleReport(int Planned, XeroDrainReport Drain, Xer
 /// first write of a session — after any lost create has been recovered.
 /// </para>
 /// <para>
+/// <b>Another organisation (F1, M1).</b> The engine remembers which
+/// organisation it last drained to (<see cref="ConnectedTenantKey"/>). When a
+/// different one is connected — the Demo Company swapped for the live
+/// organisation — before anything is sent or recovered: every open write not
+/// last sent to the new organisation is superseded
+/// (<see cref="IXeroOutboxDrain.SupersedeOpenForOtherOrganisationsAsync"/>;
+/// it was queued under the old organisation's rules), the old organisation's
+/// 429 and authorisation pauses and the session's settings reading are
+/// dropped, the planners record when automatic sync began for the new
+/// organisation (Q8, per organisation), it is audited
+/// (<see cref="AuditOrganisationChanged"/>), and every record is planned
+/// again against the new organisation — so a record issued before it was
+/// first connected waits for <em>Send to Xero</em> (badge <em>Not sent</em>,
+/// noting it went to another organisation), and nothing from the Demo
+/// testing floods the new books. Pre-v0.24 invoice links are imported once
+/// per organisation, only for invoices that organisation holds
+/// (<see cref="XeroInvoiceLinkImporter"/>).
+/// </para>
+/// <para>
 /// <b>Offline-safe.</b> With no organisation connected, Xero unreachable or
 /// waiting for re-authorisation, writes wait in the outbox; planning and every
 /// badge (<see cref="GetStatusAsync"/>, <see cref="GetDocumentStatusAsync"/>)
@@ -451,6 +478,20 @@ public sealed class XeroSyncService : IXeroSyncService
     /// <summary>Audit: writes found in flight at start-up are being recovered (their answers may have been lost).</summary>
     public const string AuditRecovering = "xero.sync.recovering";
 
+    /// <summary>`v0.24.0` F1 (M1) audit: a different Xero organisation is connected; open writes queued for the previous one were superseded and every record is planned again.</summary>
+    public const string AuditOrganisationChanged = "xero.organisation.changed";
+
+    /// <summary>`v0.24.0` F1 (M1): the key, in <see cref="StateCollection"/>, of the organisation (tenant id) the engine last saw connected.</summary>
+    public const string ConnectedTenantKey = "connected-tenant";
+
+    /// <summary>`v0.24.0` F1 (M1): the <see cref="XeroOutboxEntry.LastError"/> of an open write superseded because another organisation was connected.</summary>
+    public const string OrganisationChangedReason =
+        "Queued for another Xero organisation; not sent to the one connected now. The record is planned again for this organisation.";
+
+    /// <summary>`v0.24.0` F1 (M1): the <em>Not sent</em> badge's note for a record sent to another Xero organisation but not to the one connected now.</summary>
+    public const string SentToAnotherOrganisationNote =
+        "Sent to another Xero organisation, not to the one connected now.";
+
     /// <summary>The reason an entry that stayed inconclusive is Failed with (design §6.3).</summary>
     public const string InconclusiveReason =
         "Xero could not confirm whether it holds this record after several tries; check Xero, then Retry or Unlink.";
@@ -461,6 +502,11 @@ public sealed class XeroSyncService : IXeroSyncService
 
     private static readonly XeroOutboxState[] UnknownOnly = [XeroOutboxState.Unknown];
     private static readonly XeroOutboxState[] PendingOnly = [XeroOutboxState.Pending];
+    private static readonly XeroOutboxState[] OpenStates =
+    [
+        XeroOutboxState.Pending, XeroOutboxState.InFlight, XeroOutboxState.Unknown,
+        XeroOutboxState.Failed, XeroOutboxState.WaitingForAuthorisation,
+    ];
 
     /// <summary>The longest pause the limiter's nearly-spent-minute rule sets after a reading.</summary>
     private static readonly TimeSpan NearlySpentMinutePause = TimeSpan.FromMinutes(1);
@@ -486,7 +532,9 @@ public sealed class XeroSyncService : IXeroSyncService
     private bool _started;
     private bool _settingsReadThisSession;
     private DateTimeOffset? _lastSettingsAttemptUtc;
-    private string? _lastTenantId;
+    private string? _knownTenantId;
+    private bool _rescanPending;
+    private DateTimeOffset? _lastPruneUtc;
     private bool _sawUnusableGrant = true;
     private DateTimeOffset? _lastReadBackUtc;
     private DateTimeOffset? _lastBlockedRetryUtc;
@@ -606,6 +654,9 @@ public sealed class XeroSyncService : IXeroSyncService
 
             // Lost answers first, before the scan, the settings refresh or any other write.
             await RecoverAsync(cancellationToken).ConfigureAwait(false);
+
+            // F1 (M9): finished entries past the retention go, before the scan reads the outbox.
+            await PruneOutboxAsync(cancellationToken).ConfigureAwait(false);
 
             _started = true;
         }
@@ -740,6 +791,9 @@ public sealed class XeroSyncService : IXeroSyncService
             if (_lastScanUtc is { } lastScan && now - lastScan >= _options.FullScanInterval)
                 planned += await ScanAsync(cancellationToken).ConfigureAwait(false);
 
+            if (_lastPruneUtc is not { } lastPrune || now - lastPrune >= _options.FullScanInterval)
+                await PruneOutboxAsync(cancellationToken).ConfigureAwait(false);
+
             if (changedSomething || _lastBlockedRetryUtc is not { } lastRetry || now - lastRetry >= _options.BlockedRetryInterval)
                 await RetryBlockedAsync(cancellationToken).ConfigureAwait(false);
 
@@ -817,6 +871,7 @@ public sealed class XeroSyncService : IXeroSyncService
     public async Task<int> ScanAsync(CancellationToken cancellationToken = default)
     {
         _lastScanUtc = _time.GetUtcNow();
+        _rescanPending = false;
         var queued = 0;
         foreach (var slot in _parts.Planners)
         {
@@ -933,6 +988,10 @@ public sealed class XeroSyncService : IXeroSyncService
         await _networkGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            // F1 (M1): a re-authorisation may have connected another organisation.
+            if (await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is { } connected)
+                await DetectOrganisationAsync(connected, cancellationToken).ConfigureAwait(false);
+
             resumed = await ResumeCoreAsync("authorised in Settings", cancellationToken).ConfigureAwait(false);
             if (await _parts.ReadTenantIdAsync(cancellationToken).ConfigureAwait(false) is not null)
                 await RefreshSettingsCoreAsync(force: true, cancellationToken).ConfigureAwait(false);
@@ -943,6 +1002,9 @@ public sealed class XeroSyncService : IXeroSyncService
         }
 
         await RetryBlockedAsync(cancellationToken).ConfigureAwait(false);
+        if (_rescanPending)
+            await ScanAsync(cancellationToken).ConfigureAwait(false);
+
         Signal();
         return resumed;
     }
@@ -973,9 +1035,9 @@ public sealed class XeroSyncService : IXeroSyncService
         void Consider(DateTimeOffset at) => next = next is { } current && current <= at ? current : at;
 
         // Only the head of each document's queue can be sent; an entry
-        // behind a Failed or waiting one is not work yet.
-        var heads = (await _parts.Outbox.ListAsync([], cancellationToken).ConfigureAwait(false))
-            .Where(e => e.State is not (XeroOutboxState.Succeeded or XeroOutboxState.Superseded))
+        // behind a Failed or waiting one is not work yet. Open entries only
+        // (F1, M9: never every entry the outbox ever held).
+        var heads = (await _parts.Outbox.ListAsync(OpenStates, cancellationToken).ConfigureAwait(false))
             .GroupBy(e => e.Document)
             .Select(g => g.First())
             .Where(e => e.State is XeroOutboxState.Pending or XeroOutboxState.Unknown && e.SchemaVersion <= XeroOutboxEntry.CurrentSchemaVersion);
@@ -1111,10 +1173,16 @@ public sealed class XeroSyncService : IXeroSyncService
             return Make(badge, note);
         }
 
-        if (document.Kind == XeroDocumentKind.ExpenseBill && _parts.ExpensePlanner is { } expenses && Guid.TryParse(document.TempestKey, out var expenseId))
-            return Make(XeroSyncBadge.NotSent, await expenses.DescribeNotPushedAsync(expenseId, cancellationToken).ConfigureAwait(false));
+        // F1 (M1): sent to the Demo Company (say) is not sent here; the badge says so.
+        var elsewhere = tenantId is not null
+                        && entries.Any(e => e.State == XeroOutboxState.Succeeded && e.TenantId is { } sentTo && !string.Equals(sentTo, tenantId, StringComparison.Ordinal))
+            ? SentToAnotherOrganisationNote
+            : null;
 
-        return Make(XeroSyncBadge.NotSent, canSendAgain ? "The record TempestOS made in Xero was deleted there." : null);
+        if (document.Kind == XeroDocumentKind.ExpenseBill && _parts.ExpensePlanner is { } expenses && Guid.TryParse(document.TempestKey, out var expenseId))
+            return Make(XeroSyncBadge.NotSent, await expenses.DescribeNotPushedAsync(expenseId, cancellationToken).ConfigureAwait(false) ?? elsewhere);
+
+        return Make(XeroSyncBadge.NotSent, canSendAgain ? "The record TempestOS made in Xero was deleted there." : elsewhere);
     }
 
     /// <summary>The badge's words for <paramref name="badge"/>.</summary>
@@ -1150,8 +1218,17 @@ public sealed class XeroSyncService : IXeroSyncService
         if (tenantId is null)
             return new XeroDrainReport(0, 0, 0, 0, PausedForAuthorisation: true, ResumeNotBeforeUtc: null);
 
+        // F1 (M1): another organisation connected is noticed before anything
+        // is sent or recovered — a lost write queued for the Demo Company is
+        // never replayed into the live organisation.
+        await DetectOrganisationAsync(tenantId, cancellationToken).ConfigureAwait(false);
+
         if (!recoveryOnly)
+        {
             await OnTenantAsync(tenantId, cancellationToken).ConfigureAwait(false);
+            if (_rescanPending)
+                await ScanAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         if (await IsWaitingForAuthorisationAsync(cancellationToken).ConfigureAwait(false)
             && !await TryResumeAsync(refreshSettings: !recoveryOnly, cancellationToken).ConfigureAwait(false))
@@ -1178,7 +1255,7 @@ public sealed class XeroSyncService : IXeroSyncService
             }
 
             var claimedFromUnknown = true;
-            var entry = await _drain.ClaimNextDueAsync(UnknownOnly, cancellationToken).ConfigureAwait(false);
+            var entry = await _drain.ClaimNextDueForTenantAsync(UnknownOnly, tenantId, cancellationToken).ConfigureAwait(false);
             if (entry is null)
             {
                 if (recoveryOnly)
@@ -1196,7 +1273,7 @@ public sealed class XeroSyncService : IXeroSyncService
                     }
                 }
 
-                entry = await _drain.ClaimNextDueAsync(PendingOnly, cancellationToken).ConfigureAwait(false);
+                entry = await _drain.ClaimNextDueForTenantAsync(PendingOnly, tenantId, cancellationToken).ConfigureAwait(false);
             }
 
             if (entry is null)
@@ -1531,19 +1608,75 @@ public sealed class XeroSyncService : IXeroSyncService
         return resumed;
     }
 
-    /// <summary>On connect (a tenant first seen by this session, or a different one): the X1 settings are read and pre-v0.24 invoice links imported. The caller holds <see cref="_networkGate"/>.</summary>
-    private async Task OnTenantAsync(string tenantId, CancellationToken cancellationToken)
+    /// <summary>
+    /// F1 (M1): notices which organisation is connected — once per session
+    /// for each one seen, and before anything is sent or recovered. When it
+    /// differs from the one the engine last saw (<see cref="ConnectedTenantKey"/>,
+    /// kept across restarts): every open write not last sent to it is
+    /// superseded, the previous organisation's 429 and authorisation pauses,
+    /// read-back time and settings reading are dropped, it is audited, and a
+    /// full re-plan is due. Either way the planners record when automatic sync
+    /// began for it (Q8, per organisation). Local only. The caller holds
+    /// <see cref="_networkGate"/>.
+    /// </summary>
+    private async Task DetectOrganisationAsync(string tenantId, CancellationToken cancellationToken)
     {
-        if (string.Equals(_lastTenantId, tenantId, StringComparison.Ordinal))
+        if (string.Equals(_knownTenantId, tenantId, StringComparison.Ordinal))
             return;
 
-        var changed = _lastTenantId is not null;
-        _lastTenantId = tenantId;
+        var previous = await _store.ReadAsync(StateCollection, ConnectedTenantKey, cancellationToken).ConfigureAwait(false);
+        var changed = (previous is not null && !string.Equals(previous, tenantId, StringComparison.Ordinal))
+                      || (_knownTenantId is not null && !string.Equals(_knownTenantId, tenantId, StringComparison.Ordinal));
         if (changed)
-            _settingsReadThisSession = false;
+        {
+            var superseded = await _drain.SupersedeOpenForOtherOrganisationsAsync(tenantId, OrganisationChangedReason, cancellationToken).ConfigureAwait(false);
+            foreach (var id in superseded)
+                await DeleteTrackAsync(id, cancellationToken).ConfigureAwait(false);
 
+            // Xero's limits and the grant are per organisation.
+            await _store.DeleteAsync(StateCollection, PausedUntilKey, cancellationToken).ConfigureAwait(false);
+            await _store.DeleteAsync(StateCollection, AuthorisationPausedAtKey, cancellationToken).ConfigureAwait(false);
+            Interlocked.Exchange(ref _drainHeldUntilUtcTicks, 0);
+            _settingsReadThisSession = false;
+            _lastSettingsAttemptUtc = null;
+            _lastReadBackUtc = null;
+            _rescanPending = true;
+
+            await AuditAsync(AuditOrganisationChanged, new Dictionary<string, string>
+            {
+                ["from"] = previous ?? _knownTenantId ?? string.Empty,
+                ["to"] = tenantId,
+                ["superseded"] = superseded.Count.ToString(CultureInfo.InvariantCulture),
+                ["reason"] = "Another Xero organisation is connected: writes queued for the previous one are not sent here, and every record is planned again for this one.",
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!string.Equals(previous, tenantId, StringComparison.Ordinal))
+            await _store.WriteAsync(StateCollection, ConnectedTenantKey, tenantId, cancellationToken).ConfigureAwait(false);
+
+        _knownTenantId = tenantId;
+
+        // Q8, per organisation: when automatic sync began here is recorded as
+        // soon as the organisation is seen, before any record is planned for it.
+        foreach (var slot in _parts.Planners)
+        {
+            if (slot.Prime is { } prime)
+                await Isolated(() => prime(cancellationToken), $"recording when automatic {slot.Planner.Kind} sync began for this organisation").ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>On every drain with an organisation connected: pre-v0.24 invoice links are imported into it until that has finished (<see cref="XeroInvoiceLinkImporter.EnsureImportedAsync"/>, remembered per organisation). The caller holds <see cref="_networkGate"/>.</summary>
+    private async Task OnTenantAsync(string tenantId, CancellationToken cancellationToken)
+    {
         if (_importer is not null)
             await Isolated(() => _importer.EnsureImportedAsync(tenantId, cancellationToken), "importing pre-v0.24 invoice links").ConfigureAwait(false);
+    }
+
+    /// <summary>F1 (M9): prunes finished outbox entries past <see cref="XeroSyncOptions.OutboxRetention"/>. Local; a failure is logged and isolated.</summary>
+    private async Task PruneOutboxAsync(CancellationToken cancellationToken)
+    {
+        _lastPruneUtc = _time.GetUtcNow();
+        await Isolated(() => _drain.PruneAsync(_options.OutboxRetention, cancellationToken), "pruning finished outbox entries").ConfigureAwait(false);
     }
 
     private async Task<bool> SettingsAreStaleAsync(CancellationToken cancellationToken)

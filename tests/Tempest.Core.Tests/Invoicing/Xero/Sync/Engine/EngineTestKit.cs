@@ -160,7 +160,7 @@ internal sealed class EngineTestKit : IDisposable
         Linker = linker;
         Links = links;
         Options = options;
-        Outbox = new PersistenceXeroOutbox(store, null, clock);
+        Outbox = new PersistenceXeroOutbox(store, null, clock, secrets);
         SettingsProvider = new InMemorySettingsProvider();
         var taxTypes = new XeroTaxTypeResolver(reader, SettingsProvider);
         var accounts = new XeroAccountCodeMap(reader, SettingsProvider);

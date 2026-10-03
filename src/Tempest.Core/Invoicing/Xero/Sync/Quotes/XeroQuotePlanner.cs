@@ -16,11 +16,13 @@ public sealed record XeroQuotePlannerOptions
     /// this moment are synced automatically; earlier ones — raised before
     /// `v0.24.0`'s Xero sync existed — only after the Product Owner's explicit
     /// <em>Send to Xero</em> (<see cref="XeroQuotePlanner.SendToXeroAsync"/>,
-    /// Q8). <see langword="null"/> (the default) uses the moment Xero quote
-    /// sync started running in this workspace — when the planner was built,
-    /// at start-up — recorded once in
-    /// <see cref="XeroQuotePlanner.StateCollection"/> the first time it is
-    /// used (the start-up scan, or any plan) and never moved.
+    /// Q8). <see langword="null"/> (the default) keeps the moment <b>per
+    /// Xero organisation</b> (F1, M1; <see cref="XeroQuotePlanner.AutomaticFromAsync(string?, CancellationToken)"/>):
+    /// for the first organisation, when Xero quote sync started running in
+    /// this workspace — when the planner was built, at start-up; for every
+    /// later one, when TempestOS first saw it connected — each recorded once
+    /// in <see cref="XeroQuotePlanner.StateCollection"/> and never moved. A
+    /// configured moment applies to every organisation.
     /// </summary>
     public DateTimeOffset? AutomaticFromUtc { get; init; }
 }
@@ -93,8 +95,11 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     /// <summary>The <see cref="IPersistenceStore"/> collection holding the planner's own small state: when automatic sync began, and each quotation's <em>Send to Xero</em> opt-in.</summary>
     public const string StateCollection = "Xero.QuoteSync";
 
-    /// <summary>The key, in <see cref="StateCollection"/>, of the moment automatic quote sync began (round-trip ISO-8601).</summary>
+    /// <summary>The key, in <see cref="StateCollection"/>, of the moment automatic quote sync began in this workspace (round-trip ISO-8601): the first organisation's start (<see cref="AutomaticFromKeyFor"/>), also recorded while no organisation is connected.</summary>
     public const string AutomaticFromKey = "automatic-from";
+
+    /// <summary>`v0.24.0` F1 (M1): the key, in <see cref="StateCollection"/>, naming the organisation (tenant id) that took over <see cref="AutomaticFromKey"/> and the opt-ins recorded under <see cref="OptInKey(Guid)"/> — the first organisation connected since F1.</summary>
+    public const string AutomaticFromOwnerKey = "automatic-from-owner";
 
     /// <summary>The audit action for a quotation the Product Owner sent to Xero on demand (Q8).</summary>
     public const string AuditSendToXero = "xero.quote.send-to-xero";
@@ -162,9 +167,26 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     /// <inheritdoc />
     public string CanonicalKind => Quotation.CanonicalKind;
 
-    /// <summary>The key, in <see cref="StateCollection"/>, of <paramref name="quotationId"/>'s Q8 opt-in.</summary>
+    /// <summary>The key, in <see cref="StateCollection"/>, of <paramref name="quotationId"/>'s Q8 opt-in recorded before F1 or with no organisation connected; it counts only for the organisation named by <see cref="AutomaticFromOwnerKey"/>.</summary>
     /// <param name="quotationId">The quotation.</param>
     public static string OptInKey(Guid quotationId) => $"send-to-xero/{quotationId:D}";
+
+    /// <summary>`v0.24.0` F1 (M1): the key, in <see cref="StateCollection"/>, of <paramref name="quotationId"/>'s Q8 opt-in for the organisation <paramref name="tenantId"/> — a <em>Send to Xero</em> made for the Demo Company does not send the quotation to another organisation.</summary>
+    /// <param name="quotationId">The quotation.</param>
+    /// <param name="tenantId">The organisation.</param>
+    public static string OptInKey(Guid quotationId, string tenantId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        return $"send-to-xero/{tenantId}/{quotationId:D}";
+    }
+
+    /// <summary>`v0.24.0` F1 (M1): the key, in <see cref="StateCollection"/>, of the moment automatic quote sync began for the organisation <paramref name="tenantId"/>.</summary>
+    /// <param name="tenantId">The organisation.</param>
+    public static string AutomaticFromKeyFor(string tenantId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(tenantId);
+        return $"{AutomaticFromKey}/{tenantId}";
+    }
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<XeroPlannedOperation>> PlanAsync(Guid objectId, XeroLink? link, CancellationToken cancellationToken = default)
@@ -303,8 +325,10 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         if (!quote.IsIssued)
             return new XeroQuoteSendRequest(false, [], $"Quotation {quote.Reference} is {quote.Status}; only an approved revision, or a sent or answered quotation, goes to Xero.");
 
+        // F1 (M1): the opt-in is for the organisation connected now.
+        var tenantId = await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false);
         await _state.WriteAsync(
-            StateCollection, OptInKey(quotationId),
+            StateCollection, tenantId is null ? OptInKey(quotationId) : OptInKey(quotationId, tenantId),
             JsonSerializer.Serialize(new SendToXeroRecord(_time.GetUtcNow().ToString("O", CultureInfo.InvariantCulture), XeroQuoteMapper.ContentHash(quote))),
             cancellationToken).ConfigureAwait(false);
 
@@ -339,12 +363,11 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
     }
 
     /// <summary>
-    /// When automatic quote sync began: <see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>,
-    /// else the recorded moment; when none is recorded yet, the moment this
-    /// planner was built (start-up — never later than a quotation approved
-    /// in this run) is written once, then read back. The engine (X6) calls
-    /// this, or <see cref="ScanAsync"/>, first thing at start-up so the
-    /// start is recorded even if the run ends before its first plan.
+    /// When automatic quote sync began for the organisation connected now
+    /// (<see cref="AutomaticFromAsync(string?, CancellationToken)"/>). The
+    /// engine (X6) calls this, or <see cref="ScanAsync"/>, first thing at
+    /// start-up and whenever another organisation is connected, so the start
+    /// is recorded even if the run ends before its first plan.
     /// </summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     public async Task<DateTimeOffset> AutomaticFromAsync(CancellationToken cancellationToken = default)
@@ -352,21 +375,70 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         if (_options.AutomaticFromUtc is { } configured)
             return configured;
 
+        return await AutomaticFromAsync(await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// `v0.24.0` F1 (M1): when automatic quote sync began for the organisation
+    /// <paramref name="tenantId"/> — <see cref="XeroQuotePlannerOptions.AutomaticFromUtc"/>
+    /// when configured; else the moment recorded for it
+    /// (<see cref="AutomaticFromKeyFor"/>); else, recorded now and never moved:
+    /// for the first organisation connected since F1, the workspace's own start
+    /// (<see cref="AutomaticFromKey"/>, written before F1 or with no
+    /// organisation connected; when none is recorded yet, the moment this
+    /// planner was built — start-up, never later than a quotation approved in
+    /// this run); for any later organisation, now — the moment TempestOS first
+    /// sees it connected. So a quotation issued before an organisation was
+    /// first connected (the Demo Company's test quotes, when the live
+    /// organisation is connected) needs an explicit <em>Send to Xero</em>
+    /// there. With no organisation connected (<see langword="null"/>), the
+    /// workspace's own start.
+    /// </summary>
+    /// <param name="tenantId">The organisation; <see langword="null"/> when none is connected.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    public async Task<DateTimeOffset> AutomaticFromAsync(string? tenantId, CancellationToken cancellationToken = default)
+    {
+        if (_options.AutomaticFromUtc is { } configured)
+            return configured;
+
         await _stateGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var stored = await _state.ReadAsync(StateCollection, AutomaticFromKey, cancellationToken).ConfigureAwait(false);
-            if (stored is not null
-                && DateTimeOffset.TryParse(stored, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var recorded))
+            var workspaceStart = await ReadTimeAsync(AutomaticFromKey, cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(tenantId))
             {
-                return recorded;
+                if (workspaceStart is { } recorded)
+                    return recorded;
+
+                // First run (or an unreadable record, rewritten): sync began when
+                // this run's planner was built, not when it was first asked — an
+                // approval committed a moment before its plan is still automatic.
+                await WriteTimeAsync(AutomaticFromKey, _startedAtUtc, cancellationToken).ConfigureAwait(false);
+                return _startedAtUtc;
             }
 
-            // First run (or an unreadable record, rewritten): sync began when
-            // this run's planner was built, not when it was first asked — an
-            // approval committed a moment before its plan is still automatic.
-            await _state.WriteAsync(StateCollection, AutomaticFromKey, _startedAtUtc.ToString("O", CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
-            return _startedAtUtc;
+            if (await ReadTimeAsync(AutomaticFromKeyFor(tenantId), cancellationToken).ConfigureAwait(false) is { } own)
+                return own;
+
+            // The owner is written before the organisation's own moment, so a
+            // crash between the two still finds this organisation the owner.
+            var owner = await _state.ReadAsync(StateCollection, AutomaticFromOwnerKey, cancellationToken).ConfigureAwait(false);
+            DateTimeOffset start;
+            if (owner is null || string.Equals(owner, tenantId, StringComparison.Ordinal))
+            {
+                start = workspaceStart ?? _startedAtUtc;
+                if (workspaceStart is null)
+                    await WriteTimeAsync(AutomaticFromKey, start, cancellationToken).ConfigureAwait(false);
+                if (owner is null)
+                    await _state.WriteAsync(StateCollection, AutomaticFromOwnerKey, tenantId, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                start = _time.GetUtcNow();
+            }
+
+            await WriteTimeAsync(AutomaticFromKeyFor(tenantId), start, cancellationToken).ConfigureAwait(false);
+            return start;
         }
         finally
         {
@@ -374,13 +446,46 @@ public sealed class XeroQuotePlanner : IXeroSyncPlanner
         }
     }
 
+    private async Task<DateTimeOffset?> ReadTimeAsync(string key, CancellationToken cancellationToken)
+    {
+        var stored = await _state.ReadAsync(StateCollection, key, cancellationToken).ConfigureAwait(false);
+        return stored is not null
+               && DateTimeOffset.TryParse(stored, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var recorded)
+            ? recorded
+            : null;
+    }
+
+    private Task WriteTimeAsync(string key, DateTimeOffset at, CancellationToken cancellationToken) =>
+        _state.WriteAsync(StateCollection, key, at.ToString("O", CultureInfo.InvariantCulture), cancellationToken);
+
     private async Task<bool> IsOptedInAsync(Guid quotationId, CancellationToken cancellationToken) =>
-        await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false) is not null;
+        await ReadOptInAsync(quotationId, cancellationToken).ConfigureAwait(false) is not null;
+
+    /// <summary>
+    /// The quotation's Q8 opt-in for the organisation connected now: its own
+    /// (<see cref="OptInKey(Guid, string)"/>), or one recorded before F1 or
+    /// with no organisation connected (<see cref="OptInKey(Guid)"/>) when this
+    /// organisation is the first since F1 (<see cref="AutomaticFromOwnerKey"/>).
+    /// </summary>
+    private async Task<string?> ReadOptInAsync(Guid quotationId, CancellationToken cancellationToken)
+    {
+        var tenantId = await ReadTenantIdAsync(cancellationToken).ConfigureAwait(false);
+        if (tenantId is null)
+            return await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false);
+
+        if (await _state.ReadAsync(StateCollection, OptInKey(quotationId, tenantId), cancellationToken).ConfigureAwait(false) is { } own)
+            return own;
+
+        var owner = await _state.ReadAsync(StateCollection, AutomaticFromOwnerKey, cancellationToken).ConfigureAwait(false);
+        return owner is null || string.Equals(owner, tenantId, StringComparison.Ordinal)
+            ? await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false)
+            : null;
+    }
 
     /// <summary>Whether the Product Owner's <em>Send to Xero</em> was asked for this very revision (content), which counts as its export.</summary>
     private async Task<bool> IsRevisionSentToXeroAsync(Guid quotationId, string contentHash, CancellationToken cancellationToken)
     {
-        var stored = await _state.ReadAsync(StateCollection, OptInKey(quotationId), cancellationToken).ConfigureAwait(false);
+        var stored = await ReadOptInAsync(quotationId, cancellationToken).ConfigureAwait(false);
         if (stored is null)
             return false;
 

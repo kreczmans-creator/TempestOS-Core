@@ -317,7 +317,7 @@ public sealed class XeroSettingsSection : UserControl
         var reading = _services.Reader is null ? null : await _services.Reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true);
         await ShowReadingAsync(reading, cancellationToken).ConfigureAwait(true);
 
-        _allowLiveOrganisation.IsChecked = await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
+        _allowLiveOrganisation.IsChecked = await ReadAllowLiveAsync(cancellationToken).ConfigureAwait(true);
         _includeOnline.IsChecked = await ReadBoolAsync(XeroInvoiceDrafts.IncludeOnlineSettingKey, cancellationToken).ConfigureAwait(true);
         _loaded = true;
         DescribeLiveOrganisation();
@@ -421,12 +421,17 @@ public sealed class XeroSettingsSection : UserControl
         await _settings.SetValueAsync(XeroInvoiceDrafts.IncludeOnlineSettingKey, Format(_includeOnline.IsChecked == true), cancellationToken).ConfigureAwait(true);
 
         // D7: through the one key the write-safety handler reads, and audited
-        // on every change (who, when, old → new).
+        // on every change (who, when, old → new). F1 (m3): bound to the
+        // organisation shown, so it never carries over to another one.
+        // Turning it on is a decision for the organisation shown; turning it
+        // off (or leaving it off) clears a switch stored for any organisation.
         var allowLive = _allowLiveOrganisation.IsChecked == true;
-        var wasAllowed = await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
+        var wasAllowed = allowLive
+            ? await ReadAllowLiveAsync(cancellationToken).ConfigureAwait(true)
+            : await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
         if (allowLive != wasAllowed)
         {
-            await _settings.SetValueAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, Format(allowLive), cancellationToken).ConfigureAwait(true);
+            await XeroWriteSafetyHandler.SetAllowLiveOrganisationAsync(_settings, allowLive, _reading?.TenantId, cancellationToken).ConfigureAwait(true);
             if (_services.Audit is { } audit)
             {
                 await audit.RecordAsync(
@@ -438,11 +443,18 @@ public sealed class XeroSettingsSection : UserControl
                         ["NewValue"] = OnOff(allowLive),
                         ["Organisation"] = _reading?.Organisation.Name ?? "not read yet",
                         ["IsDemoCompany"] = _reading is { } reading ? Format(reading.Organisation.IsDemoCompany) : "unknown",
+                        ["TenantId"] = _reading?.TenantId ?? "not read yet",
                     },
                     cancellationToken).ConfigureAwait(true);
             }
         }
     }
+
+    /// <summary>F1 (m3): whether <em>Allow live organisation</em> is on for the organisation shown — granted for it; with no reading yet, the stored switch.</summary>
+    private async Task<bool> ReadAllowLiveAsync(CancellationToken cancellationToken) =>
+        _reading is { } reading
+            ? await XeroWriteSafetyHandler.IsLiveOrganisationAllowedForAsync(_settings, reading.TenantId, cancellationToken).ConfigureAwait(true)
+            : await ReadBoolAsync(XeroWriteSafetyHandler.AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(true);
 
     /// <summary><em>Retry all</em>: every Failed outbox entry back to Pending (each keeps its key; audited and the engine woken when the engine is present), then the summary re-read.</summary>
     /// <param name="cancellationToken">Cancels the retries.</param>

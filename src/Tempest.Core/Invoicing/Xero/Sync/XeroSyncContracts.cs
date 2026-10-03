@@ -211,6 +211,18 @@ public sealed record XeroOutboxEntry(
 
     /// <summary>Xero's documented maximum <c>Idempotency-Key</c> length.</summary>
     public const int MaximumIdempotencyKeyLength = 128;
+
+    /// <summary>
+    /// `v0.24.0` F1 (additive, M1): the Xero organisation (tenant) this entry
+    /// was last claimed for — sent to — so a
+    /// <see cref="XeroOutboxState.Succeeded"/> entry names the organisation it
+    /// succeeded in. <see langword="null"/> while it has never been sent, and
+    /// for an entry written before F1. The outbox de-duplicates a new write
+    /// only against open entries and entries that succeeded in the
+    /// organisation connected now (design §6.1): a record sent to the Demo
+    /// Company is not "already sent" to another organisation.
+    /// </summary>
+    public string? TenantId { get; init; }
 }
 
 /// <summary>
@@ -230,8 +242,10 @@ public interface IXeroOutbox
     /// <summary>
     /// Queues <paramref name="operation"/> for <paramref name="document"/>.
     /// <paramref name="contentHash"/> identifies the content to push; an
-    /// entry identical to one already pending or succeeded for the same
-    /// content is not queued twice (the existing entry is returned).
+    /// entry identical to one already open, or one that succeeded in the
+    /// organisation connected now (<see cref="XeroOutboxEntry.TenantId"/>),
+    /// for the same content is not queued twice (the existing entry is
+    /// returned).
     /// </summary>
     Task<XeroOutboxEntry> EnqueueAsync(
         XeroOperation operation, XeroDocumentRef document, string contentHash, string? argument = null,

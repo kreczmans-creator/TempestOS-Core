@@ -228,7 +228,14 @@ DELETED, AUTHORISED, PAID, VOIDED` [S5].
   `ExternalInvoiceNumber` / `ExternalStatus` remain the invoice's own
   `ADR-0151` fields; on first read the engine **imports** a link
   (`LinkedBy = "imported"`) for each request with `Connector == "Xero"`
-  and an `ExternalId`, so v0.19–v0.23 sends keep reconciling.
+  and an `ExternalId`, so v0.19–v0.23 sends keep reconciling. *(F1, M1)*
+  Only requests sent before v0.24.0 (before the import first ran,
+  `Xero.InvoiceLinkImport/first-run`) are candidates; each is imported only
+  if the organisation it is imported into holds the invoice (`GET
+  Invoices/{id}`, at most 10 per drain; a 404 is recorded and never
+  imported; no answer → the next drain carries on), and a finished import
+  is recorded per organisation (`ran/{tenantId}`) — so the Demo Company's
+  invoice ids never become the live organisation's links.
 - **Schema versioning.** `XeroLink`, `XeroOutboxEntry` and
   `XeroSettingsReading` carry `SchemaVersion` (`1`). Readers accept every
   version ≤ current and ignore unknown JSON properties; a record with a
@@ -255,8 +262,24 @@ InFlight → Succeeded | Failed | Unknown | WaitingForAuthorisation`,
 `Superseded`. Per-document FIFO: nothing for a document is sent while an
 earlier entry for it is Pending/Unknown/Failed/Waiting — a status change
 never overtakes its create. A newer entry for the same document and
-operation supersedes a pending one; an entry identical to one pending or
-succeeded (same content hash) is not queued again.
+operation supersedes a pending one; an entry identical to one open, or one
+that **succeeded in the organisation connected now** (same content hash), is
+not queued again. *(F1, M1)* A claim records the organisation it is sent to
+(`XeroOutboxEntry.TenantId`), so a succeeded entry names where it
+succeeded; an entry that succeeded in the Demo Company does not stand in
+for the live organisation.
+
+*(F1, M9)* **Index and pruning.** Entries are read from the store once per
+process into an in-memory index (by id, by document in queue order, and
+the open set) shared by every instance over the store; enqueue, claim, a
+document's badge and lists of open states touch only the entries
+concerned. The engine prunes finished entries (Succeeded, Superseded)
+older than `XeroSyncOptions.OutboxRetention` (30 days) at start-up and
+hourly, keeping per (document, operation, argument) the newest finished
+entry and the newest succeeded entry per organisation; the removed
+entries' per-content counts are carried on the kept entry
+(`PrunedOccurrences`), so an idempotency key's occurrence number is never
+reused.
 
 ### 6.2 Planning
 
@@ -266,6 +289,15 @@ its link (pure, offline). Triggered by `IWorkspaceChanges` (commits to
 including `AttachmentAdded`), handled off the commit thread through a
 bounded channel; and a full scan at start-up and on Refresh — so a crash
 between commit and enqueue loses nothing.
+
+*(F1, M1)* Q8's "automatic from" moment (quotes, purchase orders,
+expenses) and each *Send to Xero* opt-in are kept **per organisation**:
+the first organisation connected takes the workspace's start; any later
+one starts when TempestOS first sees it connected (on Settings' connect,
+or the next drain). A record issued before an organisation was first
+connected needs an explicit *Send to Xero* there. (Purchase orders compare
+by day, so orders issued on the day of a switch still count as
+automatic — X5's documented trade-off.)
 
 ### 6.3 Drain
 
@@ -341,7 +373,8 @@ a defect if seen.
 `xero.push.failed`, `xero.push.blocked-by-rule`, `xero.link.created`,
 `xero.link.linked`, `xero.link.reconciled`, `xero.link.unlinked`,
 `xero.settings.read`, `xero.reauthorisation.required`,
-`xero.live-organisation.allowed`. Detail: document, operation, Xero id and
+`xero.live-organisation.allowed`, `xero.live-organisation.revoked` (F1),
+`xero.organisation.changed` (F1). Detail: document, operation, Xero id and
 number, idempotency key, attempt, HTTP status, reason. Never a token.
 
 ### 6.8 Offline
@@ -352,6 +385,20 @@ VAT validation use the last X1 reading (badge in Settings: *"from Xero,
 read at …"*); a document whose required data (contact link, tax type,
 account code) is missing locally is Blocked with the reason, never sent
 half-formed.
+
+### 6.9 Changing organisation (F1, M1)
+
+The engine keeps the organisation it last saw connected
+(`Xero.SyncEngine/connected-tenant`). When a different one is connected —
+noticed on Settings' connect (`NotifyAuthorisedAsync`) or before the next
+drain or recovery, so a lost Demo write is never replayed elsewhere — every
+open entry not last sent to the new organisation is Superseded
+(*"Queued for another Xero organisation…"*), the previous organisation's
+429 and authorisation pauses and settings reading are dropped, the planners
+record the new organisation's automatic-from moment, it is audited
+(`xero.organisation.changed`), and every record is planned again. A record
+sent only to another organisation reads *Not sent* with the note *"Sent to
+another Xero organisation, not to the one connected now."*
 
 ## 7. Safety rules enforced in code (D3, D4, D7)
 
@@ -372,7 +419,7 @@ Rejected through their ordinary path, and audits `xero.push.blocked-by-rule`.
 | D4.sent-to-contact | Any body with `SentToContact: true` |
 | quote-status | `Quotes` writes with `Status` outside `DRAFT, SENT, ACCEPTED, DECLINED` |
 | write-allow-list | Any non-GET to a path other than `Contacts[/id]`, `Quotes[/id]`, `Invoices[/id]`, `PurchaseOrders[/id]`, `{Quotes,Invoices,PurchaseOrders}/{id}/Attachments/{file}` (so never `Payments`, `BankTransactions`, `ManualJournals`, `CreditNotes`, `Organisation`, `TaxRates`, `Accounts`) |
-| D7.live-organisation | Any non-GET while the cached `Organisation.IsDemoCompany` is false and Settings `Xero.AllowLiveOrganisation` is off (default off; turning it on is audited); unknown organisation (no reading) → read first, still unknown → block |
+| D7.live-organisation | Any non-GET while the cached `Organisation.IsDemoCompany` is false and Settings `Xero.AllowLiveOrganisation` is off (default off; turning it on is audited); unknown organisation (no reading) → read first, still unknown → block. *(F1, m3)* The switch counts only for the organisation it was granted for (`Xero.AllowLiveOrganisation.TenantId`, written with it); a write to another live organisation is blocked and the switch is turned off (`xero.live-organisation.revoked`), with a reason saying so |
 
 ### 7.2 By construction
 

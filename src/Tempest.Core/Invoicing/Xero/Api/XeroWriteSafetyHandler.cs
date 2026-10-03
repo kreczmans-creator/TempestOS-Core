@@ -34,6 +34,19 @@ namespace Tempest.Core.Invoicing.Xero.Api;
 /// <item><see cref="RuleLiveOrganisation"/> — any non-GET while the cached organisation is not Xero's Demo Company and <see cref="AllowLiveOrganisationSettingKey"/> is off (D7). An unknown organisation (no reading, or a reading of another tenant) is read first; still unknown blocks — and a failed reading is not retried for that tenant for <see cref="UnknownOrganisationRetryAfter"/>, so blocked writes do not spend Xero's call budget re-reading it.</item>
 /// </list>
 /// <para>
+/// <b>The switch is bound to its organisation</b> (`v0.24.0` F1, m3). Built
+/// with the Settings provider, the handler honours
+/// <see cref="AllowLiveOrganisationSettingKey"/> only for the organisation it
+/// was granted for (<see cref="AllowLiveOrganisationTenantSettingKey"/>,
+/// written with the switch by <see cref="SetAllowLiveOrganisationAsync"/>). A
+/// write to another live organisation — TempestOS re-authorised into a
+/// different one — is blocked, and the switch is turned off
+/// (<see cref="LiveOrganisationRevokedAuditAction"/>, audited) with a reason
+/// that says so: the Product Owner decides again for the new organisation. A
+/// switch turned on without a recorded organisation counts for none. The Demo
+/// Company never needs the switch, so connecting to it changes nothing.
+/// </para>
+/// <para>
 /// <b>GETs pass</b> (other than to <c>/Email</c>) — reading is never what D3,
 /// D4 or D7 restrict, and the D7 reading itself is a GET through this same
 /// pipeline.
@@ -49,6 +62,15 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
     /// <summary>The Settings key that lets TempestOS write to an organisation that is not Xero's Demo Company (D7). Default off; turning it on is audited by Settings.</summary>
     public const string AllowLiveOrganisationSettingKey = "Xero.AllowLiveOrganisation";
+
+    /// <summary>`v0.24.0` F1 (m3): the Settings key holding the tenant id of the organisation <see cref="AllowLiveOrganisationSettingKey"/> was granted for; empty when none.</summary>
+    public const string AllowLiveOrganisationTenantSettingKey = "Xero.AllowLiveOrganisation.TenantId";
+
+    /// <summary>`v0.24.0` F1 (m3): the display name of the <see cref="AllowLiveOrganisationTenantSettingKey"/> setting.</summary>
+    public const string AllowLiveOrganisationTenantDisplayName = "Xero — the organisation live writes were allowed for";
+
+    /// <summary>`v0.24.0` F1 (m3): the audit action recorded when the handler turns the live-organisation switch off because TempestOS is connected to another live organisation than the one it was granted for.</summary>
+    public const string LiveOrganisationRevokedAuditAction = "xero.live-organisation.revoked";
 
     /// <summary>D3: an invoice or bill written with a status other than <c>DRAFT</c> (or <c>DELETED</c> on an existing one).</summary>
     public const string RuleInvoiceStatus = "D3.invoice-status";
@@ -87,6 +109,7 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     private readonly Func<IXeroSettingsReader?> _settingsReader;
     private readonly Func<CancellationToken, Task<bool>> _allowLiveOrganisation;
     private readonly Func<IAuditRecorder?> _auditRecorder;
+    private readonly Func<ISettingsProvider?>? _liveOrganisationSettings;
     private readonly ILogger? _logger;
     private readonly TimeProvider _time;
     private readonly Lock _failedReadingGate = new();
@@ -98,12 +121,14 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     /// <param name="auditRecorder">Resolves the audit recorder; <see langword="null"/> from it records nothing (the block still happens).</param>
     /// <param name="logger">Where a block is logged; <see langword="null"/> for nowhere.</param>
     /// <param name="timeProvider">The clock that times <see cref="UnknownOrganisationRetryAfter"/>; <see langword="null"/> for the system clock.</param>
+    /// <param name="liveOrganisationSettings">`v0.24.0` F1 (m3, additive): resolves the Settings provider holding the organisation the switch was granted for (<see cref="AllowLiveOrganisationTenantSettingKey"/>), through which the handler also turns the switch off for another organisation; <see langword="null"/> (or <see langword="null"/> from it) honours <paramref name="allowLiveOrganisation"/> for any organisation, as before F1.</param>
     public XeroWriteSafetyHandler(
         Func<IXeroSettingsReader?> settingsReader,
         Func<CancellationToken, Task<bool>> allowLiveOrganisation,
         Func<IAuditRecorder?> auditRecorder,
         ILogger? logger = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        Func<ISettingsProvider?>? liveOrganisationSettings = null)
     {
         ArgumentNullException.ThrowIfNull(settingsReader);
         ArgumentNullException.ThrowIfNull(allowLiveOrganisation);
@@ -112,6 +137,7 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         _settingsReader = settingsReader;
         _allowLiveOrganisation = allowLiveOrganisation;
         _auditRecorder = auditRecorder;
+        _liveOrganisationSettings = liveOrganisationSettings;
         _logger = logger;
         _time = timeProvider ?? TimeProvider.System;
     }
@@ -135,6 +161,63 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         {
             // Registered already.
         }
+    }
+
+    /// <summary>`v0.24.0` F1 (m3): registers the <see cref="AllowLiveOrganisationTenantSettingKey"/> definition (default empty: granted for no organisation) unless it is registered already — idempotent; called by every reader and writer of the binding.</summary>
+    /// <param name="settings">The settings provider.</param>
+    public static void EnsureAllowLiveOrganisationTenantDefinition(ISettingsProvider settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        try
+        {
+            settings.RegisterDefinition(new SettingDefinition(AllowLiveOrganisationTenantSettingKey, AllowLiveOrganisationTenantDisplayName, string.Empty));
+        }
+        catch (DuplicateSettingDefinitionException)
+        {
+            // Registered already.
+        }
+    }
+
+    /// <summary>
+    /// `v0.24.0` F1 (m3): the Product Owner's decision on the live-organisation
+    /// switch, bound to the organisation it is made for: writes
+    /// <see cref="AllowLiveOrganisationSettingKey"/> and
+    /// <see cref="AllowLiveOrganisationTenantSettingKey"/> (<paramref name="tenantId"/>
+    /// when allowing, cleared when not). Allowing with no organisation known
+    /// allows none. Auditing the decision stays with the caller (Settings).
+    /// </summary>
+    /// <param name="settings">The settings provider.</param>
+    /// <param name="allow">Whether live writes are allowed.</param>
+    /// <param name="tenantId">The organisation connected when the decision is made (the X1 reading's tenant); <see langword="null"/> when not known.</param>
+    /// <param name="cancellationToken">Cancels the writes.</param>
+    public static async Task SetAllowLiveOrganisationAsync(ISettingsProvider settings, bool allow, string? tenantId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        EnsureAllowLiveOrganisationDefinition(settings);
+        EnsureAllowLiveOrganisationTenantDefinition(settings);
+        await settings.SetValueAsync(AllowLiveOrganisationTenantSettingKey, allow ? tenantId?.Trim() ?? string.Empty : string.Empty, cancellationToken).ConfigureAwait(false);
+        await settings.SetValueAsync(AllowLiveOrganisationSettingKey, allow ? "True" : "False", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>`v0.24.0` F1 (m3): whether the live-organisation switch is on <em>for</em> <paramref name="tenantId"/> — on, and granted for that organisation.</summary>
+    /// <param name="settings">The settings provider.</param>
+    /// <param name="tenantId">The organisation; <see langword="null"/> is never allowed.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    public static async Task<bool> IsLiveOrganisationAllowedForAsync(ISettingsProvider settings, string? tenantId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        if (string.IsNullOrWhiteSpace(tenantId))
+            return false;
+
+        EnsureAllowLiveOrganisationDefinition(settings);
+        EnsureAllowLiveOrganisationTenantDefinition(settings);
+        var on = bool.TryParse(await settings.GetValueAsync(AllowLiveOrganisationSettingKey, cancellationToken).ConfigureAwait(false), out var allowed) && allowed;
+        return on && string.Equals(
+            (await settings.GetValueAsync(AllowLiveOrganisationTenantSettingKey, cancellationToken).ConfigureAwait(false)).Trim(),
+            tenantId.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -416,10 +499,18 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
 
     private async Task<(string Rule, string Reason)?> CheckLiveOrganisationAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (await IsLiveOrganisationAllowedAsync(cancellationToken).ConfigureAwait(false))
+        var tenantId = request.Headers.TryGetValues("xero-tenant-id", out var tenants) ? tenants.FirstOrDefault() : null;
+        var switchOn = await IsLiveOrganisationAllowedAsync(cancellationToken).ConfigureAwait(false);
+        var settings = switchOn ? ResolveLiveOrganisationSettings() : null;
+
+        // Before F1 (no Settings provider to bind it): the switch counts for any organisation.
+        if (switchOn && settings is null)
             return null;
 
-        var tenantId = request.Headers.TryGetValues("xero-tenant-id", out var tenants) ? tenants.FirstOrDefault() : null;
+        // F1 (m3): the switch counts only for the organisation it was granted for.
+        if (switchOn && await IsGrantedForAsync(settings!, tenantId, cancellationToken).ConfigureAwait(false))
+            return null;
+
         var reading = await ReadOrganisationAsync(tenantId, cancellationToken).ConfigureAwait(false);
 
         if (reading is null)
@@ -428,10 +519,118 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
                 "Xero's organisation has not been read, so TempestOS cannot confirm it is the Demo Company; refresh Xero in Settings, or allow the live organisation (D7).");
         }
 
-        return reading.Organisation.IsDemoCompany
-            ? null
-            : (RuleLiveOrganisation,
-                $"'{reading.Organisation.Name}' is not Xero's Demo Company; TempestOS writes to it only once Settings allows the live organisation (D7).");
+        if (reading.Organisation.IsDemoCompany)
+            return null;
+
+        if (switchOn)
+        {
+            await RevokeAsync(settings!, reading, cancellationToken).ConfigureAwait(false);
+            return (RuleLiveOrganisation,
+                $"'Allow live organisation' was granted for another Xero organisation, so TempestOS has turned it off; it writes to '{reading.Organisation.Name}' only once Settings allows this organisation (D7).");
+        }
+
+        return (RuleLiveOrganisation,
+            $"'{reading.Organisation.Name}' is not Xero's Demo Company; TempestOS writes to it only once Settings allows the live organisation (D7).");
+    }
+
+    private ISettingsProvider? ResolveLiveOrganisationSettings()
+    {
+        if (_liveOrganisationSettings is null)
+            return null;
+
+        try
+        {
+            return _liveOrganisationSettings();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.LogWarning(ex, "Resolving Settings for {Setting} failed; the switch counts for no organisation.", AllowLiveOrganisationTenantSettingKey);
+            return NoSettings.Instance;
+        }
+    }
+
+    private async Task<bool> IsGrantedForAsync(ISettingsProvider settings, string? tenantId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await IsLiveOrganisationAllowedForAsync(settings, tenantId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Reading {Setting} failed; the switch counts for no organisation.", AllowLiveOrganisationTenantSettingKey);
+            return false;
+        }
+    }
+
+    /// <summary>Turns the live-organisation switch off — it was granted for another organisation than <paramref name="reading"/>'s — and audits it. A failure is logged; the write is blocked either way.</summary>
+    private async Task RevokeAsync(ISettingsProvider settings, XeroSettingsReading reading, CancellationToken cancellationToken)
+    {
+        string grantedFor;
+        try
+        {
+            EnsureAllowLiveOrganisationTenantDefinition(settings);
+            grantedFor = (await settings.GetValueAsync(AllowLiveOrganisationTenantSettingKey, cancellationToken).ConfigureAwait(false)).Trim();
+            await SetAllowLiveOrganisationAsync(settings, allow: false, tenantId: null, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Turning {Setting} off for another organisation failed; the write is blocked anyway.", AllowLiveOrganisationSettingKey);
+            return;
+        }
+
+        _logger?.LogWarning(
+            "TempestOS is connected to the live organisation {Organisation}, not the one 'Allow live organisation' was granted for; the switch is turned off.",
+            reading.Organisation.Name);
+
+        try
+        {
+            if (_auditRecorder() is { } audit)
+            {
+                await audit.RecordAsync(
+                    LiveOrganisationRevokedAuditAction,
+                    new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["Subject"] = AllowLiveOrganisationSettingKey,
+                        ["OldValue"] = "on",
+                        ["NewValue"] = "off",
+                        ["GrantedForTenant"] = grantedFor.Length == 0 ? "none recorded" : grantedFor,
+                        ["ConnectedTenant"] = reading.TenantId,
+                        ["Organisation"] = reading.Organisation.Name,
+                        ["reason"] = "Connected to another live Xero organisation than the one the switch was granted for; the Product Owner decides again for this one.",
+                    },
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Auditing the turned-off live-organisation switch failed.");
+        }
+    }
+
+    /// <summary>A Settings provider that holds nothing: the switch is granted for no organisation (Settings could not be resolved).</summary>
+    private sealed class NoSettings : ISettingsProvider
+    {
+        public static readonly NoSettings Instance = new();
+
+        public void RegisterDefinition(ISettingDefinition definition)
+        {
+        }
+
+        public Task<string> GetValueAsync(string key, CancellationToken cancellationToken = default) => Task.FromResult(string.Empty);
+
+        public Task SetValueAsync(string key, string value, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private async Task<bool> IsLiveOrganisationAllowedAsync(CancellationToken cancellationToken)

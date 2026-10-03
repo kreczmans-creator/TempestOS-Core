@@ -111,7 +111,9 @@ internal static partial class XeroServiceRegistration
             allowLiveOrganisation: cancellationToken => ReadAllowLiveOrganisationAsync(TryResolve<ISettingsProvider>(services()), cancellationToken),
             auditRecorder: () => TryResolve<IAuditRecorder>(services()),
             logger: loggerFactory.CreateLogger("Tempest.Core.Invoicing.Xero.Safety"),
-            timeProvider: time)
+            timeProvider: time,
+            // F1 (m3): the live-organisation switch counts only for the organisation it was granted for.
+            liveOrganisationSettings: () => TryResolve<ISettingsProvider>(services()))
         {
             InnerHandler = rateLimiter,
         };
