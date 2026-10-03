@@ -148,6 +148,10 @@ public sealed class XeroSettingsSection : UserControl
     public const string ReauthorisedIntoAnotherOrganisationStatus =
         "Xero re-authorised for another organisation. Its tax types and accounts were reloaded; any choices not yet saved were reset.";
 
+    /// <summary>The status after a Save while the section had not finished loading: <em>IncludeOnline</em> and <em>Allow live organisation</em> were not saved (the stored values are kept).</summary>
+    public const string SwitchesNotSavedStatus =
+        "Include online and Allow live organisation were not saved: the Xero section did not finish loading. Reopen Settings and save again.";
+
     /// <summary>The automation name of the <em>Allow live organisation</em> switch.</summary>
     public const string AllowLiveOrganisationName = "Allow live organisation";
 
@@ -399,7 +403,14 @@ public sealed class XeroSettingsSection : UserControl
         // not what is stored: writing them then would silently turn a stored
         // IncludeOnline / Allow-live "True" into "False".
         if (_loaded)
+        {
             await SaveSwitchesAsync(cancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            _status.Text = SwitchesNotSavedStatus;
+            ActionCompleted?.Invoke(_status.Text, ActionOutcome.Failed);
+        }
 
         DescribeLiveOrganisation();
         await ShowMappingProblemsAsync(cancellationToken).ConfigureAwait(true);
