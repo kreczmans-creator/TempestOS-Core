@@ -153,7 +153,7 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
     {
         var segments = ApiPathSegments(request.RequestUri);
 
-        if (segments is { Count: > 0 } && string.Equals(segments[^1].Split(PathSeparators)[^1], "Email", StringComparison.OrdinalIgnoreCase))
+        if (segments is { Count: > 0 } && string.Equals(FullyUnescaped(segments[^1]).Split(PathSeparators)[^1], "Email", StringComparison.OrdinalIgnoreCase))
             return (RuleEmail, "TempestOS never emails a client; the Product Owner sends from Xero (D4).");
 
         if (request.Method == HttpMethod.Get)
@@ -165,6 +165,13 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
         // An escaped '/' or '\' (%2F, %5C) inside a segment would read as one segment here but as two to anything that decodes it later.
         if (segments.Any(segment => segment.IndexOfAny(PathSeparators) >= 0))
             return (RuleWriteAllowList, "A Xero write's path must not hide a '/' or '\\' inside an escaped segment.");
+
+        // A segment that still holds an escape after unescaping was escaped twice (abc%252FEmail): one more decode further on could
+        // reveal a separator. A lone '%' that escapes nothing (a receipt named "50% off.jpg") is left alone. A file name holding a
+        // literal escape ("Invoice%20A.pdf") would also read as escaped twice: XeroAccountingApi.XeroFileName sends it as
+        // "Invoice_20A.pdf", so only a hand-built path is refused here.
+        if (segments.Any(segment => segment.Contains('%', StringComparison.Ordinal) && Uri.UnescapeDataString(segment) != segment))
+            return (RuleWriteAllowList, "A Xero write's path must not be escaped twice: a segment still holds an escape after unescaping.");
 
         var isAttachment = IsAttachmentPath(segments);
         if (!(request.Method == HttpMethod.Put || request.Method == HttpMethod.Post) || !(isAttachment || IsDocumentPath(segments)))
@@ -206,6 +213,20 @@ public sealed class XeroWriteSafetyHandler : DelegatingHandler
             return null;
 
         return [.. path[(root + ApiRootSegment.Length)..].Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.UnescapeDataString)];
+    }
+
+    /// <summary>Unescapes <paramref name="segment"/> until it stops changing (bounded), so a separator escaped more than once still shows.</summary>
+    private static string FullyUnescaped(string segment)
+    {
+        for (var pass = 0; pass < 8; pass++)
+        {
+            var next = Uri.UnescapeDataString(segment);
+            if (next == segment)
+                break;
+            segment = next;
+        }
+
+        return segment;
     }
 
     private static bool IsDocumentPath(List<string> segments) =>

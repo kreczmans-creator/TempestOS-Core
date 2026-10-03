@@ -61,13 +61,13 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
     private readonly object _sync = new();
     private XeroSettingsReading? _last;
 
-    /// <summary>Initialises a new instance of the <see cref="XeroSettingsReader"/> class on the system clock.</summary>
+    /// <summary>Initialises a new instance of the <see cref="XeroSettingsReader"/> class on <paramref name="api"/>'s clock — the one the host composed the Xero client with.</summary>
     /// <param name="api">The typed Xero client.</param>
     /// <param name="cache">Where the last reading is kept.</param>
     /// <param name="secretStore">Where the connected tenant id is kept.</param>
     /// <param name="auditRecorder">Records <see cref="AuditAction"/>.</param>
     public XeroSettingsReader(XeroAccountingApi api, IXeroSettingsCache cache, ISecretStore secretStore, IAuditRecorder auditRecorder)
-        : this(api, cache, secretStore, auditRecorder, TimeProvider.System)
+        : this(api, cache, secretStore, auditRecorder, (api ?? throw new ArgumentNullException(nameof(api))).Time)
     {
     }
 
@@ -293,12 +293,18 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
 
     private static List<XeroAccount> MergeAccounts(IReadOnlyList<XeroAccount>? previous, IEnumerable<XeroAccount> fresh)
     {
-        var merged = new List<XeroAccount>(previous ?? []);
+        var freshAccounts = fresh.ToList();
+
+        // An earlier account whose code a freshly read one now carries is stale: Xero gave the code to
+        // another account (the earlier one deleted or renumbered), and If-Modified-Since never returns it.
+        var freshIds = new HashSet<string>(freshAccounts.Select(a => a.AccountId), StringComparer.OrdinalIgnoreCase);
+        var freshCodes = new HashSet<string>(freshAccounts.Where(a => a.Code is not null).Select(a => a.Code!), StringComparer.OrdinalIgnoreCase);
+        var merged = new List<XeroAccount>((previous ?? []).Where(a => freshIds.Contains(a.AccountId) || a.Code is null || !freshCodes.Contains(a.Code)));
         var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < merged.Count; i++)
             index[merged[i].AccountId] = i;
 
-        foreach (var account in fresh)
+        foreach (var account in freshAccounts)
         {
             if (index.TryGetValue(account.AccountId, out var at))
             {
@@ -323,7 +329,7 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
         foreach (var account in merged.Where(a => IsWord(a.Type, "BANK") && IsWord(a.Status, "ACTIVE")))
         {
             if (freshById.TryGetValue(account.AccountId, out var wire))
-                result.Add(new XeroBankAccount(account.Name, Blank(wire.BankAccountNumber), Blank(wire.CurrencyCode)));
+                result.Add(new XeroBankAccount(account.Name, Blank(wire.BankAccountNumber), Blank(wire.CurrencyCode), Blank(wire.BankAccountType)));
             else
                 result.Add(previous?.FirstOrDefault(b => string.Equals(b.Name, account.Name, StringComparison.Ordinal)) ?? new XeroBankAccount(account.Name, null, null));
         }
@@ -384,7 +390,7 @@ public sealed class XeroSettingsReader : IXeroSettingsReader
 /// <param name="AddressLines">The address, one printable line each (street lines, town, region and postcode, country); empty when none.</param>
 /// <param name="Phone">The phone number; <see langword="null"/> when none.</param>
 /// <param name="Website">The website; <see langword="null"/> when none.</param>
-/// <param name="BankAccounts">The active bank accounts, for payment details.</param>
+/// <param name="BankAccounts">The active bank accounts a customer can pay into, for payment details (<see cref="XeroBankAccount.IsPayableTo"/>: never a credit card or PayPal account).</param>
 /// <param name="ReadAtUtc">When Xero was read.</param>
 public sealed record XeroCompanyDetails(
     string Name,
@@ -423,7 +429,7 @@ public sealed record XeroCompanyDetails(
             lines,
             organisation.Phone,
             organisation.Website,
-            organisation.BankAccounts,
+            [.. organisation.BankAccounts.Where(b => b.IsPayableTo)],
             reading.ReadAtUtc);
     }
 

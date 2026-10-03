@@ -281,7 +281,17 @@ public enum XeroPushOutcome
 /// <param name="Reason">Why, for every outcome but <see cref="XeroPushOutcome.Succeeded"/>/<see cref="XeroPushOutcome.NothingToDo"/>; an engineer-readable message (Xero's own <c>ValidationErrors</c> joined, where Xero sent them).</param>
 /// <param name="RetryAfter">How long to wait before the next attempt, from a 429 <c>Retry-After</c> header; <see langword="null"/> to let the engine's own backoff decide.</param>
 /// <param name="Link">The link as saved after a successful write; <see langword="null"/> otherwise.</param>
-public sealed record XeroPushResult(XeroPushOutcome Outcome, string? Reason = null, TimeSpan? RetryAfter = null, XeroLink? Link = null);
+public sealed record XeroPushResult(XeroPushOutcome Outcome, string? Reason = null, TimeSpan? RetryAfter = null, XeroLink? Link = null)
+{
+    /// <summary>
+    /// Whether this <see cref="XeroPushOutcome.Rejected"/> is X5's
+    /// <em>CannotTell</em> verdict: a create whose answer was lost and cannot be
+    /// recovered, so TempestOS cannot tell whether Xero holds the record
+    /// (<c>XeroPurchasingOwnership.CannotTell</c>). The engine keeps it with the
+    /// Failed entry and reports it on <see cref="XeroDocumentSyncStatus.CannotTell"/>.
+    /// </summary>
+    public bool CannotTell { get; init; }
+}
 
 /// <summary>
 /// Sends one kind of <see cref="XeroOperation"/>. One implementation per

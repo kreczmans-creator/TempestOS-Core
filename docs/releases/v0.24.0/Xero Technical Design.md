@@ -430,8 +430,12 @@ longer; Xero answers 400 above 128 [S7]).
 - **Account codes.** Settings holds one sales account code (quotes,
   invoices) and one per `ExpenseCategory` (bills, PO lines), chosen from
   the reading's `ACTIVE` accounts of class `REVENUE` / `EXPENSE`; a code
-  Xero lacks Blocks the push. No defaults are invented: the Demo Company
-  runbook names the codes to pick.
+  Xero lacks Blocks the push. Defaults follow build decision Q10: the UK
+  Demo Company's own codes (sales `200`; Travel and Subsistence `493`;
+  Materials and Other `429`; Subcontract `412`), so the Demo Company works
+  with no set-up. A live organisation whose chart lacks a default is
+  Blocked with the reason until Settings names a code it holds. The
+  per-category choices await Product Owner confirmation (Q10).
 
 ## 9. Security
 
@@ -614,7 +618,7 @@ outside its row.
 | Q7 | When linking to an existing Xero contact, may TempestOS write its customer code into the contact's `ContactNumber` (an identifier, not billing details)? | yes, only when empty (Build Decisions Q7) |
 | Q8 | Quotes and invoices raised before v0.24.0: push them on demand (a *Send to Xero* action), or leave them out? | on demand only |
 | Q9 | Dropping `openid profile email` from the requested scopes (unused) — confirm, subject to the Demo Company check in B1. | drop if the check passes |
-| Q10 | Which Xero accounts for sales and for each expense category (Travel, Subsistence, Materials, Subcontract, Other)? | none — pushes Blocked until chosen |
+| Q10 | Which Xero accounts for sales and for each expense category (Travel, Subsistence, Materials, Subcontract, Other)? | the UK Demo Company's codes: sales `200`; Travel and Subsistence `493`; Materials and Other `429`; Subcontract `412` (§8; Build Decisions Q10); a live organisation lacking one is Blocked until Settings names a code it holds |
 
 ## 14. Sources
 

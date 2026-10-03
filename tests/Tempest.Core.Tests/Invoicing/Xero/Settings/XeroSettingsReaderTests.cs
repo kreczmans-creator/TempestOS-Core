@@ -54,7 +54,7 @@ public sealed class XeroSettingsReaderTests
         Assert.Equal("MA12 3BC", address.PostalCode);
 
         var bank = Assert.Single(organisation.BankAccounts);
-        Assert.Equal(new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP"), bank);
+        Assert.Equal(new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP", "BANK"), bank);
 
         Assert.Equal(SimulatorSeed.UkDemoTaxRates().Count, reading.TaxRates.Count);
         var output2 = Assert.Single(reading.TaxRates, r => r.TaxType == "OUTPUT2");
@@ -298,6 +298,56 @@ public sealed class XeroSettingsReaderTests
         Assert.Empty(rig.Simulator.Violations);
     }
 
+    // Backlog X1-4: the container builds the reader through its public constructor, which used the system clock
+    // rather than the clock the host composed the Xero client with.
+    [Fact]
+    public async Task TheContainersConstructor_StampsAReadingWithTheXeroClientsClock()
+    {
+        await using var rig = await SettingsRig.CreateAsync();
+        rig.Clock.Advance(TimeSpan.FromDays(400));
+        var reader = new XeroSettingsReader(rig.NewApi(), rig.Cache, rig.SecretStore, rig.Audit);
+
+        var reading = (await reader.RefreshAsync()).Value!;
+
+        Assert.Equal(rig.Clock.GetUtcNow(), reading.ReadAtUtc);
+        Assert.Empty(rig.Simulator.Violations);
+    }
+
+    // Backlog X1-3: If-Modified-Since never returns an account deleted in Xero, so a code reused by a new
+    // account left the stale one first in the merge and Check answered its status.
+    [Fact]
+    public void AnIncrementalMerge_DropsAnEarlierAccountWhoseCodeANewAccountNowCarries()
+    {
+        var organisation = new XeroWireOrganisation("org", "Org");
+        var previous = XeroSettingsReader.Build(
+            "t", organisation, [],
+            [
+                new XeroWireAccount("acc-old", "493", "Travel (old)", "OVERHEADS", "EXPENSE", "ARCHIVED"),
+                new XeroWireAccount("acc-200", "200", "Sales", "REVENUE", "REVENUE", "ACTIVE"),
+            ],
+            null, DateTimeOffset.UnixEpoch)!;
+
+        var merged = XeroSettingsReader.Build(
+            "t", organisation, [], [new XeroWireAccount("acc-new", "493", "Travel", "OVERHEADS", "EXPENSE", "ACTIVE")], previous, DateTimeOffset.UnixEpoch.AddDays(1))!;
+
+        Assert.Equal(["acc-200", "acc-new"], merged.Accounts.Select(a => a.AccountId).Order(StringComparer.Ordinal));
+        Assert.Equal("493", XeroAccountCodeMap.Check("493", XeroAccountPurpose.Expense, merged).Code);
+    }
+
+    [Fact]
+    public void Check_PrefersTheActiveAccount_WhenAnArchivedOneSharesItsCode()
+    {
+        var reading = XeroSettingsReader.Build(
+            "t", new XeroWireOrganisation("org", "Org"), [],
+            [
+                new XeroWireAccount("acc-old", "493", "Travel (old)", "OVERHEADS", "EXPENSE", "ARCHIVED"),
+                new XeroWireAccount("acc-new", "493", "Travel", "OVERHEADS", "EXPENSE", "ACTIVE"),
+            ],
+            null, DateTimeOffset.UnixEpoch)!;
+
+        Assert.Equal("493", XeroAccountCodeMap.Check("493", XeroAccountPurpose.Expense, reading).Code);
+    }
+
     [Fact]
     public void Build_PrefersTheStreetAddressAndTheDefaultPhone_AndFallsBackOnPoBoxAndLegalName()
     {
@@ -344,6 +394,25 @@ public sealed class XeroSettingsReaderTests
         Assert.Equal("https://www.example.co.uk", details.Website);
         Assert.Equal("12-34-56 12345678", Assert.Single(details.BankAccounts).BankAccountNumber);
         Assert.Equal("from Xero, read at 2 Oct 2026 09:00", details.SourceNote(TimeZoneInfo.Utc));
+        Assert.Empty(rig.Simulator.Violations);
+    }
+
+    // Backlog U1 minor: X1 keeps each bank account's type, so a credit card is never printed as payment details.
+    [Fact]
+    public async Task ACreditCardAccount_IsReadWithItsType_AndNeverPrintedAsBankDetails()
+    {
+        await using var rig = await SettingsRig.CreateAsync();
+        rig.Simulator.AddBankAccountInXero("091", "Company Credit Card", "4111 1111", "CREDITCARD");
+
+        var reading = (await rig.NewReader().RefreshAsync()).Value!;
+
+        Assert.Contains(new XeroBankAccount("Company Credit Card", "4111 1111", "GBP", "CREDITCARD"), reading.Organisation.BankAccounts);
+        var printed = Assert.Single(XeroCompanyDetails.From(reading).BankAccounts);
+        Assert.Equal("12-34-56 12345678", printed.BankAccountNumber);
+
+        // A reading cached before the type was kept still prints its accounts.
+        var older = reading with { Organisation = reading.Organisation with { BankAccounts = [new XeroBankAccount("Business Bank Account", "12-34-56 12345678", "GBP")] } };
+        Assert.Single(XeroCompanyDetails.From(older).BankAccounts);
         Assert.Empty(rig.Simulator.Violations);
     }
 }

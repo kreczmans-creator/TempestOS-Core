@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Tempest.Core.BusinessOperations.Crm;
 using Tempest.Core.ReferenceData;
 using Tempest.Desktop.Views;
@@ -123,6 +124,39 @@ public sealed class ContactLinkLoadRaceTests
         await kit.WaitAsync(() => Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible && !view.IsXeroBusy);
         Assert.Equal("ACME1", view.EditingRecordId);
 
+        control.Intercept = null;
+        window.Close();
+    }
+
+    // Backlog U2: a found record's look-up that ends after a later one was put on the form is stale and never shown.
+    [AvaloniaFact]
+    public async Task AFoundRecordLookUpEndingAfterALaterOne_NeverReplacesTheLaterOrganisationOnTheForm()
+    {
+        await using var kit = await ContactLinkTestKit.CreateAsync();
+        await kit.AddOrganisationAsync();
+        await kit.AddOrganisationAsync(reference: "BRUNL", name: "Brunel Fabrication Ltd", customerCode: "BRUNL");
+        await kit.AddOrganisationAsync(reference: "CARLO", name: "Carlow Castings Ltd", customerCode: "CARLO");
+        var (organisations, control) = InterceptingProxy<IOrganisationCatalog>.Wrap(kit.Organisations);
+        var (window, view) = await ShowAsync(kit, organisations);
+        await view.SelectAsync("ACME1");
+        await kit.WaitAsync(() => Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible && !view.IsXeroBusy);
+
+        // BRUNL is opened with its look-up held; CARLO is opened and loads first.
+        var gate = HoldBrunel(kit, control, out var entered);
+        await view.SelectAsync("BRUNL");
+        await kit.WaitAsync(() => entered());
+        await view.SelectAsync("CARLO");
+        await kit.WaitAsync(() => view.EditingRecordId == "CARLO");
+
+        // BRUNL's answer arrives last: the form keeps CARLO, as the list shows, and CARLO's section is rendered.
+        gate.SetResult();
+        await kit.WaitAsync(() => Button(view, CustomersSuppliersView.LinkToXeroName).IsEffectivelyVisible && !view.IsXeroBusy);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.Equal("CARLO", view.EditingRecordId);
+        var list = view.GetLogicalDescendants().OfType<Avalonia.Controls.ListBox>().First(l => l.Items.OfType<Avalonia.Controls.ListBoxItem>().Any(i => Equals(i.Tag, "BRUNL")));
+        Assert.Equal("CARLO", (list.SelectedItem as Avalonia.Controls.ListBoxItem)?.Tag);
+        Assert.Contains(view.GetLogicalDescendants().OfType<Avalonia.Controls.TextBlock>(), t => t.Text == "Edit Carlow Castings Ltd");
+        Assert.DoesNotContain(view.GetLogicalDescendants().OfType<Avalonia.Controls.TextBlock>(), t => t.Text == "Edit Brunel Fabrication Ltd");
         control.Intercept = null;
         window.Close();
     }

@@ -396,7 +396,7 @@ public static class XeroBadgeText
                 return deletedInXero ? Make(Deleted, XeroBadgeTone.Neutral) : Make(Voided, XeroBadgeTone.Neutral);
 
             case XeroSyncBadge.Failed:
-                if (IsCannotTell(kind, reason))
+                if (status.CannotTell)
                     return Make(CannotTell, XeroBadgeTone.Attention);
                 if (deletedInXero)
                     return Make(Deleted, XeroBadgeTone.Attention);
@@ -412,43 +412,6 @@ public static class XeroBadgeText
 
     /// <summary>Xero's status word for a record deleted there (<see cref="Tempest.Core.Invoicing.Xero.XeroConnector.DeletedStatus"/>).</summary>
     private const string XeroConnectorDeletedStatus = Tempest.Core.Invoicing.Xero.XeroConnector.DeletedStatus;
-
-    /// <summary>
-    /// Whether <paramref name="reason"/> is X5's own <em>CannotTell</em>
-    /// refusal for a purchase order or bill
-    /// (<see cref="XeroPurchasingOwnership.CannotTell"/>). X6's status carries
-    /// no typed verdict, so the refusal is recognised by the opening X5's own
-    /// producer writes — derived from that producer at run time, never copied
-    /// here, so X5 rewording it cannot silently break the badge — and never by
-    /// searching for words such as "cannot tell" that any other reason (Xero's
-    /// own validation text, say) may contain.
-    /// </summary>
-    private static bool IsCannotTell(XeroDocumentKind kind, string? reason)
-    {
-        if (reason is null)
-            return false;
-
-        var prefix = kind switch
-        {
-            XeroDocumentKind.PurchaseOrder => CannotTellOrderPrefix.Value,
-            XeroDocumentKind.ExpenseBill => CannotTellBillPrefix.Value,
-            _ => null,
-        };
-        return prefix is not null && reason.StartsWith(prefix, StringComparison.Ordinal);
-    }
-
-    private static readonly Lazy<string?> CannotTellOrderPrefix = new(() => CannotTellPrefix("Purchase order", "order"));
-
-    private static readonly Lazy<string?> CannotTellBillPrefix = new(() => CannotTellPrefix("Bill", "expense"));
-
-    /// <summary>The words X5's <em>CannotTell</em> reason opens with, up to the record's number.</summary>
-    private static string? CannotTellPrefix(string noun, string document)
-    {
-        const string marker = "\u0001";
-        var reason = XeroPurchasingOwnership.CannotTell(noun, document, marker, problem: null, sourceGone: false).Reason ?? string.Empty;
-        var at = reason.IndexOf(marker, StringComparison.Ordinal);
-        return at > 0 ? reason[..at] : null;
-    }
 }
 
 /// <summary>

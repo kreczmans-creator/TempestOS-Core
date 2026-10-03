@@ -452,8 +452,10 @@ public sealed class XeroContactLinker : IXeroContactLinker
 
             // The answer was lost, or Xero could not be reached: Xero may
             // still have made the contact. Look once more before reporting.
-            // The look-up is by the number in the body actually sent.
-            var lookupNumber = sentNumber ?? contactNumber;
+            // The look-up is by the number in the body actually sent: a resent
+            // body without one is not looked up by today's customer code,
+            // which it never carried (that code was already checked above).
+            var lookupNumber = sentNumber;
             if (created.Outcome is ConnectorOutcome.Unknown or ConnectorOutcome.Unavailable && lookupNumber is not null)
             {
                 var after = await ReconcileByContactNumberAsync(tenantId, document, organisation, lookupNumber, cancellationToken).ConfigureAwait(false);
@@ -496,6 +498,9 @@ public sealed class XeroContactLinker : IXeroContactLinker
         if (link is null || string.IsNullOrWhiteSpace(link.XeroId))
             return ConnectorResult<XeroContactDetails>.Rejected($"'{organisationReference.Trim()}' is not linked to a Xero contact.");
 
+        // The refresh is stamped with the time the read started, so an
+        // overlapping later read or relink can be told apart below.
+        var readStartedAt = _time.GetUtcNow();
         var read = await _api.GetContactAsync(link.XeroId, cancellationToken).ConfigureAwait(false);
         if (read.Outcome != ConnectorOutcome.Ok)
         {
@@ -504,27 +509,30 @@ public sealed class XeroContactLinker : IXeroContactLinker
                 : Fail<XeroWireContact, XeroContactDetails>(read);
         }
 
-        var now = _time.GetUtcNow();
-        var details = ToDetails(read.Value!, link.XeroId, now);
+        var details = ToDetails(read.Value!, link.XeroId, _time.GetUtcNow());
 
         // The GET ran outside the write gate: the link may have been
         // unlinked, or relinked to another contact, meanwhile. Stamp the
         // refresh onto the link as it is now, and only when it still points
         // at the contact just read; otherwise save nothing (an unlink must
-        // not be undone, and the store refuses a changed Xero id).
+        // not be undone, and the store refuses a changed Xero id). Nor when
+        // the link was made again, or refreshed by a read that started later,
+        // after this read began: its fields are newer than this answer.
         await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var current = await FindLinkAsync(tenantId, organisationReference, cancellationToken).ConfigureAwait(false);
             if (current is not null
                 && string.Equals(current.XeroId, link.XeroId, StringComparison.OrdinalIgnoreCase)
-                && !PersistenceXeroLinkStore.IsFromNewerVersion(current))
+                && !PersistenceXeroLinkStore.IsFromNewerVersion(current)
+                && current.LinkedAtUtc <= readStartedAt
+                && !(current.LastReadAtUtc > readStartedAt))
             {
                 var refreshed = current with
                 {
                     XeroNumber = Blank(read.Value!.ContactNumber),
                     LastKnownXeroStatus = StatusOf(read.Value!),
-                    LastReadAtUtc = now,
+                    LastReadAtUtc = readStartedAt,
                 };
                 await _links.SaveAsync(refreshed, cancellationToken).ConfigureAwait(false);
             }

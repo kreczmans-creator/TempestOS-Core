@@ -205,6 +205,38 @@ public sealed class XeroSyncPacingTests
         Assert.Empty(kit.AuditRows(XeroSyncService.AuditDeferred));
     }
 
+    // Backlog X6-1: a 429 whose Retry-After (+1 s) fits inside the nearly-spent-minute rule's pause was taken for
+    // that rule alone, so it was backed off as a 5xx and its pause was not persisted across a restart.
+    [Fact]
+    public async Task A429OnAnInvoiceWrite_WithAShortRetryAfter_WhileTheMinuteIsNearlySpent_IsAPersistedPause()
+    {
+        using var kit = await EngineTestKit.CreateAsync();
+        var handler = new InvoiceCreateThroughX4Mapping(kit.Api);
+        var parts = new XeroSyncParts(kit.Links, kit.Outbox, kit.Secrets, [], [(XeroDocumentKind.Invoice, (IXeroPushHandler)handler)]);
+        var engine = new XeroSyncService(
+            parts, kit.Outbox, kit.Store, rateLimiter: kit.RateLimiter, audit: kit.Audit, timeProvider: kit.Clock, options: kit.Options);
+        await kit.Outbox.EnqueueAsync(XeroOperation.PushInvoiceDraft, XeroDocumentRef.For(XeroDocumentKind.Invoice, Guid.NewGuid()), "h1", null);
+        kit.Hop.MinuteRemaining = 0;
+        kit.Simulator.Inject(new XeroFault(XeroFaultKind.RateLimitedMinute, "Invoices", RetryAfter: TimeSpan.FromSeconds(30)));
+
+        var start = kit.Clock.GetUtcNow();
+        var report = await engine.RunCycleAsync();
+
+        Assert.True(kit.RateLimiter.PauseCameFromTooManyRequests);
+        var expected = start + TimeSpan.FromSeconds(31);
+        Assert.Equal(expected, report.Drain.ResumeNotBeforeUtc);
+        Assert.Equal(expected, await ReadPausedUntilAsync(kit.Store));
+        Assert.Single(kit.AuditRows(XeroSyncService.AuditRateLimited));
+        Assert.Empty(kit.AuditRows(XeroSyncService.AuditDeferred));
+
+        // Restarted without the limiter's memory: still paused until Xero said.
+        var restarted = new XeroSyncService(parts, kit.Outbox, kit.Store, timeProvider: kit.Clock, options: kit.Options);
+        kit.Clock.Advance(TimeSpan.FromSeconds(20));
+        Assert.Equal(0, (await restarted.RunCycleAsync()).Drain.Attempted);
+        Assert.Equal(1, handler.Calls);
+        Assert.Empty(kit.Simulator.Violations);
+    }
+
     // ------------------------------------------------------------ recovery first
 
     [Fact]

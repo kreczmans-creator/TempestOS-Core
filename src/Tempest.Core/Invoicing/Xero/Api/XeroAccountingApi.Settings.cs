@@ -117,6 +117,7 @@ public sealed record XeroWireAccountsEnvelope([property: JsonPropertyName("Accou
 /// <param name="BankAccountNumber">For a bank account, its number as the organisation entered it.</param>
 /// <param name="CurrencyCode">For a bank account, its currency.</param>
 /// <param name="UpdatedDateUTC">When it last changed (Microsoft JSON date).</param>
+/// <param name="BankAccountType">For a bank account, Xero's kind of account: <c>BANK</c>, <c>CREDITCARD</c> or <c>PAYPAL</c>.</param>
 public sealed record XeroWireAccount(
     [property: JsonPropertyName("AccountID")] string? AccountID,
     [property: JsonPropertyName("Code")] string? Code,
@@ -127,7 +128,8 @@ public sealed record XeroWireAccount(
     [property: JsonPropertyName("TaxType")] string? TaxType = null,
     [property: JsonPropertyName("BankAccountNumber")] string? BankAccountNumber = null,
     [property: JsonPropertyName("CurrencyCode")] string? CurrencyCode = null,
-    [property: JsonPropertyName("UpdatedDateUTC")] string? UpdatedDateUTC = null);
+    [property: JsonPropertyName("UpdatedDateUTC")] string? UpdatedDateUTC = null,
+    [property: JsonPropertyName("BankAccountType")] string? BankAccountType = null);
 
 // `v0.24.0` task X1: the settings resource (§3 "Company (X1)", §8).
 public sealed partial class XeroAccountingApi

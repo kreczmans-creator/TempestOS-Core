@@ -55,6 +55,8 @@ public sealed class XeroPurchasingOwnershipTests
         Assert.DoesNotContain("then Retry", result.Reason!, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Retrying will not change this", result.Reason!, StringComparison.Ordinal);
         Assert.Contains("PO-2026-001", result.Reason!, StringComparison.Ordinal);
+        Assert.True(result.CannotTell);
+        Assert.False(XeroPurchasingOwnership.DeletedInXero("Bill", "expense", "EXP-1", "DELETED", "Send it again.", sourceGone).CannotTell);
     }
 
     [Fact]

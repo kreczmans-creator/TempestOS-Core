@@ -159,6 +159,16 @@ internal sealed partial class XeroApiSimulator
         }
     }
 
+    /// <summary>A bank account is added in Xero by hand (<c>Type</c> <c>BANK</c>; a credit card is <c>BankAccountType</c> <c>CREDITCARD</c>), in GBP.</summary>
+    public void AddBankAccountInXero(string code, string name, string bankAccountNumber, string bankAccountType)
+    {
+        lock (_sync)
+        {
+            _accounts.Add(new SimulatedAccount(
+                SimulatorSeed.DeterministicId("account", code), code, name, "BANK", "ASSET", "ACTIVE", null, bankAccountNumber, Time.GetUtcNow(), bankAccountType));
+        }
+    }
+
     private static DocumentKind KindOf(string resource) =>
         Kinds.TryGetValue(resource, out var kind) ? kind : throw new ArgumentException($"'{resource}' is not Contacts, Quotes, Invoices or PurchaseOrders.", nameof(resource));
 

@@ -228,6 +228,9 @@ public sealed class XeroWriteSafetyHandlerTests
     [InlineData("POST", "Invoices/abc%5CEmail")]
     [InlineData("PUT", "Invoices/abc%2femail")]
     [InlineData("GET", "Invoices/abc%2FEmail")]
+    [InlineData("POST", "Invoices/abc%252FEmail")]
+    [InlineData("GET", "Invoices/abc%252FEmail")]
+    [InlineData("GET", "Invoices/abc%25252FEmail")]
     public async Task AnEmailSegmentHiddenBehindAnEscapedSeparator_IsBlocked(string method, string path)
     {
         var rig = Rig.Demo();
@@ -243,6 +246,9 @@ public sealed class XeroWriteSafetyHandlerTests
     [InlineData("Invoices/abc%2Fdef")]
     [InlineData("Invoices/abc%5Cdef")]
     [InlineData("Invoices%2Finv-1")]
+    // Backlog B1: escaped twice, the segment still holds '%2F' after one unescape.
+    [InlineData("Invoices/abc%252Fdef")]
+    [InlineData("Invoices/inv%2541")]
     public async Task AWriteWithAnEscapedSeparatorInASegment_IsBlocked(string path)
     {
         var rig = Rig.Demo();
@@ -339,6 +345,8 @@ public sealed class XeroWriteSafetyHandlerTests
     [InlineData("PUT", "Quotes/q-1/Attachments/P0012-Q-001.pdf")]
     [InlineData("POST", "Invoices/inv-1/Attachments/INV-1.pdf?IncludeOnline=false")]
     [InlineData("PUT", "PurchaseOrders/po-1/Attachments/PO%201.pdf")]
+    // Backlog B1: a '%' that escapes nothing after unescaping is part of the file name, not a second escape.
+    [InlineData("PUT", "Invoices/inv-1/Attachments/50%25%20off.jpg")]
     public async Task AnAttachmentUpload_Passes(string method, string path)
     {
         var rig = Rig.Demo();
@@ -349,6 +357,26 @@ public sealed class XeroWriteSafetyHandlerTests
         var response = await rig.Client.SendAsync(request);
 
         AssertPassed(rig, response);
+    }
+
+    // C1 verifier defect 3: a file name holding a literal escape ("Invoice%20A.pdf") is attached under a name the
+    // double-escape check accepts, not refused; a lone '%' is kept as it is.
+    [Theory]
+    [InlineData("Invoice%20A.pdf", "Invoice_20A.pdf")]
+    [InlineData("Receipt%252F.jpg", "Receipt_252F.jpg")]
+    [InlineData("50% off.jpg", "50% off.jpg")]
+    [InlineData("INV 7.pdf", "INV 7.pdf")]
+    public async Task AnAttachmentWhoseFileNameHoldsAnEscape_PassesUnderItsXeroFileName(string fileName, string sentAs)
+    {
+        var rig = Rig.Demo();
+        using var content = new ByteArrayContent([0x25, 0x50, 0x44, 0x46]);
+        content.Headers.ContentType = new("application/pdf");
+        using var request = rig.Request(HttpMethod.Put, XeroAccountingApi.AttachmentsPath(XeroAttachableResource.Invoices, "inv-1", fileName), content);
+
+        var response = await rig.Client.SendAsync(request);
+
+        AssertPassed(rig, response);
+        Assert.Equal(sentAs, Uri.UnescapeDataString(Assert.Single(rig.Network.Received).Request.RequestUri!.Segments[^1]));
     }
 
     [Fact]

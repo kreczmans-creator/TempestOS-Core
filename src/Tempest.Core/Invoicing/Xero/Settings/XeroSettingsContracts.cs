@@ -49,7 +49,15 @@ public sealed record XeroOrganisationProfile(
 /// <param name="Name">The account's own name.</param>
 /// <param name="BankAccountNumber">Xero's <c>BankAccountNumber</c>, verbatim (for a UK account, sort code and number as the organisation entered them).</param>
 /// <param name="CurrencyCode">The account's currency.</param>
-public sealed record XeroBankAccount(string Name, string? BankAccountNumber, string? CurrencyCode);
+/// <param name="BankAccountType">Xero's <c>BankAccountType</c>, verbatim (<c>"BANK"</c>, <c>"CREDITCARD"</c>, <c>"PAYPAL"</c>); <see langword="null"/> when not known (a reading cached before it was kept). Only a <c>BANK</c> one (or one of unknown type) is printed as payment details.</param>
+public sealed record XeroBankAccount(string Name, string? BankAccountNumber, string? CurrencyCode, string? BankAccountType = null)
+{
+    /// <summary>Xero's <c>BankAccountType</c> for an ordinary bank account.</summary>
+    public const string BankType = "BANK";
+
+    /// <summary>Whether this is an account a customer can be asked to pay into: a <c>BANK</c> one, or one cached before its type was kept — never a credit card or PayPal account.</summary>
+    public bool IsPayableTo => BankAccountType is null || string.Equals(BankAccountType.Trim(), BankType, StringComparison.OrdinalIgnoreCase);
+}
 
 /// <summary>One tax rate, from <c>GET /TaxRates</c>.</summary>
 /// <param name="TaxType">The code a line item carries (for example <c>"OUTPUT2"</c>, <c>"INPUT2"</c>).</param>

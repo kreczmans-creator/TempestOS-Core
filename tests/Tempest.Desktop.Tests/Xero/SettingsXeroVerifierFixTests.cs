@@ -43,7 +43,7 @@ public sealed class SettingsXeroVerifierFixTests
 
         await fixture.Section.ReauthoriseAsync();
 
-        Assert.Equal("Xero re-authorised.", Text(fixture.Section, "Xero status"));
+        Assert.Equal(XeroSettingsSection.ReauthorisedIntoAnotherOrganisationStatus, Text(fixture.Section, "Xero status"));
         Assert.Equal("Organisation: not read yet.", Text(fixture.Section, "Xero organisation"));
         Assert.Equal("Demo Company: unknown until Xero is read.", Text(fixture.Section, "Xero Demo Company"));
         Assert.Null(fixture.Identity.XeroCompanyDetails);
@@ -57,7 +57,7 @@ public sealed class SettingsXeroVerifierFixTests
     public async Task ReauthoriseIntoAnotherOrganisation_WithAReadingForIt_ShowsThatOrganisation()
     {
         var reader = new FakeXeroSettingsReader { Cached = XeroTestReadings.Demo() };
-        var authoriser = new FakeAuthoriser { OnAuthorise = () => reader.Cached = XeroTestReadings.Live() };
+        var authoriser = new FakeAuthoriser { OnAuthorise = () => reader.Cached = XeroTestReadings.Live() with { TenantId = "tenant-2" } };
         await using var fixture = await SectionFixture.StartAsync(reader, services: s => new XeroSettingsSectionServices
         {
             Reader = s.Reader,

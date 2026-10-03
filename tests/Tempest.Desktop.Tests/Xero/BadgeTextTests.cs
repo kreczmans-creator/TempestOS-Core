@@ -10,8 +10,9 @@ namespace Tempest.Desktop.Tests.Xero;
 /// </summary>
 public sealed class BadgeTextTests
 {
-    private static XeroDocumentSyncStatus Status(XeroSyncBadge badge, string? reason = null, string? xeroStatus = null, bool canSendAgain = false, Guid? retry = null) =>
-        new(new XeroSyncStatus(badge, reason, "N-1", xeroStatus, null, retry), XeroSyncService.LabelFor(badge), retry is not null, canSendAgain);
+    private static XeroDocumentSyncStatus Status(
+        XeroSyncBadge badge, string? reason = null, string? xeroStatus = null, bool canSendAgain = false, Guid? retry = null, bool cannotTell = false) =>
+        new(new XeroSyncStatus(badge, reason, "N-1", xeroStatus, null, retry), XeroSyncService.LabelFor(badge), retry is not null, canSendAgain) { CannotTell = cannotTell };
 
     [Theory]
     [InlineData(XeroDocumentKind.Quote)]
@@ -92,10 +93,22 @@ public sealed class BadgeTextTests
     public void CannotTell_IsItsOwnBadge_FromX5sOwnReason()
     {
         var reason = XeroPurchasingOwnership.CannotTell("Purchase order", "order", "PO-2026-001", "key expired", sourceGone: false).Reason;
-        var shown = XeroBadgeText.Describe(XeroDocumentKind.PurchaseOrder, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid()));
+        var shown = XeroBadgeText.Describe(XeroDocumentKind.PurchaseOrder, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid(), cannotTell: true));
 
         Assert.Equal("Can't tell", shown.Text);
         Assert.Equal(reason, shown.Detail);
+    }
+
+    // Backlog U3 open item: X6's status now carries the verdict typed, so the badge reads it and never the reason's words.
+    [Fact]
+    public void CannotTell_IsReadFromX6sTypedVerdict_NotFromTheReasonsWords()
+    {
+        var reason = XeroPurchasingOwnership.CannotTell("Purchase order", "order", "PO-2026-001", "key expired", sourceGone: false).Reason;
+
+        Assert.Equal(XeroBadgeText.Failed, XeroBadgeText.Describe(XeroDocumentKind.PurchaseOrder, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid())).Text);
+        Assert.Equal(
+            XeroBadgeText.CannotTell,
+            XeroBadgeText.Describe(XeroDocumentKind.PurchaseOrder, Status(XeroSyncBadge.Failed, "Reworded by a later X5.", retry: Guid.NewGuid(), cannotTell: true)).Text);
     }
 
     [Fact]
@@ -123,7 +136,7 @@ public sealed class BadgeTextTests
     {
         var reason = XeroPurchasingOwnership.CannotTell("Bill", "expense", "SUP-778", null, sourceGone: true).Reason;
 
-        Assert.Equal(XeroBadgeText.CannotTell, XeroBadgeText.Describe(XeroDocumentKind.ExpenseBill, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid())).Text);
+        Assert.Equal(XeroBadgeText.CannotTell, XeroBadgeText.Describe(XeroDocumentKind.ExpenseBill, Status(XeroSyncBadge.Failed, reason, retry: Guid.NewGuid(), cannotTell: true)).Text);
     }
 
     [Theory]

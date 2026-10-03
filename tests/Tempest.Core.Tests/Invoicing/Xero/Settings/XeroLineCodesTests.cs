@@ -4,6 +4,7 @@ using Tempest.Core.BusinessGovernance;
 using Tempest.Core.Expenses;
 using Tempest.Core.Invoicing;
 using Tempest.Core.Invoicing.Xero.Settings;
+using Tempest.Core.Settings;
 using Tempest.Core.Tests.Invoicing.Xero.Api;
 using Tempest.Core.Tests.Invoicing.Xero.Simulator;
 
@@ -247,5 +248,70 @@ public sealed class XeroLineCodesTests
         Assert.False(XeroAccountCodeMap.Check("201", XeroAccountPurpose.Sales, reading).IsBlocked);
         Assert.True(XeroAccountCodeMap.Check("201", XeroAccountPurpose.Expense, reading).IsBlocked);
         Assert.False(XeroAccountCodeMap.Check("401", XeroAccountPurpose.Expense, reading).IsBlocked);
+    }
+
+    // Backlog X1-5: the "ensured" flag was set before the definitions were registered, so a call racing the
+    // first one read before registration and answered the default instead of the user's choice.
+    [Fact]
+    public async Task ACallRacingTheFirstOne_StillAnswersTheUsersChoice_NotTheDefault()
+    {
+        await using var rig = await SettingsRig.CreateAsync();
+        var reader = rig.NewReader();
+        await reader.RefreshAsync();
+
+        var accountSettings = new GatedSettingsProvider(new() { [XeroAccountCodeMap.SalesSettingKey] = "260" });
+        var accounts = new XeroAccountCodeMap(reader, accountSettings);
+        Assert.Equal("260", await RaceAsync(accountSettings, async () => (await accounts.ResolveSalesAsync()).Code));
+
+        var taxSettings = new GatedSettingsProvider(new() { [XeroTaxTypeResolver.SettingKey(VatTaxDirection.Sales, VatRate.Standard)] = "ZERORATEDOUTPUT" });
+        var taxTypes = new XeroTaxTypeResolver(reader, taxSettings);
+        Assert.Equal("ZERORATEDOUTPUT", await RaceAsync(taxSettings, async () => (await taxTypes.ResolveAsync(VatRate.Standard, VatTaxDirection.Sales)).Code));
+
+        Assert.Empty(rig.Simulator.Violations);
+    }
+
+    /// <summary>Starts a first resolution that stalls inside its first definition registration, then answers a second one made meanwhile.</summary>
+    private static async Task<string?> RaceAsync(GatedSettingsProvider settings, Func<Task<string?>> resolve)
+    {
+        var first = Task.Run(resolve);
+        Assert.True(settings.FirstRegistrationEntered.Wait(TimeSpan.FromSeconds(10)));
+
+        var second = await resolve();
+
+        settings.ReleaseFirstRegistration.Set();
+        await first;
+        return second;
+    }
+
+    /// <summary>Settings whose first definition registration waits for the test; values are held for keys not yet defined, as the persisted store does.</summary>
+    private sealed class GatedSettingsProvider(Dictionary<string, string> values) : ISettingsProvider
+    {
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, ISettingDefinition> _definitions = new(StringComparer.Ordinal);
+        private int _registrations;
+
+        public ManualResetEventSlim FirstRegistrationEntered { get; } = new();
+
+        public ManualResetEventSlim ReleaseFirstRegistration { get; } = new();
+
+        public IReadOnlyCollection<ISettingDefinition> Definitions => [.. _definitions.Values];
+
+        public void RegisterDefinition(ISettingDefinition definition)
+        {
+            if (Interlocked.Increment(ref _registrations) == 1)
+            {
+                FirstRegistrationEntered.Set();
+                ReleaseFirstRegistration.Wait(TimeSpan.FromSeconds(10));
+            }
+
+            if (!_definitions.TryAdd(definition.Key, definition))
+                throw new DuplicateSettingDefinitionException(definition.Key);
+        }
+
+        public Task<string> GetValueAsync(string key, CancellationToken cancellationToken = default) =>
+            _definitions.TryGetValue(key, out var definition)
+                ? Task.FromResult(values.TryGetValue(key, out var value) ? value : definition.DefaultValue)
+                : throw new SettingNotFoundException(key);
+
+        public Task SetValueAsync(string key, string value, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

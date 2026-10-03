@@ -64,6 +64,33 @@ public sealed class XeroContactLinkerRound3Tests
         Assert.Null(now.LastReadAtUtc);
     }
 
+    // Backlog X2-3: a read overlapping an unlink and relink to the same contact overwrote the newer link's fields.
+    [Fact]
+    public async Task ReadDetails_WhileTheOrganisationIsRelinkedToTheSameContact_KeepsTheNewerLinksFields()
+    {
+        using var kit = await ContactLinkerTestKit.CreateAsync(new XeroContactLinkerOptions { WriteContactNumberWhenEmpty = false });
+        await kit.AddOrganisationAsync();
+        var id = kit.Simulator.SeedContact("Acme Engineering Ltd");
+        var original = (await kit.Linker.LinkExistingAsync("ACME1", id)).Value!;
+
+        Task<ConnectorResult<XeroContactDetails>> read;
+        using (kit.Simulator.HoldRequests())
+        {
+            read = kit.Linker.ReadDetailsAsync("ACME1");
+            await WaitForInFlightAsync(kit);
+            kit.Clock.Advance(TimeSpan.FromMinutes(1));
+            Assert.True(await kit.Linker.UnlinkAsync("ACME1"));
+            await kit.Links.SaveAsync(original with { LinkedAtUtc = kit.Clock.GetUtcNow(), XeroNumber = "RELINKED", LastReadAtUtc = null });
+        }
+
+        Assert.Equal(ConnectorOutcome.Ok, (await read).Outcome);
+        var now = await kit.Linker.FindLinkAsync("ACME1");
+        Assert.Equal(id, now!.XeroId);
+        Assert.Equal("RELINKED", now.XeroNumber);
+        Assert.Null(now.LastReadAtUtc);
+        kit.AssertNoViolations();
+    }
+
     [Fact]
     public async Task ReadDetails_WithNoRace_StillRefreshesTheLink()
     {
@@ -108,6 +135,30 @@ public sealed class XeroContactLinkerRound3Tests
         Assert.Equal((ConnectorOutcome.Ok, XeroContactLinker.LinkedByReconciled), (retry.Outcome, retry.Value!.LinkedBy));
         Assert.Equal(made, retry.Value.XeroId);
         Assert.Empty(kit.WritesSince(mark));
+        Assert.Single(kit.LiveContacts);
+        kit.AssertNoViolations();
+    }
+
+    // Backlog X2-2: the look-up after an uncertain PUT used today's customer code when the resent body carried none.
+    [Fact]
+    public async Task Create_ResendingABodyWithNoContactNumber_LooksUpNothingAfterAnUncertainPut()
+    {
+        using var kit = await ContactLinkerTestKit.CreateAsync();
+        // A reference too long for ContactNumber and no customer code: the first body carries no ContactNumber.
+        var reference = "ACME-" + new string('7', 50);
+        var organisation = await kit.AddOrganisationAsync(reference: reference, customerCode: null);
+        kit.Lost.LoseWrites = 1;
+        Assert.NotEqual(ConnectorOutcome.Ok, (await kit.Linker.CreateAsync(reference)).Outcome);
+
+        await kit.Organisations.ReviseAsync(reference, organisation with { CustomerCode = "ACME2" }, OperationsFixtures.Verified(), "Code added.");
+        kit.Lost.LoseWrites = 1;
+        var retry = await kit.NewLinker().CreateAsync(reference);
+
+        Assert.NotEqual(ConnectorOutcome.Ok, retry.Outcome);
+        var requests = kit.Simulator.Requests.ToList();
+        var lastPut = requests.FindLastIndex(r => r.Method == HttpMethod.Put);
+        Assert.Null(requests[lastPut].JsonBody!["Contacts"]![0]!["ContactNumber"]);
+        Assert.DoesNotContain(requests.Skip(lastPut + 1), r => r.Method == HttpMethod.Get);
         Assert.Single(kit.LiveContacts);
         kit.AssertNoViolations();
     }

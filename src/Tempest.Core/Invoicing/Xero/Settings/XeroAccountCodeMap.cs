@@ -138,7 +138,11 @@ public sealed class XeroAccountCodeMap
             return XeroCodeResolution.Blocked("Xero's chart of accounts has not been read yet; refresh Xero in Settings.");
 
         var trimmed = code.Trim();
-        var account = reading.Accounts.FirstOrDefault(a => string.Equals(a.Code, trimmed, StringComparison.OrdinalIgnoreCase));
+        // Xero can hold an archived account beside an active one that reuses its code: the active one is the one a line posts to.
+        var account = reading.Accounts
+            .Where(a => string.Equals(a.Code, trimmed, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(a => string.Equals(a.Status, "ACTIVE", StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
         if (account is null)
             return XeroCodeResolution.Blocked($"Xero has no account {trimmed}; choose a {what} account Xero holds in Settings.");
 
@@ -189,8 +193,13 @@ public sealed class XeroAccountCodeMap
 
     private async Task<string> ReadChoiceAsync(string key, string fallback, CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _definitionsEnsured, 1) == 0)
+        // Marked only once the definitions exist: a call racing the first one ensures them itself
+        // (idempotent) rather than reading before they are registered and answering the default.
+        if (Volatile.Read(ref _definitionsEnsured) == 0)
+        {
             EnsureDefinitions(_settings);
+            Volatile.Write(ref _definitionsEnsured, 1);
+        }
 
         try
         {

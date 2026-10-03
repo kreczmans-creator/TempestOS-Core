@@ -335,9 +335,10 @@ public sealed class ExpenseEntryPrompt : Border
     /// </summary>
     /// <param name="expenseId">The recorded expense.</param>
     /// <param name="input">What the prompt collected.</param>
+    /// <param name="supplierRecorded">Whether the supplier details were already recorded with the expense, in its first revision (<c>RecordExpenseCommand</c>'s supplier overload); then only the receipt is attached.</param>
     /// <param name="cancellationToken">Cancels the save.</param>
     /// <returns><see langword="null"/> when saved (or nothing to save); otherwise why the details were not saved, to show the person.</returns>
-    public async Task<string?> ApplyPurchasingDetailsAsync(Guid expenseId, ExpenseEntryInput input, CancellationToken cancellationToken = default)
+    public async Task<string?> ApplyPurchasingDetailsAsync(Guid expenseId, ExpenseEntryInput input, bool supplierRecorded = false, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(input);
 
@@ -345,7 +346,7 @@ public sealed class ExpenseEntryPrompt : Border
             return null;
 
         var notes = new List<string>(2);
-        if (input.SupplierOrganisationId is not null || input.SupplierInvoiceNumber is not null)
+        if (!supplierRecorded && (input.SupplierOrganisationId is not null || input.SupplierInvoiceNumber is not null))
         {
             if (ExpenseService is null)
             {

@@ -32,6 +32,20 @@ public interface IExpenseService
         Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
         Guid? sourcePurchaseOrderId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Records an expense exactly as <see cref="RecordAsync(Guid, DateOnly, string, ExpenseCategory, Money, Money, bool, Guid?, CancellationToken)"/>
+    /// does, carrying its supplier and the supplier's own invoice number
+    /// (`v0.24.0` X5, build decisions Q3, Q4) in the expense's <em>first</em>
+    /// revision too — so no reader (a sync observer planning its Xero bill, a
+    /// crash straight after) ever sees it without them and sends its bill
+    /// against "General expenses" as <c>EXP-{id}</c> first. Blank values are
+    /// "none", as for <see cref="SetSupplierAsync"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="projectId"/> does not identify a live project.</exception>
+    Task<ExpenseResult> RecordAsync(
+        Guid projectId, DateOnly date, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,
+        Guid? sourcePurchaseOrderId, string? supplierOrganisationId, string? supplierInvoiceNumber, CancellationToken cancellationToken = default);
+
     /// <summary>Amends <paramref name="expenseId"/>'s own description, category, amounts and billable flag. Refused, as a result, once the expense carries an <see cref="ProjectExpense.InvoicedBy"/> link.</summary>
     Task<ExpenseResult> AmendAsync(
         Guid expenseId, string description, ExpenseCategory category, Money netAmount, Money vatAmount, bool billable,

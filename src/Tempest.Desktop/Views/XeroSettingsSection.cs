@@ -144,6 +144,14 @@ public sealed class XeroSettingsSection : UserControl
     /// <summary>The audit action recorded when <em>Allow live organisation</em> changes (D7), with <c>Subject</c>, <c>OldValue</c> and <c>NewValue</c> ("On"/"Off").</summary>
     public const string AllowLiveOrganisationChangedAction = "xero.settings.allow-live-organisation.changed";
 
+    /// <summary>The status after <em>Re-authorise</em> signed in to another organisation: its pickers were reloaded, so choices not yet saved were reset.</summary>
+    public const string ReauthorisedIntoAnotherOrganisationStatus =
+        "Xero re-authorised for another organisation. Its tax types and accounts were reloaded; any choices not yet saved were reset.";
+
+    /// <summary>The status after a Save while the section had not finished loading: <em>IncludeOnline</em> and <em>Allow live organisation</em> were not saved (the stored values are kept).</summary>
+    public const string SwitchesNotSavedStatus =
+        "Include online and Allow live organisation were not saved: the Xero section did not finish loading. Reopen Settings and save again.";
+
     /// <summary>The automation name of the <em>Allow live organisation</em> switch.</summary>
     public const string AllowLiveOrganisationName = "Allow live organisation";
 
@@ -395,7 +403,14 @@ public sealed class XeroSettingsSection : UserControl
         // not what is stored: writing them then would silently turn a stored
         // IncludeOnline / Allow-live "True" into "False".
         if (_loaded)
+        {
             await SaveSwitchesAsync(cancellationToken).ConfigureAwait(true);
+        }
+        else
+        {
+            _status.Text = SwitchesNotSavedStatus;
+            ActionCompleted?.Invoke(_status.Text, ActionOutcome.Failed);
+        }
 
         DescribeLiveOrganisation();
         await ShowMappingProblemsAsync(cancellationToken).ConfigureAwait(true);
@@ -483,16 +498,24 @@ public sealed class XeroSettingsSection : UserControl
                 // no cached reading yet: re-read the cache so the section and
                 // every document stop showing the previous organisation's
                 // name, Demo flag and company details (falling back to
-                // Settings → Organisation until Xero is read).
+                // Settings → Organisation until Xero is read). Only then are
+                // the pickers reloaded — the same organisation keeps any
+                // choices not yet saved — and the person is told so.
+                var reloaded = false;
                 if (_services.Reader is { } reader)
                 {
-                    await ShowReadingAsync(await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true), cancellationToken).ConfigureAwait(true);
-                    DescribeLiveOrganisation();
+                    var cached = await reader.ReadCachedAsync(cancellationToken).ConfigureAwait(true);
+                    if (!string.Equals(cached?.TenantId, _reading?.TenantId, StringComparison.Ordinal))
+                    {
+                        await ShowReadingAsync(cached, cancellationToken).ConfigureAwait(true);
+                        DescribeLiveOrganisation();
+                        reloaded = true;
+                    }
                 }
 
                 await RefreshConnectionAsync(cancellationToken).ConfigureAwait(true);
                 await RefreshSyncSummaryAsync(cancellationToken).ConfigureAwait(true);
-                _status.Text = "Xero re-authorised.";
+                _status.Text = reloaded ? ReauthorisedIntoAnotherOrganisationStatus : "Xero re-authorised.";
                 ActionCompleted?.Invoke(_status.Text, ActionOutcome.Changed);
                 return;
             }
