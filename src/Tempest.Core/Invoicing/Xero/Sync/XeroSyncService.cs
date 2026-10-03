@@ -127,12 +127,18 @@ public sealed class XeroConnectorConnectionState : IXeroConnectionState
 /// <param name="Planner">The planner (X3, X4 or X5).</param>
 /// <param name="PlanAndEnqueue">Plans one record against its link and queues each planned write, in order; returns the entries (new or found).</param>
 /// <param name="ListIds">Every record of the planner's kind.</param>
-/// <param name="Prime">Run first thing at start-up (records when automatic sync began, Q8); <see langword="null"/> when none.</param>
+/// <param name="Prime">Run first thing at start-up (records when automatic sync began, Q8; for invoices, recovers sends a stop interrupted, M8); <see langword="null"/> when none.</param>
+/// <param name="PrimeDescription">`v0.24.0` F2 follow-up (additive): what <paramref name="Prime"/> does, as the start-up log names it if it fails; <see langword="null"/> for the Q8 wording.</param>
 public sealed record XeroPlannerSlot(
     IXeroSyncPlanner Planner,
     Func<Guid, CancellationToken, Task<IReadOnlyList<XeroOutboxEntry>>> PlanAndEnqueue,
     Func<CancellationToken, Task<IReadOnlyList<Guid>>> ListIds,
-    Func<CancellationToken, Task>? Prime = null);
+    Func<CancellationToken, Task>? Prime = null,
+    string? PrimeDescription = null)
+{
+    /// <summary>What <see cref="Prime"/> does, as the start-up log names it when it fails and is isolated.</summary>
+    public string PrimeLabel => PrimeDescription ?? $"recording when automatic {Planner.Kind} sync began";
+}
 
 /// <summary>
 /// Everything the sync engine drives, collected by type: the per-kind
@@ -210,7 +216,8 @@ public sealed class XeroSyncParts
             _planners.Add(new XeroPlannerSlot(
                 invoicePlanner, (id, ct) => PlanGenericAsync(invoicePlanner, id, ct),
                 domain is null ? NoIds : async ct => [.. (await domain.Repository.ListByKindAsync(InvoiceRequest.CanonicalKind, ct).ConfigureAwait(false)).Select(e => e.Id)],
-                async ct => await invoicePlanner.RecoverInterruptedSendsAsync(ct).ConfigureAwait(false))); // `v0.24.0` review M8
+                async ct => await invoicePlanner.RecoverInterruptedSendsAsync(ct).ConfigureAwait(false), // `v0.24.0` review M8
+                "recovering Invoice sends a stop interrupted (requests left Sending)"));
         }
 
         Func<CancellationToken, Task>? primePurchasing = purchasingState is null ? null : async ct => await purchasingState.AutomaticFromAsync(ct).ConfigureAwait(false);
@@ -595,7 +602,7 @@ public sealed class XeroSyncService : IXeroSyncService
             foreach (var slot in _parts.Planners)
             {
                 if (slot.Prime is { } prime)
-                    await Isolated(() => prime(cancellationToken), $"recording when automatic {slot.Planner.Kind} sync began").ConfigureAwait(false);
+                    await Isolated(() => prime(cancellationToken), slot.PrimeLabel).ConfigureAwait(false);
             }
 
             if (_observer is not null)

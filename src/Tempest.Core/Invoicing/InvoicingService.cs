@@ -375,89 +375,95 @@ public sealed class InvoicingService : IInvoicingService
         if (await ArchivedAsync(request, cancellationToken).ConfigureAwait(false) is { } archived)
             return archived;
 
-        var drafts = Drafts;
-        InvoiceDraftDocument? document = null;
-        ConnectorResult<CreatedInvoice> result;
-
-        if (drafts is not null)
+        var tracked = false;
+        try
         {
-            // `v0.24.0` X4: everything the draft needs that TempestOS holds
-            // locally — the client's contact link (X2), a tax type and the
-            // sales account for every line (X1) — is checked before the
-            // request ever moves to Sending, so an unlinked client is
-            // refused with the reason rather than sent half-formed.
-            document = await ToDraftDocumentAsync(request, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-            if (await drafts.FindBlockingReasonAsync(document, cancellationToken).ConfigureAwait(false) is { } blocked)
-            {
-                return new InvoiceRequestResult(
-                    InvoiceRequestRefusal.TransitionNotPermitted,
-                    $"Invoice request '{requestId}' cannot be sent to {drafts.ConnectorName} yet: {blocked}",
-                    request);
-            }
+            var drafts = Drafts;
+            InvoiceDraftDocument? document = null;
+            ConnectorResult<CreatedInvoice> result;
 
-            _sendsInProgress[request.Id] = 0;
-            try
+            if (drafts is not null)
             {
+                // `v0.24.0` X4: everything the draft needs that TempestOS holds
+                // locally — the client's contact link (X2), a tax type and the
+                // sales account for every line (X1) — is checked before the
+                // request ever moves to Sending, so an unlinked client is
+                // refused with the reason rather than sent half-formed.
+                document = await ToDraftDocumentAsync(request, _time.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+                if (await drafts.FindBlockingReasonAsync(document, cancellationToken).ConfigureAwait(false) is { } blocked)
+                {
+                    return new InvoiceRequestResult(
+                        InvoiceRequestRefusal.TransitionNotPermitted,
+                        $"Invoice request '{requestId}' cannot be sent to {drafts.ConnectorName} yet: {blocked}",
+                        request);
+                }
+
+                // Cut off mid-send (cancelled, or a crash in the seam or while
+                // recording the answer): the request stays Sending, and is
+                // recovered — looked up first, never re-sent blindly — by
+                // RecoverInterruptedSendsAsync. The entry is cleared in the
+                // finally below on every path, so a throw never hides the
+                // request from that recovery for the rest of the process.
+                _sendsInProgress[request.Id] = 0;
+                tracked = true;
                 await request.MoveToSendingAsync(_connector.Name, document.Reference, cancellationToken).ConfigureAwait(false);
                 result = await drafts.CreateDraftAsync(document, cancellationToken).ConfigureAwait(false);
             }
-            catch
+            else
             {
-                // Cut off mid-send (cancelled, or a crash in the seam): the
-                // request stays Sending, and is recovered — looked up first,
-                // never re-sent blindly — by RecoverInterruptedSendsAsync.
-                _sendsInProgress.TryRemove(request.Id, out _);
-                throw;
+                await request.MoveToSendingAsync(_connector.Name, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
+
+                result = await _connector
+                    .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
+                    .ConfigureAwait(false);
             }
+
+            switch (result.Outcome)
+            {
+                case ConnectorOutcome.Ok:
+                    var invoice = result.Value!;
+                    await request.MarkSentAsync(
+                        invoice.ExternalId, invoice.ExternalInvoiceNumber, _time.GetUtcNow(), drafts?.CreatedStatus, cancellationToken).ConfigureAwait(false);
+                    await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case ConnectorOutcome.Rejected:
+                    await request.MarkRejectedAsync(result.Reason ?? "Rejected by the connector.", cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case ConnectorOutcome.Reauthorise:
+                    await request.MarkReauthoriseAsync(result.Reason, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case ConnectorOutcome.Unavailable:
+                    // Stays Draft, deliberately never a stored `Unavailable`
+                    // status — InvoiceRequestStatus.Unavailable's own remarks.
+                    // `v0.24.0` X4: where the connector has a draft seam, the
+                    // send is queued again (design §4.2) rather than left for
+                    // someone to notice; any other connector is not retried
+                    // automatically (the `WP 19.1A` row's own words).
+                    await request.RevertToDraftAsync(result.Reason ?? "The connector could not be reached.", cancellationToken).ConfigureAwait(false);
+                    if (drafts is not null && document is not null && queueWhenUnavailable)
+                        await drafts.QueueSendAsync(document, cancellationToken).ConfigureAwait(false);
+                    break;
+
+                case ConnectorOutcome.Unknown:
+                default:
+                    await request.MarkUnknownAsync(result.Reason ?? "The connector's own response was lost.", cancellationToken).ConfigureAwait(false);
+                    break;
+            }
+
+            return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
         }
-        else
+        finally
         {
-            await request.MoveToSendingAsync(_connector.Name, cancellationToken: cancellationToken).ConfigureAwait(false);
-
-            var snapshot = await ToSnapshotAsync(request, cancellationToken).ConfigureAwait(false);
-
-            result = await _connector
-                .CreateDraftInvoiceAsync(snapshot, requestId.ToString(), cancellationToken)
-                .ConfigureAwait(false);
+            // `v0.24.0` F2 follow-up: on every path, including a throw after
+            // the create (recording Sent, Rejected or Draft).
+            if (tracked)
+                _sendsInProgress.TryRemove(request.Id, out _);
         }
-
-        switch (result.Outcome)
-        {
-            case ConnectorOutcome.Ok:
-                var invoice = result.Value!;
-                await request.MarkSentAsync(
-                    invoice.ExternalId, invoice.ExternalInvoiceNumber, _time.GetUtcNow(), drafts?.CreatedStatus, cancellationToken).ConfigureAwait(false);
-                await LinkLinesAsync(request, requestId, cancellationToken).ConfigureAwait(false);
-                break;
-
-            case ConnectorOutcome.Rejected:
-                await request.MarkRejectedAsync(result.Reason ?? "Rejected by the connector.", cancellationToken).ConfigureAwait(false);
-                break;
-
-            case ConnectorOutcome.Reauthorise:
-                await request.MarkReauthoriseAsync(result.Reason, cancellationToken).ConfigureAwait(false);
-                break;
-
-            case ConnectorOutcome.Unavailable:
-                // Stays Draft, deliberately never a stored `Unavailable`
-                // status — InvoiceRequestStatus.Unavailable's own remarks.
-                // `v0.24.0` X4: where the connector has a draft seam, the
-                // send is queued again (design §4.2) rather than left for
-                // someone to notice; any other connector is not retried
-                // automatically (the `WP 19.1A` row's own words).
-                await request.RevertToDraftAsync(result.Reason ?? "The connector could not be reached.", cancellationToken).ConfigureAwait(false);
-                if (drafts is not null && document is not null && queueWhenUnavailable)
-                    await drafts.QueueSendAsync(document, cancellationToken).ConfigureAwait(false);
-                break;
-
-            case ConnectorOutcome.Unknown:
-            default:
-                await request.MarkUnknownAsync(result.Reason ?? "The connector's own response was lost.", cancellationToken).ConfigureAwait(false);
-                break;
-        }
-
-        _sendsInProgress.TryRemove(request.Id, out _);
-        return new InvoiceRequestResult(InvoiceRequestRefusal.None, null, request);
     }
 
     /// <summary>

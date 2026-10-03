@@ -170,7 +170,8 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
 
     public EngineeringDomainContext Domain => InvoicingTestHost.Domain(Host);
 
-    public static async Task<InvoiceExportKit> CreateAsync()
+    /// <param name="tokenEndpoint">`v0.24.0` F2 follow-up (additive): what answers the token endpoint; <see langword="null"/> for one that fails the test loudly.</param>
+    public static async Task<InvoiceExportKit> CreateAsync(HttpMessageHandler? tokenEndpoint = null)
     {
         var temp = new TempDirectory();
         var (host, manager) = await InvoicingTestHost.StartAsync(temp.Path);
@@ -186,7 +187,7 @@ internal sealed class InvoiceExportKit : IAsyncDisposable
         var safety = new XeroWriteSafetyHandler(() => handlerReader, _ => Task.FromResult(false), () => safetyAudit, timeProvider: clock) { InnerHandler = rateLimiter };
         var client = new HttpClient(safety) { BaseAddress = XeroApiSimulator.BaseAddress };
 
-        var (authoriser, secretStore) = await XeroTestAuthoriser.CreateAsync(TenantId);
+        var (authoriser, secretStore) = await XeroTestAuthoriser.CreateAsync(TenantId, tokenEndpoint: tokenEndpoint);
         var api = new XeroAccountingApi(client, authoriser, clock);
         var connector = new XeroConnector(client, authoriser);
         var reader = new XeroSettingsReader(api, new FileXeroSettingsCache(Path.Combine(temp.Path, "accounts")), secretStore, null, clock);

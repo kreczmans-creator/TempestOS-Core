@@ -32,3 +32,31 @@ U3 records these deviations here. All are additive and approved; the two open it
 - **Open item, needs X5 (not U3):** the supplier details are saved in a follow-up commit after the record (verifier round 1, defect 8). In that short window the engine may plan and push the bill against "General expenses" as `EXP-{id}`. The next plan then updates the draft with the supplier and its invoice number, so the end state is correct. Saving them in the expense's first revision needs a `RecordAsync` overload in X5's `IExpenseService`/`ExpenseService` and a matching `RecordExpenseCommand`. Both are outside U3's row.
 - **Open item, needs X6/X5 (not U3):** X6's `XeroDocumentSyncStatus` carries no typed verdict for *Can't tell* (verifier round 1, defect 6). U3 now detects *Deleted in Xero* only from typed facts: the `DELETED` status, or X5's tombstone, which X6 exposes as `CanSendAgain`. U3 detects *Can't tell* from the opening words of `XeroPurchasingOwnership.CannotTell`, worked out from that producer at run time rather than by searching the text. A typed field on X6's status would remove the last string comparison.
 - **Expense badges (verifier round 1, defect 3):** these stay inside U3's row. Invoicing (`InvoicingView.cs`, owned by U3) gains a collapsed group, *Expense bills in Xero*, shown only when Xero is the connector. It lists every expense that is not already under *Available to invoice*, each with its bill badge. A badge in the Project Explorer's Expenses area or in the expense editor would need another sign-off: those files are not U3's.
+
+## F2 review-board fixes — edits outside the owning rows and contract growth (2026-10-03)
+
+F2 fixed the review board's core-sync findings (M2, M6, M7, M8, m1, m16, m18, m19, n1–n4) across several tasks' rows. Every change is additive or a bug fix; none weakens D3, D4 or the Demo guard (the safety handler, the write models and the architecture tests are unchanged or stricter).
+
+**Files changed outside a single owning row** (owner in brackets):
+
+- `Sync/XeroSyncService.cs` [X6]: the invoice planner's slot gets a start-up hook (M8, `RecoverInterruptedSendsAsync`), and the badge note carries `XeroLink.AttachmentNote` (M6). The follow-up adds `XeroPlannerSlot.PrimeDescription`/`PrimeLabel` (additive), so a failing hook is logged as *recovering Invoice sends a stop interrupted*, not as *recording when automatic Invoice sync began*.
+- `Sync/XeroSyncContracts.cs` [T0 contract, §12]: `XeroLink.AttachmentNote` (M6), an optional trailing record member. Older links read it as absent.
+- `XeroConnector.cs` [B1/X4]: `AccessTokenOutcome.Unavailable` maps to `ConnectorOutcome.Unavailable` and to `Authorised` in `AuthorisationStateAsync` (M2). The follow-up adds the internal `EnsureAccessAsync`.
+- `src/Tempest.Core/Invoicing/QuickBooksOnline/QuickBooksOnlineConnector.cs` [outside v0.24.0]: the same M2 mapping, so a new enum member is never read as a re-authorise.
+- `src/Tempest.Core/Invoicing/OAuth/OAuthAuthoriser.cs`, `OAuthResults.cs`, `InvoicingHttpLoggingHandler.cs` [B1, shared OAuth]: `AccessTokenOutcome.Unavailable` / `AccessTokenResult.Unavailable` (M2); the HTTP log names the path only (n2).
+- `Api/XeroAccountingApi*.cs`, `Api/XeroWriteSafetyHandler.cs`, new `Api/XeroLineRules.cs` [B1/X3/X5]: `?unitdp=4` (M7), description limit (m19), contact write-key allow-list (n1), attachment names (n3).
+- `Sync/Purchasing/XeroPurchasingAttachmentHandlers.cs`, `XeroPurchasingMapper.cs`, `XeroPurchasingOwnership.cs` [X5]: M6 refusal, M7/m19 line rules, m1 `Status: DRAFT` on content updates, n4 shared VAT inference. The follow-up adds the optional `restampSameSend` to `XeroPurchasingCreateLog.RecordSendingAsync` (default off: purchasing behaviour is unchanged).
+- `Sync/Quotes/XeroQuoteMapper.cs`, `XeroQuotePushHandler.cs` [X3]: m1, M6, M7.
+- New `Sync/XeroAttachmentRefusal.cs`, new `src/Tempest.Core/Invoicing/ExpenseVatInference.cs` (shared helpers, M6/n4).
+- Tests, test-only and additive: `Api/XeroApiTestSupport.cs` (`tokenEndpoint`), `Sync/Engine/EngineTestKit.cs`, `Sync/Invoices/InvoiceExportKit.cs` (`tokenEndpoint`), and the simulator (`XeroApiSimulator.Documents.cs`, `.Routing.cs`: rounds to four places like Xero, enforces the 4,000-character description).
+
+**Contract growth:** `XeroLink.AttachmentNote`; `AccessTokenOutcome.Unavailable` with `AccessTokenResult.Unavailable`; `InvoiceNumberHolder.OwnUnproven`; `XeroInvoiceDrafts.LinkedByMatched` (`"matched"`); `XeroPlannerSlot.PrimeDescription`/`PrimeLabel`; the optional `creates` parameter of `XeroInvoiceDrafts` (the shared create log, resolved through dependency injection).
+
+**m16 — the smaller option (no Product Owner decision needed).** The board asked for a PO decision before m16 overrode design §6.4's lost-create recovery. F2 now applies the board's smaller option instead:
+
+- An invoice found under the request's number is adopted as `"reconciled"` when proven: its id came back to a logged create, or the logged create's key replays to it while Xero holds the key (5 minutes from the latest send; a create re-sent after a look-up found nothing re-stamps its send time).
+- Otherwise, after a **lost create of this request** (a create TempestOS logged with that number, contact and reference, whose id never came back), the one live invoice under that number, reference and contact is linked as `"matched"`. That is design §6.4's recovery, so M8's restart after a long outage ends Sent, not Failed. A matched invoice is kept up to date while it is a draft. **TempestOS never deletes it.** Voiding the request is refused with the reason until the person deletes or voids it in Xero; then the void goes ahead.
+- With no lost create of its own (for example, an invoice entered by hand), a match stays `OwnUnproven`: refused, and never adopted, changed or deleted. The advice depends on the invoice's state in Xero. For a draft: delete it in Xero, then Retry. For an approved invoice: it can only be voided there, so void it there and then void this request. For a voided invoice: Xero keeps a voided invoice's number, so void this request.
+- A create that could not leave the machine is not logged. This covers a sign-in service that cannot be reached, or a needed re-authorisation.
+- A send that throws after Xero answered no longer hides the request from the start-up recovery.
+

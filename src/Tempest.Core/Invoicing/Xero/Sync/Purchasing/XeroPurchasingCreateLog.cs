@@ -58,10 +58,19 @@ public sealed class XeroPurchasingCreateLog
     /// <param name="reference">The <c>Reference</c> the create carries (a purchase order's project code), if any. Kept for the record only: a bookkeeper may edit it, so the ownership rule never reads it.</param>
     /// <param name="value">The value-bearing content the create carries (<see cref="XeroPurchasingOwnership.ValueOf(XeroWirePurchaseOrderWrite)"/> or <see cref="XeroPurchasingOwnership.ValueOf(XeroWireBillWrite)"/>). Only ever used to word a refusal for another document (<see cref="ListSentForOthersAsync"/>), never to call a record ours.</param>
     /// <param name="body">The create's body exactly as sent (<see cref="XeroPurchasingSentCreate.Body"/>): what recovery re-sends under the same <c>Idempotency-Key</c> so Xero replays its first answer, the record's id.</param>
-    /// <param name="sentAtUtc">When the create is sent (<see cref="XeroPurchasingSentCreate.SentAtUtc"/>): how recovery tells whether Xero still holds its key. A create already logged with the same key and body keeps its first time (Xero's key lifetime runs from the first call). <see langword="null"/> when unknown: its key is then never relied on.</param>
+    /// <param name="sentAtUtc">When the create is sent (<see cref="XeroPurchasingSentCreate.SentAtUtc"/>): how recovery tells whether Xero still holds its key. A create already logged with the same key and body keeps its first time (Xero's key lifetime runs from the first call) unless <paramref name="restampSameSend"/>. <see langword="null"/> when unknown: its key is then never relied on.</param>
+    /// <param name="restampSameSend">
+    /// `v0.24.0` F2 follow-up (invoices only): a create already logged with the
+    /// same key and body whose record's id is not yet known takes
+    /// <paramref name="sentAtUtc"/> as its send time. Sound only for a caller
+    /// that re-sends a create solely after finding nothing under its number:
+    /// then no earlier send of that key made anything Xero still shows, so the
+    /// key's lifetime that matters runs from this send — a later recovery
+    /// replays it while Xero still holds it, never by the first, older send.
+    /// </param>
     public async Task RecordSendingAsync(
         string tenantId, XeroDocumentRef document, string number, string contactId, string idempotencyKey, CancellationToken cancellationToken = default,
-        string? reference = null, string? value = null, string? body = null, DateTimeOffset? sentAtUtc = null)
+        string? reference = null, string? value = null, string? body = null, DateTimeOffset? sentAtUtc = null, bool restampSameSend = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(number);
         ArgumentException.ThrowIfNullOrWhiteSpace(contactId);
@@ -70,7 +79,18 @@ public sealed class XeroPurchasingCreateLog
         var sent = new XeroPurchasingSentCreate(
             number.Trim(), contactId.Trim(), idempotencyKey, string.IsNullOrWhiteSpace(reference) ? null : reference.Trim(), string.IsNullOrWhiteSpace(value) ? null : value,
             string.IsNullOrWhiteSpace(body) ? null : body, SentAtUtc: sentAtUtc);
-        await UpdateAsync(tenantId, document, list => list.Any(s => s.SameSend(sent)) ? list : [.. list, sent], cancellationToken).ConfigureAwait(false);
+        await UpdateAsync(
+            tenantId, document,
+            list =>
+            {
+                if (!list.Any(s => s.SameSend(sent)))
+                    return [.. list, sent];
+
+                return restampSameSend && sentAtUtc is not null
+                    ? [.. list.Select(s => s.SameSend(sent) && s.XeroId is null && s.GoneStatus is null ? s with { SentAtUtc = sentAtUtc } : s)]
+                    : list;
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

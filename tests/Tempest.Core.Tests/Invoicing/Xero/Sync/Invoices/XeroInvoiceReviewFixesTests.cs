@@ -4,6 +4,7 @@ using Tempest.Core.Invoicing.Xero.Sync;
 using Tempest.Core.Invoicing.Xero.Sync.Invoices;
 using Tempest.Core.Invoicing.Xero.Sync.Purchasing;
 using Tempest.Core.Tests.Invoicing.Xero.Sync.Engine;
+using Tempest.Core.Tests.Invoicing.Xero.Api;
 
 namespace Tempest.Core.Tests.Invoicing.Xero.Sync.Invoices;
 
@@ -74,15 +75,19 @@ public sealed class XeroInvoiceReviewFixesTests
     }
 
     [Fact]
-    public async Task M8_ACrashDuringTheCreate_RestartedAfterXeroForgotTheKey_IsAFailedDecision_NeverStuck_NeverDuplicated()
+    public async Task M8_ACrashDuringTheCreate_RestartedAfterXeroForgotTheKey_IsLinkedByItsMatch_NeverDuplicated_NeverDeletedByTempestOS()
     {
+        // F2 follow-up (design §6.4 lost-create recovery; review m16's smaller option, Build Decisions):
+        // the key is gone, but a create TempestOS logged carried this number, reference and contact, so the
+        // one live draft matching it is linked — as "matched", which TempestOS never deletes.
         await using var kit = await InvoiceExportKit.CreateAsync();
         var (projectId, organisationId) = await kit.AddProjectAsync("M8C");
         await kit.LinkClientAsync(organisationId);
         var raised = await kit.RaiseAsync(projectId, "M8C");
         await CrashDuringCreateAsync(kit, raised.Id, xeroCommits: true);
+        var lost = Assert.Single(kit.SalesInvoices);
 
-        // A long outage: Xero no longer holds the create's key, so nothing proves the draft TempestOS's own.
+        // A long outage: Xero no longer holds the create's key.
         kit.Clock.Advance(TimeSpan.FromHours(2));
         kit.Simulator.ForgetIdempotencyKeys();
 
@@ -91,13 +96,25 @@ public sealed class XeroInvoiceReviewFixesTests
         await SettleAsync(engine);
 
         var request = await kit.ReloadAsync(raised.Id);
-        Assert.Equal(InvoiceRequestStatus.Unknown, request.Status);
-        var status = await engine.GetDocumentStatusAsync(XeroInvoiceDrafts.DocumentFor(raised.Id));
-        Assert.Equal(XeroSyncBadge.Failed, status.Status.Badge);
-        Assert.Contains("cannot prove it created it", status.Status.Reason, StringComparison.Ordinal);
+        Assert.Equal(InvoiceRequestStatus.Sent, request.Status);
+        Assert.Equal(lost.Id, request.ExternalId);
+        var link = await kit.LinkAsync(raised.Id);
+        Assert.Equal((lost.Id, XeroInvoiceDrafts.LinkedByMatched), (link!.XeroId, link.LinkedBy));
         Assert.Single(kit.SalesInvoices);
-        Assert.Null(await kit.LinkAsync(raised.Id));
-        Assert.DoesNotContain(kit.Simulator.Requests, r => r.Method == HttpMethod.Post && r.Path.StartsWith("Invoices/", StringComparison.Ordinal));
+
+        // Voiding the request never deletes the matched draft: refused with the reason, nothing written.
+        var mark = kit.Mark;
+        var voided = await kit.Service.VoidAsync(raised.Id);
+        Assert.False(voided.Succeeded);
+        Assert.Contains("does not delete it", voided.Reason, StringComparison.Ordinal);
+        Assert.Equal("DRAFT", kit.Invoice(lost.Id).Status);
+        Assert.DoesNotContain(kit.RequestsSince(mark), r => r.Method != HttpMethod.Get);
+
+        // Once the person deletes it in Xero, the void goes ahead.
+        kit.Simulator.DeleteInXero("Invoices", lost.Id);
+        var again = await kit.Service.VoidAsync(raised.Id);
+        Assert.True(again.Succeeded, again.Reason);
+        Assert.Equal(InvoiceRequestStatus.Voided, (await kit.ReloadAsync(raised.Id)).Status);
         kit.AssertSafe();
     }
 
@@ -178,6 +195,151 @@ public sealed class XeroInvoiceReviewFixesTests
         Assert.Null(await kit.LinkAsync(raised.Id));
         Assert.Equal("DRAFT", kit.Invoice(handEntered).Status);
         kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task M16_AMatchWithNoLoggedCreate_StaysUnproven_EvenAfterALostCreateOfAnotherRequest()
+    {
+        // The smaller option adopts a match only after this request's own lost create.
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("M16C");
+        var contactId = await kit.LinkClientAsync(organisationId);
+        var raised = await kit.RaiseAsync(projectId, "M16C");
+        var handEntered = await kit.EnterInvoiceInXeroAsync(contactId, "ACME1-BRIDG1-INV-001", "ACME1-BRIDG1 · Deliverable M16C");
+
+        var sent = await kit.Service.SendAsync(raised.Id);
+
+        Assert.Equal(InvoiceRequestStatus.Rejected, sent.Request!.Status);
+        Assert.Null(await kit.LinkAsync(raised.Id));
+        Assert.Equal("DRAFT", kit.Invoice(handEntered).Status);
+    }
+
+    // ------------------------------------------------------------------ F2 follow-ups
+
+    [Fact]
+    public async Task F2_OfflineFirstAttempt_ThenALostAnswerTenMinutesLater_RetrySecondsLater_IsRecoveredByItsKey()
+    {
+        // Verifier probe: the first send never reached Xero; the second, ten minutes later, was committed
+        // but its answer lost; a retry 30 s later must replay the key Xero saw seconds ago.
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("PRB");
+        await kit.LinkClientAsync(organisationId);
+        var raised = await kit.RaiseAsync(projectId, "PRB");
+
+        var dropNext = true;
+        kit.Loss.BeforeSend = r =>
+        {
+            if (dropNext && r.Method == HttpMethod.Put)
+            {
+                dropNext = false;
+                throw new HttpRequestException("offline");
+            }
+        };
+        var first = await kit.Service.SendAsync(raised.Id);
+        Assert.Equal(InvoiceRequestStatus.Draft, first.Request!.Status);
+        Assert.Empty(kit.SalesInvoices);
+
+        kit.Clock.Advance(TimeSpan.FromMinutes(10));
+        kit.Loss.LoseInvoiceCreates = 1;
+        var second = await kit.Service.SendAsync(raised.Id);
+        Assert.Equal(InvoiceRequestStatus.Draft, second.Request!.Status);
+        var made = Assert.Single(kit.SalesInvoices);
+
+        kit.Clock.Advance(TimeSpan.FromSeconds(30));
+        var third = await kit.Service.SendAsync(raised.Id);
+
+        Assert.Equal(InvoiceRequestStatus.Sent, third.Request!.Status);
+        Assert.Single(kit.SalesInvoices);
+        var link = await kit.LinkAsync(raised.Id);
+        Assert.Equal((made.Id, XeroInvoiceDrafts.LinkedByReconciled), (link!.XeroId, link.LinkedBy));
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task F2_ACreateThatCouldNotLeaveTheMachine_TheSignInServiceUnreachable_IsNotLogged()
+    {
+        var tokenEndpoint = new TerminalHandler { Throw = new HttpRequestException("offline") };
+        await using var kit = await InvoiceExportKit.CreateAsync(tokenEndpoint);
+        var (projectId, organisationId) = await kit.AddProjectAsync("TOK");
+        await kit.LinkClientAsync(organisationId);
+        var raised = await kit.RaiseAsync(projectId, "TOK");
+
+        // The token runs out between the number look-up and the create; it cannot be renewed.
+        kit.Loss.BeforeSend = r =>
+        {
+            if (r.Method == HttpMethod.Get && r.RequestUri!.Query.Contains("InvoiceNumbers", StringComparison.Ordinal))
+                kit.SecretStore.SetAsync("Invoicing:Xero:ExpiresAtUtc", DateTimeOffset.UtcNow.AddHours(-1).ToString("O")).GetAwaiter().GetResult();
+        };
+
+        var sent = await kit.Service.SendAsync(raised.Id);
+
+        Assert.Equal(InvoiceRequestStatus.Draft, sent.Request!.Status);
+        Assert.DoesNotContain(kit.Simulator.Requests, r => r.Method == HttpMethod.Put && r.Path == "Invoices");
+        var log = new XeroPurchasingCreateLog(kit.Store);
+        Assert.Empty(await log.ListSentAsync(InvoiceExportKit.TenantId, XeroInvoiceDrafts.DocumentFor(raised.Id)));
+    }
+
+    [Fact]
+    public async Task F2_AnApprovedUnprovenHolder_TheAdviceIsToVoidThere_ThenVoidTheRequest_AndThatWorks()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("APR");
+        var contactId = await kit.LinkClientAsync(organisationId);
+        var raised = await kit.RaiseAsync(projectId, "APR");
+        var handEntered = await kit.EnterInvoiceInXeroAsync(contactId, "ACME1-BRIDG1-INV-001", "ACME1-BRIDG1 · Deliverable APR");
+        kit.Simulator.ApproveInXero(handEntered);
+
+        var sent = await kit.Service.SendAsync(raised.Id);
+        Assert.Equal(InvoiceRequestStatus.Rejected, sent.Request!.Status);
+        Assert.Contains("can only be voided there", sent.Request.LastError, StringComparison.Ordinal);
+        Assert.DoesNotContain("then Retry", sent.Request.LastError, StringComparison.Ordinal);
+
+        // Voided in Xero: its number stays taken, so the advice is to void the request — which then works.
+        kit.Simulator.VoidInXero(handEntered);
+        var document = await kit.Service.ToDraftDocumentAsync(await kit.ReloadAsync(raised.Id), kit.Clock.GetUtcNow(), CancellationToken.None);
+        var finding = await kit.Drafts.FindByInvoiceNumberAsync(document);
+        Assert.Equal(ConnectorOutcome.Rejected, finding.Outcome);
+        Assert.Contains("void this request", finding.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("then Retry", finding.Reason, StringComparison.Ordinal);
+
+        var voided = await kit.Service.VoidAsync(raised.Id);
+        Assert.True(voided.Succeeded, voided.Reason);
+        Assert.Equal(InvoiceRequestStatus.Voided, (await kit.ReloadAsync(raised.Id)).Status);
+        kit.AssertSafe();
+    }
+
+    [Fact]
+    public async Task F2_AThrowWhileRecordingTheAnswer_NeverHidesTheRequestFromTheStartUpRecovery()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var (projectId, organisationId) = await kit.AddProjectAsync("THR");
+        await kit.LinkClientAsync(organisationId);
+        var raised = await kit.RaiseAsync(projectId, "THR");
+
+        var throwing = new ThrowAfterCreateDrafts(kit.Drafts);
+        var service = kit.NewService(throwing);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.SendAsync(raised.Id));
+        Assert.Equal(InvoiceRequestStatus.Sending, (await kit.ReloadAsync(raised.Id)).Status);
+        Assert.Single(kit.SalesInvoices);
+
+        // Not "being sent right now" any more: the recovery takes it.
+        Assert.Equal(1, await service.RecoverInterruptedSendsAsync());
+        Assert.Equal(InvoiceRequestStatus.Unknown, (await kit.ReloadAsync(raised.Id)).Status);
+    }
+
+    [Fact]
+    public async Task F2_TheInvoicePlannersStartUpHook_IsLabelledAsRecoveringInterruptedSends()
+    {
+        await using var kit = await InvoiceExportKit.CreateAsync();
+        var parts = new XeroSyncParts(
+            kit.Links, kit.Outbox, kit.SecretStore,
+            invoicePlanner: new XeroInvoicePlanner(kit.Service, kit.Files),
+            domain: kit.Domain);
+
+        var slot = Assert.Single(parts.Planners);
+        Assert.NotNull(slot.Prime);
+        Assert.Contains("interrupted", slot.PrimeLabel, StringComparison.Ordinal);
+        Assert.DoesNotContain("automatic", slot.PrimeLabel, StringComparison.Ordinal);
     }
 
     // ------------------------------------------------------------------ m18
@@ -261,6 +423,37 @@ public sealed class XeroInvoiceReviewFixesTests
             if (report.Drain.Attempted == 0 && report.Planned == 0)
                 return;
         }
+    }
+
+    /// <summary>The kit's drafts seam, but reading <see cref="IInvoiceDraftSync.CreatedStatus"/> after a successful create throws — a failure while recording Sent.</summary>
+    private sealed class ThrowAfterCreateDrafts(XeroInvoiceDrafts inner) : IInvoiceDraftSync
+    {
+        private bool _created;
+
+        public string ConnectorName => inner.ConnectorName;
+
+        public string CreatedStatus => _created ? throw new InvalidOperationException("Simulated: recording Sent failed.") : inner.CreatedStatus;
+
+        public Task<string?> FindBlockingReasonAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.FindBlockingReasonAsync(document, cancellationToken);
+
+        public async Task<ConnectorResult<CreatedInvoice>> CreateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default)
+        {
+            var created = await inner.CreateDraftAsync(document, cancellationToken);
+            _created = created.Outcome == ConnectorOutcome.Ok;
+            return created;
+        }
+
+        public Task<ConnectorResult<CreatedInvoice?>> FindByInvoiceNumberAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.FindByInvoiceNumberAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<InvoiceNumberFinding>> FindNumberHolderAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.FindNumberHolderAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<InvoiceDraftChange>> UpdateDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.UpdateDraftAsync(document, cancellationToken);
+
+        public Task<ConnectorResult<InvoiceDraftChange>> DeleteDraftAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.DeleteDraftAsync(document, cancellationToken);
+
+        public Task QueueSendAsync(InvoiceDraftDocument document, CancellationToken cancellationToken = default) => inner.QueueSendAsync(document, cancellationToken);
+
+        public Task RecordStatusReadingAsync(InvoiceDraftDocument document, string externalStatus, CancellationToken cancellationToken = default) => inner.RecordStatusReadingAsync(document, externalStatus, cancellationToken);
     }
 
     private sealed class ZonedClock(TimeProvider inner, TimeZoneInfo zone) : TimeProvider
