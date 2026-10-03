@@ -1,8 +1,8 @@
 using System.Text;
-using Tempest.Core.Tests.Invoicing.Xero.Live;
+using Tempest.Core.Tests.ReleaseEngineering;
 using Tempest.Core.Tests.Templates;
 
-namespace Tempest.Core.Tests.ReleaseEngineering;
+namespace Tempest.Core.Tests.Invoicing.Xero.Live;
 
 /// <summary>
 /// `scripts/xero-demo-smoke.ps1` (`v0.24.0` task X8, ADR-0162 D7): the
@@ -11,7 +11,8 @@ namespace Tempest.Core.Tests.ReleaseEngineering;
 /// script: the real PowerShell parser accepts it, it is pure ASCII (Windows
 /// PowerShell 5.1 reads a BOM-less .ps1 as Windows-1252), and it runs the
 /// live tests the way they are gated. Running it needs Demo Company
-/// credentials and is done by hand (runbook steps XL-*).
+/// credentials and is done by hand (runbook steps XL-*). Lives under
+/// <c>Invoicing/Xero/Live/</c>, the test folder X8 owns (design §11).
 /// </summary>
 public sealed class XeroDemoSmokeScriptTests
 {
@@ -79,5 +80,25 @@ public sealed class XeroDemoSmokeScriptTests
         Assert.DoesNotContain("Write-Host $AccessToken", content, StringComparison.Ordinal);
         Assert.DoesNotContain("$AccessToken\"", content, StringComparison.Ordinal);
         Assert.DoesNotContain("$ClientSecret\"", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Script_DataFolderHelp_SaysTheDefaultFollowsVersion_AndHowToNameTheRc24Folder()
+    {
+        var content = File.ReadAllText(ScriptPath, Encoding.ASCII);
+        var help = content[content.IndexOf(".PARAMETER DataFolder", StringComparison.Ordinal)..content.IndexOf(".PARAMETER Connect", StringComparison.Ordinal)];
+
+        // VERSION reads 0.23.0 until the release bump, so the default is the rc23 folder until then.
+        Assert.Contains("VERSION", help, StringComparison.Ordinal);
+        Assert.Contains("-DataFolder C:\\TempestOS-rc24-data", help, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Script_ClientIdHelp_SaysItIsIgnoredWithASuppliedToken()
+    {
+        var content = File.ReadAllText(ScriptPath, Encoding.ASCII);
+        var help = content[content.IndexOf(".PARAMETER ClientId", StringComparison.Ordinal)..content.IndexOf(".PARAMETER AccessToken", StringComparison.Ordinal)];
+
+        Assert.Contains("Ignored with -AccessToken", help, StringComparison.Ordinal);
     }
 }

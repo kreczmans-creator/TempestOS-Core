@@ -9,7 +9,7 @@
     (tests/Tempest.Core.Tests, Category=XeroLive), which are skipped
     everywhere else, including CI.
 
-    What the test does (about 45 calls, under Xero's 60 a minute):
+    What the test does (about 35 calls, under Xero's 60 a minute):
       1. Connects with the tokens TempestOS stored when you connected Xero in
          Settings (or signs in first with -Connect).
       2. Checks the granted scopes, reads the organisation, tax rates,
@@ -41,7 +41,11 @@
 .PARAMETER DataFolder
     The TempestOS data folder whose secrets hold the Xero tokens - the one
     the app you connected Xero from uses. Defaults to
-    C:\TempestOS-rc<minor>-data, as scripts/install-test-build.ps1 does.
+    C:\TempestOS-rc<minor>-data, as scripts/install-test-build.ps1 does,
+    with <minor> read from the repository's VERSION file. Until VERSION is
+    bumped to 0.24.0 at release that default is the rc23 folder, so for the
+    v0.24.0 test build pass -DataFolder C:\TempestOS-rc24-data explicitly
+    (the runbook and the setup guide always do).
 
 .PARAMETER Connect
     Sign in first: a browser opens; choose the Demo Company. The new tokens
@@ -49,17 +53,20 @@
 
 .PARAMETER ClientId
     The Xero app's client id, when TempestOS has none stored (needed for
-    -Connect, and to refresh an expired token).
+    -Connect, and to refresh an expired stored token). Ignored with
+    -AccessToken: a supplied token is never refreshed, so no client id or
+    secret is ever sent to Xero's token endpoint for it.
 
 .PARAMETER ClientSecret
     The Xero app's client secret, when the app has one and TempestOS has
-    none stored.
+    none stored. Ignored with -AccessToken, as -ClientId is.
 
 .PARAMETER AccessToken
     Use this access token instead of the stored ones (for example from a
     secret store). Needs -TenantId. It is never refreshed: it is used until
-    the expiry in the token itself (Xero's tokens last 30 minutes), or for
-    25 minutes when the token is opaque - supply a freshly issued one.
+    2 minutes before the expiry in the token itself (Xero's tokens last 30
+    minutes), or for 23 minutes when the token is opaque - supply a freshly
+    issued one (and one with more than 10 minutes left for -KeyWindow).
 
 .PARAMETER Scopes
     With an opaque -AccessToken only: the scopes it was granted, separated

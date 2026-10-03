@@ -1,5 +1,8 @@
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Tempest.Core.Invoicing.Xero;
 using Tempest.Core.Tests.Invoicing.Xero.Api;
+using Tempest.Core.Tests.Templates;
 using Tempest.Core.Tests.Invoicing.Xero.Simulator;
 
 namespace Tempest.Core.Tests.Invoicing.Xero.Live;
@@ -249,6 +252,67 @@ public sealed class XeroDemoSmokeJourneyTests
     }
 
     [Fact]
+    public async Task Journey_KeepsTheRecordedBillVat_WhichIsNotWhatXeroWouldCompute()
+    {
+        using var kit = await SmokeKit.CreateAsync();
+
+        var report = await kit.Journey(keep: true).RunAsync();
+
+        // 20% of the net 50 is 10.00; the bill records 9.99 so S18 can tell kept from recomputed.
+        Assert.NotEqual(10m, XeroDemoSmokeJourney.RecordedBillVat);
+        var bill = Assert.Single(kit.Simulator.All("Invoices"), i => i.Body["Type"]?.GetValue<string>() == "ACCPAY");
+        Assert.Equal(XeroDemoSmokeJourney.RecordedBillVat, bill.Body["TotalTax"]!.GetValue<decimal>());
+        var step = report.Steps.Single(s => s.Id == "S18");
+        Assert.True(step.Passed, step.Detail);
+        Assert.Contains("kept", step.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Journey_WhenXeroRecomputesTheBillVat_FailsTheReadBackStep()
+    {
+        using var kit = await SmokeKit.CreateAsync(wrapNetwork: network => new RecomputeBillVat { InnerHandler = network });
+
+        var report = await kit.Journey().RunAsync();
+
+        var step = report.Steps.Single(s => s.Id == "S18");
+        Assert.False(step.Passed);
+        Assert.Contains("NOT kept", step.Detail, StringComparison.Ordinal);
+        Assert.False(report.Passed);
+    }
+
+    [Fact]
+    public async Task Journey_WithAnExpiredSuppliedToken_SaysSupplyAFreshOne_NotConnect()
+    {
+        using var kit = await SmokeKit.CreateAsync(authorised: false);
+
+        var report = await kit.Journey(suppliedToken: true).RunAsync();
+
+        var step = Assert.Single(report.Steps);
+        Assert.Equal("S01", step.Id);
+        Assert.False(step.Passed);
+        Assert.Contains("supplied token expired: supply a fresh one", step.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("-Connect", step.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("-ClientId", step.Detail, StringComparison.Ordinal);
+        Assert.Empty(kit.Simulator.Requests);
+    }
+
+    [Fact]
+    public async Task Journey_CallCount_IsTheOneTheScriptStates()
+    {
+        using var kit = await SmokeKit.CreateAsync();
+
+        var report = await kit.Journey().RunAsync();
+        Assert.True(report.Passed, Failures(report));
+
+        var script = File.ReadAllText(Path.Combine(RepositoryPaths.RepositoryRoot, "scripts", "xero-demo-smoke.ps1"));
+        var stated = Regex.Match(script, @"about (\d+) calls");
+        Assert.True(stated.Success, "The script's help should say about how many calls the journey makes.");
+        var calls = kit.Simulator.Requests.Count;
+        Assert.InRange(int.Parse(stated.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture), calls - 3, calls + 3);
+        Assert.True(calls < 60, $"The journey ({calls} calls) should fit inside Xero's 60 a minute.");
+    }
+
+    [Fact]
     public void SmokePdf_IsAWellFormedPdf_NamedAfterTheNumber()
     {
         var pdf = XeroDemoSmokeJourney.Pdf("SMOKE-Q-1 R2");
@@ -280,7 +344,8 @@ public sealed class XeroDemoSmokeJourneyTests
 
         public XeroLiveConnection Connection { get; }
 
-        public static async Task<SmokeKit> CreateAsync(bool isDemoCompany = true, bool recordGrant = true, bool authorised = true, int minuteLimit = 60)
+        public static async Task<SmokeKit> CreateAsync(
+            bool isDemoCompany = true, bool recordGrant = true, bool authorised = true, int minuteLimit = 60, Func<HttpMessageHandler, HttpMessageHandler>? wrapNetwork = null)
         {
             var clock = new XeroSimulatorClock();
             var simulator = new XeroApiSimulator(
@@ -290,7 +355,7 @@ public sealed class XeroDemoSmokeJourneyTests
             var (authoriser, secretStore) = await XeroTestAuthoriser.CreateAsync(
                 authorised: authorised, grantedScopes: recordGrant ? XeroScopes.Required : null);
 
-            return new SmokeKit(simulator, clock, XeroLiveConnection.CreateOver(authoriser, secretStore, simulator, XeroApiSimulator.BaseAddress, clock));
+            return new SmokeKit(simulator, clock, XeroLiveConnection.CreateOver(authoriser, secretStore, wrapNetwork?.Invoke(simulator) ?? simulator, XeroApiSimulator.BaseAddress, clock));
         }
 
         public XeroDemoSmokeJourney Journey(bool keep = false, Action<TimeSpan>? delay = null, bool suppliedToken = false) => new(
@@ -309,6 +374,35 @@ public sealed class XeroDemoSmokeJourneyTests
         {
             Connection.Dispose();
             Simulator.Dispose();
+        }
+    }
+
+    /// <summary>Stands in for a Xero that ignored the sent <c>TaxAmount</c>: every bill read back carries the 20% VAT Xero would compute.</summary>
+    private sealed class RecomputeBillVat : DelegatingHandler
+    {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = await base.SendAsync(request, cancellationToken);
+            if (request.Method != HttpMethod.Get || response.Content is null
+                || response.Content.Headers.ContentType?.MediaType?.Contains("json", StringComparison.Ordinal) != true)
+                return response;
+
+            var json = JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+            if (json?["Invoices"] is not JsonArray invoices)
+                return response;
+
+            foreach (var invoice in invoices.OfType<JsonObject>().Where(i => i["Type"]?.GetValue<string>() == "ACCPAY"))
+                invoice["TotalTax"] = 10m;
+
+            var rewritten = new HttpResponseMessage(response.StatusCode)
+            {
+                Content = new StringContent(json.ToJsonString(), System.Text.Encoding.UTF8, "application/json"),
+                RequestMessage = request,
+            };
+            foreach (var header in response.Headers)
+                rewritten.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            response.Dispose();
+            return rewritten;
         }
     }
 }

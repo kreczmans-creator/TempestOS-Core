@@ -1,7 +1,7 @@
 # TempestOS v0.24.0 — Release Notes
 
 **Status: draft.** Awaiting the Product Owner's run of
-`docs/releases/v0.24.0/PO Test Runbook - Xero.md` against the Xero Demo
+`docs/releases/v0.24.0/PO Test Runbook.md` against the Xero Demo
 Company and the live smoke test (`scripts/xero-demo-smoke.ps1`). The
 forward cash picture (task X7) merges separately; its runbook section XF
 is a placeholder until then. Decision record: `ADR-0162` (Accepted).
@@ -89,7 +89,7 @@ approved, posted or emailed by TempestOS.
   runs against the in-process Xero simulator on every CI run.
 - **Documentation.** `docs/guides/Xero Setup - Step by Step.md` (new
   scopes, Demo Company first, Re-authorise, the live switch, the smoke
-  script); `docs/releases/v0.24.0/PO Test Runbook - Xero.md`;
+  script); `docs/releases/v0.24.0/PO Test Runbook.md`;
   `PHYSICAL_REVIEW.md` §7m.
 
 ## Product Owner decisions (D1–D7, 2026-10-02)

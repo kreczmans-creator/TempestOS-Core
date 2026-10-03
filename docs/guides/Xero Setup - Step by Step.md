@@ -110,7 +110,7 @@ before your live organisation is connected (D7).
 33. Go to **Business → Invoices**. Bills due, repeating bills and the
     cash position now come from the connected organisation.
 34. Record the result in the v0.24.0 runbook
-    (`docs/releases/v0.24.0/PO Test Runbook - Xero.md`, section XS).
+    (`docs/releases/v0.24.0/PO Test Runbook.md`, section XS).
 
 ## Part 5 — The Xero section in Settings (v0.24.0)
 
@@ -198,11 +198,15 @@ keeps an idempotency key (about seven more minutes).
 
 To run it with a token from a secret store instead of the stored one, pass
 `-AccessToken <token> -TenantId <Demo Company tenant id>`. That token is
-never refreshed: it is used until the expiry written in it (Xero's last
-30 minutes; 25 minutes for a token that carries none), so use a freshly
-issued one. Its scopes are read from the token itself; for a token that
-does not carry them, add `-Scopes "<granted scopes>"`, or the scope check
-is reported *not checked (supplied token)*.
+never refreshed: it is used until 2 minutes before the expiry written in
+it (Xero's last 30 minutes; 25 minutes for a token that carries none), so
+use a freshly issued one, with more than 10 minutes left for `-KeyWindow`.
+`-ClientId` and `-ClientSecret` are ignored with it: nothing is ever sent
+to Xero's token endpoint for a supplied token. If it has run out, the first
+step says *supplied token expired: supply a fresh one*. Its scopes are read
+from the token itself; for a token that does not carry them (or carries an
+empty list), add `-Scopes "<granted scopes>"`, or the scope check is
+reported *not checked (supplied token)*.
 
 ---
 

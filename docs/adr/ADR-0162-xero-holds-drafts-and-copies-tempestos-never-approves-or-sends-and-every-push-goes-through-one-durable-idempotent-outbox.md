@@ -10,7 +10,7 @@ by tests (the safety handler's own tests, the in-process Xero simulator's
 and `XeroSafetyArchitectureTests`). The live confirmation against the Xero
 Demo Company is the operator-run smoke test
 (`scripts/xero-demo-smoke.ps1`, `Category=XeroLive`) and the Product
-Owner's runbook (`docs/releases/v0.24.0/PO Test Runbook - Xero.md`); their
+Owner's runbook (`docs/releases/v0.24.0/PO Test Runbook.md`); their
 results are recorded in `docs/releases/v0.24.0/Release Notes.md`. A
 finding there that contradicts this decision reopens it as a new ADR.
 Technical detail: `docs/releases/v0.24.0/Xero Technical Design.md`;
@@ -119,5 +119,5 @@ schema-versioned stores; an invoice request sent to Xero before
 `docs/releases/v0.24.0/Xero Technical Design.md`;
 `docs/releases/v0.24.0/Xero Build Decisions.md`;
 `docs/releases/v0.24.0/Release Notes.md`;
-`docs/releases/v0.24.0/PO Test Runbook - Xero.md`;
+`docs/releases/v0.24.0/PO Test Runbook.md`;
 `docs/guides/Xero Setup - Step by Step.md`.

@@ -185,7 +185,7 @@ Use a project for *Basket Case Ltd* (XC3).
 | S08–S11a | Quote DRAFT + PDF, second PDF same name, SENT, ACCEPTED, read back | XQ2–XQ5 |
 | S12–S14 | Invoice DRAFT + PDF (not online), read back still DRAFT, never sent to the contact | XI1–XI4 |
 | S15–S16 | Purchase order DRAFT + PDF | XP1–XP2 |
-| S17–S18 | Bill DRAFT + receipt, recorded VAT kept | XE1–XE3 |
+| S17–S18 | Bill DRAFT + receipt; read back with the recorded VAT kept (the script records 9.99 on net 50, not the 10.00 Xero would compute, so a recomputed VAT fails S18) | XE1–XE3 |
 | S19 | Drafts deleted (unless `-Keep`) | XI9, XP3, XE7 |
 | S20 | Nothing that left the PC approved, emailed or wrote outside the allow-list | XI4, XI11 |
 | F1–F4 | Key retention, attachment replace-by-name, scopes without openid, contact create | Release Notes "To confirm" |

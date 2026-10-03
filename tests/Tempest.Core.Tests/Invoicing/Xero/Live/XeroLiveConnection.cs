@@ -106,9 +106,25 @@ internal sealed class XeroLiveConnection : IDisposable
     /// <paramref name="settings"/> (see <see cref="XeroLiveSettings"/>).
     /// </summary>
     /// <param name="settings">What the operator asked for.</param>
-    public static async Task<XeroLiveConnection> CreateLiveAsync(XeroLiveSettings settings)
+    public static Task<XeroLiveConnection> CreateLiveAsync(XeroLiveSettings settings) =>
+        CreateLiveAsync(settings, new HttpClientHandler(), new InvoicingHttpLoggingHandler(NullLogger.Instance), TimeProvider.System);
+
+    /// <summary>
+    /// <see cref="CreateLiveAsync(XeroLiveSettings)"/> over the given
+    /// handlers and clock, so a test can prove what the credentials set-up
+    /// would send (a supplied token must never reach the token endpoint).
+    /// </summary>
+    /// <param name="settings">What the operator asked for.</param>
+    /// <param name="apiNetwork">The innermost handler of the API pipeline.</param>
+    /// <param name="tokenNetwork">The handler the authoriser's token requests go to.</param>
+    /// <param name="time">The clock.</param>
+    internal static async Task<XeroLiveConnection> CreateLiveAsync(
+        XeroLiveSettings settings, HttpMessageHandler apiNetwork, HttpMessageHandler tokenNetwork, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(apiNetwork);
+        ArgumentNullException.ThrowIfNull(tokenNetwork);
+        ArgumentNullException.ThrowIfNull(time);
 
         var configuration = BuildConfiguration(settings);
         ISecretStore secretStore;
@@ -118,17 +134,22 @@ internal sealed class XeroLiveConnection : IDisposable
             var supplied = new InMemorySecretStore();
             var token = settings.Trimmed(XeroLiveSettings.AccessTokenVariable)!;
             await supplied.SetAsync("Invoicing:Xero:AccessToken", token);
-            // A refresh token must exist for the authoriser to use the access
-            // token at all; this one is never sent (the token is used until it
-            // expires, then the run reports Reauthorise).
+            // The authoriser uses a stored access token only when a refresh
+            // token is stored beside it, so a placeholder is stored. It can
+            // never be sent: BuildConfiguration leaves out the client id for
+            // a supplied token, and this store holds none, so once the token
+            // is expired (or within the authoriser's 2-minute refresh skew)
+            // the authoriser answers NotConfigured without a request, and
+            // S01 tells the operator to supply a fresh token.
             await supplied.SetAsync("Invoicing:Xero:RefreshToken", "supplied-access-token-is-not-refreshed");
             await supplied.SetAsync(
                 "Invoicing:Xero:ExpiresAtUtc",
-                XeroLiveSettings.SuppliedTokenExpiry(token, DateTimeOffset.UtcNow).ToString("O", CultureInfo.InvariantCulture));
-            // The granted-scope record S02 checks: the JWT's own scope claim,
-            // else what the operator said; neither leaves it unrecorded and
-            // S02 reports "not checked (supplied token)".
-            if ((OAuthAuthoriser.ReadScopeClaim(token) ?? settings.SuppliedScopes) is { Count: > 0 } scopes)
+                XeroLiveSettings.SuppliedTokenExpiry(token, time.GetUtcNow()).ToString("O", CultureInfo.InvariantCulture));
+            // The granted-scope record S02 checks: the JWT's own scope claim
+            // when it names any scope, else what the operator said; neither
+            // leaves it unrecorded and S02 reports "not checked (supplied token)".
+            var scopes = OAuthAuthoriser.ReadScopeClaim(token) is { Count: > 0 } claim ? claim : settings.SuppliedScopes;
+            if (scopes is { Count: > 0 })
                 await supplied.SetAsync("Invoicing:Xero:" + OAuthAuthoriser.GrantedScopesKeySuffix, string.Join(' ', scopes));
             if (settings.Trimmed(XeroLiveSettings.TenantIdVariable) is { } tenant)
                 await supplied.SetAsync("Invoicing:Xero:TenantId", tenant);
@@ -142,10 +163,10 @@ internal sealed class XeroLiveConnection : IDisposable
                 : new FileSecretStore(configuration);
         }
 
-        var tokenClient = new HttpClient(new InvoicingHttpLoggingHandler(NullLogger.Instance));
-        var authoriser = new OAuthAuthoriser(XeroServiceRegistration.OAuthProfile, configuration, secretStore, new SystemBrowserLauncher(), tokenClient);
+        var tokenClient = new HttpClient(tokenNetwork);
+        var authoriser = new OAuthAuthoriser(XeroServiceRegistration.OAuthProfile, configuration, secretStore, new SystemBrowserLauncher(), tokenClient, time);
 
-        return Compose(authoriser, secretStore, new HttpClientHandler(), XeroServiceRegistration.ApiBaseAddress, TimeProvider.System, tokenClient);
+        return Compose(authoriser, secretStore, apiNetwork, XeroServiceRegistration.ApiBaseAddress, time, tokenClient);
     }
 
     /// <summary>The same pipeline over <paramref name="network"/> (the in-process simulator) and <paramref name="authoriser"/>.</summary>
@@ -190,10 +211,18 @@ internal sealed class XeroLiveConnection : IDisposable
 
         if (settings.DataFolder is { } folder)
             entries.Add(new(SqlitePersistenceStore.RootPathConfigurationKey, folder));
-        if (settings.Trimmed(XeroLiveSettings.ClientIdVariable) is { } clientId)
-            entries.Add(new("Invoicing:Xero:ClientId", clientId));
-        if (settings.Trimmed(XeroLiveSettings.ClientSecretVariable) is { } clientSecret)
-            entries.Add(new("Invoicing:Xero:ClientSecret", clientSecret));
+
+        // A supplied token is never refreshed: without a client id the
+        // authoriser cannot exchange the placeholder refresh token, so
+        // neither it nor the client credentials ever reach Xero's token
+        // endpoint. -ClientId/-ClientSecret apply to the stored tokens only.
+        if (!settings.UsesSuppliedToken)
+        {
+            if (settings.Trimmed(XeroLiveSettings.ClientIdVariable) is { } clientId)
+                entries.Add(new("Invoicing:Xero:ClientId", clientId));
+            if (settings.Trimmed(XeroLiveSettings.ClientSecretVariable) is { } clientSecret)
+                entries.Add(new("Invoicing:Xero:ClientSecret", clientSecret));
+        }
 
         return new ConfigurationBuilder().AddSource(new MemoryConfigurationSource(entries)).Build();
     }

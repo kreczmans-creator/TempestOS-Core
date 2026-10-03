@@ -345,7 +345,7 @@ rebuild then takes about 15 seconds after restore.
 
 ---
 
-## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7m add about three and a half hours in total, each timed in its own heading)
+## 7. Physical smoke test (10–15 minutes for the core walk; §7a–§7l add about two and a half hours in total, each timed in its own heading)
 
 Every step below uses behaviour that exists today. Where something is
 deliberately not implemented, the step says so rather than asking for it.
@@ -719,30 +719,6 @@ Every claim names the file it comes from.
 | N8 | Rail → **Home** with at least two open projects and one signed off | **Continue** lists the most recently created open projects, newest first, never a signed-off one; each entry opens its project, and each **Recent** entry opens its object in Engineering (`HomeDashboardView.cs`). | Continue lists the oldest projects first or a closed one; an entry is plain text or opens nothing. |
 | N9 | With the Dashboard Export configured, refresh it; open `reviews.json` | A fifth file, `reviews.json` (schema v1), lists every live item awaiting review, oldest first, with its project, age and submitter; there is no approve action anywhere in it (`ReviewQueueExportAdapter.cs`, `ADR-0157`). | An item in review is missing; the file carries a write action. |
 | N10 | On a fresh data root: Settings → **Sign-off**; then a quote of your own → **Submit for review** → **Approve**; then tick *Second-person sign-off* → **Save**, untick it → **Save**; restart and reopen Settings | The switch reads *Second-person sign-off — require a different person to approve quotes and check evidence. Off for a one-person consultancy.* and is **off**. The Quote tab reads *Self-approval allowed (second-person sign-off is off).*; your own approval succeeds and reads *Approved R1 by … (self-approved)*. After a restart the switch keeps its last saved position. The audit trail has one `governance.second-person-sign-off.changed` row per change, naming you, Off → On and On → Off (`SettingsView.cs`, `SignOffPolicy`, `ADR-0161`). | The switch is on by default; your own approval is refused while it is off, or is not marked self-approved; the switch forgets its position on restart; a change has no audit row. |
-
-### 7m. Xero in `v0.24.0` — drafts and copies, against the Demo Company (about 60 minutes, the Product Owner's Xero app)
-
-`ADR-0162`, decisions D1–D7. Connect the **Xero Demo Company**, not the
-live organisation: until **Allow live organisation** is switched on,
-TempestOS refuses every write to an organisation Xero does not report as
-the Demo Company. Setup: `docs/guides/Xero Setup - Step by Step.md`
-(Parts 3, 5–7). The full step list, with every badge state, is
-`docs/releases/v0.24.0/PO Test Runbook - Xero.md`; these rows are its
-spine. Check every record in the Demo Company in the browser.
-
-| # | Step | Expected result | Counts as a failure if |
-|---|---|---|---|
-| XR-1 | (Developer PC) `pwsh -NoProfile -File scripts/xero-demo-smoke.ps1 -DataFolder <data folder> -Keep` | **RESULT: PASSED**; the report lists S01–S20 *pass* and a Xero link per record; open items F2–F4 *CONFIRMED* (`tests/Tempest.Core.Tests/Invoicing/Xero/Live/`). Without `TEMPEST_XERO_LIVE=1` these tests are reported *skipped* (CI) | Any FAIL step; the invoice is anything but Draft; a second record for a repeated create; the run writes to an organisation that is not the Demo Company |
-| XR-2 | Settings → **Xero** | *Connected to Xero.*; *Required scopes* = *Granted* (six scopes), *Missing: none*; **Refresh from Xero** → *Demo Company: yes …*; company details *from Xero, read at …*; tax-type and account pickers on **Default**; *Allow live organisation* **off** (`XeroSettingsSection.cs`) | The section is missing with Xero as the connector; *openid*/*profile*/*email* requested; the switch is on by default |
-| XR-3 | Customers & Suppliers → an organisation → **Link to Xero…** | Candidates strongest first with why; nothing linked until **Link to selected contact**; or **Create in Xero**; Xero billing details then shown read-only (`XeroContactLinkPrompt.cs`, `CustomersSuppliersView.cs`) | A contact linked without confirming; TempestOS changes anything in Xero but an empty contact number |
-| XR-4 | Quote: approve → **Export** → edit → approve R2 → Export → **Send** → **Accept** | Badge: Queued → *In Xero (draft)* → (R2 updates the same Xero quote) → *Sent in Xero* → *Accepted in Xero*; in Xero the same number, lines and PDF; no email (`XeroSyncBadge.cs`, X3) | A second Xero quote for one TempestOS quote; Xero emails the client; the status leads TempestOS |
-| XR-5 | Invoices → **Send** an invoice | Badge exactly **Draft in Xero — review and send from Xero**; in Xero a **Draft** with the same number, contact, lines and PDF (not shown online); approving and paying it in Xero reads back *Awaiting payment*, then *Paid* (X4) | The invoice is ever Awaiting approval/payment because of TempestOS; any email; a duplicate after a lost answer |
-| XR-6 | Purchase orders → **Issue**; **Cancel** another; delete one in Xero → **Send again** | *In Xero (draft)* with the PDF; cancel → *Deleted in Xero*; Send again → a new Xero draft, the deleted one stays deleted (X5) | A purchase order approved in Xero by TempestOS; Send again re-uses the deleted record |
-| XR-7 | Record an expense with a supplier, invoice number and receipt; Invoices → **Expense bills in Xero** | A Xero **draft bill** numbered by the supplier's invoice number, the recorded VAT kept, the receipt attached; with no supplier, against the *General expenses* contact as `EXP-…` (Q3, Q4) | The bill is approved; VAT recomputed; an expense from a received PO billed twice (Q6) |
-| XR-8 | Wi-Fi off: export a quote, issue a PO, record an expense, send an invoice; restart; Wi-Fi on | All badges *Queued* while offline and after the restart; within a minute of reconnecting each record is in Xero exactly once (X6 outbox) | Anything lost, or made twice |
-| XR-9 | Unlink a customer → export a quote for it → link it again; on a Failed badge **Retry** | *Failed* naming the missing link; re-linking sends it by itself; Retry → *Queued for Xero again.* | A blocked push sent half-formed; Retry not offered on Failed |
-| XR-10 | Re-authorise with a **live** organisation (only after XR-1…XR-9 pass) → export a quote | *Demo Company: no — a live organisation.*; badge *Failed* — *TempestOS blocked the request (D7.live-organisation)*; nothing in the live Xero; the smoke script answers **REFUSED**. Turning the switch on is audited (`xero.live-organisation.allowed`) | Any write reaches the live organisation while the switch is off |
-| XR-11 | Business dashboard forward cash picture (X7) | *Placeholder: rows added when task X7 merges* | — |
 
 ---
 

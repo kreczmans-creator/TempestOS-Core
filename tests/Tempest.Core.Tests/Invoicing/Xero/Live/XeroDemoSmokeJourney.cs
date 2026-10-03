@@ -67,6 +67,13 @@ internal sealed class XeroDemoSmokeJourney
     /// <summary>The smoke contact's <c>ContactNumber</c> (TempestOS's customer code; the natural key the contact is found by).</summary>
     public const string ContactNumber = "TOS-SMOKE";
 
+    /// <summary>
+    /// The VAT the smoke bill records on its one line (net 50): deliberately
+    /// not the 10.00 Xero would compute at 20%, so S18 can tell the recorded
+    /// VAT kept (D5) from VAT recomputed by Xero.
+    /// </summary>
+    public const decimal RecordedBillVat = 9.99m;
+
     private static readonly string[] OpenIdScopes = ["openid", "profile", "email"];
 
     private readonly XeroAccountingApi _api;
@@ -213,9 +220,7 @@ internal sealed class XeroDemoSmokeJourney
     {
         var access = await _authoriser.EnsureAccessTokenAsync(cancellationToken);
         Step("S01", "Connected: a current access token and a connected organisation", access.Outcome == AccessTokenOutcome.Ok && !string.IsNullOrEmpty(access.TenantId),
-            access.Outcome == AccessTokenOutcome.Ok
-                ? "token current; tenant connected"
-                : $"{access.Outcome}{(access.Reason is null ? string.Empty : $" ({access.Reason})")}: connect the Demo Company in Settings -> Xero, or run the script with -Connect (and -ClientId when the app has none stored)");
+            ConnectionDetail(access));
         if (access.Outcome != AccessTokenOutcome.Ok || string.IsNullOrEmpty(access.TenantId))
             throw new SmokeStopped();
 
@@ -472,8 +477,8 @@ internal sealed class XeroDemoSmokeJourney
         var upload = await CallAsync(() => _api.UploadAttachmentAsync(XeroAttachableResource.Invoices, billId, receipt, $"tos:smoke:{Stamp}:bill:receipt:{receipt.Sha256[..16]}", cancellationToken: cancellationToken), cancellationToken);
         var readBack = await CallAsync(() => _api.GetBillAsync(billId, cancellationToken), cancellationToken);
         Step("S18", "Receipt attached to the bill; read back still DRAFT with the recorded VAT",
-            upload.Outcome == ConnectorOutcome.Ok && readBack.Outcome == ConnectorOutcome.Ok && readBack.Value!.Status == "DRAFT",
-            $"upload: {Describe(upload, a => a.FileName)}; read back: {Describe(readBack, b => $"{b.Status}, tax {b.TotalTax?.ToString(CultureInfo.InvariantCulture) ?? "?"}")}");
+            upload.Outcome == ConnectorOutcome.Ok && readBack.Outcome == ConnectorOutcome.Ok && readBack.Value!.Status == "DRAFT" && readBack.Value.TotalTax == RecordedBillVat,
+            $"upload: {Describe(upload, a => a.FileName)}; read back: {Describe(readBack, b => $"{b.Status}, tax {b.TotalTax?.ToString(CultureInfo.InvariantCulture) ?? "?"} (recorded {RecordedBillVat.ToString(CultureInfo.InvariantCulture)}{(b.TotalTax == RecordedBillVat ? ", kept" : ", NOT kept: Xero recomputed it")})")}");
         Record("Bill", number, billId, readBack.Value?.Status ?? "?", BillLink(billId));
     }
 
@@ -567,6 +572,25 @@ internal sealed class XeroDemoSmokeJourney
         return value ?? throw new SmokeStopped();
     }
 
+    /// <summary>S01's detail: what is wrong with the connection and what the operator does about it (a supplied token is never refreshed, so the advice is to supply a fresh one, never to connect).</summary>
+    private string ConnectionDetail(AccessTokenResult access)
+    {
+        if (access.Outcome == AccessTokenOutcome.Ok)
+        {
+            if (!string.IsNullOrEmpty(access.TenantId))
+                return "token current; tenant connected";
+
+            return _options.SuppliedToken
+                ? "token current but no tenant: run the script with -TenantId (the Demo Company's tenant id) beside -AccessToken"
+                : "token current but no connected organisation: connect the Demo Company in Settings -> Xero, or run the script with -Connect";
+        }
+
+        var outcome = $"{access.Outcome}{(access.Reason is null ? string.Empty : $" ({access.Reason})")}";
+        return _options.SuppliedToken
+            ? $"{outcome}: supplied token expired: supply a fresh one with -AccessToken (a supplied token is never refreshed; it must have more than 2 minutes left)"
+            : $"{outcome}: connect the Demo Company in Settings -> Xero, or run the script with -Connect (and -ClientId when the app has none stored)";
+    }
+
     private void Step(string id, string title, bool passed, string detail) => _report.Add(new XeroSmokeStep(id, title, passed, detail));
 
     private void Record(string kind, string number, string id, string status, string link) => _report.Add(new XeroSmokeRecord(kind, number, id, status, link));
@@ -579,7 +603,7 @@ internal sealed class XeroDemoSmokeJourney
 
     private XeroWireBillWrite BillWrite(string number, string contactId) => new(
         number, new XeroWireContactRef(contactId), Today(), _currency, XeroWire.LineAmountTypesExclusive,
-        [new XeroWireLineItem("Smoke test train fare", 1m, 50m, _expenseAccount, _purchaseTax, TaxAmount: 10m)]);
+        [new XeroWireLineItem("Smoke test train fare", 1m, 50m, _expenseAccount, _purchaseTax, TaxAmount: RecordedBillVat)]);
 
     private string Today(int addDays = 0) => DateOnly.FromDateTime(_options.Time.GetUtcNow().UtcDateTime).AddDays(addDays).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
