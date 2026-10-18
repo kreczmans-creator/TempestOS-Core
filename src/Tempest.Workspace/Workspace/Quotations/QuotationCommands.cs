@@ -59,7 +59,7 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
 {
     /// <summary>Initialises a new instance of the <see cref="AddQuotationLineCommand"/> class.</summary>
     public AddQuotationLineCommand(
-        Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode = null)
+        Guid targetObjectId, string targetKind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode = null, VatRate? vatRate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -71,6 +71,7 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
         Rate = rate;
         FixedPrice = fixedPrice;
         RateCardServiceCode = rateCardServiceCode;
+        VatRate = vatRate;
     }
 
     /// <inheritdoc />
@@ -93,6 +94,9 @@ public sealed class AddQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>Runbook C3: the pinned rate card's own hourly entry this line's rate is taken from, or <see langword="null"/> for a fixed-price line or a rate given directly.</summary>
     public string? RateCardServiceCode { get; }
+
+    /// <summary>This line's own VAT treatment (`TD-188`) — <see langword="null"/> takes the Settings default, exactly as <see cref="IQuotationService.AddLineAsync"/> does.</summary>
+    public VatRate? VatRate { get; }
 }
 
 /// <summary>Handles <see cref="AddQuotationLineCommand"/>.</summary>
@@ -113,7 +117,7 @@ public sealed class AddQuotationLineCommandHandler : ICommandHandler<AddQuotatio
         var result = await _service
             .AddLineAsync(
                 command.TargetObjectId, command.Description, command.Hours, command.Rate, command.FixedPrice,
-                rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
+                vatRate: command.VatRate, rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded
@@ -227,7 +231,7 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
     /// <summary>Initialises a new instance of the <see cref="UpdateQuotationLineCommand"/> class.</summary>
     public UpdateQuotationLineCommand(
         Guid targetObjectId, string targetKind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice,
-        string? rateCardServiceCode = null)
+        string? rateCardServiceCode = null, VatRate? vatRate = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetKind);
         ArgumentException.ThrowIfNullOrWhiteSpace(description);
@@ -240,6 +244,7 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
         Rate = rate;
         FixedPrice = fixedPrice;
         RateCardServiceCode = rateCardServiceCode;
+        VatRate = vatRate;
     }
 
     /// <inheritdoc />
@@ -265,6 +270,9 @@ public sealed class UpdateQuotationLineCommand : IWorkspaceCommand
 
     /// <summary>Runbook C3: the pinned rate card's own hourly entry this line's rate is taken from, or <see langword="null"/> for a fixed-price line or a rate given directly.</summary>
     public string? RateCardServiceCode { get; }
+
+    /// <summary>This line's own VAT treatment (`TD-188`) — <see langword="null"/> takes the Settings default, exactly as <see cref="IQuotationService.AddLineAsync"/> does.</summary>
+    public VatRate? VatRate { get; }
 }
 
 /// <summary>Handles <see cref="UpdateQuotationLineCommand"/>.</summary>
@@ -285,7 +293,7 @@ public sealed class UpdateQuotationLineCommandHandler : ICommandHandler<UpdateQu
         var result = await _service
             .UpdateLineAsync(
                 command.TargetObjectId, command.LineId, command.Description, command.Hours, command.Rate, command.FixedPrice,
-                rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
+                vatRate: command.VatRate, rateCardServiceCode: command.RateCardServiceCode, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.Succeeded

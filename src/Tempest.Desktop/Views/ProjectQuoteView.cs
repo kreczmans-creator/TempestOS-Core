@@ -462,9 +462,10 @@ public sealed class ProjectQuoteView : UserControl
             var rateSource = line.RateCardServiceCode is { } code && rateCard?.FindEntry(code) is { } entry ? $" ({entry.ServiceName})" : string.Empty;
             var text = new TextBlock
             {
-                Text = line.Basis == QuotationLineBasis.Hourly
+                Text = (line.Basis == QuotationLineBasis.Hourly
                     ? $"{line.Description}  •  {line.Hours:0.##} × {MoneyDisplay.Format(line.Rate!.Value)}{rateSource}  =  {MoneyDisplay.Format(line.Amount)}"
-                    : $"{line.Description}  •  {MoneyDisplay.Format(line.Amount)} (fixed)",
+                    : $"{line.Description}  •  {MoneyDisplay.Format(line.Amount)} (fixed)")
+                    + $"  •  VAT {line.VatRate.DisplayName()}",
                 FontSize = DesignTokens.FontSizeBody,
                 TextWrapping = Avalonia.Media.TextWrapping.Wrap,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -592,6 +593,19 @@ public sealed class ProjectQuoteView : UserControl
         };
         AutomationProperties.SetName(hint, "Rate card hint");
 
+        // `TD-188`: each line carries its own VAT treatment — the same
+        // closed vocabulary a purchase-order line already offers
+        // (`PurchaseOrderLinePrompt`). The first entry leaves the choice to
+        // Settings → Organisation identity → Default VAT rate, exactly what
+        // every line got before this control existed, so a quote raised
+        // without touching it reads as it always did.
+        var vatRateBox = new ComboBox { MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 160 };
+        AutomationProperties.SetName(vatRateBox, "Line VAT rate");
+        vatRateBox.Items.Add(new ComboBoxItem { Content = "VAT: Settings default", Tag = null });
+        foreach (var rate in Enum.GetValues<VatRate>())
+            vatRateBox.Items.Add(new ComboBoxItem { Content = $"VAT: {rate.DisplayName()}", Tag = rate });
+        vatRateBox.SelectedIndex = 0;
+
         var lineStatus = new TextBlock { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
 
         var saveButton = new Button { Content = _editingLineId is null ? "Add line" : "Save line", MinHeight = DesignTokens.MinControlSize };
@@ -614,6 +628,7 @@ public sealed class ProjectQuoteView : UserControl
             ApplyChoice();
             hoursBox.Value = editingLine.Hours;
             fixedPriceBox.Value = editingLine.FixedPrice?.Amount;
+            vatRateBox.SelectedItem = vatRateBox.Items.OfType<ComboBoxItem>().First(i => Equals(i.Tag, editingLine.VatRate));
         }
         else
         {
@@ -640,11 +655,12 @@ public sealed class ProjectQuoteView : UserControl
             var hours = option is { Entry: not null } or { ManualRate: not null } ? (decimal?)hoursBox.Value : null;
             var rate = option?.ManualRate;
             var serviceCode = option?.Entry?.ServiceCode;
+            var vatRate = (vatRateBox.SelectedItem as ComboBoxItem)?.Tag as VatRate?;
             var fixedPrice = option is { Entry: null, ManualRate: null } && fixedPriceBox.Value is { } f ? new Money(f, quote.Currency) : (Money?)null;
 
             var succeeded = _editingLineId is { } lineId
-                ? await OnUpdateLineAsync(quote.Id, quote.Kind, lineId, description, hours, rate, fixedPrice, serviceCode).ConfigureAwait(true)
-                : await OnAddLineAsync(quote.Id, quote.Kind, description, hours, rate, fixedPrice, serviceCode).ConfigureAwait(true);
+                ? await OnUpdateLineAsync(quote.Id, quote.Kind, lineId, description, hours, rate, fixedPrice, serviceCode, vatRate).ConfigureAwait(true)
+                : await OnAddLineAsync(quote.Id, quote.Kind, description, hours, rate, fixedPrice, serviceCode, vatRate).ConfigureAwait(true);
 
             if (succeeded)
                 _editingLineId = null;
@@ -662,7 +678,7 @@ public sealed class ProjectQuoteView : UserControl
         };
 
         var fieldsRow = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var control in new Control[] { descriptionBox, rateChoice, hoursBox, rateBox, fixedPriceBox, saveButton, cancelButton })
+        foreach (var control in new Control[] { descriptionBox, rateChoice, hoursBox, rateBox, fixedPriceBox, vatRateBox, saveButton, cancelButton })
         {
             control.Margin = new Thickness(0, 0, DesignTokens.SpaceSm, DesignTokens.SpaceXs);
             fieldsRow.Children.Add(control);
@@ -901,9 +917,9 @@ public sealed class ProjectQuoteView : UserControl
     }
 
     private async Task<bool> OnAddLineAsync(
-        Guid quotationId, string kind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode)
+        Guid quotationId, string kind, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode, VatRate? vatRate)
     {
-        var command = new AddQuotationLineCommand(quotationId, kind, description, hours, rate, fixedPrice, rateCardServiceCode);
+        var command = new AddQuotationLineCommand(quotationId, kind, description, hours, rate, fixedPrice, rateCardServiceCode, vatRate);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)
@@ -918,9 +934,9 @@ public sealed class ProjectQuoteView : UserControl
     }
 
     private async Task<bool> OnUpdateLineAsync(
-        Guid quotationId, string kind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode)
+        Guid quotationId, string kind, Guid lineId, string description, decimal? hours, Money? rate, Money? fixedPrice, string? rateCardServiceCode, VatRate? vatRate)
     {
-        var command = new UpdateQuotationLineCommand(quotationId, kind, lineId, description, hours, rate, fixedPrice, rateCardServiceCode);
+        var command = new UpdateQuotationLineCommand(quotationId, kind, lineId, description, hours, rate, fixedPrice, rateCardServiceCode, vatRate);
         var result = await _commandDispatcher.DispatchAsync(command, CancellationToken.None).ConfigureAwait(true);
 
         if (!result.Succeeded)

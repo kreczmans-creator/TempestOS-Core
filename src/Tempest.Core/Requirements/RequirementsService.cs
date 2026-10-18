@@ -601,13 +601,49 @@ public sealed class RequirementsService : IRequirementsService
 
         _logger?.Information($"Requirement collection deleted: '{dto.Name}'.");
 
+        return new RequirementCollection(collectionId, dto.Name, await CollectionMemberIdsAsync(collectionId, cancellationToken).ConfigureAwait(false), dto.IsDeleted);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirementCollection> UndeleteCollectionAsync(Guid collectionId, CancellationToken cancellationToken = default)
+    {
+        var collectionDocument = await _documentStore.FindAsync(collectionId, cancellationToken).ConfigureAwait(false);
+        if (collectionDocument is null || !string.Equals(collectionDocument.Kind, RequirementCollectionDocumentKind, StringComparison.Ordinal))
+            throw new EngineeringDocumentNotFoundException(collectionId);
+
+        var history = await _documentStore.GetRevisionHistoryAsync(collectionId, cancellationToken).ConfigureAwait(false);
+        var current = DeserialiseContent<RequirementCollectionDto>(history[^1].Content, $"Requirement collection '{collectionId}'");
+
+        if (!current.IsDeleted)
+            throw new RequirementCollectionNotDeletedException(collectionId);
+
+        var dto = current with { IsDeleted = false };
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.ReviseAsync(transaction, collectionId, JsonSerializer.Serialize(dto), "Restored from deletion.", token)
+                    .ConfigureAwait(false);
+
+                await WriteAuditAsync(transaction, collectionId, RequirementCollectionDocumentKind, RequirementsAuditActions.CollectionUndeleted, "Restored from deletion.", token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(collectionId, RequirementCollectionDocumentKind, WorkspaceChangeType.Updated);
+
+        _logger?.Information($"Requirement collection undeleted: '{dto.Name}'.");
+
+        return new RequirementCollection(collectionId, dto.Name, await CollectionMemberIdsAsync(collectionId, cancellationToken).ConfigureAwait(false), dto.IsDeleted);
+    }
+
+    private async Task<List<Guid>> CollectionMemberIdsAsync(Guid collectionId, CancellationToken cancellationToken)
+    {
         var members = await _documentStore.GetReferencesAsync(collectionId, cancellationToken).ConfigureAwait(false);
-        var memberIds = members
+        return members
             .Where(r => string.Equals(r.RelationshipKind, RequirementRelationshipKinds.CollectedIn, StringComparison.Ordinal))
             .Select(r => r.TargetDocumentId)
             .ToList();
-
-        return new RequirementCollection(collectionId, dto.Name, memberIds, dto.IsDeleted);
     }
 
     /// <inheritdoc />
@@ -780,6 +816,42 @@ public sealed class RequirementsService : IRequirementsService
         PublishChange(groupId, RequirementGroupDocumentKind, WorkspaceChangeType.Deleted);
 
         _logger?.Information($"Requirement group deleted: '{dto.Name}'.");
+
+        return new RequirementGroup(groupId, dto.Name, dto.ParentGroupId, dto.IsDeleted);
+    }
+
+    /// <inheritdoc />
+    public async Task<IRequirementGroup> UndeleteGroupAsync(Guid groupId, CancellationToken cancellationToken = default)
+    {
+        var current = await ReadGroupDtoAsync(groupId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EngineeringDocumentNotFoundException(groupId);
+
+        if (!current.IsDeleted)
+            throw new RequirementGroupNotDeletedException(groupId);
+
+        if (current.ParentGroupId is { } parentGroupId)
+        {
+            var parent = await ReadGroupDtoAsync(parentGroupId, cancellationToken).ConfigureAwait(false);
+            if (parent is null || parent.IsDeleted)
+                throw new RequirementParentGroupDeletedException(groupId, parentGroupId);
+        }
+
+        var dto = current with { IsDeleted = false };
+
+        await _transactionalStore.ExecuteInTransactionAsync(
+            async (transaction, token) =>
+            {
+                await _documentWriter.ReviseAsync(transaction, groupId, JsonSerializer.Serialize(dto), "Restored from deletion.", token)
+                    .ConfigureAwait(false);
+
+                await WriteAuditAsync(transaction, groupId, RequirementGroupDocumentKind, RequirementsAuditActions.GroupUndeleted, "Restored from deletion.", token)
+                    .ConfigureAwait(false);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        PublishChange(groupId, RequirementGroupDocumentKind, WorkspaceChangeType.Updated);
+
+        _logger?.Information($"Requirement group undeleted: '{dto.Name}'.");
 
         return new RequirementGroup(groupId, dto.Name, dto.ParentGroupId, dto.IsDeleted);
     }
